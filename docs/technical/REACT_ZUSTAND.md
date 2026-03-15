@@ -141,3 +141,24 @@ minimal, targeted `set()` call.
 - Maintaining the same flag in both a Zustand store and a React Context
 - Multiple `useXyzStore(state => state.field)` calls in the same component when a combined
   selector already exists
+
+---
+
+## HA entity update performance
+
+Every HA WebSocket state change replaces the `entities` object in the store, causing
+`useHADevices` to rebuild all device collections and `useDeviceMap` to produce a new
+`Map`. Without stabilization this triggers a full component-tree re-render.
+
+**`useDeviceMap` reference stabilization** — A `useRef` tracks the previous Map. On each
+rebuild, each new device object is compared against its previous version (primitives by
+`===`, arrays by length + `JSON.stringify`). Unchanged devices reuse their old object
+reference. When no devices changed, the same Map instance is returned, collapsing the
+entire cascade.
+
+**`RoomSection` custom memo comparator** — Default `memo` re-renders all sections
+whenever `deviceMap` changes reference. The custom comparator (`areRoomSectionPropsEqual`)
+only iterates `orderedIds` that belong to *this* section when checking `deviceMap` and
+`customCardMap`, and compares `orderedIds` by content rather than reference. Sections
+whose devices are unmodified skip re-rendering entirely when another section's device
+updates.

@@ -79,11 +79,14 @@ export const RoomSection = memo(function RoomSection({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        startTransition(() => {
-          setIsVisible(Boolean(entry?.isIntersecting));
-        });
+        if (entry?.isIntersecting) {
+          startTransition(() => {
+            setIsVisible(true);
+          });
+          observer.disconnect();
+        }
       },
-      { rootMargin: '320px 0px' }
+      { rootMargin: '400px 0px' }
     );
 
     observer.observe(node);
@@ -95,7 +98,6 @@ export const RoomSection = memo(function RoomSection({
 
   useEffect(() => {
     if (!isVisible) {
-      setVisibleCount(0);
       return;
     }
 
@@ -226,17 +228,7 @@ export const RoomSection = memo(function RoomSection({
   );
 
   return (
-    <div
-      ref={containerRef}
-      style={
-        isVisible
-          ? undefined
-          : {
-              contentVisibility: 'auto',
-              containIntrinsicSize: '800px',
-            }
-      }
-    >
+    <div ref={containerRef}>
       <div className={showHeader ? 'mb-4 flex items-center gap-3' : ''}>
         {showHeader ? (
           <>
@@ -274,4 +266,53 @@ export const RoomSection = memo(function RoomSection({
       )}
     </div>
   );
-});
+}, areRoomSectionPropsEqual);
+
+function areRoomSectionPropsEqual(prev: RoomSectionProps, next: RoomSectionProps): boolean {
+  if (
+    prev.title !== next.title ||
+    prev.totalItems !== next.totalItems ||
+    prev.mutedTitle !== next.mutedTitle ||
+    prev.showHeader !== next.showHeader ||
+    prev.textColor !== next.textColor ||
+    prev.textSecondary !== next.textSecondary ||
+    prev.isEditMode !== next.isEditMode ||
+    prev.cardSizes !== next.cardSizes ||
+    prev.handleSizeChange !== next.handleSizeChange ||
+    prev.onDeleteCard !== next.onDeleteCard ||
+    prev.onUpdateCard !== next.onUpdateCard ||
+    prev.onRemoveEntity !== next.onRemoveEntity ||
+    prev.allowEntityRemoval !== next.allowEntityRemoval ||
+    prev.usesHideAction !== next.usesHideAction
+  ) {
+    return false;
+  }
+
+  // Compare orderedIds by content — reference changes on every useAllViewGrid run even when
+  // IDs are identical (the arrays are freshly filtered from cardOrders).
+  const prevIds = prev.orderedIds;
+  const nextIds = next.orderedIds;
+  if (prevIds !== nextIds) {
+    if (prevIds.length !== nextIds.length) return false;
+    for (let i = 0; i < prevIds.length; i++) {
+      if (prevIds[i] !== nextIds[i]) return false;
+    }
+  }
+
+  // Check customCardMap only for IDs present in this section.
+  if (prev.customCardMap !== next.customCardMap) {
+    for (const id of prevIds) {
+      if (prev.customCardMap.get(id) !== next.customCardMap.get(id)) return false;
+    }
+  }
+
+  // Check deviceMap only for IDs present in this section — avoids re-rendering sections
+  // whose devices haven't changed when a device in a different section updates.
+  if (prev.deviceMap !== next.deviceMap) {
+    for (const id of prevIds) {
+      if (prev.deviceMap.get(id) !== next.deviceMap.get(id)) return false;
+    }
+  }
+
+  return true;
+}
