@@ -1,4 +1,4 @@
-import type { DragEndEvent, DragOverEvent, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent, useSensors } from '@dnd-kit/core';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
@@ -52,6 +52,7 @@ export type DashboardController = OnboardingController &
     handleDeleteCard: (cardId: string) => void;
     handleDragEnd: (_event: DragEndEvent) => void;
     handleDragOver: (event: DragOverEvent) => void;
+    handleDragStart: (event: DragStartEvent) => void;
     handleRemoveEntity: (entityId: string) => void;
     handleUpdateCard: (cardId: string, data: Record<string, unknown>) => void;
     hiddenEntityIds: string[];
@@ -118,11 +119,12 @@ export function useDashboardController(): DashboardController {
     hiddenEntityIds,
     roomOrder,
   });
-  const { handleDragEnd, handleDragOver, sensors } = useDashboardDnd({
-    cardOrders,
-    getCardRoom,
-    moveCard,
-  });
+  const { activeCardOrders, handleDragEnd, handleDragOver, handleDragStart, sensors } =
+    useDashboardDnd({
+      cardOrders,
+      getCardRoom,
+      moveCard,
+    });
 
   const dialogs = useDashboardDialogs();
   const onboarding = useOnboardingController({ allEntityIds, changeRoom });
@@ -175,7 +177,7 @@ export function useDashboardController(): DashboardController {
     allEntityIds,
     allViewGrouping,
     availableDeviceMap,
-    cardOrders,
+    cardOrders: activeCardOrders,
     cardSizes,
     changeRoom,
     customCards,
@@ -187,6 +189,7 @@ export function useDashboardController(): DashboardController {
     handleDeleteCard,
     handleDragEnd,
     handleDragOver,
+    handleDragStart,
     handleRemoveEntity,
     handleUpdateCard,
     hiddenEntityIds,

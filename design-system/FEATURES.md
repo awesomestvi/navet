@@ -494,6 +494,10 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 - CSS variables for dynamic color changes
 - Memoized components prevent unnecessary re-renders
 
+### Dashboard Drag & Drop
+- Drag reordering uses local state during the drag — the global store is written only once on drop, eliminating per-event re-renders and localStorage writes
+- `contain: layout style` on card wrappers reduces cross-card style recalculation during scroll
+
 ### Navigation
 - Section-based code splitting (future enhancement)
 - Lazy loading of section components

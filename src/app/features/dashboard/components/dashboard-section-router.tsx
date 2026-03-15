@@ -44,6 +44,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     handleDeleteCard,
     handleDragEnd,
     handleDragOver,
+    handleDragStart,
     handleRemoveEntity,
     handleUpdateCard,
     hiddenEntityIds,
@@ -228,6 +229,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >

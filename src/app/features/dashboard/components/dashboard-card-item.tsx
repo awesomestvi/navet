@@ -89,7 +89,9 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   );
 
   if (!isEditMode) {
-    return <div className={`h-full relative ${spanClass}`}>{cardContent}</div>;
+    return (
+      <div className={`relative h-full [contain:layout_style] ${spanClass}`}>{cardContent}</div>
+    );
   }
 
   return (

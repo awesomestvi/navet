@@ -150,6 +150,7 @@ The current dashboard build includes a few runtime-focused optimizations:
 - Deferred rendering for offscreen room groups in the All view
 - Zustand-backed search result state to reduce context fan-out
 - Stable device-map reuse to avoid rerendering unchanged cards
+- Drag reordering uses local state during a drag; the global store is written once on drop, eliminating per-event re-renders and localStorage writes
 - Onboarding-based dashboard visibility with add/remove entity curation
 - Local dashboard config YAML export/import for layout and preference backup, including first-run import from onboarding
 - Configurable entity card interaction styles with a live preview in Settings
