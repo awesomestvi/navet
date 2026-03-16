@@ -104,7 +104,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
                     : 'linear-gradient(180deg, rgba(12,18,32,0.98), rgba(7,10,18,0.99))',
             }}
           />
-          {showSharedGlassBlur ? <div className="absolute inset-0 backdrop-blur-[28px]" /> : null}
+          {showSharedGlassBlur ? <div className="absolute inset-0 backdrop-blur-[28px] [transform:translateZ(0)]" /> : null}
         </div>
       )}
 

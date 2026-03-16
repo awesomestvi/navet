@@ -29,6 +29,7 @@ export function DraggableCard({
     ? {
         transform: CSS.Transform.toString(transform),
         transition,
+        willChange: 'transform',
       }
     : {};
 

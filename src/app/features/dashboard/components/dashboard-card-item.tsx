@@ -90,7 +90,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 
   if (!isEditMode) {
     return (
-      <div className={`relative h-full [contain:layout_style] ${spanClass}`}>{cardContent}</div>
+      <div className={`relative h-full [contain:layout_style_paint] ${spanClass}`}>{cardContent}</div>
     );
   }
 
