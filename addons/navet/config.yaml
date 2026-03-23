@@ -1,8 +1,9 @@
 name: Navet
-version: "0.1.5"
+version: "0.1.7"
 slug: navet
 description: Modern smart home dashboard for Home Assistant
 url: https://github.com/awesomestvi/navet
+image: ghcr.io/awesomestvi/{arch}-navet-addon
 arch:
   - aarch64
   - amd64

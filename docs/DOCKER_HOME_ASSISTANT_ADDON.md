@@ -84,19 +84,22 @@ The token should have package read access.
 
 - `repository.yaml`
 - `addons/navet/config.yaml`
-- `addons/navet/build.yaml`
 - `addons/navet/Dockerfile`
 - `addons/navet/run.sh`
 - `addons/navet/rootfs/etc/nginx/http.d/default.conf`
+- `addons/navet/CHANGELOG.md`
+- `addons/navet/icon.png`
+- `addons/navet/logo.png`
 - `addons/navet/README.md`
-- `.github/workflows/ci.yml`
+- `.github/workflows/publish-addon.yml`
 
 ### Current Behavior
 
 The add-on:
 
-- Bundle Navet as static files
-- Serve it with `nginx`
+- Pulls a prebuilt add-on image from GHCR
+- Builds that image from repo root in CI
+- Serves Navet with `nginx`
 - Use `ingress: true`
 - Generate `/config.js` from add-on options
 - Fall back to manual login in Navet if no options are provided
@@ -110,12 +113,12 @@ The add-on:
 
 Typical flow:
 
-1. Copy `addons/navet/` into your Home Assistant add-ons directory
+1. Push changes to the repository
 2. In Home Assistant, open Settings -> Add-ons -> Add-on Store
-3. Refresh local add-ons
+3. Refresh the custom add-on repository
 4. Open the `Navet` add-on
 5. Optionally set `hass_url` and `token`
-6. Build and start the add-on
+6. Install or rebuild the add-on image for the new version
 7. Open Navet through the Ingress panel entry
 
 ### Update Flow
@@ -124,9 +127,10 @@ For private Home Assistant development:
 
 1. Update files in this repo
 2. Bump `addons/navet/config.yaml` version
-3. Copy `addons/navet/` into the Home Assistant add-ons directory again
-4. Refresh local add-ons in Home Assistant
-5. Rebuild the add-on
+3. Push to `main`
+4. Wait for `.github/workflows/publish-addon.yml` to publish the matching add-on image tag
+5. Refresh the add-on repository in Home Assistant
+6. Rebuild or reinstall the add-on
 
 For standalone Docker users:
 
@@ -173,8 +177,8 @@ The CI workflow runs on pushes to `main` and on pull requests. It currently:
 If you are the only consumer right now:
 
 1. Keep the repo private
-2. Use local add-on installs for Home Assistant testing
-3. Let pushes to `main` publish the GHCR image for remote Docker deployments
+2. Let pushes to `main` publish the GHCR add-on image
+3. Refresh and rebuild the Home Assistant add-on from the custom repository
 4. Move to tag-based or public releases only when you are ready to distribute the project
 
 ## Notes Specific to This Repo

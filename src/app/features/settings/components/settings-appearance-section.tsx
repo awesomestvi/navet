@@ -41,22 +41,22 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
     () => [
       {
         id: 'serene-dawn',
-        src: '/wallpapers/serene-dawn.svg',
+        src: './wallpapers/serene-dawn.svg',
         label: t('settings.appearance.wallpaper.stock.sereneDawn'),
       },
       {
         id: 'starfield-nocturne',
-        src: '/wallpapers/starfield-nocturne.svg',
+        src: './wallpapers/starfield-nocturne.svg',
         label: t('settings.appearance.wallpaper.stock.starfieldNocturne'),
       },
       {
         id: 'aurora-veil',
-        src: '/wallpapers/aurora-veil.svg',
+        src: './wallpapers/aurora-veil.svg',
         label: t('settings.appearance.wallpaper.stock.auroraVeil'),
       },
       {
         id: 'rainforest-canopy',
-        src: '/wallpapers/rainforest-canopy.svg',
+        src: './wallpapers/rainforest-canopy.svg',
         label: t('settings.appearance.wallpaper.stock.rainforestCanopy'),
       },
     ],

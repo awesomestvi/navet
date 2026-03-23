@@ -2,7 +2,9 @@
 
 This add-on serves the Navet frontend through Home Assistant Ingress.
 
-The add-on now builds from a self-contained `addons/navet/` context. The frontend assets are served from `addons/navet/www/`, which should be refreshed from the repo `dist/` output when preparing an add-on update.
+The Home Assistant add-on now pulls a prebuilt container image from GitHub Container Registry instead of relying on committed frontend build artifacts in `addons/navet/www/`.
+
+The image is built from the repository root in CI, which allows the add-on image to compile the frontend directly from source while still keeping the add-on metadata in `addons/navet/`.
 
 ## Configuration
 

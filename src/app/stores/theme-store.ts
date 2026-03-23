@@ -26,6 +26,37 @@ interface ThemeState {
   setWallpaper: (wallpaper: string | null) => void;
 }
 
+function normalizeWallpaperPath(wallpaper: string | null | undefined) {
+  if (!wallpaper) {
+    return null;
+  }
+
+  const trimmed = wallpaper.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith('/wallpapers/')) {
+    return `.${trimmed}`;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const resolved = new URL(trimmed, window.location.href);
+      if (
+        resolved.origin === window.location.origin &&
+        resolved.pathname.startsWith('/wallpapers/')
+      ) {
+        return `.${resolved.pathname}`;
+      }
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return trimmed;
+}
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
@@ -38,11 +69,20 @@ export const useThemeStore = create<ThemeState>()(
       setFollowSystemTheme: (followSystemTheme) => set({ followSystemTheme }),
       setPrimaryColor: (primaryColor) => set({ primaryColor }),
       setCustomPrimaryColor: (customPrimaryColor) => set({ customPrimaryColor }),
-      setWallpaper: (wallpaper) => set({ wallpaper }),
+      setWallpaper: (wallpaper) => set({ wallpaper: normalizeWallpaperPath(wallpaper) }),
     }),
     {
       name: 'ha-dashboard-theme',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const next = (persisted as Partial<ThemeState> | null) ?? {};
+
+        return {
+          ...current,
+          ...next,
+          wallpaper: normalizeWallpaperPath(next.wallpaper ?? current.wallpaper),
+        };
+      },
     }
   )
 );
