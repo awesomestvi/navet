@@ -1,0 +1,54 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle with Gradient -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main Circle Background -->
+  <circle cx="60" cy="60" r="56" fill="url(#logoGradient)" filter="url(#glow)"/>
+  
+  <!-- Hub Node Design - Center Circle -->
+  <circle cx="60" cy="60" r="8" fill="white" opacity="0.95"/>
+  
+  <!-- Connection Lines (representing "the hub") -->
+  <g stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9">
+    <!-- Top -->
+    <line x1="60" y1="60" x2="60" y2="28"/>
+    <!-- Top Right -->
+    <line x1="60" y1="60" x2="82.6" y2="38.6"/>
+    <!-- Right -->
+    <line x1="60" y1="60" x2="92" y2="60"/>
+    <!-- Bottom Right -->
+    <line x1="60" y1="60" x2="82.6" y2="81.4"/>
+    <!-- Bottom -->
+    <line x1="60" y1="60" x2="60" y2="92"/>
+    <!-- Bottom Left -->
+    <line x1="60" y1="60" x2="37.4" y2="81.4"/>
+    <!-- Left -->
+    <line x1="60" y1="60" x2="28" y2="60"/>
+    <!-- Top Left -->
+    <line x1="60" y1="60" x2="37.4" y2="38.6"/>
+  </g>
+  
+  <!-- Outer Nodes -->
+  <g fill="white" opacity="0.95">
+    <circle cx="60" cy="28" r="5"/>
+    <circle cx="82.6" cy="38.6" r="5"/>
+    <circle cx="92" cy="60" r="5"/>
+    <circle cx="82.6" cy="81.4" r="5"/>
+    <circle cx="60" cy="92" r="5"/>
+    <circle cx="37.4" cy="81.4" r="5"/>
+    <circle cx="28" cy="60" r="5"/>
+    <circle cx="37.4" cy="38.6" r="5"/>
+  </g>
+</svg>

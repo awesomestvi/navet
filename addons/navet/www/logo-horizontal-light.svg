@@ -1,0 +1,41 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="horizontalLightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon Circle -->
+  <circle cx="30" cy="30" r="26" fill="url(#horizontalLightGradient)"/>
+  
+  <!-- Hub Design -->
+  <circle cx="30" cy="30" r="3.5" fill="white" opacity="0.95"/>
+  
+  <g stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9">
+    <line x1="30" y1="30" x2="30" y2="12"/>
+    <line x1="30" y1="30" x2="42.73" y2="17.27"/>
+    <line x1="30" y1="30" x2="48" y2="30"/>
+    <line x1="30" y1="30" x2="42.73" y2="42.73"/>
+    <line x1="30" y1="30" x2="30" y2="48"/>
+    <line x1="30" y1="30" x2="17.27" y2="42.73"/>
+    <line x1="30" y1="30" x2="12" y2="30"/>
+    <line x1="30" y1="30" x2="17.27" y2="17.27"/>
+  </g>
+  
+  <g fill="white" opacity="0.95">
+    <circle cx="30" cy="12" r="2.5"/>
+    <circle cx="42.73" cy="17.27" r="2.5"/>
+    <circle cx="48" cy="30" r="2.5"/>
+    <circle cx="42.73" cy="42.73" r="2.5"/>
+    <circle cx="30" cy="48" r="2.5"/>
+    <circle cx="17.27" cy="42.73" r="2.5"/>
+    <circle cx="12" cy="30" r="2.5"/>
+    <circle cx="17.27" cy="17.27" r="2.5"/>
+  </g>
+  
+  <!-- Text "Navet" in white for dark backgrounds -->
+  <text x="70" y="40" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="600" fill="white" letter-spacing="-0.5">
+    Navet
+  </text>
+</svg>

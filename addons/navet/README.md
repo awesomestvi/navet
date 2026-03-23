@@ -2,7 +2,7 @@
 
 This add-on serves the Navet frontend through Home Assistant Ingress.
 
-For a private repository, the simplest development flow is to copy this `addons/navet/` folder into your Home Assistant local add-ons directory and rebuild it there.
+The add-on now builds from a self-contained `addons/navet/` context. The frontend assets are served from `addons/navet/www/`, which should be refreshed from the repo `dist/` output when preparing an add-on update.
 
 ## Configuration
 
