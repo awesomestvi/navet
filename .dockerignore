@@ -9,3 +9,5 @@ coverage
 *.log
 .DS_Store
 addons
+!addons/navet
+!addons/navet/**
