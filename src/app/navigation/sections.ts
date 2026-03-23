@@ -22,11 +22,27 @@ export const NAVIGATION_SECTIONS = [
 export const isSection = (value: unknown): value is Section =>
   typeof value === 'string' && NAVIGATION_SECTIONS.includes(value as Section);
 
-export const sectionToPath = (section: Section): string =>
-  section === 'home' ? '/' : `/${section}`;
+// Read the <base href> injected by nginx for HA Ingress support.
+// Returns '/' when running standalone (no base tag or base href='/').
+const getBasePath = (): string => {
+  if (typeof document === 'undefined') return '/';
+  const href = document.querySelector('base')?.getAttribute('href');
+  if (!href || href === '/') return '/';
+  return href.endsWith('/') ? href : `${href}/`;
+};
+
+export const sectionToPath = (section: Section): string => {
+  const base = getBasePath();
+  return section === 'home' ? base : `${base}${section}`;
+};
 
 export const pathToSection = (pathname: string): Section => {
-  const segment = pathname.replace(/^\//, '').split('/')[0];
+  const base = getBasePath();
+  const relative =
+    base !== '/' && pathname.startsWith(base)
+      ? pathname.slice(base.length)
+      : pathname.replace(/^\//, '');
+  const segment = relative.split('/')[0] ?? '';
   if (!segment || !isSection(segment)) return 'home';
   return segment;
 };

@@ -206,6 +206,9 @@ export function DashboardOnboardingDialog({
         }}
       >
         <div>
+          <div className="mb-5 flex items-center">
+            <img src="./logo.svg" alt="" className="h-12 w-12" />
+          </div>
           <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${mutedColor}`}>
             {t('dashboard.onboarding.welcome')}
           </p>

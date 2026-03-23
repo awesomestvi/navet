@@ -132,6 +132,7 @@ export default defineConfig(({ mode }) => {
   const hassToken = env.NAVET_HASS_TOKEN?.trim()
 
   return {
+  base: './',
   envPrefix: ['VITE_', 'NAVET_'],
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if

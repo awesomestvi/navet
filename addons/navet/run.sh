@@ -41,7 +41,18 @@ ${PROXY_AUTH_DIRECTIVE}
     try_files \$uri =404;
   }
 
+  location /assets/ {
+    try_files \$uri =404;
+  }
+
+  location ~* \.(?:js|mjs|css|map|png|svg|ico|webmanifest)$ {
+    try_files \$uri =404;
+  }
+
   location / {
+    sub_filter '<head>' '<head><base href="\$http_x_ingress_path/">';
+    sub_filter_once on;
+    add_header Cache-Control "no-store";
     try_files \$uri \$uri/ /index.html;
   }
 }

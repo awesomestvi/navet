@@ -250,7 +250,7 @@ export function DashboardArrivalReveal({ open, onComplete, variant }: DashboardA
                       : undefined,
                 }}
               >
-                <img src="/logo.svg" alt="" className="h-24 w-24" />
+                <img src="./logo.svg" alt="" className="h-24 w-24" />
               </div>
             </div>
             <p
@@ -354,7 +354,7 @@ export function DashboardArrivalReveal({ open, onComplete, variant }: DashboardA
               opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
             }}
           >
-            <img src="/logo.svg" alt="" className="h-24 w-24" />
+            <img src="./logo.svg" alt="" className="h-24 w-24" />
           </div>
           <div
             className="mx-auto mt-5 h-px w-28 origin-center"

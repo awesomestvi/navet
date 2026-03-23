@@ -110,7 +110,7 @@ export const Sidebar = memo(function Sidebar() {
         <div className="flex w-full justify-center safe-area-pt-5">
           <div className="flex h-10 w-10 items-center justify-center">
             <ImageWithFallback
-              src="/logo.svg"
+              src="./logo.svg"
               alt={t('sidebar.brandLogoAlt')}
               className="h-10 w-10"
             />

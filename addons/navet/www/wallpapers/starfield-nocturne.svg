@@ -1,0 +1,39 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nightSky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09111F"/>
+      <stop offset="0.52" stop-color="#0E1B34"/>
+      <stop offset="1" stop-color="#162B3A"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1216 178) rotate(90) scale(164)">
+      <stop stop-color="#EDE5D0" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#EDE5D0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#nightSky)"/>
+  <circle cx="1216" cy="178" r="164" fill="url(#moonGlow)"/>
+  <circle cx="1216" cy="178" r="46" fill="#F7F0E1" fill-opacity="0.82"/>
+  <g fill="#F4F7FF" fill-opacity="0.85">
+    <circle cx="132" cy="104" r="2.5"/>
+    <circle cx="218" cy="186" r="1.8"/>
+    <circle cx="302" cy="82" r="1.6"/>
+    <circle cx="414" cy="142" r="2.2"/>
+    <circle cx="533" cy="108" r="1.5"/>
+    <circle cx="628" cy="198" r="2.4"/>
+    <circle cx="744" cy="98" r="1.8"/>
+    <circle cx="856" cy="152" r="2.6"/>
+    <circle cx="978" cy="90" r="1.7"/>
+    <circle cx="1094" cy="138" r="2.2"/>
+    <circle cx="1384" cy="118" r="1.6"/>
+    <circle cx="1486" cy="84" r="2.1"/>
+    <circle cx="1418" cy="224" r="1.9"/>
+    <circle cx="1168" cy="272" r="1.6"/>
+    <circle cx="944" cy="236" r="2.1"/>
+    <circle cx="686" cy="266" r="1.8"/>
+    <circle cx="512" cy="232" r="1.4"/>
+    <circle cx="264" cy="264" r="2.2"/>
+  </g>
+  <path d="M0 548C152 508 292 516 438 560C580 604 694 620 836 600C986 578 1094 520 1257 510C1399 501 1511 530 1600 556V900H0V548Z" fill="#162734" fill-opacity="0.74"/>
+  <path d="M0 640C148 614 294 636 434 690C606 757 741 777 910 754C1064 733 1188 679 1331 660C1442 645 1531 650 1600 666V900H0V640Z" fill="#213F48" fill-opacity="0.6"/>
+  <path d="M0 726C162 716 294 736 432 778C584 824 736 844 892 832C1067 819 1190 771 1328 760C1437 750 1528 756 1600 770V900H0V726Z" fill="#C6B49C" fill-opacity="0.08"/>
+</svg>
