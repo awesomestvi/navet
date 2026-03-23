@@ -1,5 +1,6 @@
 import { DoorClosed, DoorOpen, Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
+import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
@@ -13,12 +14,14 @@ interface LockCardProps {
   name: string;
   room: string;
   initialState?: boolean; // true = locked, false = unlocked
+  size?: CardSize;
 }
 
 export const LockCard = memo(function LockCard({
   id,
   name,
   initialState = true,
+  size = 'small',
 }: Omit<LockCardProps, 'room'>) {
   const [isLocked, setIsLocked] = useState(initialState);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
@@ -34,12 +37,79 @@ export const LockCard = memo(function LockCard({
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
+  const isExtraSmall = isExtraSmallCardSize(size);
 
   const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
 
+  if (isExtraSmall) {
+    return (
+      <div
+        className={`relative h-full overflow-hidden rounded-3xl bg-gradient-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
+      >
+        <div
+          className={`absolute inset-0 bg-gradient-to-r ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+        />
+
+        {securitySurface.overlayClassName ? (
+          <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+        ) : null}
+
+        <EntityCardHeader
+          title={name}
+          subtitle={isLocked ? t('security.locked') : t('security.unlocked')}
+          size="extra-small"
+          align="center"
+          titleClassName="text-white"
+          subtitleClassName={`${
+            isLocked
+              ? theme === 'light'
+                ? 'text-green-700'
+                : theme === 'glass'
+                  ? 'text-green-100'
+                  : 'text-green-300'
+              : theme === 'light'
+                ? 'text-red-700'
+                : theme === 'glass'
+                  ? 'text-red-100'
+                  : 'text-red-300'
+          }`}
+          className="h-full"
+          contentClassName="justify-center"
+          marginBottomClassName="mb-0"
+          leading={
+            <EntityCardHeaderIcon
+              IconComponent={isLocked ? DoorClosed : DoorOpen}
+              isActive={isLocked}
+              size="small"
+            />
+          }
+          trailing={
+            <RoundControlButton
+              theme={theme}
+              size="extra-small"
+              variant="emphasis"
+              onClick={() => setIsLocked(!isLocked)}
+              className={`h-9 w-9 ${
+                isLocked
+                  ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
+                  : 'bg-gradient-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
+              }`}
+            >
+              {isLocked ? (
+                <Lock className="h-4.5 w-4.5 text-white" />
+              ) : (
+                <Unlock className="h-4.5 w-4.5 text-white" />
+              )}
+            </RoundControlButton>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-3xl bg-gradient-to-br p-4 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
+      className={`relative h-full overflow-hidden rounded-3xl bg-gradient-to-br ${isExtraSmall ? 'p-3' : 'p-4'} ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
     >
       <div
         className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
@@ -54,12 +124,12 @@ export const LockCard = memo(function LockCard({
         <EntityCardHeader
           title={name}
           subtitle={t('security.lock')}
-          size="small"
+          size={size}
           leading={
             <EntityCardHeaderIcon
               IconComponent={isLocked ? DoorClosed : DoorOpen}
               isActive={isLocked}
-              size="small"
+              size={size}
             />
           }
         />
@@ -67,25 +137,25 @@ export const LockCard = memo(function LockCard({
         <div className="flex-1 flex flex-col items-center justify-center">
           <RoundControlButton
             theme={theme}
-            size="large"
+            size={isExtraSmall ? 'extra-small' : 'large'}
             variant="emphasis"
             onClick={() => setIsLocked(!isLocked)}
-            className={`h-12 w-12 transition-all duration-500 hover:scale-105 ${
+            className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
               isLocked
                 ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
                 : 'bg-gradient-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
             }`}
           >
             {isLocked ? (
-              <Lock className="w-6 h-6 text-white" />
+              <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
             ) : (
-              <Unlock className="w-6 h-6 text-white" />
+              <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
             )}
           </RoundControlButton>
 
-          <div className="text-center mt-3">
+          <div className={`text-center ${isExtraSmall ? 'mt-2' : 'mt-3'}`}>
             <div
-              className={`text-xs ${
+              className={`${isExtraSmall ? 'text-[11px]' : 'text-xs'} ${
                 isLocked
                   ? theme === 'light'
                     ? 'text-green-700'

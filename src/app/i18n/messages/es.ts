@@ -481,6 +481,7 @@ export const esMessages = {
   'weather.precipitation': 'Precipitación',
   'weather.humidity': 'Humedad',
   'weather.wind': 'Viento',
+  'weather.precipitationTomorrow': '{amount} {unit} mañana',
   'media.size.small': 'Pequeño',
   'media.size.medium': 'Mediano',
   'media.size.large': 'Grande',

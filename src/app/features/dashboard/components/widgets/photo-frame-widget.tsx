@@ -95,7 +95,7 @@ export function PhotoFrameWidget({
           <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>
             {t('widgets.photoFrame.title')}
           </h3>
-          <p className={`mt-0.5 truncate text-[10px] ${surface.textMuted}`}>
+          <p className={`truncate text-[10px] ${surface.textMuted}`}>
             {hasCustomPhotos
               ? `${photoUrls.length} ${t('widgets.common.widget').toLowerCase()}`
               : t('widgets.photoFrame.settings.emptyHint')}

@@ -484,6 +484,7 @@ export const frMessages = {
   'weather.precipitation': 'Précipitations',
   'weather.humidity': 'Humidite',
   'weather.wind': 'Vent',
+  'weather.precipitationTomorrow': '{amount} {unit} demain',
   'media.size.small': 'Petit',
   'media.size.medium': 'Moyen',
   'media.size.large': 'Grand',

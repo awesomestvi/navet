@@ -7,6 +7,7 @@
 
 ## Verification
 
+- Do not run `pnpm typecheck` after every code change by default. Ask the user to run it instead unless they explicitly request that you run it.
 - After structural refactors, import cleanup, module moves, or shared-type changes, ask the user to run `pnpm typecheck`.
 - For small visual or copy-only changes, do not ask to run `pnpm typecheck` unless the edit touches shared logic, types, or wiring.
 - Preserve behavior during refactors — structural cleanup must not introduce feature changes unless explicitly requested.

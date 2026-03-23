@@ -55,7 +55,7 @@ export function NoteWidget({ initialNote = '', onNoteChange }: Omit<NoteWidgetPr
           <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>
             {t('widgets.note.title')}
           </h3>
-          <p className={`text-[10px] ${surface.textMuted} truncate mt-0.5`}>
+          <p className={`text-[10px] ${surface.textMuted} truncate`}>
             {t('widgets.common.widget')}
           </p>
         </div>

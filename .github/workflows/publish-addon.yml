@@ -1,10 +1,11 @@
 name: Publish Home Assistant Add-on
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  # Re-enable the push trigger when the add-on image pipeline should publish on every main push.
+  # push:
+  #   branches:
+  #     - main
 
 permissions:
   contents: read

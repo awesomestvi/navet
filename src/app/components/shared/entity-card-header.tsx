@@ -7,9 +7,14 @@ interface EntityCardHeaderProps {
   title: string;
   subtitle: string;
   size: CardSize;
-  leading: ReactNode;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+  align?: 'start' | 'center';
   titleClassName?: string;
   subtitleClassName?: string;
+  className?: string;
+  contentClassName?: string;
+  marginBottomClassName?: string;
 }
 
 export function EntityCardHeader({
@@ -17,8 +22,13 @@ export function EntityCardHeader({
   subtitle,
   size,
   leading,
+  trailing,
+  align = 'start',
   titleClassName = '',
   subtitleClassName = '',
+  className = '',
+  contentClassName = '',
+  marginBottomClassName,
 }: EntityCardHeaderProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -26,23 +36,28 @@ export function EntityCardHeader({
   const isExtraSmall = isExtraSmallCardSize(size);
   const isStandardCompact = size === 'small' || size === 'medium';
   const titleSize = isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
-  const marginBottom = isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2';
+  const marginBottom =
+    marginBottomClassName ?? (isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
   const headerGap = isExtraSmall ? 'gap-2' : isStandardCompact ? 'gap-3' : 'gap-3';
-  const subtitleMarginTop = isExtraSmall ? 'mt-0' : isStandardCompact ? 'mt-0.5' : 'mt-0.5';
+  const subtitleMarginTop = 'mt-0';
+  const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';
 
   return (
-    <div className={`flex items-start ${headerGap} ${marginBottom}`}>
-      {leading}
-      <div className="min-w-0 flex-1">
+    <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
+      {leading ? <div className="shrink-0">{leading}</div> : null}
+      <div className={`min-w-0 flex-1 ${contentClassName}`}>
         <h3 className={`truncate font-semibold ${titleSize} ${textColor} ${titleClassName}`}>
           {title}
         </h3>
-        <p
-          className={`mt-0.5 truncate text-[10px] ${surface.textMuted} ${subtitleMarginTop} ${subtitleClassName}`}
-        >
-          {subtitle}
-        </p>
+        {subtitle ? (
+          <p
+            className={`truncate text-[10px] ${surface.textMuted} ${subtitleMarginTop} ${subtitleClassName}`}
+          >
+            {subtitle}
+          </p>
+        ) : null}
       </div>
+      {trailing ? <div className="shrink-0">{trailing}</div> : null}
     </div>
   );
 }

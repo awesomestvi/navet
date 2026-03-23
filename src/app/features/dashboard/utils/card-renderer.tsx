@@ -116,6 +116,7 @@ export const renderCard = ({
           humidity={device.humidity as number}
           windSpeed={device.windSpeed as number}
           precipitation={device.precipitation as number}
+          precipitationUnit={device.precipitationUnit as string}
           sunrise={device.sunrise as string}
           sunset={device.sunset as string}
           daylight={device.daylight as string}
@@ -170,6 +171,7 @@ export const renderCard = ({
           id={device.id as string}
           name={device.name as string}
           initialState={device.state as boolean | undefined}
+          size={size}
         />
       );
     case 'cameras':

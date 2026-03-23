@@ -476,6 +476,7 @@ export const svMessages = {
   'weather.precipitation': 'Nederbörd',
   'weather.humidity': 'Luftfuktighet',
   'weather.wind': 'Vind',
+  'weather.precipitationTomorrow': '{amount} {unit} i morgon',
   'media.size.small': 'Liten',
   'media.size.medium': 'Medium',
   'media.size.large': 'Stor',

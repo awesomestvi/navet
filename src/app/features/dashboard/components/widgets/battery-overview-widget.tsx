@@ -63,7 +63,7 @@ export function BatteryOverviewWidget({ size = 'large' }: BatteryOverviewWidgetP
           <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>
             {t('widgets.battery.title')}
           </h3>
-          <p className={`mt-0.5 text-[10px] ${surface.textMuted}`}>
+          <p className={`text-[10px] ${surface.textMuted}`}>
             {batteries.length} {t('widgets.common.widget').toLowerCase()}
           </p>
         </div>

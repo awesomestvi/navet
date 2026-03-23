@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
-import { type ButtonHTMLAttributes, memo } from 'react';
+import type { ButtonHTMLAttributes } from 'react';
+import { memo } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
 import { useTheme } from '@/app/hooks';

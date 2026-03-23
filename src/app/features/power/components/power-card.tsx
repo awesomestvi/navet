@@ -1,6 +1,7 @@
 import { TrendingDown, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -72,23 +73,21 @@ export const PowerCard = memo(function PowerCard({
       {shell.overlayClassName && <div className={`absolute inset-0 ${shell.overlayClassName}`} />}
 
       <div className="relative h-full flex flex-col">
-        <div className={`flex items-start justify-between ${isSmall ? 'mb-1' : 'mb-2'}`}>
-          <div className="min-w-0 flex-1">
-            <h3
-              className={`font-semibold ${textPrimary} truncate ${isSmall ? 'text-xs' : 'text-sm'}`}
+        <EntityCardHeader
+          title={t('power.title')}
+          subtitle={t('power.subtitle')}
+          size={size}
+          titleClassName={textPrimary}
+          subtitleClassName={surface.textMuted}
+          className={isSmall ? 'mb-1 justify-between' : 'mb-2 justify-between'}
+          trailing={
+            <div
+              className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-full ${iconBg} flex items-center justify-center`}
             >
-              {t('power.title')}
-            </h3>
-            <p className={`text-[10px] ${surface.textMuted} truncate mt-0.5`}>
-              {t('power.subtitle')}
-            </p>
-          </div>
-          <div
-            className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}
-          >
-            <Zap className={`${isSmall ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} />
-          </div>
-        </div>
+              <Zap className={`${isSmall ? 'w-4 h-4' : 'w-5 h-5'} ${iconColor}`} />
+            </div>
+          }
+        />
 
         {isSmall ? (
           // Small: Just percentage

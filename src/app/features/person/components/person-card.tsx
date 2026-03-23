@@ -2,6 +2,7 @@ import { Home, MapPin, User } from 'lucide-react';
 import { memo } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
@@ -71,23 +72,20 @@ export const PersonCard = memo(function PersonCard({
       )}
 
       <div className="relative h-full flex flex-col">
-        <div className="flex items-start justify-between mb-2">
-          <div className="min-w-0 flex-1">
-            <h3
-              className={`font-semibold truncate ${isSmall ? 'text-xs' : 'text-sm'} ${surface.titleClassName}`}
-            >
-              {name}
-            </h3>
-            <p className={`mt-0.5 truncate text-[10px] ${surface.typeLabelClassName}`}>
-              {t('deviceType.person')}
-            </p>
-            {!isSmall && (
-              <p className={`text-xs ${surface.locationClassName}`}>
-                {liveState === 'home' ? room : liveLocation}
-              </p>
-            )}
-          </div>
-        </div>
+        <EntityCardHeader
+          title={name}
+          subtitle={t('deviceType.person')}
+          size={size}
+          titleClassName={surface.titleClassName}
+          subtitleClassName={surface.typeLabelClassName}
+          className="mb-2"
+        />
+
+        {!isSmall && (
+          <p className={`mb-2 text-xs ${surface.locationClassName}`}>
+            {liveState === 'home' ? room : liveLocation}
+          </p>
+        )}
 
         <div className="flex-1 flex flex-col items-center justify-center">
           <div

@@ -1,5 +1,6 @@
 import { ChevronRight, Rss, Settings2 } from 'lucide-react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -86,31 +87,28 @@ export function RSSFeedCardView({
       {/* Content */}
       <div className="relative h-full flex flex-col p-4">
         {/* Header */}
-        <div className="mb-2 flex items-start gap-3">
-          <EntityCardHeaderIcon
-            IconComponent={Rss}
-            isActive={true}
-            size={size}
-            ariaLabel={t('rss.configureProviders')}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenSettings();
-            }}
-          />
-          <div className="min-w-0 flex-1">
-            <h3
-              className={`truncate font-semibold ${size === 'small' || size === 'medium' ? 'text-xs' : 'text-sm'} ${surface.textPrimary}`}
-            >
-              {t('rss.title')}
-            </h3>
-            <p
-              className={`mt-0.5 whitespace-normal break-words text-[10px] leading-relaxed ${surface.textMuted}`}
-            >
-              {selectedFeedLabel}
-            </p>
-          </div>
-        </div>
+        <EntityCardHeader
+          title={t('rss.title')}
+          subtitle={selectedFeedLabel}
+          size={size}
+          titleClassName={surface.textPrimary}
+          subtitleClassName={`${surface.textMuted} whitespace-normal break-words leading-relaxed`}
+          className="mb-2"
+          contentClassName="text-left"
+          leading={
+            <EntityCardHeaderIcon
+              IconComponent={Rss}
+              isActive={true}
+              size={size}
+              ariaLabel={t('rss.configureProviders')}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenSettings();
+              }}
+            />
+          }
+        />
 
         {isEmpty ? (
           <div className="flex flex-1 flex-col justify-center text-left">

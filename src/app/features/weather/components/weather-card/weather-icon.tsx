@@ -5,6 +5,7 @@ import {
   CloudLightning,
   CloudRain,
   CloudSnow,
+  type LucideIcon,
   Sun,
 } from 'lucide-react';
 
@@ -24,37 +25,41 @@ interface WeatherIconProps {
   className?: string;
 }
 
+export function getWeatherIconComponent(condition: WeatherCondition | string): LucideIcon {
+  switch (condition.toLowerCase()) {
+    case 'clear':
+    case 'sunny':
+      return Sun;
+    case 'cloudy':
+    case 'overcast':
+      return Cloud;
+    case 'partly cloudy':
+      return Cloud;
+    case 'rainy':
+    case 'rain':
+      return CloudRain;
+    case 'snowy':
+    case 'snow':
+      return CloudSnow;
+    case 'drizzle':
+      return CloudDrizzle;
+    case 'fog':
+    case 'mist':
+      return CloudFog;
+    case 'thunderstorm':
+    case 'storm':
+      return CloudLightning;
+    default:
+      return Cloud;
+  }
+}
+
 /**
  * Weather Icon Component
  * Returns appropriate icon based on weather condition
  */
 export const WeatherIcon = ({ condition, className = 'w-6 h-6' }: WeatherIconProps) => {
+  const IconComponent = getWeatherIconComponent(condition);
   const iconProps = { className: `${className} text-cyan-300` };
-
-  switch (condition.toLowerCase()) {
-    case 'clear':
-    case 'sunny':
-      return <Sun {...iconProps} />;
-    case 'cloudy':
-    case 'overcast':
-      return <Cloud {...iconProps} />;
-    case 'partly cloudy':
-      return <Cloud {...iconProps} />;
-    case 'rainy':
-    case 'rain':
-      return <CloudRain {...iconProps} />;
-    case 'snowy':
-    case 'snow':
-      return <CloudSnow {...iconProps} />;
-    case 'drizzle':
-      return <CloudDrizzle {...iconProps} />;
-    case 'fog':
-    case 'mist':
-      return <CloudFog {...iconProps} />;
-    case 'thunderstorm':
-    case 'storm':
-      return <CloudLightning {...iconProps} />;
-    default:
-      return <Cloud {...iconProps} />;
-  }
+  return <IconComponent {...iconProps} />;
 };

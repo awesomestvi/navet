@@ -1,9 +1,10 @@
 import { Clipboard, Lightbulb, Lock, type LucideIcon, Tv, Video } from 'lucide-react';
-import { memo } from 'react';
+import { type CSSProperties, memo } from 'react';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { renderCard } from '@/app/features/dashboard';
 import { useCardState, useDevices, useI18n, useTheme } from '@/app/hooks';
+import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
 import { EmptyState } from '../shared/empty-state';
 
@@ -128,6 +129,7 @@ const EntityGrid = memo(function EntityGrid({
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const breakpointCols = useBreakpointCols();
   const { cardSizes, updateCardSize } = useCardState(rawDevices);
 
   return (
@@ -138,7 +140,14 @@ const EntityGrid = memo(function EntityGrid({
           {devices.length} {devices.length === 1 ? singularLabel : pluralLabel}
         </span>
       </div>
-      <div className="grid w-full auto-rows-[87px] grid-flow-row-dense grid-cols-2 gap-2 md:grid-cols-4 md:gap-3 lg:gap-4 xl:grid-cols-6 2xl:grid-cols-8">
+      <div
+        className="grid w-full auto-rows-[87px] grid-flow-row-dense gap-2 md:gap-3 lg:gap-4"
+        style={
+          {
+            gridTemplateColumns: `repeat(${breakpointCols}, minmax(0, 1fr))`,
+          } as CSSProperties
+        }
+      >
         {devices.map((device) => {
           const size = (cardSizes[device.id] ?? device.size) as CardSize;
 

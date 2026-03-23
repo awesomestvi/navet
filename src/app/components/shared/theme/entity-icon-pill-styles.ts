@@ -35,7 +35,7 @@ function getBadgeSizeClass(size: CardSize) {
     return 'h-8 w-8';
   }
 
-  return 'h-10 w-10';
+  return 'h-8 w-8';
 }
 
 function getIconSizeClass(size: CardSize) {
@@ -47,7 +47,7 @@ function getIconSizeClass(size: CardSize) {
     return 'h-4 w-4';
   }
 
-  return 'h-5 w-5';
+  return 'h-4 w-4';
 }
 
 export function getEntityIconPillStyles({

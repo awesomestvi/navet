@@ -4,6 +4,7 @@ import {
   CardSizeSelector,
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
+import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 
 interface CameraCardViewProps {
   id: string;
@@ -80,15 +81,15 @@ export function CameraCardView({
       {/* Bottom gradient overlay */}
       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
         <div className="flex items-end justify-between gap-2">
-          {/* Name + room */}
-          <div className="min-w-0 flex-1">
-            <p
-              className={`truncate font-semibold leading-tight text-white ${isCompact ? 'text-xs' : 'text-sm'}`}
-            >
-              {name}
-            </p>
-            {!isCompact && <p className="mt-0.5 truncate text-[10px] text-zinc-300">{room}</p>}
-          </div>
+          <EntityCardHeader
+            title={name}
+            subtitle={isCompact ? '' : room}
+            size={size}
+            titleClassName="text-white leading-tight"
+            subtitleClassName="text-zinc-300"
+            className="mb-0 min-w-0 flex-1"
+            contentClassName="text-left"
+          />
 
           {/* Action buttons */}
           {!isEditMode && (

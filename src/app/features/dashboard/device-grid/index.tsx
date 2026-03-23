@@ -1,16 +1,10 @@
-import {
-  memo,
-  startTransition,
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { useSearch } from '@/app/hooks';
+import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { DeviceGridProps } from './types';
 
 /**
@@ -32,6 +26,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   usesHideAction = false,
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
+  const breakpointCols = useBreakpointCols();
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
 
   const handleSizeChange = useCallback(
@@ -56,75 +51,7 @@ export const DeviceGrid = memo(function DeviceGrid({
     [customCards]
   );
 
-  const INITIAL_BATCH = 8;
-  const BATCH_SIZE = 8;
-  const [visibleCount, setVisibleCount] = useState(
-    isEditMode ? Infinity : Math.min(INITIAL_BATCH, displayedCardIds.length)
-  );
-
-  useEffect(() => {
-    if (isEditMode) {
-      setVisibleCount(Infinity);
-      return;
-    }
-
-    setVisibleCount(Math.min(INITIAL_BATCH, displayedCardIds.length));
-
-    if (displayedCardIds.length <= INITIAL_BATCH) {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: number | null = null;
-
-    type IdleCallbackHandle = number;
-    type IdleDeadlineLike = { didTimeout: boolean; timeRemaining: () => number };
-    type WindowWithIdleCallback = Window & {
-      requestIdleCallback?: (
-        cb: (deadline: IdleDeadlineLike) => void,
-        opts?: { timeout: number }
-      ) => IdleCallbackHandle;
-      cancelIdleCallback?: (handle: IdleCallbackHandle) => void;
-    };
-    const idleWindow = window as WindowWithIdleCallback;
-
-    const scheduleNextBatch = () => {
-      const runBatch = () => {
-        if (cancelled) return;
-        startTransition(() => {
-          setVisibleCount((current) => {
-            if (current >= displayedCardIds.length) return current;
-            const next = Math.min(current + BATCH_SIZE, displayedCardIds.length);
-            if (next < displayedCardIds.length) scheduleNextBatch();
-            return next;
-          });
-        });
-      };
-
-      if (typeof idleWindow.requestIdleCallback === 'function') {
-        idleWindow.requestIdleCallback(
-          (deadline) => {
-            if (deadline.didTimeout || deadline.timeRemaining() > 4) {
-              runBatch();
-            } else {
-              scheduleNextBatch();
-            }
-          },
-          { timeout: 160 }
-        );
-        return;
-      }
-
-      timeoutId = window.setTimeout(runBatch, 96);
-    };
-
-    scheduleNextBatch();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-    };
-  }, [isEditMode, displayedCardIds.length]);
+  const visibleCount = useProgressiveBatching(displayedCardIds.length, isEditMode);
 
   // Combine device cards and custom widget cards using the shared ordering model.
   const allCards = useMemo(
@@ -147,10 +74,17 @@ export const DeviceGrid = memo(function DeviceGrid({
     [customCardMap, deviceMap, displayedCardIds]
   );
 
-  const visibleCards = isEditMode ? allCards : allCards.slice(0, visibleCount);
+  const visibleCards = allCards.slice(0, visibleCount);
 
   const gridContent = (
-    <div className="grid w-full grid-flow-row-dense grid-cols-2 gap-2 auto-rows-[87px] md:grid-cols-4 md:gap-3 xl:grid-cols-6 lg:gap-4 2xl:grid-cols-8">
+    <div
+      className="grid w-full grid-flow-row-dense gap-2 auto-rows-[87px] md:gap-3 lg:gap-4"
+      style={
+        {
+          gridTemplateColumns: `repeat(${breakpointCols}, minmax(0, 1fr))`,
+        } as CSSProperties
+      }
+    >
       {visibleCards.map((item) => {
         if (item.type === 'device') {
           const device = deviceMap.get(item.id);

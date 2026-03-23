@@ -74,16 +74,87 @@ const overlayClass: Record<CardSize, string> = {
 const LIBRARY_LIST_HEIGHT = 360; // 6 rows × 60px
 const LIBRARY_ROW_HEIGHT = 60; // ~44px row (text + py-2) + 8px gap (gap-2 slot)
 const LIBRARY_LIST_OVERSCAN = 1;
-const SECTION_GRID_ROW_HEIGHT = 8;
-const SECTION_CANVAS_GAP = 20;
-const SECTION_PRESENTATION_GAP = 24;
+const SECTION_LAYOUT_BASE_COLS = 12;
+const SECTION_GRID_GAP_CLASS = 'gap-2 md:gap-3 lg:gap-4';
 
 function isCustomCard(entry: DeviceWithType | CustomCard): entry is CustomCard {
   return 'createdAt' in entry;
 }
 
 function getRenderedSectionSpan(span: HomeDashboardSectionSpan, cols: number): number {
-  return Math.min(Math.max(1, span), cols);
+  const normalizedSpan = Math.max(1, span);
+  if (cols === SECTION_LAYOUT_BASE_COLS) {
+    return Math.min(normalizedSpan, cols);
+  }
+
+  return Math.min(
+    cols,
+    Math.max(1, Math.round((normalizedSpan / SECTION_LAYOUT_BASE_COLS) * cols))
+  );
+}
+
+function getRenderedSectionColumnStart(
+  x: number,
+  span: HomeDashboardSectionSpan,
+  cols: number
+): number {
+  const renderedSpan = getRenderedSectionSpan(span, cols);
+  const renderedX =
+    cols === SECTION_LAYOUT_BASE_COLS
+      ? x
+      : Math.max(0, Math.round((Math.max(0, x) / SECTION_LAYOUT_BASE_COLS) * cols));
+
+  return Math.min(cols - renderedSpan + 1, renderedX + 1);
+}
+
+function groupSectionRows<T extends { x: number; y: number }>(items: T[]): Map<number, T[]> {
+  const rows = new Map<number, T[]>();
+  for (const item of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    const row = rows.get(item.y);
+    if (row) row.push(item);
+    else rows.set(item.y, [item]);
+  }
+  return rows;
+}
+
+function buildSectionStacks<T extends { id: string; x: number; y: number; span: number }>(
+  items: T[]
+) {
+  const rows = groupSectionRows(items);
+  const sortedYs = [...rows.keys()].sort((a, b) => a - b);
+  const consumedIds = new Set<string>();
+
+  return sortedYs.map((y) => {
+    const rowItems = rows.get(y) ?? [];
+
+    return rowItems
+      .filter((item) => !consumedIds.has(item.id))
+      .map((item) => {
+        const stack = [item];
+        consumedIds.add(item.id);
+
+        let nextY = y + 1;
+        while (true) {
+          const nextRowItems = rows.get(nextY) ?? [];
+          const nextItem = nextRowItems.find(
+            (candidate) =>
+              !consumedIds.has(candidate.id) &&
+              candidate.x === item.x &&
+              candidate.span === item.span
+          );
+
+          if (!nextItem) {
+            break;
+          }
+
+          stack.push(nextItem);
+          consumedIds.add(nextItem.id);
+          nextY += 1;
+        }
+
+        return stack;
+      });
+  });
 }
 
 export const HomeDashboardOverview = memo(function HomeDashboardOverview({
@@ -597,155 +668,6 @@ function SectionCanvas({
   );
 }
 
-function MeasuredSectionCanvas({
-  section,
-  sectionsByParent,
-  sectionGridCols,
-  activeSectionId,
-  accentColor,
-  allCards,
-  cardSizes,
-  updateCardSize,
-  isEditMode,
-  onUpdateCard,
-  onRemoveFromLayout,
-  showHero,
-  onSelectSection,
-  onOpenLibraryForSection,
-  onAddSectionBelow,
-  onRenameSection,
-  onRemoveSection,
-  surface,
-}: {
-  section: HomeEditorSection;
-  sectionsByParent: Map<string, HomeEditorSection[]>;
-  sectionGridCols: number;
-  activeSectionId: string | null;
-  accentColor: string;
-  allCards: Map<string, DeviceWithType | CustomCard>;
-  cardSizes: Record<string, CardSize>;
-  updateCardSize: (id: string, size: CardSize) => void;
-  isEditMode: boolean;
-  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
-  onRemoveFromLayout: (cardId: string) => void;
-  showHero: boolean;
-  onSelectSection: (sectionId: string) => void;
-  onOpenLibraryForSection: (sectionId: string) => void;
-  onAddSectionBelow: (sectionId: string) => void;
-  onRenameSection: (sectionId: string, title: string) => void;
-  onRemoveSection: (sectionId: string) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const renderedSpan = getRenderedSectionSpan(section.span, sectionGridCols);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const [rowSpan, setRowSpan] = useState(1);
-
-  useEffect(() => {
-    const node = contentRef.current;
-    if (!node) {
-      return;
-    }
-
-    let frameId: number | null = null;
-    const updateRowSpan = () => {
-      frameId = null;
-      const nextRowSpan = Math.max(
-        1,
-        Math.ceil(
-          (node.getBoundingClientRect().height + SECTION_CANVAS_GAP) /
-            (SECTION_GRID_ROW_HEIGHT + SECTION_CANVAS_GAP)
-        )
-      );
-      setRowSpan((previous) => (previous === nextRowSpan ? previous : nextRowSpan));
-    };
-
-    const scheduleUpdate = () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      frameId = window.requestAnimationFrame(updateRowSpan);
-    };
-
-    scheduleUpdate();
-
-    const observer = new ResizeObserver(scheduleUpdate);
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
-
-  return (
-    <div
-      style={{
-        gridColumn: `span ${renderedSpan} / span ${renderedSpan}`,
-        gridRow: `span ${rowSpan} / span ${rowSpan}`,
-      }}
-    >
-      <div ref={contentRef} className="space-y-3">
-        <SectionCanvas
-          sectionId={section.id}
-          title={section.title}
-          gridCols={renderedSpan}
-          isActive={activeSectionId === section.id}
-          accentColor={accentColor}
-          cardIds={section.cardIds}
-          allCards={allCards}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          isEditMode={isEditMode}
-          onUpdateCard={onUpdateCard}
-          onRemoveFromLayout={onRemoveFromLayout}
-          showHero={showHero}
-          onSelectSection={onSelectSection}
-          onOpenLibraryForSection={onOpenLibraryForSection}
-          onRenameSection={onRenameSection}
-          onRemoveSection={onRemoveSection}
-          surface={surface}
-        />
-        {(sectionsByParent.get(section.id) ?? []).length === 0 ? (
-          <button
-            type="button"
-            onClick={() => onAddSectionBelow(section.id)}
-            className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`}
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add section</span>
-          </button>
-        ) : (
-          (sectionsByParent.get(section.id) ?? []).map((childSection) => (
-            <MeasuredSectionCanvas
-              key={childSection.id}
-              section={childSection}
-              sectionsByParent={sectionsByParent}
-              sectionGridCols={renderedSpan}
-              activeSectionId={activeSectionId}
-              accentColor={accentColor}
-              allCards={allCards}
-              cardSizes={cardSizes}
-              updateCardSize={updateCardSize}
-              isEditMode={isEditMode}
-              onUpdateCard={onUpdateCard}
-              onRemoveFromLayout={onRemoveFromLayout}
-              showHero={showHero}
-              onSelectSection={onSelectSection}
-              onOpenLibraryForSection={onOpenLibraryForSection}
-              onAddSectionBelow={onAddSectionBelow}
-              onRenameSection={onRenameSection}
-              onRemoveSection={onRemoveSection}
-              surface={surface}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SectionCanvasGrid({
   sections,
   sectionGridCols,
@@ -783,58 +705,75 @@ function SectionCanvasGrid({
   onRemoveSection: (sectionId: string) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
-  const sectionIdSet = new Set(sections.map((section) => section.id));
-  const topLevelSections = sections.filter(
-    (section) => !section.stackUnder || !sectionIdSet.has(section.stackUnder)
-  );
-  const sectionsByParent = new Map<string, HomeEditorSection[]>();
-
-  for (const section of sections) {
-    if (!section.stackUnder || !sectionIdSet.has(section.stackUnder)) {
-      continue;
-    }
-
-    const children = sectionsByParent.get(section.stackUnder);
-    if (children) {
-      children.push(section);
-    } else {
-      sectionsByParent.set(section.stackUnder, [section]);
-    }
-  }
+  const sectionStacksByRow = buildSectionStacks(sections);
 
   return (
-    <div
-      className="grid auto-rows-[8px] grid-flow-row-dense gap-5"
-      style={
-        {
-          '--home-section-cols': sectionGridCols,
-          gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-        } as CSSProperties
-      }
-    >
-      {topLevelSections.map((section) => (
-        <MeasuredSectionCanvas
-          key={section.id}
-          section={section}
-          sectionsByParent={sectionsByParent}
-          sectionGridCols={sectionGridCols}
-          activeSectionId={activeSectionId}
-          accentColor={accentColor}
-          allCards={allCards}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          isEditMode={isEditMode}
-          onUpdateCard={onUpdateCard}
-          onRemoveFromLayout={onRemoveFromLayout}
-          showHero={showHero}
-          onSelectSection={onSelectSection}
-          onOpenLibraryForSection={onOpenLibraryForSection}
-          onAddSectionBelow={onAddSectionBelow}
-          onRenameSection={onRenameSection}
-          onRemoveSection={onRemoveSection}
-          surface={surface}
-        />
-      ))}
+    <div className="flex flex-col gap-5">
+      {sectionStacksByRow.map((rowStacks, rowIndex) => {
+        return (
+          <div
+            key={rowIndex}
+            className={`grid ${SECTION_GRID_GAP_CLASS}`}
+            style={
+              {
+                '--home-section-cols': sectionGridCols,
+                gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
+              } as CSSProperties
+            }
+          >
+            {rowStacks.map((stack) => {
+              const leadSection = stack[0];
+              const renderedSpan = getRenderedSectionSpan(leadSection.span, sectionGridCols);
+              const renderedColumnStart = getRenderedSectionColumnStart(
+                leadSection.x,
+                leadSection.span,
+                sectionGridCols
+              );
+              return (
+                <div
+                  key={leadSection.id}
+                  style={{ gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }}
+                >
+                  <div className="space-y-3">
+                    {stack.map((section) => (
+                      <div key={section.id} className="space-y-3">
+                        <SectionCanvas
+                          sectionId={section.id}
+                          title={section.title}
+                          gridCols={renderedSpan}
+                          isActive={activeSectionId === section.id}
+                          accentColor={accentColor}
+                          cardIds={section.cardIds}
+                          allCards={allCards}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          onUpdateCard={onUpdateCard}
+                          onRemoveFromLayout={onRemoveFromLayout}
+                          showHero={showHero}
+                          onSelectSection={onSelectSection}
+                          onOpenLibraryForSection={onOpenLibraryForSection}
+                          onRenameSection={onRenameSection}
+                          onRemoveSection={onRemoveSection}
+                          surface={surface}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onAddSectionBelow(section.id)}
+                          className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`}
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Add section</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -941,7 +880,6 @@ function HomePresentationSection({
 
 function MeasuredPresentationSection({
   section,
-  sectionsByParent,
   sectionGridCols,
   allCards,
   cardSizes,
@@ -951,7 +889,6 @@ function MeasuredPresentationSection({
   surface,
 }: {
   section: HomeEditorSection;
-  sectionsByParent: Map<string, HomeEditorSection[]>;
   sectionGridCols: number;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
@@ -961,82 +898,24 @@ function MeasuredPresentationSection({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const renderedSpan = getRenderedSectionSpan(section.span, sectionGridCols);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const [rowSpan, setRowSpan] = useState(1);
-
-  useEffect(() => {
-    const node = contentRef.current;
-    if (!node) {
-      return;
-    }
-
-    let frameId: number | null = null;
-    const updateRowSpan = () => {
-      frameId = null;
-      const nextRowSpan = Math.max(
-        1,
-        Math.ceil(
-          (node.getBoundingClientRect().height + SECTION_PRESENTATION_GAP) /
-            (SECTION_GRID_ROW_HEIGHT + SECTION_PRESENTATION_GAP)
-        )
-      );
-      setRowSpan((previous) => (previous === nextRowSpan ? previous : nextRowSpan));
-    };
-
-    const scheduleUpdate = () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      frameId = window.requestAnimationFrame(updateRowSpan);
-    };
-
-    scheduleUpdate();
-
-    const observer = new ResizeObserver(scheduleUpdate);
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
+  const renderedColumnStart = getRenderedSectionColumnStart(
+    section.x,
+    section.span,
+    sectionGridCols
+  );
 
   return (
-    <div
-      style={{
-        gridColumn: `span ${renderedSpan} / span ${renderedSpan}`,
-        gridRow: `span ${rowSpan} / span ${rowSpan}`,
-      }}
-    >
-      <div ref={contentRef}>
-        <HomePresentationSection
-          section={section}
-          sectionGridCols={sectionGridCols}
-          allCards={allCards}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          onUpdateCard={onUpdateCard}
-          showHero={showHero}
-          surface={surface}
-        />
-        {(sectionsByParent.get(section.id) ?? []).map((childSection) => (
-          <div key={childSection.id} className="mt-6">
-            <MeasuredPresentationSection
-              section={childSection}
-              sectionsByParent={sectionsByParent}
-              sectionGridCols={renderedSpan}
-              allCards={allCards}
-              cardSizes={cardSizes}
-              updateCardSize={updateCardSize}
-              onUpdateCard={onUpdateCard}
-              showHero={showHero}
-              surface={surface}
-            />
-          </div>
-        ))}
-      </div>
+    <div style={{ gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }}>
+      <HomePresentationSection
+        section={section}
+        sectionGridCols={sectionGridCols}
+        allCards={allCards}
+        cardSizes={cardSizes}
+        updateCardSize={updateCardSize}
+        onUpdateCard={onUpdateCard}
+        showHero={showHero}
+        surface={surface}
+      />
     </div>
   );
 }
@@ -1160,24 +1039,6 @@ function HomePresentation({
   onToggleEditMode?: () => void;
 }) {
   const sectionGridCols = useBreakpointCols();
-  const sectionIdSet = new Set(sections.map((section) => section.id));
-  const topLevelSections = sections.filter(
-    (section) => !section.stackUnder || !sectionIdSet.has(section.stackUnder)
-  );
-  const sectionsByParent = new Map<string, HomeEditorSection[]>();
-
-  for (const section of sections) {
-    if (!section.stackUnder || !sectionIdSet.has(section.stackUnder)) {
-      continue;
-    }
-
-    const children = sectionsByParent.get(section.stackUnder);
-    if (children) {
-      children.push(section);
-    } else {
-      sectionsByParent.set(section.stackUnder, [section]);
-    }
-  }
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
 
   if (!hasCards) {
@@ -1213,37 +1074,59 @@ function HomePresentation({
     );
   }
 
+  const presentationRowStacks = buildSectionStacks(
+    sections.filter((section) => section.cardIds.length > 0)
+  );
+
   return (
     <div className="space-y-7 md:space-y-8">
-      <div
-        className="grid auto-rows-[8px] grid-flow-row-dense gap-6"
-        style={
-          {
-            '--home-section-cols': sectionGridCols,
-            gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-          } as CSSProperties
-        }
-      >
-        {topLevelSections
-          .filter(
-            (section) =>
-              section.cardIds.length > 0 ||
-              (sectionsByParent.get(section.id) ?? []).some((child) => child.cardIds.length > 0)
-          )
-          .map((section) => (
-            <MeasuredPresentationSection
-              key={section.id}
-              section={section}
-              sectionsByParent={sectionsByParent}
-              sectionGridCols={sectionGridCols}
-              allCards={allCards}
-              cardSizes={cardSizes}
-              updateCardSize={updateCardSize}
-              onUpdateCard={onUpdateCard}
-              showHero={showHero}
-              surface={surface}
-            />
-          ))}
+      <div className="flex flex-col gap-6">
+        {presentationRowStacks.map((rowStacks, rowIndex) => {
+          return (
+            <div
+              key={rowIndex}
+              className={`grid ${SECTION_GRID_GAP_CLASS}`}
+              style={
+                {
+                  '--home-section-cols': sectionGridCols,
+                  gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
+                } as CSSProperties
+              }
+            >
+              {rowStacks.map((stack) => {
+                const leadSection = stack[0];
+                const renderedSpan = getRenderedSectionSpan(leadSection.span, sectionGridCols);
+                const renderedColumnStart = getRenderedSectionColumnStart(
+                  leadSection.x,
+                  leadSection.span,
+                  sectionGridCols
+                );
+
+                return (
+                  <div
+                    key={leadSection.id}
+                    style={{ gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }}
+                    className="space-y-6"
+                  >
+                    {stack.map((section) => (
+                      <MeasuredPresentationSection
+                        key={section.id}
+                        section={section}
+                        sectionGridCols={sectionGridCols}
+                        allCards={allCards}
+                        cardSizes={cardSizes}
+                        updateCardSize={updateCardSize}
+                        onUpdateCard={onUpdateCard}
+                        showHero={showHero}
+                        surface={surface}
+                      />
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
       {flowCards.length > 0 ? (
         <CardGrid

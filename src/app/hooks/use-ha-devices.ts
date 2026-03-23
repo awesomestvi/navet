@@ -71,6 +71,10 @@ type CalendarEventsServiceEnvelope = CalendarEventsServicePayload & {
   result?: CalendarEventsServicePayload;
 };
 
+function formatWeatherValue(value: number): string {
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
 let cachedWeatherForecasts: Record<string, WeatherForecastEntry[]> = {};
 let cachedCalendarEvents: Record<string, CalendarServiceEvent[]> = {};
 
@@ -849,6 +853,21 @@ export const useHADevices = (): DeviceCollection => {
             parseRoundedNumberish(entity.attributes?.native_temperature) ??
             0;
           const lowTemp = forecast[0]?.low ?? highTemp;
+          const precipitationUnit =
+            (typeof entity.attributes?.precipitation_unit === 'string' &&
+              entity.attributes.precipitation_unit) ||
+            '%';
+          const precipitationValue =
+            parseNumberish(entity.attributes?.precipitation_probability) ??
+            parseNumberish(entity.attributes?.precipitation) ??
+            0;
+          const tomorrowForecast = forecastSource[1] as Record<string, unknown> | undefined;
+          const tomorrowPrecipitationProbability = tomorrowForecast
+            ? parseNumberish(tomorrowForecast.precipitation_probability)
+            : null;
+          const tomorrowPrecipitationAmount = tomorrowForecast
+            ? parseNumberish(tomorrowForecast.precipitation)
+            : null;
 
           const sunriseSource = sunEntitySunrise ?? entity.attributes?.sunrise;
           const sunsetSource = sunEntitySunset ?? entity.attributes?.sunset;
@@ -885,26 +904,22 @@ export const useHADevices = (): DeviceCollection => {
               parseNumberish(entity.attributes?.pressure) ??
               parseNumberish(entity.attributes?.native_pressure) ??
               0,
-            precipitation:
-              parseNumberish(entity.attributes?.precipitation_probability) ??
-              parseNumberish(entity.attributes?.precipitation) ??
-              0,
+            precipitation: precipitationValue,
+            precipitationUnit,
             sunrise: formatClock(sunriseSource, locale),
             sunset: formatClock(sunsetSource, locale),
             daylight: formatDaylight(sunriseSource, sunsetSource),
             rainForecast:
-              forecastSource[1] &&
-              parseNumberish(
-                (forecastSource[1] as Record<string, unknown>).precipitation_probability
-              ) !== null
+              tomorrowPrecipitationProbability !== null
                 ? t('weather.rainTomorrow', {
-                    chance: Math.round(
-                      parseNumberish(
-                        (forecastSource[1] as Record<string, unknown>).precipitation_probability
-                      ) ?? 0
-                    ),
+                    chance: Math.round(tomorrowPrecipitationProbability),
                   })
-                : '',
+                : tomorrowPrecipitationAmount !== null
+                  ? t('weather.precipitationTomorrow', {
+                      amount: formatWeatherValue(tomorrowPrecipitationAmount),
+                      unit: precipitationUnit,
+                    })
+                  : '',
             highTemp,
             lowTemp,
             forecast,

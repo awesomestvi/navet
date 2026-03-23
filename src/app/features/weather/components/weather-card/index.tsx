@@ -1,13 +1,15 @@
 import { Sunrise, Sunset } from 'lucide-react';
 import { memo, useState } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { CaptionValue } from '@/app/components/ui/caption-value';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
 import { useI18n, useTheme } from '@/app/hooks';
-import { type WeatherCondition, WeatherIcon } from './weather-icon';
+import { getWeatherIconComponent, type WeatherCondition, WeatherIcon } from './weather-icon';
 import { WeatherSettingsDialog } from './weather-settings-dialog';
 
 // Re-export types
@@ -27,6 +29,7 @@ interface WeatherCardProps {
   humidity: number;
   windSpeed: number;
   precipitation: number;
+  precipitationUnit: string;
   sunrise: string;
   sunset: string;
   daylight: string;
@@ -51,6 +54,7 @@ export const WeatherCard = memo(function WeatherCard({
   humidity,
   windSpeed,
   precipitation,
+  precipitationUnit,
   sunrise,
   sunset,
   daylight,
@@ -72,16 +76,12 @@ export const WeatherCard = memo(function WeatherCard({
   const isSmall = isCompactCardSize(size);
   const isLarge = size === 'large';
   const visibleForecast = isLarge ? forecast : forecast.slice(0, 3);
+  const precipitationValue = `${precipitation}${precipitationUnit ? ` ${precipitationUnit}` : ''}`;
+  const HeaderIcon = getWeatherIconComponent(condition);
 
   // Theme-aware colors
   const textPrimary = surface.textPrimary;
   const textSecondary = surface.textSubtle;
-  const iconBg =
-    theme === 'light'
-      ? 'bg-blue-100'
-      : isGlass
-        ? 'bg-blue-300/24 border border-blue-100/20'
-        : 'bg-blue-500/24 border border-blue-300/18';
   const dashedBorder =
     theme === 'light' ? 'border-gray-300' : isGlass ? 'border-white/18' : 'border-slate-600';
 
@@ -102,23 +102,15 @@ export const WeatherCard = memo(function WeatherCard({
             setIsSettingsOpen(true);
           }}
         >
-          <div className={`${isSmall ? 'gap-2' : 'gap-3'} flex items-start`}>
-            <div
-              className={`${isSmall ? 'h-8 w-8' : 'h-10 w-10'} rounded-full flex shrink-0 items-center justify-center ${iconBg}`}
-            >
-              <WeatherIcon condition={condition} className={`${isSmall ? 'h-4 w-4' : 'h-5 w-5'}`} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3
-                className={`font-semibold ${textPrimary} truncate ${isSmall ? 'text-xs' : 'text-sm'}`}
-              >
-                {location}
-              </h3>
-              <p className={`mt-0.5 truncate text-[10px] ${surface.textMuted}`}>
-                {t('weather.subtitle')}
-              </p>
-            </div>
-          </div>
+          <EntityCardHeader
+            title={location}
+            subtitle={t('weather.subtitle')}
+            size={size}
+            titleClassName={textPrimary}
+            leading={
+              <EntityCardHeaderIcon IconComponent={HeaderIcon} isActive={true} size={size} />
+            }
+          />
         </button>
 
         {isSmall ? (
@@ -149,7 +141,7 @@ export const WeatherCard = memo(function WeatherCard({
               <div className="space-y-0.5 flex-shrink-0">
                 <CaptionValue
                   caption={t('weather.precipitation')}
-                  value={`${precipitation}%`}
+                  value={precipitationValue}
                   align="right"
                 />
                 <CaptionValue

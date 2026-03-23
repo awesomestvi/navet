@@ -154,7 +154,7 @@ function getAllowedSizes(
     case 'switches':
       return ['extra-small', 'small'];
     case 'locks':
-      return [device.size as CardSize];
+      return ['extra-small', 'small'];
     default:
       return ['extra-small', 'small', 'medium', 'large'];
   }

@@ -470,6 +470,7 @@ export const enMessages = {
   'weather.precipitation': 'Precipitation',
   'weather.humidity': 'Humidity',
   'weather.wind': 'Wind',
+  'weather.precipitationTomorrow': '{amount} {unit} tomorrow',
   'media.size.small': 'Small',
   'media.size.medium': 'Medium',
   'media.size.large': 'Large',

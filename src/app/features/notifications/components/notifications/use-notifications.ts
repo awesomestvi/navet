@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'rea
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { storage } from '@/app/utils/storage';
 
 const READ_NOTIFICATIONS_STORAGE_KEY = 'navet-read-notifications';
 const HIDDEN_NOTIFICATIONS_STORAGE_KEY = 'navet-hidden-notifications';
@@ -69,23 +70,7 @@ const loadPendingUpdateInstalls = (): string[] => {
 };
 
 const loadNotificationIds = (storageKey: string): string[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const stored = window.localStorage.getItem(storageKey);
-    if (!stored) {
-      return [];
-    }
-
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed)
-      ? parsed.filter((value): value is string => typeof value === 'string')
-      : [];
-  } catch {
-    return [];
-  }
+  return storage.get<string[]>(storageKey, []);
 };
 
 const persistReadNotifications = (ids: string[]) => {
@@ -101,11 +86,7 @@ const persistPendingUpdateInstalls = (ids: string[]) => {
 };
 
 const persistNotificationIds = (storageKey: string, ids: string[]) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(storageKey, JSON.stringify(ids));
+  storage.set(storageKey, ids);
 };
 
 const inferNotificationType = (
@@ -476,15 +457,18 @@ export function useNotifications(): UseNotificationsReturn {
         return;
       }
 
-      if (notification.source === 'persistent_notification') {
-        await homeAssistantService.callService('persistent_notification', 'dismiss', {
-          notification_id: notification.notificationId,
-        });
-      } else {
-        setHiddenNotifications((current) => (current.includes(id) ? current : [...current, id]));
-      }
-
+      setHiddenNotifications((current) => (current.includes(id) ? current : [...current, id]));
       setReadNotifications((current) => current.filter((entry) => entry !== id));
+
+      if (notification.source === 'persistent_notification') {
+        try {
+          await homeAssistantService.callService('persistent_notification', 'dismiss', {
+            notification_id: notification.notificationId,
+          });
+        } catch {
+          // Keep the item hidden locally even if Home Assistant rejects or delays dismissal.
+        }
+      }
     },
     [notifications]
   );
@@ -494,7 +478,11 @@ export function useNotifications(): UseNotificationsReturn {
       return;
     }
 
-    await Promise.all(
+    const notificationIds = notifications.map((notification) => notification.id);
+    setHiddenNotifications((current) => [...new Set([...current, ...notificationIds])]);
+    setReadNotifications([]);
+
+    await Promise.allSettled(
       notifications
         .filter((notification) => notification.source === 'persistent_notification')
         .map((notification) =>
@@ -503,17 +491,6 @@ export function useNotifications(): UseNotificationsReturn {
           })
         )
     );
-
-    setHiddenNotifications((current) => [
-      ...new Set([
-        ...current,
-        ...notifications
-          .filter((notification) => notification.source === 'update')
-          .map((notification) => notification.id),
-      ]),
-    ]);
-
-    setReadNotifications([]);
   }, [notifications]);
 
   return {

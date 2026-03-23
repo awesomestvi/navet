@@ -50,6 +50,7 @@ export interface WeatherDevice extends BaseDevice {
   windSpeed: number;
   pressure: number;
   precipitation: number;
+  precipitationUnit: string;
   sunrise: string;
   sunset: string;
   daylight: string;

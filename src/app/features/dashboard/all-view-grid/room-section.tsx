@@ -1,27 +1,14 @@
 import { type CSSProperties, memo, startTransition, useEffect, useRef, useState } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
+import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
-
-type IdleCallbackHandle = number;
-
-type IdleDeadlineLike = {
-  didTimeout: boolean;
-  timeRemaining: () => number;
-};
-
-type WindowWithIdleCallback = Window & {
-  requestIdleCallback?: (
-    callback: (deadline: IdleDeadlineLike) => void,
-    options?: { timeout: number }
-  ) => IdleCallbackHandle;
-  cancelIdleCallback?: (handle: IdleCallbackHandle) => void;
-};
 
 interface RoomSectionProps {
   title: string;
@@ -63,10 +50,10 @@ export const RoomSection = memo(function RoomSection({
   usesHideAction = false,
 }: RoomSectionProps) {
   const { t } = useI18n();
+  const breakpointCols = useBreakpointCols();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(isEditMode);
-  const [visibleCount, setVisibleCount] = useState(isEditMode ? orderedIds.length : 0);
 
   useEffect(() => {
     if (isEditMode) {
@@ -98,91 +85,19 @@ export const RoomSection = memo(function RoomSection({
     };
   }, [isEditMode]);
 
-  useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
-
-    if (isEditMode) {
-      setVisibleCount(orderedIds.length);
-      return;
-    }
-
-    const INITIAL_BATCH = 8;
-    const BATCH_SIZE = 8;
-    const idleWindow = window as WindowWithIdleCallback;
-
-    setVisibleCount((current) =>
-      current > 0
-        ? Math.min(current, orderedIds.length)
-        : Math.min(INITIAL_BATCH, orderedIds.length)
-    );
-
-    if (orderedIds.length <= INITIAL_BATCH) {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: number | null = null;
-    let idleId: IdleCallbackHandle | null = null;
-
-    const scheduleNextBatch = () => {
-      const runBatch = () => {
-        if (cancelled) {
-          return;
-        }
-
-        startTransition(() => {
-          setVisibleCount((current) => {
-            if (current >= orderedIds.length) {
-              return current;
-            }
-
-            const next = Math.min(current + BATCH_SIZE, orderedIds.length);
-            if (next < orderedIds.length) {
-              scheduleNextBatch();
-            }
-            return next;
-          });
-        });
-      };
-
-      if (typeof idleWindow.requestIdleCallback === 'function') {
-        idleId = idleWindow.requestIdleCallback(
-          (deadline) => {
-            if (deadline.didTimeout || deadline.timeRemaining() > 4) {
-              runBatch();
-              return;
-            }
-
-            scheduleNextBatch();
-          },
-          { timeout: 160 }
-        );
-        return;
-      }
-
-      timeoutId = window.setTimeout(runBatch, 96);
-    };
-
-    scheduleNextBatch();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-      if (idleId !== null && typeof idleWindow.cancelIdleCallback === 'function') {
-        idleWindow.cancelIdleCallback(idleId);
-      }
-    };
-  }, [isEditMode, isVisible, orderedIds.length]);
-
+  const visibleCount = useProgressiveBatching(orderedIds.length, isEditMode, isVisible);
   const estimatedRows = Math.max(1, Math.ceil(totalItems / 4));
   const placeholderHeight = estimatedRows * 120;
-  const visibleOrderedIds = isEditMode ? orderedIds : orderedIds.slice(0, visibleCount);
+  const visibleOrderedIds = orderedIds.slice(0, visibleCount);
   const gridContent = (
-    <div className="grid w-full grid-flow-row-dense grid-cols-2 gap-2 auto-rows-[87px] md:grid-cols-4 md:gap-3 xl:grid-cols-6 lg:gap-4 2xl:grid-cols-8">
+    <div
+      className="grid w-full grid-flow-row-dense gap-2 auto-rows-[87px] md:gap-3 lg:gap-4"
+      style={
+        {
+          gridTemplateColumns: `repeat(${breakpointCols}, minmax(0, 1fr))`,
+        } as CSSProperties
+      }
+    >
       {visibleOrderedIds.map((id) => {
         const device = deviceMap.get(id);
         if (device) {

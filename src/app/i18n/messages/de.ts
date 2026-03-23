@@ -481,6 +481,7 @@ export const deMessages = {
   'weather.precipitation': 'Niederschlag',
   'weather.humidity': 'Luftfeuchtigkeit',
   'weather.wind': 'Wind',
+  'weather.precipitationTomorrow': '{amount} {unit} morgen',
   'media.size.small': 'Klein',
   'media.size.medium': 'Mittel',
   'media.size.large': 'Groß',
