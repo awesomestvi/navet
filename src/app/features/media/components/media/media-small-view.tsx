@@ -29,6 +29,8 @@ interface MediaSmallViewProps {
   onTogglePlay: () => void;
   onNext: () => void;
   onVolumeChange: (value: number) => void;
+  onVolumeInteractionStart: () => void;
+  onVolumeInteractionEnd: () => void;
   onOpenDialog: () => void;
 }
 
@@ -48,6 +50,8 @@ export function MediaSmallView({
   onTogglePlay,
   onNext,
   onVolumeChange,
+  onVolumeInteractionStart,
+  onVolumeInteractionEnd,
   onOpenDialog,
 }: MediaSmallViewProps) {
   const { t } = useI18n();
@@ -238,6 +242,15 @@ export function MediaSmallView({
               min="0"
               max="100"
               value={displayVolume}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onMouseDown={onVolumeInteractionStart}
+              onTouchStart={onVolumeInteractionStart}
+              onKeyDown={onVolumeInteractionStart}
+              onMouseUp={onVolumeInteractionEnd}
+              onTouchEnd={onVolumeInteractionEnd}
+              onKeyUp={onVolumeInteractionEnd}
+              onBlur={onVolumeInteractionEnd}
               onChange={(event) => onVolumeChange(parseInt(event.target.value, 10))}
               className="absolute inset-0 h-6 w-full -translate-y-1/2 cursor-pointer opacity-0"
             />

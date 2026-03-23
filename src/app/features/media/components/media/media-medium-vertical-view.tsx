@@ -29,6 +29,8 @@ interface MediaMediumVerticalViewProps {
   onTogglePlay: () => void;
   onNext: () => void;
   onVolumeChange: (value: number) => void;
+  onVolumeInteractionStart: () => void;
+  onVolumeInteractionEnd: () => void;
 }
 
 export function MediaMediumVerticalView({
@@ -49,6 +51,8 @@ export function MediaMediumVerticalView({
   onTogglePlay,
   onNext,
   onVolumeChange,
+  onVolumeInteractionStart,
+  onVolumeInteractionEnd,
 }: MediaMediumVerticalViewProps) {
   const { t } = useI18n();
   const displayVolume = Math.max(0, Math.min(100, isMuted ? 0 : volume));
@@ -176,6 +180,15 @@ export function MediaMediumVerticalView({
                 min="0"
                 max="100"
                 value={displayVolume}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+                onMouseDown={onVolumeInteractionStart}
+                onTouchStart={onVolumeInteractionStart}
+                onKeyDown={onVolumeInteractionStart}
+                onMouseUp={onVolumeInteractionEnd}
+                onTouchEnd={onVolumeInteractionEnd}
+                onKeyUp={onVolumeInteractionEnd}
+                onBlur={onVolumeInteractionEnd}
                 onChange={(event) => onVolumeChange(parseInt(event.target.value, 10))}
                 className="absolute inset-0 h-6 w-full -translate-y-1/2 cursor-pointer opacity-0"
               />

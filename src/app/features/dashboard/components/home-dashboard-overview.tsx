@@ -34,6 +34,7 @@ import type {
 } from '../hooks/use-home-dashboard-layout';
 import { useLibraryPanel } from '../hooks/use-library-panel';
 import type { CustomCard } from '../stores/custom-cards-store';
+import { SECTION_LAYOUT_COLUMNS, SECTION_RESIZE_SNAP } from '../utils/layout-engine';
 import { DashboardCardItem } from './dashboard-card-item';
 import { DashboardEditActions } from './dashboard-edit-actions';
 import { DashboardEmptyState } from './dashboard-empty-state';
@@ -57,6 +58,7 @@ interface HomeDashboardOverviewProps {
   addHomeSectionBelow: (targetSectionId: string) => string;
   renameHomeSection: (sectionId: string, title: string) => void;
   removeHomeSection: (sectionId: string) => void;
+  resizeHomeSection: (sectionId: string, newW: number) => void;
   onOpenAddCardDialog?: (targetSectionId?: string) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onToggleEditMode?: () => void;
@@ -67,6 +69,7 @@ const overlayClass: Record<CardSize, string> = {
   'extra-small': 'w-[190px] h-[87px]',
   small: 'w-[190px] h-[190px]',
   medium: 'w-[396px] h-[190px]',
+  'medium-vertical': 'w-[190px] h-[396px]',
   large: 'w-[396px] h-[396px]',
   hero: 'w-full h-[277px]',
 };
@@ -175,6 +178,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   addHomeSectionBelow,
   renameHomeSection,
   removeHomeSection,
+  resizeHomeSection,
   onOpenAddCardDialog,
   onUpdateCard,
   onToggleEditMode,
@@ -421,6 +425,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       onAddSectionBelow={addHomeSectionBelow}
                       onRenameSection={renameHomeSection}
                       onRemoveSection={removeHomeSection}
+                      onResizeSection={resizeHomeSection}
                       surface={surface}
                     />
                   ) : (
@@ -573,6 +578,9 @@ function SectionCanvas({
   onOpenLibraryForSection,
   onRenameSection,
   onRemoveSection,
+  span,
+  rowSiblingCount,
+  onResizeSection,
   surface,
 }: {
   sectionId: string;
@@ -592,8 +600,13 @@ function SectionCanvas({
   onOpenLibraryForSection: (sectionId: string) => void;
   onRenameSection: (sectionId: string, title: string) => void;
   onRemoveSection: (sectionId: string) => void;
+  span: number;
+  rowSiblingCount: number;
+  onResizeSection: (sectionId: string, newW: number) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
+  const minW = SECTION_RESIZE_SNAP;
+  const maxW = SECTION_LAYOUT_COLUMNS - (rowSiblingCount - 1) * minW;
   return (
     <section
       className={`relative rounded-[24px] border p-4 transition-[border-color,box-shadow,background-color] ${
@@ -609,7 +622,7 @@ function SectionCanvas({
     >
       <button
         type="button"
-        aria-label={`Select ${title || 'section'}`}
+        aria-label={`Select ${title} section`}
         className="absolute inset-0 rounded-[24px]"
         onClick={() => onSelectSection(sectionId)}
       />
@@ -619,8 +632,37 @@ function SectionCanvas({
           value={title}
           onChange={(event) => onRenameSection(sectionId, event.target.value)}
           onFocus={() => onSelectSection(sectionId)}
+          onClick={(event) => event.stopPropagation()}
           className={`min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none ${surface.textPrimary}`}
         />
+        {rowSiblingCount > 1 ? (
+          <>
+            <button
+              type="button"
+              aria-label="Shrink section"
+              disabled={span <= minW}
+              onClick={(event) => {
+                event.stopPropagation();
+                onResizeSection(sectionId, span - SECTION_RESIZE_SNAP);
+              }}
+              className={`rounded-full border p-1.5 transition-colors disabled:opacity-30 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Grow section"
+              disabled={span >= maxW}
+              onClick={(event) => {
+                event.stopPropagation();
+                onResizeSection(sectionId, span + SECTION_RESIZE_SNAP);
+              }}
+              className={`rounded-full border p-1.5 transition-colors disabled:opacity-30 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </>
+        ) : null}
         <button
           type="button"
           onClick={(event) => {
@@ -685,6 +727,7 @@ function SectionCanvasGrid({
   onAddSectionBelow,
   onRenameSection,
   onRemoveSection,
+  onResizeSection,
   surface,
 }: {
   sections: HomeEditorSection[];
@@ -703,77 +746,64 @@ function SectionCanvasGrid({
   onAddSectionBelow: (sectionId: string) => void;
   onRenameSection: (sectionId: string, title: string) => void;
   onRemoveSection: (sectionId: string) => void;
+  onResizeSection: (sectionId: string, newW: number) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const sectionStacksByRow = buildSectionStacks(sections);
 
   return (
     <div className="flex flex-col gap-5">
-      {sectionStacksByRow.map((rowStacks, rowIndex) => {
-        return (
-          <div
-            key={rowIndex}
-            className={`grid ${SECTION_GRID_GAP_CLASS}`}
-            style={
-              {
-                '--home-section-cols': sectionGridCols,
-                gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-              } as CSSProperties
-            }
-          >
-            {rowStacks.map((stack) => {
-              const leadSection = stack[0];
-              const renderedSpan = getRenderedSectionSpan(leadSection.span, sectionGridCols);
-              const renderedColumnStart = getRenderedSectionColumnStart(
-                leadSection.x,
-                leadSection.span,
-                sectionGridCols
-              );
-              return (
-                <div
-                  key={leadSection.id}
-                  style={{ gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }}
-                >
-                  <div className="space-y-3">
-                    {stack.map((section) => (
-                      <div key={section.id} className="space-y-3">
-                        <SectionCanvas
-                          sectionId={section.id}
-                          title={section.title}
-                          gridCols={renderedSpan}
-                          isActive={activeSectionId === section.id}
-                          accentColor={accentColor}
-                          cardIds={section.cardIds}
-                          allCards={allCards}
-                          cardSizes={cardSizes}
-                          updateCardSize={updateCardSize}
-                          isEditMode={isEditMode}
-                          onUpdateCard={onUpdateCard}
-                          onRemoveFromLayout={onRemoveFromLayout}
-                          showHero={showHero}
-                          onSelectSection={onSelectSection}
-                          onOpenLibraryForSection={onOpenLibraryForSection}
-                          onRenameSection={onRenameSection}
-                          onRemoveSection={onRemoveSection}
-                          surface={surface}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onAddSectionBelow(section.id)}
-                          className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`}
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>Add section</span>
-                        </button>
-                      </div>
-                    ))}
+      {sectionStacksByRow.map((rowStacks, rowIndex) => (
+        <div key={rowIndex} className="flex items-start gap-3">
+          {rowStacks.map((stack) => {
+            const leadSection = stack[0];
+            const renderedSpan = getRenderedSectionSpan(leadSection.span, sectionGridCols);
+            return (
+              <div
+                key={leadSection.id}
+                style={{ flex: `${leadSection.span} 1 0`, minWidth: 0 }}
+                className="space-y-3"
+              >
+                {stack.map((section) => (
+                  <div key={section.id} className="space-y-3">
+                    <SectionCanvas
+                      sectionId={section.id}
+                      title={section.title}
+                      gridCols={renderedSpan}
+                      isActive={activeSectionId === section.id}
+                      accentColor={accentColor}
+                      cardIds={section.cardIds}
+                      allCards={allCards}
+                      cardSizes={cardSizes}
+                      updateCardSize={updateCardSize}
+                      isEditMode={isEditMode}
+                      onUpdateCard={onUpdateCard}
+                      onRemoveFromLayout={onRemoveFromLayout}
+                      showHero={showHero}
+                      onSelectSection={onSelectSection}
+                      onOpenLibraryForSection={onOpenLibraryForSection}
+                      onRenameSection={onRenameSection}
+                      onRemoveSection={onRemoveSection}
+                      span={leadSection.span}
+                      rowSiblingCount={rowStacks.length}
+                      onResizeSection={onResizeSection}
+                      surface={surface}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onAddSectionBelow(section.id)}
+                      className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add section</span>
+                    </button>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -966,10 +996,7 @@ function CardGrid({
 
         const storedSize = cardSizes[cardId] ?? entry.size;
         const size = !showHero && storedSize === 'hero' ? 'large' : storedSize;
-        const spanClass =
-          !isCustomCard(entry) && entry.type === 'media' && size === 'large'
-            ? 'col-span-1 row-span-4'
-            : getCardSpanClass(size);
+        const spanClass = getCardSpanClass(size);
 
         return (
           <HomeCardSlot

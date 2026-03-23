@@ -24,7 +24,7 @@
 
 Navet (Swedish for "the hub") is a modern, responsive smart home dashboard built with React and Tailwind CSS v4. It keeps a premium glass-inspired design language while scaling visual effects across powerful and low-power devices, with comprehensive smart home control capabilities and an intuitive editing system.
 
-Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONING.md) for the beta versioning policy.
+Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONING.md) for the beta versioning policy and tag-driven GitHub release flow.
 
 ## ✨ Features
 
@@ -302,7 +302,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 #### Navigation Sections
 - **Home** for the main dashboard
 - **Security**, **Tasks**, **Locks**, **Lights**, and **Media** as dedicated sections
-- **Dashboard Builder** for building the Home screen: add cards from the floating library panel, choose between flow and sectioned layout, and manage sections with drag-and-drop
+- **Dashboard Builder** for building the Home screen: add cards from the floating library panel, choose between flow and sectioned layout, manage sections with drag-and-drop, and resize column widths with snap controls in each section header
 - **Settings** for appearance, dashboard, config export/import, and onboarding reset
 - On mobile, the bottom navigation hides on downward scroll and reappears when you return near the top of the page
 

@@ -53,20 +53,18 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 ### Smart Home
 
 - [ ] **Automations management** — view, trigger, and edit Home Assistant automations
-- [ ] **Scene management** — view and activate Home Assistant scenes from the dashboard
+- [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
 - [ ] **Camera / video feed card** — live stream from `camera.*` entities; MJPEG streaming and recording controls
 - [ ] **Light group card** — control a group of lights as one unit (brightness, color, on/off)
 - [ ] **Alarm panel card** — arm, disarm, and show state of `alarm_control_panel.*` entities
 - [ ] **Timer card** — start, pause, and cancel Home Assistant timers from the dashboard
 - [ ] **Todo / shopping list card** — view and check off items from `todo.*` list entities
-- [ ] **Battery overview** — dedicated view or card listing all low-battery devices sorted by charge level
-- [ ] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
+- [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [ ] **Template sensor card** — display the output of a Home Assistant template expression
 - [ ] **Climate schedule card** — set and visualise thermostat schedules directly from the dashboard
 - [ ] **Media queue card** — show upcoming tracks / queue for an active media player
 - [ ] **Media player tagging** — tag and untag media players to group or filter them across the dashboard
-- [ ] **Media player large card** — expanded large-size card with more playback controls and metadata
-- [ ] **Presence overview** — at-a-glance card showing who is home across all `person.*` entities
+- [x] **Media player large card** — expanded large-size card with more playback controls and metadata
 
 ---
 
@@ -98,8 +96,11 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **RSS Feed widget** — custom card showing a live RSS feed
 - [x] **Photo Frame widget** — cycling image display widget
 - [x] **Quick Note widget** — freeform text note card
+- [x] **Battery overview** — dashboard widget listing all low-battery devices sorted by charge level
+- [x] **Presence overview** — dashboard widget showing who is home across all `person.*` entities
 - [x] **Low-power mode** — reduced-effects mode for RPi-class hardware
 - [x] **Deferred / batched room rendering** — offscreen rooms defer and visible rooms hydrate in batches
 - [x] **Energy dashboard** — dedicated energy section with live stats, solar/battery/grid flow diagram, trend charts, storage gauges, top consumers, cost projection, heating breakdown, smart insights, and node drill-down; backed by custom zero-bundle SVG chart primitives (bar chart, area chart, semi-circle gauge, segmented quality bar, Catmull-Rom sparkline)
 - [x] **Energy live HA wiring** — setup panel with auto-detect from HA `energy/get_prefs`, per-device power sensor mapping, datalist autocomplete; live entity state reading via `useEnergyHaData`; today's kWh via `recorder/statistics_during_period` polled every 5 min; conditional display hides unconfigured solar/battery gauges; bathroom/toilet and device-level energy breakdowns
 - [x] **Camera card** — snapshot display for `camera.*` entities via HA camera proxy; manual refresh; unavailable placeholder; dark card with name/room overlay
+- [x] **Section resize actions** — ← → buttons in each section header snap column widths to multiples of 3 (out of a 12-column grid); the adjacent section compensates automatically so the row total stays constant; controls appear only when two or more sections share the same row

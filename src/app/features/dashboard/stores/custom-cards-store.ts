@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { ZoneName } from '../zones/zone-types';
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence';
 export const HOME_WIDGET_ROOM = '__home__';
 
 export interface CustomCard {

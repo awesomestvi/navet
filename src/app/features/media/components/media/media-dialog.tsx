@@ -22,11 +22,22 @@ interface MediaDialogProps {
   isMuted: boolean;
   elapsedSeconds: number;
   durationSeconds: number;
+  supportsGrouping: boolean;
+  groupMembers: string[];
+  availableGroupingPlayers: Array<{
+    id: string;
+    name: string;
+    isAttached: boolean;
+  }>;
   onPrevious: () => void;
   onTogglePlay: () => void;
   onNext: () => void;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
+  onVolumeInteractionStart: () => void;
+  onVolumeInteractionEnd: () => void;
+  onAttachGroupMember: (entityId: string) => void;
+  onDetachGroupMember: (entityId: string) => void;
 }
 
 export function MediaDialog({
@@ -42,11 +53,18 @@ export function MediaDialog({
   isMuted,
   elapsedSeconds,
   durationSeconds,
+  supportsGrouping,
+  groupMembers,
+  availableGroupingPlayers,
   onPrevious,
   onTogglePlay,
   onNext,
   onToggleMute,
   onVolumeChange,
+  onVolumeInteractionStart,
+  onVolumeInteractionEnd,
+  onAttachGroupMember,
+  onDetachGroupMember,
 }: MediaDialogProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -172,6 +190,13 @@ export function MediaDialog({
                     min="0"
                     max="100"
                     value={isMuted ? 0 : volume}
+                    onMouseDown={onVolumeInteractionStart}
+                    onTouchStart={onVolumeInteractionStart}
+                    onKeyDown={onVolumeInteractionStart}
+                    onMouseUp={onVolumeInteractionEnd}
+                    onTouchEnd={onVolumeInteractionEnd}
+                    onKeyUp={onVolumeInteractionEnd}
+                    onBlur={onVolumeInteractionEnd}
                     onChange={(e) => onVolumeChange(parseInt(e.target.value, 10))}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
@@ -199,6 +224,73 @@ export function MediaDialog({
                 ))}
               </div>
             </div>
+
+            {supportsGrouping ? (
+              <div>
+                <span className={`mb-3 block text-sm font-medium ${surface.textSecondary}`}>
+                  {t('media.group.title')}
+                </span>
+
+                <div className="space-y-3">
+                  <div>
+                    <div
+                      className={`mb-2 text-xs uppercase tracking-[0.14em] ${surface.textMuted}`}
+                    >
+                      {t('media.group.attached')}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {groupMembers.filter((memberId) => memberId !== entityId).length > 0 ? (
+                        availableGroupingPlayers
+                          .filter((player) => player.isAttached)
+                          .map((player) => (
+                            <button
+                              type="button"
+                              key={player.id}
+                              onClick={() => onDetachGroupMember(player.id)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${surface.border} ${surface.textPrimary} ${isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/5 hover:bg-white/10'}`}
+                            >
+                              {player.name} · {t('media.group.detach')}
+                            </button>
+                          ))
+                      ) : (
+                        <div className={`text-sm ${surface.textMuted}`}>
+                          {t('media.group.noAttached')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      className={`mb-2 text-xs uppercase tracking-[0.14em] ${surface.textMuted}`}
+                    >
+                      {t('media.group.available')}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {availableGroupingPlayers.filter((player) => !player.isAttached).length >
+                      0 ? (
+                        availableGroupingPlayers
+                          .filter((player) => !player.isAttached)
+                          .map((player) => (
+                            <button
+                              type="button"
+                              key={player.id}
+                              onClick={() => onAttachGroupMember(player.id)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${surface.border} ${surface.textPrimary} ${isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/5 hover:bg-white/10'}`}
+                            >
+                              {player.name} · {t('media.group.attach')}
+                            </button>
+                          ))
+                      ) : (
+                        <div className={`text-sm ${surface.textMuted}`}>
+                          {t('media.group.noAvailable')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {/* Close button */}
             <Dialog.Close asChild>

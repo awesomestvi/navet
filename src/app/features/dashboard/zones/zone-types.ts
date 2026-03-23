@@ -23,6 +23,7 @@ export const ZONE_DEFAULTS_BY_DEVICE_TYPE: Record<string, ZoneName> = {
   lights: 'actions',
   switches: 'actions',
   locks: 'actions',
+  scenes: 'actions',
   covers: 'actions',
   persons: 'actions',
   cameras: 'hero',
@@ -39,4 +40,5 @@ export const ZONE_DEFAULTS_BY_DEVICE_TYPE: Record<string, ZoneName> = {
   note: 'status',
   battery: 'status',
   button: 'actions',
+  presence: 'status',
 };

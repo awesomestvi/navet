@@ -84,6 +84,8 @@ export interface MediaDevice extends BaseDevice {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  supportsGrouping?: boolean;
+  groupMembers?: string[];
 }
 
 // Switch device
@@ -109,6 +111,11 @@ export interface CoverDevice extends BaseDevice {
 export interface LockDevice extends BaseDevice {
   room: string;
   state: boolean;
+}
+
+// Scene device
+export interface SceneDevice extends BaseDevice {
+  room: string;
 }
 
 // Person device
@@ -187,6 +194,7 @@ export type Device =
   | SwitchDevice
   | CoverDevice
   | LockDevice
+  | SceneDevice
   | PersonDevice
   | SensorDevice
   | VacuumDevice
@@ -205,6 +213,7 @@ export interface DeviceCollection {
   switches: SwitchDevice[];
   covers: CoverDevice[];
   locks: LockDevice[];
+  scenes: SceneDevice[];
   persons: PersonDevice[];
   sensors: SensorDevice[];
   vacuums: VacuumDevice[];
@@ -214,7 +223,8 @@ export interface DeviceCollection {
 }
 
 // Device with type information
-export interface DeviceWithType extends Record<string, string | number | boolean | undefined> {
+export interface DeviceWithType
+  extends Record<string, string | number | boolean | string[] | undefined> {
   id: string;
   type: keyof DeviceCollection;
 }

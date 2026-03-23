@@ -13,6 +13,7 @@ import type {
   LockDevice,
   MediaDevice,
   PersonDevice,
+  SceneDevice,
   SensorDevice,
   SwitchDevice,
   VacuumDevice,
@@ -245,6 +246,7 @@ export const useHADevices = (): DeviceCollection => {
         switches: [],
         covers: [],
         locks: [],
+        scenes: [],
         persons: [],
         sensors: [],
         vacuums: [],
@@ -267,6 +269,7 @@ export const useHADevices = (): DeviceCollection => {
     const sensors: SensorDevice[] = [];
     const covers: CoverDevice[] = [];
     const locks: LockDevice[] = [];
+    const scenes: SceneDevice[] = [];
     const vacuums: VacuumDevice[] = [];
     const weather: WeatherDevice[] = [];
     const calendars: CalendarDevice[] = [];
@@ -496,6 +499,7 @@ export const useHADevices = (): DeviceCollection => {
           break;
 
         case 'media_player': {
+          const supportedFeatures = parseNumberish(entity.attributes?.supported_features) ?? 0;
           const mediaEntityType = formatMediaEntityType(entity.attributes?.device_class, t);
           const entityPicture =
             (typeof entity.attributes?.entity_picture === 'string' &&
@@ -523,6 +527,11 @@ export const useHADevices = (): DeviceCollection => {
             typeof entity.attributes?.media_position_updated_at === 'string'
               ? entity.attributes.media_position_updated_at
               : undefined;
+          const groupMembers = Array.isArray(entity.attributes?.group_members)
+            ? entity.attributes.group_members.filter(
+                (value): value is string => typeof value === 'string' && value.length > 0
+              )
+            : [];
           const normalizedState: MediaDevice['state'] =
             entity.state === 'playing'
               ? 'playing'
@@ -555,6 +564,8 @@ export const useHADevices = (): DeviceCollection => {
                 ? Math.max(0, Math.floor(mediaDuration))
                 : undefined,
             positionUpdatedAt,
+            supportsGrouping: (supportedFeatures & 524288) === 524288,
+            groupMembers,
           });
           break;
         }
@@ -609,6 +620,15 @@ export const useHADevices = (): DeviceCollection => {
             room,
             size: 'small',
             state: entity.state === 'locked',
+          });
+          break;
+
+        case 'scene':
+          scenes.push({
+            id: entityId,
+            name,
+            room,
+            size: 'small',
           });
           break;
 
@@ -939,6 +959,7 @@ export const useHADevices = (): DeviceCollection => {
       switches,
       covers,
       locks,
+      scenes,
       persons,
       sensors: [],
       vacuums,

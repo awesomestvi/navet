@@ -11,6 +11,7 @@ export const DEVICE_TYPE_LABEL_KEYS: Record<keyof DeviceCollection, TranslationK
   switches: 'deviceType.switch',
   covers: 'deviceType.cover',
   locks: 'deviceType.lock',
+  scenes: 'deviceType.scene',
   persons: 'deviceType.person',
   sensors: 'deviceType.sensor',
   vacuums: 'deviceType.vacuum',

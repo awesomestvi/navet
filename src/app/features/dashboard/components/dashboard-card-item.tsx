@@ -49,9 +49,8 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = 'Remove entity from dashboard';
-  const spanClass =
-    device?.type === 'media' && size === 'large' ? 'col-span-1 row-span-4' : getCardSpanClass(size);
-  const editControlSize = device?.type === 'media' && size === 'large' ? 'medium' : size;
+  const spanClass = getCardSpanClass(size);
+  const editControlSize = device?.type === 'media' && size === 'medium-vertical' ? 'medium' : size;
   const allowedSizes = getAllowedSizes(device, card, allowHeroSizes);
 
   // Drag is only enabled in edit mode when the card is inside a zone band.
@@ -144,7 +143,7 @@ function getAllowedSizes(
 
   switch (device?.type) {
     case 'media':
-      return ['small', 'medium', 'large'];
+      return ['small', 'medium', 'medium-vertical', 'large'];
     case 'grouped-sensors':
       return ['small', 'medium'];
     case 'calendars':
@@ -155,6 +154,8 @@ function getAllowedSizes(
       return ['extra-small', 'small'];
     case 'locks':
       return ['extra-small', 'small'];
+    case 'scenes':
+      return ['small', 'medium'];
     default:
       return ['extra-small', 'small', 'medium', 'large'];
   }

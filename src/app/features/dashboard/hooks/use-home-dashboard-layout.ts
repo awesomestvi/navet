@@ -8,8 +8,11 @@ import {
   getBottomRow,
   insertSectionBelow,
   insertSectionRow,
+  layoutRow,
   removeSectionFromLayout,
+  replaceRow,
   SECTION_LAYOUT_COLUMNS,
+  SECTION_RESIZE_SNAP,
   type SectionLayoutItem,
   sortSectionLayout,
   translateGridUnits,
@@ -451,6 +454,48 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
     [persistLayout]
   );
 
+  const resizeSection = useCallback(
+    (sectionId: string, newW: number) => {
+      persistLayout((previous) => {
+        const items = previous.sections.map(toSectionLayoutItem);
+        const target = items.find((s) => s.id === sectionId);
+        if (!target) return previous;
+
+        const rowItems = sortSectionLayout(items.filter((s) => s.y === target.y));
+        if (rowItems.length <= 1) return previous;
+
+        const minW = SECTION_RESIZE_SNAP;
+        const maxW = SECTION_LAYOUT_COLUMNS - (rowItems.length - 1) * minW;
+        const snapped = Math.round(newW / minW) * minW;
+        const clampedW = Math.max(minW, Math.min(maxW, snapped));
+        if (clampedW === target.w) return previous;
+
+        const targetIdx = rowItems.findIndex((s) => s.id === sectionId);
+        const neighborIdx = targetIdx < rowItems.length - 1 ? targetIdx + 1 : targetIdx - 1;
+        const neighbor = rowItems[neighborIdx];
+        if (!neighbor) return previous;
+
+        const delta = clampedW - target.w;
+        const newNeighborW = neighbor.w - delta;
+        if (newNeighborW < minW || newNeighborW > maxW) return previous;
+
+        const newRow = layoutRow(
+          rowItems.map((s) => ({
+            ...s,
+            w: s.id === sectionId ? clampedW : s.id === neighbor.id ? newNeighborW : s.w,
+          })),
+          target.y
+        );
+
+        return {
+          ...previous,
+          sections: replaceRow(items, target.y, newRow).map(toHomeSection),
+        };
+      });
+    },
+    [persistLayout]
+  );
+
   const addCard = useCallback(
     (cardId: string, sectionId?: string) => {
       if (!validIdSet.has(cardId) && !cardId.startsWith(CUSTOM_CARD_ID_PREFIX)) {
@@ -577,6 +622,7 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
     addSectionBelow,
     renameSection,
     removeSection,
+    resizeSection,
     addCard,
     removeCard,
     moveCard,

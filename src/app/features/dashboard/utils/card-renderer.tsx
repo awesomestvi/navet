@@ -6,6 +6,7 @@ import { LightCard, SwitchCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
 import { PersonCard } from '@/app/features/person';
 import { PowerCard } from '@/app/features/power';
+import { SceneCard } from '@/app/features/scenes';
 import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
 import { GroupedSensorCard, SensorCard, type SensorReading } from '@/app/features/sensors';
 import { VacuumCard } from '@/app/features/vacuum';
@@ -101,6 +102,8 @@ export const renderCard = ({
           elapsedSeconds={device.elapsedSeconds as number | undefined}
           durationSeconds={device.durationSeconds as number | undefined}
           positionUpdatedAt={device.positionUpdatedAt as string | undefined}
+          supportsGrouping={device.supportsGrouping as boolean | undefined}
+          groupMembers={device.groupMembers as string[] | undefined}
           size={size}
           onSizeChange={handleSizeChange}
           isEditMode={isEditMode}
@@ -172,6 +175,17 @@ export const renderCard = ({
           name={device.name as string}
           initialState={device.state as boolean | undefined}
           size={size}
+        />
+      );
+    case 'scenes':
+      return (
+        <SceneCard
+          id={device.id as string}
+          name={device.name as string}
+          room={device.room as string}
+          size={size}
+          onSizeChange={handleSizeChange}
+          isEditMode={isEditMode}
         />
       );
     case 'cameras':

@@ -73,6 +73,7 @@ export type DashboardController = OnboardingController &
     addHomeSectionBelow: ReturnType<typeof useHomeDashboardLayout>['addSectionBelow'];
     renameHomeSection: ReturnType<typeof useHomeDashboardLayout>['renameSection'];
     removeHomeSection: ReturnType<typeof useHomeDashboardLayout>['removeSection'];
+    resizeHomeSection: ReturnType<typeof useHomeDashboardLayout>['resizeSection'];
     isEditMode: boolean;
     lightDeviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
     lightRooms: string[];
@@ -272,6 +273,7 @@ export function useDashboardController(): DashboardController {
     addHomeSectionBelow: homeLayoutController.addSectionBelow,
     renameHomeSection: homeLayoutController.renameSection,
     removeHomeSection: homeLayoutController.removeSection,
+    resizeHomeSection: homeLayoutController.resizeSection,
     isEditMode,
     lightDeviceMap,
     lightRooms,

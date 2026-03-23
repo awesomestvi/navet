@@ -45,6 +45,11 @@ const ButtonWidget = lazy(async () => {
   return { default: module.ButtonWidget };
 });
 
+const PresenceOverviewWidget = lazy(async () => {
+  const module = await import('./widgets/presence-overview-widget');
+  return { default: module.PresenceOverviewWidget };
+});
+
 interface WidgetCardProps {
   card: CustomCard;
   isEditMode: boolean;
@@ -100,13 +105,26 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
     case 'button':
       widgetContent = (
         <ButtonWidget
-          data={card.data as { label?: string; service?: string; entityId?: string } | undefined}
+          data={
+            card.data as
+              | {
+                  label?: string;
+                  service?: string;
+                  entityId?: string;
+                  icon?: string;
+                  serviceData?: Record<string, unknown>;
+                }
+              | undefined
+          }
           onUpdate={
             onUpdate ? (data) => onUpdate(card.id, { data: { ...card.data, ...data } }) : undefined
           }
           isEditMode={isEditMode}
         />
       );
+      break;
+    case 'presence':
+      widgetContent = <PresenceOverviewWidget size={card.size} />;
       break;
     default:
       widgetContent = null;

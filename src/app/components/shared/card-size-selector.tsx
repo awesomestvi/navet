@@ -53,6 +53,13 @@ const sizes: {
     preview: 'w-14 h-7',
   },
   {
+    value: 'medium-vertical',
+    label: 'Medium Vertical',
+    description: '1 × 2',
+    dimensions: 'Tall tile',
+    preview: 'w-7 h-14',
+  },
+  {
     value: 'large',
     label: 'Large',
     description: '2 × 2',
@@ -207,6 +214,8 @@ export function getCardSpanClass(size: CardSize): string {
       return 'col-span-1 row-span-2'; // 1 column × 1 row
     case 'medium':
       return 'col-span-2 row-span-2'; // 2 columns × 1 row
+    case 'medium-vertical':
+      return 'col-span-1 row-span-4'; // 1 column × 2 rows
     case 'large':
       return 'col-span-2 row-span-4'; // 2 columns × 2 rows
     case 'hero':

@@ -400,6 +400,19 @@ class HomeAssistantService {
     );
   }
 
+  async joinMediaPlayers(entityId: string, memberEntityIds: string[]): Promise<void> {
+    await this.callService(
+      'media_player',
+      'join',
+      { group_members: memberEntityIds },
+      { entity_id: entityId }
+    );
+  }
+
+  async unjoinMediaPlayer(entityId: string): Promise<void> {
+    await this.callService('media_player', 'unjoin', {}, { entity_id: entityId });
+  }
+
   /**
    * Turn a camera entity on or off.
    */

@@ -333,11 +333,18 @@ function getMediaSizeOptions(
       preview: 'h-7 w-14',
     },
     {
-      value: 'large',
+      value: 'medium-vertical',
       label: t('media.size.mediumVertical'),
       description: t('media.size.verticalTile'),
       dimensions: '1 x 2',
       preview: 'h-14 w-7',
+    },
+    {
+      value: 'large',
+      label: t('media.size.large'),
+      description: t('media.size.largeTile'),
+      dimensions: '2 x 2',
+      preview: 'h-14 w-14',
     },
   ];
 }

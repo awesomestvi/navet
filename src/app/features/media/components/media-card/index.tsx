@@ -4,6 +4,7 @@ import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-sh
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
+import { MediaLargeView } from '../media/media-large-view';
 import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
 import { MediaMediumView } from '../media/media-medium-view';
 import { MediaSmallView } from '../media/media-small-view';
@@ -27,6 +28,8 @@ interface MediaCardProps {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  supportsGrouping?: boolean;
+  groupMembers?: string[];
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
@@ -34,8 +37,8 @@ interface MediaCardProps {
 
 export const MediaCard = memo(function MediaCard({
   id,
-  name: _name,
-  room: _room,
+  name,
+  room,
   title,
   artist,
   entityPicture,
@@ -45,9 +48,11 @@ export const MediaCard = memo(function MediaCard({
   elapsedSeconds: initialElapsedSeconds,
   durationSeconds: initialDurationSeconds,
   positionUpdatedAt: initialPositionUpdatedAt,
+  supportsGrouping: initialSupportsGrouping,
+  groupMembers: initialGroupMembers,
   size,
   onSizeChange: _onSizeChange,
-  isEditMode: _isEditMode,
+  isEditMode,
 }: MediaCardProps) {
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -62,11 +67,18 @@ export const MediaCard = memo(function MediaCard({
     handleNext,
     handlePrevious,
     handleVolumeChange,
+    groupMembers,
     isOff,
     isPlaying,
     isMuted,
     isOpen,
     openDialog,
+    availableGroupingPlayers,
+    attachGroupMember,
+    detachGroupMember,
+    supportsGrouping,
+    startVolumeInteraction,
+    endVolumeInteraction,
     toggleMute,
     togglePlay,
     volume,
@@ -80,13 +92,16 @@ export const MediaCard = memo(function MediaCard({
     initialElapsedSeconds,
     initialDurationSeconds,
     initialPositionUpdatedAt,
+    initialSupportsGrouping,
+    initialGroupMembers,
   });
   const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
 
   const isSmall = mediaSize === 'small';
   const isMedium = mediaSize === 'medium';
-  const isMediumVertical = mediaSize === 'large';
-  const padding = isSmall ? 'p-4' : isMediumVertical ? 'p-6' : 'p-5';
+  const isMediumVertical = mediaSize === 'medium-vertical';
+  const isLarge = mediaSize === 'large';
+  const padding = isSmall ? 'p-4' : isLarge ? 'p-6' : 'p-5';
   const isLight = theme === 'light';
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
@@ -110,11 +125,27 @@ export const MediaCard = memo(function MediaCard({
   const shellBorder = isOff ? inactiveShellBorder : cardBorder;
   const shellBlur = hasArtwork ? '' : cardShell.backdropClassName;
   const shellOverlayClassName = isOff && !hasArtwork ? null : stateSurface.overlayClassName;
+  const interactiveShellProps = isEditMode
+    ? {}
+    : {
+        role: 'button' as const,
+        tabIndex: 0,
+        onClick: openDialog,
+        onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openDialog();
+          }
+        },
+      };
 
   return (
     <>
       <div
-        className={`relative h-full rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName} overflow-hidden`}
+        {...interactiveShellProps}
+        className={`relative h-full rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName} overflow-hidden ${
+          isEditMode ? '' : 'cursor-pointer'
+        }`}
       >
         {shellOverlayClassName && (
           <div className={`absolute inset-0 ${shellOverlayClassName}`}></div>
@@ -138,6 +169,8 @@ export const MediaCard = memo(function MediaCard({
               onTogglePlay={togglePlay}
               onNext={handleNext}
               onVolumeChange={handleVolumeChange}
+              onVolumeInteractionStart={startVolumeInteraction}
+              onVolumeInteractionEnd={endVolumeInteraction}
               onOpenDialog={openDialog}
             />
           ) : isMedium ? (
@@ -160,8 +193,10 @@ export const MediaCard = memo(function MediaCard({
               onNext={handleNext}
               onToggleMute={toggleMute}
               onVolumeChange={handleVolumeChange}
+              onVolumeInteractionStart={startVolumeInteraction}
+              onVolumeInteractionEnd={endVolumeInteraction}
             />
-          ) : (
+          ) : isMediumVertical ? (
             <MediaMediumVerticalView
               entityId={id}
               artwork={resolvedAlbumArt}
@@ -180,8 +215,35 @@ export const MediaCard = memo(function MediaCard({
               onTogglePlay={togglePlay}
               onNext={handleNext}
               onVolumeChange={handleVolumeChange}
+              onVolumeInteractionStart={startVolumeInteraction}
+              onVolumeInteractionEnd={endVolumeInteraction}
             />
-          )}
+          ) : isLarge ? (
+            <MediaLargeView
+              entityId={id}
+              artwork={resolvedAlbumArt}
+              onArtworkError={handleArtworkError}
+              title={title}
+              artist={artist}
+              playerName={name}
+              room={room}
+              isActive={!isOff}
+              isPlaying={isPlaying}
+              volume={volume}
+              isMuted={isMuted}
+              elapsedSeconds={elapsedSeconds}
+              durationSeconds={durationSeconds}
+              theme={theme}
+              onOpenDialog={openDialog}
+              onPrevious={handlePrevious}
+              onTogglePlay={togglePlay}
+              onNext={handleNext}
+              onToggleMute={toggleMute}
+              onVolumeChange={handleVolumeChange}
+              onVolumeInteractionStart={startVolumeInteraction}
+              onVolumeInteractionEnd={endVolumeInteraction}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -200,11 +262,18 @@ export const MediaCard = memo(function MediaCard({
             isMuted={isMuted}
             elapsedSeconds={elapsedSeconds}
             durationSeconds={durationSeconds}
+            supportsGrouping={supportsGrouping}
+            groupMembers={groupMembers}
+            availableGroupingPlayers={availableGroupingPlayers}
             onPrevious={handlePrevious}
             onTogglePlay={togglePlay}
             onNext={handleNext}
             onToggleMute={toggleMute}
             onVolumeChange={handleVolumeChange}
+            onVolumeInteractionStart={startVolumeInteraction}
+            onVolumeInteractionEnd={endVolumeInteraction}
+            onAttachGroupMember={attachGroupMember}
+            onDetachGroupMember={detachGroupMember}
           />
         </Suspense>
       )}

@@ -15,6 +15,7 @@ export const DEVICES: DeviceCollection = {
   switches: [],
   covers: [],
   locks: [],
+  scenes: [],
   persons: [],
   sensors: [],
   cameras: [],

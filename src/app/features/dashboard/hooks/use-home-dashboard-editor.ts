@@ -33,6 +33,7 @@ const widgetTypeLabels: Record<CustomCard['type'], string> = {
   note: 'Note widget',
   battery: 'Battery widget',
   button: 'Button widget',
+  presence: 'Presence widget',
 };
 
 interface UseHomeDashboardEditorParams {

@@ -16,5 +16,5 @@ export { CustomScrollbar } from './custom-scrollbar';
 export { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 export { DialogHeader } from './dialog-header';
 export { DialogSectionRow } from './dialog-section-row';
-export { IconPicker } from './icon-picker';
+export { DEVICE_EDITOR_ICON_OPTIONS, getNamedIconComponent, IconPicker } from './icon-picker';
 export { KelvinSlider } from './kelvin-slider';

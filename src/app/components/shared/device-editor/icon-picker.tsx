@@ -75,6 +75,12 @@ const lightIcons = [
   labelKey: TranslationKey;
 }>;
 
+export const DEVICE_EDITOR_ICON_OPTIONS = lightIcons;
+
+export function getNamedIconComponent(iconName: string) {
+  return lightIcons.find((icon) => icon.name === iconName)?.component ?? Zap;
+}
+
 export const IconPicker = memo(function IconPicker({
   selectedIcon,
   onIconChange,

@@ -324,15 +324,15 @@ The Dashboard Builder (`/mock` section) lets users compose their Home screen fro
 | `flow` | All cards in a single responsive masonry grid — the simplest layout |
 | `sectioned` | Cards organised into named sections (rows and column groups) |
 
-Switching to `sectioned` mode auto-creates the first section if none exist. Sections can be renamed inline, removed individually, and split into column arrangements via "Add column" or stacked vertically within the same column block via "Add below".
+Switching to `sectioned` mode auto-creates the first section if none exist. Sections can be renamed inline, removed individually, split into column arrangements via "Add column", stacked vertically within the same column block via "Add below", and resized horizontally via ← → controls in the section header.
 
 ### Section Stacking
 
-Sections support a `stackUnder` relationship: a section with `stackUnder` set to another section's ID is rendered directly below that parent section, sharing its column span, rather than flowing into the next row. This allows vertical stacks of sections inside a single column slot.
+Sections in the same column slot are grouped into vertical stacks by `buildSectionStacks` (in `home-dashboard-overview.tsx`). A stack is formed when two sections share the same `x` coordinate and `span` value across consecutive `y` rows.
 
-- **Add below** — creates a new section stacked under the selected section
-- Stack membership is preserved when spans are reordered or sections are removed (orphaned children fall back to the nearest surviving ancestor or become top-level)
-- `getSectionBlock` / `mergeTopLevelSections` in `use-home-dashboard-layout.ts` manage block integrity
+- **Add below** — creates a new section stacked directly below the selected section, inheriting its column span
+- All sections in a stack share the same column width; resizing one resizes the entire stack column
+- `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates
 
 ### Floating Library Panel
 
@@ -344,14 +344,21 @@ The card library is a draggable floating panel (`useLibraryPanel`) that overlays
 - **Add card** — places the card into the first available section (sectioned mode) or the flow canvas
 - **Drag to place** — cards can be dragged from the library panel directly onto a canvas drop zone
 
-### Section Partitioning
+### Section Layout Engine
 
-Top-level sections in `sectioned` mode are laid out in rows. The `partitionSectionRows` algorithm (in `use-home-dashboard-layout.ts`) enforces two hard constraints:
+Top-level sections in `sectioned` mode are positioned on a **12-column grid** defined in `src/app/features/dashboard/utils/layout-engine.ts`.
 
-- Maximum **4 sections per row**
-- Maximum combined span of **8 columns** per row
+| Constant | Value | Meaning |
+|---|---|---|
+| `SECTION_LAYOUT_COLUMNS` | `12` | Total grid columns |
+| `SECTION_MAX_PER_ROW` | `4` | Maximum sections in one row |
+| `SECTION_RESIZE_SNAP` | `3` | Column increment for resize (12 ÷ 4) |
 
-Each section carries a `HomeDashboardSectionSpan` value that controls how many grid columns it occupies. Sections that would overflow the row start a new row automatically. Stacked sections (`stackUnder` set) are excluded from row partitioning and rendered inside their parent's column block instead.
+Each section is stored as a `SectionLayoutItem` with `x`, `y`, `w`, and `h` coordinates. The layout engine functions (`insertSectionRow`, `insertSectionBelow`, `removeSectionFromLayout`, `rebalanceRow`, `compactRows`) mutate these coordinates and are called by `useHomeDashboardLayout`.
+
+**Section resizing** snaps widths to multiples of `SECTION_RESIZE_SNAP` (i.e. 3, 6, 9, or 12 columns). When one section grows by one snap unit, its row neighbor shrinks by the same amount, keeping the row sum constant. The resize action is exposed as `resizeSection(sectionId, newW)` from `useHomeDashboardLayout` and triggered by ← → buttons in each section's header (shown only when `rowSiblingCount > 1`).
+
+`buildSectionStacks` (in `home-dashboard-overview.tsx`) groups the flat section list into a `rowStacks` structure for rendering — each row is an array of stacks, each stack an array of sections sharing the same column slot.
 
 ### Hook Architecture
 
@@ -360,7 +367,7 @@ Each section carries a `HomeDashboardSectionSpan` value that controls how many g
 | `useHomeDashboardEditor` | `hooks/use-home-dashboard-editor.ts` | Card map construction, library card list, `sectionCards` (HomeEditorSection[]), flow card list, library search/filtering, summary stats |
 | `useDashboardDragState` | `hooks/use-dashboard-drag-state.ts` | dnd-kit sensors, active drag card/size, `handleDragOver`, `handleDragEnd`, drop-meta resolution |
 | `useLibraryPanel` | `hooks/use-library-panel.ts` | Floating panel position, drag-to-reposition, visibility/collapse toggles, resize-responsive repositioning |
-| `useHomeDashboardLayout` | `hooks/use-home-dashboard-layout.ts` | Persisted layout state — card IDs, section assignments, layout mode, hero visibility; exports `partitionSectionRows` |
+| `useHomeDashboardLayout` | `hooks/use-home-dashboard-layout.ts` | Persisted layout state — card IDs, section assignments, layout mode, hero visibility; exposes `addSection`, `addColumnSection`, `addSectionBelow`, `removeSection`, `renameSection`, `resizeSection`, `addCard`, `removeCard`, `moveCard`, `setMode` |
 
 ### Summary Stats
 
@@ -714,6 +721,7 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 - [x] PWA installation support
 - [x] Security section: full camera card with snapshot display, power toggle, refresh, and sibling entity settings dialog
 - [x] Dashboard Builder: flow and sectioned layout modes, floating card library panel, drag-and-drop from library to canvas
+- [x] Section resize with snap widths: ← → controls in section headers snap column widths to multiples of 3 (out of 12); neighbor section compensates automatically; controls hidden on single-column rows
 - [x] Energy dashboard: live HA data, statistics, setup panel, device tracking, SVG chart primitives
 
 ### Planned
@@ -893,7 +901,7 @@ Controller hook for the Dashboard Builder edit canvas. Accepts the current `devi
 **Returns**:
 - `allCards` — unified `Map<id, DeviceWithType | CustomCard>` combining devices and widgets
 - `flowCards` — IDs of cards not assigned to any section (used in `flow` mode and as overflow in `sectioned` mode)
-- `sectionRows` — sections partitioned into rows obeying the 4-per-row / span-8 constraints
+- `sectionCards` — sections as `HomeEditorSection[]` (id, title, span, x, y, cardIds), consumed by `buildSectionStacks` in the render layer
 - `activeDragCard` / `setActiveDragCard` — active drag overlay state
 - `activeDragSize` — resolved size of the card currently being dragged (for the `DragOverlay`)
 - `sensors` — pre-configured dnd-kit sensors (pointer with 8px activation threshold + keyboard)

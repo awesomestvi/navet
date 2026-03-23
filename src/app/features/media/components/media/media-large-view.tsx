@@ -1,0 +1,301 @@
+import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
+import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { useI18n } from '@/app/hooks';
+import type { ThemeType } from '@/app/hooks/use-theme';
+import { MediaArtworkSurface } from './media-artwork-surface';
+import { MediaMarqueeText } from './media-marquee-text';
+import { formatMediaTime } from './media-time';
+import { MediaVisualizerButton } from './media-visualizer-button';
+import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+
+interface MediaLargeViewProps {
+  entityId: string;
+  artwork?: string | null;
+  onArtworkError?: (imageUrl?: string | null) => void;
+  title: string;
+  artist: string;
+  playerName: string;
+  room: string;
+  isActive: boolean;
+  isPlaying: boolean;
+  volume: number;
+  isMuted: boolean;
+  elapsedSeconds: number;
+  durationSeconds: number;
+  theme: ThemeType;
+  onOpenDialog: () => void;
+  onPrevious: () => void;
+  onTogglePlay: () => void;
+  onNext: () => void;
+  onToggleMute: () => void;
+  onVolumeChange: (value: number) => void;
+  onVolumeInteractionStart: () => void;
+  onVolumeInteractionEnd: () => void;
+}
+
+export function MediaLargeView({
+  entityId,
+  artwork,
+  onArtworkError,
+  title,
+  artist,
+  playerName,
+  room,
+  isActive,
+  isPlaying,
+  volume,
+  isMuted,
+  elapsedSeconds,
+  durationSeconds,
+  theme,
+  onOpenDialog,
+  onPrevious,
+  onTogglePlay,
+  onNext,
+  onToggleMute,
+  onVolumeChange,
+  onVolumeInteractionStart,
+  onVolumeInteractionEnd,
+}: MediaLargeViewProps) {
+  const { t } = useI18n();
+  const stateSurface = getCardStateSurfaceTokens(theme, isActive);
+  const palette = useMediaArtworkColors(artwork, theme, `${entityId}::${title}::${artist}`);
+  const iconTone = stateSurface.primaryTextClassName;
+  const subtitleTone = stateSurface.secondaryTextClassName;
+  const displayVolume = Math.max(0, Math.min(100, isMuted ? 0 : volume));
+  const elapsedLabel = formatMediaTime(Math.max(0, elapsedSeconds));
+  const remainingLabel = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
+  const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const controlSizes = getCardActionControlSizes('small');
+  const primaryControlSizes = getCardActionControlSizes('large');
+  const subduedFallback = !artwork;
+  const neutralButtonStyle = {
+    backgroundColor: withAlpha(palette.darkMuted, 0.18),
+    borderColor: withAlpha(palette.highlight, 0.14),
+    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.12)}`,
+  };
+  const playButtonStyle = {
+    background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.34)} 0%, ${withAlpha(
+      palette.vibrant,
+      0.62
+    )} 100%)`,
+    borderColor: withAlpha(palette.highlight, 0.22),
+    boxShadow: `0 18px 42px -18px ${withAlpha(palette.vibrant, 0.7)}, inset 0 1px 0 ${withAlpha(
+      palette.highlight,
+      0.22
+    )}`,
+  };
+  const playGlowStyle = {
+    background: `radial-gradient(circle, ${withAlpha(palette.vibrant, 0.48)} 0%, ${withAlpha(
+      palette.highlight,
+      0.18
+    )} 38%, transparent 74%)`,
+  };
+  const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
+  const trackFillStyle = {
+    background: `linear-gradient(90deg, ${palette.highlight} 0%, ${palette.vibrant} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(palette.vibrant, 0.26)}`,
+  };
+  const trackThumbStyle = {
+    backgroundColor: palette.highlight,
+    boxShadow: `0 0 0 1px ${withAlpha(palette.highlight, 0.2)}, 0 0 14px ${withAlpha(
+      palette.vibrant,
+      0.32
+    )}`,
+  };
+
+  return (
+    <div className="relative -m-6 flex h-[calc(100%+3rem)] flex-col overflow-hidden rounded-[inherit]">
+      <MediaArtworkSurface
+        artwork={artwork}
+        onArtworkError={onArtworkError}
+        palette={palette}
+        layout="stacked"
+        artRegionClassName="h-[42%]"
+        imagePaddingClassName=""
+        imageClassName="object-cover object-top"
+        subduedFallback={!artwork && !isActive}
+      />
+
+      <div className="relative z-[1] flex h-full flex-col">
+        <div className="h-[42%]" />
+
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}>
+                {playerName}
+              </div>
+              <div className={`truncate text-xs ${subtitleTone}`}>{room || t('media.room')}</div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <MediaVisualizerButton
+                isPlaying={isPlaying}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenDialog();
+                }}
+                className={iconTone}
+              />
+              <span className={`text-[11px] ${subtitleTone}`}>-{remainingLabel}</span>
+            </div>
+          </div>
+
+          <div className="mt-3 min-w-0">
+            <MediaMarqueeText text={title} className={`text-lg font-semibold ${iconTone}`} />
+            <MediaMarqueeText
+              text={artist}
+              className={`mt-1 text-sm ${subtitleTone}`}
+              threshold={28}
+            />
+          </div>
+
+          <div className="mt-3">
+            <div className="relative">
+              <div
+                className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+                style={trackBaseStyle}
+              />
+              <div
+                className="absolute left-0 top-1/2 h-px -translate-y-1/2"
+                style={{
+                  ...trackFillStyle,
+                  width:
+                    durationSeconds > 0
+                      ? `${Math.max(0, Math.min(100, (elapsedSeconds / durationSeconds) * 100))}%`
+                      : '0%',
+                }}
+              />
+            </div>
+            <div className={`mt-1.5 flex items-center justify-between text-[11px] ${subtitleTone}`}>
+              <span>{elapsedLabel}</span>
+              <span>{durationLabel}</span>
+            </div>
+          </div>
+
+          <div className="mt-auto flex shrink-0 items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={t('media.previousTrack')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPrevious();
+                }}
+                className="border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
+                style={neutralButtonStyle}
+              >
+                <SkipBack className={controlSizes.icon} />
+              </RoundControlButton>
+
+              <div className="relative">
+                {!subduedFallback && (
+                  <div
+                    className="pointer-events-none absolute inset-[-28%] rounded-full blur-3xl"
+                    style={playGlowStyle}
+                  />
+                )}
+                <RoundControlButton
+                  theme={theme}
+                  size="large"
+                  variant="emphasis"
+                  aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTogglePlay();
+                  }}
+                  className={`h-12 w-12 hover:scale-[1.03] active:scale-95 ${
+                    subduedFallback ? '' : 'border backdrop-blur-xl'
+                  }`}
+                  iconClassName={subduedFallback ? undefined : '!text-white'}
+                  style={subduedFallback ? undefined : playButtonStyle}
+                >
+                  {isPlaying ? (
+                    <Pause className={primaryControlSizes.icon} fill="currentColor" />
+                  ) : (
+                    <Play className={primaryControlSizes.icon} fill="currentColor" />
+                  )}
+                </RoundControlButton>
+              </div>
+
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={t('media.nextTrack')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onNext();
+                }}
+                className="border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
+                style={neutralButtonStyle}
+              >
+                <SkipForward className={controlSizes.icon} />
+              </RoundControlButton>
+            </div>
+
+            <div className="flex min-w-[34%] items-center gap-1.5">
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleMute();
+                }}
+                className="border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
+                style={neutralButtonStyle}
+              >
+                {isMuted ? (
+                  <VolumeX className={controlSizes.icon} />
+                ) : (
+                  <Volume2 className={controlSizes.icon} />
+                )}
+              </RoundControlButton>
+
+              <div className="relative flex-1">
+                <div
+                  className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+                  style={trackBaseStyle}
+                />
+                <div
+                  className="absolute left-0 top-1/2 h-px -translate-y-1/2"
+                  style={{ ...trackFillStyle, width: `${displayVolume}%` }}
+                />
+                <div
+                  className="absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
+                  style={{ ...trackThumbStyle, left: `calc(${displayVolume}% - 5px)` }}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={displayVolume}
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={onVolumeInteractionStart}
+                  onTouchStart={onVolumeInteractionStart}
+                  onKeyDown={onVolumeInteractionStart}
+                  onMouseUp={onVolumeInteractionEnd}
+                  onTouchEnd={onVolumeInteractionEnd}
+                  onKeyUp={onVolumeInteractionEnd}
+                  onBlur={onVolumeInteractionEnd}
+                  onChange={(event) => onVolumeChange(parseInt(event.target.value, 10))}
+                  className="absolute inset-0 h-6 w-full -translate-y-1/2 cursor-pointer opacity-0"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
@@ -19,6 +19,8 @@ interface UseMediaCardControllerParams {
   initialElapsedSeconds?: number;
   initialDurationSeconds?: number;
   initialPositionUpdatedAt?: string;
+  initialSupportsGrouping?: boolean;
+  initialGroupMembers?: string[];
 }
 
 function isFailedArtworkCandidate(
@@ -38,10 +40,13 @@ export function useMediaCardController({
   initialElapsedSeconds,
   initialDurationSeconds,
   initialPositionUpdatedAt,
+  initialSupportsGrouping = false,
+  initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
   const { config: authConfig } = useAuth();
   const { t } = useI18n();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
+  const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const [state, setState] = useState(initialState);
   const [volume, setVolume] = useState(initialVolume);
   const [isMuted, setIsMuted] = useState(initialMuted);
@@ -51,6 +56,13 @@ export function useMediaCardController({
   const [durationSeconds, setDurationSeconds] = useState(initialDurationSeconds ?? 0);
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
   const [resolvedAlbumArt, setResolvedAlbumArt] = useState<string | null>(null);
+  const [supportsGrouping, setSupportsGrouping] = useState(initialSupportsGrouping);
+  const [groupMembers, setGroupMembers] = useState<string[]>(
+    initialGroupMembers.length > 0 ? initialGroupMembers : [entityId]
+  );
+  const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
+  const pendingVolumeRef = useRef<number | null>(null);
+  const volumeCommitTimeoutRef = useRef<number | null>(null);
 
   // Derive playback fields from liveEntity when available, fall back to initial props.
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
@@ -86,22 +98,37 @@ export function useMediaCardController({
         typeof attrs.media_duration === 'number'
           ? attrs.media_duration
           : (initialDurationSeconds ?? 0);
+      const nextSupportedFeatures =
+        typeof attrs.supported_features === 'number' ? attrs.supported_features : 0;
+      const nextGroupMembers = Array.isArray(attrs.group_members)
+        ? attrs.group_members.filter(
+            (value): value is string => typeof value === 'string' && value.length > 0
+          )
+        : [];
       setState(nextState);
       setElapsedSeconds(nextElapsed);
       setDurationSeconds(nextDuration);
-      setVolume(nextVolume);
-      if (nextVolume > 0) setPreviousVolume(nextVolume);
-      setIsMuted(nextMuted);
+      if (!isAdjustingVolume) {
+        setVolume(nextVolume);
+        if (nextVolume > 0) setPreviousVolume(nextVolume);
+        setIsMuted(nextMuted);
+      }
+      setSupportsGrouping((nextSupportedFeatures & 524288) === 524288);
+      setGroupMembers(nextGroupMembers.length > 0 ? nextGroupMembers : [entityId]);
       return;
     }
     setState(initialState);
     setElapsedSeconds(initialElapsedSeconds ?? 0);
     setDurationSeconds(initialDurationSeconds ?? 0);
-    setVolume(initialVolume);
-    if (initialVolume > 0) {
-      setPreviousVolume(initialVolume);
+    if (!isAdjustingVolume) {
+      setVolume(initialVolume);
+      if (initialVolume > 0) {
+        setPreviousVolume(initialVolume);
+      }
+      setIsMuted(initialMuted || initialVolume === 0);
     }
-    setIsMuted(initialMuted || initialVolume === 0);
+    setSupportsGrouping(initialSupportsGrouping);
+    setGroupMembers(initialGroupMembers.length > 0 ? initialGroupMembers : [entityId]);
   }, [
     liveEntity,
     initialState,
@@ -109,6 +136,10 @@ export function useMediaCardController({
     initialMuted,
     initialElapsedSeconds,
     initialDurationSeconds,
+    initialSupportsGrouping,
+    initialGroupMembers,
+    entityId,
+    isAdjustingVolume,
   ]);
 
   // Artwork key changing means a new track — reset failed URL then resolve new artwork.
@@ -122,6 +153,23 @@ export function useMediaCardController({
   }, [artworkRequestKey, fallbackArtwork, failedArtworkUrl]);
 
   const isPlaying = state === 'playing';
+  const availableGroupingPlayers = Object.values(entities ?? {})
+    .filter(
+      (entity): entity is NonNullable<typeof entity> =>
+        Boolean(entity) &&
+        entity.entity_id.startsWith('media_player.') &&
+        entity.entity_id !== entityId &&
+        typeof entity.attributes?.supported_features === 'number' &&
+        (entity.attributes.supported_features & 524288) === 524288
+    )
+    .map((entity) => ({
+      id: entity.entity_id,
+      name:
+        typeof entity.attributes?.friendly_name === 'string' && entity.attributes.friendly_name
+          ? entity.attributes.friendly_name
+          : entity.entity_id,
+      isAttached: groupMembers.includes(entity.entity_id),
+    }));
 
   useEffect(() => {
     if (!isPlaying) {
@@ -166,6 +214,14 @@ export function useMediaCardController({
       window.clearInterval(timerId);
     };
   }, [durationSeconds, liveAttrs, initialElapsedSeconds, initialPositionUpdatedAt, isPlaying]);
+
+  useEffect(() => {
+    return () => {
+      if (volumeCommitTimeoutRef.current !== null) {
+        window.clearTimeout(volumeCommitTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const runAction = useCallback(async (action: () => Promise<void>, errorMessage: string) => {
     try {
@@ -215,24 +271,51 @@ export function useMediaCardController({
 
       if (nextVolume > 0 && isMuted) {
         setIsMuted(false);
-        void runAction(
-          () => homeAssistantService.setMediaPlayerVolume(entityId, nextVolume),
-          t('media.feedback.updateVolumeFailed')
-        );
-        return;
-      }
-
-      if (nextVolume === 0) {
+      } else if (nextVolume === 0) {
         setIsMuted(true);
       }
 
-      void runAction(
-        () => homeAssistantService.setMediaPlayerVolume(entityId, nextVolume),
-        t('media.feedback.updateVolumeFailed')
-      );
+      pendingVolumeRef.current = nextVolume;
+      if (volumeCommitTimeoutRef.current !== null) {
+        window.clearTimeout(volumeCommitTimeoutRef.current);
+      }
+      volumeCommitTimeoutRef.current = window.setTimeout(() => {
+        const pendingVolume = pendingVolumeRef.current;
+        volumeCommitTimeoutRef.current = null;
+        if (pendingVolume === null) {
+          return;
+        }
+        void runAction(
+          () => homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume),
+          t('media.feedback.updateVolumeFailed')
+        );
+      }, 120);
     },
     [entityId, isMuted, runAction, t]
   );
+
+  const startVolumeInteraction = useCallback(() => {
+    setIsAdjustingVolume(true);
+  }, []);
+
+  const endVolumeInteraction = useCallback(() => {
+    setIsAdjustingVolume(false);
+    if (volumeCommitTimeoutRef.current !== null) {
+      window.clearTimeout(volumeCommitTimeoutRef.current);
+      volumeCommitTimeoutRef.current = null;
+    }
+
+    const pendingVolume = pendingVolumeRef.current;
+    pendingVolumeRef.current = null;
+    if (pendingVolume === null) {
+      return;
+    }
+
+    void runAction(
+      () => homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume),
+      t('media.feedback.updateVolumeFailed')
+    );
+  }, [entityId, runAction, t]);
 
   const openDialog = useCallback(() => {
     setIsOpen(true);
@@ -256,6 +339,37 @@ export function useMediaCardController({
     );
   }, [entityId, runAction, t]);
 
+  const attachGroupMember = useCallback(
+    (memberEntityId: string) => {
+      const nextGroupMembers = [...new Set([...groupMembers, memberEntityId])].filter(
+        (memberId) => memberId !== entityId
+      );
+      if (nextGroupMembers.length === 0) {
+        return;
+      }
+
+      void runAction(
+        () => homeAssistantService.joinMediaPlayers(entityId, nextGroupMembers),
+        t('media.feedback.groupAttachFailed')
+      );
+    },
+    [entityId, groupMembers, runAction, t]
+  );
+
+  const detachGroupMember = useCallback(
+    (memberEntityId: string) => {
+      if (memberEntityId === entityId) {
+        return;
+      }
+
+      void runAction(
+        () => homeAssistantService.unjoinMediaPlayer(memberEntityId),
+        t('media.feedback.groupDetachFailed')
+      );
+    },
+    [entityId, runAction, t]
+  );
+
   const handleArtworkError = useCallback((imageUrl?: string | null) => {
     if (!imageUrl) {
       return;
@@ -267,9 +381,14 @@ export function useMediaCardController({
 
   return {
     albumArt: resolvedAlbumArt,
+    attachGroupMember,
+    availableGroupingPlayers,
     closeDialog,
+    detachGroupMember,
     durationSeconds,
     elapsedSeconds,
+    endVolumeInteraction,
+    groupMembers,
     handleArtworkError,
     handleNext,
     handlePrevious,
@@ -279,6 +398,8 @@ export function useMediaCardController({
     isOpen,
     isPlaying,
     openDialog,
+    startVolumeInteraction,
+    supportsGrouping,
     toggleMute,
     togglePlay,
     volume,

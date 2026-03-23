@@ -13,6 +13,7 @@ export interface SectionLayoutItem extends GridItemLayout {
 export const SECTION_LAYOUT_COLUMNS = 12;
 export const SECTION_MIN_WIDTH = 1;
 export const SECTION_MAX_PER_ROW = 4;
+export const SECTION_RESIZE_SNAP = SECTION_LAYOUT_COLUMNS / SECTION_MAX_PER_ROW; // 3
 
 export function clampWidth(width: number, maxColumns = SECTION_LAYOUT_COLUMNS) {
   return Math.min(maxColumns, Math.max(SECTION_MIN_WIDTH, Math.round(width)));

@@ -18,6 +18,7 @@ export const useDashboardDevices = (
       switches: devices.switches.filter((device) => !hiddenIds.has(device.id)),
       covers: devices.covers.filter((device) => !hiddenIds.has(device.id)),
       locks: devices.locks.filter((device) => !hiddenIds.has(device.id)),
+      scenes: devices.scenes.filter((device) => !hiddenIds.has(device.id)),
       persons: devices.persons.filter((device) => !hiddenIds.has(device.id)),
       sensors: devices.sensors.filter((device) => !hiddenIds.has(device.id)),
       vacuums: devices.vacuums.filter((device) => !hiddenIds.has(device.id)),

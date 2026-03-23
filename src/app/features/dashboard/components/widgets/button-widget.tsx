@@ -1,8 +1,12 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { Settings2, Zap } from 'lucide-react';
+import { Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  DEVICE_EDITOR_ICON_OPTIONS,
+  DialogHeader,
+  getNamedIconComponent,
+} from '@/app/components/shared/device-editor';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -12,6 +16,8 @@ export interface ButtonWidgetData {
   label?: string;
   service?: string;
   entityId?: string;
+  icon?: string;
+  serviceData?: Record<string, unknown>;
 }
 
 interface ButtonWidgetProps {
@@ -31,23 +37,52 @@ function ButtonSettingsDialog({
   data: ButtonWidgetData;
   onSave: (data: ButtonWidgetData) => void;
 }) {
-  const { theme } = useTheme();
+  const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme);
+  const accentHex = getThemeColorValue(primaryColor);
   const [label, setLabel] = useState(data.label ?? '');
   const [service, setService] = useState(data.service ?? '');
   const [entityId, setEntityId] = useState(data.entityId ?? '');
+  const [selectedIcon, setSelectedIcon] = useState(data.icon ?? 'Zap');
+  const [iconQuery, setIconQuery] = useState('');
+  const [serviceData, setServiceData] = useState(
+    data.serviceData ? JSON.stringify(data.serviceData, null, 2) : ''
+  );
 
   const handleSave = () => {
+    let parsedServiceData: Record<string, unknown> | undefined;
+
+    if (serviceData.trim()) {
+      try {
+        const parsed = JSON.parse(serviceData);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          toast.error(t('widgets.button.invalidServiceData'));
+          return;
+        }
+        parsedServiceData = parsed as Record<string, unknown>;
+      } catch {
+        toast.error(t('widgets.button.invalidServiceData'));
+        return;
+      }
+    }
+
     onSave({
       label: label.trim() || undefined,
       service: service.trim() || undefined,
       entityId: entityId.trim() || undefined,
+      icon: selectedIcon,
+      serviceData: parsedServiceData,
     });
     onOpenChange(false);
   };
 
   const inputClass = `w-full rounded-xl border px-3 py-2 text-sm outline-none ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:opacity-40`;
+  const filteredIcons = iconQuery.trim()
+    ? DEVICE_EDITOR_ICON_OPTIONS.filter((icon) =>
+        `${icon.name} ${t(icon.labelKey)}`.toLowerCase().includes(iconQuery.trim().toLowerCase())
+      )
+    : DEVICE_EDITOR_ICON_OPTIONS;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
@@ -80,6 +115,58 @@ function ButtonSettingsDialog({
               placeholder={t('widgets.button.entityPlaceholder')}
               className={inputClass}
             />
+            <textarea
+              value={serviceData}
+              onChange={(e) => setServiceData(e.target.value)}
+              placeholder={t('widgets.button.serviceDataPlaceholder')}
+              className={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
+            />
+
+            <div className="space-y-3">
+              <div className={`text-xs font-medium ${surface.textSecondary}`}>
+                {t('widgets.button.iconLabel')}
+              </div>
+              <div className="relative">
+                <Search
+                  className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${surface.textMuted}`}
+                />
+                <input
+                  type="text"
+                  value={iconQuery}
+                  onChange={(e) => setIconQuery(e.target.value)}
+                  placeholder={t('widgets.button.iconSearchPlaceholder')}
+                  className={`${inputClass} pl-10`}
+                />
+              </div>
+              <div className="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto pr-1">
+                {filteredIcons.map((icon) => {
+                  const IconComponent = icon.component;
+                  const isSelected = selectedIcon === icon.name;
+                  return (
+                    <button
+                      type="button"
+                      key={icon.name}
+                      onClick={() => setSelectedIcon(icon.name)}
+                      className={`flex aspect-square items-center justify-center rounded-2xl border transition-all ${
+                        isSelected ? '' : `${surface.borderClassName} ${surface.textMuted}`
+                      }`}
+                      style={
+                        isSelected
+                          ? {
+                              borderColor: `${accentHex}88`,
+                              backgroundColor: `${accentHex}22`,
+                              color: accentHex,
+                            }
+                          : undefined
+                      }
+                      title={t(icon.labelKey)}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <button
@@ -103,6 +190,7 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   const [isSettingsOpen, setIsSettingsOpen] = useState(!data.service);
   const [isPressed, setIsPressed] = useState(false);
   const accentHex = getThemeColorValue(primaryColor);
+  const IconComponent = getNamedIconComponent(data.icon ?? 'Zap');
 
   const handleTap = async () => {
     if (isEditMode || !data.service) return;
@@ -116,11 +204,11 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
       await homeAssistantService.callService(
         domain,
         service,
-        {},
+        data.serviceData ?? {},
         data.entityId ? { entity_id: data.entityId } : undefined
       );
     } catch {
-      toast.error(`Failed to call ${data.service}`);
+      toast.error(t('widgets.button.callFailed', { service: data.service }));
     }
   };
 
@@ -156,13 +244,20 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
             color: isConfigured ? accentHex : undefined,
           }}
         >
-          <Zap className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
+          <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
         </div>
-        <span
-          className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
-        >
-          {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
-        </span>
+        <div className="flex flex-col items-center gap-0.5">
+          <span
+            className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
+          >
+            {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
+          </span>
+          {isConfigured && data.entityId ? (
+            <span className={`max-w-[12rem] truncate text-[11px] ${surface.textMuted}`}>
+              {data.entityId}
+            </span>
+          ) : null}
+        </div>
       </button>
 
       {onUpdate && (

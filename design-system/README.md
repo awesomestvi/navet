@@ -191,7 +191,7 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 | Section | Status |
 |---|---|
-| Home | Live — dashboard builder with flow/sectioned layouts |
+| Home | Live — dashboard builder with flow/sectioned layouts, section resize |
 | Security | Live — camera cards via HA `camera.*` entities |
 | Lights | Live — `AllViewGrid` with all light entities |
 | Media | Live — HA `media_player.*` entity cards |
@@ -201,4 +201,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 22, 2026
+**Last Updated:** March 23, 2026
