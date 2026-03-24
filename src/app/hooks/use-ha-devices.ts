@@ -509,17 +509,25 @@ export const useHADevices = (): DeviceCollection => {
             (typeof entity.attributes?.media_image_url === 'string' &&
               entity.attributes.media_image_url) ||
             undefined;
+          const normalizedState: MediaDevice['state'] =
+            entity.state === 'playing'
+              ? 'playing'
+              : entity.state === 'paused'
+                ? 'paused'
+                : entity.state === 'off' || entity.state === 'standby'
+                  ? 'off'
+                  : 'idle';
           const mediaTitle =
             (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
             (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
-            name;
+            t('media.nothingPlaying');
           const mediaArtist =
             (typeof entity.attributes?.media_artist === 'string' &&
               entity.attributes.media_artist) ||
-            (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
             (typeof entity.attributes?.media_album_name === 'string' &&
               entity.attributes.media_album_name) ||
-            mediaEntityType;
+            (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
+            t('media.nothingPlayingDescription');
           const volumeLevel = parseNumberish(entity.attributes?.volume_level);
           const mediaPosition = parseNumberish(entity.attributes?.media_position);
           const mediaDuration = parseNumberish(entity.attributes?.media_duration);
@@ -532,14 +540,6 @@ export const useHADevices = (): DeviceCollection => {
                 (value): value is string => typeof value === 'string' && value.length > 0
               )
             : [];
-          const normalizedState: MediaDevice['state'] =
-            entity.state === 'playing'
-              ? 'playing'
-              : entity.state === 'paused'
-                ? 'paused'
-                : entity.state === 'off' || entity.state === 'standby'
-                  ? 'off'
-                  : 'idle';
 
           media.push({
             id: entityId,
@@ -548,6 +548,7 @@ export const useHADevices = (): DeviceCollection => {
             size: 'medium',
             title: mediaTitle,
             artist: mediaArtist,
+            entityType: mediaEntityType,
             entityPicture,
             state: normalizedState,
             volume:

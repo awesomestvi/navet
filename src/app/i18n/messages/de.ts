@@ -510,6 +510,8 @@ export const deMessages = {
   'media.group.noAttached': 'Keine weiteren Player sind verbunden',
   'media.group.noAvailable': 'Keine weiteren kompatiblen Player verfügbar',
   'media.artworkAlt': '{title} von {artist}',
+  'media.nothingPlaying': 'Nichts wird abgespielt',
+  'media.nothingPlayingDescription': 'Wähle etwas zum Abspielen',
   'media.feedback.updatePlaybackFailed': 'Medienwiedergabe konnte nicht aktualisiert werden',
   'media.feedback.updateVolumeFailed': 'Medienlautstärke konnte nicht aktualisiert werden',
   'media.feedback.previousTrackFailed': 'Wechsel zum vorherigen Titel fehlgeschlagen',

@@ -17,6 +17,8 @@ interface MediaSmallViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
+  playerName: string;
+  room: string;
   title: string;
   artist: string;
   isActive: boolean;
@@ -38,6 +40,8 @@ export function MediaSmallView({
   entityId,
   artwork,
   onArtworkError,
+  playerName,
+  room,
   title,
   artist,
   isActive,
@@ -95,13 +99,13 @@ export function MediaSmallView({
         )} 42%, ${withAlpha(palette.gradientEnd, 0.2)} 100%)`
       : `radial-gradient(circle at 18% 14%, ${withAlpha(
           palette.highlight,
-          0.12
+          0.2
         )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
           palette.dominant,
-          0.94
-        )} 0%, ${withAlpha(palette.dominant, 0.88)} 42%, ${withAlpha(
+          0.72
+        )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
           palette.gradientEnd,
-          0.94
+          0.68
         )} 100%)`,
   };
   const colorTintStyle = {
@@ -112,16 +116,16 @@ export function MediaSmallView({
         )} 48%, ${withAlpha(palette.darkMuted, 0.18)} 100%)`
       : `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.52)} 0%, ${withAlpha(
           palette.dominant,
-          0.58
-        )} 48%, ${withAlpha(palette.darkMuted, 0.62)} 100%)`,
+          0.3
+        )} 48%, ${withAlpha(palette.darkMuted, 0.34)} 100%)`,
   };
   const readabilityGradientStyle = {
     background: subduedFallback
       ? `linear-gradient(180deg, rgba(0,0,0,0.24) 0%, rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.16) 68%, rgba(0,0,0,0.28) 100%)`
       : `radial-gradient(circle at 50% 46%, ${withAlpha(
           palette.highlight,
-          0.08
-        )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0.16) 42%, rgba(0,0,0,0.28) 68%, rgba(0,0,0,0.46) 100%)`,
+          0.14
+        )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.14) 68%, rgba(0,0,0,0.24) 100%)`,
   };
   const artworkAtmosphereStyle = {
     background: `radial-gradient(circle at 50% 50%, ${withAlpha(
@@ -141,7 +145,7 @@ export function MediaSmallView({
               alt=""
               aria-hidden="true"
               onError={() => onArtworkError?.(artwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-18 saturate-[0.92] contrast-[0.88]"
+              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-36 saturate-[0.98] contrast-[0.94]"
               decoding="async"
             />
             <img
@@ -149,7 +153,7 @@ export function MediaSmallView({
               alt=""
               aria-hidden="true"
               onError={() => onArtworkError?.(artwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-10 blur-[26px] saturate-[1.02]"
+              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-22 blur-[26px] saturate-[1.02]"
               decoding="async"
             />
           </>
@@ -167,18 +171,26 @@ export function MediaSmallView({
       <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
 
       <div className="relative flex h-full flex-col p-4">
-        <div className="flex items-center gap-2.5">
-          <MediaVisualizerButton
-            isPlaying={isPlaying}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenDialog();
-            }}
-            className={iconTone}
-          />
-          {isPlaying && durationSeconds > 0 && (
-            <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
-          )}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}>
+              {playerName}
+            </div>
+            <div className={`truncate text-xs ${subtitleTone}`}>{room || t('media.room')}</div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <MediaVisualizerButton
+              isPlaying={isPlaying}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenDialog();
+              }}
+              className={iconTone}
+            />
+            {isPlaying && durationSeconds > 0 && (
+              <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
+            )}
+          </div>
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-4">

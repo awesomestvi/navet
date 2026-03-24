@@ -510,6 +510,8 @@ export const esMessages = {
   'media.group.noAttached': 'No hay otros reproductores conectados',
   'media.group.noAvailable': 'No hay otros reproductores compatibles disponibles',
   'media.artworkAlt': '{title} de {artist}',
+  'media.nothingPlaying': 'No se está reproduciendo nada',
+  'media.nothingPlayingDescription': 'Elige algo para reproducir',
   'media.feedback.updatePlaybackFailed': 'No se pudo actualizar la reproducción multimedia',
   'media.feedback.updateVolumeFailed': 'No se pudo actualizar el volumen multimedia',
   'media.feedback.previousTrackFailed': 'No se pudo volver a la pista anterior',

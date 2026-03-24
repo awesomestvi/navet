@@ -499,6 +499,8 @@ export const enMessages = {
   'media.group.noAttached': 'No other players are attached',
   'media.group.noAvailable': 'No other compatible players are available',
   'media.artworkAlt': '{title} by {artist}',
+  'media.nothingPlaying': 'Nothing playing',
+  'media.nothingPlayingDescription': 'Choose something to play',
   'media.feedback.updatePlaybackFailed': 'Failed to update media playback',
   'media.feedback.updateVolumeFailed': 'Failed to update media volume',
   'media.feedback.previousTrackFailed': 'Failed to skip to previous track',

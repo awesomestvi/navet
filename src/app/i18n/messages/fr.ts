@@ -513,6 +513,8 @@ export const frMessages = {
   'media.group.noAttached': "Aucun autre lecteur n'est connecté",
   'media.group.noAvailable': "Aucun autre lecteur compatible n'est disponible",
   'media.artworkAlt': '{title} par {artist}',
+  'media.nothingPlaying': 'Aucune lecture en cours',
+  'media.nothingPlayingDescription': 'Choisissez quelque chose à lire',
   'media.feedback.updatePlaybackFailed': 'Impossible de mettre à jour la lecture média',
   'media.feedback.updateVolumeFailed': 'Impossible de mettre à jour le volume média',
   'media.feedback.previousTrackFailed': 'Impossible de revenir à la piste précédente',

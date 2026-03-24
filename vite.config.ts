@@ -220,17 +220,8 @@ export default defineConfig(({ mode }) => {
             return 'react-vendor'
           }
 
-          if (packageName.startsWith('@radix-ui/') || packageName === 'vaul') {
+          if (packageName.startsWith('@radix-ui/')) {
             return 'radix-vendor'
-          }
-
-          if (
-            packageName === 'recharts' ||
-            packageName.startsWith('d3-') ||
-            packageName === 'internmap' ||
-            packageName === 'robust-predicates'
-          ) {
-            return 'charts-vendor'
           }
 
           if (
@@ -247,15 +238,6 @@ export default defineConfig(({ mode }) => {
 
           if (packageName === 'lucide-react') {
             return 'icons-vendor'
-          }
-
-          if (
-            packageName === 'embla-carousel-react' ||
-            packageName === 'react-day-picker' ||
-            packageName === 'cmdk' ||
-            packageName === 'date-fns'
-          ) {
-            return 'ui-vendor'
           }
 
           return 'vendor'

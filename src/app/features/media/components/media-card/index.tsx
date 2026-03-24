@@ -21,6 +21,7 @@ interface MediaCardProps {
   room: string;
   title: string;
   artist: string;
+  entityType?: string;
   entityPicture?: string;
   state: 'playing' | 'paused' | 'idle' | 'off';
   volume: number;
@@ -41,6 +42,7 @@ export const MediaCard = memo(function MediaCard({
   room,
   title,
   artist,
+  entityType,
   entityPicture,
   state,
   volume: initialVolume,
@@ -62,6 +64,8 @@ export const MediaCard = memo(function MediaCard({
     albumArt: resolvedAlbumArt,
     closeDialog,
     durationSeconds,
+    displayArtist,
+    displayTitle,
     elapsedSeconds,
     handleArtworkError,
     handleNext,
@@ -86,6 +90,8 @@ export const MediaCard = memo(function MediaCard({
     entityId: id,
     entityPicture,
     artworkKey: [entityPicture, title, artist].filter(Boolean).join('::'),
+    initialTitle: title,
+    initialArtist: artist,
     initialState: state,
     initialVolume,
     initialMuted,
@@ -157,8 +163,10 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              title={title}
-              artist={artist}
+              playerName={entityType || name}
+              room={room}
+              title={displayTitle}
+              artist={displayArtist}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
@@ -178,8 +186,10 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              title={title}
-              artist={artist}
+              playerName={entityType || name}
+              room={room}
+              title={displayTitle}
+              artist={displayArtist}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
@@ -201,8 +211,10 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              title={title}
-              artist={artist}
+              playerName={entityType || name}
+              room={room}
+              title={displayTitle}
+              artist={displayArtist}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
@@ -223,9 +235,9 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              title={title}
-              artist={artist}
-              playerName={name}
+              title={displayTitle}
+              artist={displayArtist}
+              playerName={entityType || name}
               room={room}
               isActive={!isOff}
               isPlaying={isPlaying}
@@ -255,8 +267,8 @@ export const MediaCard = memo(function MediaCard({
             onOpenChange={closeDialog}
             artwork={resolvedAlbumArt}
             onArtworkError={handleArtworkError}
-            title={title}
-            artist={artist}
+            title={displayTitle}
+            artist={displayArtist}
             isPlaying={isPlaying}
             volume={volume}
             isMuted={isMuted}

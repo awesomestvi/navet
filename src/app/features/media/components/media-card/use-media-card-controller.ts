@@ -13,6 +13,8 @@ interface UseMediaCardControllerParams {
   entityId: string;
   entityPicture?: string;
   artworkKey?: string;
+  initialTitle: string;
+  initialArtist: string;
   initialState: 'playing' | 'paused' | 'idle' | 'off';
   initialVolume: number;
   initialMuted: boolean;
@@ -34,6 +36,8 @@ export function useMediaCardController({
   entityId,
   entityPicture,
   artworkKey,
+  initialTitle,
+  initialArtist,
   initialState,
   initialVolume,
   initialMuted,
@@ -68,6 +72,21 @@ export function useMediaCardController({
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const liveEntityPicture =
     typeof liveAttrs?.entity_picture === 'string' ? liveAttrs.entity_picture : entityPicture;
+  const hasLiveMediaMetadata =
+    typeof liveAttrs?.media_title === 'string' ||
+    typeof liveAttrs?.app_name === 'string' ||
+    typeof liveAttrs?.media_artist === 'string' ||
+    typeof liveAttrs?.media_album_name === 'string' ||
+    typeof liveAttrs?.source === 'string';
+  const displayTitle =
+    (typeof liveAttrs?.media_title === 'string' && liveAttrs.media_title) ||
+    (typeof liveAttrs?.app_name === 'string' && liveAttrs.app_name) ||
+    (hasLiveMediaMetadata ? initialTitle : t('media.nothingPlaying'));
+  const displayArtist =
+    (typeof liveAttrs?.media_artist === 'string' && liveAttrs.media_artist) ||
+    (typeof liveAttrs?.media_album_name === 'string' && liveAttrs.media_album_name) ||
+    (typeof liveAttrs?.source === 'string' && liveAttrs.source) ||
+    (hasLiveMediaMetadata ? initialArtist : t('media.nothingPlayingDescription'));
   const liveArtworkKey =
     typeof liveAttrs?.media_content_id === 'string' ? liveAttrs.media_content_id : artworkKey;
   const artworkRequestKey = [entityId, liveArtworkKey].filter(Boolean).join('::');
@@ -385,6 +404,8 @@ export function useMediaCardController({
     availableGroupingPlayers,
     closeDialog,
     detachGroupMember,
+    displayArtist,
+    displayTitle,
     durationSeconds,
     elapsedSeconds,
     endVolumeInteraction,

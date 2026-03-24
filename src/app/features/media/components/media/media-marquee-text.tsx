@@ -22,9 +22,14 @@ export const MediaMarqueeText = memo(function MediaMarqueeText({
       <div
         className={`flex min-w-max items-center whitespace-nowrap motion-safe:animate-[media-track-marquee_18s_linear_infinite] ${className}`}
       >
-        <span>{text}</span>
-        <span className="px-6 opacity-50">•</span>
-        <span>{text}</span>
+        <span className="flex shrink-0 items-center">
+          <span>{text}</span>
+          <span className="px-6 opacity-50">•</span>
+        </span>
+        <span className="flex shrink-0 items-center">
+          <span>{text}</span>
+          <span className="px-6 opacity-50">•</span>
+        </span>
       </div>
     </div>
   );

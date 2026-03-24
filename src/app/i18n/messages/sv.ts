@@ -505,6 +505,8 @@ export const svMessages = {
   'media.group.noAttached': 'Inga andra spelare är anslutna',
   'media.group.noAvailable': 'Inga andra kompatibla spelare är tillgängliga',
   'media.artworkAlt': '{title} av {artist}',
+  'media.nothingPlaying': 'Inget spelas',
+  'media.nothingPlayingDescription': 'Välj något att spela',
   'media.feedback.updatePlaybackFailed': 'Det gick inte att uppdatera medieuppspelningen',
   'media.feedback.updateVolumeFailed': 'Det gick inte att uppdatera medievolymen',
   'media.feedback.previousTrackFailed': 'Det gick inte att byta till förra spåret',

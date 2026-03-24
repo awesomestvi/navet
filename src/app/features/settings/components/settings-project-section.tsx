@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, Github, Info, LogOut, Scale } from 'lucide-react';
+import { ExternalLink, FileText, GitBranch, Info, LogOut, Scale } from 'lucide-react';
 import { AppReleaseBadge } from '@/app/components/shared/app-release-badge';
 import { APP_VERSION } from '@/app/constants/app-version';
 import { useI18n } from '@/app/hooks';
@@ -60,7 +60,7 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
           rel="noopener noreferrer"
           className={`inline-flex items-center gap-3 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
         >
-          <Github className="h-4 w-4" />
+          <GitBranch className="h-4 w-4" />
           <span>awesomestvi</span>
           <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
         </a>

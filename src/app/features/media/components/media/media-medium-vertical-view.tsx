@@ -15,6 +15,8 @@ interface MediaMediumVerticalViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
+  playerName: string;
+  room: string;
   title: string;
   artist: string;
   isActive: boolean;
@@ -37,6 +39,8 @@ export function MediaMediumVerticalView({
   entityId,
   artwork,
   onArtworkError,
+  playerName,
+  room,
   title,
   artist,
   isActive,
@@ -93,18 +97,26 @@ export function MediaMediumVerticalView({
         <div className="h-[52%]" />
 
         <div className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-5">
-          <div className="flex items-center gap-3">
-            <MediaVisualizerButton
-              isPlaying={isPlaying}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenDialog?.();
-              }}
-              className={iconTone}
-            />
-            {isPlaying && durationSeconds > 0 && (
-              <span className={`text-xs ${subtitleTone}`}>{displayRemaining}</span>
-            )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}>
+                {playerName}
+              </div>
+              <div className={`truncate text-xs ${subtitleTone}`}>{room || t('media.room')}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <MediaVisualizerButton
+                isPlaying={isPlaying}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenDialog?.();
+                }}
+                className={iconTone}
+              />
+              {isPlaying && durationSeconds > 0 && (
+                <span className={`text-xs ${subtitleTone}`}>{displayRemaining}</span>
+              )}
+            </div>
           </div>
 
           <div className="mt-auto flex items-center justify-between gap-4">

@@ -77,6 +77,7 @@ export interface MediaDevice extends BaseDevice {
   room: string;
   title: string;
   artist: string;
+  entityType?: string;
   entityPicture?: string;
   state: 'playing' | 'paused' | 'idle' | 'off';
   volume: number;

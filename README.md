@@ -92,7 +92,7 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Shared UI Foundation** - Cross-feature pieces such as card sizing, empty states, interaction previews, and theme color helpers live under shared component modules
 - **Shared Visual Primitives** - Cross-theme icon pills and interactive nav/action pills are centralized behind reusable shared primitives instead of feature-level inline theme branches
 - **Shared Card State Styling** - Off/inactive card treatment for light, HVAC, switch, and media cards now resolves through one shared card-state surface token helper
-- **Artwork-Led Media Layouts** - Small, medium, and medium-vertical media cards use artwork-driven layouts with a shared transport-control language
+- **Artwork-Led Media Layouts** - Small, medium, medium-vertical, and large media cards use artwork-driven layouts with shared transport controls, speaker/room headers, and empty-state fallbacks
 - **Single Climate Card Path** - The legacy `ClimateCard` implementation has been removed; climate entities now use `HVACCard` only
 - **Consistent Persistence** - Storage keys plus dashboard/light preference persistence are standardized behind shared helpers and feature stores
 

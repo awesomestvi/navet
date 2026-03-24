@@ -95,6 +95,7 @@ export const renderCard = ({
           room={device.room as string}
           title={device.title as string}
           artist={device.artist as string}
+          entityType={device.entityType as string | undefined}
           entityPicture={device.entityPicture as string | undefined}
           state={device.state as 'playing' | 'paused' | 'idle' | 'off'}
           volume={device.volume as number}

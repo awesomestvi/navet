@@ -14,6 +14,8 @@ interface MediaMediumViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
+  playerName: string;
+  room: string;
   title: string;
   artist: string;
   isActive: boolean;
@@ -37,6 +39,8 @@ export function MediaMediumView({
   entityId,
   artwork,
   onArtworkError,
+  playerName,
+  room,
   title,
   artist,
   isActive,
@@ -111,18 +115,26 @@ export function MediaMediumView({
         <div />
 
         <div className="flex min-w-0 flex-col pl-2 pr-5 py-5">
-          <div className="flex items-center gap-2.5">
-            <MediaVisualizerButton
-              isPlaying={isPlaying}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenDialog();
-              }}
-              className={iconTone}
-            />
-            {isPlaying && durationSeconds > 0 && (
-              <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
-            )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}>
+                {playerName}
+              </div>
+              <div className={`truncate text-xs ${subtitleTone}`}>{room || t('media.room')}</div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <MediaVisualizerButton
+                isPlaying={isPlaying}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenDialog();
+                }}
+                className={iconTone}
+              />
+              {isPlaying && durationSeconds > 0 && (
+                <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
+              )}
+            </div>
           </div>
 
           <div className="mt-auto flex items-end justify-between gap-5">

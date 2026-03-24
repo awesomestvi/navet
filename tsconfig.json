@@ -23,9 +23,8 @@
     "jsx": "react-jsx",
 
     /* Paths */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     /* Type declarations */
