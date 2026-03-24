@@ -103,6 +103,7 @@ export const LightCardSmall = memo(function LightCardSmall({
                 theme={theme}
                 size="extra-small"
                 tone={isOn ? 'default' : 'muted'}
+                variant="soft"
               />
             )}
           </div>

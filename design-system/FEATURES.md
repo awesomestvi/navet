@@ -135,7 +135,7 @@ Recent UI cleanup moved repeated theme logic into shared primitives so cross-the
 
 - **Entity icon pill styles** - centralized under shared theme helpers for all 4 themes
 - **Interactive nav/action pills** - centralized for active/inactive, light/dark/contrast/glass behavior
-- **Round control button** - shared circular action control primitive for card actions across lighting, media, HVAC, security, and vacuum cards
+- **Round control button** - shared circular action control primitive for card actions across lighting, media, HVAC, security, and vacuum cards; supports `neutral`, `soft` (glass/frosted), and `emphasis` variants
 - **Card state surface tokens** - centralized off/inactive card shell, overlay, text, and media-artwork dimming treatment for light, HVAC, switch, and media cards
 - **Theme surface tokens** - still define the shared panel, border, text, and input surfaces used by these primitives
 

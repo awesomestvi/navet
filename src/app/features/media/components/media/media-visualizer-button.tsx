@@ -1,9 +1,11 @@
+import type { CSSProperties, MouseEvent } from 'react';
 import { useI18n } from '@/app/hooks';
 
 interface MediaVisualizerButtonProps {
   isPlaying: boolean;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   className?: string;
+  style?: CSSProperties;
 }
 
 const BAR_DELAYS = ['0ms', '180ms', '320ms', '120ms'];
@@ -12,6 +14,7 @@ export function MediaVisualizerButton({
   isPlaying,
   onClick,
   className = '',
+  style,
 }: MediaVisualizerButtonProps) {
   const { t } = useI18n();
   return (
@@ -21,6 +24,7 @@ export function MediaVisualizerButton({
         aria-label={t('media.openDetails')}
         onClick={onClick}
         className={`flex h-7 w-7 items-center justify-center ${className}`}
+        style={style}
       >
         <span className="flex h-5 items-center gap-[3px]">
           {BAR_DELAYS.map((delay, index) => (

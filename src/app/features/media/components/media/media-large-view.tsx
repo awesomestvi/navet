@@ -219,6 +219,7 @@ export function MediaLargeView({
                   onOpenDialog();
                 }}
                 className={iconTone}
+                style={{ color: textTokens.titleColor }}
               />
               <span className={`text-[11px] ${subtitleTone}`}>-{remainingLabel}</span>
             </div>

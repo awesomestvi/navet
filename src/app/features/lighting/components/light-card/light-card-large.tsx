@@ -142,6 +142,7 @@ export const LightCardLarge = memo(function LightCardLarge({
                 isOn={isOn}
                 onBrightnessChange={onBrightnessCommit}
                 size="large"
+                buttonVariant="soft"
               />
             </div>
           )}
@@ -197,6 +198,7 @@ export const LightCardLarge = memo(function LightCardLarge({
                   theme={theme}
                   size="large"
                   tone={isOn ? 'default' : 'muted'}
+                  variant="soft"
                 />
               }
             />

@@ -126,6 +126,7 @@ export function MediaMediumVerticalView({
                   onOpenDialog?.();
                 }}
                 className={iconTone}
+                style={{ color: textTokens.titleColor }}
               />
               {isPlaying && durationSeconds > 0 && (
                 <span className={`text-xs ${subtitleTone}`}>{displayRemaining}</span>

@@ -7,7 +7,7 @@ import type { ThemeType } from '@/app/hooks/use-theme';
 interface RoundControlButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   theme: ThemeType;
   size?: CardSize | 'large';
-  variant?: 'neutral' | 'emphasis';
+  variant?: 'neutral' | 'soft' | 'emphasis';
   iconClassName?: string;
   className?: string;
   children: ReactNode;
@@ -28,8 +28,18 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
   ) {
     const controlSizes = getCardActionControlSizes(size);
     const styles = getRoundControlStyles(theme);
-    const buttonClasses = variant === 'emphasis' ? styles.emphasisButton : styles.defaultButton;
-    const iconClasses = variant === 'emphasis' ? styles.emphasisIcon : styles.defaultIcon;
+    const buttonClasses =
+      variant === 'emphasis'
+        ? styles.emphasisButton
+        : variant === 'soft'
+          ? styles.softButton
+          : styles.defaultButton;
+    const iconClasses =
+      variant === 'emphasis'
+        ? styles.emphasisIcon
+        : variant === 'soft'
+          ? styles.softIcon
+          : styles.defaultIcon;
 
     return (
       <button

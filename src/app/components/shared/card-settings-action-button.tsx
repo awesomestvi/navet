@@ -9,6 +9,7 @@ interface CardSettingsActionButtonProps extends ButtonHTMLAttributes<HTMLButtonE
   size?: CardSize | 'large';
   className?: string;
   tone?: 'default' | 'muted';
+  variant?: 'neutral' | 'soft';
 }
 
 export function CardSettingsActionButton({
@@ -16,13 +17,14 @@ export function CardSettingsActionButton({
   size = 'medium',
   className = '',
   tone = 'default',
+  variant = 'neutral',
   ...props
 }: CardSettingsActionButtonProps) {
   return (
     <RoundControlButton
       theme={theme}
       size={size}
-      variant="neutral"
+      variant={variant}
       className={`${
         tone === 'muted' ? 'opacity-50' : 'hover:scale-105 active:scale-95'
       } ${className}`}

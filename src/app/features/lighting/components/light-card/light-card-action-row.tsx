@@ -81,6 +81,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
               size={size}
               maxVisible={presetMaxVisible}
               overflow={presetOverflow}
+              buttonVariant="soft"
             />
           </div>
         </>
@@ -92,6 +93,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
             theme={theme}
             size={size}
             tone={isOn ? 'default' : 'muted'}
+            variant="soft"
           />
         ) : undefined
       }

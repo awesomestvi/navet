@@ -200,6 +200,7 @@ export function MediaSmallView({
                 onOpenDialog();
               }}
               className={iconTone}
+              style={{ color: textTokens.titleColor }}
             />
             {isPlaying && durationSeconds > 0 && (
               <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>

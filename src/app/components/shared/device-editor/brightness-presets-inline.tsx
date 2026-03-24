@@ -27,6 +27,7 @@ interface BrightnessPresetsInlineProps {
   size?: CardSize;
   maxVisible?: number;
   overflow?: 'hide' | 'menu';
+  buttonVariant?: 'neutral' | 'soft';
 }
 
 export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
@@ -37,6 +38,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   size = 'medium',
   maxVisible,
   overflow = 'hide',
+  buttonVariant = 'neutral',
 }: BrightnessPresetsInlineProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -53,7 +55,10 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   const activeColor = getBrightnessPresetAccentColor(primaryColor);
   const selectedClasses = `${roundControl.selectedText} ring-2 scale-105`;
   const disabledSelectedClasses = 'cursor-not-allowed text-white ring-2 scale-105 opacity-70';
-  const disabledUnselectedClasses = roundControl.disabledButton;
+  const unselectedClasses =
+    buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
+  const disabledUnselectedClasses =
+    buttonVariant === 'soft' ? roundControl.softDisabledButton : roundControl.disabledButton;
 
   const handlePresetButtonClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -96,7 +101,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
                   : disabledUnselectedClasses
                 : isSelected
                   ? selectedClasses
-                  : `${roundControl.defaultButton} cursor-pointer hover:scale-105 active:scale-95`
+                  : `${unselectedClasses} cursor-pointer hover:scale-105 active:scale-95`
             }`}
           >
             <IconComponent className={iconSize} aria-hidden="true" />
@@ -111,6 +116,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
           onBrightnessChange={onBrightnessChange}
           buttonSize={buttonSize}
           iconSize={iconSize}
+          buttonVariant={buttonVariant}
         />
       )}
     </fieldset>
@@ -124,6 +130,7 @@ interface BrightnessOverflowMenuProps {
   onBrightnessChange: (brightness: number) => void;
   buttonSize: string;
   iconSize: string;
+  buttonVariant: 'neutral' | 'soft';
 }
 
 const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
@@ -133,13 +140,17 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
   onBrightnessChange,
   buttonSize,
   iconSize,
+  buttonVariant,
 }: BrightnessOverflowMenuProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const activeColor = getBrightnessPresetAccentColor(primaryColor);
   const roundControl = getRoundControlStyles(theme);
   const selectedClasses = `${roundControl.selectedText} ring-2 scale-105`;
-  const unselectedClasses = roundControl.defaultButton;
+  const unselectedClasses =
+    buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
+  const disabledTriggerClasses =
+    buttonVariant === 'soft' ? roundControl.softDisabledButton : roundControl.disabledButton;
 
   const handleOverflowButtonClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -159,8 +170,8 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
           aria-label={t('deviceEditor.moreBrightnessPresets')}
           className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
             !isOn
-              ? roundControl.disabledButton
-              : `cursor-pointer ${roundControl.defaultButton} hover:scale-105 active:scale-95`
+              ? disabledTriggerClasses
+              : `cursor-pointer ${unselectedClasses} hover:scale-105 active:scale-95`
           }`}
           onClick={(e) => e.stopPropagation()}
         >
