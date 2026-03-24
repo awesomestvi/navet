@@ -1,47 +1,93 @@
-import { useMemo, useState } from 'react';
-import { useInterval } from '@/app/hooks';
+import { useEffect, useRef, useState } from 'react';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
 
-interface LoadSample {
-  timestamp: number;
-  value: number;
+const REFRESH_MS = 5 * 60 * 1000;
+
+function formatBucketLabel(timestampMs: number, index: number, total: number) {
+  if (index === total - 1) {
+    return 'Now';
+  }
+
+  const date = new Date(timestampMs);
+  return `${date.getHours().toString().padStart(2, '0')}:${date
+    .getMinutes()
+    .toString()
+    .padStart(2, '0')}`;
 }
 
-const SAMPLE_INTERVAL_MS = 15_000;
-const BUCKET_MS = 5 * 60_000;
-const BUCKET_COUNT = 12;
-const MAX_SAMPLE_AGE_MS = BUCKET_MS * BUCKET_COUNT;
+export function useEnergyLoadHistory(
+  entityId: string | undefined,
+  fallbackCurrentLoadW: number
+): EnergySeriesPoint[] {
+  const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-export function useEnergyLoadHistory(currentLoadW: number): EnergySeriesPoint[] {
-  const [samples, setSamples] = useState<LoadSample[]>([]);
-
-  useInterval(() => {
-    const now = Date.now();
-    setSamples((prev) => {
-      const next = [...prev, { timestamp: now, value: currentLoadW }];
-      return next.filter((sample) => now - sample.timestamp <= MAX_SAMPLE_AGE_MS);
-    });
-  }, SAMPLE_INTERVAL_MS);
-
-  return useMemo(() => {
-    const now = Date.now();
-
-    return Array.from({ length: BUCKET_COUNT }, (_, index) => {
-      const bucketEnd = now - (BUCKET_COUNT - 1 - index) * BUCKET_MS;
-      const bucketStart = bucketEnd - BUCKET_MS;
-      const bucketSamples = samples.filter(
-        (sample) => sample.timestamp > bucketStart && sample.timestamp <= bucketEnd
+  useEffect(() => {
+    if (!entityId) {
+      setPoints(
+        Array.from({ length: 12 }, (_, index) => ({
+          label: index === 11 ? 'Now' : '',
+          value: Math.round(fallbackCurrentLoadW),
+        }))
       );
+      return;
+    }
 
-      const averageW =
-        bucketSamples.length > 0
-          ? bucketSamples.reduce((sum, sample) => sum + sample.value, 0) / bucketSamples.length
-          : currentLoadW;
+    const resolvedEntityId = entityId;
 
-      return {
-        label: index === BUCKET_COUNT - 1 ? 'Now' : `-${(BUCKET_COUNT - 1 - index) * 5}m`,
-        value: +(averageW / 1000).toFixed(2),
-      };
-    });
-  }, [currentLoadW, samples]);
+    async function fetchHistory() {
+      const connection = homeAssistantService.getConnection();
+      if (!connection) {
+        return;
+      }
+
+      try {
+        const stats = await getPowerStatisticsHistory(
+          connection,
+          resolvedEntityId,
+          new Date(Date.now() - 24 * 60 * 60 * 1000)
+        );
+        if (stats.length === 0) {
+          setPoints([
+            {
+              label: 'Now',
+              value: Math.round(fallbackCurrentLoadW),
+            },
+          ]);
+          return;
+        }
+
+        setPoints(
+          stats.map((entry, index) => ({
+            label: formatBucketLabel(entry.start, index, stats.length),
+            value: Math.round(entry.mean),
+            timestampMs: entry.start,
+            endTimestampMs: entry.end,
+            minValue: Math.round(entry.min),
+            maxValue: Math.round(entry.max),
+          }))
+        );
+      } catch {
+        setPoints([
+          {
+            label: 'Now',
+            value: Math.round(fallbackCurrentLoadW),
+          },
+        ]);
+      }
+    }
+
+    void fetchHistory();
+    timerRef.current = setInterval(() => void fetchHistory(), REFRESH_MS);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [entityId, fallbackCurrentLoadW]);
+
+  return points;
 }

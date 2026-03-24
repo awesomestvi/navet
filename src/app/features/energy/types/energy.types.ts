@@ -54,6 +54,10 @@ export interface EnergySeriesPoint {
   label: string;
   value: number;
   secondaryValue?: number;
+  timestampMs?: number;
+  endTimestampMs?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface EnergyFlowDatum {
@@ -68,6 +72,7 @@ export interface EnergyConsumer {
   id: string;
   name: string;
   category: EnergyConsumerCategory;
+  powerEntityId?: string;
   powerW: number;
   energyKWh: number;
   shareOfLoad: number;

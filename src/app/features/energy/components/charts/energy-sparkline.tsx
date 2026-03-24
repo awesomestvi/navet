@@ -1,9 +1,13 @@
-import { memo, useId } from 'react';
+import { memo, useId, useState } from 'react';
 import { useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 export interface EnergySparklinePoint {
   value: number;
+  timestampMs?: number;
+  endTimestampMs?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 interface EnergySparklineProps {
@@ -47,6 +51,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   if (data.length < 2) return null;
 
@@ -60,6 +65,29 @@ export const EnergySparkline = memo(function EnergySparkline({
 
   const pts = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
   const line = smoothPath(pts);
+  const activeIndex = hoverIndex;
+  const activePoint = activeIndex === null ? null : data[activeIndex];
+  const activeCoords = activeIndex === null ? null : pts[activeIndex];
+
+  const formatTooltipTimestamp = (timestampMs?: number) => {
+    if (!timestampMs || Number.isNaN(timestampMs)) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(new Date(timestampMs));
+  };
+
+  const tooltipTimestamp = formatTooltipTimestamp(activePoint?.timestampMs);
+  const tooltipLeftPercent =
+    activeCoords === null ? null : Math.max(18, Math.min(82, (activeCoords.x / VB_W) * 100));
 
   // Closed area path
   const area =
@@ -68,45 +96,78 @@ export const EnergySparkline = memo(function EnergySparkline({
     ` L ${pts[pts.length - 1].x} ${baseline} Z`;
 
   return (
-    <svg
-      viewBox={`0 0 ${VB_W} ${height}`}
-      className="w-full"
-      role="img"
-      aria-label="Power sparkline"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={`${id}-sg`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.2" />
-          <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.01" />
-        </linearGradient>
-      </defs>
+    <div className="relative">
+      {activePoint && tooltipTimestamp && tooltipLeftPercent !== null ? (
+        <div
+          className="pointer-events-none absolute top-0 z-10 w-max max-w-[220px] -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md"
+          style={{ left: `${tooltipLeftPercent}%` }}
+        >
+          <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
+            <span>Use: {Math.round(activePoint.value)} W</span>
+          </div>
+        </div>
+      ) : null}
 
-      <line
-        x1={PAD_X}
-        y1={baseline}
-        x2={VB_W - PAD_X}
-        y2={baseline}
-        stroke={tokens.grid}
-        strokeWidth="1"
-      />
+      <svg
+        viewBox={`0 0 ${VB_W} ${height}`}
+        className="w-full"
+        role="img"
+        aria-label="Power sparkline"
+        preserveAspectRatio="none"
+        onMouseLeave={() => setHoverIndex(null)}
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const relativeX = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+          const nextIndex = Math.round((relativeX / Math.max(rect.width, 1)) * (data.length - 1));
+          setHoverIndex(Math.max(0, Math.min(data.length - 1, nextIndex)));
+        }}
+      >
+        <defs>
+          <linearGradient id={`${id}-sg`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
 
-      <path d={area} fill={`url(#${id}-sg)`} />
-      <path
-        d={line}
-        fill="none"
-        stroke={tokens.accent}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <circle
-        cx={pts[pts.length - 1].x}
-        cy={pts[pts.length - 1].y}
-        r="4"
-        fill={tokens.accentGlow}
-      />
-      <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="2.2" fill={tokens.accent} />
-    </svg>
+        <line
+          x1={PAD_X}
+          y1={baseline}
+          x2={VB_W - PAD_X}
+          y2={baseline}
+          stroke={tokens.grid}
+          strokeWidth="1"
+        />
+
+        <path d={area} fill={`url(#${id}-sg)`} />
+        <path
+          d={line}
+          fill="none"
+          stroke={tokens.accent}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {hoverIndex !== null && activeCoords ? (
+          <line
+            x1={activeCoords.x}
+            y1={PAD_Y}
+            x2={activeCoords.x}
+            y2={baseline}
+            stroke={tokens.accent}
+            strokeOpacity="0.45"
+            strokeDasharray="2 2"
+            strokeWidth="1"
+          />
+        ) : null}
+        {activeCoords ? (
+          <circle cx={activeCoords.x} cy={activeCoords.y} r="4" fill={tokens.accentGlow} />
+        ) : null}
+        {activeCoords ? (
+          <circle cx={activeCoords.x} cy={activeCoords.y} r="2.2" fill={tokens.accent} />
+        ) : null}
+      </svg>
+    </div>
   );
 });

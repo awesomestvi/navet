@@ -584,6 +584,7 @@ export const enMessages = {
   'rss.loading.title': 'Loading feeds',
   'rss.loading.description': 'Fetching the latest articles from your selected providers.',
   'rss.readMore': 'Read more',
+  'rss.showLess': 'Show less',
   'rss.settings.title': 'RSS Providers',
   'rss.settings.description': 'Choose which providers {title} should show',
   'rss.settings.selectedProviders': 'Selected Providers',

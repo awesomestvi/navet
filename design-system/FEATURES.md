@@ -797,8 +797,10 @@ A dedicated full-page section for monitoring home load, grid dependency, individ
 
 - Reads entity states via `useHomeAssistant(homeAssistantSelectors.entities)` (minimal selector).
 - Home load is derived as `solar + gridImport − gridExport` when no dedicated load sensor is configured.
+- `getInferredHomeLoadPowerSensor` — when no explicit home load power entity is configured, scans all `sensor.*` entities with `device_class: power` and `unit_of_measurement: W`, scoring candidates by name heuristics (`instantaneous_demand`, `home load`, `demand`, etc.) and penalising solar/battery/grid/charger entities. The top-scoring candidate is used as the live W source and its entity ID is returned as `currentLoadStatisticId` for sparkline history.
+- `buildConsumers` no longer falls back to the raw entity state for daily energy — falling back produced a misleading lifetime cumulative kWh. When no daily statistic is available, device energy shows `0` instead.
 - `liveStats` array is conditionally built — solar/battery/grid stats are only included when the corresponding entity IDs are configured, so unconfigured sources are never shown.
-- Three module-level helpers keep the hook under 50 lines: `buildLiveStats`, `buildFlow`, `buildConsumers`. These are pure functions called inside `useMemo`.
+- Module-level helpers: `buildLiveStats`, `buildFlow`, `buildConsumers`, `getConfiguredDevicePowerW`, `getInferredHomeLoadPowerSensor`. All pure functions called inside `useMemo`.
 
 **`useEnergyStatisticsToday`** (`hooks/use-energy-statistics-today.ts`) — polls `recorder/statistics_during_period` with `period: 'day'` and `types: ['change']` to get today's kWh delta for all configured energy entities. Refreshes every 5 minutes. Returns a `Record<entityId, kWh>` map. Silently fails — the dashboard remains usable without statistics.
 
@@ -818,8 +820,8 @@ Memoized widget components, each receiving only its required props from `EnergyS
 | Widget | Key props | Description |
 |---|---|---|
 | `EnergyStatusWidget` | `liveStats`, `importTodayKWh?`, `solarTodayKWh?` | Live stat cards grid; shows a "Today" panel with grid import kWh and solar kWh when those props are provided (only passed when `isConfigured`) |
-| `EnergyNowWidget` | `currentLoadW`, `gridImportW`, `trend`, `accentColor` | Live load reading with a sparkline trend of recent values |
-| `EnergyDeviceTotalsWidget` | `consumers` | Top devices ranked by today's kWh; shows live W alongside kWh when a power sensor is configured; shows empty state when no devices are tracked |
+| `EnergyNowWidget` | `currentLoadW`, `gridImportW`, `trend`, `accentColor` | Live load reading in W with a 24-hour sparkline; tick labels use a capped count so the row stays readable at any width |
+| `EnergyDeviceTotalsWidget` | `consumers` | Top devices ranked by today's kWh; shows live W alongside kWh when a power sensor is configured; each device renders a 24-hour `DeviceHistorySparkline` sub-component; shows empty state when no devices are tracked |
 | `EnergyFocusZonesWidget` | `todayKWh`, `currentPowerW`, `consumers` | Bathroom and toilet energy focus — today's kWh total, live W, and per-device breakdown |
 | `EnergyGridAllocationWidget` | `importTodayKWh`, `allocation` | Grid import split across individual devices + untracked remainder |
 | `EnergyStorageWidget` | `batteryPercent`, `solarW`, `currentLoadW`, `importW`, `hasBattery?`, `hasSolar?` | Semi-circle gauges for battery reserve and solar coverage; quality bar for grid dependency. Gauges hidden when the corresponding source is not configured |
@@ -836,6 +838,8 @@ Widget visibility is toggled via filter pills in the section header; state persi
 ### Chart Primitives
 
 All charts are custom SVG — zero bundle cost, full theme control, Raspberry Pi-safe. Located in `src/app/features/energy/components/charts/`.
+
+`EnergySparkline` supports interactive hover: mouse position maps to the nearest data point, showing a dashed crosshair line and a tooltip with the formatted timestamp and wattage. The tooltip is horizontally clamped (18–82% of width) to stay within the component bounds. Data points accept optional `timestampMs`, `endTimestampMs`, `minValue`, and `maxValue` fields for richer tooltip content.
 
 **`EnergyGauge`** (`energy-gauge.tsx`)
 - Semi-circle arc gauge using `stroke-dasharray` trick

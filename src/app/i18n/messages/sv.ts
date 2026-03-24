@@ -590,6 +590,7 @@ export const svMessages = {
   'rss.loading.title': 'Laddar flödet',
   'rss.loading.description': 'Hämta de senaste artiklarna från dina valda källor.',
   'rss.readMore': 'Läs mer',
+  'rss.showLess': 'Visa mindre',
   'rss.settings.title': 'RSS-källor',
   'rss.settings.description': 'Välj vilka källor {title} ska visa',
   'rss.settings.selectedProviders': 'Valda källor',

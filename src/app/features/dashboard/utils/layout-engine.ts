@@ -222,7 +222,8 @@ export function getSectionMinBaseWidth(
 
 export function getRenderedRowLayouts<T extends { id: string; x: number; span: number }>(
   items: T[],
-  cols: number
+  cols: number,
+  minSpansById: Record<string, number> = {}
 ): Map<string, { start: number; span: number }> {
   const sortedItems = [...items].sort((left, right) => left.x - right.x);
 
@@ -245,7 +246,12 @@ export function getRenderedRowLayouts<T extends { id: string; x: number; span: n
   const exactSpans = sortedItems.map(
     (item) => (Math.max(1, item.span) / SECTION_LAYOUT_COLUMNS) * cols
   );
-  const renderedSpans = exactSpans.map((span) => Math.max(1, Math.floor(span)));
+  const minimumSpans = sortedItems.map((item) =>
+    Math.max(1, Math.min(cols, minSpansById[item.id] ?? 1))
+  );
+  const renderedSpans = exactSpans.map((span, index) =>
+    Math.max(minimumSpans[index] ?? 1, Math.floor(span))
+  );
   let assignedCols = renderedSpans.reduce((total, span) => total + span, 0);
 
   if (assignedCols < cols) {
@@ -272,6 +278,30 @@ export function getRenderedRowLayouts<T extends { id: string; x: number; span: n
         x: sortedItems[index]?.x ?? 0,
       }))
       .sort((left, right) => left.remainder - right.remainder || left.x - right.x);
+
+    let candidateIndex = 0;
+    while (assignedCols > cols && candidates.length > 0) {
+      const candidate = candidates[candidateIndex % candidates.length];
+      const minimumSpan = minimumSpans[candidate.index] ?? 1;
+      if (renderedSpans[candidate.index] > minimumSpan) {
+        renderedSpans[candidate.index] -= 1;
+        assignedCols -= 1;
+      }
+      candidateIndex += 1;
+      if (candidateIndex > candidates.length * cols) {
+        break;
+      }
+    }
+  }
+
+  if (assignedCols > cols) {
+    const candidates = renderedSpans
+      .map((span, index) => ({
+        index,
+        span,
+        x: sortedItems[index]?.x ?? 0,
+      }))
+      .sort((left, right) => left.span - right.span || left.x - right.x);
 
     let candidateIndex = 0;
     while (assignedCols > cols && candidates.length > 0) {

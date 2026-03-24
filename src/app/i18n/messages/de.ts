@@ -595,6 +595,7 @@ export const deMessages = {
   'rss.loading.title': 'Feeds werden geladen',
   'rss.loading.description': 'Die neuesten Artikel Ihrer ausgewählten Anbieter werden geladen.',
   'rss.readMore': 'Mehr lesen',
+  'rss.showLess': 'Weniger anzeigen',
   'rss.settings.title': 'RSS-Anbieter',
   'rss.settings.description': 'Wählen Sie aus, welche Anbieter {title} anzeigen soll',
   'rss.settings.selectedProviders': 'Ausgewählte Anbieter',

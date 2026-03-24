@@ -35,10 +35,10 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
           </div>
           <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-              In use now
+              Current power
             </div>
             <div className={`mt-3 text-3xl font-semibold ${surface.textPrimary}`}>
-              {(currentPowerW / 1000).toFixed(1)} kW
+              {Math.round(currentPowerW)} W
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
                       {consumer.energyKWh.toFixed(2)} kWh
                     </div>
                     <div className={`mt-1 text-xs ${surface.textMuted}`}>
-                      {(consumer.powerW / 1000).toFixed(1)} kW now
+                      {Math.round(consumer.powerW)} W now
                     </div>
                   </div>
                 </div>

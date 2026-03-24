@@ -596,6 +596,7 @@ export const esMessages = {
   'rss.loading.description':
     'Obteniendo los artículos más recientes de tus proveedores seleccionados.',
   'rss.readMore': 'Leer mas',
+  'rss.showLess': 'Mostrar menos',
   'rss.settings.title': 'Proveedores RSS',
   'rss.settings.description': 'Elige qué proveedores debe mostrar {title}',
   'rss.settings.selectedProviders': 'Proveedores seleccionados',

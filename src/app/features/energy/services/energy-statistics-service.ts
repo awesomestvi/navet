@@ -3,9 +3,32 @@ import type { Connection } from 'home-assistant-js-websocket';
 interface StatisticEntry {
   start: string;
   change?: number;
+  mean?: number;
+  min?: number;
+  max?: number;
 }
 
 type StatisticsResponse = Record<string, StatisticEntry[]>;
+
+function normalizeStatisticTimestamp(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      return numericValue;
+    }
+
+    const parsedValue = Date.parse(value);
+    if (Number.isFinite(parsedValue)) {
+      return parsedValue;
+    }
+  }
+
+  return Number.NaN;
+}
 
 /**
  * Fetches today's energy delta (kWh) for each entity using
@@ -91,4 +114,34 @@ export async function getEnergyStatisticsPeriods(
     week: sumChanges(weekResponse),
     month: sumChanges(monthResponse),
   };
+}
+
+export async function getPowerStatisticsHistory(
+  connection: Connection,
+  entityId: string,
+  startTime?: Date
+): Promise<Array<{ start: number; end: number; mean: number; min: number; max: number }>> {
+  const now = new Date();
+  const start = startTime ?? getStartOfToday(now);
+
+  const response = (await connection.sendMessagePromise({
+    type: 'recorder/statistics_during_period',
+    start_time: start.toISOString(),
+    end_time: now.toISOString(),
+    statistic_ids: [entityId],
+    period: '5minute',
+    types: ['mean', 'min', 'max'],
+  })) as StatisticsResponse;
+
+  return (response[entityId] ?? [])
+    .map((entry) => ({
+      start: normalizeStatisticTimestamp(entry.start),
+      end: normalizeStatisticTimestamp(
+        (entry as StatisticEntry & { end?: number | string }).end ?? entry.start
+      ),
+      mean: typeof entry.mean === 'number' ? entry.mean : 0,
+      min: typeof entry.min === 'number' ? entry.min : 0,
+      max: typeof entry.max === 'number' ? entry.max : 0,
+    }))
+    .filter((entry) => Number.isFinite(entry.start) && Number.isFinite(entry.mean));
 }

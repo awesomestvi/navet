@@ -22,8 +22,11 @@ export function useEnergyDashboard() {
 
   const [showSetup, setShowSetup] = useState(false);
 
-  const { overview, isConfigured } = useEnergyHaData(range);
-  const recentLoadTrend = useEnergyLoadHistory(overview.totals.currentLoadW);
+  const { overview, isConfigured, currentLoadStatisticId } = useEnergyHaData(range);
+  const recentLoadTrend = useEnergyLoadHistory(
+    currentLoadStatisticId,
+    overview.totals.currentLoadW
+  );
   const periodTotals = useEnergyStatisticsPeriods(sourceConfig?.gridImportEnergyEntityId);
 
   const selectedNode = useMemo(

@@ -797,9 +797,21 @@ function SectionCanvasGrid({
   return (
     <div className="flex flex-col gap-5">
       {sectionStacksByRow.map((rowStacks, rowIndex) => {
+        const rowMinSpansById = Object.fromEntries(
+          rowStacks.map((stack) => [
+            stack[0].id,
+            Math.max(
+              1,
+              ...stack.flatMap((section) =>
+                section.cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
+              )
+            ),
+          ])
+        );
         const rowLayouts = getRenderedRowLayouts(
           rowStacks.map((stack) => stack[0]),
-          sectionGridCols
+          sectionGridCols,
+          rowMinSpansById
         );
 
         return (
@@ -812,7 +824,7 @@ function SectionCanvasGrid({
               return (
                 <div
                   key={leadSection.id}
-                  style={{ flex: `${leadSection.span} 1 0`, minWidth: 0 }}
+                  style={{ flex: `${renderedSpan} 1 0`, minWidth: 0 }}
                   className="space-y-3"
                 >
                   {stack.map((section) => (
@@ -914,7 +926,7 @@ function FlowCanvas({
 
 function HomePresentationSection({
   section,
-  sectionGridCols,
+  renderedSpan,
   allCards,
   cardSizes,
   updateCardSize,
@@ -925,10 +937,9 @@ function HomePresentationSection({
   section: {
     id: string;
     title: string;
-    span: HomeDashboardSectionSpan;
     cardIds: string[];
   };
-  sectionGridCols: number;
+  renderedSpan: number;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
@@ -936,8 +947,6 @@ function HomePresentationSection({
   showHero: boolean;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
-  const renderedSpan = getRenderedSectionSpan(section.span, sectionGridCols);
-
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
@@ -1121,9 +1130,21 @@ function HomePresentation({
     <div className="space-y-7 md:space-y-8">
       <div className="flex flex-col gap-6">
         {presentationRowStacks.map((rowStacks, rowIndex) => {
+          const rowMinSpansById = Object.fromEntries(
+            rowStacks.map((stack) => [
+              stack[0].id,
+              Math.max(
+                1,
+                ...stack.flatMap((section) =>
+                  section.cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
+                )
+              ),
+            ])
+          );
           const rowLayouts = getRenderedRowLayouts(
             rowStacks.map((stack) => stack[0]),
-            sectionGridCols
+            sectionGridCols,
+            rowMinSpansById
           );
 
           return (
@@ -1155,8 +1176,8 @@ function HomePresentation({
                     {stack.map((section) => (
                       <HomePresentationSection
                         key={section.id}
-                        section={{ ...section, span: leadSection.span }}
-                        sectionGridCols={sectionGridCols}
+                        section={section}
+                        renderedSpan={renderedSpan}
                         allCards={allCards}
                         cardSizes={cardSizes}
                         updateCardSize={updateCardSize}

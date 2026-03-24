@@ -16,7 +16,7 @@ const rangeOptions: EnergyRange[] = ['live', 'day', 'week', 'month'];
 
 const widgetOptions: Array<{ id: EnergyWidgetId; label: string }> = [
   { id: 'status', label: 'Summary' },
-  { id: 'flow', label: 'In use now' },
+  { id: 'flow', label: 'Current power' },
   { id: 'consumers', label: 'Device totals' },
   { id: 'cost', label: 'Grid split' },
   { id: 'battery', label: 'Battery devices' },
@@ -163,8 +163,8 @@ export const EnergySection = memo(function EnergySection() {
                   tone: 'default',
                 },
                 {
-                  label: 'In use now',
-                  value: `${(overview.totals.currentLoadW / 1000).toFixed(1)} kW`,
+                  label: 'Current power',
+                  value: `${Math.round(overview.totals.currentLoadW)} W`,
                   tone: 'default',
                 },
                 {
@@ -173,8 +173,8 @@ export const EnergySection = memo(function EnergySection() {
                   tone: 'default',
                 },
                 {
-                  label: 'Bathroom + toilet now',
-                  value: `${(bathroomToiletPowerW / 1000).toFixed(1)} kW`,
+                  label: 'Bathroom + toilet power',
+                  value: `${Math.round(bathroomToiletPowerW)} W`,
                   tone: 'default',
                 },
               ]}

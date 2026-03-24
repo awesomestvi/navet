@@ -2,17 +2,49 @@ import { PlugZap } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
+import { useEnergyLoadHistory } from '../../hooks/use-energy-load-history';
 import type { EnergyConsumer } from '../../types/energy.types';
+import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface EnergyDeviceTotalsWidgetProps {
   consumers: EnergyConsumer[];
 }
 
+const DeviceHistorySparkline = memo(function DeviceHistorySparkline({
+  consumer,
+  accentColor,
+}: {
+  consumer: EnergyConsumer;
+  accentColor: string;
+}) {
+  const history = useEnergyLoadHistory(consumer.powerEntityId, consumer.powerW);
+
+  if (!consumer.powerEntityId || history.length < 2) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3">
+      <EnergySparkline
+        data={history.map((point) => ({
+          value: point.value,
+          timestampMs: point.timestampMs,
+          endTimestampMs: point.endTimestampMs,
+          minValue: point.minValue,
+          maxValue: point.maxValue,
+        }))}
+        accentColor={accentColor}
+        height={34}
+      />
+    </div>
+  );
+});
+
 export const EnergyDeviceTotalsWidget = memo(function EnergyDeviceTotalsWidget({
   consumers,
 }: EnergyDeviceTotalsWidgetProps) {
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
@@ -51,10 +83,11 @@ export const EnergyDeviceTotalsWidget = memo(function EnergyDeviceTotalsWidget({
                     {consumer.energyKWh.toFixed(2)} kWh
                   </div>
                   <div className={`mt-1 text-xs ${surface.textMuted}`}>
-                    {(consumer.powerW / 1000).toFixed(1)} kW now
+                    {Math.round(consumer.powerW)} W now
                   </div>
                 </div>
               </div>
+              <DeviceHistorySparkline consumer={consumer} accentColor={accentColor} />
             </div>
           ))
         )}

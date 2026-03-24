@@ -598,6 +598,7 @@ export const frMessages = {
   'rss.loading.title': 'Chargement des flux',
   'rss.loading.description': 'Récupération des derniers articles de vos fournisseurs sélectionnés.',
   'rss.readMore': 'Lire la suite',
+  'rss.showLess': 'Réduire',
   'rss.settings.title': 'Fournisseurs RSS',
   'rss.settings.description': 'Choisissez quels fournisseurs {title} doit afficher',
   'rss.settings.selectedProviders': 'Fournisseurs sélectionnés',

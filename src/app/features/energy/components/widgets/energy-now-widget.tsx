@@ -21,24 +21,29 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
 }: EnergyNowWidgetProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const maxTickCount = 6;
+  const tickStep = Math.max(1, Math.floor((trend.length - 1) / Math.max(1, maxTickCount - 1)));
+  const trendTicks = trend.filter(
+    (_, index) => index === 0 || index === trend.length - 1 || index % tickStep === 0
+  );
 
   return (
     <EnergyWidgetShell
-      title="Energy in use now"
-      eyebrow="Live load"
+      title="Power in use now"
+      eyebrow="Current load"
       action={<Bolt className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
         <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
           <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-            Current draw
+            Current power
           </div>
           <div className={`mt-3 text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
-            {(currentLoadW / 1000).toFixed(1)} kW
+            {Math.round(currentLoadW)} W
           </div>
           <div className={`mt-3 text-sm ${surface.textSecondary}`}>
             {gridImportW > 0
-              ? `${(gridImportW / 1000).toFixed(1)} kW coming from the grid right now`
+              ? `${Math.round(gridImportW)} W currently coming from the grid`
               : 'No active grid import right now'}
           </div>
         </div>
@@ -50,31 +55,34 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
                 5-minute sparkline
               </div>
               <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-                Rolling aggregated usage
+                Last 24 hours, Home Assistant 5-minute mean
               </div>
             </div>
-            <div className={`text-xs ${surface.textMuted}`}>kW</div>
+            <div className={`text-xs ${surface.textMuted}`}>W</div>
           </div>
 
           <div className="mt-4">
             <EnergySparkline
-              data={trend.map((point) => ({ value: point.value }))}
+              data={trend.map((point) => ({
+                value: point.value,
+                timestampMs: point.timestampMs,
+                endTimestampMs: point.endTimestampMs,
+                minValue: point.minValue,
+                maxValue: point.maxValue,
+              }))}
               accentColor={accentColor}
               height={54}
             />
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
-            {trend
-              .filter((_, index) => index % 3 === 0 || index === trend.length - 1)
-              .map((point) => (
-                <div key={point.label}>
-                  <div className={`${surface.textMuted}`}>{point.label}</div>
-                  <div className={`mt-1 font-medium ${surface.textPrimary}`}>
-                    {point.value.toFixed(1)}
-                  </div>
-                </div>
-              ))}
+          <div
+            className={`mt-3 flex items-center justify-between gap-3 text-[11px] ${surface.textMuted}`}
+          >
+            {trendTicks.map((point, index) => (
+              <div key={`${point.label || 'tick'}-${index}`} className="min-w-0 whitespace-nowrap">
+                {point.label}
+              </div>
+            ))}
           </div>
         </div>
       </div>

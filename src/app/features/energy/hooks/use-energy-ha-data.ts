@@ -15,7 +15,14 @@ import type {
 } from '../types/energy.types';
 import { useEnergyStatisticsToday } from './use-energy-statistics-today';
 
-type EntityMap = Record<string, { state: string }>;
+type EntityMap = Record<
+  string,
+  {
+    entity_id?: string;
+    state: string;
+    attributes?: Record<string, unknown>;
+  }
+>;
 
 function parseW(state: string | undefined): number {
   const n = parseFloat(state ?? '');
@@ -143,12 +150,19 @@ function buildConsumers(
   return devices
     .map((device) => {
       const powerW = parseW(entities?.[device.powerEntityId ?? '']?.state);
-      // Prefer today's kWh from statistics; fall back to entity state (running total)
-      const energyKWh = todayKWh[device.entityId] ?? parseW(entities?.[device.entityId]?.state);
+      // Device totals are "today" values, so only use daily statistics here.
+      // Falling back to the raw entity state is often a lifetime cumulative kWh
+      // total, which is misleading in this widget.
+      const statisticsEnergyKWh = todayKWh[device.entityId];
+      const energyKWh =
+        typeof statisticsEnergyKWh === 'number' && statisticsEnergyKWh > 0
+          ? statisticsEnergyKWh
+          : 0;
       return {
         id: device.entityId,
         name: device.name,
         category: device.category,
+        powerEntityId: device.powerEntityId,
         powerW,
         energyKWh,
         shareOfLoad: homeLoadW > 0 ? powerW / homeLoadW : 0,
@@ -157,6 +171,87 @@ function buildConsumers(
       };
     })
     .sort((a, b) => b.energyKWh - a.energyKWh || b.powerW - a.powerW);
+}
+
+function getConfiguredDevicePowerW(
+  devices: EnergyDeviceSource[],
+  entities: EntityMap | null | undefined
+): number {
+  return devices.reduce((total, device) => {
+    if (!device.powerEntityId) {
+      return total;
+    }
+
+    return total + Math.max(0, parseW(entities?.[device.powerEntityId]?.state));
+  }, 0);
+}
+
+function getInferredHomeLoadPowerSensor(entities: EntityMap | null | undefined): {
+  entityId?: string;
+  watts: number;
+} {
+  if (!entities) {
+    return { entityId: undefined, watts: 0 };
+  }
+
+  const candidates = Object.entries(entities)
+    .filter(([entityId, entity]) => {
+      if (!entityId.startsWith('sensor.')) {
+        return false;
+      }
+
+      const unit = String(
+        entity.attributes?.unit_of_measurement ??
+          entity.attributes?.native_unit_of_measurement ??
+          ''
+      ).toUpperCase();
+      const deviceClass = String(entity.attributes?.device_class ?? '').toLowerCase();
+      return deviceClass === 'power' && unit === 'W';
+    })
+    .map(([entityId, entity]) => {
+      const friendlyName = String(entity.attributes?.friendly_name ?? '').toLowerCase();
+      const haystack = `${entityId} ${friendlyName}`.toLowerCase();
+
+      let score = 0;
+      if (haystack.includes('instantaneous_demand') || haystack.includes('instantaneous demand')) {
+        score += 100;
+      }
+      if (
+        haystack.includes('home load') ||
+        haystack.includes('home_load') ||
+        haystack.includes('house power') ||
+        haystack.includes('active power') ||
+        haystack.includes('total power') ||
+        haystack.includes('main power') ||
+        haystack.includes('demand')
+      ) {
+        score += 30;
+      }
+      if (
+        haystack.includes('solar') ||
+        haystack.includes('battery') ||
+        haystack.includes('grid import') ||
+        haystack.includes('grid export') ||
+        haystack.includes('grid_') ||
+        haystack.includes('pv') ||
+        haystack.includes('charger')
+      ) {
+        score -= 40;
+      }
+
+      return {
+        entityId,
+        score,
+        watts: parseW(entity.state),
+      };
+    })
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  return {
+    entityId: candidates[0]?.entityId,
+    watts: candidates[0]?.watts ?? 0,
+  };
 }
 
 /**
@@ -170,76 +265,106 @@ function buildConsumers(
 export function useEnergyHaData(range: EnergyRange): {
   overview: EnergyOverview;
   isConfigured: boolean;
+  currentLoadStatisticId?: string;
 } {
   const sourceConfig = useEnergyDashboardStore((s) => s.sourceConfig);
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const todayKWh = useEnergyStatisticsToday(sourceConfig);
 
-  const overview = useMemo((): EnergyOverview => {
-    if (!sourceConfig) return getMockEnergyOverview(range);
+  const { overview, currentLoadStatisticId } = useMemo(() => {
+    if (!sourceConfig) {
+      return {
+        overview: getMockEnergyOverview(range),
+        currentLoadStatisticId: undefined,
+      };
+    }
 
     const solarW = parseW(entities?.[sourceConfig.solarPowerEntityId ?? '']?.state);
     const batterySoc = parsePct(entities?.[sourceConfig.batterySocEntityId ?? '']?.state);
     const batteryPowerRaw = parseW(entities?.[sourceConfig.batteryPowerEntityId ?? '']?.state);
     const gridImportW = parseW(entities?.[sourceConfig.gridImportPowerEntityId ?? '']?.state);
     const gridExportW = parseW(entities?.[sourceConfig.gridExportPowerEntityId ?? '']?.state);
-    const homeLoadW = sourceConfig.homeLoadPowerEntityId
-      ? parseW(entities?.[sourceConfig.homeLoadPowerEntityId]?.state)
-      : Math.max(0, solarW + gridImportW - gridExportW);
-
     // batteryPowerRaw sign convention: positive = charging, negative = discharging
     const batteryDischargeW = batteryPowerRaw < 0 ? Math.abs(batteryPowerRaw) : 0;
     const batteryChargeW = batteryPowerRaw > 0 ? batteryPowerRaw : 0;
+    const monitoredDevicePowerW = getConfiguredDevicePowerW(sourceConfig.devices, entities);
+    const inferredHomeLoad = getInferredHomeLoadPowerSensor(entities);
+    const derivedHomeLoadW = Math.max(
+      0,
+      solarW + gridImportW + batteryDischargeW - gridExportW - batteryChargeW
+    );
+    const configuredHomeLoadW = sourceConfig.homeLoadPowerEntityId
+      ? parseW(entities?.[sourceConfig.homeLoadPowerEntityId]?.state)
+      : 0;
+    const homeLoadW = Math.max(
+      configuredHomeLoadW,
+      inferredHomeLoad.watts,
+      derivedHomeLoadW,
+      monitoredDevicePowerW
+    );
+    const currentLoadStatisticId =
+      configuredHomeLoadW > 0
+        ? sourceConfig.homeLoadPowerEntityId
+        : inferredHomeLoad.watts > 0
+          ? inferredHomeLoad.entityId
+          : sourceConfig.homeLoadPowerEntityId;
 
     return {
-      liveStats: buildLiveStats(
-        sourceConfig,
-        homeLoadW,
-        solarW,
-        batterySoc,
-        gridImportW,
-        gridExportW
-      ),
-      flow: buildFlow(
-        solarW,
-        batteryDischargeW,
-        batteryChargeW,
-        gridImportW,
-        gridExportW,
-        homeLoadW
-      ),
-      trend: getMockEnergyOverview(range).trend, // replaced by statistics in follow-up
-      topConsumers: buildConsumers(sourceConfig.devices, entities, todayKWh, homeLoadW),
-      insights: [],
-      totals: {
-        currentLoadW: homeLoadW,
-        solarW,
-        batteryPercent: batterySoc,
-        importW: gridImportW,
-        exportW: gridExportW,
-        importTodayKWh: sourceConfig.gridImportEnergyEntityId
-          ? (todayKWh[sourceConfig.gridImportEnergyEntityId] ?? 0)
-          : 0,
-        solarTodayKWh: sourceConfig.solarEnergyEntityId
-          ? (todayKWh[sourceConfig.solarEnergyEntityId] ?? 0)
-          : 0,
-        gasTodayKWh: 0,
-        hotWaterTodayKWh: 0,
-        costToday: 0,
-        projectedMonthCost: 0,
+      overview: {
+        liveStats: buildLiveStats(
+          sourceConfig,
+          homeLoadW,
+          solarW,
+          batterySoc,
+          gridImportW,
+          gridExportW
+        ),
+        flow: buildFlow(
+          solarW,
+          batteryDischargeW,
+          batteryChargeW,
+          gridImportW,
+          gridExportW,
+          homeLoadW
+        ),
+        trend: getMockEnergyOverview(range).trend, // replaced by statistics in follow-up
+        topConsumers: buildConsumers(sourceConfig.devices, entities, todayKWh, homeLoadW),
+        insights: [],
+        totals: {
+          currentLoadW: homeLoadW,
+          solarW,
+          batteryPercent: batterySoc,
+          importW: gridImportW,
+          exportW: gridExportW,
+          importTodayKWh: sourceConfig.gridImportEnergyEntityId
+            ? (todayKWh[sourceConfig.gridImportEnergyEntityId] ?? 0)
+            : 0,
+          solarTodayKWh: sourceConfig.solarEnergyEntityId
+            ? (todayKWh[sourceConfig.solarEnergyEntityId] ?? 0)
+            : 0,
+          gasTodayKWh: 0,
+          hotWaterTodayKWh: 0,
+          costToday: 0,
+          projectedMonthCost: 0,
+        },
+        nodes: sourceConfig.devices.map((device) => ({
+          id: device.entityId,
+          name: device.name,
+          kind: 'consumer' as const,
+          resourceType: HEATING_CATEGORIES.has(device.category)
+            ? ('heating' as const)
+            : ('electricity' as const),
+          category: device.category,
+          entityIds: [device.entityId, ...(device.powerEntityId ? [device.powerEntityId] : [])],
+        })),
       },
-      nodes: sourceConfig.devices.map((device) => ({
-        id: device.entityId,
-        name: device.name,
-        kind: 'consumer' as const,
-        resourceType: HEATING_CATEGORIES.has(device.category)
-          ? ('heating' as const)
-          : ('electricity' as const),
-        category: device.category,
-        entityIds: [device.entityId, ...(device.powerEntityId ? [device.powerEntityId] : [])],
-      })),
+      currentLoadStatisticId,
     };
   }, [sourceConfig, entities, range, todayKWh]);
 
-  return { overview, isConfigured: sourceConfig !== null };
+  return {
+    overview,
+    isConfigured: sourceConfig !== null,
+    currentLoadStatisticId,
+  };
 }
