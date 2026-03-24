@@ -3,7 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import { DEFAULT_LIGHT_ICON, LIGHT_ICON_MAP } from '@/app/constants/icon-map';
+import {
+  DEFAULT_LIGHT_ICON,
+  normalizeLightIconName,
+  resolveLightIconComponent,
+} from '@/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import { useHaCommandQueue, useHomeAssistant, useI18n } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -44,7 +48,8 @@ export interface LightCardController {
   currentColor: string;
   customColor: string;
   iconButtonProps: HeaderIconButtonProps;
-  IconComponent: LucideIcon;
+  IconComponent: LucideIcon | null;
+  iconText: string | null;
   isOn: boolean;
   isOpen: boolean;
   maxColorTemp: number;
@@ -90,7 +95,7 @@ export function useLightCardController({
   const [customColor, setCustomColor] = useState('#FFA500');
   const [isOpen, setIsOpen] = useState(false);
   const [applyBrightnessPresetsToAll, setApplyBrightnessPresetsToAll] = useState(false);
-  const [selectedIcon, setSelectedIcon] = useState(DEFAULT_LIGHT_ICON);
+  const [selectedIcon, setSelectedIcon] = useState('');
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   // Per-entity selector: only re-renders this card when its own entity changes.
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
@@ -111,7 +116,14 @@ export function useLightCardController({
   const lastKnownColorRef = useRef<string | null>(null);
 
   const effectiveSelectedColor = selectedColor ?? (isOn ? lastKnownColorRef.current : null);
-  const IconComponent = LIGHT_ICON_MAP[selectedIcon] || LIGHT_ICON_MAP[DEFAULT_LIGHT_ICON];
+  const normalizedSelectedIcon = normalizeLightIconName(selectedIcon);
+  const customIconComponent = normalizedSelectedIcon
+    ? resolveLightIconComponent(normalizedSelectedIcon)
+    : null;
+  const iconText = normalizedSelectedIcon && !customIconComponent ? normalizedSelectedIcon : null;
+  const IconComponent = iconText
+    ? null
+    : (customIconComponent ?? resolveLightIconComponent(DEFAULT_LIGHT_ICON));
   const isHomeAssistantLight = Boolean(connection) && id.startsWith('light.');
   const supportsColorTemperature = supportsColorTemperatureControl(liveEntity);
   const supportsColorControl = supportsColorSelection(liveEntity);
@@ -642,6 +654,7 @@ export function useLightCardController({
     customColor,
     iconButtonProps: cardInteraction.iconButtonProps,
     IconComponent,
+    iconText,
     isOn,
     isOpen,
     maxColorTemp,
@@ -655,7 +668,7 @@ export function useLightCardController({
       setBrightnessPresetValue(id, key, value, applyBrightnessPresetsToAll),
     onColorChange,
     onCustomColorChange,
-    onIconChange: setSelectedIcon,
+    onIconChange: (icon) => setSelectedIcon(icon.trim()),
     onOpenChange: setIsOpen,
     onTempChange,
     onTempCommit,

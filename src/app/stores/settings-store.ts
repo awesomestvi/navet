@@ -5,7 +5,7 @@ import { detectDeviceTier } from '@/app/utils/detect-device-tier';
 
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
-export type PageZoom = 75 | 85 | 100;
+export type PageZoom = 75 | 80 | 85 | 90 | 95 | 100;
 
 export interface UserSettings {
   username: string;

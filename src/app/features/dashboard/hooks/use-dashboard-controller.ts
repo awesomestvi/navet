@@ -142,7 +142,7 @@ export function useDashboardController(): DashboardController {
     () => [...availableDeviceMap.keys(), ...allCustomCards.map((card) => card.id)],
     [availableDeviceMap, allCustomCards]
   );
-  const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds);
+  const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
   const homeLayoutHydrated = useMemo(() => {
     if (homeLayoutController.layout.cardIds.length === 0) {
       return true;

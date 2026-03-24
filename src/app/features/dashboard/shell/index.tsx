@@ -119,7 +119,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
       <div className="relative z-10 overflow-x-clip">
         <Sidebar />
 
-        <div className="safe-area-pt-5 flex flex-col gap-4 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-8 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
+        <div className="safe-area-pt-5 min-w-0 flex flex-col gap-4 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-8 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
           <Header />
           {children}
         </div>

@@ -1,7 +1,8 @@
 import { Lightbulb } from 'lucide-react';
 import { SettingsLivePreviewFrame } from '@/app/components/shared/settings-live-preview-frame';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
-import { useI18n } from '@/app/hooks';
+import { getLightCardSurfaceTokens } from '@/app/features/lighting/components/light-card/light-card-surface-tokens';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
 interface AmbientLightPreviewCardProps {
@@ -16,6 +17,7 @@ export function AmbientLightPreviewCard({
   theme,
 }: AmbientLightPreviewCardProps) {
   const { t } = useI18n();
+  const { colors } = useTheme();
   const isLightTheme = theme === 'light';
   const isContrastTheme = theme === 'contrast';
   const previewTokens = getThemeAppearancePickerTokens(theme, accentColor);
@@ -27,26 +29,15 @@ export function AmbientLightPreviewCard({
       : theme === 'glass'
         ? 'bg-[#111827]/72 border-white/10'
         : 'bg-gray-900/95 border-white/10';
-  const previewCardClassName = isLightTheme
-    ? 'bg-white/92 border-gray-200/80'
-    : isContrastTheme
-      ? 'bg-black border-white/16'
-      : theme === 'glass'
-        ? 'bg-white/10 border-white/12'
-        : 'bg-white/6 border-white/10';
   const primaryBarColor = previewTokens.previewPrimaryBarColor;
   const secondaryBarColor = previewTokens.previewSecondaryBarColor;
-  const innerGlowStyle = isLightTheme
-    ? {
-        background: `radial-gradient(circle at 50% 50%, ${accentColor}20 0%, ${accentColor}10 28%, transparent 60%), linear-gradient(135deg, ${accentColor}10 0%, rgba(255,255,255,0.18) 100%)`,
-      }
-    : isContrastTheme
-      ? {
-          background: `radial-gradient(circle at 50% 50%, ${accentColor}26 0%, ${accentColor}14 28%, transparent 60%), linear-gradient(135deg, ${accentColor}12 0%, rgba(255,255,255,0.03) 100%)`,
-        }
-      : {
-          background: `radial-gradient(circle at 50% 50%, ${accentColor}24 0%, ${accentColor}12 28%, transparent 60%), linear-gradient(135deg, ${accentColor}10 0%, rgba(255,255,255,0.06) 100%)`,
-        };
+  const surfaceTokens = getLightCardSurfaceTokens({
+    isOn: true,
+    selectedColor: null,
+    theme,
+    lightColors: colors.switch.on,
+    accentColor,
+  });
   const glowOpacityClassName = ambientLightBleed
     ? isLightTheme
       ? 'opacity-100'
@@ -56,6 +47,7 @@ export function AmbientLightPreviewCard({
   return (
     <SettingsLivePreviewFrame
       accentColor={accentColor}
+      className="w-full"
       theme={theme}
       title={t('settings.preview.lightCardTitle')}
       subtitle={
@@ -63,45 +55,45 @@ export function AmbientLightPreviewCard({
           ? t('settings.preview.ambientBleedEnabled')
           : t('settings.preview.containedInsideCard')
       }
-      topBar={
-        <div
-          className="h-3 w-16 rounded-full"
-          style={{
-            background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)`,
-          }}
-        />
-      }
     >
-      <div className={`relative rounded-[20px] ${previewSurfaceClassName}`}>
+      <div className={`relative rounded-[18px] ${previewSurfaceClassName}`}>
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-x-[-22%] top-1/2 h-36 -translate-y-1/2 blur-3xl transition-opacity duration-300 ${glowOpacityClassName}`}
+          className={`pointer-events-none absolute inset-x-[-18%] top-1/2 h-28 -translate-y-1/2 blur-3xl transition-opacity duration-300 ${glowOpacityClassName}`}
           style={{
-            background: `radial-gradient(circle, ${accentColor}d9 0%, ${accentColor}73 24%, ${accentColor}26 54%, transparent 78%)`,
+            background: `radial-gradient(circle, ${surfaceTokens.glowColor}d9 0%, ${surfaceTokens.glowColor}73 24%, ${surfaceTokens.glowColor}26 54%, transparent 78%)`,
           }}
         />
 
-        <div className={`relative z-10 rounded-[20px] border p-3 ${previewCardClassName}`}>
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-[inherit]"
-            style={innerGlowStyle}
-          />
-
-          <div className="flex items-center gap-3">
+        <div
+          className={`relative z-10 rounded-[18px] border p-2.5 ${surfaceTokens.cardClassName}`}
+          style={surfaceTokens.cardStyle}
+        >
+          {surfaceTokens.innerOverlayClassName ? (
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-2xl"
+              className={surfaceTokens.innerOverlayClassName}
+              style={surfaceTokens.innerOverlayStyle}
+            />
+          ) : null}
+
+          {surfaceTokens.shineOverlayClassName ? (
+            <div className={surfaceTokens.shineOverlayClassName} />
+          ) : null}
+
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-xl"
               style={{ backgroundColor: `${accentColor}26` }}
             >
-              <Lightbulb className="h-4 w-4" style={{ color: accentColor }} />
+              <Lightbulb className="h-3.5 w-3.5" style={{ color: accentColor }} />
             </div>
             <div className="flex-1">
               <div
-                className="h-3 rounded-full"
+                className="h-2.5 rounded-full"
                 style={{ width: '54%', backgroundColor: primaryBarColor }}
               />
               <div
-                className="mt-2 h-2 rounded-full"
+                className="mt-1.5 h-2 rounded-full"
                 style={{ width: '34%', backgroundColor: secondaryBarColor }}
               />
             </div>

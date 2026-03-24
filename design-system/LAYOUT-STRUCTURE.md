@@ -191,8 +191,12 @@ gap: 8px
   gap: 16px
 }
 
-@media (min-width: 1536px) {
+@media (min-width: 1700px) {
   grid-template-columns: repeat(8, minmax(0, 1fr))
+}
+
+@media (min-width: 2500px) {
+  grid-template-columns: repeat(12, minmax(0, 1fr))
 }
 ```
 
@@ -250,7 +254,7 @@ gap: 8px;
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-@media (min-width: 1536px) {
+@media (min-width: 1700px) {
   grid-template-columns: repeat(8, minmax(0, 1fr));
 }
 ```

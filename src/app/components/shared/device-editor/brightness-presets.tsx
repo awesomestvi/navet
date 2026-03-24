@@ -1,7 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
-import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
+import {
+  getBrightnessPresetAccentColor,
+  getBrightnessPresetSelectedStyle,
+} from './brightness-preset-styles';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 
 interface BrightnessPreset {
@@ -24,9 +27,9 @@ export const BrightnessPresets = memo(function BrightnessPresets({
   isOn,
   onBrightnessChange,
 }: BrightnessPresetsProps) {
-  const { primaryColor } = useTheme();
+  const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
-  const activeColor = getThemeColorValue(primaryColor);
+  const activeColor = getBrightnessPresetAccentColor(primaryColor);
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
 
   return (
@@ -38,36 +41,33 @@ export const BrightnessPresets = memo(function BrightnessPresets({
       </span>
 
       {/* Preset Brightness Levels */}
-      <div className="grid grid-cols-6 gap-3 mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
         {presets.map((preset) => {
           const IconComponent = preset.icon;
+          const isSelected = currentBrightness === preset.brightness;
           return (
             <button
               type="button"
               key={preset.brightness}
               onClick={() => onBrightnessChange(preset.brightness)}
               disabled={!isOn}
-              className={`w-full aspect-square rounded-full transition-all duration-300 flex items-center justify-center ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 ${
                 isOn ? 'hover:scale-110' : editorSurface.disabledCircleClassName
-              } ${currentBrightness === preset.brightness ? 'scale-110 shadow-lg' : ''}`}
+              } ${isSelected ? 'scale-110 shadow-lg' : ''}`}
               style={{
-                backgroundColor:
-                  isOn && currentBrightness === preset.brightness
-                    ? activeColor
-                    : isOn
-                      ? '#ffffff'
-                      : editorSurface.disabledSurfaceColor,
-                boxShadow:
-                  currentBrightness === preset.brightness ? `0 0 0 4px ${activeColor}` : undefined,
+                ...(isSelected
+                  ? getBrightnessPresetSelectedStyle(theme, activeColor, isOn)
+                  : {
+                      backgroundColor: isOn
+                        ? `${activeColor}22`
+                        : editorSurface.disabledSurfaceColor,
+                      borderColor: isOn ? `${activeColor}33` : 'transparent',
+                    }),
               }}
             >
               <IconComponent
-                className={`w-5 h-5 ${
-                  isOn && currentBrightness === preset.brightness
-                    ? 'text-white'
-                    : isOn
-                      ? 'text-gray-900'
-                      : editorSurface.iconClassName
+                className={`h-4 w-4 ${
+                  isSelected ? 'text-white' : isOn ? 'text-white/90' : editorSurface.iconClassName
                 }`}
               />
             </button>

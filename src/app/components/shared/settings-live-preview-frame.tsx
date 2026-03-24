@@ -6,6 +6,7 @@ import { getThemeSurfaceTokens } from './theme/theme-surface-tokens';
 interface SettingsLivePreviewFrameProps {
   accentColor: string;
   children: ReactNode;
+  className?: string;
   subtitle: string;
   theme: ThemeType;
   title: string;
@@ -16,6 +17,7 @@ interface SettingsLivePreviewFrameProps {
 export function SettingsLivePreviewFrame({
   accentColor,
   children,
+  className,
   subtitle,
   theme,
   title,
@@ -27,7 +29,7 @@ export function SettingsLivePreviewFrame({
 
   return (
     <div
-      className={`overflow-hidden rounded-[24px] border p-4 ${surface.textPrimary}`}
+      className={`overflow-hidden rounded-[24px] border p-4 ${surface.textPrimary} ${className ?? ''}`}
       style={{
         borderColor: `${accentColor}33`,
         background,
@@ -39,12 +41,12 @@ export function SettingsLivePreviewFrame({
             {t('preview.livePreview')}
           </p>
           <p className="mt-2 text-sm font-semibold">{title}</p>
-          <p className={`text-xs ${surface.textMuted}`}>{subtitle}</p>
+          <p className={`mt-1 text-xs ${surface.textMuted}`}>{subtitle}</p>
         </div>
         {topBar}
       </div>
 
-      <div className="mt-5">{children}</div>
+      <div className="mt-4">{children}</div>
     </div>
   );
 }

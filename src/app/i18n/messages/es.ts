@@ -431,6 +431,9 @@ export const esMessages = {
   'lighting.lightColor': 'Color de luz',
   'lighting.colorTemperature': 'Temperatura de color',
   'lighting.lightIcon': 'Icono de luz',
+  'lighting.iconInputPlaceholder': 'sun-medium o 💡',
+  'lighting.iconInputHelp': 'Escribe un nombre de icono de Lucide o pega un emoji.',
+  'lighting.lucideIconLibrary': 'Explorar iconos de Lucide',
   'lighting.searchIcons': 'Buscar iconos...',
   'lighting.noIconsFound': 'No se encontraron iconos',
   'lighting.tryDifferentSearch': 'Prueba con otro término de búsqueda',
@@ -617,7 +620,7 @@ export const esMessages = {
   'rss.error.unableToLoad': 'No se pudieron cargar las fuentes',
   'common.room': 'Habitación',
   'common.noRoom': 'Sin habitación',
-  'preview.livePreview': 'Vista previa en vivo',
+  'preview.livePreview': 'Vista previa',
   'network.offlineTitle': 'Estás sin conexión',
   'network.offlineDescription':
     'La interfaz de la app sigue disponible, pero los datos en vivo y las acciones del hogar inteligente necesitan conexión de red.',

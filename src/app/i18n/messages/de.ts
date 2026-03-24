@@ -431,6 +431,9 @@ export const deMessages = {
   'lighting.lightColor': 'Lichtfarbe',
   'lighting.colorTemperature': 'Farbtemperatur',
   'lighting.lightIcon': 'Lichtsymbol',
+  'lighting.iconInputPlaceholder': 'sun-medium oder 💡',
+  'lighting.iconInputHelp': 'Geben Sie einen Lucide-Iconnamen ein oder fügen Sie ein Emoji ein.',
+  'lighting.lucideIconLibrary': 'Lucide-Symbole durchsuchen',
   'lighting.searchIcons': 'Symbole suchen...',
   'lighting.noIconsFound': 'Keine Symbole gefunden',
   'lighting.tryDifferentSearch': 'Versuchen Sie einen anderen Suchbegriff',
@@ -616,7 +619,7 @@ export const deMessages = {
   'rss.error.unableToLoad': 'Feeds konnten nicht geladen werden',
   'common.room': 'Raum',
   'common.noRoom': 'Kein Raum',
-  'preview.livePreview': 'Live-Vorschau',
+  'preview.livePreview': 'Vorschau',
   'network.offlineTitle': 'Sie sind offline',
   'network.offlineDescription':
     'Die App-Oberfläche ist verfügbar, aber Live-Daten und Smart-Home-Aktionen benötigen eine Netzwerkverbindung.',

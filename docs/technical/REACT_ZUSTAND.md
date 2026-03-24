@@ -211,7 +211,7 @@ when `ambientLightBleed` is enabled; `paint` containment clips glow effects to t
 border-box, so light cards in bleed mode use `contain: layout style` only.
 
 **Stable event handlers** — Where multiple sibling elements share the same logical action
-(icon picker grid, brightness preset buttons), a single `useCallback`-memoized handler is
+(for example brightness preset buttons), a single `useCallback`-memoized handler can be
 passed to all buttons via `data-*` attributes and `e.currentTarget`. This produces one
 function allocation instead of N closures per render.
 

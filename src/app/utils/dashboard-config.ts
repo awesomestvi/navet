@@ -251,7 +251,12 @@ export const importDashboardConfig = (value: unknown) => {
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
     pageZoom:
-      settings.pageZoom === 75 || settings.pageZoom === 85 || settings.pageZoom === 100
+      settings.pageZoom === 75 ||
+      settings.pageZoom === 80 ||
+      settings.pageZoom === 85 ||
+      settings.pageZoom === 90 ||
+      settings.pageZoom === 95 ||
+      settings.pageZoom === 100
         ? settings.pageZoom
         : defaultSettings.pageZoom,
     entityInteractionMode:

@@ -14,7 +14,6 @@ import {
   Moon,
   MoonStar,
   Orbit,
-  Search,
   Sparkle,
   Sparkles,
   Star,
@@ -29,8 +28,13 @@ import {
   ZapOff,
 } from 'lucide-react';
 import type React from 'react';
-import { memo, useCallback, useState } from 'react';
+import { memo } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
+import {
+  DEFAULT_LIGHT_ICON,
+  normalizeLightIconName,
+  resolveLightIconComponent,
+} from '@/app/constants/icon-map';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
@@ -78,7 +82,7 @@ const lightIcons = [
 export const DEVICE_EDITOR_ICON_OPTIONS = lightIcons;
 
 export function getNamedIconComponent(iconName: string) {
-  return lightIcons.find((icon) => icon.name === iconName)?.component ?? Zap;
+  return resolveLightIconComponent(iconName) ?? Zap;
 }
 
 export const IconPicker = memo(function IconPicker({
@@ -88,26 +92,16 @@ export const IconPicker = memo(function IconPicker({
 }: IconPickerProps) {
   const { primaryColor } = useTheme();
   const { t } = useI18n();
-  const [searchQuery, setSearchQuery] = useState('');
   const activeColor = getThemeColorValue(primaryColor);
   const editorSurface = getDeviceEditorSurfaceTokens(isLightOn);
-
-  const handleIconButtonClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      const iconName = e.currentTarget.dataset.icon;
-      if (iconName) onIconChange(iconName);
-    },
-    [onIconChange]
-  );
-
-  // Filter icons based on search query
-  const filteredIcons = searchQuery
-    ? lightIcons.filter(
-        (icon) =>
-          icon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t(icon.labelKey).toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : lightIcons;
+  const normalizedIconName = normalizeLightIconName(selectedIcon);
+  const customIconComponent = normalizedIconName
+    ? resolveLightIconComponent(normalizedIconName)
+    : null;
+  const isEmojiIcon = !customIconComponent && normalizedIconName.length > 0;
+  const IconComponent = isEmojiIcon
+    ? null
+    : (customIconComponent ?? resolveLightIconComponent(DEFAULT_LIGHT_ICON));
 
   return (
     <div>
@@ -119,83 +113,69 @@ export const IconPicker = memo(function IconPicker({
         </span>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search
-          className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-500 ${editorSurface.closeIconClassName}`}
-        />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t('lighting.searchIcons')}
-          className={`w-full rounded-[22px] border py-2 pl-10 pr-4 text-sm transition-all duration-500 focus:outline-none focus:ring-2 ${
-            isLightOn
-              ? 'border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:bg-white/10 focus:ring-transparent'
-              : 'border-white/5 bg-white/[0.02] text-gray-500 placeholder:text-gray-700 focus:border-gray-500/30 focus:bg-white/5 focus:ring-gray-500/20'
-          }`}
-          style={
-            isLightOn
-              ? {
-                  borderColor: searchQuery ? `${activeColor}4d` : undefined,
-                  boxShadow: searchQuery ? `0 0 0 2px ${activeColor}26` : undefined,
-                }
-              : undefined
-          }
-        />
-      </div>
-
-      {/* Icon Grid */}
-      <div className="grid grid-cols-6 gap-3">
-        {filteredIcons.map((icon) => {
-          const IconComponent = icon.component;
-          return (
-            <button
-              type="button"
-              key={icon.name}
-              data-icon={icon.name}
-              disabled={!isLightOn}
-              onClick={handleIconButtonClick}
-              className={`w-full aspect-square rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
-                selectedIcon === icon.name
-                  ? isLightOn
-                    ? 'scale-105'
-                    : 'bg-gray-500/20 border-gray-500/50'
-                  : isLightOn
-                    ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 hover:scale-105'
-                    : `bg-white/[0.02] border-white/5 ${editorSurface.disabledCircleClassName}`
-              }`}
-              style={
-                selectedIcon === icon.name && isLightOn
-                  ? {
-                      backgroundColor: `${activeColor}30`,
-                      borderColor: activeColor,
-                      boxShadow: `0 10px 20px -12px ${activeColor}80`,
-                    }
-                  : undefined
-              }
-              title={t(icon.labelKey)}
-            >
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ${
+              isLightOn ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5'
+            }`}
+            style={
+              isLightOn
+                ? {
+                    borderColor: `${activeColor}4d`,
+                    boxShadow: `0 0 0 2px ${activeColor}26`,
+                  }
+                : undefined
+            }
+          >
+            {IconComponent ? (
               <IconComponent
-                className={`w-5 h-5 transition-colors duration-500 ${
-                  selectedIcon === icon.name ? '' : editorSurface.closeIconClassName
-                }`}
-                style={selectedIcon === icon.name && isLightOn ? { color: '#ffffff' } : undefined}
+                className={`h-4 w-4 ${isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
               />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* No results message */}
-      {searchQuery && filteredIcons.length === 0 && (
-        <div
-          className={`py-8 text-center transition-colors duration-500 ${editorSurface.sectionLabelClassName}`}
-        >
-          <p className="text-sm">{t('lighting.noIconsFound')}</p>
-          <p className="text-xs mt-1">{t('lighting.tryDifferentSearch')}</p>
+            ) : (
+              <span
+                className={`text-sm leading-none ${isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
+              >
+                {isEmojiIcon ? normalizedIconName : '•'}
+              </span>
+            )}
+          </div>
+          <input
+            type="text"
+            value={selectedIcon}
+            onChange={(e) => onIconChange(e.target.value)}
+            placeholder={t('lighting.iconInputPlaceholder')}
+            className={`w-full rounded-[22px] border px-4 py-2 text-sm transition-all duration-500 focus:outline-none focus:ring-2 ${
+              isLightOn
+                ? 'border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:bg-white/10 focus:ring-transparent'
+                : 'border-white/5 bg-white/[0.02] text-gray-500 placeholder:text-gray-700 focus:border-gray-500/30 focus:bg-white/5 focus:ring-gray-500/20'
+            }`}
+            style={
+              isLightOn
+                ? {
+                    borderColor: selectedIcon.trim() ? `${activeColor}4d` : undefined,
+                    boxShadow: selectedIcon.trim() ? `0 0 0 2px ${activeColor}26` : undefined,
+                  }
+                : undefined
+            }
+          />
         </div>
-      )}
+
+        <p className={`text-xs leading-relaxed ${editorSurface.sectionLabelClassName}`}>
+          {t('lighting.iconInputHelp')}
+        </p>
+
+        <a
+          href="https://lucide.dev/icons/"
+          target="_blank"
+          rel="noreferrer"
+          className={`inline-flex items-center gap-2 text-xs font-medium underline underline-offset-4 ${
+            isLightOn ? 'text-white/80 hover:text-white' : editorSurface.sectionLabelClassName
+          }`}
+        >
+          {t('lighting.lucideIconLibrary')}
+        </a>
+      </div>
     </div>
   );
 });

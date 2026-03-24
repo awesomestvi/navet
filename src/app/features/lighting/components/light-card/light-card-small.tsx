@@ -21,7 +21,8 @@ interface LightCardSmallProps {
   brightnessPresets: LightBrightnessPreset[];
   isOn: boolean;
   isKelvinMode: boolean;
-  IconComponent: LucideIcon;
+  IconComponent?: LucideIcon | null;
+  iconText?: string | null;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
@@ -48,6 +49,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   isOn,
   isKelvinMode,
   IconComponent,
+  iconText,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
@@ -75,6 +77,7 @@ export const LightCardSmall = memo(function LightCardSmall({
         name={name}
         isOn={isOn}
         IconComponent={IconComponent}
+        iconText={iconText}
         size={size}
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}

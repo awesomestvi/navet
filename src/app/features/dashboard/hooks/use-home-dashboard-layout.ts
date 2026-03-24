@@ -1,4 +1,5 @@
 import { type SetStateAction, useCallback, useMemo, useState } from 'react';
+import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { storage } from '@/app/utils/storage';
 import {
@@ -6,13 +7,13 @@ import {
   clampWidth,
   compactRows,
   getBottomRow,
+  getSectionCardMinColumns,
   insertSectionBelow,
   insertSectionRow,
   layoutRow,
   removeSectionFromLayout,
   replaceRow,
   SECTION_LAYOUT_COLUMNS,
-  SECTION_RESIZE_SNAP,
   type SectionLayoutItem,
   sortSectionLayout,
   translateGridUnits,
@@ -284,7 +285,10 @@ function normalizeLayout(value: unknown): HomeDashboardLayoutState {
   };
 }
 
-export function useHomeDashboardLayout(validCardIds: string[]) {
+export function useHomeDashboardLayout(
+  validCardIds: string[],
+  cardSizes: Record<string, CardSize>
+) {
   const validIdSet = useMemo(() => new Set(validCardIds), [validCardIds]);
   const [layout, setLayout] = useState<HomeDashboardLayoutState>(() =>
     normalizeLayout(storage.get(STORAGE_KEYS.homeDashboardLayout, DEFAULT_LAYOUT))
@@ -455,7 +459,7 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
   );
 
   const resizeSection = useCallback(
-    (sectionId: string, newW: number) => {
+    (sectionId: string, newW: number, minWidthsBySection: Record<string, number> = {}) => {
       persistLayout((previous) => {
         const items = previous.sections.map(toSectionLayoutItem);
         const target = items.find((s) => s.id === sectionId);
@@ -464,10 +468,30 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
         const rowItems = sortSectionLayout(items.filter((s) => s.y === target.y));
         if (rowItems.length <= 1) return previous;
 
-        const minW = SECTION_RESIZE_SNAP;
-        const maxW = SECTION_LAYOUT_COLUMNS - (rowItems.length - 1) * minW;
-        const snapped = Math.round(newW / minW) * minW;
-        const clampedW = Math.max(minW, Math.min(maxW, snapped));
+        const resolvedMinWidths = Object.fromEntries(
+          rowItems.map((item) => {
+            const sectionCardIds = previous.cardIds.filter(
+              (cardId) => previous.cardSectionAssignments[cardId] === item.id
+            );
+            const fallbackMinWidth = Math.max(
+              1,
+              ...sectionCardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
+            );
+
+            return [
+              item.id,
+              Math.max(1, Math.round(minWidthsBySection[item.id] ?? fallbackMinWidth)),
+            ];
+          })
+        );
+
+        const minW = resolvedMinWidths[sectionId] ?? 1;
+        const maxW =
+          SECTION_LAYOUT_COLUMNS -
+          rowItems
+            .filter((item) => item.id !== sectionId)
+            .reduce((total, item) => total + (resolvedMinWidths[item.id] ?? 1), 0);
+        const clampedW = Math.max(minW, Math.min(maxW, Math.round(newW)));
         if (clampedW === target.w) return previous;
 
         const targetIdx = rowItems.findIndex((s) => s.id === sectionId);
@@ -477,7 +501,8 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
 
         const delta = clampedW - target.w;
         const newNeighborW = neighbor.w - delta;
-        if (newNeighborW < minW || newNeighborW > maxW) return previous;
+        const neighborMinW = resolvedMinWidths[neighbor.id] ?? 1;
+        if (newNeighborW < neighborMinW || newNeighborW > SECTION_LAYOUT_COLUMNS) return previous;
 
         const newRow = layoutRow(
           rowItems.map((s) => ({
@@ -486,14 +511,38 @@ export function useHomeDashboardLayout(validCardIds: string[]) {
           })),
           target.y
         );
+        const resizedTarget = newRow.find((item) => item.id === sectionId);
+        if (!resizedTarget) return previous;
+
+        const stackedDescendantIds: string[] = [];
+        let nextY = target.y + 1;
+
+        while (true) {
+          const nextRowItem = items.find(
+            (item) => item.y === nextY && item.x === target.x && item.w === target.w
+          );
+
+          if (!nextRowItem) {
+            break;
+          }
+
+          stackedDescendantIds.push(nextRowItem.id);
+          nextY += 1;
+        }
+
+        const nextSections = replaceRow(items, target.y, newRow).map((item) =>
+          stackedDescendantIds.includes(item.id)
+            ? { ...item, x: resizedTarget.x, w: resizedTarget.w }
+            : item
+        );
 
         return {
           ...previous,
-          sections: replaceRow(items, target.y, newRow).map(toHomeSection),
+          sections: nextSections.map(toHomeSection),
         };
       });
     },
-    [persistLayout]
+    [cardSizes, persistLayout]
   );
 
   const addCard = useCallback(

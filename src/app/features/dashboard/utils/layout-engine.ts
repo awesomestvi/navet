@@ -1,3 +1,5 @@
+import type { CardSize } from '@/app/components/shared/card-size-selector';
+
 export interface GridItemLayout {
   x: number;
   y: number;
@@ -193,4 +195,108 @@ export function translateGridUnits(value: number, fromColumns: number, toColumns
   }
 
   return Math.round((value / fromColumns) * toColumns);
+}
+
+// --- Section rendering helpers ---
+
+export function getSectionCardMinColumns(size: CardSize | undefined): number {
+  switch (size) {
+    case 'medium':
+    case 'large':
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+export function getSectionMinBaseWidth(
+  cardIds: string[],
+  cardSizes: Record<string, CardSize>,
+  layoutCols: number
+): number {
+  const minRenderedWidth = Math.max(
+    1,
+    ...cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
+  );
+  return Math.max(1, Math.ceil((minRenderedWidth / layoutCols) * SECTION_LAYOUT_COLUMNS));
+}
+
+export function getRenderedRowLayouts<T extends { id: string; x: number; span: number }>(
+  items: T[],
+  cols: number
+): Map<string, { start: number; span: number }> {
+  const sortedItems = [...items].sort((left, right) => left.x - right.x);
+
+  if (sortedItems.length === 0) {
+    return new Map();
+  }
+
+  if (cols === SECTION_LAYOUT_COLUMNS) {
+    return new Map(
+      sortedItems.map((item) => [
+        item.id,
+        {
+          start: Math.max(1, item.x + 1),
+          span: Math.min(cols, Math.max(1, item.span)),
+        },
+      ])
+    );
+  }
+
+  const exactSpans = sortedItems.map(
+    (item) => (Math.max(1, item.span) / SECTION_LAYOUT_COLUMNS) * cols
+  );
+  const renderedSpans = exactSpans.map((span) => Math.max(1, Math.floor(span)));
+  let assignedCols = renderedSpans.reduce((total, span) => total + span, 0);
+
+  if (assignedCols < cols) {
+    const candidates = exactSpans
+      .map((span, index) => ({
+        index,
+        remainder: span - Math.floor(span),
+        x: sortedItems[index]?.x ?? 0,
+      }))
+      .sort((left, right) => right.remainder - left.remainder || right.x - left.x);
+
+    let candidateIndex = 0;
+    while (assignedCols < cols && candidates.length > 0) {
+      const candidate = candidates[candidateIndex % candidates.length];
+      renderedSpans[candidate.index] += 1;
+      assignedCols += 1;
+      candidateIndex += 1;
+    }
+  } else if (assignedCols > cols) {
+    const candidates = exactSpans
+      .map((span, index) => ({
+        index,
+        remainder: span - Math.floor(span),
+        x: sortedItems[index]?.x ?? 0,
+      }))
+      .sort((left, right) => left.remainder - right.remainder || left.x - right.x);
+
+    let candidateIndex = 0;
+    while (assignedCols > cols && candidates.length > 0) {
+      const candidate = candidates[candidateIndex % candidates.length];
+      if (renderedSpans[candidate.index] > 1) {
+        renderedSpans[candidate.index] -= 1;
+        assignedCols -= 1;
+      }
+      candidateIndex += 1;
+      if (candidateIndex > candidates.length * cols) {
+        break;
+      }
+    }
+  }
+
+  let start = 1;
+  return new Map(
+    sortedItems.map((item, index) => {
+      const layout = {
+        start,
+        span: renderedSpans[index] ?? 1,
+      };
+      start += layout.span;
+      return [item.id, layout];
+    })
+  );
 }

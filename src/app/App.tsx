@@ -66,10 +66,46 @@ function AppContent() {
   }, [reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
+    const syncViewportVars = () => {
+      const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const visibleViewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const layoutViewportWidth = Math.max(window.innerWidth, visibleViewportWidth);
+      const layoutViewportHeight = Math.max(window.innerHeight, visibleViewportHeight);
+      const logicalViewportWidth = layoutViewportWidth / pageZoomScale;
+      const logicalViewportHeight = layoutViewportHeight / pageZoomScale;
+
+      document.documentElement.style.setProperty(
+        '--navet-viewport-width',
+        `${logicalViewportWidth}px`
+      );
+      document.documentElement.style.setProperty(
+        '--navet-viewport-height',
+        `${logicalViewportHeight}px`
+      );
+      document.documentElement.style.setProperty(
+        '--navet-visible-viewport-width',
+        `${visibleViewportWidth}px`
+      );
+      document.documentElement.style.setProperty(
+        '--navet-visible-viewport-height',
+        `${visibleViewportHeight}px`
+      );
+    };
+
     document.documentElement.style.zoom = String(pageZoomScale);
+    syncViewportVars();
+
+    window.addEventListener('resize', syncViewportVars);
+    window.visualViewport?.addEventListener('resize', syncViewportVars);
 
     return () => {
+      window.removeEventListener('resize', syncViewportVars);
+      window.visualViewport?.removeEventListener('resize', syncViewportVars);
       document.documentElement.style.zoom = '';
+      document.documentElement.style.removeProperty('--navet-viewport-width');
+      document.documentElement.style.removeProperty('--navet-viewport-height');
+      document.documentElement.style.removeProperty('--navet-visible-viewport-width');
+      document.documentElement.style.removeProperty('--navet-visible-viewport-height');
     };
   }, [pageZoomScale]);
 

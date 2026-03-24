@@ -390,8 +390,9 @@ Focus visible on keyboard navigation
 ```css
 Mobile: < 768px
 Tablet: 768px - 1279px
-Desktop: 1280px - 1535px
-Large Desktop: ≥ 1536px
+Desktop: 1280px - 1699px
+Large Desktop: 1700px - 2499px
+Ultra-Wide: ≥ 2500px
 ```
 
 ### Mobile Optimizations
@@ -407,6 +408,7 @@ Mobile: grid-cols-2 + gap-2
 Tablet (md): grid-cols-4 + gap-3
 Desktop (xl): grid-cols-6
 Large Desktop (2xl): grid-cols-8
+Ultra-Wide (4xl): grid-cols-12
 Desktop gap: lg:gap-4
 Auto rows: 87px
 Small cards: 2 row spans

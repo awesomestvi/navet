@@ -16,7 +16,8 @@ interface LightCardMediumProps {
   brightnessPresets: LightBrightnessPreset[];
   isOn: boolean;
   isKelvinMode: boolean;
-  IconComponent: LucideIcon;
+  IconComponent?: LucideIcon | null;
+  iconText?: string | null;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
@@ -43,6 +44,7 @@ export const LightCardMedium = memo(function LightCardMedium({
   isOn,
   isKelvinMode,
   IconComponent,
+  iconText,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
@@ -62,6 +64,7 @@ export const LightCardMedium = memo(function LightCardMedium({
         name={name}
         isOn={isOn}
         IconComponent={IconComponent}
+        iconText={iconText}
         size="medium"
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}

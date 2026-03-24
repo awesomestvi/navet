@@ -7,7 +7,8 @@ import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-ic
 import { useTheme } from '@/app/hooks';
 
 interface EntityCardHeaderIconProps {
-  IconComponent: LucideIcon;
+  IconComponent?: LucideIcon | null;
+  iconText?: string | null;
   isActive: boolean;
   size: CardSize;
   tone?: CardTextTone;
@@ -18,6 +19,7 @@ interface EntityCardHeaderIconProps {
 
 export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   IconComponent,
+  iconText,
   isActive,
   size,
   tone,
@@ -36,8 +38,20 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     theme,
     tone,
   });
+  const iconTextClassName =
+    size === 'large' || size === 'hero'
+      ? 'text-base'
+      : size === 'extra-small'
+        ? 'text-xs'
+        : 'text-sm';
 
-  const icon = <IconComponent aria-hidden="true" className={iconClassName} style={iconStyle} />;
+  const icon = IconComponent ? (
+    <IconComponent aria-hidden="true" className={iconClassName} style={iconStyle} />
+  ) : iconText ? (
+    <span aria-hidden="true" className={`${iconTextClassName} leading-none`} style={iconStyle}>
+      {iconText}
+    </span>
+  ) : null;
 
   if (!isInteractive) {
     return (

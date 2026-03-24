@@ -34,7 +34,7 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Custom Accent Colors** - 8 built-in accents plus a custom accent color picker
 - **Multi-Language UI** - English, Swedish, German, French, and Spanish interface support with locale-aware date, time, and number formatting
 - **Dynamic Greeting** - Header greeting rotates on each session: time-of-day greetings (Good morning/afternoon/evening/night) with occasional casual variants (Hi, Hey, Welcome back), fully localized across all five languages
-- **Responsive Grid** - 2 columns (mobile) → 4 (`md`) → 6 (`xl`) → 8 (`2xl`)
+- **Responsive Grid** - 2 columns (mobile) → 4 (`md`) → 6 (`xl`) → 8 (`2xl`) → 12 (`4xl`)
 - **Adaptive Cards** - Extra-Small, Small, Medium, and Large card sizes
 
 ### 🏠 Smart Home Control
@@ -207,7 +207,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Liquid Glass now uses a denser frosted treatment with stronger rim highlights and deeper control surfaces instead of a flatter transparent blur
 - Select from **8 built-in accents** or choose a **custom accent color**
 - Choose **Visual Quality** in **Settings -> Appearance**: **High**, **Medium**, or **Low**
-- Choose **Page Zoom** in **Settings -> Appearance** to scale the whole interface with built-in presets such as `75%`
+- Choose **Page Zoom** in **Settings -> Appearance** to scale the whole interface with built-in presets from `75%` to `100%` in 5% steps
 - Choose the app **Language** in **Settings -> Localization** to switch locale-aware interface formatting
 - Theme mode names and descriptions follow the selected app language
 - First-run onboarding now gives **Localization** its own step for language, time format, and temperature unit before the appearance step

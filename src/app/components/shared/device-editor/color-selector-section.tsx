@@ -34,14 +34,28 @@ export const ColorSelectorSection = memo(function ColorSelectorSection({
       </span>
 
       {/* Preset Colors + Custom Color Button */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <ColorInputSwatch
+          value={customColor}
+          ariaLabel={t('lighting.customColorPicker')}
+          title={t('lighting.customColorPicker')}
+          size="small"
+          disabled={!isOn}
+          selected={selectedColor === customColor}
+          ringColor={activeColor}
+          className={!isOn ? editorSurface.disabledCircleClassName : ''}
+          onChange={(value) => {
+            onCustomColorChange(value);
+            onColorChange(value);
+          }}
+        />
         {colors.map((color) => (
           <button
             type="button"
             key={color}
             onClick={() => onColorChange(color)}
             disabled={!isOn}
-            className={`w-full aspect-square rounded-full transition-all duration-300 ${
+            className={`h-8 w-8 rounded-full transition-all duration-300 ${
               isOn ? 'hover:scale-110' : editorSurface.disabledCircleClassName
             } ${selectedColor === color ? 'scale-110 shadow-lg' : ''}`}
             style={{
@@ -50,22 +64,6 @@ export const ColorSelectorSection = memo(function ColorSelectorSection({
             }}
           />
         ))}
-
-        {/* Custom Color Button */}
-        <ColorInputSwatch
-          value={customColor}
-          ariaLabel={t('lighting.customColorPicker')}
-          title={t('lighting.customColorPicker')}
-          size="large"
-          disabled={!isOn}
-          selected={selectedColor === customColor}
-          ringColor={activeColor}
-          className={`h-auto w-full aspect-square ${!isOn ? editorSurface.disabledCircleClassName : ''}`}
-          onChange={(value) => {
-            onCustomColorChange(value);
-            onColorChange(value);
-          }}
-        />
       </div>
     </div>
   );

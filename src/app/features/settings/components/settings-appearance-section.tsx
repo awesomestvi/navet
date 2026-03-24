@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Palette, Upload, X } from 'lucide-react';
+import { Image as ImageIcon, Minus, Palette, Plus, Upload, X } from 'lucide-react';
 import { useMemo } from 'react';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
 import { useI18n } from '@/app/hooks';
@@ -70,11 +70,25 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
     { value: 'medium', label: t('settings.system.effectsQuality.medium') },
     { value: 'low', label: t('settings.system.effectsQuality.low') },
   ];
-  const pageZoomOptions: Array<{ value: PageZoom; label: string }> = [
-    { value: 75, label: '75%' },
-    { value: 85, label: '85%' },
-    { value: 100, label: '100%' },
-  ];
+  const pageZoomOptions: readonly PageZoom[] = [75, 80, 85, 90, 95, 100];
+  const currentPageZoomIndex = pageZoomOptions.indexOf(pageZoom);
+  const canDecreasePageZoom = currentPageZoomIndex > 0;
+  const canIncreasePageZoom =
+    currentPageZoomIndex >= 0 && currentPageZoomIndex < pageZoomOptions.length - 1;
+  const decreasePageZoom = () => {
+    if (!canDecreasePageZoom) {
+      return;
+    }
+
+    updateSettings({ pageZoom: pageZoomOptions[currentPageZoomIndex - 1] });
+  };
+  const increasePageZoom = () => {
+    if (!canIncreasePageZoom) {
+      return;
+    }
+
+    updateSettings({ pageZoom: pageZoomOptions[currentPageZoomIndex + 1] });
+  };
 
   return (
     <SettingsSectionShell
@@ -156,32 +170,37 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
         styles={styles}
       >
         <div
-          className={`inline-flex flex-wrap rounded-full border p-1 ${styles.borderColor} ${styles.softBg}`}
+          className={`inline-flex items-center gap-3 rounded-full border px-3 py-2 ${styles.borderColor} ${styles.softBg}`}
         >
-          {pageZoomOptions.map((option) => {
-            const isActive = pageZoom === option.value;
-            return (
-              <button
-                type="button"
-                key={option.label}
-                onClick={() => updateSettings({ pageZoom: option.value })}
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: styles.accentColor,
-                        color: '#ffffff',
-                      }
-                    : undefined
-                }
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all md:px-5 ${
-                  isActive ? 'shadow-sm' : styles.chipTextColor
-                }`}
-                aria-pressed={isActive}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={decreasePageZoom}
+            disabled={!canDecreasePageZoom}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+              canDecreasePageZoom
+                ? `${styles.softBg} ${styles.chipTextColor}`
+                : 'cursor-not-allowed opacity-40'
+            }`}
+            aria-label="Decrease page zoom"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <div className={`min-w-[4.5rem] text-center text-sm font-medium ${styles.textColor}`}>
+            {pageZoom}%
+          </div>
+          <button
+            type="button"
+            onClick={increasePageZoom}
+            disabled={!canIncreasePageZoom}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+              canIncreasePageZoom
+                ? `${styles.softBg} ${styles.chipTextColor}`
+                : 'cursor-not-allowed opacity-40'
+            }`}
+            aria-label="Increase page zoom"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
         </div>
       </SettingsItem>
 
@@ -190,7 +209,7 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
         description={t('settings.appearance.ambience.description')}
         styles={styles}
       >
-        <div className="grid gap-4 md:gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_13rem] md:gap-5 md:items-start xl:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="space-y-3">
             <div
               className={`inline-flex w-fit flex-wrap rounded-full border p-1 ${styles.borderColor} ${styles.softBg}`}

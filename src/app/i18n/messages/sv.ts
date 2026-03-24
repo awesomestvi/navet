@@ -427,6 +427,9 @@ export const svMessages = {
   'lighting.lightColor': 'Ljusfärg',
   'lighting.colorTemperature': 'Färgtemperatur',
   'lighting.lightIcon': 'Ljusikon',
+  'lighting.iconInputPlaceholder': 'sun-medium eller 💡',
+  'lighting.iconInputHelp': 'Ange ett Lucide-ikonnamn eller klistra in en emoji.',
+  'lighting.lucideIconLibrary': 'Bläddra bland Lucide-ikoner',
   'lighting.searchIcons': 'Sök ikoner...',
   'lighting.noIconsFound': 'Inga ikoner hittades',
   'lighting.tryDifferentSearch': 'Prova en annan sökterm',
@@ -611,7 +614,7 @@ export const svMessages = {
   'rss.error.unableToLoad': 'Det gick inte att ladda flöden',
   'common.room': 'Rum',
   'common.noRoom': 'Inget rum',
-  'preview.livePreview': 'Liveförhandsvisning',
+  'preview.livePreview': 'Förhandsvisning',
   'network.offlineTitle': 'Du är offline',
   'network.offlineDescription':
     'Appskalet är tillgängligt, men live-data och smarta hem-aktioner kräver en nätverksanslutning.',

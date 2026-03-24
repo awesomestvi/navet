@@ -30,7 +30,8 @@ interface LightCardLargeProps {
   maxColorTemp: number;
   isOn: boolean;
   isKelvinMode: boolean;
-  IconComponent: LucideIcon;
+  IconComponent?: LucideIcon | null;
+  iconText?: string | null;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
@@ -57,6 +58,7 @@ export const LightCardLarge = memo(function LightCardLarge({
   isOn,
   isKelvinMode,
   IconComponent,
+  iconText,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
@@ -88,6 +90,7 @@ export const LightCardLarge = memo(function LightCardLarge({
         name={name}
         isOn={isOn}
         IconComponent={IconComponent}
+        iconText={iconText}
         size="large"
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}

@@ -324,14 +324,14 @@ The Dashboard Builder (`/mock` section) lets users compose their Home screen fro
 | `flow` | All cards in a single responsive masonry grid — the simplest layout |
 | `sectioned` | Cards organised into named sections (rows and column groups) |
 
-Switching to `sectioned` mode auto-creates the first section if none exist. Sections can be renamed inline, removed individually, split into column arrangements via "Add column", stacked vertically within the same column block via "Add below", and resized horizontally via ← → controls in the section header.
+Switching to `sectioned` mode auto-creates the first section if none exist. Sections can be renamed inline, removed individually, split into column arrangements via "Add column", stacked vertically within the same column block via "Add below", and resized horizontally via − + controls in the section header.
 
 ### Section Stacking
 
 Sections in the same column slot are grouped into vertical stacks by `buildSectionStacks` (in `home-dashboard-overview.tsx`). A stack is formed when two sections share the same `x` coordinate and `span` value across consecutive `y` rows.
 
 - **Add below** — creates a new section stacked directly below the selected section, inheriting its column span
-- All sections in a stack share the same column width; resizing one resizes the entire stack column
+- All sections in a stack share the same column width; resizing one resizes the entire stack column — stacked descendants are updated automatically
 - `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates
 
 ### Floating Library Panel
@@ -352,11 +352,11 @@ Top-level sections in `sectioned` mode are positioned on a **12-column grid** de
 |---|---|---|
 | `SECTION_LAYOUT_COLUMNS` | `12` | Total grid columns |
 | `SECTION_MAX_PER_ROW` | `4` | Maximum sections in one row |
-| `SECTION_RESIZE_SNAP` | `3` | Column increment for resize (12 ÷ 4) |
+| `SECTION_RESIZE_SNAP` | `3` | Base grid ratio helper (`SECTION_LAYOUT_COLUMNS / SECTION_MAX_PER_ROW`) |
 
 Each section is stored as a `SectionLayoutItem` with `x`, `y`, `w`, and `h` coordinates. The layout engine functions (`insertSectionRow`, `insertSectionBelow`, `removeSectionFromLayout`, `rebalanceRow`, `compactRows`) mutate these coordinates and are called by `useHomeDashboardLayout`.
 
-**Section resizing** snaps widths to multiples of `SECTION_RESIZE_SNAP` (i.e. 3, 6, 9, or 12 columns). When one section grows by one snap unit, its row neighbor shrinks by the same amount, keeping the row sum constant. The resize action is exposed as `resizeSection(sectionId, newW)` from `useHomeDashboardLayout` and triggered by ← → buttons in each section's header (shown only when `rowSiblingCount > 1`).
+**Section resizing** operates in rendered-column units (matching the current breakpoint column count) and translates back to base-12 storage units. Minimum section width is content-aware — a section containing medium or large cards cannot be shrunk below 2 rendered columns. When one section grows, its row neighbor shrinks to compensate. All sections stacked below the resized column are updated together. The resize action is exposed as `resizeSection(sectionId, newW, minWidthsBySection?)` from `useHomeDashboardLayout` and triggered by − + buttons in each section's header (shown only when `rowSiblingCount > 1`).
 
 `buildSectionStacks` (in `home-dashboard-overview.tsx`) groups the flat section list into a `rowStacks` structure for rendering — each row is an array of stacks, each stack an array of sections sharing the same column slot.
 

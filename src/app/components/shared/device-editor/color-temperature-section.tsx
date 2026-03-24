@@ -84,39 +84,24 @@ export const ColorTemperatureSection = memo(function ColorTemperatureSection({
       </div>
 
       {/* Temperature Presets */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         {tempOptions.map((temp) => (
-          <div key={temp.value} className="flex items-center gap-2 rounded-2xl px-2 py-2 text-left">
-            <ColorInputSwatch
-              mode="swatch"
-              value={temp.color}
-              ariaLabel={`${temp.label} (${temp.value}K)`}
-              title={`${temp.label} (${temp.value}K)`}
-              size="small"
-              disabled={!isOn}
-              selected={colorTemp === temp.value}
-              ringColor={activeColor}
-              className={`shrink-0 ${!isOn ? editorSurface.disabledCircleClassName : ''}`}
-              onClick={() => {
-                onTempChange(temp.value);
-                onTempCommit?.(temp.value);
-              }}
-            />
-            <div className="min-w-0">
-              <div
-                className={`text-xs font-semibold transition-colors duration-300 ${
-                  colorTemp === temp.value
-                    ? editorSurface.sectionValueClassName
-                    : editorSurface.sectionLabelClassName
-                }`}
-              >
-                {temp.label}
-              </div>
-              <div className={`text-[11px] ${editorSurface.sectionLabelClassName}`}>
-                {temp.value}K
-              </div>
-            </div>
-          </div>
+          <ColorInputSwatch
+            key={temp.value}
+            mode="swatch"
+            value={temp.color}
+            ariaLabel={`${temp.label} (${temp.value}K)`}
+            title={`${temp.label} (${temp.value}K)`}
+            size="small"
+            disabled={!isOn}
+            selected={colorTemp === temp.value}
+            ringColor={activeColor}
+            className={!isOn ? editorSurface.disabledCircleClassName : ''}
+            onClick={() => {
+              onTempChange(temp.value);
+              onTempCommit?.(temp.value);
+            }}
+          />
         ))}
       </div>
     </div>

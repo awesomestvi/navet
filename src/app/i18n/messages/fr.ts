@@ -433,6 +433,9 @@ export const frMessages = {
   'lighting.lightColor': 'Couleur de la lumière',
   'lighting.colorTemperature': 'Temperature de couleur',
   'lighting.lightIcon': 'Icône de lumière',
+  'lighting.iconInputPlaceholder': 'sun-medium ou 💡',
+  'lighting.iconInputHelp': 'Saisissez un nom d’icône Lucide ou collez un emoji.',
+  'lighting.lucideIconLibrary': 'Parcourir les icônes Lucide',
   'lighting.searchIcons': 'Rechercher des icones...',
   'lighting.noIconsFound': 'Aucune icone trouvee',
   'lighting.tryDifferentSearch': 'Essayez un autre terme de recherche',
@@ -619,7 +622,7 @@ export const frMessages = {
   'rss.error.unableToLoad': 'Impossible de charger les flux',
   'common.room': 'Piece',
   'common.noRoom': 'Aucune pièce',
-  'preview.livePreview': 'Aperçu en direct',
+  'preview.livePreview': 'Aperçu',
   'network.offlineTitle': 'Vous êtes hors ligne',
   'network.offlineDescription':
     'L’interface de l’application reste disponible, mais les données en direct et les actions domotiques nécessitent une connexion réseau.',

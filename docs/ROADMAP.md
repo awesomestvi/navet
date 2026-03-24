@@ -37,11 +37,10 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 
 ### Customization
 
-- [ ] **Light/dark auto-switch** — follow OS dark mode or time-of-day schedule
+- [ ] **Time-based light/dark schedule** — switch theme automatically by time of day
 - [ ] **Section reordering** — drag sidebar sections into a custom order
-- [ ] **Custom section creation** — user-defined sections beyond the built-in ones
+- [ ] **Custom navigation section creation** — user-defined top-level sidebar sections beyond the built-in ones
 - [ ] **Per-section customization** — background, column count, or grouping mode per section
-- [ ] **Photo Frame widget settings** — configurable photo source / URL for the photo frame widget
 - [ ] **Gesture navigation** — swipe between rooms on mobile
 - [ ] **Advanced accessibility settings** — font size, reduced motion, high contrast overrides
 - [ ] **Widget marketplace** — community-contributed widget types beyond RSS/Photo/Note
@@ -63,7 +62,6 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [ ] **Template sensor card** — display the output of a Home Assistant template expression
 - [ ] **Climate schedule card** — set and visualise thermostat schedules directly from the dashboard
 - [ ] **Media queue card** — show upcoming tracks / queue for an active media player
-- [ ] **Media player tagging** — tag and untag media players to group or filter them across the dashboard
 - [x] **Media player large card** — expanded large-size card with more playback controls and metadata
 
 ---
@@ -72,7 +70,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 
 - [x] **Zone-based Home screen layout** — Home view organises all devices into Overview, Quick Actions, Status, and Analytics zone bands; per-card zone overrides persist to localStorage and YAML export; `hero` card size (6×3) available for weather, calendars, photo, and RSS in the Overview zone; responsive 12-column grid via CSS custom property aligned with Tailwind breakpoints
 - [x] **Custom accent color picker** — custom color input alongside 8 built-in accent presets in Settings → Appearance
-- [x] **Widget settings** — RSS Feed and Quick Note widgets support post-creation configuration (feed URLs, note content)
+- [x] **Widget settings** — RSS Feed, Quick Note, and Photo Frame widgets support post-creation configuration (feed URLs, note content, photo URLs)
 - [x] **Configuration UI with setup wizard** — in-app onboarding and login screen
 - [x] **Multi-language interface** — English, Swedish, German, French, Spanish with locale-aware formatting
 - [x] **Room ordering** — rooms display in their natural Home Assistant area order
@@ -100,7 +98,10 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Presence overview** — dashboard widget showing who is home across all `person.*` entities
 - [x] **Low-power mode** — reduced-effects mode for RPi-class hardware
 - [x] **Deferred / batched room rendering** — offscreen rooms defer and visible rooms hydrate in batches
+- [x] **OS appearance auto-follow** — optional "Follow system appearance" mode switches between light and dark using `prefers-color-scheme`
 - [x] **Energy dashboard** — dedicated energy section with live stats, solar/battery/grid flow diagram, trend charts, storage gauges, top consumers, cost projection, heating breakdown, smart insights, and node drill-down; backed by custom zero-bundle SVG chart primitives (bar chart, area chart, semi-circle gauge, segmented quality bar, Catmull-Rom sparkline)
 - [x] **Energy live HA wiring** — setup panel with auto-detect from HA `energy/get_prefs`, per-device power sensor mapping, datalist autocomplete; live entity state reading via `useEnergyHaData`; today's kWh via `recorder/statistics_during_period` polled every 5 min; conditional display hides unconfigured solar/battery gauges; bathroom/toilet and device-level energy breakdowns
 - [x] **Camera card** — snapshot display for `camera.*` entities via HA camera proxy; manual refresh; unavailable placeholder; dark card with name/room overlay
-- [x] **Section resize actions** — ← → buttons in each section header snap column widths to multiples of 3 (out of a 12-column grid); the adjacent section compensates automatically so the row total stays constant; controls appear only when two or more sections share the same row
+- [x] **Section resize actions** — −/+ buttons resize by rendered-column units at the current breakpoint; the row neighbor compensates automatically and stacked descendant sections in the same column update together; controls appear only when two or more sections share the same row
+- [x] **Media player grouping controls** — media cards support attaching and detaching compatible players in a speaker group directly from the dialog (`join` / `unjoin`)
+- [x] **Home section creation (sectioned layout)** — Home Dashboard Builder supports adding, renaming, and removing user-defined sections in `sectioned` mode

@@ -9,7 +9,8 @@ import { useI18n, useTheme } from '@/app/hooks';
 interface LightCardHeaderProps {
   name: string;
   isOn: boolean;
-  IconComponent: LucideIcon;
+  IconComponent?: LucideIcon | null;
+  iconText?: string | null;
   size: CardSize;
   onIconClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onIconPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
@@ -20,6 +21,7 @@ export const LightCardHeader = memo(function LightCardHeader({
   name,
   isOn,
   IconComponent,
+  iconText,
   size,
   onIconClick,
   onIconPointerDown,
@@ -40,6 +42,7 @@ export const LightCardHeader = memo(function LightCardHeader({
       leading={
         <EntityCardHeaderIcon
           IconComponent={IconComponent}
+          iconText={iconText}
           isActive={isOn}
           size={size}
           tone={isOn ? 'primary' : 'neutral'}

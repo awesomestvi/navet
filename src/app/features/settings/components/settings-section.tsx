@@ -22,8 +22,8 @@ export function SettingsSection() {
   ] as const;
 
   return (
-    <div className="h-full overflow-y-auto px-3 py-3 md:px-6 md:py-6">
-      <div className="mx-auto max-w-6xl space-y-5 md:space-y-8">
+    <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto px-3 py-3 md:px-6 md:py-6">
+      <div className="mx-auto min-w-0 w-[min(72rem,calc(var(--navet-visible-viewport-width,100vw)-1.5rem))] max-w-full space-y-5 md:w-[min(72rem,calc(var(--navet-visible-viewport-width,100vw)-7rem))] md:space-y-8 lg:w-[min(72rem,calc(var(--navet-visible-viewport-width,100vw)-8rem))]">
         <SettingsHero navItems={[...navItems]} styles={controller.styles} />
         <SettingsAppearanceSection controller={controller} />
         <SettingsLocalizationSection controller={controller} />

@@ -421,6 +421,9 @@ export const enMessages = {
   'lighting.lightColor': 'Light Color',
   'lighting.colorTemperature': 'Color Temperature',
   'lighting.lightIcon': 'Light Icon',
+  'lighting.iconInputPlaceholder': 'sun-medium or 💡',
+  'lighting.iconInputHelp': 'Enter a Lucide icon name or paste an emoji.',
+  'lighting.lucideIconLibrary': 'Browse Lucide icons',
   'lighting.searchIcons': 'Search icons...',
   'lighting.noIconsFound': 'No icons found',
   'lighting.tryDifferentSearch': 'Try a different search term',
@@ -605,7 +608,7 @@ export const enMessages = {
   'rss.error.unableToLoad': 'Unable to load feeds',
   'common.room': 'Room',
   'common.noRoom': 'No room',
-  'preview.livePreview': 'Live Preview',
+  'preview.livePreview': 'Preview',
   'network.offlineTitle': 'You are offline',
   'network.offlineDescription':
     'The app shell is available, but live smart-home data and actions need a network connection.',

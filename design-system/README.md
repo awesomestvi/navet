@@ -113,8 +113,9 @@ Room views use a fixed responsive column grid:
 - tablet (`md`): `grid-cols-4`
 - desktop (`xl`): `grid-cols-6`
 - large desktop (`2xl`): `grid-cols-8`
+- ultra-wide (`4xl`): `grid-cols-12`
 
-The Home view zone bands use a CSS custom-property grid driven by `useBreakpointCols`, matching the same breakpoints as room views: `md` → 4 cols, `xl` → 6 cols, `2xl` → 8 cols.
+The Home view zone bands use a CSS custom-property grid driven by `useBreakpointCols`, matching the same breakpoints as room views: `md` → 4 cols, `xl` → 6 cols, `2xl` → 8 cols, `4xl` → 12 cols.
 
 Gaps scale from `gap-2` to `md:gap-3` to `lg:gap-4`, while `auto-rows-[87px]` keeps the card height math stable.
 
@@ -127,8 +128,9 @@ At `lg` and above, that resolves to the familiar desktop card dimensions:
 ### Responsive Breakpoints
 - **Mobile**: `< 768px` - 2 column grid, hidden sidebar
 - **Tablet**: `768px - 1279px` - 4 column grid
-- **Desktop**: `1280px - 1535px` - 6 column grid, fixed sidebar
-- **Large Desktop**: `≥ 1536px` - 8 column grid, fixed sidebar
+- **Desktop**: `1280px - 1699px` - 6 column grid, fixed sidebar
+- **Large Desktop**: `1700px - 2499px` - 8 column grid, fixed sidebar
+- **Ultra-Wide**: `≥ 2500px` - 12 column grid, fixed sidebar
 
 ## 🛠 For Developers
 

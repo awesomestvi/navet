@@ -205,7 +205,20 @@ export function ThemeAppearancePicker({
           <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
             {t('themePicker.accentHelp')}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 md:gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+            <ColorInputSwatch
+              value={customAccentValue}
+              ariaLabel={t('themePicker.customAccent')}
+              title={t('themePicker.customAccent')}
+              size="small"
+              selected={selectedAccent === 'custom'}
+              ringColor={customAccentValue}
+              onClick={() => onAccentChange('custom')}
+              onChange={(value) => {
+                onCustomAccentChange(value);
+                onAccentChange('custom');
+              }}
+            />
             {colorOptions
               .filter((option) => option.value !== 'custom')
               .map((option) => {
@@ -216,7 +229,7 @@ export function ThemeAppearancePicker({
                     key={option.value}
                     type="button"
                     onClick={() => onAccentChange(option.value)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition-transform md:h-12 md:w-12 ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-transform ${
                       isActive ? 'scale-110 ring-2 ring-offset-2' : 'hover:scale-105'
                     }`}
                     style={{
@@ -231,24 +244,11 @@ export function ThemeAppearancePicker({
                     aria-label={`Select ${option.label} accent color`}
                   >
                     {isActive ? (
-                      <Check className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />
+                      <Check className="h-3 w-3 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />
                     ) : null}
                   </button>
                 );
               })}
-            <ColorInputSwatch
-              value={customAccentValue}
-              ariaLabel={t('themePicker.customAccent')}
-              title={t('themePicker.customAccent')}
-              size="medium"
-              selected={selectedAccent === 'custom'}
-              ringColor={customAccentValue}
-              onClick={() => onAccentChange('custom')}
-              onChange={(value) => {
-                onCustomAccentChange(value);
-                onAccentChange('custom');
-              }}
-            />
           </div>
         </div>
       </div>
