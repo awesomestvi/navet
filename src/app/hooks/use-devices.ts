@@ -8,18 +8,8 @@ import { useHomeAssistant } from './use-home-assistant';
 
 /**
  * Custom hook for managing devices
- * In production, this would use React Query to fetch from API:
- *
- * export const useDevices = () => {
- *   return useQuery({
- *     queryKey: ['devices'],
- *     queryFn: () => deviceService.fetchDevices(),
- *     staleTime: 30000, // 30 seconds
- *     refetchInterval: 60000, // refetch every minute
- *   });
- * };
- *
- * For now, returns mock data
+ * Uses Home Assistant live entities when connected and falls back to bundled
+ * mock data when disconnected.
  */
 export const useDevices = (): DeviceCollection => {
   const connected = useHomeAssistant(homeAssistantSelectors.connected);

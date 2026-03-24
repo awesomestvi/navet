@@ -183,12 +183,12 @@ gap: 8px
   gap: 12px
 }
 
-@media (min-width: 1280px) {
-  grid-template-columns: repeat(6, minmax(0, 1fr))
-}
-
 @media (min-width: 1024px) {
   gap: 16px
+}
+
+@media (min-width: 1280px) {
+  grid-template-columns: repeat(6, minmax(0, 1fr))
 }
 
 @media (min-width: 1700px) {

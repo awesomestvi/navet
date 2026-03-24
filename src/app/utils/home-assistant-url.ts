@@ -55,10 +55,6 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
   }
 }
 
-export function isHomeAssistantProxyUrl(resourceUrl: string) {
-  return resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH);
-}
-
 export function isMediaPlayerProxyUrl(resourceUrl: string) {
   return resourceUrl.includes('/api/media_player_proxy/');
 }

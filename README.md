@@ -22,7 +22,7 @@
 
 ## 📱 Overview
 
-Navet (Swedish for "the hub") is a modern, responsive smart home dashboard built with React and Tailwind CSS v4. It keeps a premium glass-inspired design language while scaling visual effects across powerful and low-power devices, with comprehensive smart home control capabilities and an intuitive editing system.
+Navet (Swedish for "the hub") is a modern, responsive smart home dashboard built with React and Tailwind CSS v4. It maintains a premium glass-inspired design language while scaling visual effects across powerful and low-power devices, with comprehensive smart home control capabilities and an intuitive editing system.
 
 Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONING.md) for the beta versioning policy and tag-driven GitHub release flow.
 

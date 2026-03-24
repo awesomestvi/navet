@@ -58,7 +58,7 @@ Complete feature implementation guide:
 1. **Adaptive Glass Aesthetic** - Premium glass-inspired surfaces, rounded corners, semantic colors
 2. **Adaptive Layouts** - Content rearranges intelligently based on card size
 3. **Room-Based Organization** - Filter devices by physical location
-4. **Consistent Icon Sizing** - Extra-small: 7×7 container / 3.5×3.5 icon, Small: 8×8 / 4×4, Medium/Large: 10×10 / 5×5
+4. **Consistent Icon Sizing** - Extra-Small: 7×7 (28px container) / 3.5×3.5 (14px icon), Small: 8×8 (32px) / 4×4 (16px), Medium/Large: 10×10 (40px) / 5×5 (20px)
 5. **Smooth Transitions** - 500ms for state changes, 200ms for interactions
 6. **Theme Customization** - Four theme modes (Liquid Glass, Dark, Light, Black) with 8 built-in accents, a custom accent picker, and visual quality tiers
 7. **Section-Based Navigation** - Organized into dedicated sections (Home, Security, Tasks, Locks, Lights, Media, Mock, Settings)
@@ -203,4 +203,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 23, 2026
+**Last Updated:** March 24, 2026

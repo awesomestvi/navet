@@ -39,7 +39,7 @@
 ## Visual Mood & Atmosphere
 
 ### Overall Aesthetic
-- **Sophisticated Dark**: Deep blacks (#0f0f0f) not gray
+- **Sophisticated Dark**: Deep blacks (#0f0f0f), not gray
 - **Atmospheric Glow**: Subtle color glows around active elements
 - **Premium Feel**: High-end, luxury smart home experience
 - **Calm & Controlled**: Not overwhelming despite many devices

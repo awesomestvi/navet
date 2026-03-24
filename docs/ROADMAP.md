@@ -52,17 +52,14 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 ### Smart Home
 
 - [ ] **Automations management** — view, trigger, and edit Home Assistant automations
-- [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
 - [ ] **Camera / video feed card** — live stream from `camera.*` entities; MJPEG streaming and recording controls
 - [ ] **Light group card** — control a group of lights as one unit (brightness, color, on/off)
 - [ ] **Alarm panel card** — arm, disarm, and show state of `alarm_control_panel.*` entities
 - [ ] **Timer card** — start, pause, and cancel Home Assistant timers from the dashboard
 - [ ] **Todo / shopping list card** — view and check off items from `todo.*` list entities
-- [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [ ] **Template sensor card** — display the output of a Home Assistant template expression
-- [ ] **Climate schedule card** — set and visualise thermostat schedules directly from the dashboard
+- [ ] **Climate schedule card** — set and visualize thermostat schedules directly from the dashboard
 - [ ] **Media queue card** — show upcoming tracks / queue for an active media player
-- [x] **Media player large card** — expanded large-size card with more playback controls and metadata
 
 ---
 
@@ -86,6 +83,9 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Person card** — `person.*` entities with profile image and presence text
 - [x] **Vacuum card** — live vacuum entity state and controls
 - [x] **Media player card** — playback, local mute memory, artwork, remaining time
+- [x] **Media player large card** — expanded large-size card with more playback controls and metadata
+- [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
+- [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [x] **HVAC card** — unified climate entity card
 - [x] **Cover card** — cover entity controls
 - [x] **Lock card** — lock entity controls

@@ -352,7 +352,7 @@ Top-level sections in `sectioned` mode are positioned on a **12-column grid** de
 |---|---|---|
 | `SECTION_LAYOUT_COLUMNS` | `12` | Total grid columns |
 | `SECTION_MAX_PER_ROW` | `4` | Maximum sections in one row |
-| `SECTION_RESIZE_SNAP` | `3` | Base grid ratio helper (`SECTION_LAYOUT_COLUMNS / SECTION_MAX_PER_ROW`) |
+| `SECTION_MIN_WIDTH` | `1` | Minimum stored width for a section in base-12 units |
 
 Each section is stored as a `SectionLayoutItem` with `x`, `y`, `w`, and `h` coordinates. The layout engine functions (`insertSectionRow`, `insertSectionBelow`, `removeSectionFromLayout`, `rebalanceRow`, `compactRows`) mutate these coordinates and are called by `useHomeDashboardLayout`.
 
@@ -768,7 +768,7 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 
 ---
 
-**Last Updated**: March 20, 2026
+**Last Updated**: March 24, 2026
 **Version**: 1.8
 **Status**: Living Document
 

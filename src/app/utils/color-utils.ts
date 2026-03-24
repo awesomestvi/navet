@@ -9,15 +9,6 @@ export const darkenColor = (color: string, amount: number): string => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-// Proportional darkening — scales each channel by a factor, preserving hue
-export const scaleColor = (color: string, factor: number): string => {
-  const hex = color.replace('#', '');
-  const r = Math.round(parseInt(hex.slice(0, 2), 16) * factor);
-  const g = Math.round(parseInt(hex.slice(2, 4), 16) * factor);
-  const b = Math.round(parseInt(hex.slice(4, 6), 16) * factor);
-  return `rgb(${r}, ${g}, ${b})`;
-};
-
 interface GradientColors {
   from?: string;
   to?: string;

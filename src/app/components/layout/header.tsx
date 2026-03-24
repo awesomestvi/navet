@@ -8,7 +8,6 @@ import { NotificationPanel, useNotifications } from '@/app/features/notification
 import { useDevices, useHomeAssistant, useI18n, useSearch, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { getWeekNumber } from '@/app/utils/format';
 import { UserDropdown } from './user-dropdown';
 
 function getGreetingKey(hour: number): TranslationKey {
@@ -24,6 +23,12 @@ function getGreetingKey(hour: number): TranslationKey {
   if (hour >= 12 && hour < 17) return 'header.greeting.afternoon';
   if (hour >= 17 && hour < 21) return 'header.greeting.evening';
   return 'header.greeting.night';
+}
+
+function getWeekNumber(date: Date): number {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
 
 export const Header = memo(function Header() {

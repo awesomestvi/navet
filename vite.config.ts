@@ -135,8 +135,6 @@ export default defineConfig(({ mode }) => {
   base: './',
   envPrefix: ['VITE_', 'NAVET_'],
   plugins: [
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
     rssProxyPlugin(),
@@ -201,7 +199,7 @@ export default defineConfig(({ mode }) => {
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
-  assetsInclude: ['**/*.svg', '**/*.csv'],
+  assetsInclude: ['**/*.svg'],
 
   build: {
     rollupOptions: {
@@ -245,7 +243,6 @@ export default defineConfig(({ mode }) => {
       },
     },
   },
-
 
   server: {
     host: 'navet.local',

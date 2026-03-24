@@ -22,9 +22,7 @@ This project includes components from [shadcn/ui](https://ui.shadcn.com/) used u
 
 ## Project Inspiration
 
-- [`ha-fusion`](https://github.com/matt8707/ha-fusion) was the inspiration for starting Navet.
-- Mattias' work has been incredible, and it is sad that he stopped contributing.
-- Tack sa mycket, Mattias.
+- [`ha-fusion`](https://github.com/matt8707/ha-fusion) inspired me to build Navet, and I just want to say: tack så mycket, Mattias.
 
 ---
 

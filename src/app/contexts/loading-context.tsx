@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useState } from 'react';
 import { useI18n } from '@/app/i18n';
 
 interface LoadingContextType {
@@ -55,12 +55,4 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
       {children}
     </LoadingContext.Provider>
   );
-}
-
-export function useLoading() {
-  const context = useContext(LoadingContext);
-  if (!context) {
-    throw new Error('useLoading must be used within LoadingProvider');
-  }
-  return context;
 }
