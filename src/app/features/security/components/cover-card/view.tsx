@@ -101,11 +101,13 @@ export function CoverCardView({
           title={name}
           subtitle={t(deviceClassConfig[deviceClass].labelKey)}
           size={size}
+          tone={position > 50 ? 'primary' : 'neutral'}
           leading={
             <EntityCardHeaderIcon
               IconComponent={DeviceIcon}
               isActive={position > 50}
               size={size}
+              tone={position > 50 ? 'primary' : 'neutral'}
               ariaLabel={iconButtonProps['aria-label']}
               onClick={iconButtonProps.onClick}
               onPointerDown={iconButtonProps.onPointerDown}

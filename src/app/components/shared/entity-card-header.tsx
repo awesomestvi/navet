@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
 import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardTextTone,
+  getCardReadableTextTokens,
+} from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 
@@ -10,6 +14,7 @@ interface EntityCardHeaderProps {
   leading?: ReactNode;
   trailing?: ReactNode;
   align?: 'start' | 'center';
+  tone?: CardTextTone;
   titleClassName?: string;
   subtitleClassName?: string;
   className?: string;
@@ -24,15 +29,16 @@ export function EntityCardHeader({
   leading,
   trailing,
   align = 'start',
+  tone = 'neutral',
   titleClassName = '',
   subtitleClassName = '',
   className = '',
   contentClassName = '',
   marginBottomClassName,
 }: EntityCardHeaderProps) {
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const textColor = surface.textPrimary;
+  const textTokens = getCardReadableTextTokens({ theme, tone, accentColor });
   const isExtraSmall = isExtraSmallCardSize(size);
   const isStandardCompact = size === 'small' || size === 'medium';
   const titleSize = isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
@@ -46,12 +52,16 @@ export function EntityCardHeader({
     <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div className={`min-w-0 flex-1 ${contentClassName}`}>
-        <h3 className={`truncate font-semibold ${titleSize} ${textColor} ${titleClassName}`}>
+        <h3
+          className={`truncate font-semibold ${titleSize} ${titleClassName}`}
+          style={{ color: textTokens.titleColor }}
+        >
           {title}
         </h3>
         {subtitle ? (
           <p
             className={`truncate text-[10px] ${surface.textMuted} ${subtitleMarginTop} ${subtitleClassName}`}
+            style={{ color: textTokens.subtitleColor }}
           >
             {subtitle}
           </p>

@@ -91,6 +91,7 @@ export function RSSFeedCardView({
           title={t('rss.title')}
           subtitle={selectedFeedLabel}
           size={size}
+          tone="orange"
           titleClassName={surface.textPrimary}
           subtitleClassName={`${surface.textMuted} whitespace-normal break-words leading-relaxed`}
           className="mb-2"
@@ -100,6 +101,7 @@ export function RSSFeedCardView({
               IconComponent={Rss}
               isActive={true}
               size={size}
+              tone="orange"
               ariaLabel={t('rss.configureProviders')}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {

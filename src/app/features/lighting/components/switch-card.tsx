@@ -50,6 +50,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               }
               size="extra-small"
               align="center"
+              tone={controller.isOn ? 'primary' : 'neutral'}
               titleClassName={stateSurface.primaryTextClassName}
               subtitleClassName={stateSurface.mutedTextClassName}
               className="w-full"
@@ -60,6 +61,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                   IconComponent={Power}
                   isActive={controller.isOn}
                   size="extra-small"
+                  tone={controller.isOn ? 'primary' : 'neutral'}
                   ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                   onClick={controller.cardInteraction.iconButtonProps.onClick}
                 />
@@ -210,6 +212,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             title={props.name}
             subtitle={controller.entityType}
             size={controller.isExtraSmall ? 'extra-small' : 'small'}
+            tone={controller.isOn ? 'primary' : 'neutral'}
             titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left ${controller.isExtraSmall ? 'text-[11px]' : ''}`}
             subtitleClassName={`${stateSurface.mutedTextClassName} text-left ${controller.isExtraSmall ? 'text-[9px]' : ''}`}
             className={`${controller.isExtraSmall ? 'mb-1.5' : 'mb-2'}`}
@@ -218,6 +221,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                 IconComponent={Power}
                 isActive={controller.isOn}
                 size={controller.isExtraSmall ? 'extra-small' : 'small'}
+                tone={controller.isOn ? 'primary' : 'neutral'}
                 ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                 onClick={controller.cardInteraction.iconButtonProps.onClick}
               />

@@ -71,8 +71,14 @@ export const SensorCard = memo(function SensorCard({
           title={name}
           subtitle={subtitle || t('sensors.single')}
           size={size}
+          tone="teal"
           leading={
-            <EntityCardHeaderIcon IconComponent={IconComponent} isActive={true} size={size} />
+            <EntityCardHeaderIcon
+              IconComponent={IconComponent}
+              isActive={true}
+              size={size}
+              tone="teal"
+            />
           }
         />
 

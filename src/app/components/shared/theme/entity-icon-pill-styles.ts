@@ -4,6 +4,11 @@ import {
   isCompactCardSize,
   isExtraSmallCardSize,
 } from '@/app/components/shared/card-size-selector';
+import {
+  type CardTextTone,
+  getCardReadableTextTokens,
+  resolveCardToneBaseColor,
+} from '@/app/components/shared/theme/card-readable-text-tokens';
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { PrimaryColor, ThemeType } from '@/app/hooks/use-theme';
@@ -14,17 +19,6 @@ type EntityIconPillStyles = {
   iconClassName: string;
   iconStyle?: CSSProperties;
 };
-
-const accentColorMap = {
-  orange: { bg: 'rgba(249, 115, 22, 0.24)', text: '#c2410c' },
-  blue: { bg: 'rgba(59, 130, 246, 0.24)', text: '#1d4ed8' },
-  green: { bg: 'rgba(34, 197, 94, 0.24)', text: '#15803d' },
-  purple: { bg: 'rgba(168, 85, 247, 0.24)', text: '#7e22ce' },
-  pink: { bg: 'rgba(236, 72, 153, 0.24)', text: '#be185d' },
-  red: { bg: 'rgba(239, 68, 68, 0.24)', text: '#b91c1c' },
-  yellow: { bg: 'rgba(234, 179, 8, 0.24)', text: '#a16207' },
-  teal: { bg: 'rgba(20, 184, 166, 0.24)', text: '#0f766e' },
-} as const;
 
 function getBadgeSizeClass(size: CardSize) {
   if (isExtraSmallCardSize(size)) {
@@ -54,17 +48,41 @@ export function getEntityIconPillStyles({
   isActive,
   isInteractive,
   primaryColor,
+  accentColor,
   size,
   theme,
+  tone,
 }: {
   isActive: boolean;
   isInteractive: boolean;
   primaryColor: PrimaryColor;
+  accentColor?: string | null;
   size: CardSize;
   theme: ThemeType;
+  tone?: CardTextTone;
 }): EntityIconPillStyles {
   const surface = getThemeSurfaceTokens(theme);
-  const accent = accentColorMap[resolvePrimaryColorToken(primaryColor)];
+  const resolvedTone =
+    tone ??
+    (isActive
+      ? primaryColor === 'custom'
+        ? 'primary'
+        : resolvePrimaryColorToken(primaryColor)
+      : 'neutral');
+  const baseColor = resolveCardToneBaseColor({ tone: resolvedTone, accentColor });
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    tone: resolvedTone,
+    accentColor,
+    backgroundColor:
+      theme === 'light'
+        ? '#ffffff'
+        : theme === 'glass'
+          ? '#0f172a'
+          : theme === 'contrast'
+            ? '#000000'
+            : '#09090b',
+  });
   const badgeSizeClass = getBadgeSizeClass(size);
   const iconSizeClass = getIconSizeClass(size);
   const interactiveClass = isInteractive
@@ -91,34 +109,34 @@ export function getEntityIconPillStyles({
     ? {
         backgroundColor:
           theme === 'light'
-            ? '#ffffff'
+            ? `${baseColor}1f`
             : theme === 'glass'
-              ? accent.bg.replace('0.24', '0.16')
+              ? `${baseColor}24`
               : theme === 'contrast'
-                ? 'rgba(0,0,0,1)'
-                : accent.bg.replace('0.24', '0.28'),
+                ? `${baseColor}26`
+                : `${baseColor}2e`,
         borderColor:
           theme === 'light'
-            ? `${accent.text}55`
+            ? `${baseColor}4f`
             : theme === 'glass'
-              ? 'rgba(255,255,255,0.18)'
+              ? `${baseColor}54`
               : theme === 'contrast'
-                ? 'rgba(255,255,255,0.28)'
-                : `${accent.text}66`,
+                ? `${baseColor}66`
+                : `${baseColor}66`,
         boxShadow:
           theme === 'light'
-            ? `0 0 0 2px ${accent.text}22, 0 10px 28px ${accent.text}40`
+            ? `0 0 0 2px ${baseColor}18, 0 10px 28px ${baseColor}2e`
             : theme === 'glass'
-              ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${accent.text}66`
+              ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${baseColor}52`
               : theme === 'contrast'
                 ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
-                : `0 0 0 1px ${accent.text}18, 0 12px 30px ${accent.text}22`,
+                : `0 0 0 1px ${baseColor}18, 0 12px 30px ${baseColor}22`,
       }
     : undefined;
 
   const iconStyle = isActive
     ? {
-        color: theme === 'glass' || theme === 'contrast' ? '#ffffff' : accent.text,
+        color: textTokens.titleColor,
         filter: theme === 'light' ? undefined : 'drop-shadow(0 1px 4px rgba(0, 0, 0, 0.18))',
       }
     : undefined;

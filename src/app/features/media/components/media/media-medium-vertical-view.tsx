@@ -1,6 +1,7 @@
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
@@ -62,6 +63,11 @@ export function MediaMediumVerticalView({
   const displayVolume = Math.max(0, Math.min(100, isMuted ? 0 : volume));
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const palette = useMediaArtworkColors(artwork, theme, `${entityId}::${title}::${artist}`);
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    baseColor: palette.highlight,
+    backgroundColor: palette.gradientEnd,
+  });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
   const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
@@ -99,10 +105,18 @@ export function MediaMediumVerticalView({
         <div className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}>
+              <div
+                className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}
+                style={{ color: textTokens.subtitleColor }}
+              >
                 {playerName}
               </div>
-              <div className={`truncate text-xs ${subtitleTone}`}>{room || t('media.room')}</div>
+              <div
+                className={`truncate text-xs ${subtitleTone}`}
+                style={{ color: textTokens.subtitleColor }}
+              >
+                {room || t('media.room')}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <MediaVisualizerButton
@@ -121,11 +135,16 @@ export function MediaMediumVerticalView({
 
           <div className="mt-auto flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <MediaMarqueeText text={title} className={`text-sm font-medium ${iconTone}`} />
+              <MediaMarqueeText
+                text={title}
+                className={`text-sm font-medium ${iconTone}`}
+                style={{ color: textTokens.titleColor }}
+              />
               <MediaMarqueeText
                 text={artist}
                 className={`mt-0.5 text-[13px] ${subtitleTone}`}
                 threshold={24}
+                style={{ color: textTokens.subtitleColor }}
               />
             </div>
 

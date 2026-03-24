@@ -69,9 +69,12 @@ export const SceneCard = memo(function SceneCard({
           title={name}
           subtitle={t('deviceType.scene')}
           size={size}
+          tone="primary"
           titleClassName={surface.textPrimary}
           subtitleClassName={surface.textSecondary}
-          leading={<EntityCardHeaderIcon IconComponent={Sparkles} isActive size={size} />}
+          leading={
+            <EntityCardHeaderIcon IconComponent={Sparkles} isActive size={size} tone="primary" />
+          }
         />
 
         <div

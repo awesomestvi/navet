@@ -76,6 +76,7 @@ export const PersonCard = memo(function PersonCard({
           title={name}
           subtitle={t('deviceType.person')}
           size={size}
+          tone={liveState === 'home' ? 'primary' : 'neutral'}
           titleClassName={surface.titleClassName}
           subtitleClassName={surface.typeLabelClassName}
           className="mb-2"

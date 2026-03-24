@@ -94,6 +94,7 @@ export const CalendarCard = memo(function CalendarCard({
                 title={selectedCalendarLabel || displayName}
                 subtitle={t('calendar.upcomingAgenda')}
                 size={effectiveSize}
+                tone="indigo"
                 titleClassName={isSmall ? 'text-[11px]' : ''}
                 subtitleClassName={isSmall ? 'text-[9px]' : ''}
                 leading={
@@ -101,6 +102,7 @@ export const CalendarCard = memo(function CalendarCard({
                     IconComponent={CalendarDays}
                     isActive={true}
                     size={effectiveSize}
+                    tone="indigo"
                   />
                 }
               />
@@ -110,6 +112,7 @@ export const CalendarCard = memo(function CalendarCard({
               title={selectedCalendarLabel || displayName}
               subtitle={t('calendar.upcomingAgenda')}
               size={effectiveSize}
+              tone="indigo"
               titleClassName={isSmall ? 'text-[11px]' : ''}
               subtitleClassName={isSmall ? 'text-[9px]' : ''}
               leading={
@@ -117,6 +120,7 @@ export const CalendarCard = memo(function CalendarCard({
                   IconComponent={CalendarDays}
                   isActive={true}
                   size={effectiveSize}
+                  tone="indigo"
                 />
               }
             />

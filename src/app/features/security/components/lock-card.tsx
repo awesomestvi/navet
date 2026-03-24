@@ -59,6 +59,7 @@ export const LockCard = memo(function LockCard({
           subtitle={isLocked ? t('security.locked') : t('security.unlocked')}
           size="extra-small"
           align="center"
+          tone={isLocked ? 'primary' : 'red'}
           titleClassName="text-white"
           subtitleClassName={`${
             isLocked
@@ -81,6 +82,7 @@ export const LockCard = memo(function LockCard({
               IconComponent={isLocked ? DoorClosed : DoorOpen}
               isActive={isLocked}
               size="small"
+              tone={isLocked ? 'primary' : 'red'}
             />
           }
           trailing={
@@ -125,11 +127,13 @@ export const LockCard = memo(function LockCard({
           title={name}
           subtitle={t('security.lock')}
           size={size}
+          tone={isLocked ? 'primary' : 'red'}
           leading={
             <EntityCardHeaderIcon
               IconComponent={isLocked ? DoorClosed : DoorOpen}
               isActive={isLocked}
               size={size}
+              tone={isLocked ? 'primary' : 'red'}
             />
           }
         />

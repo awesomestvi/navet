@@ -92,11 +92,29 @@ export const VacuumCard = memo(function VacuumCard({
             title={name}
             subtitle={t('vacuum.subtitle')}
             size={size}
+            tone={
+              currentStatus === 'returning'
+                ? 'purple'
+                : currentStatus === 'paused'
+                  ? 'yellow'
+                  : currentStatus === 'cleaning'
+                    ? 'primary'
+                    : 'neutral'
+            }
             leading={
               <EntityCardHeaderIcon
                 IconComponent={Bot}
                 isActive={currentStatus === 'cleaning' || currentStatus === 'returning'}
                 size={size}
+                tone={
+                  currentStatus === 'returning'
+                    ? 'purple'
+                    : currentStatus === 'paused'
+                      ? 'yellow'
+                      : currentStatus === 'cleaning'
+                        ? 'primary'
+                        : 'neutral'
+                }
               />
             }
           />

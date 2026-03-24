@@ -330,7 +330,7 @@ class HomeAssistantService {
       serviceData.brightness_pct = Math.max(1, Math.min(100, Math.round(brightnessPct)));
     }
     if (typeof kelvin === 'number') {
-      serviceData.kelvin = Math.max(2000, Math.min(6500, Math.round(kelvin)));
+      serviceData.color_temp_kelvin = Math.max(2000, Math.min(6500, Math.round(kelvin)));
     }
     if (rgbColor) {
       serviceData.rgb_color = rgbColor;

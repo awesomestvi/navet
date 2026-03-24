@@ -77,6 +77,7 @@ export const PowerCard = memo(function PowerCard({
           title={t('power.title')}
           subtitle={t('power.subtitle')}
           size={size}
+          tone="yellow"
           titleClassName={textPrimary}
           subtitleClassName={surface.textMuted}
           className={isSmall ? 'mb-1 justify-between' : 'mb-2 justify-between'}

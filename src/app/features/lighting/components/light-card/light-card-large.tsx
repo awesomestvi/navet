@@ -8,6 +8,7 @@ import {
   ColorPicker,
   KelvinSlider,
 } from '@/app/components/shared/device-editor';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -68,11 +69,16 @@ export const LightCardLarge = memo(function LightCardLarge({
   settingsButtonProps,
   showSettingsButton,
 }: LightCardLargeProps) {
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
   const secondaryTextColor = stateSurface.secondaryTextClassName;
   const textColor = stateSurface.primaryTextClassName;
+  const labelTokens = getCardReadableTextTokens({
+    theme,
+    tone: isOn ? 'primary' : 'neutral',
+    accentColor,
+  });
 
   const roundedTemp = roundKelvin(colorTemp);
 
@@ -92,7 +98,10 @@ export const LightCardLarge = memo(function LightCardLarge({
         {/* Slider section */}
         <div className="mb-2">
           <div className="flex items-baseline justify-between mb-2">
-            <div className={`text-xs ${secondaryTextColor}`}>
+            <div
+              className={`text-xs ${secondaryTextColor}`}
+              style={{ color: labelTokens.subtitleColor }}
+            >
               {isKelvinMode && supportsColorTemperature
                 ? t('lighting.colorTemperature')
                 : t('lighting.brightness')}
@@ -140,7 +149,12 @@ export const LightCardLarge = memo(function LightCardLarge({
 
         {(supportsColorTemperature || supportsColorControl) && (
           <div className="space-y-2">
-            <div className={`text-xs ${secondaryTextColor}`}>{t('lighting.colors')}</div>
+            <div
+              className={`text-xs ${secondaryTextColor}`}
+              style={{ color: labelTokens.subtitleColor }}
+            >
+              {t('lighting.colors')}
+            </div>
             <div className="flex items-center gap-2">
               {supportsColorTemperature && (
                 <KelvinColorTrigger

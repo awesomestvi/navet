@@ -76,6 +76,15 @@ export const HVACCard = memo(function HVACCard({
             title={name}
             subtitle={t('climate.subtitle')}
             size={size}
+            tone={
+              !controller.isOn
+                ? 'neutral'
+                : controller.visualMode === 'heat'
+                  ? 'orange'
+                  : controller.visualMode === 'cool'
+                    ? 'cyan'
+                    : 'blue'
+            }
             titleClassName={stateSurface.primaryTextClassName}
             subtitleClassName={stateSurface.mutedTextClassName}
             leading={
@@ -83,6 +92,15 @@ export const HVACCard = memo(function HVACCard({
                 IconComponent={HeaderIcon}
                 isActive={controller.isOn}
                 size={size}
+                tone={
+                  !controller.isOn
+                    ? 'neutral'
+                    : controller.visualMode === 'heat'
+                      ? 'orange'
+                      : controller.visualMode === 'cool'
+                        ? 'cyan'
+                        : 'blue'
+                }
                 ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                 onClick={controller.cardInteraction.iconButtonProps.onClick}
               />

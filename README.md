@@ -218,6 +218,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Light brightness presets now use a compact **3-preset** set: **Bright**, **Dim**, and **Night**
 - Shared theme-sensitive pieces such as entity icon pills and nav/action pills now resolve through reusable shared primitives rather than per-feature inline styling
 - Inactive/off card shells and text treatment now also resolve through a shared card-state primitive instead of per-card opacity tweaks
+- Colored card headers now derive title, subtitle, and active icon colors from the card’s own color family with shared contrast-aware tokens instead of fixed white/gray text
 
 #### Card Interaction Style
 - In **Settings -> Interaction**, choose how entity cards respond to taps

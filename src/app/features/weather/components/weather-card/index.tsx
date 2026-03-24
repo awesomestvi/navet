@@ -106,9 +106,15 @@ export const WeatherCard = memo(function WeatherCard({
             title={location}
             subtitle={t('weather.subtitle')}
             size={size}
+            tone="blue"
             titleClassName={textPrimary}
             leading={
-              <EntityCardHeaderIcon IconComponent={HeaderIcon} isActive={true} size={size} />
+              <EntityCardHeaderIcon
+                IconComponent={HeaderIcon}
+                isActive={true}
+                size={size}
+                tone="blue"
+              />
             }
           />
         </button>
