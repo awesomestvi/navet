@@ -47,7 +47,7 @@ jobs:
           VERSION="${TAG#v}"
 
           {
-            echo "body<<'EOF'"
+            echo "body<<EOF"
             echo "## Navet $VERSION"
             echo
             echo "- Release tag: \`$TAG\`"
