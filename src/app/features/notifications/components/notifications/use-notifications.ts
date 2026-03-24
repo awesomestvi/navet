@@ -74,6 +74,14 @@ const loadNotificationIds = (storageKey: string): string[] => {
   return storage.get<string[]>(storageKey, []);
 };
 
+const areNotificationIdListsEqual = (left: string[], right: string[]) => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+};
+
 const persistReadNotifications = (ids: string[]) => {
   persistNotificationIds(READ_NOTIFICATIONS_STORAGE_KEY, ids);
 };
@@ -174,9 +182,25 @@ export function useNotifications(): UseNotificationsReturn {
     }
 
     const syncFromStorage = () => {
-      setReadNotifications(loadReadNotifications());
-      setHiddenNotifications(loadHiddenNotifications());
-      setPendingUpdateInstalls(loadPendingUpdateInstalls());
+      const nextReadNotifications = loadReadNotifications();
+      const nextHiddenNotifications = loadHiddenNotifications();
+      const nextPendingUpdateInstalls = loadPendingUpdateInstalls();
+
+      setReadNotifications((current) =>
+        areNotificationIdListsEqual(current, nextReadNotifications)
+          ? current
+          : nextReadNotifications
+      );
+      setHiddenNotifications((current) =>
+        areNotificationIdListsEqual(current, nextHiddenNotifications)
+          ? current
+          : nextHiddenNotifications
+      );
+      setPendingUpdateInstalls((current) =>
+        areNotificationIdListsEqual(current, nextPendingUpdateInstalls)
+          ? current
+          : nextPendingUpdateInstalls
+      );
     };
 
     const handleStorageSync = () => {
