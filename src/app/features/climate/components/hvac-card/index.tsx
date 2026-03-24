@@ -1,13 +1,14 @@
-import { Flame, Snowflake, Wind } from 'lucide-react';
+import { Flame, Snowflake, Thermometer, Wind } from 'lucide-react';
 import { memo } from 'react';
 import { CardActionRow } from '@/app/components/shared/card-action-row';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
-import { useI18n } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { HVACSettingsDialog } from '../hvac-settings-dialog';
 import type { HVACCardProps } from './hvac-card.types';
 import { HVACGauge } from './hvac-gauge';
@@ -29,6 +30,7 @@ export const HVACCard = memo(function HVACCard({
   isEditMode,
 }: HVACCardProps) {
   const { t } = useI18n();
+  const { accentColor } = useTheme();
   const controller = useHVACCardController({
     id,
     name,
@@ -46,8 +48,27 @@ export const HVACCard = memo(function HVACCard({
     controller.targetTemp < controller.currentTemp
       ? t('climate.coolingDownTo', { temp: controller.targetTemp })
       : t('climate.heatingTo', { temp: controller.targetTemp });
+  const tone = !controller.isOn
+    ? 'neutral'
+    : controller.visualMode === 'heat'
+      ? 'orange'
+      : controller.visualMode === 'cool'
+        ? 'cyan'
+        : 'blue';
+  const readableTokens = getCardReadableTextTokens({
+    theme: controller.theme,
+    tone,
+    accentColor,
+  });
+  const normalizedMode = controller.mode.toLowerCase();
   const HeaderIcon =
-    controller.visualMode === 'heat' ? Flame : controller.visualMode === 'cool' ? Snowflake : Wind;
+    normalizedMode === 'heat'
+      ? Flame
+      : normalizedMode === 'cool'
+        ? Snowflake
+        : normalizedMode === 'fan' || normalizedMode === 'fan_only'
+          ? Wind
+          : Thermometer;
 
   return (
     <>
@@ -76,15 +97,7 @@ export const HVACCard = memo(function HVACCard({
             title={name}
             subtitle={t('climate.subtitle')}
             size={size}
-            tone={
-              !controller.isOn
-                ? 'neutral'
-                : controller.visualMode === 'heat'
-                  ? 'orange'
-                  : controller.visualMode === 'cool'
-                    ? 'cyan'
-                    : 'blue'
-            }
+            tone={tone}
             titleClassName={stateSurface.primaryTextClassName}
             subtitleClassName={stateSurface.mutedTextClassName}
             leading={
@@ -92,15 +105,7 @@ export const HVACCard = memo(function HVACCard({
                 IconComponent={HeaderIcon}
                 isActive={controller.isOn}
                 size={size}
-                tone={
-                  !controller.isOn
-                    ? 'neutral'
-                    : controller.visualMode === 'heat'
-                      ? 'orange'
-                      : controller.visualMode === 'cool'
-                        ? 'cyan'
-                        : 'blue'
-                }
+                tone={tone}
                 ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                 onClick={controller.cardInteraction.iconButtonProps.onClick}
               />
@@ -113,10 +118,14 @@ export const HVACCard = memo(function HVACCard({
                 <div className="mt-auto">
                   <div
                     className={`text-3xl font-bold ${stateSurface.primaryTextClassName} leading-none transition-colors duration-500 mb-1`}
+                    style={{ color: readableTokens.titleColor }}
                   >
                     {controller.currentTemp}°C
                   </div>
-                  <div className={`text-xs ${stateSurface.secondaryTextClassName}`}>
+                  <div
+                    className={`text-xs ${stateSurface.secondaryTextClassName}`}
+                    style={{ color: readableTokens.subtitleColor }}
+                  >
                     {targetTemperatureLabel}
                   </div>
                 </div>
@@ -149,10 +158,14 @@ export const HVACCard = memo(function HVACCard({
                 <div className="mt-auto">
                   <div
                     className={`text-3xl font-bold ${stateSurface.primaryTextClassName} leading-none transition-colors duration-500 mb-1`}
+                    style={{ color: readableTokens.titleColor }}
                   >
                     {controller.currentTemp}°C
                   </div>
-                  <div className={`text-xs ${stateSurface.secondaryTextClassName}`}>
+                  <div
+                    className={`text-xs ${stateSurface.secondaryTextClassName}`}
+                    style={{ color: readableTokens.subtitleColor }}
+                  >
                     {targetTemperatureLabel}
                   </div>
                 </div>
@@ -219,7 +232,10 @@ export const HVACCard = memo(function HVACCard({
                     size="large"
                     leftContent={
                       <div className="flex items-center gap-3">
-                        <div className={`text-xs ${stateSurface.secondaryTextClassName}`}>
+                        <div
+                          className={`text-xs ${stateSurface.secondaryTextClassName}`}
+                          style={{ color: readableTokens.subtitleColor }}
+                        >
                           {t('climate.mode')}
                         </div>
                         <HVACModeControls

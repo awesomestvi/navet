@@ -7,6 +7,7 @@ import { storage } from '@/app/utils/storage';
 const READ_NOTIFICATIONS_STORAGE_KEY = 'navet-read-notifications';
 const HIDDEN_NOTIFICATIONS_STORAGE_KEY = 'navet-hidden-notifications';
 const PENDING_UPDATE_INSTALLS_STORAGE_KEY = 'navet-pending-update-installs';
+const NOTIFICATION_STORAGE_SYNC_EVENT = 'navet-notification-storage-sync';
 
 export interface Notification {
   id: string;
@@ -87,6 +88,14 @@ const persistPendingUpdateInstalls = (ids: string[]) => {
 
 const persistNotificationIds = (storageKey: string, ids: string[]) => {
   storage.set(storageKey, ids);
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_STORAGE_SYNC_EVENT, {
+        detail: { storageKey, ids },
+      })
+    );
+  }
 };
 
 const inferNotificationType = (
@@ -158,6 +167,30 @@ export function useNotifications(): UseNotificationsReturn {
   useEffect(() => {
     persistPendingUpdateInstalls(pendingUpdateInstalls);
   }, [pendingUpdateInstalls]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncFromStorage = () => {
+      setReadNotifications(loadReadNotifications());
+      setHiddenNotifications(loadHiddenNotifications());
+      setPendingUpdateInstalls(loadPendingUpdateInstalls());
+    };
+
+    const handleStorageSync = () => {
+      syncFromStorage();
+    };
+
+    window.addEventListener(NOTIFICATION_STORAGE_SYNC_EVENT, handleStorageSync);
+    window.addEventListener('storage', handleStorageSync);
+
+    return () => {
+      window.removeEventListener(NOTIFICATION_STORAGE_SYNC_EVENT, handleStorageSync);
+      window.removeEventListener('storage', handleStorageSync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!entities) {

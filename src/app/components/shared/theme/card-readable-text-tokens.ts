@@ -34,7 +34,7 @@ const FAMILY_BASE_COLORS: Record<Exclude<CardTextTone, 'primary' | 'neutral'>, s
 const NEUTRAL_BACKGROUNDS: Record<ThemeType, string> = {
   light: '#f3f4f6',
   dark: '#18181b',
-  glass: '#0f172a',
+  glass: '#334155',
   contrast: '#000000',
 };
 
@@ -146,7 +146,7 @@ function resolveBackgroundColor(
   }
 
   if (theme === 'glass') {
-    return mixColors(baseColor, '#0f172a', 0.72);
+    return mixColors(baseColor, '#334155', 0.78);
   }
 
   if (theme === 'contrast') {
@@ -194,23 +194,31 @@ export function getCardReadableTextTokens({
     resolvedBaseColor,
     backgroundColor
   );
-  const backgroundIsDark = getLuminance(resolvedBackgroundColor) < 0.32;
-  const targetEndpoint = backgroundIsDark ? '#ffffff' : '#111827';
+  const contrastBackgroundColor =
+    theme === 'glass'
+      ? mixColors(resolvedBackgroundColor, '#64748b', 0.24)
+      : resolvedBackgroundColor;
+  const backgroundIsDark = getLuminance(contrastBackgroundColor) < 0.32;
+  const targetEndpoint = theme === 'glass' || backgroundIsDark ? '#ffffff' : '#111827';
+  const titleMinBlend = theme === 'glass' ? 0.78 : backgroundIsDark ? 0.36 : 0.52;
+  const subtitleMinBlend = theme === 'glass' ? 0.86 : backgroundIsDark ? 0.28 : 0.6;
+  const titleContrastTarget = theme === 'glass' ? 6 : 4.5;
+  const subtitleContrastTarget = theme === 'glass' ? 5.2 : 4.5;
 
   return {
     titleColor: findAccessibleColor(
       resolvedBaseColor,
-      resolvedBackgroundColor,
+      contrastBackgroundColor,
       targetEndpoint,
-      backgroundIsDark ? 0.36 : 0.52,
-      4.5
+      titleMinBlend,
+      titleContrastTarget
     ),
     subtitleColor: findAccessibleColor(
       resolvedBaseColor,
-      resolvedBackgroundColor,
+      contrastBackgroundColor,
       targetEndpoint,
-      backgroundIsDark ? 0.28 : 0.6,
-      4.5
+      subtitleMinBlend,
+      subtitleContrastTarget
     ),
   };
 }

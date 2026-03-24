@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import {
@@ -28,8 +29,10 @@ export const HVACGauge = memo(function HVACGauge({
   const glowColor = getHVACGlowColor(mode);
   const textShadow = getHVACTextShadow(mode);
   const bgGlowColor = getHVACBackgroundGlowColor(mode);
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const tone = !isOn ? 'neutral' : mode === 'heat' ? 'orange' : mode === 'cool' ? 'cyan' : 'blue';
+  const textTokens = getCardReadableTextTokens({ theme, tone, accentColor });
   const tempTextColor =
     theme === 'light'
       ? isOn
@@ -139,13 +142,17 @@ export const HVACGauge = memo(function HVACGauge({
           <div
             className={`relative text-5xl font-bold ${tempTextColor} leading-none transition-colors duration-500`}
             style={{
+              color: textTokens.titleColor,
               textShadow: isOn && theme !== 'light' ? `0 0 20px ${textShadow}` : 'none',
             }}
           >
             {targetTemp}°
           </div>
         </div>
-        <div className={`text-xs ${currentTempColor} mt-2`}>
+        <div
+          className={`text-xs ${currentTempColor} mt-2`}
+          style={{ color: textTokens.subtitleColor }}
+        >
           {t('climate.currentTemperature', { temp: currentTemp })}
         </div>
       </div>
