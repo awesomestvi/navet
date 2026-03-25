@@ -8,9 +8,12 @@ import { storage } from '../utils/storage';
  * Custom hook for managing card sizes across all devices
  * Encapsulates card size state management logic with localStorage persistence
  */
-export const useCardState = (devices: DeviceCollection) => {
+export const useCardState = (
+  devices: DeviceCollection,
+  storageKey: keyof typeof STORAGE_KEYS = 'cardSizes'
+) => {
   const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>(() => {
-    const stored = storage.get<Record<string, CardSize> | null>(STORAGE_KEYS.cardSizes, null);
+    const stored = storage.get<Record<string, CardSize> | null>(STORAGE_KEYS[storageKey], null);
     if (stored) {
       return stored;
     }
@@ -25,8 +28,8 @@ export const useCardState = (devices: DeviceCollection) => {
 
   // Persist to localStorage whenever cardSizes changes
   useEffect(() => {
-    storage.set(STORAGE_KEYS.cardSizes, cardSizes);
-  }, [cardSizes]);
+    storage.set(STORAGE_KEYS[storageKey], cardSizes);
+  }, [cardSizes, storageKey]);
 
   const updateCardSize = useCallback((id: string, size: CardSize) => {
     setCardSizes((prev) => ({ ...prev, [id]: size }));

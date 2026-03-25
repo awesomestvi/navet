@@ -48,7 +48,11 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   const icon = IconComponent ? (
     <IconComponent aria-hidden="true" className={iconClassName} style={iconStyle} />
   ) : iconText ? (
-    <span aria-hidden="true" className={`${iconTextClassName} leading-none`} style={iconStyle}>
+    <span
+      aria-hidden="true"
+      className={`${iconTextClassName} max-w-full overflow-hidden text-ellipsis whitespace-nowrap leading-none`}
+      style={iconStyle}
+    >
       {iconText}
     </span>
   ) : null;

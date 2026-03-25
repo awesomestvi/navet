@@ -1,6 +1,7 @@
 import { Lightbulb } from 'lucide-react';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { RoomNav } from '@/app/components/layout/room-nav';
+import { SectionCustomizeShell } from '@/app/components/layout/section-customize-shell';
 import { EmptyState } from '@/app/components/shared/empty-state';
 import { LoadingSpinner } from '@/app/components/shared/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
@@ -11,6 +12,7 @@ import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { DashboardLayout } from '../shell';
 import { HomeDashboardOverview } from './home-dashboard-overview';
+import { RoomOverviewPanel } from './room-overview-panel';
 
 const lazySections = () => import('@/app/components/layout/sections');
 
@@ -84,19 +86,25 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     );
   } else if (activeSection === 'lights') {
     sectionContent = (
-      <div {...sectionStackProps}>
+      <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
         {lightDeviceMap.size > 0 ? (
-          <RenderProfiler id="LightsSection">
-            <AllViewGrid
-              deviceMap={lightDeviceMap}
-              rooms={lightRooms}
-              cardOrders={cardOrders}
-              isEditMode={isEditMode}
-              cardSizes={cardSizes}
-              grouping="custom"
-              updateCardSize={updateCardSize}
-            />
-          </RenderProfiler>
+          <SectionCustomizeShell
+            isEditMode={isEditMode}
+            onToggle={onToggleEditMode ?? (() => {})}
+            className="relative"
+          >
+            <RenderProfiler id="LightsSection">
+              <AllViewGrid
+                deviceMap={lightDeviceMap}
+                rooms={lightRooms}
+                cardOrders={cardOrders}
+                isEditMode={isEditMode}
+                cardSizes={cardSizes}
+                grouping="custom"
+                updateCardSize={updateCardSize}
+              />
+            </RenderProfiler>
+          </SectionCustomizeShell>
         ) : (
           <EmptyState
             icon={Lightbulb}
@@ -178,19 +186,26 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
           </RenderProfiler>
         ) : (
           <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
-            <DeviceGrid
-              orderedCardIds={orderedCardIds}
-              deviceMap={deviceMap}
-              isEditMode={isEditMode}
-              cardSizes={cardSizes}
-              updateCardSize={updateCardSize}
-              customCards={customCards}
-              onDeleteCard={handleDeleteCard}
-              onUpdateCard={handleUpdateCard}
-              onRemoveEntity={handleRemoveEntity}
-              allowEntityRemoval
-              usesHideAction
-            />
+            <div className="space-y-6">
+              <RoomOverviewPanel
+                room={activeRoom}
+                orderedCardIds={orderedCardIds}
+                deviceMap={deviceMap}
+              />
+              <DeviceGrid
+                orderedCardIds={orderedCardIds}
+                deviceMap={deviceMap}
+                isEditMode={isEditMode}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                customCards={customCards}
+                onDeleteCard={handleDeleteCard}
+                onUpdateCard={handleUpdateCard}
+                onRemoveEntity={handleRemoveEntity}
+                allowEntityRemoval
+                usesHideAction
+              />
+            </div>
           </RenderProfiler>
         )}
       </div>

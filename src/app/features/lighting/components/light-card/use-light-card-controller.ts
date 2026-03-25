@@ -5,6 +5,7 @@ import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/car
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import {
   DEFAULT_LIGHT_ICON,
+  isEmojiLightIcon,
   normalizeLightIconName,
   resolveLightIconComponent,
 } from '@/app/constants/icon-map';
@@ -120,7 +121,8 @@ export function useLightCardController({
   const customIconComponent = normalizedSelectedIcon
     ? resolveLightIconComponent(normalizedSelectedIcon)
     : null;
-  const iconText = normalizedSelectedIcon && !customIconComponent ? normalizedSelectedIcon : null;
+  const iconText =
+    !customIconComponent && isEmojiLightIcon(selectedIcon) ? selectedIcon.trim() : null;
   const IconComponent = iconText
     ? null
     : (customIconComponent ?? resolveLightIconComponent(DEFAULT_LIGHT_ICON));

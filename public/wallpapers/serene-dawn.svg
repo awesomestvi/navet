@@ -1,19 +1,41 @@
 <svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="sky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F4E7D7"/>
-      <stop offset="0.45" stop-color="#D6E4E8"/>
-      <stop offset="1" stop-color="#8AA4A2"/>
+    <linearGradient id="sereneSky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8D8BB"/>
+      <stop offset="0.28" stop-color="#ECCFD2"/>
+      <stop offset="0.52" stop-color="#C2D4DE"/>
+      <stop offset="0.76" stop-color="#9ABFC6"/>
+      <stop offset="1" stop-color="#6EA4AC"/>
     </linearGradient>
-    <linearGradient id="water" x1="800" y1="510" x2="800" y2="900" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#95B6B2" stop-opacity="0.9"/>
-      <stop offset="1" stop-color="#5B797B"/>
+    <radialGradient id="sunGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1168 148) rotate(90) scale(340 480)">
+      <stop offset="0" stop-color="#FFF4DC" stop-opacity="0.88"/>
+      <stop offset="0.32" stop-color="#FFD898" stop-opacity="0.48"/>
+      <stop offset="0.65" stop-color="#FFCCA0" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFCCA0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="horizMist" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 488) rotate(90) scale(76 800)">
+      <stop offset="0" stop-color="#EAF2F4" stop-opacity="0.40"/>
+      <stop offset="1" stop-color="#EAF2F4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sereneWater" x1="800" y1="510" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8DBCC0" stop-opacity="0.94"/>
+      <stop offset="0.5" stop-color="#60959C"/>
+      <stop offset="1" stop-color="#3E747A"/>
     </linearGradient>
   </defs>
-  <rect width="1600" height="900" fill="url(#sky)"/>
-  <circle cx="1230" cy="176" r="82" fill="#FFF3D8" fill-opacity="0.75"/>
-  <ellipse cx="790" cy="547" rx="620" ry="88" fill="#E9F0ED" fill-opacity="0.35"/>
-  <path d="M0 470C171 422 331 416 481 452C602 481 698 492 835 470C945 452 1064 406 1219 420C1373 433 1500 490 1600 500V900H0V470Z" fill="#A8C1BB" fill-opacity="0.75"/>
-  <path d="M0 530C180 506 303 525 470 585C621 639 760 657 928 627C1120 592 1289 496 1600 530V900H0V530Z" fill="url(#water)"/>
-  <path d="M0 632C127 618 286 636 421 682C590 739 715 767 889 751C1057 735 1160 677 1337 648C1447 630 1532 635 1600 648V900H0V632Z" fill="#456367" fill-opacity="0.45"/>
+  <rect width="1600" height="900" fill="url(#sereneSky)"/>
+  <ellipse cx="1168" cy="148" rx="480" ry="340" fill="url(#sunGlow)"/>
+  <circle cx="1168" cy="152" r="56" fill="#FFF8EE" fill-opacity="0.82"/>
+  <circle cx="1168" cy="152" r="34" fill="#FFFBF4" fill-opacity="0.92"/>
+  <ellipse cx="800" cy="488" rx="800" ry="76" fill="url(#horizMist)"/>
+  <!-- Far hills -->
+  <path d="M0 440C148 410 316 396 500 426C650 452 778 474 968 458C1128 444 1264 406 1418 422C1502 430 1560 442 1600 450V580H0V440Z" fill="#BBCEC8" fill-opacity="0.42"/>
+  <!-- Mid hills -->
+  <path d="M0 484C132 456 272 448 428 472C592 498 740 518 908 500C1082 482 1222 440 1382 452C1466 458 1542 470 1600 480V580H0V484Z" fill="#98B9B4" fill-opacity="0.60"/>
+  <!-- Near hills -->
+  <path d="M0 522C116 500 244 496 376 520C544 550 686 572 852 558C1022 544 1160 504 1328 514C1436 521 1528 534 1600 543V640H0V522Z" fill="#7CABA6" fill-opacity="0.70"/>
+  <!-- Water -->
+  <path d="M0 554C140 538 292 546 442 572C592 600 722 616 880 602C1044 588 1174 554 1338 546C1438 541 1530 548 1600 558V900H0V554Z" fill="url(#sereneWater)"/>
+  <!-- Deep water -->
+  <path d="M0 662C136 646 278 662 418 708C568 756 708 774 876 760C1038 746 1168 700 1328 684C1430 674 1524 680 1600 692V900H0V662Z" fill="#3C6872" fill-opacity="0.50"/>
 </svg>

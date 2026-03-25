@@ -34,7 +34,11 @@ export function DashboardHeroSection({
         }
       />
 
-      <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_22rem] xl:items-start">
+      <div
+        className={`relative grid gap-6 ${
+          aside ? 'xl:grid-cols-[minmax(0,1.35fr)_22rem] xl:items-start' : ''
+        }`}
+      >
         <div>
           {eyebrow ? eyebrow : null}
           <h1

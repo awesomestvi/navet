@@ -187,6 +187,26 @@ Navet now uses a live Home Assistant-backed media card flow.
 - The media dialog and card views share the same transport/action visual language
 - Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
 
+### Media Section Layout
+
+**Location**: `src/app/components/layout/sections.tsx`
+
+The `/media` section groups devices into labeled sub-sections by entity type instead of rendering a single flat grid.
+
+| Sub-section | Criteria |
+|---|---|
+| Players & speakers | Entity type is `player`, `speaker`, `receiver`, or `soundbar` |
+| TVs | Entity type is `tv` |
+| Other groups | All remaining types, each forming their own labeled sub-section |
+
+Card sizes in the media section are stored under `STORAGE_KEYS.mediaSectionCardSizes` (`ha-dashboard-media-section-card-sizes`) separately from the main `cardSizes` key, so media card size preferences don't affect other sections.
+
+### Section Customize Shell
+
+**Location**: `src/app/components/layout/section-customize-shell.tsx`
+
+A thin wrapper exposing an edit-mode toggle to device sections. The Lights, Media, Security, and Locks sections are each wrapped in `SectionCustomizeShell`, which shows an edit-mode button and passes `isEditMode` into the section's `EntityGrid`. The section-level shell replaces the previous pattern of each section managing its own edit toggle.
+
 ---
 
 ## Navigation System
@@ -334,6 +354,15 @@ Sections in the same column slot are grouped into vertical stacks by `buildSecti
 - All sections in a stack share the same column width; resizing one resizes the entire stack column — stacked descendants are updated automatically
 - `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates
 
+### Portrait Mode Layout
+
+On portrait-orientation viewports (height > 1.15× width), the Home canvas automatically caps its effective column count and reflows sections into narrower portrait stacks via `buildPortraitStackRows`.
+
+- **`useHomeLayoutViewport`** — hook that tracks both `effectiveCols` (breakpoint cols capped for portrait) and `isPortrait`; listens to `window` and `visualViewport` resize events
+- **Portrait max cols** — `4` on viewports narrower than `1280 px` (`PORTRAIT_HOME_MAX_COLS`), `6` on wider portrait screens (`PORTRAIT_HOME_RELAXED_COLS`)
+- **Lane count** — portrait layout splits each row into 2 lanes (or 3 when `sectionGridCols ≥ 6`) so sections stack two-per-row instead of side-by-side; computed by `getPortraitLaneCount`
+- Viewport dimensions are read from CSS custom properties (`--navet-visible-viewport-width/height`, `--navet-viewport-width`) when set, falling back to `visualViewport` / `innerWidth/Height`
+
 ### Floating Library Panel
 
 The card library is a draggable floating panel (`useLibraryPanel`) that overlays the canvas in edit mode.
@@ -384,6 +413,10 @@ The editor header displays four live counters supplied by `useHomeDashboardEdito
 
 A toggle in the edit toolbar shows or hides the Hero section at the top of the Home view. Cards with `hero` size degrade to `large` when the hero section is hidden.
 
+### Room View
+
+When a user selects a named room (any room other than Home), the `DashboardSectionRouter` renders a `RoomOverviewPanel` above the device grid for that room. The overview panel provides a summary view of the room's entities before the full `DeviceGrid`.
+
 ### Persistence
 
 The Home layout is persisted to `STORAGE_KEYS.homeDashboardLayout` (`ha-dashboard-home-layout`) via the `useHomeDashboardLayout` hook using Zustand `persist` middleware.
@@ -404,13 +437,14 @@ Full-page settings interface with card-based organization.
 - **Theme Mode Selection**: 2 × 2 grid of theme option cards
 - **Primary Color Picker**: 8 built-in accent circles plus a custom accent swatch
 - **Visual quality**: choose between High, Medium, and Low glass rendering; shows the recommended tier for the current device based on an automatic benchmark run at first load
-- **Built-in wallpapers**: 4 bundled SVG scenes (Serene Dawn, Starfield Nocturne, Aurora Veil, Rainforest Canopy) selectable directly from the wallpaper setting; custom image upload still available alongside them
+- **Built-in wallpapers**: 8 bundled SVG scenes (Serene Dawn, Starfield Nocturne, Aurora Veil, Rainforest Canopy, Ember Loft, Slate Passage, Coastal Haze, Night Lounge) shown as compact circle swatches; custom image upload still available alongside them
 - **Localized theme picker copy**: theme names and descriptions resolve through the shared i18n dictionaries
 - **Light card ambience**: global visual toggle between ambient bleed and contained light-card rendering
 - **Theme-aware ambience preview**: the ambience preview uses the shared preview-frame primitive, and the shared `Live Preview` header localizes with the active language
 - **Shared color picker primitive**: custom accents, light colors, and Kelvin swatches reuse the same base control with size variants
 - **Brightness presets**: light cards use a compact 3-preset set (`Bright`, `Dim`, `Night`) that fits inline without an overflow menu
 - **Kelvin slider auto-reset**: tapping the Kelvin swatch on a light card replaces the brightness slider with the color temperature slider; it reverts automatically after 3 seconds of inactivity or when the user taps outside the card — `isKelvinMode` state is owned by the `LightCard` index component and passed down to all size variants
+- **Page zoom**: preset options are `[50, 67, 75, 80, 90, 100]`%; stored values are snapped to the nearest valid option via `normalizePageZoom`; a **Reset** button appears inline beside the − / + controls whenever the active zoom is not 100%
 - **Layout**: Left-aligned text, right-aligned selection indicator
 
 **2. Localization**
@@ -781,6 +815,21 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 **Location**: `src/app/features/energy/`
 
 A dedicated full-page section for monitoring home load, grid dependency, individual device energy, and bathroom/toilet demand. Connects to the Home Assistant energy domain via `useEnergyDashboard`.
+
+### Section Layout
+
+The energy section is structured using `EnergySectionBand` — a shared layout primitive that renders a labeled eyebrow, heading, optional description, and child content for each content band on the page.
+
+The section hero includes an `overviewHighlights` aside panel with four live stat tiles:
+
+| Stat | Value |
+|---|---|
+| Current power | Live home load in W |
+| Today | Today's kWh consumption |
+| Grid import | Today's grid import kWh |
+| Cost today | Today's estimated cost |
+
+This aside is shown alongside the hero when the energy dashboard is configured. Battery devices are rendered in a dedicated band when any HA battery-class sensors are available (`showBatteryDevices`).
 
 ### Setup and Configuration
 

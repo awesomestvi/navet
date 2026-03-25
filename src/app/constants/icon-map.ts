@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import {
   Circle,
   CircleDashed,
@@ -56,6 +57,24 @@ export const LIGHT_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export const DEFAULT_LIGHT_ICON = 'Zap';
+const emojiIconRegex = /\p{Extended_Pictographic}/u;
+
+const lucideIconEntries = Object.entries(LucideIcons).filter(([, value]) => {
+  return (
+    typeof value === 'function' ||
+    (typeof value === 'object' && value !== null && ('$$typeof' in value || 'render' in value))
+  );
+}) as Array<[string, LucideIcon]>;
+
+const lucideIconRegistry = new Map<string, LucideIcon>();
+
+for (const [key, icon] of lucideIconEntries) {
+  if (key.endsWith('Icon') || key.startsWith('Lucide')) {
+    continue;
+  }
+
+  lucideIconRegistry.set(key, icon);
+}
 
 function toPascalCaseIconName(value: string) {
   return value
@@ -86,9 +105,45 @@ export function normalizeLightIconName(value: string) {
     return matchedKey;
   }
 
-  return trimmed;
+  const lucideMatchedKey = Array.from(lucideIconRegistry.keys()).find(
+    (key) => key.toLowerCase() === lowerTrimmed
+  );
+  if (lucideMatchedKey) {
+    return lucideMatchedKey;
+  }
+
+  const pascalCaseLucideMatch = Array.from(lucideIconRegistry.keys()).find(
+    (key) => key.toLowerCase() === pascalCaseValue.toLowerCase()
+  );
+  if (pascalCaseLucideMatch) {
+    return pascalCaseLucideMatch;
+  }
+
+  return pascalCaseValue || trimmed;
 }
 
 export function resolveLightIconComponent(iconName: string) {
-  return LIGHT_ICON_MAP[normalizeLightIconName(iconName)] ?? null;
+  const normalizedIconName = normalizeLightIconName(iconName);
+  if (!normalizedIconName) {
+    return null;
+  }
+
+  if (LIGHT_ICON_MAP[normalizedIconName]) {
+    return LIGHT_ICON_MAP[normalizedIconName];
+  }
+
+  return lucideIconRegistry.get(normalizedIconName) ?? null;
+}
+
+export function isEmojiLightIcon(iconName: string) {
+  const trimmed = iconName.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  if (/[a-z0-9]/i.test(trimmed)) {
+    return false;
+  }
+
+  return emojiIconRegex.test(trimmed);
 }

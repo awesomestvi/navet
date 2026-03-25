@@ -1,28 +1,44 @@
 <svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="rainSky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2C4A47"/>
-      <stop offset="0.54" stop-color="#1C3534"/>
-      <stop offset="1" stop-color="#122625"/>
+    <linearGradient id="forestSky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1E3C2C"/>
+      <stop offset="0.35" stop-color="#162E22"/>
+      <stop offset="0.65" stop-color="#10221A"/>
+      <stop offset="1" stop-color="#0A1813"/>
     </linearGradient>
-    <radialGradient id="fogGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(820 302) rotate(90) scale(286 620)">
-      <stop stop-color="#DDE8D5" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#DDE8D5" stop-opacity="0"/>
+    <radialGradient id="canopyLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(780 252) rotate(90) scale(322 640)">
+      <stop offset="0" stop-color="#D4E8C2" stop-opacity="0.30"/>
+      <stop offset="0.45" stop-color="#B8D8A4" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#B8D8A4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="canopySide" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1246 172) rotate(90) scale(246 392)">
+      <stop offset="0" stop-color="#E0EED2" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#E0EED2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="floorDapple" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(618 682) rotate(90) scale(62 208)">
+      <stop offset="0" stop-color="#C0D8A2" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#C0D8A2" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1600" height="900" fill="url(#rainSky)"/>
-  <ellipse cx="820" cy="302" rx="620" ry="286" fill="url(#fogGlow)"/>
-  <path d="M0 286C112 313 200 370 282 474C351 561 445 618 548 617C640 616 713 569 778 502C857 421 930 351 1026 333C1146 310 1251 367 1343 452C1413 516 1490 561 1600 556V900H0V286Z" fill="#204A40" fill-opacity="0.48"/>
-  <path d="M0 452C87 407 186 390 290 418C374 441 436 496 505 553C573 609 641 660 742 660C858 660 919 593 989 524C1066 447 1162 361 1305 369C1418 376 1516 437 1600 522V900H0V452Z" fill="#17362F" fill-opacity="0.74"/>
-  <path d="M0 632C110 583 209 575 313 615C406 650 492 720 608 740C738 763 846 712 937 652C1031 590 1131 541 1255 543C1388 546 1497 604 1600 694V900H0V632Z" fill="#0C211C" fill-opacity="0.82"/>
-  <g fill="#0A1915">
-    <path d="M133 0C172 112 156 251 99 394C67 475 22 556 0 622V0H133Z"/>
-    <path d="M319 0C342 126 327 238 288 347C253 446 198 549 145 638C121 678 102 718 89 756C158 705 252 616 319 505C404 364 445 188 420 0H319Z"/>
-    <path d="M1600 0V598C1557 548 1514 483 1478 408C1422 291 1406 138 1443 0H1600Z"/>
-    <path d="M1326 0C1304 110 1317 206 1350 300C1384 398 1435 490 1486 569C1520 622 1553 670 1585 711C1511 663 1434 593 1368 503C1283 386 1242 219 1262 0H1326Z"/>
+  <rect width="1600" height="900" fill="url(#forestSky)"/>
+  <ellipse cx="780" cy="252" rx="640" ry="322" fill="url(#canopyLight)"/>
+  <ellipse cx="1246" cy="172" rx="392" ry="246" fill="url(#canopySide)"/>
+  <!-- Far canopy (lightest, furthest) -->
+  <path d="M0 272C68 262 130 304 188 362C248 424 306 472 386 466C452 460 496 408 548 360C602 310 664 278 738 294C812 310 856 368 924 404C988 438 1050 442 1122 422C1200 400 1262 344 1340 330C1410 318 1490 354 1568 420C1580 432 1592 446 1600 456V660H0V272Z" fill="#224E38" fill-opacity="0.44"/>
+  <!-- Mid canopy -->
+  <path d="M0 366C82 340 150 378 212 448C276 520 338 576 430 576C516 576 580 516 638 444C698 370 764 312 854 326C942 340 1002 410 1070 470C1138 530 1210 560 1296 544C1390 526 1460 456 1536 400C1558 384 1580 372 1600 370V700H0V366Z" fill="#163C2A" fill-opacity="0.60"/>
+  <!-- Near canopy -->
+  <path d="M0 488C78 450 150 460 214 520C278 580 334 642 416 652C490 662 548 616 606 552C662 490 718 432 802 440C884 448 936 516 1000 576C1064 636 1132 672 1226 666C1328 660 1414 598 1494 518C1528 486 1562 460 1600 452V780H0V488Z" fill="#0E2C1E" fill-opacity="0.76"/>
+  <!-- Tree trunk silhouettes -->
+  <g fill="#080E0A">
+    <path d="M0 0C30 82 44 188 40 314C36 444 20 560 0 642V0Z"/>
+    <path d="M112 0C142 110 136 238 114 366C94 480 56 584 30 674C58 618 100 518 124 398C150 272 154 130 138 0H112Z"/>
+    <path d="M1600 0V618C1576 564 1556 494 1542 410C1524 302 1530 154 1558 0H1600Z"/>
+    <path d="M1482 0C1460 106 1466 212 1492 308C1518 406 1550 494 1578 570C1514 512 1452 420 1424 306C1396 188 1408 76 1436 0H1482Z"/>
   </g>
-  <g fill="#C7DAB8" fill-opacity="0.06">
-    <ellipse cx="546" cy="680" rx="230" ry="70"/>
-    <ellipse cx="1024" cy="620" rx="256" ry="64"/>
-  </g>
+  <!-- Floor dapple light pools -->
+  <ellipse cx="618" cy="682" rx="208" ry="62" fill="url(#floorDapple)"/>
+  <ellipse cx="1042" cy="644" rx="232" ry="56" fill="url(#floorDapple)"/>
+  <!-- Floor layer -->
+  <path d="M0 672C108 640 218 646 328 686C456 730 568 762 692 756C822 750 918 702 1026 666C1142 628 1248 616 1372 642C1454 660 1534 690 1600 724V900H0V672Z" fill="#060E08" fill-opacity="0.90"/>
 </svg>

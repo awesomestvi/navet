@@ -1,0 +1,44 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hazeSky" x1="800" y1="0" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C6D4E4"/>
+      <stop offset="0.32" stop-color="#B2C6D6"/>
+      <stop offset="0.60" stop-color="#98B2C2"/>
+      <stop offset="0.82" stop-color="#7C9EAE"/>
+      <stop offset="1" stop-color="#608C9C"/>
+    </linearGradient>
+    <!-- Diffuse sun through morning haze -->
+    <radialGradient id="hazeSun" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(338 182) rotate(90) scale(348 460)">
+      <stop offset="0" stop-color="#FFF8E8" stop-opacity="0.60"/>
+      <stop offset="0.32" stop-color="#FFECC8" stop-opacity="0.34"/>
+      <stop offset="0.65" stop-color="#FFE0A0" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFE0A0" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Horizon haze band -->
+    <linearGradient id="horizHaze" x1="800" y1="432" x2="800" y2="532" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D8EAF2" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#D8EAF2" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Sea gradient -->
+    <linearGradient id="hazeWater" x1="800" y1="500" x2="800" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7E9EAC" stop-opacity="0.96"/>
+      <stop offset="0.46" stop-color="#5C7E8C"/>
+      <stop offset="1" stop-color="#3A5E6C"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#hazeSky)"/>
+  <!-- Diffuse sun -->
+  <ellipse cx="338" cy="182" rx="460" ry="348" fill="url(#hazeSun)"/>
+  <!-- Horizon haze band -->
+  <rect x="0" y="432" width="1600" height="100" fill="url(#horizHaze)"/>
+  <!-- Far headlands (very faint, haze-blue) -->
+  <path d="M0 424C126 398 254 380 390 400C508 418 590 456 706 464C812 472 912 456 1022 432C1140 406 1244 380 1372 394C1458 404 1538 426 1600 442V580H0V424Z" fill="#A4BAC8" fill-opacity="0.42"/>
+  <!-- Mid headlands -->
+  <path d="M0 464C98 440 198 430 306 454C418 480 508 518 622 526C730 534 832 518 944 494C1062 470 1170 442 1290 456C1386 468 1478 498 1600 516V640H0V464Z" fill="#80A0B0" fill-opacity="0.62"/>
+  <!-- Near cliffs/coast -->
+  <path d="M0 514C64 490 130 484 204 504C288 528 364 574 450 592C530 608 610 604 690 582C772 560 846 522 934 510C1026 498 1118 510 1202 540C1284 568 1360 600 1600 582V720H0V514Z" fill="#5C7A88" fill-opacity="0.76"/>
+  <!-- Sea surface -->
+  <path d="M0 558C130 542 266 550 402 578C550 608 682 624 842 610C1006 596 1138 560 1302 550C1410 544 1514 554 1600 564V900H0V558Z" fill="url(#hazeWater)"/>
+  <!-- Deep water -->
+  <path d="M0 672C140 652 284 670 426 720C574 774 718 794 894 780C1062 767 1194 718 1354 702C1456 692 1542 696 1600 708V900H0V672Z" fill="#3A5C6A" fill-opacity="0.54"/>
+</svg>

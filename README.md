@@ -207,13 +207,13 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Liquid Glass now uses a denser frosted treatment with stronger rim highlights and deeper control surfaces instead of a flatter transparent blur
 - Select from **8 built-in accents** or choose a **custom accent color**
 - Choose **Visual Quality** in **Settings -> Appearance**: **High**, **Medium**, or **Low**
-- Choose **Page Zoom** in **Settings -> Appearance** to scale the whole interface with built-in presets from `75%` to `100%` in 5% steps
+- Choose **Page Zoom** in **Settings -> Appearance** to scale the whole interface with built-in presets (50%, 67%, 75%, 80%, 90%, 100%); a **Reset** button appears inline when a non-default zoom is active
 - Choose the app **Language** in **Settings -> Localization** to switch locale-aware interface formatting
 - Theme mode names and descriptions follow the selected app language
 - First-run onboarding now gives **Localization** its own step for language, time format, and temperature unit before the appearance step
 - In **Settings -> Appearance**, choose whether active light cards use **Ambient bleed** or stay **Contained** inside the card
 - On light cards that support color temperature, tapping the Kelvin swatch switches the card's slider to the color temperature slider; the slider automatically returns to brightness after 3 seconds of inactivity or when clicking outside the card
-- Choose from **4 built-in wallpapers** (Serene Dawn, Starfield Nocturne, Aurora Veil, Rainforest Canopy) or upload your own image as a dashboard background
+- Choose from **8 built-in wallpapers** (Serene Dawn, Starfield Nocturne, Aurora Veil, Rainforest Canopy, Ember Loft, Slate Passage, Coastal Haze, Night Lounge) shown as compact circle swatches, or upload your own image as a dashboard background
 - Custom accent colors, preset accent colors, light colors, and Kelvin swatches now share the same color-picker primitive and sizing language
 - Light brightness presets now use a compact **3-preset** set: **Bright**, **Dim**, and **Night**
 - Shared theme-sensitive pieces such as entity icon pills and nav/action pills now resolve through reusable shared primitives rather than per-feature inline styling

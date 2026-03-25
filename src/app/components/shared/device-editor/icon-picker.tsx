@@ -32,6 +32,7 @@ import { memo } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   DEFAULT_LIGHT_ICON,
+  isEmojiLightIcon,
   normalizeLightIconName,
   resolveLightIconComponent,
 } from '@/app/constants/icon-map';
@@ -98,7 +99,7 @@ export const IconPicker = memo(function IconPicker({
   const customIconComponent = normalizedIconName
     ? resolveLightIconComponent(normalizedIconName)
     : null;
-  const isEmojiIcon = !customIconComponent && normalizedIconName.length > 0;
+  const isEmojiIcon = !customIconComponent && isEmojiLightIcon(selectedIcon);
   const IconComponent = isEmojiIcon
     ? null
     : (customIconComponent ?? resolveLightIconComponent(DEFAULT_LIGHT_ICON));
@@ -136,7 +137,7 @@ export const IconPicker = memo(function IconPicker({
               <span
                 className={`text-sm leading-none ${isLightOn ? 'text-white' : editorSurface.closeIconClassName}`}
               >
-                {isEmojiIcon ? normalizedIconName : '•'}
+                {isEmojiIcon ? selectedIcon.trim() : '•'}
               </span>
             )}
           </div>

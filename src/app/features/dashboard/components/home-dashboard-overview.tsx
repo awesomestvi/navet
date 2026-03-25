@@ -88,6 +88,8 @@ const LIBRARY_LIST_HEIGHT = 360; // 6 rows × 60px
 const LIBRARY_ROW_HEIGHT = 60; // ~44px row (text + py-2) + 8px gap (gap-2 slot)
 const LIBRARY_LIST_OVERSCAN = 1;
 const SECTION_GRID_GAP_CLASS = 'gap-2 md:gap-3 lg:gap-4';
+const PORTRAIT_HOME_MAX_COLS = 4;
+const PORTRAIT_HOME_RELAXED_COLS = 6;
 
 function isCustomCard(entry: DeviceWithType | CustomCard): entry is CustomCard {
   return 'createdAt' in entry;
@@ -166,6 +168,113 @@ function buildSectionStacks<T extends { id: string; x: number; y: number; span: 
   });
 }
 
+function buildPortraitStackRows<T>(rows: T[][], laneCount: number): T[][] {
+  const flattened = rows.flat();
+  const portraitRows: T[][] = [];
+  const normalizedLaneCount = Math.max(1, laneCount);
+
+  for (let index = 0; index < flattened.length; index += normalizedLaneCount) {
+    portraitRows.push(flattened.slice(index, index + normalizedLaneCount));
+  }
+
+  return portraitRows;
+}
+
+function getPortraitLaneCount(sectionGridCols: number) {
+  if (sectionGridCols >= 6) {
+    return 3;
+  }
+
+  return 2;
+}
+
+function getViewportDimensionVar(name: string) {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+
+  const value = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(name)
+  );
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getVisibleViewportSize() {
+  if (typeof window === 'undefined') {
+    return { width: 0, height: 0 };
+  }
+
+  const width =
+    getViewportDimensionVar('--navet-visible-viewport-width') ||
+    window.visualViewport?.width ||
+    window.innerWidth;
+  const height =
+    getViewportDimensionVar('--navet-visible-viewport-height') ||
+    window.visualViewport?.height ||
+    window.innerHeight;
+
+  return { width, height };
+}
+
+function getLogicalViewportWidth() {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+
+  return (
+    getViewportDimensionVar('--navet-viewport-width') ||
+    Math.max(window.innerWidth, window.visualViewport?.width ?? 0)
+  );
+}
+
+function getHomeEffectiveCols(cols: number) {
+  const { width: viewportWidth, height: viewportHeight } = getVisibleViewportSize();
+  const logicalViewportWidth = getLogicalViewportWidth();
+  const isPortraitCanvas = viewportHeight > viewportWidth * 1.15;
+
+  if (!isPortraitCanvas) {
+    return cols;
+  }
+
+  const portraitMaxCols =
+    logicalViewportWidth >= 1280 ? PORTRAIT_HOME_RELAXED_COLS : PORTRAIT_HOME_MAX_COLS;
+
+  return Math.min(cols, portraitMaxCols);
+}
+
+function isPortraitHomeCanvas() {
+  const { width: viewportWidth, height: viewportHeight } = getVisibleViewportSize();
+  return viewportHeight > viewportWidth * 1.15;
+}
+
+function useHomeLayoutViewport() {
+  const breakpointCols = useBreakpointCols();
+  const [viewportState, setViewportState] = useState(() => ({
+    effectiveCols: getHomeEffectiveCols(breakpointCols),
+    isPortrait: isPortraitHomeCanvas(),
+  }));
+
+  useEffect(() => {
+    const syncViewportState = () => {
+      setViewportState({
+        effectiveCols: getHomeEffectiveCols(breakpointCols),
+        isPortrait: isPortraitHomeCanvas(),
+      });
+    };
+
+    syncViewportState();
+    window.addEventListener('resize', syncViewportState);
+    window.visualViewport?.addEventListener('resize', syncViewportState);
+
+    return () => {
+      window.removeEventListener('resize', syncViewportState);
+      window.visualViewport?.removeEventListener('resize', syncViewportState);
+    };
+  }, [breakpointCols]);
+
+  return viewportState;
+}
+
 export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   deviceMap,
   availableDeviceMap,
@@ -192,7 +301,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const sectionGridCols = useBreakpointCols();
+  const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const {
     libraryPanelRef,
@@ -252,6 +361,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
         onUpdateCard={onUpdateCard}
         showHero={homeLayout.showHero}
         isSectioned={homeLayout.mode === 'sectioned'}
+        gridCols={sectionGridCols}
+        isPortraitHome={isPortraitHome}
         accentColor={accentColor}
         surface={surface}
         emptyTitle={t('dashboard.homeOverview.emptyTitle')}
@@ -439,6 +550,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       onRenameSection={renameHomeSection}
                       onRemoveSection={removeHomeSection}
                       onResizeSection={resizeHomeSection}
+                      isPortraitHome={isPortraitHome}
                       surface={surface}
                     />
                   ) : (
@@ -451,6 +563,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                 ) : (
                   <FlowCanvas
                     cardIds={flowCards}
+                    gridCols={sectionGridCols}
                     allCards={allCards}
                     cardSizes={cardSizes}
                     updateCardSize={updateCardSize}
@@ -746,6 +859,7 @@ function SectionCanvas({
 function SectionCanvasGrid({
   sections,
   sectionGridCols,
+  isPortraitHome,
   activeSectionId,
   accentColor,
   allCards,
@@ -765,6 +879,7 @@ function SectionCanvasGrid({
 }: {
   sections: HomeEditorSection[];
   sectionGridCols: number;
+  isPortraitHome: boolean;
   activeSectionId: string | null;
   accentColor: string;
   allCards: Map<string, DeviceWithType | CustomCard>;
@@ -787,6 +902,11 @@ function SectionCanvasGrid({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const sectionStacksByRow = buildSectionStacks(sections);
+  const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
+  const visibleRows = isPortraitHome
+    ? buildPortraitStackRows(sectionStacksByRow, portraitLaneCount)
+    : sectionStacksByRow;
+  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
   const minWidthsBySection = Object.fromEntries(
     sections.map((section) => [
       section.id,
@@ -796,7 +916,7 @@ function SectionCanvasGrid({
 
   return (
     <div className="flex flex-col gap-5">
-      {sectionStacksByRow.map((rowStacks, rowIndex) => {
+      {visibleRows.map((rowStacks, rowIndex) => {
         const rowMinSpansById = Object.fromEntries(
           rowStacks.map((stack) => [
             stack[0].id,
@@ -815,17 +935,30 @@ function SectionCanvasGrid({
         );
 
         return (
-          <div key={rowIndex} className="flex items-start gap-3">
+          <div
+            key={rowIndex}
+            className={isPortraitHome ? 'grid gap-3' : 'flex items-start gap-3'}
+            style={
+              isPortraitHome
+                ? ({
+                    gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
+                  } as CSSProperties)
+                : undefined
+            }
+          >
             {rowStacks.map((stack) => {
               const leadSection = stack[0];
-              const renderedSpan =
-                rowLayouts.get(leadSection.id)?.span ??
-                getRenderedSectionSpan(leadSection.span, sectionGridCols);
+              const renderedSpan = isPortraitHome
+                ? portraitLaneCols
+                : (rowLayouts.get(leadSection.id)?.span ??
+                  getRenderedSectionSpan(leadSection.span, sectionGridCols));
               return (
                 <div
                   key={leadSection.id}
-                  style={{ flex: `${renderedSpan} 1 0`, minWidth: 0 }}
-                  className="space-y-3"
+                  style={
+                    isPortraitHome ? { minWidth: 0 } : { flex: `${renderedSpan} 1 0`, minWidth: 0 }
+                  }
+                  className={`space-y-3 ${isPortraitHome ? 'min-w-0' : ''}`}
                 >
                   {stack.map((section) => (
                     <div key={section.id} className="space-y-3">
@@ -876,6 +1009,7 @@ function SectionCanvasGrid({
 
 function FlowCanvas({
   cardIds,
+  gridCols,
   allCards,
   cardSizes,
   updateCardSize,
@@ -886,6 +1020,7 @@ function FlowCanvas({
   surface,
 }: {
   cardIds: string[];
+  gridCols: number;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
@@ -904,6 +1039,7 @@ function FlowCanvas({
         {cardIds.length > 0 ? (
           <CardGrid
             cardIds={cardIds}
+            gridCols={gridCols}
             allCards={allCards}
             cardSizes={cardSizes}
             updateCardSize={updateCardSize}
@@ -1060,6 +1196,8 @@ function CardGrid({
 function HomePresentation({
   flowCards,
   sections,
+  gridCols,
+  isPortraitHome,
   allCards,
   cardSizes,
   updateCardSize,
@@ -1074,6 +1212,8 @@ function HomePresentation({
 }: {
   flowCards: string[];
   sections: HomeEditorSection[];
+  gridCols: number;
+  isPortraitHome: boolean;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
@@ -1086,7 +1226,7 @@ function HomePresentation({
   emptyDescription: string;
   onToggleEditMode?: () => void;
 }) {
-  const sectionGridCols = useBreakpointCols();
+  const sectionGridCols = gridCols;
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
 
   if (!hasCards) {
@@ -1110,6 +1250,7 @@ function HomePresentation({
     return (
       <CardGrid
         cardIds={flowCards}
+        gridCols={sectionGridCols}
         allCards={allCards}
         cardSizes={cardSizes}
         updateCardSize={updateCardSize}
@@ -1125,11 +1266,16 @@ function HomePresentation({
   const presentationRowStacks = buildSectionStacks(
     sections.filter((section) => section.cardIds.length > 0)
   );
+  const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
+  const visibleRows = isPortraitHome
+    ? buildPortraitStackRows(presentationRowStacks, portraitLaneCount)
+    : presentationRowStacks;
+  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
 
   return (
     <div className="space-y-7 md:space-y-8">
       <div className="flex flex-col gap-6">
-        {presentationRowStacks.map((rowStacks, rowIndex) => {
+        {visibleRows.map((rowStacks, rowIndex) => {
           const rowMinSpansById = Object.fromEntries(
             rowStacks.map((stack) => [
               stack[0].id,
@@ -1152,17 +1298,22 @@ function HomePresentation({
               key={rowIndex}
               className={`grid ${SECTION_GRID_GAP_CLASS}`}
               style={
-                {
-                  '--home-section-cols': sectionGridCols,
-                  gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-                } as CSSProperties
+                isPortraitHome
+                  ? ({
+                      gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
+                    } as CSSProperties)
+                  : ({
+                      '--home-section-cols': sectionGridCols,
+                      gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
+                    } as CSSProperties)
               }
             >
               {rowStacks.map((stack) => {
                 const leadSection = stack[0];
                 const rowLayout = rowLayouts.get(leadSection.id);
-                const renderedSpan =
-                  rowLayout?.span ?? getRenderedSectionSpan(leadSection.span, sectionGridCols);
+                const renderedSpan = isPortraitHome
+                  ? portraitLaneCols
+                  : (rowLayout?.span ?? getRenderedSectionSpan(leadSection.span, sectionGridCols));
                 const renderedColumnStart =
                   rowLayout?.start ??
                   getRenderedSectionColumnStart(leadSection.x, leadSection.span, sectionGridCols);
@@ -1170,7 +1321,11 @@ function HomePresentation({
                 return (
                   <div
                     key={leadSection.id}
-                    style={{ gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }}
+                    style={
+                      isPortraitHome
+                        ? undefined
+                        : { gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }
+                    }
                     className="space-y-6"
                   >
                     {stack.map((section) => (
@@ -1196,6 +1351,7 @@ function HomePresentation({
       {flowCards.length > 0 ? (
         <CardGrid
           cardIds={flowCards}
+          gridCols={sectionGridCols}
           allCards={allCards}
           cardSizes={cardSizes}
           updateCardSize={updateCardSize}

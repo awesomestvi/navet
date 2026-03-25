@@ -2,7 +2,12 @@ import { Image as ImageIcon, Minus, Palette, Plus, Upload, X } from 'lucide-reac
 import { useMemo } from 'react';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
 import { useI18n } from '@/app/hooks';
-import type { EffectsQuality, PageZoom } from '@/app/stores/settings-store';
+import {
+  type EffectsQuality,
+  normalizePageZoom,
+  PAGE_ZOOM_OPTIONS,
+  type PageZoom,
+} from '@/app/stores/settings-store';
 import { detectDeviceTier } from '@/app/utils/detect-device-tier';
 import { getLegacyReducedEffectsFlags } from '@/app/utils/effects-quality';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
@@ -42,25 +47,37 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
       {
         id: 'serene-dawn',
         src: './wallpapers/serene-dawn.svg',
-        label: t('settings.appearance.wallpaper.stock.sereneDawn'),
       },
       {
         id: 'starfield-nocturne',
         src: './wallpapers/starfield-nocturne.svg',
-        label: t('settings.appearance.wallpaper.stock.starfieldNocturne'),
       },
       {
         id: 'aurora-veil',
         src: './wallpapers/aurora-veil.svg',
-        label: t('settings.appearance.wallpaper.stock.auroraVeil'),
       },
       {
         id: 'rainforest-canopy',
         src: './wallpapers/rainforest-canopy.svg',
-        label: t('settings.appearance.wallpaper.stock.rainforestCanopy'),
+      },
+      {
+        id: 'ember-loft',
+        src: './wallpapers/ember-loft.svg',
+      },
+      {
+        id: 'slate-passage',
+        src: './wallpapers/slate-passage.svg',
+      },
+      {
+        id: 'coastal-haze',
+        src: './wallpapers/coastal-haze.svg',
+      },
+      {
+        id: 'night-lounge',
+        src: './wallpapers/night-lounge.svg',
       },
     ],
-    [t]
+    []
   );
   const detectedTier = useMemo(() => detectDeviceTier(), []);
   const ambienceDisabled = effectsQuality !== 'high';
@@ -70,11 +87,13 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
     { value: 'medium', label: t('settings.system.effectsQuality.medium') },
     { value: 'low', label: t('settings.system.effectsQuality.low') },
   ];
-  const pageZoomOptions: readonly PageZoom[] = [75, 80, 85, 90, 95, 100];
-  const currentPageZoomIndex = pageZoomOptions.indexOf(pageZoom);
+  const pageZoomOptions: readonly PageZoom[] = PAGE_ZOOM_OPTIONS;
+  const normalizedPageZoom = normalizePageZoom(pageZoom);
+  const currentPageZoomIndex = pageZoomOptions.indexOf(normalizedPageZoom);
   const canDecreasePageZoom = currentPageZoomIndex > 0;
   const canIncreasePageZoom =
     currentPageZoomIndex >= 0 && currentPageZoomIndex < pageZoomOptions.length - 1;
+  const hasCustomPageZoom = normalizedPageZoom !== 100;
   const decreasePageZoom = () => {
     if (!canDecreasePageZoom) {
       return;
@@ -170,8 +189,21 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
         styles={styles}
       >
         <div
-          className={`inline-flex items-center gap-3 rounded-full border px-3 py-2 ${styles.borderColor} ${styles.softBg}`}
+          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 ${styles.borderColor} ${styles.softBg}`}
         >
+          {hasCustomPageZoom ? (
+            <>
+              <button
+                type="button"
+                onClick={() => updateSettings({ pageZoom: 100 })}
+                className={`inline-flex h-9 items-center rounded-full px-3 text-sm font-medium transition-all ${styles.softBg} ${styles.chipTextColor}`}
+                aria-label={t('common.reset')}
+              >
+                {t('common.reset')}
+              </button>
+              <div className={`h-6 w-px ${styles.borderColor}`} />
+            </>
+          ) : null}
           <button
             type="button"
             onClick={decreasePageZoom}
@@ -186,7 +218,7 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
             <Minus className="h-4 w-4" />
           </button>
           <div className={`min-w-[4.5rem] text-center text-sm font-medium ${styles.textColor}`}>
-            {pageZoom}%
+            {normalizedPageZoom}%
           </div>
           <button
             type="button"
@@ -337,17 +369,8 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
             </label>
           )}
 
-          <div className="space-y-3 max-w-5xl">
-            <div>
-              <h3 className={`text-sm font-semibold ${styles.textColor}`}>
-                {t('settings.appearance.wallpaper.stockTitle')}
-              </h3>
-              <p className={`mt-1 text-sm ${styles.subtleColor}`}>
-                {t('settings.appearance.wallpaper.stockDescription')}
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="max-w-5xl">
+            <div className="flex flex-wrap gap-3">
               {builtInWallpapers.map((option) => {
                 const isSelected = wallpaper === option.src;
 
@@ -357,40 +380,31 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
                     type="button"
                     onClick={() => handleSelectWallpaper(option.src)}
                     aria-pressed={isSelected}
-                    className={`group flex h-full min-h-[11.5rem] flex-col overflow-hidden rounded-[20px] border text-left transition-all ${styles.hoverBg}`}
+                    aria-label={`Wallpaper ${option.id}`}
+                    className="group relative h-14 w-14 overflow-hidden rounded-full border transition-all md:h-16 md:w-16"
                     style={{
                       borderColor: isSelected ? `${styles.accentColor}88` : undefined,
                       boxShadow: isSelected ? `0 0 0 1px ${styles.accentColor}55` : undefined,
                     }}
                   >
-                    <div className="relative h-28 shrink-0 overflow-hidden">
-                      <img
-                        src={option.src}
-                        alt={option.label}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                      />
+                    <img
+                      src={option.src}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.06]"
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(180deg, transparent, ${styles.accentColor}18)`,
+                        mixBlendMode: styles.mixBlendMode,
+                      }}
+                    />
+                    {isSelected ? (
                       <div
-                        className="absolute inset-0"
-                        style={{
-                          background: `linear-gradient(180deg, transparent, ${styles.accentColor}18)`,
-                          mixBlendMode: styles.mixBlendMode,
-                        }}
+                        className="absolute inset-0 rounded-full"
+                        style={{ boxShadow: `inset 0 0 0 2px ${styles.accentColor}` }}
                       />
-                    </div>
-                    <div className="flex flex-1 items-start justify-between gap-3 px-4 py-3">
-                      <span
-                        className={`line-clamp-2 min-h-[2.75rem] text-sm font-medium leading-5 ${styles.textColor}`}
-                      >
-                        {option.label}
-                      </span>
-                      <span
-                        className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full transition-opacity"
-                        style={{
-                          backgroundColor: styles.accentColor,
-                          opacity: isSelected ? 1 : 0.22,
-                        }}
-                      />
-                    </div>
+                    ) : null}
                   </button>
                 );
               })}

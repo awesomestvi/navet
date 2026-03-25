@@ -58,4 +58,4 @@ Complete documentation for the Navet smart home dashboard.
 
 ---
 
-**Last Updated:** March 24, 2026
+**Last Updated:** March 26, 2026
