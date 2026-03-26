@@ -61,22 +61,22 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 group cursor-pointer"
+        className={`group flex h-9 w-9 items-center justify-center rounded-[22px] transition-colors ${surface.hoverBg} md:h-10 md:w-10`}
         aria-label={t('userDropdown.openMenu')}
         aria-expanded={isOpen}
       >
         <Avatar
-          className="h-10 w-10 transition-transform group-hover:scale-105"
+          className="h-8 w-8 transition-transform group-hover:scale-105 md:h-[34px] md:w-[34px]"
           style={{
             backgroundColor: accentColor,
             boxShadow: connected
-              ? `0 0 0 2px ${accentColor}55, 0 0 0 5px ${accentColor}18`
+              ? `0 0 0 1px ${accentColor}55, 0 0 0 2px ${accentColor}14`
               : undefined,
             opacity: connected ? 1 : 0.82,
           }}
         >
           {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
-          <AvatarFallback className="bg-transparent text-white text-sm font-semibold">
+          <AvatarFallback className="bg-transparent text-white text-xs font-semibold md:text-sm">
             {initials || t('userDropdown.defaultInitial')}
           </AvatarFallback>
         </Avatar>

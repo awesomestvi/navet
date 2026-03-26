@@ -351,8 +351,9 @@ Switching to `sectioned` mode auto-creates the first section if none exist. Sect
 Sections in the same column slot are grouped into vertical stacks by `buildSectionStacks` (in `home-dashboard-overview.tsx`). A stack is formed when two sections share the same `x` coordinate and `span` value across consecutive `y` rows.
 
 - **Add below** — creates a new section stacked directly below the selected section, inheriting its column span
+- **Drag to reorder** — in edit mode, each section exposes a drag handle (grip icon); dragging it over an "Add section" drop zone repositions the section in the layout via `moveSectionBelow` in `layout-engine.ts`. Drop zones are rendered between sections and highlight when a section drag is active.
 - All sections in a stack share the same column width; resizing one resizes the entire stack column — stacked descendants are updated automatically
-- `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates
+- `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates; `compactStackGaps` closes gaps left after a section is moved or removed
 
 ### Portrait Mode Layout
 

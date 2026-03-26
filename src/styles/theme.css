@@ -282,6 +282,16 @@
 }
 
 @layer utilities {
+  @media (max-width: 767px) {
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(
+        [type="color"]
+      ):not([type="button"]):not([type="submit"]):not([type="reset"]),
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
   @keyframes fade-in {
     from {
       opacity: 0;

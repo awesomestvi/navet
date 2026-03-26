@@ -859,4 +859,7 @@ export const enMessages = {
   'energy.band.today.description': 'How imported energy is being absorbed across the home.',
   'energy.band.devices.title': 'Devices',
   'energy.band.devices.description': 'The individual loads currently taking the most energy.',
+  'dashboard.section.addBelow': 'Add section',
+  'dashboard.section.moveHere': 'Move section here',
+  'dashboard.section.moveDragLabel': 'Move section',
 } as const;

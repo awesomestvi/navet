@@ -873,4 +873,7 @@ export const esMessages = {
   'energy.band.today.description': 'Cómo se distribuye la energía importada en el hogar.',
   'energy.band.devices.title': 'Dispositivos',
   'energy.band.devices.description': 'Los dispositivos que más energía consumen en este momento.',
+  'dashboard.section.addBelow': 'Añadir sección',
+  'dashboard.section.moveHere': 'Mover sección aquí',
+  'dashboard.section.moveDragLabel': 'Mover sección',
 } as const;

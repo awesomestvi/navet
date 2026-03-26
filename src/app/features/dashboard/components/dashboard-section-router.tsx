@@ -175,6 +175,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
               addHomeSection={controller.addHomeSection}
               addHomeColumnSection={controller.addHomeColumnSection}
               addHomeSectionBelow={controller.addHomeSectionBelow}
+              moveHomeSection={controller.moveHomeSection}
               renameHomeSection={controller.renameHomeSection}
               removeHomeSection={controller.removeHomeSection}
               resizeHomeSection={controller.resizeHomeSection}

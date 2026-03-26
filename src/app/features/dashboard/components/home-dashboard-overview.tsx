@@ -1,4 +1,4 @@
-import { closestCenter, DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
+import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import {
   ChevronLeft,
@@ -15,7 +15,15 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
-import { type CSSProperties, memo, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  memo,
+  type ReactNode,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -62,6 +70,7 @@ interface HomeDashboardOverviewProps {
   addHomeSection: () => string;
   addHomeColumnSection: (targetSectionId?: string) => string;
   addHomeSectionBelow: (targetSectionId: string) => string;
+  moveHomeSection: (sourceId: string, targetId: string) => void;
   renameHomeSection: (sectionId: string, title: string) => void;
   removeHomeSection: (sectionId: string) => void;
   resizeHomeSection: (
@@ -87,9 +96,70 @@ const overlayClass: Record<CardSize, string> = {
 const LIBRARY_LIST_HEIGHT = 360; // 6 rows × 60px
 const LIBRARY_ROW_HEIGHT = 60; // ~44px row (text + py-2) + 8px gap (gap-2 slot)
 const LIBRARY_LIST_OVERSCAN = 1;
-const SECTION_GRID_GAP_CLASS = 'gap-2 md:gap-3 lg:gap-4';
+const SECTION_GRID_GAP_CLASS = 'gap-x-6 md:gap-x-7 lg:gap-x-8';
 const PORTRAIT_HOME_MAX_COLS = 4;
 const PORTRAIT_HOME_RELAXED_COLS = 6;
+const NOOP_REMOVE_FROM_LAYOUT = () => {};
+const MIN_HOME_CARD_TRACK_WIDTH = 176;
+
+type HomePresentationSectionProps = {
+  section: {
+    id: string;
+    title: string;
+    cardIds: string[];
+  };
+  renderedSpan: number;
+  allCards: Map<string, DeviceWithType | CustomCard>;
+  cardSizes: Record<string, CardSize>;
+  updateCardSize: (id: string, size: CardSize) => void;
+  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
+  showHero: boolean;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+};
+
+type CardGridProps = {
+  cardIds: string[];
+  sectionId?: string;
+  gridCols?: number;
+  allCards: Map<string, DeviceWithType | CustomCard>;
+  cardSizes: Record<string, CardSize>;
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
+  onRemoveFromLayout: (cardId: string) => void;
+  showHero: boolean;
+  sortable?: boolean;
+};
+
+type SectionCanvasProps = {
+  sectionId: string;
+  title: string;
+  gridCols: number;
+  isActive: boolean;
+  accentColor: string;
+  cardIds: string[];
+  allCards: Map<string, DeviceWithType | CustomCard>;
+  cardSizes: Record<string, CardSize>;
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
+  onRemoveFromLayout: (cardId: string) => void;
+  showHero: boolean;
+  onSelectSection: (sectionId: string) => void;
+  onOpenLibraryForSection: (sectionId: string) => void;
+  onRenameSection: (sectionId: string, title: string) => void;
+  onRemoveSection: (sectionId: string) => void;
+  span: number;
+  layoutCols: number;
+  minWidthsBySection: Record<string, number>;
+  rowSiblingCount: number;
+  onResizeSection: (
+    sectionId: string,
+    newW: number,
+    minWidthsBySection?: Record<string, number>
+  ) => void;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+};
 
 function isCustomCard(entry: DeviceWithType | CustomCard): entry is CustomCard {
   return 'createdAt' in entry;
@@ -102,6 +172,85 @@ function getRenderedSectionSpan(span: HomeDashboardSectionSpan, cols: number): n
   }
 
   return Math.min(cols, Math.max(1, Math.round((normalizedSpan / SECTION_LAYOUT_COLUMNS) * cols)));
+}
+
+function getStoredSectionSpan(item: { span?: number; w?: number }) {
+  return Math.max(1, item.w ?? item.span ?? 1);
+}
+
+function getCardGridGapPx(cols: number) {
+  if (cols >= 6) {
+    return 16;
+  }
+
+  if (cols >= 4) {
+    return 12;
+  }
+
+  return 8;
+}
+
+function getStackMinSpan<T extends { cardIds: string[] }>(
+  stack: T[],
+  cardSizes: Record<string, CardSize>
+) {
+  return Math.max(
+    1,
+    ...stack.flatMap((section) =>
+      section.cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
+    )
+  );
+}
+
+function splitRowStacksByMinSpan<T extends { cardIds: string[] }>(
+  rowStacks: T[][],
+  cols: number,
+  cardSizes: Record<string, CardSize>
+) {
+  const rows: T[][][] = [];
+  let currentRow: T[][] = [];
+  let currentWidth = 0;
+
+  for (const stack of rowStacks) {
+    const stackMinSpan = Math.min(cols, getStackMinSpan(stack, cardSizes));
+
+    if (currentRow.length > 0 && currentWidth + stackMinSpan > cols) {
+      rows.push(currentRow);
+      currentRow = [];
+      currentWidth = 0;
+    }
+
+    currentRow.push(stack);
+    currentWidth += stackMinSpan;
+  }
+
+  if (currentRow.length > 0) {
+    rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+function areStringArraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function areCardIdsStable(
+  cardIds: string[],
+  nextCardIds: string[],
+  allCards: Map<string, DeviceWithType | CustomCard>,
+  nextAllCards: Map<string, DeviceWithType | CustomCard>,
+  cardSizes: Record<string, CardSize>,
+  nextCardSizes: Record<string, CardSize>
+) {
+  return (
+    areStringArraysEqual(cardIds, nextCardIds) &&
+    cardIds.every(
+      (cardId) =>
+        allCards.get(cardId) === nextAllCards.get(cardId) &&
+        cardSizes[cardId] === nextCardSizes[cardId]
+    )
+  );
 }
 
 function getRenderedSectionColumnStart(
@@ -128,9 +277,9 @@ function groupSectionRows<T extends { x: number; y: number }>(items: T[]): Map<n
   return rows;
 }
 
-function buildSectionStacks<T extends { id: string; x: number; y: number; span: number }>(
-  items: T[]
-) {
+function buildSectionStacks<
+  T extends { id: string; x: number; y: number; span?: number; w?: number },
+>(items: T[]) {
   const rows = groupSectionRows(items);
   const sortedYs = [...rows.keys()].sort((a, b) => a - b);
   const consumedIds = new Set<string>();
@@ -151,7 +300,7 @@ function buildSectionStacks<T extends { id: string; x: number; y: number; span: 
             (candidate) =>
               !consumedIds.has(candidate.id) &&
               candidate.x === item.x &&
-              candidate.span === item.span
+              getStoredSectionSpan(candidate) === getStoredSectionSpan(item)
           );
 
           if (!nextItem) {
@@ -181,6 +330,10 @@ function buildPortraitStackRows<T>(rows: T[][], laneCount: number): T[][] {
 }
 
 function getPortraitLaneCount(sectionGridCols: number) {
+  if (sectionGridCols <= 3) {
+    return 1;
+  }
+
   if (sectionGridCols >= 6) {
     return 3;
   }
@@ -255,10 +408,26 @@ function useHomeLayoutViewport() {
   }));
 
   useEffect(() => {
+    let frameId: number | null = null;
+
     const syncViewportState = () => {
-      setViewportState({
-        effectiveCols: getHomeEffectiveCols(breakpointCols),
-        isPortrait: isPortraitHomeCanvas(),
+      if (frameId !== null) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        const nextState = {
+          effectiveCols: getHomeEffectiveCols(breakpointCols),
+          isPortrait: isPortraitHomeCanvas(),
+        };
+
+        setViewportState((previous) =>
+          previous.effectiveCols === nextState.effectiveCols &&
+          previous.isPortrait === nextState.isPortrait
+            ? previous
+            : nextState
+        );
       });
     };
 
@@ -267,6 +436,9 @@ function useHomeLayoutViewport() {
     window.visualViewport?.addEventListener('resize', syncViewportState);
 
     return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
       window.removeEventListener('resize', syncViewportState);
       window.visualViewport?.removeEventListener('resize', syncViewportState);
     };
@@ -291,6 +463,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   addHomeSection,
   addHomeColumnSection,
   addHomeSectionBelow,
+  moveHomeSection,
   renameHomeSection,
   removeHomeSection,
   resizeHomeSection,
@@ -303,6 +476,9 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const { theme, accentColor } = useTheme();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
+  const deferredDeviceMap = useDeferredValue(deviceMap);
+  const deferredAvailableDeviceMap = useDeferredValue(availableDeviceMap);
+  const deferredAllCustomCards = useDeferredValue(allCustomCards);
   const {
     libraryPanelRef,
     isLibraryVisible,
@@ -322,6 +498,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     setActiveSectionId,
     activeDragCard,
     setActiveDragCard,
+    activeDragSection,
+    setActiveDragSection,
     activeDragSize,
     sensors,
     handleDragOver,
@@ -333,14 +511,15 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     handleAddFromLibrary,
     summaryItems,
   } = useHomeDashboardEditor({
-    deviceMap,
-    availableDeviceMap,
-    allCustomCards,
+    deviceMap: deferredDeviceMap,
+    availableDeviceMap: deferredAvailableDeviceMap,
+    allCustomCards: deferredAllCustomCards,
     homeLayout,
     cardSizes,
     hiddenEntityCount,
     addHomeCard,
     moveHomeCard,
+    moveHomeSection,
     addHomeSection,
     onShowEntity,
   });
@@ -378,7 +557,14 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       collisionDetection={closestCenter}
       onDragStart={(event) => {
         const dragMeta = event.active.data.current as DragMeta | undefined;
-        setActiveDragCard(dragMeta?.cardId ?? null);
+        if (dragMeta?.source === 'section') {
+          setActiveDragCard(null);
+          setActiveDragSection(dragMeta.sectionId);
+          return;
+        }
+
+        setActiveDragCard(dragMeta && 'cardId' in dragMeta ? dragMeta.cardId : null);
+        setActiveDragSection(null);
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -670,7 +856,14 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       ) : null}
 
       <DragOverlay dropAnimation={null}>
-        {activeDragCard && activeDragSize ? (
+        {activeDragSection ? (
+          <div className="w-[280px] rounded-[24px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
+            <div className="flex items-center gap-3 text-white/80">
+              <GripVertical className="h-5 w-5" />
+              <div className="text-sm font-semibold">{t('dashboard.section.moveDragLabel')}</div>
+            </div>
+          </div>
+        ) : activeDragCard && activeDragSize ? (
           <div
             className={`flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl ${
               overlayClass[
@@ -686,7 +879,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   );
 });
 
-function SectionCanvas({
+const SectionCanvas = memo(function SectionCanvas({
   sectionId,
   title,
   gridCols,
@@ -710,48 +903,26 @@ function SectionCanvas({
   rowSiblingCount,
   onResizeSection,
   surface,
-}: {
-  sectionId: string;
-  title: string;
-  gridCols: number;
-  isActive: boolean;
-  accentColor: string;
-  cardIds: string[];
-  allCards: Map<string, DeviceWithType | CustomCard>;
-  cardSizes: Record<string, CardSize>;
-  updateCardSize: (id: string, size: CardSize) => void;
-  isEditMode: boolean;
-  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
-  onRemoveFromLayout: (cardId: string) => void;
-  showHero: boolean;
-  onSelectSection: (sectionId: string) => void;
-  onOpenLibraryForSection: (sectionId: string) => void;
-  onRenameSection: (sectionId: string, title: string) => void;
-  onRemoveSection: (sectionId: string) => void;
-  span: number;
-  layoutCols: number;
-  minWidthsBySection: Record<string, number>;
-  rowSiblingCount: number;
-  onResizeSection: (
-    sectionId: string,
-    newW: number,
-    minWidthsBySection?: Record<string, number>
-  ) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
+}: SectionCanvasProps) {
   const renderedSpan = Math.max(1, getRenderedSectionSpan(span, layoutCols));
   const minRenderedWidth = Math.max(
     1,
     ...cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
   );
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `home-section-drag-${sectionId}`,
+    data: { source: 'section', sectionId, type: 'section' } as DragMeta,
+  });
   return (
     <section
+      ref={setNodeRef}
       className={`relative rounded-[24px] border p-4 transition-[border-color,box-shadow,background-color] ${
         isActive
           ? `${surface.borderStrong} ${surface.panel}`
           : `${surface.border} ${surface.panelMuted}`
-      }`}
+      } ${isDragging ? 'opacity-60' : ''}`}
       style={{
+        ...getDndTransformStyle(transform, undefined),
         boxShadow: isActive
           ? `0 0 0 2px ${accentColor}55, 0 22px 52px -34px ${accentColor}aa`
           : undefined,
@@ -764,6 +935,17 @@ function SectionCanvas({
         onClick={() => onSelectSection(sectionId)}
       />
       <div className="relative z-10 mb-4 flex items-center gap-3">
+        <button
+          type="button"
+          aria-label={`Move ${title} section`}
+          data-dashboard-drag-handle="true"
+          className={`cursor-grab rounded-full border p-1.5 transition-colors active:cursor-grabbing ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+          onClick={(event) => event.stopPropagation()}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
         <input
           type="text"
           value={title}
@@ -854,6 +1036,43 @@ function SectionCanvas({
       </SortableContext>
     </section>
   );
+}, areSectionCanvasPropsEqual);
+
+function SectionInsertDropZone({
+  sectionId,
+  onAddSectionBelow,
+  surface,
+}: {
+  sectionId: string;
+  onAddSectionBelow: (sectionId: string) => void;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+}) {
+  const { t } = useI18n();
+  const { setNodeRef, isOver, active } = useDroppable({
+    id: `home-section-insert-${sectionId}`,
+    data: { type: 'section-insert', sectionId } satisfies DropMeta,
+  });
+  const isSectionDrag = active?.data.current?.source === 'section';
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={() => onAddSectionBelow(sectionId)}
+      className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${
+        isOver && isSectionDrag
+          ? `${surface.borderStrong} ${surface.panel}`
+          : `${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`
+      }`}
+    >
+      <Plus className="h-4 w-4" />
+      <span>
+        {isOver && isSectionDrag
+          ? t('dashboard.section.moveHere')
+          : t('dashboard.section.addBelow')}
+      </span>
+    </button>
+  );
 }
 
 function SectionCanvasGrid({
@@ -903,9 +1122,11 @@ function SectionCanvasGrid({
 }) {
   const sectionStacksByRow = buildSectionStacks(sections);
   const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
-  const visibleRows = isPortraitHome
-    ? buildPortraitStackRows(sectionStacksByRow, portraitLaneCount)
-    : sectionStacksByRow;
+  const visibleRows = (
+    isPortraitHome
+      ? buildPortraitStackRows(sectionStacksByRow, portraitLaneCount)
+      : sectionStacksByRow
+  ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes));
   const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
   const minWidthsBySection = Object.fromEntries(
     sections.map((section) => [
@@ -929,7 +1150,11 @@ function SectionCanvasGrid({
           ])
         );
         const rowLayouts = getRenderedRowLayouts(
-          rowStacks.map((stack) => stack[0]),
+          rowStacks.map((stack) => ({
+            id: stack[0].id,
+            x: stack[0].x,
+            span: getStoredSectionSpan(stack[0]),
+          })),
           sectionGridCols,
           rowMinSpansById
         );
@@ -937,7 +1162,7 @@ function SectionCanvasGrid({
         return (
           <div
             key={rowIndex}
-            className={isPortraitHome ? 'grid gap-3' : 'flex items-start gap-3'}
+            className={isPortraitHome ? 'grid gap-x-7 gap-y-3' : 'flex items-start gap-x-7'}
             style={
               isPortraitHome
                 ? ({
@@ -951,7 +1176,7 @@ function SectionCanvasGrid({
               const renderedSpan = isPortraitHome
                 ? portraitLaneCols
                 : (rowLayouts.get(leadSection.id)?.span ??
-                  getRenderedSectionSpan(leadSection.span, sectionGridCols));
+                  getRenderedSectionSpan(getStoredSectionSpan(leadSection), sectionGridCols));
               return (
                 <div
                   key={leadSection.id}
@@ -980,21 +1205,18 @@ function SectionCanvasGrid({
                         onOpenLibraryForSection={onOpenLibraryForSection}
                         onRenameSection={onRenameSection}
                         onRemoveSection={onRemoveSection}
-                        span={leadSection.span}
+                        span={getStoredSectionSpan(leadSection)}
                         layoutCols={sectionGridCols}
                         minWidthsBySection={minWidthsBySection}
                         rowSiblingCount={rowStacks.length}
                         onResizeSection={onResizeSection}
                         surface={surface}
                       />
-                      <button
-                        type="button"
-                        onClick={() => onAddSectionBelow(section.id)}
-                        className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`}
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>Add section</span>
-                      </button>
+                      <SectionInsertDropZone
+                        sectionId={section.id}
+                        onAddSectionBelow={onAddSectionBelow}
+                        surface={surface}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1060,7 +1282,7 @@ function FlowCanvas({
   );
 }
 
-function HomePresentationSection({
+const HomePresentationSection = memo(function HomePresentationSection({
   section,
   renderedSpan,
   allCards,
@@ -1069,20 +1291,7 @@ function HomePresentationSection({
   onUpdateCard,
   showHero,
   surface,
-}: {
-  section: {
-    id: string;
-    title: string;
-    cardIds: string[];
-  };
-  renderedSpan: number;
-  allCards: Map<string, DeviceWithType | CustomCard>;
-  cardSizes: Record<string, CardSize>;
-  updateCardSize: (id: string, size: CardSize) => void;
-  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
-  showHero: boolean;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
+}: HomePresentationSectionProps) {
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
@@ -1099,15 +1308,15 @@ function HomePresentationSection({
         updateCardSize={updateCardSize}
         isEditMode={false}
         onUpdateCard={onUpdateCard}
-        onRemoveFromLayout={() => {}}
+        onRemoveFromLayout={NOOP_REMOVE_FROM_LAYOUT}
         showHero={showHero}
         sortable={false}
       />
     </div>
   );
-}
+}, areHomePresentationSectionPropsEqual);
 
-function CardGrid({
+const CardGrid = memo(function CardGrid({
   cardIds,
   sectionId,
   gridCols,
@@ -1119,79 +1328,120 @@ function CardGrid({
   onRemoveFromLayout,
   showHero,
   sortable = true,
-}: {
-  cardIds: string[];
-  sectionId?: string;
-  gridCols?: number;
-  allCards: Map<string, DeviceWithType | CustomCard>;
-  cardSizes: Record<string, CardSize>;
-  updateCardSize: (id: string, size: CardSize) => void;
-  isEditMode: boolean;
-  onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
-  onRemoveFromLayout: (cardId: string) => void;
-  showHero: boolean;
-  sortable?: boolean;
-}) {
+}: CardGridProps) {
   const breakpointCols = useBreakpointCols();
   const renderedGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
+  const gridGapPx = getCardGridGapPx(breakpointCols);
+  const targetGridWidth =
+    renderedGridCols * MIN_HOME_CARD_TRACK_WIDTH + Math.max(0, renderedGridCols - 1) * gridGapPx;
+  const outerRef = useRef<HTMLDivElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const [outerWidth, setOuterWidth] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const outerObserver = new ResizeObserver((entries) => {
+      const nextWidth = entries[0]?.contentRect.width ?? outer.clientWidth;
+      setOuterWidth((previous) => (previous === nextWidth ? previous : nextWidth));
+    });
+    const innerObserver = new ResizeObserver((entries) => {
+      const nextHeight = entries[0]?.contentRect.height ?? inner.offsetHeight;
+      setContentHeight((previous) => (previous === nextHeight ? previous : nextHeight));
+    });
+
+    outerObserver.observe(outer);
+    innerObserver.observe(inner);
+
+    setOuterWidth(outer.clientWidth);
+    setContentHeight(inner.offsetHeight);
+
+    return () => {
+      outerObserver.disconnect();
+      innerObserver.disconnect();
+    };
+  }, []);
+
+  const autoScale =
+    renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;
+  const isAutoScaled = autoScale < 0.999;
 
   return (
     <div
-      className="grid w-full grid-flow-row-dense auto-rows-[87px] gap-2 md:gap-3 lg:gap-4"
-      style={
-        {
-          '--home-card-cols': renderedGridCols,
-          gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(0, 1fr))',
-        } as CSSProperties
-      }
+      ref={outerRef}
+      className="relative w-full"
+      style={isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined}
     >
-      {cardIds.map((cardId) => {
-        const entry = allCards.get(cardId);
-        if (!entry) {
-          return null;
+      <div
+        ref={innerRef}
+        className={`grid w-full grid-flow-row-dense auto-rows-[87px] gap-2 md:gap-3 lg:gap-4${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+        style={
+          {
+            '--home-card-cols': renderedGridCols,
+            '--home-card-min': `${MIN_HOME_CARD_TRACK_WIDTH}px`,
+            gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
+            ...(isAutoScaled
+              ? {
+                  transform: `scale(${autoScale})`,
+                  width: `${targetGridWidth}px`,
+                }
+              : {}),
+          } as CSSProperties
         }
+      >
+        {cardIds.map((cardId) => {
+          const entry = allCards.get(cardId);
+          if (!entry) {
+            return null;
+          }
 
-        const storedSize = cardSizes[cardId] ?? entry.size;
-        const size = !showHero && storedSize === 'hero' ? 'large' : storedSize;
-        const spanClass = getCardSpanClass(size);
+          const storedSize = cardSizes[cardId] ?? entry.size;
+          const size = !showHero && storedSize === 'hero' ? 'large' : storedSize;
+          const spanClass = getCardSpanClass(size);
 
-        return (
-          <HomeCardSlot
-            key={cardId}
-            sortable={sortable}
-            cardId={cardId}
-            sectionId={sectionId}
-            className={spanClass}
-            content={
-              !isCustomCard(entry) ? (
-                <DashboardCardItem
-                  id={cardId}
-                  device={entry}
-                  size={size}
-                  isEditMode={isEditMode}
-                  handleSizeChange={updateCardSize}
-                  onRemoveFromLayout={onRemoveFromLayout}
-                  allowHeroSizes={showHero}
-                />
-              ) : (
-                <DashboardCardItem
-                  id={cardId}
-                  card={entry}
-                  size={size}
-                  isEditMode={isEditMode}
-                  handleSizeChange={updateCardSize}
-                  onUpdateCard={onUpdateCard}
-                  onRemoveFromLayout={onRemoveFromLayout}
-                  allowHeroSizes={showHero}
-                />
-              )
-            }
-          />
-        );
-      })}
+          return (
+            <HomeCardSlot
+              key={cardId}
+              sortable={sortable}
+              cardId={cardId}
+              sectionId={sectionId}
+              className={spanClass}
+              content={
+                !isCustomCard(entry) ? (
+                  <DashboardCardItem
+                    id={cardId}
+                    device={entry}
+                    size={size}
+                    isEditMode={isEditMode}
+                    handleSizeChange={updateCardSize}
+                    onRemoveFromLayout={onRemoveFromLayout}
+                    allowHeroSizes={showHero}
+                  />
+                ) : (
+                  <DashboardCardItem
+                    id={cardId}
+                    card={entry}
+                    size={size}
+                    isEditMode={isEditMode}
+                    handleSizeChange={updateCardSize}
+                    onUpdateCard={onUpdateCard}
+                    onRemoveFromLayout={onRemoveFromLayout}
+                    allowHeroSizes={showHero}
+                  />
+                )
+              }
+            />
+          );
+        })}
+      </div>
     </div>
   );
-}
+}, areCardGridPropsEqual);
 
 function HomePresentation({
   flowCards,
@@ -1256,7 +1506,7 @@ function HomePresentation({
         updateCardSize={updateCardSize}
         isEditMode={false}
         onUpdateCard={onUpdateCard}
-        onRemoveFromLayout={() => {}}
+        onRemoveFromLayout={NOOP_REMOVE_FROM_LAYOUT}
         showHero={showHero}
         sortable={false}
       />
@@ -1267,9 +1517,11 @@ function HomePresentation({
     sections.filter((section) => section.cardIds.length > 0)
   );
   const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
-  const visibleRows = isPortraitHome
-    ? buildPortraitStackRows(presentationRowStacks, portraitLaneCount)
-    : presentationRowStacks;
+  const visibleRows = (
+    isPortraitHome
+      ? buildPortraitStackRows(presentationRowStacks, portraitLaneCount)
+      : presentationRowStacks
+  ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes));
   const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
 
   return (
@@ -1277,18 +1529,14 @@ function HomePresentation({
       <div className="flex flex-col gap-6">
         {visibleRows.map((rowStacks, rowIndex) => {
           const rowMinSpansById = Object.fromEntries(
-            rowStacks.map((stack) => [
-              stack[0].id,
-              Math.max(
-                1,
-                ...stack.flatMap((section) =>
-                  section.cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
-                )
-              ),
-            ])
+            rowStacks.map((stack) => [stack[0].id, getStackMinSpan(stack, cardSizes)])
           );
           const rowLayouts = getRenderedRowLayouts(
-            rowStacks.map((stack) => stack[0]),
+            rowStacks.map((stack) => ({
+              id: stack[0].id,
+              x: stack[0].x,
+              span: getStoredSectionSpan(stack[0]),
+            })),
             sectionGridCols,
             rowMinSpansById
           );
@@ -1313,10 +1561,15 @@ function HomePresentation({
                 const rowLayout = rowLayouts.get(leadSection.id);
                 const renderedSpan = isPortraitHome
                   ? portraitLaneCols
-                  : (rowLayout?.span ?? getRenderedSectionSpan(leadSection.span, sectionGridCols));
+                  : (rowLayout?.span ??
+                    getRenderedSectionSpan(getStoredSectionSpan(leadSection), sectionGridCols));
                 const renderedColumnStart =
                   rowLayout?.start ??
-                  getRenderedSectionColumnStart(leadSection.x, leadSection.span, sectionGridCols);
+                  getRenderedSectionColumnStart(
+                    leadSection.x,
+                    getStoredSectionSpan(leadSection),
+                    sectionGridCols
+                  );
 
                 return (
                   <div
@@ -1357,7 +1610,7 @@ function HomePresentation({
           updateCardSize={updateCardSize}
           isEditMode={false}
           onUpdateCard={onUpdateCard}
-          onRemoveFromLayout={() => {}}
+          onRemoveFromLayout={NOOP_REMOVE_FROM_LAYOUT}
           showHero={showHero}
           sortable={false}
         />
@@ -1441,6 +1694,83 @@ function HomeCardSlot({
     <SortableHomeCard cardId={cardId} sectionId={sectionId} className={className}>
       {content}
     </SortableHomeCard>
+  );
+}
+
+function areHomePresentationSectionPropsEqual(
+  previous: HomePresentationSectionProps,
+  next: HomePresentationSectionProps
+) {
+  return (
+    previous.renderedSpan === next.renderedSpan &&
+    previous.showHero === next.showHero &&
+    previous.updateCardSize === next.updateCardSize &&
+    previous.onUpdateCard === next.onUpdateCard &&
+    previous.surface === next.surface &&
+    previous.section.id === next.section.id &&
+    previous.section.title === next.section.title &&
+    areCardIdsStable(
+      previous.section.cardIds,
+      next.section.cardIds,
+      previous.allCards,
+      next.allCards,
+      previous.cardSizes,
+      next.cardSizes
+    )
+  );
+}
+
+function areCardGridPropsEqual(previous: CardGridProps, next: CardGridProps) {
+  return (
+    previous.sectionId === next.sectionId &&
+    previous.gridCols === next.gridCols &&
+    previous.updateCardSize === next.updateCardSize &&
+    previous.isEditMode === next.isEditMode &&
+    previous.onUpdateCard === next.onUpdateCard &&
+    previous.onRemoveFromLayout === next.onRemoveFromLayout &&
+    previous.showHero === next.showHero &&
+    previous.sortable === next.sortable &&
+    areCardIdsStable(
+      previous.cardIds,
+      next.cardIds,
+      previous.allCards,
+      next.allCards,
+      previous.cardSizes,
+      next.cardSizes
+    )
+  );
+}
+
+function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionCanvasProps) {
+  return (
+    previous.sectionId === next.sectionId &&
+    previous.title === next.title &&
+    previous.gridCols === next.gridCols &&
+    previous.isActive === next.isActive &&
+    previous.accentColor === next.accentColor &&
+    previous.updateCardSize === next.updateCardSize &&
+    previous.isEditMode === next.isEditMode &&
+    previous.onUpdateCard === next.onUpdateCard &&
+    previous.onRemoveFromLayout === next.onRemoveFromLayout &&
+    previous.showHero === next.showHero &&
+    previous.onSelectSection === next.onSelectSection &&
+    previous.onOpenLibraryForSection === next.onOpenLibraryForSection &&
+    previous.onRenameSection === next.onRenameSection &&
+    previous.onRemoveSection === next.onRemoveSection &&
+    previous.span === next.span &&
+    previous.layoutCols === next.layoutCols &&
+    previous.rowSiblingCount === next.rowSiblingCount &&
+    previous.onResizeSection === next.onResizeSection &&
+    previous.surface === next.surface &&
+    previous.minWidthsBySection[previous.sectionId] === next.minWidthsBySection[next.sectionId] &&
+    areCardIdsStable(
+      previous.cardIds,
+      next.cardIds,
+      previous.allCards,
+      next.allCards,
+      previous.cardSizes,
+      next.cardSizes
+    )
   );
 }
 

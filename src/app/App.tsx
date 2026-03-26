@@ -66,6 +66,15 @@ function AppContent() {
   }, [reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
+    const syncRootScaleVars = () => {
+      const shouldScaleRootFont =
+        window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+        window.matchMedia('(max-width: 1024px)').matches;
+      const rootFontSize = shouldScaleRootFont ? 16 * pageZoomScale : 16;
+
+      document.documentElement.style.setProperty('--font-size', `${rootFontSize}px`);
+    };
+
     const syncViewportVars = () => {
       const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
       const visibleViewportHeight = window.visualViewport?.height ?? window.innerHeight;
@@ -93,15 +102,21 @@ function AppContent() {
     };
 
     document.documentElement.style.zoom = String(pageZoomScale);
+    syncRootScaleVars();
     syncViewportVars();
 
+    window.addEventListener('resize', syncRootScaleVars);
     window.addEventListener('resize', syncViewportVars);
+    window.visualViewport?.addEventListener('resize', syncRootScaleVars);
     window.visualViewport?.addEventListener('resize', syncViewportVars);
 
     return () => {
+      window.removeEventListener('resize', syncRootScaleVars);
       window.removeEventListener('resize', syncViewportVars);
+      window.visualViewport?.removeEventListener('resize', syncRootScaleVars);
       window.visualViewport?.removeEventListener('resize', syncViewportVars);
       document.documentElement.style.zoom = '';
+      document.documentElement.style.removeProperty('--font-size');
       document.documentElement.style.removeProperty('--navet-viewport-width');
       document.documentElement.style.removeProperty('--navet-viewport-height');
       document.documentElement.style.removeProperty('--navet-visible-viewport-width');

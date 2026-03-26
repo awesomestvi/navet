@@ -6,11 +6,13 @@ import {
   buildBalancedWidths,
   clampWidth,
   compactRows,
+  compactStackGaps,
   getBottomRow,
   getSectionCardMinColumns,
   insertSectionBelow,
   insertSectionRow,
   layoutRow,
+  moveSectionBelow,
   removeSectionFromLayout,
   replaceRow,
   SECTION_LAYOUT_COLUMNS,
@@ -243,24 +245,26 @@ function normalizeLayout(value: unknown): HomeDashboardLayoutState {
           typeof section?.y === 'number' &&
           typeof section?.w === 'number'
       )
-      ? compactRows(
-          candidate.sections
-            .filter(
-              (section): section is LegacySectionWithCoordinates =>
-                typeof section?.id === 'string' &&
-                typeof section?.title === 'string' &&
-                typeof section?.x === 'number' &&
-                typeof section?.y === 'number' &&
-                typeof section?.w === 'number'
-            )
-            .map((section) => ({
-              id: section.id,
-              title: section.title,
-              x: normalizeCoordinate(section.x),
-              y: normalizeCoordinate(section.y),
-              w: normalizeSpan(section.w),
-              h: normalizeCoordinate(section.h) || 1,
-            }))
+      ? compactStackGaps(
+          compactRows(
+            candidate.sections
+              .filter(
+                (section): section is LegacySectionWithCoordinates =>
+                  typeof section?.id === 'string' &&
+                  typeof section?.title === 'string' &&
+                  typeof section?.x === 'number' &&
+                  typeof section?.y === 'number' &&
+                  typeof section?.w === 'number'
+              )
+              .map((section) => ({
+                id: section.id,
+                title: section.title,
+                x: normalizeCoordinate(section.x),
+                y: normalizeCoordinate(section.y),
+                w: normalizeSpan(section.w),
+                h: normalizeCoordinate(section.h) || 1,
+              }))
+          )
         ).map(toHomeSection)
       : migrateLegacySections(candidate.sections)
     : [];
@@ -662,6 +666,20 @@ export function useHomeDashboardLayout(
     [persistLayout]
   );
 
+  const moveSection = useCallback(
+    (sourceId: string, targetId: string) => {
+      persistLayout((previous) => ({
+        ...previous,
+        sections: moveSectionBelow(
+          previous.sections.map(toSectionLayoutItem),
+          sourceId,
+          targetId
+        ).map(toHomeSection),
+      }));
+    },
+    [persistLayout]
+  );
+
   return {
     layout,
     setMode,
@@ -669,6 +687,7 @@ export function useHomeDashboardLayout(
     addSection,
     addColumnSection,
     addSectionBelow,
+    moveSection,
     renameSection,
     removeSection,
     resizeSection,

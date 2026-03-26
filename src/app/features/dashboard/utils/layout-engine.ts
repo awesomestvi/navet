@@ -96,6 +96,51 @@ export function compactRows(items: SectionLayoutItem[]) {
   );
 }
 
+function rowsOverlapHorizontally(
+  left: Pick<SectionLayoutItem, 'x' | 'w'>,
+  right: Pick<SectionLayoutItem, 'x' | 'w'>
+) {
+  return left.x < right.x + right.w && right.x < left.x + left.w;
+}
+
+export function compactStackGaps(items: SectionLayoutItem[]) {
+  const nextItems = sortSectionLayout(items).map((item) => ({ ...item }));
+
+  for (const item of nextItems) {
+    const previousStackItem = [...nextItems]
+      .filter(
+        (candidate) =>
+          candidate.id !== item.id &&
+          candidate.x === item.x &&
+          candidate.w === item.w &&
+          candidate.y < item.y
+      )
+      .sort((left, right) => right.y - left.y)[0];
+
+    if (!previousStackItem) {
+      continue;
+    }
+
+    const targetY = previousStackItem.y + 1;
+    if (targetY >= item.y) {
+      continue;
+    }
+
+    const blocked = nextItems.some(
+      (candidate) =>
+        candidate.id !== item.id &&
+        candidate.y === targetY &&
+        rowsOverlapHorizontally(candidate, item)
+    );
+
+    if (!blocked) {
+      item.y = targetY;
+    }
+  }
+
+  return sortSectionLayout(nextItems);
+}
+
 export function replaceRow(items: SectionLayoutItem[], y: number, nextRow: SectionLayoutItem[]) {
   return sortSectionLayout([...items.filter((item) => item.y !== y), ...nextRow]);
 }
@@ -156,8 +201,24 @@ export function insertSectionBelow(
     return items;
   }
 
-  return sortSectionLayout([
-    ...shiftRowsAtOrBelow(items, target.y + 1, 1),
+  const shiftedIds = new Set<string>();
+  let nextY = target.y + 1;
+
+  while (true) {
+    const nextRowItem = items.find(
+      (item) => item.y === nextY && item.x === target.x && item.w === target.w
+    );
+
+    if (!nextRowItem) {
+      break;
+    }
+
+    shiftedIds.add(nextRowItem.id);
+    nextY += 1;
+  }
+
+  return compactStackGaps([
+    ...items.map((item) => (shiftedIds.has(item.id) ? { ...item, y: item.y + 1 } : item)),
     {
       id: nextId,
       title: nextTitle,
@@ -167,6 +228,22 @@ export function insertSectionBelow(
       h: target.h,
     },
   ]);
+}
+
+export function moveSectionBelow(items: SectionLayoutItem[], sourceId: string, targetId: string) {
+  if (sourceId === targetId) {
+    return items;
+  }
+
+  const source = items.find((item) => item.id === sourceId);
+  const target = items.find((item) => item.id === targetId);
+
+  if (!source || !target) {
+    return items;
+  }
+
+  const withoutSource = removeSectionFromLayout(items, sourceId);
+  return insertSectionBelow(withoutSource, targetId, source.id, source.title);
 }
 
 export function removeSectionFromLayout(items: SectionLayoutItem[], sectionId: string) {

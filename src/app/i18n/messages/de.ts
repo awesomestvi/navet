@@ -871,4 +871,7 @@ export const deMessages = {
   'energy.band.today.description': 'Wie die importierte Energie im Haus verteilt wird.',
   'energy.band.devices.title': 'Geräte',
   'energy.band.devices.description': 'Die Verbraucher mit dem höchsten Energiebedarf.',
+  'dashboard.section.addBelow': 'Abschnitt hinzufügen',
+  'dashboard.section.moveHere': 'Abschnitt hierher verschieben',
+  'dashboard.section.moveDragLabel': 'Abschnitt verschieben',
 } as const;

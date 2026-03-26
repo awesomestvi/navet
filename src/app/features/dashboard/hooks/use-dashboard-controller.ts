@@ -71,6 +71,7 @@ export type DashboardController = OnboardingController &
     addHomeSection: ReturnType<typeof useHomeDashboardLayout>['addSection'];
     addHomeColumnSection: ReturnType<typeof useHomeDashboardLayout>['addColumnSection'];
     addHomeSectionBelow: ReturnType<typeof useHomeDashboardLayout>['addSectionBelow'];
+    moveHomeSection: ReturnType<typeof useHomeDashboardLayout>['moveSection'];
     renameHomeSection: ReturnType<typeof useHomeDashboardLayout>['renameSection'];
     removeHomeSection: ReturnType<typeof useHomeDashboardLayout>['removeSection'];
     resizeHomeSection: ReturnType<typeof useHomeDashboardLayout>['resizeSection'];
@@ -271,6 +272,7 @@ export function useDashboardController(): DashboardController {
     addHomeSection: homeLayoutController.addSection,
     addHomeColumnSection: homeLayoutController.addColumnSection,
     addHomeSectionBelow: homeLayoutController.addSectionBelow,
+    moveHomeSection: homeLayoutController.moveSection,
     renameHomeSection: homeLayoutController.renameSection,
     removeHomeSection: homeLayoutController.removeSection,
     resizeHomeSection: homeLayoutController.resizeSection,

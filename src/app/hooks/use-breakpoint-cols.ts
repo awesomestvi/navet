@@ -12,6 +12,13 @@ function getLogicalViewportWidth(pageZoomScale: number) {
     return 0;
   }
 
+  const cssVisibleViewportWidth = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--navet-visible-viewport-width')
+  );
+  if (Number.isFinite(cssVisibleViewportWidth) && cssVisibleViewportWidth > 0) {
+    return cssVisibleViewportWidth / pageZoomScale;
+  }
+
   const cssViewportWidth = Number.parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue('--navet-viewport-width')
   );
@@ -20,8 +27,8 @@ function getLogicalViewportWidth(pageZoomScale: number) {
     return cssViewportWidth;
   }
 
-  const viewportWidth = Math.max(window.innerWidth, window.visualViewport?.width ?? 0);
-  return viewportWidth / pageZoomScale;
+  const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  return visibleViewportWidth / pageZoomScale;
 }
 
 /**
@@ -44,8 +51,18 @@ export function useBreakpointCols(): number {
   );
 
   useEffect(() => {
+    let frameId: number | null = null;
+
     const syncLogicalViewportWidth = () => {
-      setLogicalViewportWidth(getLogicalViewportWidth(pageZoomScale));
+      if (frameId !== null) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        const nextWidth = getLogicalViewportWidth(pageZoomScale);
+        setLogicalViewportWidth((previous) => (previous === nextWidth ? previous : nextWidth));
+      });
     };
 
     syncLogicalViewportWidth();
@@ -54,6 +71,9 @@ export function useBreakpointCols(): number {
     window.visualViewport?.addEventListener('resize', syncLogicalViewportWidth);
 
     return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
       window.removeEventListener('resize', syncLogicalViewportWidth);
       window.visualViewport?.removeEventListener('resize', syncLogicalViewportWidth);
     };
@@ -61,7 +81,7 @@ export function useBreakpointCols(): number {
 
   if (logicalViewportWidth >= FOUR_XL_BREAKPOINT) return 12;
   if (logicalViewportWidth >= XXL_BREAKPOINT) return 8;
-  if (logicalViewportWidth >= XL_BREAKPOINT) return 6;
+  if (logicalViewportWidth > XL_BREAKPOINT) return 6;
   if (logicalViewportWidth >= MD_BREAKPOINT) return 4;
   return 2;
 }

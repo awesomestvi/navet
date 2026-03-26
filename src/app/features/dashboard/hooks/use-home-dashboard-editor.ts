@@ -21,11 +21,13 @@ export type HomeEditorSection = HomeDashboardLayoutState['sections'][number] & {
 
 export type DragMeta =
   | { source: 'library'; cardId: string }
-  | { source: 'home'; cardId: string; sectionId?: string };
+  | { source: 'home'; cardId: string; sectionId?: string; type: 'card' }
+  | { source: 'section'; sectionId: string; type: 'section' };
 
 export type DropMeta =
   | { type: 'card'; cardId: string; sectionId?: string }
-  | { type: 'container'; sectionId?: string };
+  | { type: 'container'; sectionId?: string }
+  | { type: 'section-insert'; sectionId: string };
 
 const widgetTypeLabels: Record<CustomCard['type'], string> = {
   rss: 'RSS widget',
@@ -45,6 +47,7 @@ interface UseHomeDashboardEditorParams {
   hiddenEntityCount: number;
   addHomeCard: (cardId: string, sectionId?: string) => void;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
+  moveHomeSection: (sourceId: string, targetId: string) => void;
   addHomeSection: () => string;
   onShowEntity: (entityId: string) => void;
 }
@@ -58,6 +61,7 @@ export function useHomeDashboardEditor({
   hiddenEntityCount,
   addHomeCard,
   moveHomeCard,
+  moveHomeSection,
   addHomeSection,
   onShowEntity,
 }: UseHomeDashboardEditorParams) {
@@ -141,7 +145,13 @@ export function useHomeDashboardEditor({
     });
   }, [homeLayout.cardSectionAssignments, homeLayout.mode, sectionIds, selectedIds]);
 
-  const dragState = useDashboardDragState({ allCards, cardSizes, addHomeCard, moveHomeCard });
+  const dragState = useDashboardDragState({
+    allCards,
+    cardSizes,
+    addHomeCard,
+    moveHomeCard,
+    moveHomeSection,
+  });
 
   const filteredLibraryCards = useMemo(() => {
     const normalizedQuery = libraryQuery.trim().toLowerCase();

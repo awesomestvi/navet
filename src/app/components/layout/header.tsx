@@ -205,16 +205,16 @@ export const Header = memo(function Header() {
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2 md:block">
             <div className="min-w-0">
-              <div className="mb-0.5 flex items-center gap-1.5 md:mb-1 md:flex-wrap md:gap-2">
+              <div className="mb-0.5 md:mb-1">
                 <h1
                   className={`min-w-0 text-[1.55rem] leading-none md:text-4xl font-bold ${textPrimary}`}
                 >
-                  {t(greetingKey, { name: firstName })}
+                  <span>{t(greetingKey, { name: firstName })}</span>
+                  <AppReleaseBadge className="ml-3 hidden align-middle translate-y-[-3px] shrink-0 lg:inline-flex" />
                 </h1>
-                <AppReleaseBadge className="shrink-0 translate-y-[1px] scale-90 md:scale-100" />
               </div>
               <div
-                className={`${textSecondary} flex items-center gap-1.5 text-[0.82rem] md:hidden`}
+                className={`${textSecondary} flex flex-wrap items-center gap-1.5 text-[0.82rem] md:hidden`}
               >
                 <span>{formattedDate}</span>
                 <span aria-hidden="true" className={dividerColor}>
@@ -244,11 +244,11 @@ export const Header = memo(function Header() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 md:hidden">
+            <div className="flex items-center gap-2 md:hidden">
               <button
                 type="button"
                 onClick={handleToggleMobileSearch}
-                className={`relative p-2 rounded-[22px] ${hoverBg} transition-colors`}
+                className={`relative flex h-9 w-9 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
                 aria-label={t('header.searchPlaceholder')}
                 aria-expanded={isMobileSearchOpen}
               >
@@ -259,12 +259,12 @@ export const Header = memo(function Header() {
                 )}
               </button>
 
-              <div className="relative">
+              <div className="relative h-9 w-9">
                 <button
                   ref={mobileNotificationButtonRef}
                   type="button"
                   onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                  className={`relative p-2 rounded-[22px] ${hoverBg} transition-colors`}
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
                 >
                   <Bell className={`w-5 h-5 ${textSecondary}`} />
                   {unreadCount > 0 && (

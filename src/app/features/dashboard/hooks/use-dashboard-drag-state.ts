@@ -32,8 +32,12 @@ class DashboardPointerSensor extends PointerSensor {
       eventName: 'onPointerDown' as const,
       handler: ({ nativeEvent }: { nativeEvent: PointerEvent }) => {
         const target = nativeEvent.target;
-        if (!(target instanceof HTMLElement)) {
+        if (!(target instanceof Element)) {
           return false;
+        }
+
+        if (target.closest('[data-dashboard-drag-handle="true"]')) {
+          return nativeEvent.isPrimary && nativeEvent.button === 0;
         }
 
         if (target.closest(NO_DRAG_SELECTOR)) {
@@ -62,6 +66,10 @@ function resolveDropMeta(
     return { type: 'card', cardId: rawId.slice('home-card-'.length) };
   }
 
+  if (rawId.startsWith('home-section-insert-')) {
+    return { type: 'section-insert', sectionId: rawId.slice('home-section-insert-'.length) };
+  }
+
   if (rawId === 'home-container-flow') {
     return { type: 'container' };
   }
@@ -78,6 +86,7 @@ interface UseDashboardDragStateParams {
   cardSizes: Record<string, CardSize>;
   addHomeCard: (cardId: string, sectionId?: string) => void;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
+  moveHomeSection: (sourceId: string, targetId: string) => void;
 }
 
 export function useDashboardDragState({
@@ -85,8 +94,10 @@ export function useDashboardDragState({
   cardSizes,
   addHomeCard,
   moveHomeCard,
+  moveHomeSection,
 }: UseDashboardDragStateParams) {
   const [activeDragCard, setActiveDragCard] = useState<string | null>(null);
+  const [activeDragSection, setActiveDragSection] = useState<string | null>(null);
   const lastResolvedOverRef = useRef<DropMeta | null>(null);
 
   const sensors = useSensors(
@@ -114,6 +125,13 @@ export function useDashboardDragState({
       return;
     }
 
+    if (activeMeta.source === 'section') {
+      if (overMeta.type === 'section-insert' && overMeta.sectionId !== activeMeta.sectionId) {
+        lastResolvedOverRef.current = overMeta;
+      }
+      return;
+    }
+
     if (
       overMeta.type === 'card' &&
       activeMeta.source === 'home' &&
@@ -132,9 +150,19 @@ export function useDashboardDragState({
       lastResolvedOverRef.current;
 
     setActiveDragCard(null);
+    setActiveDragSection(null);
     lastResolvedOverRef.current = null;
 
     if (!activeMeta || !overMeta) return;
+
+    if (activeMeta.source === 'section') {
+      if (overMeta.type !== 'section-insert' || activeMeta.sectionId === overMeta.sectionId) {
+        return;
+      }
+
+      moveHomeSection(activeMeta.sectionId, overMeta.sectionId);
+      return;
+    }
 
     const targetSectionId = overMeta.sectionId;
     const overCardId = overMeta.type === 'card' ? overMeta.cardId : null;
@@ -153,6 +181,8 @@ export function useDashboardDragState({
   return {
     activeDragCard,
     setActiveDragCard,
+    activeDragSection,
+    setActiveDragSection,
     activeDragSize,
     sensors,
     handleDragOver,

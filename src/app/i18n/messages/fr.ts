@@ -875,4 +875,7 @@ export const frMessages = {
   'energy.band.today.description': "Comment l'énergie importée est répartie dans le foyer.",
   'energy.band.devices.title': 'Appareils',
   'energy.band.devices.description': "Les consommateurs utilisant le plus d'énergie en ce moment.",
+  'dashboard.section.addBelow': 'Ajouter une section',
+  'dashboard.section.moveHere': 'Déplacer la section ici',
+  'dashboard.section.moveDragLabel': 'Déplacer la section',
 } as const;

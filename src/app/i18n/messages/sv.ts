@@ -865,4 +865,7 @@ export const svMessages = {
   'energy.band.today.description': 'Hur importerad energi fördelas i hemmet.',
   'energy.band.devices.title': 'Enheter',
   'energy.band.devices.description': 'De enheter som just nu förbrukar mest energi.',
+  'dashboard.section.addBelow': 'Lägg till sektion',
+  'dashboard.section.moveHere': 'Flytta sektion hit',
+  'dashboard.section.moveDragLabel': 'Flytta sektion',
 } as const;
