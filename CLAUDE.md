@@ -3,8 +3,16 @@
 Navet is a smart home dashboard PWA built on React 18 + TypeScript 5 + Zustand + Tailwind CSS 4.
 Connects to Home Assistant over WebSocket.
 
-> Process rules (commit format, verification triggers, branding) are in `AGENTS.md`. This file covers
-> architecture, engineering standards, patterns, and how to extend the codebase correctly.
+---
+
+## Commit Rules
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/) format: `type(scope): summary`
+- Valid types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `build`, `ci`, `perf`, `style`
+- Summary must be lowercase, imperative mood, no period at the end
+- Keep the summary line under 72 characters
+- Do not use generic or free-form commit messages
+- Do not add bullet-point bodies unless the change genuinely requires explanation beyond the summary line
 
 ---
 
