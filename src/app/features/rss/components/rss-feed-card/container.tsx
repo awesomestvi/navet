@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import { toast } from 'sonner';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
+import { HOME_WIDGET_ROOM } from '@/app/features/dashboard';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
 import { homeAssistantSelectors } from '@/app/stores/selectors';

@@ -1,16 +1,25 @@
 import {
   type PointerEvent as ReactPointerEvent,
-  useEffect,
+  useCallback,
   useLayoutEffect,
   useRef,
   useState,
 } from 'react';
+import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 
 const FLOATING_LIBRARY_WIDTH = 360;
 const FLOATING_LIBRARY_DOCK_GAP = 20;
 const FLOATING_LIBRARY_MIN_MARGIN = 8;
 const FLOATING_LIBRARY_MIN_TOP = 88;
 const FLOATING_LIBRARY_BOTTOM_OFFSET = 120;
+
+function getExpandedLibraryX() {
+  return Math.max(16, window.innerWidth - FLOATING_LIBRARY_WIDTH - 32);
+}
+
+function getDockedLibraryX() {
+  return window.innerWidth - FLOATING_LIBRARY_DOCK_GAP;
+}
 
 export interface UseLibraryPanelReturn {
   libraryPanelRef: React.RefObject<HTMLDivElement | null>;
@@ -39,20 +48,13 @@ export function useLibraryPanel(): UseLibraryPanelReturn {
     panel.style.transform = `translate(${libraryPosition.x}px, ${libraryPosition.y}px)`;
   }, [isLibraryCollapsed, isLibraryVisible, libraryPosition]);
 
-  useEffect(() => {
-    const placePanel = () => {
-      const width = window.innerWidth;
-      const x = isLibraryCollapsed
-        ? width - FLOATING_LIBRARY_DOCK_GAP
-        : Math.max(16, width - FLOATING_LIBRARY_WIDTH - 32);
-      const y = 170;
-      setLibraryPosition((current) => (current.x === 0 && current.y === 0 ? { x, y } : current));
-    };
-
-    placePanel();
-    window.addEventListener('resize', placePanel);
-    return () => window.removeEventListener('resize', placePanel);
+  const placePanel = useCallback(() => {
+    const x = isLibraryCollapsed ? getDockedLibraryX() : getExpandedLibraryX();
+    const y = 170;
+    setLibraryPosition((current) => (current.x === 0 && current.y === 0 ? { x, y } : current));
   }, [isLibraryCollapsed]);
+
+  useViewportResize(placePanel);
 
   const handleStartLibraryDrag = (event: ReactPointerEvent<HTMLElement>) => {
     if (isLibraryCollapsed) return;
@@ -125,7 +127,7 @@ export function useLibraryPanel(): UseLibraryPanelReturn {
       setIsLibraryCollapsed(false);
       setLibraryPosition((position) => ({
         ...position,
-        x: Math.max(16, window.innerWidth - FLOATING_LIBRARY_WIDTH - 32),
+        x: getExpandedLibraryX(),
       }));
       return true;
     });
@@ -136,7 +138,7 @@ export function useLibraryPanel(): UseLibraryPanelReturn {
     setIsLibraryCollapsed(false);
     setLibraryPosition((position) => ({
       ...position,
-      x: Math.max(16, window.innerWidth - FLOATING_LIBRARY_WIDTH - 32),
+      x: getExpandedLibraryX(),
     }));
   };
 
@@ -145,7 +147,7 @@ export function useLibraryPanel(): UseLibraryPanelReturn {
     setIsLibraryCollapsed(true);
     setLibraryPosition((position) => ({
       ...position,
-      x: window.innerWidth - FLOATING_LIBRARY_DOCK_GAP,
+      x: getDockedLibraryX(),
     }));
   };
 

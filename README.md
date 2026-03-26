@@ -93,6 +93,7 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Shared Visual Primitives** - Cross-theme icon pills and interactive nav/action pills are centralized behind reusable shared primitives instead of feature-level inline theme branches
 - **Shared Card State Styling** - Off/inactive card treatment for light, HVAC, switch, and media cards now resolves through one shared card-state surface token helper
 - **Artwork-Led Media Layouts** - Small, medium, medium-vertical, and large media cards use artwork-driven layouts with shared transport controls, speaker/room headers, and empty-state fallbacks
+- **Composable Controller Hooks** - Dashboard, lighting, media, climate, and settings controllers are split into smaller focused hooks (sync, actions, display, and interaction) to keep feature behavior easier to extend and validate
 - **Single Climate Card Path** - The legacy `ClimateCard` implementation has been removed; climate entities now use `HVACCard` only
 - **Consistent Persistence** - Storage keys plus dashboard/light preference persistence are standardized behind shared helpers and feature stores
 

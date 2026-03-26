@@ -1,5 +1,3 @@
-import { type ChangeEvent, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useConfig } from '@/app/contexts/config-context';
@@ -8,42 +6,13 @@ import { useI18n, useTheme } from '@/app/hooks';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { useThemeStore } from '@/app/stores/theme-store';
-import {
-  downloadDashboardConfig,
-  importDashboardConfigFromFile,
-} from '@/app/utils/dashboard-config';
-import { readFileAsDataUrl, validateImageFile } from '@/app/utils/image-upload';
 import { getSettingsSectionStyles } from './settings-section-styles';
+import { useSettingsSectionActions } from './use-settings-section-actions';
 
 export type SectionNavItem = {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-};
-
-export type SettingsSectionStyles = {
-  accentColor: string;
-  borderColor: string;
-  cardBg: string;
-  chipBg: string;
-  chipHoverBg: string;
-  chipTextColor: string;
-  dividerColor: string;
-  elevatedShadow: string;
-  floatingButtonBg: string;
-  floatingButtonText: string;
-  hoverBg: string;
-  iconBg: string;
-  isLightTheme: boolean;
-  insetBg: string;
-  lineColor: string;
-  mixBlendMode: 'multiply' | 'screen';
-  mutedColor: string;
-  ringClass: string;
-  ringOffsetClass: string;
-  softBg: string;
-  subtleColor: string;
-  textColor: string;
 };
 
 export function useSettingsSectionController() {
@@ -78,84 +47,34 @@ export function useSettingsSectionController() {
   const reopenOnboarding = useDashboardEntitiesStore((state) => state.reopenOnboarding);
   const setActiveSection = useNavigationStore((state) => state.setActiveSection);
   const setCurrentRoom = useNavigationStore((state) => state.setCurrentRoom);
-  const [showLicense, setShowLicense] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
-  const [showRevealAllConfirm, setShowRevealAllConfirm] = useState(false);
-  const [showRestartOnboardingConfirm, setShowRestartOnboardingConfirm] = useState(false);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleLogout = () => {
-    if (confirm(t('settings.feedback.logoutConfirm'))) {
-      logout();
-      toast.success(t('settings.feedback.logoutSuccess'));
-    }
-  };
-
-  const handleResetConnection = () => {
-    if (confirm(t('settings.feedback.resetConnectionConfirm'))) {
-      clearConfig();
-      logout();
-      toast.info(t('settings.feedback.resetConnectionSuccess'));
-    }
-  };
-
-  const handleWallpaperUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const validationError = validateImageFile(file);
-    if (validationError) {
-      alert(validationError);
-      return;
-    }
-
-    try {
-      setWallpaper(await readFileAsDataUrl(file));
-    } catch (error) {
-      alert(error instanceof Error ? error.message : t('settings.feedback.wallpaperReadFailed'));
-    }
-  };
-
-  const handleRemoveWallpaper = () => {
-    setWallpaper(null);
-  };
-
-  const handleSelectWallpaper = (nextWallpaper: string) => {
-    setWallpaper(nextWallpaper);
-  };
-
-  const handleExportDashboardConfig = () => {
-    downloadDashboardConfig();
-    toast.success(t('settings.feedback.configExported'));
-  };
-
-  const handleImportDashboardConfig = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    try {
-      await importDashboardConfigFromFile(file);
-      toast.success(t('settings.feedback.configImported'));
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 600);
-    } catch {
-      toast.error(t('settings.feedback.configImportFailed'));
-    } finally {
-      event.target.value = '';
-    }
-  };
-
-  const handleRestartOnboarding = () => {
-    setActiveSection('home');
-    setCurrentRoom('All');
-    reopenOnboarding();
-    setShowRestartOnboardingConfirm(false);
-  };
+  const {
+    showLicense,
+    setShowLicense,
+    showTerms,
+    setShowTerms,
+    showRevealAllConfirm,
+    setShowRevealAllConfirm,
+    showRestartOnboardingConfirm,
+    setShowRestartOnboardingConfirm,
+    importInputRef,
+    handleLogout,
+    handleResetConnection,
+    handleWallpaperUpload,
+    handleRemoveWallpaper,
+    handleSelectWallpaper,
+    handleExportDashboardConfig,
+    handleImportDashboardConfig,
+    handleRestartOnboarding,
+  } = useSettingsSectionActions({
+    t,
+    logout,
+    clearConfig,
+    setWallpaper,
+    setActiveSection,
+    setCurrentRoom,
+    reopenOnboarding,
+  });
 
   const styles = getSettingsSectionStyles(theme, primaryColor);
 

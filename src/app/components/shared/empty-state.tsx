@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { DashboardEmptyState } from '@/app/features/dashboard/components/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/features/dashboard';
 import { useTheme } from '@/app/hooks';
 
 interface EmptyStateProps {

@@ -1,12 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { DashboardHeroSection } from '@/app/features/dashboard/components/dashboard-hero-section';
+import { DashboardHeroSection } from '@/app/features/dashboard';
 import { useI18n } from '@/app/hooks';
-import type {
-  SectionNavItem,
-  SettingsSectionStyles,
-} from '../hooks/use-settings-section-controller';
+import type { SettingsSectionStyles } from '../hooks/settings-section-styles';
+import type { SectionNavItem } from '../hooks/use-settings-section-controller';
 
 interface SettingsSectionShellProps {
   id: string;
@@ -40,7 +38,7 @@ export function SettingsSectionShell({
   return (
     <section
       id={id}
-      className={`rounded-[28px] border ${styles.borderColor} ${styles.cardBg} md:rounded-[32px]`}
+      className={`rounded-[28px] border ${styles.borderColor} ${styles.cardBg} md:rounded-4xl`}
     >
       <div className="px-4 py-5 md:px-8 md:py-8">
         <div className="flex items-start gap-3 md:gap-4">

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { type AppLanguage, getNavigatorLanguage } from '@/app/i18n/config';
 import { detectDeviceTier } from '@/app/utils/detect-device-tier';
+import { storage } from '@/app/utils/storage';
 
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
@@ -56,6 +57,7 @@ export interface UserSettings {
 
 interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
+  applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
 
@@ -84,12 +86,8 @@ export const defaultSettings: UserSettings = {
  * overwrites it with the user's saved preference.
  */
 function getInitialEffectsQuality(): EffectsQuality {
-  try {
-    if (typeof localStorage !== 'undefined' && !localStorage.getItem('ha-dashboard-settings')) {
-      return detectDeviceTier();
-    }
-  } catch {
-    // localStorage may be unavailable in some private-browsing environments
+  if (storage.get<unknown>('ha-dashboard-settings', null) === null) {
+    return detectDeviceTier();
   }
   return defaultSettings.effectsQuality;
 }
@@ -106,6 +104,11 @@ export const useSettingsStore = create<SettingsState>()(
           ...(newSettings.pageZoom !== undefined
             ? { pageZoom: normalizePageZoom(newSettings.pageZoom) }
             : {}),
+        })),
+      applyImportedSettings: (importedSettings) =>
+        set(() => ({
+          ...importedSettings,
+          pageZoom: normalizePageZoom(importedSettings.pageZoom),
         })),
       resetSettings: () => set(defaultSettings),
     }),

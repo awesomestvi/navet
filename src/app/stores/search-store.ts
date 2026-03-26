@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { storage } from '@/app/utils/storage';
 
 const LEGACY_SEARCH_STORAGE_KEY = 'ha-dashboard-search';
 
@@ -28,7 +29,5 @@ export const useSearchStore = create<SearchState>()((set) => ({
   clearSearch: () => set({ searchQuery: '', filteredDeviceIds: [] }),
 }));
 
-if (typeof window !== 'undefined') {
-  window.localStorage.removeItem(LEGACY_SEARCH_STORAGE_KEY);
-  useSearchStore.setState({ searchQuery: '', filteredDeviceIds: [] });
-}
+storage.remove(LEGACY_SEARCH_STORAGE_KEY);
+useSearchStore.setState({ searchQuery: '', filteredDeviceIds: [] });

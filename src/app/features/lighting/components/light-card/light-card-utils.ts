@@ -176,6 +176,51 @@ export function getSupportedColorTemperatureRange(entity?: HassEntity): {
   return { min: 2700, max: 6500 };
 }
 
+export function hexToRgb(hex: string): [number, number, number] | null {
+  const normalized = hex.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+  return [
+    parseInt(normalized.slice(0, 2), 16),
+    parseInt(normalized.slice(2, 4), 16),
+    parseInt(normalized.slice(4, 6), 16),
+  ];
+}
+
+export function rgbToHs(rgb: [number, number, number]): [number, number] {
+  const [rRaw, gRaw, bRaw] = rgb;
+  const r = Math.max(0, Math.min(255, rRaw)) / 255;
+  const g = Math.max(0, Math.min(255, gRaw)) / 255;
+  const b = Math.max(0, Math.min(255, bRaw)) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let hue = 0;
+  if (delta > 0) {
+    if (max === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (max === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+  }
+  if (hue < 0) hue += 360;
+  const saturation = max === 0 ? 0 : (delta / max) * 100;
+  return [Math.round(hue * 10) / 10, Math.round(saturation * 10) / 10];
+}
+
+export function rgbToXy(rgb: [number, number, number]): [number, number] {
+  const gammaCorrect = (channel: number) => {
+    const normalized = Math.max(0, Math.min(255, channel)) / 255;
+    return normalized > 0.04045 ? ((normalized + 0.055) / 1.055) ** 2.4 : normalized / 12.92;
+  };
+  const r = gammaCorrect(rgb[0]);
+  const g = gammaCorrect(rgb[1]);
+  const b = gammaCorrect(rgb[2]);
+  const X = r * 0.664511 + g * 0.154324 + b * 0.162028;
+  const Y = r * 0.283881 + g * 0.668433 + b * 0.047685;
+  const Z = r * 0.000088 + g * 0.07231 + b * 0.986039;
+  const sum = X + Y + Z;
+  if (sum <= 0) return [0.3127, 0.329];
+  return [Math.round((X / sum) * 10000) / 10000, Math.round((Y / sum) * 10000) / 10000];
+}
+
 function parseNumberish(value: unknown): number | null {
   if (typeof value === 'number' && !Number.isNaN(value)) {
     return value;

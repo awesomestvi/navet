@@ -19,6 +19,12 @@ interface ThemeState {
   primaryColor: PrimaryColor;
   customPrimaryColor: string | null;
   wallpaper: string | null;
+  applyImportedTheme: (theme: {
+    theme: ThemeMode;
+    primaryColor: PrimaryColor;
+    customPrimaryColor: string | null;
+    wallpaper: string | null;
+  }) => void;
   setTheme: (theme: ThemeMode) => void;
   setFollowSystemTheme: (follow: boolean) => void;
   setPrimaryColor: (color: PrimaryColor) => void;
@@ -65,6 +71,13 @@ export const useThemeStore = create<ThemeState>()(
       primaryColor: 'orange',
       customPrimaryColor: null,
       wallpaper: null,
+      applyImportedTheme: (nextTheme) =>
+        set({
+          theme: nextTheme.theme,
+          primaryColor: nextTheme.primaryColor,
+          customPrimaryColor: nextTheme.customPrimaryColor,
+          wallpaper: normalizeWallpaperPath(nextTheme.wallpaper),
+        }),
       setTheme: (theme) => set({ theme }),
       setFollowSystemTheme: (followSystemTheme) => set({ followSystemTheme }),
       setPrimaryColor: (primaryColor) => set({ primaryColor }),

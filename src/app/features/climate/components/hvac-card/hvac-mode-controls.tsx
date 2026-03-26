@@ -30,7 +30,7 @@ export const HVACModeControls = memo(function HVACModeControls({
       <RoundControlButton
         theme={theme as ThemeType}
         size={primitiveSize}
-        variant="neutral"
+        variant="soft"
         onClick={(e) => {
           e.stopPropagation();
           onModeChange('cool');
@@ -44,7 +44,7 @@ export const HVACModeControls = memo(function HVACModeControls({
       <RoundControlButton
         theme={theme as ThemeType}
         size={primitiveSize}
-        variant="neutral"
+        variant="soft"
         onClick={(e) => {
           e.stopPropagation();
           onModeChange('heat');
@@ -58,7 +58,7 @@ export const HVACModeControls = memo(function HVACModeControls({
       <RoundControlButton
         theme={theme as ThemeType}
         size={primitiveSize}
-        variant="neutral"
+        variant="soft"
         onClick={(e) => {
           e.stopPropagation();
           onModeChange('fan');

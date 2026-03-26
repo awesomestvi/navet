@@ -1,32 +1,15 @@
-import { Power } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useRef, useState } from 'react';
 import { isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { iconMap } from '@/app/features/sensors';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import type { DeviceMetric } from '@/app/types/device.types';
-import { storage } from '@/app/utils/storage';
 import type { SwitchCardProps } from './switch-card.types';
-
-function normalizeStoredMetricLabels(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((label): label is string => typeof label === 'string');
-  }
-  if (typeof value === 'string' && value.length > 0) {
-    return [value];
-  }
-  return [];
-}
-
-function areMetricLabelListsEqual(left: string[], right: string[]) {
-  return left.length === right.length && left.every((label, index) => label === right[index]);
-}
+import { useSwitchMetricFormatters } from './use-switch-metric-formatters';
+import { useSwitchMetricState } from './use-switch-metric-state';
+import { useSwitchResetTimerCleanup } from './use-switch-reset-timer-cleanup';
+import { useSwitchToggleAction } from './use-switch-toggle-action';
 
 export function useSwitchCardController({
   id,
@@ -46,13 +29,8 @@ export function useSwitchCardController({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        clearTimeout(resetTimerRef.current);
-      }
-    };
-  }, []);
+  useSwitchResetTimerCleanup(resetTimerRef);
+
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { colors, theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -69,122 +47,17 @@ export function useSwitchCardController({
     setIsOn(initialState);
   }, [initialState, liveEntity]);
 
-  const fallbackMetrics = useMemo<DeviceMetric[]>(
-    () => [
-      ...(power != null
-        ? [
-            {
-              label: 'Power',
-              value: power,
-              unit: 'W',
-              icon: 'zap' as const,
-              category: 'measurement' as const,
-            },
-          ]
-        : []),
-      ...(voltage != null
-        ? [
-            {
-              label: 'Voltage',
-              value: voltage,
-              unit: 'V',
-              icon: 'gauge' as const,
-              category: 'measurement' as const,
-            },
-          ]
-        : []),
-      ...(energy != null
-        ? [
-            {
-              label: 'Energy',
-              value: energy,
-              unit: 'kWh',
-              icon: 'activity' as const,
-              category: 'measurement' as const,
-            },
-          ]
-        : []),
-    ],
-    [energy, power, voltage]
-  );
-  const allMetrics = useMemo(
-    () => (metrics?.length ? metrics : fallbackMetrics),
-    [fallbackMetrics, metrics]
-  );
-  const availableMetrics = useMemo(
-    () => allMetrics.filter((metric) => isOn || metric.category === 'configuration'),
-    [allMetrics, isOn]
-  );
-  const metricPreferenceKey = `${STORAGE_KEYS.switchCardMetricPreferences}:${id}`;
-  const metricLimit = useMemo(() => {
-    switch (size) {
-      case 'extra-small':
-        return 1;
-      case 'small':
-        return 2;
-      case 'medium':
-        return 3;
-      case 'large':
-        return 4;
-      default:
-        return 2;
-    }
-  }, [size]);
-  const [hasExplicitMetricPreference, setHasExplicitMetricPreference] = useState<boolean>(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.localStorage.getItem(metricPreferenceKey) !== null;
+  const metricState = useSwitchMetricState({
+    id,
+    size,
+    isOn,
+    power,
+    voltage,
+    energy,
+    metrics,
   });
-  const [selectedMetricLabels, setSelectedMetricLabels] = useState<string[]>(() =>
-    normalizeStoredMetricLabels(storage.get<unknown>(metricPreferenceKey, []))
-  );
 
-  useEffect(() => {
-    setHasExplicitMetricPreference(
-      typeof window !== 'undefined' && window.localStorage.getItem(metricPreferenceKey) !== null
-    );
-    setSelectedMetricLabels(
-      normalizeStoredMetricLabels(storage.get<unknown>(metricPreferenceKey, []))
-    );
-  }, [metricPreferenceKey]);
-
-  useEffect(() => {
-    const availableMetricLabels = new Set(availableMetrics.map((metric) => metric.label));
-    const nextLabels = selectedMetricLabels.filter((label) => availableMetricLabels.has(label));
-
-    if (nextLabels.length === 0 && !hasExplicitMetricPreference) {
-      const fallbackLabels = availableMetrics.slice(0, metricLimit).map((metric) => metric.label);
-      if (!areMetricLabelListsEqual(selectedMetricLabels, fallbackLabels)) {
-        setSelectedMetricLabels(fallbackLabels);
-      }
-      return;
-    }
-
-    if (nextLabels.length > metricLimit) {
-      const truncatedLabels = nextLabels.slice(0, metricLimit);
-      if (!areMetricLabelListsEqual(selectedMetricLabels, truncatedLabels)) {
-        setSelectedMetricLabels(truncatedLabels);
-      }
-      return;
-    }
-
-    if (!areMetricLabelListsEqual(selectedMetricLabels, nextLabels)) {
-      setSelectedMetricLabels(nextLabels);
-    }
-  }, [availableMetrics, hasExplicitMetricPreference, metricLimit, selectedMetricLabels]);
-
-  useEffect(() => {
-    storage.set(metricPreferenceKey, selectedMetricLabels);
-  }, [metricPreferenceKey, selectedMetricLabels]);
-
-  const selectedMetrics = availableMetrics
-    .filter((metric) => selectedMetricLabels.includes(metric.label))
-    .slice(0, metricLimit);
-  const hasMetrics = availableMetrics.length > 0;
-  const hasControlsDialog = hasMetrics;
-
+  const hasControlsDialog = metricState.hasMetrics;
   const surface = getThemeSurfaceTokens(theme);
   const cardColors = isOn ? colors.switch.on : colors.switch.off;
   const textColor =
@@ -207,122 +80,42 @@ export function useSwitchCardController({
       : 'bg-gray-950/95 border-white/10 text-white';
   const accentColor = getThemeColorValue(primaryColor);
 
+  const handleToggle = useSwitchToggleAction({
+    id,
+    isOn,
+    setIsOn,
+    resetTimerRef,
+    resolvedServiceDomain,
+    resolvedServiceAction,
+    updateSwitchFailedMessage: t('lighting.feedback.updateSwitchFailed'),
+  });
+
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: `${name} ${t('lighting.type.switch').toLowerCase()}`,
     ariaPressed: isOn,
     isEditMode,
-    onToggle: () => {
-      if (resolvedServiceAction === 'turn_on') {
-        setIsOn(true);
-        void homeAssistantService
-          .callService(resolvedServiceDomain, 'turn_on', {}, { entity_id: id })
-          .then(() => {
-            resetTimerRef.current = window.setTimeout(() => setIsOn(false), 700);
-          })
-          .catch((error) => {
-            setIsOn(false);
-            toast.error(
-              error instanceof Error ? error.message : t('lighting.feedback.updateSwitchFailed')
-            );
-          });
-        return;
-      }
-
-      if (resolvedServiceAction === 'press') {
-        setIsOn(true);
-        void homeAssistantService
-          .callService(resolvedServiceDomain, 'press', {}, { entity_id: id })
-          .then(() => {
-            resetTimerRef.current = window.setTimeout(() => setIsOn(false), 500);
-          })
-          .catch((error) => {
-            setIsOn(false);
-            toast.error(
-              error instanceof Error ? error.message : t('lighting.feedback.updateSwitchFailed')
-            );
-          });
-        return;
-      }
-
-      const nextIsOn = !isOn;
-      setIsOn(nextIsOn);
-      void homeAssistantService
-        .callService(
-          resolvedServiceDomain,
-          nextIsOn ? 'turn_on' : 'turn_off',
-          {},
-          { entity_id: id }
-        )
-        .catch((error) => {
-          setIsOn(!nextIsOn);
-          toast.error(
-            error instanceof Error ? error.message : t('lighting.feedback.updateSwitchFailed')
-          );
-        });
-    },
+    onToggle: handleToggle,
     onOpenControls: () => {
-      if (hasControlsDialog) {
-        setIsDialogOpen(true);
-      }
+      if (hasControlsDialog) setIsDialogOpen(true);
     },
     onOpenSettings: () => {
-      if (hasControlsDialog) {
-        setIsDialogOpen(true);
-      }
+      if (hasControlsDialog) setIsDialogOpen(true);
     },
   });
 
   const showSettingsButton =
     hasControlsDialog && cardInteraction.interactionMode !== 'control-first';
 
-  const formatPower = (watts?: number) => {
-    if (!watts) return null;
-    if (watts >= 1000) return `${(watts / 1000).toFixed(1)} kW`;
-    return `${watts} W`;
-  };
-
-  const formatMetricValue = (metric: DeviceMetric) =>
-    typeof metric.value === 'number'
-      ? metric.label === 'Power'
-        ? formatPower(metric.value)
-        : `${metric.value.toFixed(metric.unit === 'kWh' ? 2 : 0)}${metric.unit ? ` ${metric.unit}` : ''}`
-      : metric.value;
-
-  const getMetricLabel = (metric: DeviceMetric) => {
-    switch (metric.label) {
-      case 'Power':
-        return t('lighting.metrics.power');
-      case 'Voltage':
-        return t('lighting.metrics.voltage');
-      case 'Energy':
-        return t('lighting.metrics.energy');
-      default:
-        return metric.label;
-    }
-  };
-
-  const renderMetricIcon = (metric: DeviceMetric, className: string) => {
-    const Icon = iconMap[metric.icon] ?? Power;
-    return <Icon className={className} />;
-  };
-
-  const handleMetricToggle = (metricLabel: string) => {
-    setHasExplicitMetricPreference(true);
-    setSelectedMetricLabels((current) => {
-      if (current.includes(metricLabel)) {
-        return current.filter((label) => label !== metricLabel);
-      }
-
-      if (current.length >= metricLimit) {
-        return [...current.slice(1), metricLabel];
-      }
-
-      return [...current, metricLabel];
-    });
-  };
+  const { formatMetricValue, getMetricLabel, renderMetricIcon } = useSwitchMetricFormatters({
+    labels: {
+      power: t('lighting.metrics.power'),
+      voltage: t('lighting.metrics.voltage'),
+      energy: t('lighting.metrics.energy'),
+    },
+  });
 
   return {
-    availableMetrics,
+    availableMetrics: metricState.availableMetrics,
     accentColor,
     cardColors,
     cardInteraction,
@@ -330,22 +123,22 @@ export function useSwitchCardController({
     entityType: resolvedEntityType,
     formatMetricValue,
     getMetricLabel,
-    handleMetricToggle,
+    handleMetricToggle: metricState.handleMetricToggle,
     hasControlsDialog,
-    hasMetrics,
+    hasMetrics: metricState.hasMetrics,
     isDialogOpen,
     isOn,
     labelColor,
-    metricLimit,
+    metricLimit: metricState.metricLimit,
     metricSectionDescription:
-      metricLimit === 1
-        ? t('lighting.switch.metricLimit.one', { count: metricLimit })
-        : t('lighting.switch.metricLimit.other', { count: metricLimit }),
+      metricState.metricLimit === 1
+        ? t('lighting.switch.metricLimit.one', { count: metricState.metricLimit })
+        : t('lighting.switch.metricLimit.other', { count: metricState.metricLimit }),
     metricSectionTitle: t('lighting.switch.cardMetric'),
     roomLabel: t('lighting.settings.room'),
     renderMetricIcon,
-    selectedMetricLabels,
-    selectedMetrics,
+    selectedMetricLabels: metricState.selectedMetricLabels,
+    selectedMetrics: metricState.selectedMetrics,
     setIsDialogOpen,
     settingsButtonClass,
     showSettingsButton,

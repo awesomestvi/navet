@@ -4,6 +4,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 interface DashboardEntitiesState {
   hiddenEntityIds: string[];
   onboardingCompleted: boolean;
+  replaceDashboardEntitiesState: (state: {
+    hiddenEntityIds: string[];
+    onboardingCompleted: boolean;
+  }) => void;
   completeOnboarding: (entityIds: string[], startBlank: boolean) => void;
   markOnboardingCompleted: () => void;
   hideEntity: (entityId: string) => void;
@@ -18,6 +22,8 @@ export const useDashboardEntitiesStore = create<DashboardEntitiesState>()(
     (set) => ({
       hiddenEntityIds: [],
       onboardingCompleted: false,
+      replaceDashboardEntitiesState: ({ hiddenEntityIds, onboardingCompleted }) =>
+        set({ hiddenEntityIds, onboardingCompleted }),
       completeOnboarding: (entityIds, startBlank) =>
         set({
           hiddenEntityIds: startBlank ? entityIds : [],

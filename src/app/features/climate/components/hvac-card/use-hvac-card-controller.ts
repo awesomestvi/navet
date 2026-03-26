@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HVACCardProps } from './hvac-card.types';
+import { useHvacEntitySync } from './use-hvac-entity-sync';
+import { useHvacVisualMode } from './use-hvac-visual-mode';
 
 export function useHVACCardController({
   id,
@@ -39,70 +41,30 @@ export function useHVACCardController({
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
 
-  // Single effect syncs all HA-driven fields in one batch when the entity updates.
-  useEffect(() => {
-    if (liveEntity) {
-      const attrs = liveEntity.attributes as Record<string, unknown>;
-      setIsOn(liveEntity.state !== 'off');
-      setMode(typeof attrs.hvac_mode === 'string' ? attrs.hvac_mode : initialMode);
-      setAction(typeof attrs.hvac_action === 'string' ? attrs.hvac_action : initialAction);
-      if (typeof attrs.temperature === 'number') setTargetTemp(attrs.temperature);
-      if (typeof attrs.current_temperature === 'number') setCurrentTemp(attrs.current_temperature);
-      return;
-    }
-    setTargetTemp(initialTemp);
-    setCurrentTemp(initialCurrentTemp);
-    setMode(initialMode);
-    setAction(initialAction);
-    setIsOn(initialState);
-  }, [liveEntity, initialTemp, initialCurrentTemp, initialMode, initialAction, initialState]);
+  useHvacEntitySync({
+    liveEntity,
+    initialTemp,
+    initialCurrentTemp,
+    initialMode,
+    initialAction,
+    initialState,
+    setTargetTemp,
+    setCurrentTemp,
+    setMode,
+    setAction,
+    setIsOn,
+  });
 
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
 
-  const visualMode = useMemo(() => {
-    const normalizedAction = action?.toLowerCase() ?? '';
-    const normalizedMode = mode.toLowerCase();
-    const temperatureDelta = targetTemp - currentTemp;
-
-    if (!isOn) {
-      return 'off';
-    }
-
-    if (normalizedAction.includes('fan')) {
-      return 'fan';
-    }
-
-    if (normalizedAction.includes('heat')) {
-      return 'heat';
-    }
-
-    if (normalizedAction.includes('cool')) {
-      return 'cool';
-    }
-
-    if (normalizedMode === 'fan' || normalizedMode === 'fan_only') {
-      return 'fan';
-    }
-
-    if (temperatureDelta > 0.05) {
-      return 'heat';
-    }
-
-    if (temperatureDelta < -0.05) {
-      return 'cool';
-    }
-
-    if (normalizedMode === 'heat') {
-      return 'heat';
-    }
-
-    if (normalizedMode === 'cool') {
-      return 'cool';
-    }
-
-    return normalizedMode;
-  }, [action, currentTemp, isOn, mode, targetTemp]);
+  const visualMode = useHvacVisualMode({
+    action,
+    currentTemp,
+    isOn,
+    mode,
+    targetTemp,
+  });
 
   const cardColors = !isOn
     ? colors.hvac.off

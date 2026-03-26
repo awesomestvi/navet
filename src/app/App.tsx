@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
@@ -9,10 +9,12 @@ import { LoadingProvider } from './contexts/loading-context';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
 import { useHomeAssistant, useTheme } from './hooks';
+import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { useSettingsStore } from './stores';
 import { homeAssistantSelectors, settingsSelectors } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
+import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function AppContent() {
   const { isAuthenticated, config: authConfig } = useAuth();
@@ -24,16 +26,31 @@ function AppContent() {
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const pageZoom = useSettingsStore(settingsSelectors.pageZoom);
+  const pageZoomScale = useSettingsStore(settingsSelectors.pageZoomScale);
   const resolvedEffectsQuality = resolveEffectsQuality(
     effectsQuality,
     disableAnimations || lowPowerMode
   );
   const reducedEffectsEnabled = resolvedEffectsQuality === 'low';
-  const pageZoomScale = pageZoom / 100;
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
+
+  const syncRootScaleVars = useCallback(() => {
+    const shouldScaleRootFont =
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+      window.matchMedia('(max-width: 1024px)').matches;
+    const rootFontSize = shouldScaleRootFont ? 16 * pageZoomScale : 16;
+
+    document.documentElement.style.setProperty('--font-size', `${rootFontSize}px`);
+  }, [pageZoomScale]);
+
+  const syncZoomEnvironment = useCallback(() => {
+    syncRootScaleVars();
+    syncViewportCssVars(pageZoomScale);
+  }, [pageZoomScale, syncRootScaleVars]);
+
+  useViewportResize(syncZoomEnvironment);
 
   useEffect(() => {
     const configToUse = authConfig || haConfig;
@@ -66,63 +83,15 @@ function AppContent() {
   }, [reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
-    const syncRootScaleVars = () => {
-      const shouldScaleRootFont =
-        window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
-        window.matchMedia('(max-width: 1024px)').matches;
-      const rootFontSize = shouldScaleRootFont ? 16 * pageZoomScale : 16;
-
-      document.documentElement.style.setProperty('--font-size', `${rootFontSize}px`);
-    };
-
-    const syncViewportVars = () => {
-      const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const visibleViewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const layoutViewportWidth = Math.max(window.innerWidth, visibleViewportWidth);
-      const layoutViewportHeight = Math.max(window.innerHeight, visibleViewportHeight);
-      const logicalViewportWidth = layoutViewportWidth / pageZoomScale;
-      const logicalViewportHeight = layoutViewportHeight / pageZoomScale;
-
-      document.documentElement.style.setProperty(
-        '--navet-viewport-width',
-        `${logicalViewportWidth}px`
-      );
-      document.documentElement.style.setProperty(
-        '--navet-viewport-height',
-        `${logicalViewportHeight}px`
-      );
-      document.documentElement.style.setProperty(
-        '--navet-visible-viewport-width',
-        `${visibleViewportWidth}px`
-      );
-      document.documentElement.style.setProperty(
-        '--navet-visible-viewport-height',
-        `${visibleViewportHeight}px`
-      );
-    };
-
     document.documentElement.style.zoom = String(pageZoomScale);
-    syncRootScaleVars();
-    syncViewportVars();
-
-    window.addEventListener('resize', syncRootScaleVars);
-    window.addEventListener('resize', syncViewportVars);
-    window.visualViewport?.addEventListener('resize', syncRootScaleVars);
-    window.visualViewport?.addEventListener('resize', syncViewportVars);
+    syncZoomEnvironment();
 
     return () => {
-      window.removeEventListener('resize', syncRootScaleVars);
-      window.removeEventListener('resize', syncViewportVars);
-      window.visualViewport?.removeEventListener('resize', syncRootScaleVars);
-      window.visualViewport?.removeEventListener('resize', syncViewportVars);
       document.documentElement.style.zoom = '';
       document.documentElement.style.removeProperty('--font-size');
-      document.documentElement.style.removeProperty('--navet-viewport-width');
-      document.documentElement.style.removeProperty('--navet-viewport-height');
-      document.documentElement.style.removeProperty('--navet-visible-viewport-width');
-      document.documentElement.style.removeProperty('--navet-visible-viewport-height');
+      clearViewportCssVars();
     };
-  }, [pageZoomScale]);
+  }, [pageZoomScale, syncZoomEnvironment]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

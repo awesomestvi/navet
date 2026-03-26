@@ -5,6 +5,7 @@ import { pathToSection, type Section, sectionToPath } from '../navigation/sectio
 interface NavigationState {
   currentRoom: string;
   activeSection: Section;
+  applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
   setCurrentRoom: (room: string) => void;
   setActiveSection: (section: Section) => void;
 }
@@ -17,6 +18,7 @@ export const useNavigationStore = create<NavigationState>()(
     (set) => ({
       currentRoom: 'All',
       activeSection: initialSection(),
+      applyNavigationState: ({ currentRoom, activeSection }) => set({ currentRoom, activeSection }),
       setCurrentRoom: (currentRoom) => set({ currentRoom }),
       setActiveSection: (activeSection) => {
         history.pushState({}, '', sectionToPath(activeSection));

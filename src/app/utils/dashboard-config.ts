@@ -1,7 +1,6 @@
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useDashboardEntitiesStore } from '@/app/features/dashboard';
-import { useCustomCardsStore } from '@/app/features/dashboard/stores/custom-cards-store';
+import { useCustomCardsStore, useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { useLightPresetStore } from '@/app/features/lighting';
 import { resolveAppLanguage } from '@/app/i18n/config';
 import { isSection } from '@/app/navigation/sections';
@@ -208,7 +207,7 @@ export const importDashboardConfig = (value: unknown) => {
     reducedEffectsEnabled
   );
 
-  useThemeStore.setState({
+  useThemeStore.getState().applyImportedTheme({
     theme:
       (theme.theme as ReturnType<typeof useThemeStore.getState>['theme'] | undefined) ??
       currentThemeState.theme,
@@ -226,7 +225,7 @@ export const importDashboardConfig = (value: unknown) => {
         : (theme.wallpaper as string | null),
   });
 
-  useSettingsStore.setState({
+  useSettingsStore.getState().applyImportedSettings({
     username: (settings.username as string | undefined) ?? defaultSettings.username,
     email: (settings.email as string | undefined) ?? defaultSettings.email,
     language: resolveAppLanguage(
@@ -271,16 +270,16 @@ export const importDashboardConfig = (value: unknown) => {
         : defaultSettings.ambientLightBleed,
   });
 
-  useNavigationStore.setState({
+  useNavigationStore.getState().applyNavigationState({
     currentRoom: (navigation.currentRoom as string | undefined) ?? 'All',
     activeSection: isSection(navigation.activeSection) ? navigation.activeSection : 'home',
   });
 
-  useCustomCardsStore.setState({
-    cards: Array.isArray(value.customCards) ? value.customCards : [],
-  });
+  useCustomCardsStore
+    .getState()
+    .replaceCards(Array.isArray(value.customCards) ? value.customCards : []);
 
-  useDashboardEntitiesStore.setState({
+  useDashboardEntitiesStore.getState().replaceDashboardEntitiesState({
     hiddenEntityIds: Array.isArray(dashboardEntities.hiddenEntityIds)
       ? dashboardEntities.hiddenEntityIds.filter((item): item is string => typeof item === 'string')
       : [],
@@ -290,7 +289,7 @@ export const importDashboardConfig = (value: unknown) => {
         : true,
   });
 
-  useLightPresetStore.setState({
+  useLightPresetStore.getState().replacePresetState({
     globalBrightnessPresetValues:
       (lightPresets.globalBrightnessPresetValues as
         | ReturnType<typeof useLightPresetStore.getState>['globalBrightnessPresetValues']

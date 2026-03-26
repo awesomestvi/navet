@@ -30,7 +30,7 @@ export const HVACTempControls = memo(function HVACTempControls({
       <RoundControlButton
         theme={theme}
         size={primitiveSize}
-        variant="neutral"
+        variant="soft"
         onClick={(e) => {
           e.stopPropagation();
           onTempChange(Math.max(16, targetTemp - 0.5));
@@ -44,7 +44,7 @@ export const HVACTempControls = memo(function HVACTempControls({
       <RoundControlButton
         theme={theme}
         size={primitiveSize}
-        variant="neutral"
+        variant="soft"
         onClick={(e) => {
           e.stopPropagation();
           onTempChange(Math.min(30, targetTemp + 0.5));

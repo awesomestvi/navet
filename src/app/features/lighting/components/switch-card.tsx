@@ -236,7 +236,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                 <RoundControlButton
                   theme={controller.theme}
                   size="small"
-                  variant="neutral"
+                  variant="soft"
                   {...controller.cardInteraction.settingsButtonProps}
                   className={controller.settingsButtonClass}
                 >

@@ -15,6 +15,11 @@ interface LightPresetState {
   globalBrightnessPresetValues: BrightnessPresetValues;
   globalBrightnessPresetOrder: BrightnessPresetKey[];
   lightPresetConfigs: Record<string, LightPresetConfig>;
+  replacePresetState: (state: {
+    globalBrightnessPresetValues: BrightnessPresetValues;
+    globalBrightnessPresetOrder: BrightnessPresetKey[];
+    lightPresetConfigs: Record<string, LightPresetConfig>;
+  }) => void;
   setBrightnessPresetValue: (
     lightId: string,
     key: BrightnessPresetKey,
@@ -116,6 +121,16 @@ export const useLightPresetStore = create<LightPresetState>()(
       globalBrightnessPresetValues: defaultBrightnessPresetValues,
       globalBrightnessPresetOrder: defaultBrightnessPresetOrder,
       lightPresetConfigs: {},
+      replacePresetState: ({
+        globalBrightnessPresetValues,
+        globalBrightnessPresetOrder,
+        lightPresetConfigs,
+      }) =>
+        set({
+          globalBrightnessPresetValues,
+          globalBrightnessPresetOrder,
+          lightPresetConfigs,
+        }),
       setBrightnessPresetValue: (lightId, key, value, applyToAll = false) =>
         set((state) => {
           const normalizedValue = Math.max(1, Math.min(100, Math.round(value)));

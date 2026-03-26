@@ -1,7 +1,31 @@
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { PrimaryColor, ThemeType } from '@/app/hooks';
-import type { SettingsSectionStyles } from './use-settings-section-controller';
+
+export type SettingsSectionStyles = {
+  accentColor: string;
+  borderColor: string;
+  cardBg: string;
+  chipBg: string;
+  chipHoverBg: string;
+  chipTextColor: string;
+  dividerColor: string;
+  elevatedShadow: string;
+  floatingButtonBg: string;
+  floatingButtonText: string;
+  hoverBg: string;
+  iconBg: string;
+  isLightTheme: boolean;
+  insetBg: string;
+  lineColor: string;
+  mixBlendMode: 'multiply' | 'screen';
+  mutedColor: string;
+  ringClass: string;
+  ringOffsetClass: string;
+  softBg: string;
+  subtleColor: string;
+  textColor: string;
+};
 
 export function getSettingsSectionStyles(
   theme: ThemeType,

@@ -4,6 +4,7 @@ import {
   type CSSProperties,
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -19,6 +20,7 @@ import {
 } from '@/app/components/ui/dropdown-menu';
 import type { AllViewGrouping } from '@/app/features/dashboard/all-view-grid';
 import { useI18n, useTheme } from '@/app/hooks';
+import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 
 interface RoomNavProps {
   rooms?: string[];
@@ -53,8 +55,9 @@ function useStickyActivation() {
   const stickyMarkerRef = useRef<HTMLDivElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
+  const attachObserver = useCallback(() => {
     const markerNode = stickyMarkerRef.current;
     const stickyNode = stickyRef.current;
     const shellNode = shellRef.current;
@@ -62,38 +65,32 @@ function useStickyActivation() {
       return;
     }
 
-    let observer: IntersectionObserver | null = null;
+    observerRef.current?.disconnect();
 
-    const attachObserver = () => {
-      observer?.disconnect();
+    const stickyTop = Number.parseFloat(window.getComputedStyle(stickyNode).top) || 0;
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => {
+        shellNode.classList.toggle('is-stuck', Boolean(entry) && !entry.isIntersecting);
+      },
+      {
+        root: null,
+        threshold: 0,
+        rootMargin: `-${stickyTop}px 0px 0px 0px`,
+      }
+    );
 
-      const stickyTop = Number.parseFloat(window.getComputedStyle(stickyNode).top) || 0;
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          shellNode.classList.toggle('is-stuck', Boolean(entry) && !entry.isIntersecting);
-        },
-        {
-          root: null,
-          threshold: 0,
-          rootMargin: `-${stickyTop}px 0px 0px 0px`,
-        }
-      );
+    observerRef.current.observe(markerNode);
+  }, []);
 
-      observer.observe(markerNode);
-    };
+  useViewportResize(attachObserver);
 
-    const handleResize = () => {
-      attachObserver();
-    };
-
+  useEffect(() => {
     attachObserver();
-    window.addEventListener('resize', handleResize);
 
     return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', handleResize);
+      observerRef.current?.disconnect();
     };
-  }, []);
+  }, [attachObserver]);
 
   return { stickyMarkerRef, stickyRef, shellRef };
 }
@@ -193,7 +190,7 @@ export const RoomNav = memo(function RoomNav({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 flex-shrink-0 pl-1 md:gap-1.5 md:pl-1.5">
+            <div className="flex items-center gap-1 shrink-0 pl-1 md:gap-1.5 md:pl-1.5">
               {isEditMode && showAllViewGrouping ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -316,7 +313,7 @@ const RoomNavItem = memo(function RoomNavItem({
     <InteractivePill
       active={activeRoom === room}
       onClick={() => onRoomChange(room)}
-      className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+      className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
         activeRoom === room ? 'room-nav-item-active text-white' : `${textSecondary} ${hoverBg}`
       }`}
     >

@@ -3,7 +3,7 @@ import { type CSSProperties, memo, type ReactNode } from 'react';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { DashboardCardItem } from '@/app/features/dashboard/components/dashboard-card-item';
+import { DashboardCardItem } from '@/app/features/dashboard';
 import { useCardState, useDevices, useEditMode, useI18n, useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';

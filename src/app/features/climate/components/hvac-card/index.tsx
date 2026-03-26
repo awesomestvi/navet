@@ -60,13 +60,12 @@ export const HVACCard = memo(function HVACCard({
     tone,
     accentColor,
   });
-  const normalizedMode = controller.mode.toLowerCase();
   const HeaderIcon =
-    normalizedMode === 'heat'
+    controller.visualMode === 'heat'
       ? Flame
-      : normalizedMode === 'cool'
+      : controller.visualMode === 'cool'
         ? Snowflake
-        : normalizedMode === 'fan' || normalizedMode === 'fan_only'
+        : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
           ? Wind
           : Thermometer;
 
@@ -148,6 +147,7 @@ export const HVACCard = memo(function HVACCard({
                         theme={controller.theme}
                         size="small"
                         tone={controller.isOn ? 'default' : 'muted'}
+                        variant="soft"
                       />
                     }
                   />
@@ -196,6 +196,7 @@ export const HVACCard = memo(function HVACCard({
                         theme={controller.theme}
                         size="medium"
                         tone={controller.isOn ? 'default' : 'muted'}
+                        variant="soft"
                       />
                     }
                   />
@@ -252,6 +253,7 @@ export const HVACCard = memo(function HVACCard({
                         theme={controller.theme}
                         size="large"
                         tone={controller.isOn ? 'default' : 'muted'}
+                        variant="soft"
                       />
                     }
                   />

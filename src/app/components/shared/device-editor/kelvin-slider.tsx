@@ -4,7 +4,7 @@ import {
   isCompactCardSize,
   isExtraSmallCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { kelvinToColor } from '@/app/features/lighting/components/light-card/light-card-utils';
+import { kelvinToColor } from '@/app/features/lighting';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { CardSize } from '../card-size-selector';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';

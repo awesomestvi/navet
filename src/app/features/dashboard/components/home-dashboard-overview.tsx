@@ -19,6 +19,7 @@ import {
   type CSSProperties,
   memo,
   type ReactNode,
+  useCallback,
   useDeferredValue,
   useEffect,
   useRef,
@@ -29,7 +30,9 @@ import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-styl
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
+import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { getLogicalViewportWidth, getVisibleViewportSize } from '@/app/utils/viewport';
 import {
   type DragMeta,
   type DropMeta,
@@ -341,45 +344,6 @@ function getPortraitLaneCount(sectionGridCols: number) {
   return 2;
 }
 
-function getViewportDimensionVar(name: string) {
-  if (typeof window === 'undefined') {
-    return 0;
-  }
-
-  const value = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue(name)
-  );
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
-function getVisibleViewportSize() {
-  if (typeof window === 'undefined') {
-    return { width: 0, height: 0 };
-  }
-
-  const width =
-    getViewportDimensionVar('--navet-visible-viewport-width') ||
-    window.visualViewport?.width ||
-    window.innerWidth;
-  const height =
-    getViewportDimensionVar('--navet-visible-viewport-height') ||
-    window.visualViewport?.height ||
-    window.innerHeight;
-
-  return { width, height };
-}
-
-function getLogicalViewportWidth() {
-  if (typeof window === 'undefined') {
-    return 0;
-  }
-
-  return (
-    getViewportDimensionVar('--navet-viewport-width') ||
-    Math.max(window.innerWidth, window.visualViewport?.width ?? 0)
-  );
-}
-
 function getHomeEffectiveCols(cols: number) {
   const { width: viewportWidth, height: viewportHeight } = getVisibleViewportSize();
   const logicalViewportWidth = getLogicalViewportWidth();
@@ -407,42 +371,21 @@ function useHomeLayoutViewport() {
     isPortrait: isPortraitHomeCanvas(),
   }));
 
-  useEffect(() => {
-    let frameId: number | null = null;
-
-    const syncViewportState = () => {
-      if (frameId !== null) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        const nextState = {
-          effectiveCols: getHomeEffectiveCols(breakpointCols),
-          isPortrait: isPortraitHomeCanvas(),
-        };
-
-        setViewportState((previous) =>
-          previous.effectiveCols === nextState.effectiveCols &&
-          previous.isPortrait === nextState.isPortrait
-            ? previous
-            : nextState
-        );
-      });
+  const syncViewportState = useCallback(() => {
+    const nextState = {
+      effectiveCols: getHomeEffectiveCols(breakpointCols),
+      isPortrait: isPortraitHomeCanvas(),
     };
 
-    syncViewportState();
-    window.addEventListener('resize', syncViewportState);
-    window.visualViewport?.addEventListener('resize', syncViewportState);
-
-    return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      window.removeEventListener('resize', syncViewportState);
-      window.visualViewport?.removeEventListener('resize', syncViewportState);
-    };
+    setViewportState((previous) =>
+      previous.effectiveCols === nextState.effectiveCols &&
+      previous.isPortrait === nextState.isPortrait
+        ? previous
+        : nextState
+    );
   }, [breakpointCols]);
+
+  useViewportResize(syncViewportState);
 
   return viewportState;
 }
@@ -787,7 +730,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       {isLibraryVisible && !isLibraryCollapsed ? (
         <aside
           ref={libraryPanelRef}
-          className={`fixed left-0 top-0 z-40 w-[360px] cursor-grab rounded-[28px] border p-5 active:cursor-grabbing md:p-6 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
+          className={`fixed left-0 top-0 z-40 w-90 cursor-grab rounded-[28px] border p-5 active:cursor-grabbing md:p-6 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
           onPointerDown={(event) => {
             const target = event.target as HTMLElement;
             if (
@@ -857,7 +800,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
 
       <DragOverlay dropAnimation={null}>
         {activeDragSection ? (
-          <div className="w-[280px] rounded-[24px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
+          <div className="w-70 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
             <div className="flex items-center gap-3 text-white/80">
               <GripVertical className="h-5 w-5" />
               <div className="text-sm font-semibold">{t('dashboard.section.moveDragLabel')}</div>
@@ -916,7 +859,7 @@ const SectionCanvas = memo(function SectionCanvas({
   return (
     <section
       ref={setNodeRef}
-      className={`relative rounded-[24px] border p-4 transition-[border-color,box-shadow,background-color] ${
+      className={`relative rounded-3xl border p-4 transition-[border-color,box-shadow,background-color] ${
         isActive
           ? `${surface.borderStrong} ${surface.panel}`
           : `${surface.border} ${surface.panelMuted}`
@@ -931,7 +874,7 @@ const SectionCanvas = memo(function SectionCanvas({
       <button
         type="button"
         aria-label={`Select ${title} section`}
-        className="absolute inset-0 rounded-[24px]"
+        className="absolute inset-0 rounded-3xl"
         onClick={() => onSelectSection(sectionId)}
       />
       <div className="relative z-10 mb-4 flex items-center gap-3">
@@ -1636,7 +1579,7 @@ function HomeContainerDropZone({
   return (
     <div
       ref={setNodeRef}
-      className={isOver && cardIds.length === 0 ? 'rounded-[24px] ring-1 ring-white/20' : undefined}
+      className={isOver && cardIds.length === 0 ? 'rounded-3xl ring-1 ring-white/20' : undefined}
     >
       {children}
     </div>
@@ -1786,7 +1729,7 @@ const LibraryCardRow = memo(function LibraryCardRow({
   return (
     <div
       data-library-interactive="true"
-      className={`flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left ${surface.border} ${surface.panelMuted}`}
+      className={`flex w-full items-center gap-2 rounded-2xl border px-2.5 py-2 text-left ${surface.border} ${surface.panelMuted}`}
     >
       <GripVertical className={`h-3.5 w-3.5 shrink-0 ${surface.textMuted}`} />
       <div className="min-w-0 flex-1">
@@ -1933,7 +1876,7 @@ function EmptyCanvas({
   const content = (
     <div
       className={`relative overflow-hidden rounded-[20px] border-2 border-dashed text-center ${
-        compact ? 'min-h-[180px] px-5 py-6' : 'min-h-[220px] px-5 py-8'
+        compact ? 'min-h-45 px-5 py-6' : 'min-h-55 px-5 py-8'
       } ${surface.panelMuted}`}
       style={{
         borderColor: 'rgba(255,255,255,0.16)',

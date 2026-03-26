@@ -1,7 +1,7 @@
 import { Lightbulb } from 'lucide-react';
 import { SettingsLivePreviewFrame } from '@/app/components/shared/settings-live-preview-frame';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
-import { getLightCardSurfaceTokens } from '@/app/features/lighting/components/light-card/light-card-surface-tokens';
+import { getLightCardSurfaceTokens } from '@/app/features/lighting';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 

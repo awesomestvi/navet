@@ -19,6 +19,7 @@ export interface CustomCard {
 
 interface CustomCardsState {
   cards: CustomCard[];
+  replaceCards: (cards: CustomCard[]) => void;
   addCard: (
     type: CardType,
     size: CardSize,
@@ -34,6 +35,7 @@ export const useCustomCardsStore = create<CustomCardsState>()(
   persist(
     (set, get) => ({
       cards: [],
+      replaceCards: (cards) => set({ cards }),
       addCard: (type, size, room, data) => {
         const newCard: CustomCard = {
           id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

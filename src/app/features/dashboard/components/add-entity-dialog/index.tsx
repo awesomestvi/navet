@@ -42,7 +42,7 @@ const AddEntityRow = memo(function AddEntityRow({
 }: AddEntityRowProps) {
   return (
     <div
-      className={`flex h-[76px] items-center justify-between gap-4 rounded-xl border ${borderColor} ${cardBg} p-4`}
+      className={`flex h-19 items-center justify-between gap-4 rounded-xl border ${borderColor} ${cardBg} p-4`}
     >
       <div className="min-w-0">
         <p className={`truncate text-sm font-medium ${textColor}`}>{device.name}</p>
