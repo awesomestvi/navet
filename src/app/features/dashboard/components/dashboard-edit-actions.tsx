@@ -4,7 +4,7 @@ import { CardEditActionButton } from '@/app/components/shared/card-edit-action-b
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
+import { type TranslateFn, useI18n, useTheme } from '@/app/hooks';
 
 type ResizeMenuState = {
   cardId: string;
@@ -161,7 +161,7 @@ export function DashboardEditActions({
       {resizeMenu ? (
         <div
           ref={menuRef}
-          className={`fixed z-[70] min-w-[260px] rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+          className={`fixed z-70 min-w-65 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
           style={{
             top: `${Math.max(16, resizeMenu.top)}px`,
             left: `${Math.max(16, resizeMenu.left)}px`,
@@ -198,7 +198,7 @@ export function DashboardEditActions({
               >
                 <div
                   className={`mr-3 flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border ${
-                    theme === 'light' ? 'bg-black/[0.03]' : 'bg-black/20'
+                    theme === 'light' ? 'bg-black/3' : 'bg-black/20'
                   }`}
                   style={{
                     borderColor:
@@ -314,9 +314,7 @@ function getDefaultSizeOptions(): SizeOption[] {
   ];
 }
 
-function getMediaSizeOptions(
-  t: ReturnType<typeof useI18n>['t']
-): Exclude<SizeOption, { value: 'extra-small' }>[] {
+function getMediaSizeOptions(t: TranslateFn): Exclude<SizeOption, { value: 'extra-small' }>[] {
   return [
     {
       value: 'small',

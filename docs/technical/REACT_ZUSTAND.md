@@ -77,6 +77,37 @@ const store = useHomeAssistant();
 - Do not duplicate persistence logic — use `createJSONStorage(() => localStorage)` inside
   the store's `persist` middleware, not raw `window.localStorage` access
 - Stores own their own localStorage keys; feature components do not call `storage.set` directly
+
+### Controller decomposition contract
+
+Feature controller hooks should remain orchestration-focused and delegate responsibility:
+
+- Keep entity/service synchronization in dedicated sync hooks (for example `use-*-entity-sync`,
+  `use-*-runtime-state`, `use-*-on-state-sync`)
+- Keep side-effectful domain actions in action hooks (`use-*-actions`, `use-*-toggle-action`)
+- Keep display-only computed fields in display hooks (`use-*-display`, `use-*-display-fields`)
+
+The controller should compose these slices and return view state, rather than accumulating large
+inline sync/action/display blocks.
+
+### Typed i18n callback contract
+
+Use shared translator function types exported by the i18n module for hook/component dependencies
+that accept `t` callbacks.
+
+- Prefer importing `TranslateFn` from `src/app/hooks` or `src/app/i18n`
+- Avoid redefining local callback signatures like `(key: string) => string`
+
+This keeps strict `TranslationKey` typing intact across features and prevents type mismatch when
+extracting helper hooks.
+
+### Store mutation boundary
+
+For import/restore/config-apply flows, mutate stores through explicit action methods (`apply...`,
+`replace...`) rather than calling external `store.setState(...)` from feature or utility modules.
+
+`setState` is allowed inside the store implementation itself when needed for store-internal sync
+mechanics, but external callers should use store actions.
   for store-owned domains
 
 ### Persistence pattern

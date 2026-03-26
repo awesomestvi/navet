@@ -64,6 +64,8 @@ Complete feature implementation guide:
 7. **Section-Based Navigation** - Organized into dedicated sections (Home, Security, Tasks, Locks, Lights, Media, Mock, Settings)
 8. **Shared Primitives First** - Cross-theme icon pills, nav/action pills, and card off-state surfaces should resolve through shared primitives before feature-level custom styling is added
 9. **One Climate Card Pattern** - Climate entities should use the HVAC card pattern; do not reintroduce a parallel legacy climate-card implementation
+10. **Composable Controller Layers** - Keep feature controllers as orchestration shells and extract sync/action/display responsibilities into dedicated helper hooks
+11. **Shared i18n Function Types** - Use exported i18n function types for translator dependencies across hooks/components instead of redefining local translator signatures
 
 ### Authentication System
 - **Login Page** - Secure authentication with Home Assistant URL and long-lived access token
@@ -160,8 +162,14 @@ When creating a new card component:
 /src/app/features/dashboard/            → Dashboard layout, routing, and card registry
 /src/app/features/settings/             → Settings page and section implementations
 /src/app/features/lighting/             → Light cards, presets, and feature-owned stores
+/src/app/features/lighting/components/light-card/use-light-runtime-state.ts → Light runtime sync orchestration
+/src/app/features/lighting/components/light-card/build-light-card-controller-state.ts → Light controller output shaping
 /src/app/features/climate/              → HVAC card, settings dialog, and climate-specific styles
+/src/app/features/climate/components/hvac-card/use-hvac-entity-sync.ts → HVAC live entity synchronization
 /src/app/features/auth/login-page.tsx   → Login interface
+/src/app/features/media/components/media-card/use-media-display-fields.ts → Media metadata display derivation
+/src/app/features/dashboard/hooks/use-dashboard-devices-loaded.ts → Dashboard connection-hydration sync
+/src/app/features/dashboard/hooks/use-dashboard-entity-visibility.ts → Dashboard entity visibility selectors
 /src/app/stores/auth-store.ts           → Authentication state (Zustand)
 /src/app/stores/config-store.ts         → HA connection config (Zustand)
 /src/app/stores/theme-store.ts          → Theme mode and primary color (Zustand)
@@ -203,4 +211,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 24, 2026
+**Last Updated:** March 26, 2026

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import type { useI18n } from '@/app/hooks';
+import type { TranslateFn } from '@/app/hooks';
 import type { CardType } from '../components/add-card-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { HOME_WIDGET_ROOM } from './use-custom-cards';
@@ -15,7 +15,7 @@ interface UseDashboardCardActionsParams {
   updateCard: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
   hideAutoEntity: (entityId: string) => void;
   showAutoEntity: (entityId: string) => void;
-  t: ReturnType<typeof useI18n>['t'];
+  t: TranslateFn;
   addCardTargetSectionId: string | null;
   homeLayoutController: {
     layout: {

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type { useI18n } from '@/app/hooks';
+import type { TranslateFn } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaGroupingParams {
@@ -10,7 +10,7 @@ interface UseMediaGroupingParams {
     | undefined;
   groupMembers: string[];
   runAction: (action: () => Promise<void>, fallbackMessage: string) => Promise<void>;
-  t: ReturnType<typeof useI18n>['t'];
+  t: TranslateFn;
 }
 
 export function useMediaGrouping({

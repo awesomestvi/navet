@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import type { useI18n } from '@/app/hooks';
+import type { TranslateFn } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaVolumeParams {
   entityId: string;
   initialVolume: number;
   initialMuted: boolean;
-  t: ReturnType<typeof useI18n>['t'];
+  t: TranslateFn;
 }
 
 export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: UseMediaVolumeParams) {

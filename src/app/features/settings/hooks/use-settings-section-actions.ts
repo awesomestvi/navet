@@ -1,13 +1,11 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import type { useI18n } from '@/app/hooks';
+import type { TranslateFn } from '@/app/hooks';
 import {
   downloadDashboardConfig,
   importDashboardConfigFromFile,
 } from '@/app/utils/dashboard-config';
 import { readFileAsDataUrl, validateImageFile } from '@/app/utils/image-upload';
-
-type TranslateFn = ReturnType<typeof useI18n>['t'];
 
 interface SettingsSectionActionDeps {
   t: TranslateFn;

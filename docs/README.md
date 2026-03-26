@@ -25,6 +25,7 @@ Complete documentation for the Navet smart home dashboard.
 - **[Layout Structure](../design-system/LAYOUT-STRUCTURE.md)** - Sidebar, header, grid, responsive layout
 - **[Features](../design-system/FEATURES.md)** - Auth, theme system, navigation, camera card, dashboard builder
 - **[Moodboard](../design-system/MOODBOARD.md)** - Design inspiration and visual direction
+- **[React + Zustand Guide](technical/REACT_ZUSTAND.md)** - Shared state rules, persistence contracts, and controller/store integration patterns
 
 ### Branding
 - **[Branding Guide](branding/BRANDING.md)** - Brand identity, voice, logo usage guidelines
@@ -55,6 +56,8 @@ Complete documentation for the Navet smart home dashboard.
 **Check the license** → [License](../LICENSE.md), [Terms of Use](TERMS_OF_USE.md), [Trademark Policy](branding/TRADEMARK_POLICY.md)
 
 **Learn about project history** → [Change History](archive/CHANGES.md)
+
+**Review state and controller contracts** → [React + Zustand Guide](technical/REACT_ZUSTAND.md)
 
 ---
 

@@ -3,6 +3,7 @@
  * Central export point for all custom hooks
  */
 
+export type { TranslateFn } from '../i18n';
 export { useI18n } from '../i18n';
 export type { Section } from '../navigation/sections';
 export { isSection, NAVIGATION_SECTIONS } from '../navigation/sections';

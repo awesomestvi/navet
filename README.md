@@ -94,6 +94,9 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Shared Card State Styling** - Off/inactive card treatment for light, HVAC, switch, and media cards now resolves through one shared card-state surface token helper
 - **Artwork-Led Media Layouts** - Small, medium, medium-vertical, and large media cards use artwork-driven layouts with shared transport controls, speaker/room headers, and empty-state fallbacks
 - **Composable Controller Hooks** - Dashboard, lighting, media, climate, and settings controllers are split into smaller focused hooks (sync, actions, display, and interaction) to keep feature behavior easier to extend and validate
+- **Controller Runtime Slices** - Entity card controllers now separate runtime synchronization from presentational shaping; for example light-card runtime sync, interaction wiring, and final controller-state building live in distinct helper modules
+- **Feature-Level Action Hooks** - Dashboard, media, and settings action handlers are intentionally extracted to feature-local hooks so business actions can evolve without inflating controller hooks
+- **Typed i18n Contracts** - Translation callback typing is standardized through exported i18n types to avoid repeated ad-hoc translator signatures and cross-feature type drift
 - **Single Climate Card Path** - The legacy `ClimateCard` implementation has been removed; climate entities now use `HVACCard` only
 - **Consistent Persistence** - Storage keys plus dashboard/light preference persistence are standardized behind shared helpers and feature stores
 
@@ -368,6 +371,15 @@ For technical documentation and developer guides, see [`/docs/README.md`](docs/R
 - Update documentation as needed
 - Ensure accessibility standards
 - Run `pnpm setup:hooks` once so pre-commit checks enforce Biome, a clean TypeScript check with baseline sync, and docs updates for user-facing changes
+
+### Refactor Conventions
+
+When extending feature behavior, keep the current decomposition model:
+
+- Keep controller hooks focused on orchestration; move side-effect synchronization into `use-*-sync` hooks and action/event handlers into `use-*-actions` hooks
+- Prefer feature-local helper modules (for example display field derivation, visibility selectors, and interaction wiring) over adding large inline blocks inside controllers
+- Reuse exported i18n callback types from the i18n module for translator parameters instead of redefining local `(key: string) => string` signatures
+- For store import/apply flows, call store actions rather than invoking direct external `setState` updates
 
 ## 🐛 Bug Reports & Feature Requests
 

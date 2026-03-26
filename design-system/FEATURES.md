@@ -207,6 +207,32 @@ Card sizes in the media section are stored under `STORAGE_KEYS.mediaSectionCardS
 
 A thin wrapper exposing an edit-mode toggle to device sections. The Lights, Media, Security, and Locks sections are each wrapped in `SectionCustomizeShell`, which shows an edit-mode button and passes `isEditMode` into the section's `EntityGrid`. The section-level shell replaces the previous pattern of each section managing its own edit toggle.
 
+### Controller Composition Pattern
+
+Across dashboard, lighting, media, climate, and settings features, card/section controllers now follow a composition-first pattern:
+
+- **Controller hook**: owns orchestration only (wiring dependencies, returning final view state)
+- **Sync hooks**: handle entity or service synchronization (`use-*-entity-sync`, `use-*-runtime-state`, `use-*-on-state-sync`)
+- **Action hooks**: encapsulate business actions and side effects (`use-*-actions`, `use-*-toggle-action`)
+- **Display derivation hooks**: compute presentational values and labels (`use-*-display-fields`, `use-*-display`)
+
+This reduces controller churn, keeps hook responsibilities explicit, and makes feature behavior easier to test in isolation.
+
+### Shared i18n Function Typing
+
+Translator function typing is now standardized via exported i18n types rather than repeated local callback signatures.
+
+- Shared translator types are exported from `src/app/i18n/i18n-provider.tsx` and re-exported through `src/app/i18n/index.ts` and `src/app/hooks/index.ts`.
+- Feature hooks requiring translation callbacks consume the shared type directly.
+- This prevents drift between strict `TranslationKey`-based translators and looser `string` callback declarations.
+
+### Store Mutation Contract
+
+Dashboard/config import and feature-level restore flows rely on explicit store action methods rather than direct external `store.setState(...)` mutation.
+
+- Import/apply flows should call domain actions (`apply...`, `replace...`) exposed by each store.
+- Direct external `setState` usage should remain internal to the store implementation unless an intentional store-internal sync mechanism requires it.
+
 ---
 
 ## Navigation System

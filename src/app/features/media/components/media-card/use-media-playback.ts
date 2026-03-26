@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { useI18n } from '@/app/hooks';
+import type { TranslateFn } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaPlaybackParams {
   entityId: string;
   isPlaying: boolean;
-  t: ReturnType<typeof useI18n>['t'];
+  t: TranslateFn;
 }
 
 export function useMediaPlayback({ entityId, isPlaying, t }: UseMediaPlaybackParams) {

@@ -8,13 +8,14 @@ import {
 } from './config';
 import { MESSAGES, type TranslationKey } from './messages';
 
-type TranslationValues = Record<string, string | number>;
+export type TranslationValues = Record<string, string | number>;
+export type TranslateFn = (key: TranslationKey, values?: TranslationValues) => string;
 
 type I18nContextValue = {
   language: AppLanguage;
   locale: string;
   languageOptions: typeof LANGUAGE_OPTIONS;
-  t: (key: TranslationKey, values?: TranslationValues) => string;
+  t: TranslateFn;
   formatDate: (value: Date, options?: Intl.DateTimeFormatOptions) => string;
   formatTime: (
     value: Date,

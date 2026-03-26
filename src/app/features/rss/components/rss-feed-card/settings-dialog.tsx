@@ -7,7 +7,7 @@ import {
   DialogSectionRow,
 } from '@/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n } from '@/app/hooks';
+import { type TranslateFn, useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import type { RSSProvider } from './types';
 
@@ -247,7 +247,7 @@ function RSSProviderGroup({
   onRemoveProvider?: (providerId: string) => void;
   primaryColorValue: string;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
-  t: ReturnType<typeof useI18n>['t'];
+  t: TranslateFn;
 }) {
   return (
     <div className="space-y-2">
