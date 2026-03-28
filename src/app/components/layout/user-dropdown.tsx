@@ -1,10 +1,11 @@
-import { Activity, LogOut } from 'lucide-react';
+import { Activity, LogOut, RefreshCw } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useClickOutside, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { refreshPwaApp } from '@/app/pwa/pwa-update-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 interface UserDropdownProps {
@@ -28,6 +29,11 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
     }
   };
 
+  const handleRefreshApp = () => {
+    setIsOpen(false);
+    void refreshPwaApp();
+  };
+
   // Theme colors
   const textPrimary = surface.textPrimary;
   const textMuted = surface.textMuted;
@@ -38,6 +44,7 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
     theme === 'glass' ? 'backdrop-blur-xl' : ''
   }`;
   const statusCardClassName = `flex items-center gap-3 rounded-xl border px-3 py-3 ${surface.border} ${itemBg}`;
+  const refreshButtonClassName = `inline-flex w-full items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${surface.border} ${surface.hoverBg} ${textPrimary}`;
   const logoutButtonClassName =
     'inline-flex w-full items-center gap-2 rounded-full bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/15';
 
@@ -140,8 +147,12 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
             </div>
           </div>
 
-          {/* Logout Button */}
-          <div className={`p-2 border-t ${divider}`}>
+          {/* App Actions */}
+          <div className={`space-y-2 p-2 border-t ${divider}`}>
+            <button type="button" onClick={handleRefreshApp} className={refreshButtonClassName}>
+              <RefreshCw className="w-4 h-4" />
+              <span className="text-sm font-medium">{t('pwa.refreshApp')}</span>
+            </button>
             <button type="button" onClick={handleLogout} className={logoutButtonClassName}>
               <LogOut className="w-4 h-4" />
               <span className="text-sm font-medium">{t('common.logout')}</span>

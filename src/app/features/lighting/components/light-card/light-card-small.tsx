@@ -85,7 +85,7 @@ export const LightCardSmall = memo(function LightCardSmall({
       />
 
       <div
-        className={`flex-1 flex flex-col ${isExtraSmall ? 'justify-start gap-0.5 -mt-0.5' : 'justify-end gap-4'}`}
+        className={`flex-1 flex flex-col ${isExtraSmall ? 'justify-between gap-0.5' : 'justify-end gap-4'}`}
       >
         {isExtraSmall ? (
           <div className="flex min-h-6 items-center gap-1.5">

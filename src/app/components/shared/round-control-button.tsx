@@ -48,7 +48,11 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
         className={`${controlSizes.button} flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${buttonClasses} ${className}`}
         {...props}
       >
-        <span className={`${iconClasses} ${iconClassName}`}>{children}</span>
+        <span
+          className={`flex h-full w-full items-center justify-center leading-none ${iconClasses} ${iconClassName}`}
+        >
+          {children}
+        </span>
       </button>
     );
   }

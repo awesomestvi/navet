@@ -1,4 +1,4 @@
-import { memo, useId } from 'react';
+import { memo, useCallback, useId, useState } from 'react';
 import { useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
@@ -30,6 +30,7 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const cW = VB_W - PAD.left - PAD.right;
   const cH = VB_H - PAD.top - PAD.bottom;
   const baseline = PAD.top + cH;
@@ -38,6 +39,18 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   const yAt = (v: number) => PAD.top + (1 - Math.min(1, v / yMax)) * cH;
 
   const pts = data.map((d, i) => ({ x: xAt(i), y: yAt(d.y) }));
+  const activePoint = activeIndex === null ? null : data[activeIndex];
+  const activeCoords = activeIndex === null ? null : pts[activeIndex];
+  const tooltipLeftPercent =
+    activeCoords === null ? null : Math.max(14, Math.min(86, (activeCoords.x / VB_W) * 100));
+  const updateActiveIndex = useCallback(
+    (clientX: number, rect: DOMRect) => {
+      const relativeX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const nextIndex = Math.round((relativeX / Math.max(rect.width, 1)) * (data.length - 1));
+      setActiveIndex(Math.max(0, Math.min(data.length - 1, nextIndex)));
+    },
+    [data.length]
+  );
 
   // Step-style filled area
   let area = `M ${pts[0].x} ${baseline} L ${pts[0].x} ${pts[0].y}`;
@@ -53,54 +66,110 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   }
 
   return (
-    <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="h-28 w-full" role="img" aria-label="Area chart">
-      <defs>
-        <linearGradient id={`${id}-ag`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.18" />
-          <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
+    <div className="relative">
+      {activePoint && tooltipLeftPercent !== null ? (
+        <div
+          className="pointer-events-none absolute top-0 z-10 w-max max-w-[180px] -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left text-[11px] text-white shadow-2xl backdrop-blur-md"
+          style={{ left: `${tooltipLeftPercent}%` }}
+        >
+          <div className="text-white/85">{activePoint.x}</div>
+          <div className="mt-1 text-white/75">
+            {activePoint.y}
+            {yUnit}
+          </div>
+        </div>
+      ) : null}
 
-      {yTicks.map((v) => {
-        const y = yAt(v);
-        return (
-          <g key={v}>
+      <svg
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        className="h-28 w-full"
+        role="img"
+        aria-label="Area chart"
+        onMouseLeave={() => setActiveIndex(null)}
+        onMouseMove={(event) => {
+          updateActiveIndex(event.clientX, event.currentTarget.getBoundingClientRect());
+        }}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          updateActiveIndex(touch.clientX, event.currentTarget.getBoundingClientRect());
+        }}
+        onTouchMove={(event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          updateActiveIndex(touch.clientX, event.currentTarget.getBoundingClientRect());
+        }}
+      >
+        <defs>
+          <linearGradient id={`${id}-ag`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.26" />
+            <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.04" />
+          </linearGradient>
+        </defs>
+
+        {yTicks.map((v) => {
+          const y = yAt(v);
+          return (
+            <g key={v}>
+              <line
+                x1={PAD.left}
+                y1={y}
+                x2={VB_W - PAD.right}
+                y2={y}
+                stroke={v === 0 ? tokens.gridStrong : tokens.grid}
+                strokeWidth="1"
+              />
+              <text
+                x={PAD.left - 5}
+                y={y + 3.5}
+                textAnchor="end"
+                fontSize="9"
+                fill={tokens.labelSubtle}
+              >
+                {v}
+                {yUnit}
+              </text>
+            </g>
+          );
+        })}
+
+        <path d={area} fill={`url(#${id}-ag)`} />
+        <path
+          d={line}
+          fill="none"
+          stroke={tokens.accent}
+          strokeWidth="0.6"
+          strokeLinejoin="miter"
+        />
+        {activeCoords ? (
+          <>
             <line
-              x1={PAD.left}
-              y1={y}
-              x2={VB_W - PAD.right}
-              y2={y}
-              stroke={v === 0 ? tokens.gridStrong : tokens.grid}
+              x1={activeCoords.x}
+              y1={PAD.top}
+              x2={activeCoords.x}
+              y2={baseline}
+              stroke={tokens.accent}
+              strokeOpacity="0.45"
+              strokeDasharray="2 2"
               strokeWidth="1"
             />
-            <text
-              x={PAD.left - 5}
-              y={y + 3.5}
-              textAnchor="end"
-              fontSize="9"
-              fill={tokens.labelSubtle}
-            >
-              {v}
-              {yUnit}
-            </text>
-          </g>
-        );
-      })}
-
-      <path d={area} fill={`url(#${id}-ag)`} />
-      <path d={line} fill="none" stroke={tokens.accent} strokeWidth="1.5" strokeLinejoin="miter" />
-      {data.map((d, i) => (
-        <text
-          key={`${d.x}-${i}`}
-          x={xAt(i)}
-          y={VB_H - 7}
-          textAnchor="middle"
-          fontSize="9"
-          fill={tokens.labelMuted}
-        >
-          {d.x}
-        </text>
-      ))}
-    </svg>
+            <circle cx={activeCoords.x} cy={activeCoords.y} r="3.5" fill={tokens.accentGlow} />
+            <circle cx={activeCoords.x} cy={activeCoords.y} r="2" fill={tokens.accent} />
+          </>
+        ) : null}
+        {data.map((d, i) => (
+          <text
+            key={`${d.x}-${i}`}
+            x={xAt(i)}
+            y={VB_H - 7}
+            textAnchor="middle"
+            fontSize="9"
+            fill={tokens.labelMuted}
+          >
+            {d.x}
+          </text>
+        ))}
+      </svg>
+    </div>
   );
 });

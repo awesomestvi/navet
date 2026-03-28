@@ -78,6 +78,11 @@ class HomeAssistantService {
   } = {};
   private registryLoadInProgress = false;
   private pendingRegistryLoad = false;
+  private activeConfiguration: HomeAssistantConfiguration | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempt = 0;
+  private manuallyDisconnected = false;
+  private connecting = false;
 
   /**
    * Authenticate and establish connection to Home Assistant
@@ -87,9 +92,24 @@ class HomeAssistantService {
       throw new Error('Home Assistant URL is required');
     }
 
+    this.activeConfiguration = configuration;
+    this.manuallyDisconnected = false;
+    this.clearReconnectTimer();
+
+    if (this.connecting) {
+      return;
+    }
+
     let auth: Auth | undefined;
 
     try {
+      this.connecting = true;
+
+      if (this.connection) {
+        this.connection.close();
+        this.connection = null;
+      }
+
       // Long-lived access token
       if (configuration?.token) {
         auth = createLongLivedTokenAuth(configuration.hassUrl, configuration.token);
@@ -102,6 +122,7 @@ class HomeAssistantService {
       // Create connection
       this.connection = await createConnection({ auth });
       this.connected = true;
+      this.reconnectAttempt = 0;
       this.user = await getUser(this.connection);
 
       await this.loadRegistries();
@@ -120,6 +141,8 @@ class HomeAssistantService {
 
       // Connection events
       this.connection.addEventListener('ready', () => {
+        this.clearReconnectTimer();
+        this.reconnectAttempt = 0;
         this.connected = true;
         this.notifyListeners('connection', { connected: true, connection: this.connection });
       });
@@ -127,11 +150,13 @@ class HomeAssistantService {
       this.connection.addEventListener('disconnected', () => {
         this.connected = false;
         this.notifyListeners('connection', { connected: false, connection: this.connection });
+        this.scheduleReconnect();
       });
 
       this.connection.addEventListener('reconnect-error', () => {
         this.connected = false;
         this.notifyListeners('connection', { connected: false, connection: this.connection });
+        this.scheduleReconnect();
       });
 
       // Clear auth query string if present
@@ -140,7 +165,31 @@ class HomeAssistantService {
       }
     } catch (error) {
       this.handleError(error);
+    } finally {
+      this.connecting = false;
     }
+  }
+
+  private clearReconnectTimer() {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  private scheduleReconnect() {
+    if (this.manuallyDisconnected || !this.activeConfiguration || this.reconnectTimer !== null) {
+      return;
+    }
+
+    const delayMs = Math.min(30000, 2000 * 2 ** Math.min(this.reconnectAttempt, 4));
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.reconnectAttempt += 1;
+      void this.authenticate(this.activeConfiguration as HomeAssistantConfiguration).catch(() => {
+        this.scheduleReconnect();
+      });
+    }, delayMs);
   }
 
   private async loadRegistries(): Promise<void> {
@@ -453,6 +502,10 @@ class HomeAssistantService {
    * Close the connection
    */
   disconnect(): void {
+    this.manuallyDisconnected = true;
+    this.activeConfiguration = null;
+    this.clearReconnectTimer();
+
     if (this.connection) {
       this.connection.close();
       this.connection = null;

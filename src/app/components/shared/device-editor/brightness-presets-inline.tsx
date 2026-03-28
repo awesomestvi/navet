@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { MoreHorizontal } from 'lucide-react';
 import { type MouseEvent, memo, useCallback } from 'react';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getCardActionControlSizes } from '../card-action-control-sizes';
 import type { CardSize } from '../card-size-selector';
@@ -53,8 +54,8 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   const visiblePresets = maxVisible !== undefined ? presets.slice(0, maxVisible) : presets;
   const overflowPresets = maxVisible !== undefined ? presets.slice(maxVisible) : [];
   const activeColor = getBrightnessPresetAccentColor(primaryColor);
-  const selectedClasses = `${roundControl.selectedText} ring-2 scale-105`;
-  const disabledSelectedClasses = 'cursor-not-allowed text-white ring-2 scale-105 opacity-70';
+  const selectedClasses = roundControl.selectedText;
+  const disabledSelectedClasses = 'cursor-not-allowed text-white opacity-70';
   const unselectedClasses =
     buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
   const disabledUnselectedClasses =
@@ -144,9 +145,10 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
 }: BrightnessOverflowMenuProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const surface = getThemeSurfaceTokens(theme);
   const activeColor = getBrightnessPresetAccentColor(primaryColor);
   const roundControl = getRoundControlStyles(theme);
-  const selectedClasses = `${roundControl.selectedText} ring-2 scale-105`;
+  const selectedClasses = roundControl.selectedText;
   const unselectedClasses =
     buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
   const disabledTriggerClasses =
@@ -182,7 +184,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
         <Popover.Content
           sideOffset={10}
           align="start"
-          className="z-50 rounded-2xl border border-white/10 bg-[#1c1c1e]/95 p-3 backdrop-blur-xl shadow-2xl animate-in fade-in zoom-in duration-200"
+          className={`z-50 rounded-2xl border p-3 backdrop-blur-xl shadow-2xl animate-in fade-in zoom-in duration-200 ${surface.panel} ${surface.border}`}
           onClick={(e) => e.stopPropagation()}
         >
           <fieldset
@@ -218,7 +220,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
               );
             })}
           </fieldset>
-          <Popover.Arrow className="fill-[#1c1c1e]/95" />
+          <Popover.Arrow className={theme === 'light' ? 'fill-white' : 'fill-zinc-900'} />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

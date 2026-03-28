@@ -93,6 +93,17 @@ export async function applyPwaUpdate() {
   await updateServiceWorker(true);
 }
 
+export async function refreshPwaApp() {
+  if (state.updateAvailable && updateServiceWorker) {
+    await applyPwaUpdate();
+    return;
+  }
+
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
+}
+
 export function dismissPwaUpdate() {
   setState({ updateAvailable: false });
 }

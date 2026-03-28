@@ -38,13 +38,8 @@ function AppContent() {
   );
 
   const syncRootScaleVars = useCallback(() => {
-    const shouldScaleRootFont =
-      window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
-      window.matchMedia('(max-width: 1024px)').matches;
-    const rootFontSize = shouldScaleRootFont ? 16 * pageZoomScale : 16;
-
-    document.documentElement.style.setProperty('--font-size', `${rootFontSize}px`);
-  }, [pageZoomScale]);
+    document.documentElement.style.setProperty('--font-size', '16px');
+  }, []);
 
   const syncZoomEnvironment = useCallback(() => {
     syncRootScaleVars();

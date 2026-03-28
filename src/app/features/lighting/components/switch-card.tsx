@@ -1,4 +1,4 @@
-import { Check, Power, Settings2 } from 'lucide-react';
+import { Check, Play, Power, Settings2 } from 'lucide-react';
 import { memo } from 'react';
 import { isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
@@ -34,6 +34,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   ) : null;
   const lightOverlay =
     controller.theme === 'light' ? <div className="absolute inset-0 bg-white/58" /> : null;
+  const HeaderIcon = controller.isScript ? Play : Power;
 
   const controlsDialog =
     controller.hasControlsDialog && controller.isDialogOpen ? (
@@ -150,7 +151,6 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           }`}
           metadata={controller.entityType}
           title={props.name}
-          detail={primaryMetric ? controller.formatMetricValue(primaryMetric) : null}
           metadataClassName={stateSurface.mutedTextClassName}
           titleClassName={stateSurface.primaryTextClassName}
           detailClassName={`w-full ${stateSurface.mutedTextClassName}`}
@@ -159,7 +159,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           detailStyle={{ color: tinyTextTokens.subtitleColor }}
           watermark={
             <TinyCardWatermark
-              IconComponent={Power}
+              IconComponent={HeaderIcon}
               color={tinyTextTokens.titleColor}
               className={controller.isOn ? 'opacity-18' : 'opacity-12'}
             />
@@ -220,7 +220,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               marginBottomClassName="mb-0"
               leading={
                 <EntityCardHeaderIcon
-                  IconComponent={Power}
+                  IconComponent={HeaderIcon}
                   isActive={controller.isOn}
                   size="extra-small"
                   tone={controller.isOn ? 'primary' : 'neutral'}
@@ -269,7 +269,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             className={`${controller.isExtraSmall ? 'mb-1.5' : 'mb-2'}`}
             leading={
               <EntityCardHeaderIcon
-                IconComponent={Power}
+                IconComponent={HeaderIcon}
                 isActive={controller.isOn}
                 size={controller.isExtraSmall ? 'extra-small' : 'small'}
                 tone={controller.isOn ? 'primary' : 'neutral'}

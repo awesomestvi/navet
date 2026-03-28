@@ -626,6 +626,7 @@ export const esMessages = {
   'pwa.updateAvailableTitle': 'Actualización de Navet disponible',
   'pwa.updateAvailableDescription': 'Se ha instalado una nueva versión en segundo plano.',
   'pwa.reload': 'Recargar',
+  'pwa.refreshApp': 'Actualizar la app',
   'pwa.later': 'Más tarde',
   'entityRoomSelector.movedTo': 'Tarjeta movida a {room}',
   'entityRoomSelector.updateFailed': 'No se pudo actualizar la habitación',

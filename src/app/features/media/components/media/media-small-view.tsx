@@ -212,12 +212,12 @@ export function MediaSmallView({
           <div className="min-w-0">
             <MediaMarqueeText
               text={title}
-              className={`text-sm font-medium ${iconTone}`}
+              className={`text-xs font-semibold ${iconTone}`}
               style={{ color: textTokens.titleColor }}
             />
             <MediaMarqueeText
               text={artist}
-              className={`mt-0.5 text-[13px] ${subtitleTone}`}
+              className={`mt-0.5 text-[10px] ${subtitleTone}`}
               threshold={24}
               style={{ color: textTokens.subtitleColor }}
             />

@@ -1,4 +1,4 @@
-import { memo, useId, useState } from 'react';
+import { memo, useCallback, useId, useState } from 'react';
 import { useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
@@ -52,6 +52,14 @@ export const EnergySparkline = memo(function EnergySparkline({
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const updateHoverIndex = useCallback(
+    (clientX: number, rect: DOMRect) => {
+      const relativeX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const nextIndex = Math.round((relativeX / Math.max(rect.width, 1)) * (data.length - 1));
+      setHoverIndex(Math.max(0, Math.min(data.length - 1, nextIndex)));
+    },
+    [data.length]
+  );
 
   if (data.length < 2) return null;
 
@@ -118,16 +126,23 @@ export const EnergySparkline = memo(function EnergySparkline({
         preserveAspectRatio="none"
         onMouseLeave={() => setHoverIndex(null)}
         onMouseMove={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect();
-          const relativeX = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
-          const nextIndex = Math.round((relativeX / Math.max(rect.width, 1)) * (data.length - 1));
-          setHoverIndex(Math.max(0, Math.min(data.length - 1, nextIndex)));
+          updateHoverIndex(event.clientX, event.currentTarget.getBoundingClientRect());
+        }}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          updateHoverIndex(touch.clientX, event.currentTarget.getBoundingClientRect());
+        }}
+        onTouchMove={(event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          updateHoverIndex(touch.clientX, event.currentTarget.getBoundingClientRect());
         }}
       >
         <defs>
           <linearGradient id={`${id}-sg`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.01" />
+            <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.03" />
           </linearGradient>
         </defs>
 
@@ -145,7 +160,7 @@ export const EnergySparkline = memo(function EnergySparkline({
           d={line}
           fill="none"
           stroke={tokens.accent}
-          strokeWidth="1.5"
+          strokeWidth="0.6"
           strokeLinejoin="round"
           strokeLinecap="round"
         />

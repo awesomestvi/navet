@@ -2,7 +2,8 @@ import {
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -50,9 +51,15 @@ export const BrightnessPresetEditor = memo(function BrightnessPresetEditor({
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
   const { t } = useI18n();
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 6,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 10,
       },
     }),
     useSensor(KeyboardSensor, {

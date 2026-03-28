@@ -68,6 +68,7 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
   const { theme } = useTheme();
   const classes = SIZE_CLASSES[size];
   const safeValue = isValidHexColor(value) ? value : '#f97316';
+  const hasFullColorSurface = !disabled && (mode === 'picker' || selected);
   const background =
     mode === 'swatch'
       ? disabled
@@ -80,20 +81,12 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
           ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
           : 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.14) 100%)'
         : `linear-gradient(135deg, ${safeValue} 0%, ${safeValue}cc 48%, rgba(255, 255, 255, 0.92) 100%)`;
-  const borderColor = selected
-    ? (ringColor ?? safeValue)
+  const borderColor = hasFullColorSurface
+    ? 'transparent'
     : theme === 'light'
       ? 'rgba(148, 163, 184, 0.36)'
       : 'rgba(255, 255, 255, 0.18)';
-  const selectionShadow = selected
-    ? `0 0 0 2px ${
-        theme === 'light'
-          ? '#ffffff'
-          : theme === 'contrast'
-            ? 'rgba(17,24,39,0.96)'
-            : 'rgba(15,23,42,0.82)'
-      }, 0 0 0 4px ${ringColor ?? safeValue}66`
-    : undefined;
+  const selectionShadow = selected ? `0 10px 24px -18px ${ringColor ?? safeValue}cc` : undefined;
   const coreBackground = disabled
     ? theme === 'light'
       ? 'rgba(243,244,246,0.9)'
@@ -104,7 +97,9 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
       ? '#9ca3af'
       : 'rgba(255,255,255,0.18)'
     : 'rgba(255,255,255,0.8)';
-  const sharedClassName = `${classes.shell} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border transition-transform duration-200 ${
+  const sharedClassName = `${classes.shell} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ${
+    hasFullColorSurface ? 'border-0' : 'border'
+  } transition-transform duration-200 ${
     disabled ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
   } ${className}`;
   const sharedStyle = {

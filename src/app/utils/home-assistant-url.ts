@@ -29,6 +29,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
     return resourceUrl;
   }
 
+  if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+    return resourceUrl;
+  }
+
   if (resourceUrl.startsWith('/')) {
     return `${HOME_ASSISTANT_PROXY_PATH}${resourceUrl}`;
   }
@@ -44,6 +48,16 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
   try {
     const resolvedResourceUrl = new URL(resourceUrl);
     const resolvedHassUrl = new URL(hassUrl);
+    const currentOrigin =
+      typeof window !== 'undefined' ? window.location.origin : resolvedHassUrl.origin;
+
+    if (resolvedResourceUrl.origin === currentOrigin) {
+      if (resolvedResourceUrl.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+        return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
+      }
+
+      return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
+    }
 
     if (resolvedResourceUrl.origin !== resolvedHassUrl.origin) {
       return resourceUrl;

@@ -37,6 +37,7 @@ export function useSwitchCardController({
   const resolvedEntityType = entityType || t('lighting.type.switch');
   const resolvedServiceDomain = serviceDomain || id.split('.')[0];
   const resolvedServiceAction = serviceAction || 'binary';
+  const isScript = resolvedServiceDomain === 'script';
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
 
@@ -71,14 +72,8 @@ export function useSwitchCardController({
         : 'text-gray-100';
   const valueColor = surface.textPrimary;
   const labelColor = surface.textSecondary;
-  const settingsButtonClass =
-    theme === 'light'
-      ? 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-      : 'bg-white/10 hover:bg-white/20 text-white';
-  const dialogSurface =
-    theme === 'light'
-      ? 'bg-white/95 border-gray-200/80 text-gray-900'
-      : 'bg-gray-950/95 border-white/10 text-white';
+  const settingsButtonClass = `${surface.subtleBg} ${surface.hoverBg} ${surface.textPrimary}`;
+  const dialogSurface = `${surface.panel} ${surface.border} ${surface.textPrimary}`;
   const accentColor = getThemeColorValue(primaryColor);
 
   const handleToggle = useSwitchToggleAction({
@@ -129,6 +124,7 @@ export function useSwitchCardController({
     hasMetrics: metricState.hasMetrics,
     isDialogOpen,
     isOn,
+    isScript,
     isTiny,
     labelColor,
     metricLimit: metricState.metricLimit,

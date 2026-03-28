@@ -1,4 +1,4 @@
-import { DoorClosed, DoorOpen, Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 import {
   type CardSize,
@@ -48,6 +48,18 @@ export const LockCard = memo(function LockCard({
   const isExtraSmall = isExtraSmallCardSize(size);
 
   const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
+  const statusTextClassName =
+    theme === 'light'
+      ? isLocked
+        ? 'text-green-700'
+        : 'text-red-700'
+      : theme === 'glass'
+        ? isLocked
+          ? 'text-green-100'
+          : 'text-red-100'
+        : isLocked
+          ? 'text-green-300'
+          : 'text-red-300';
   const tinyTextTokens = getCardReadableTextTokens({
     theme,
     tone: isLocked ? 'primary' : 'red',
@@ -63,31 +75,19 @@ export const LockCard = memo(function LockCard({
         detail={isLocked ? t('security.locked') : t('security.unlocked')}
         metadataClassName="text-white/70"
         titleClassName="text-white"
-        detailClassName={`${
-          isLocked
-            ? theme === 'light'
-              ? 'text-green-700'
-              : theme === 'glass'
-                ? 'text-green-100'
-                : 'text-green-300'
-            : theme === 'light'
-              ? 'text-red-700'
-              : theme === 'glass'
-                ? 'text-red-100'
-                : 'text-red-300'
-        }`}
+        detailClassName={statusTextClassName}
         metadataStyle={{ color: tinyTextTokens.subtitleColor }}
         titleStyle={{ color: tinyTextTokens.titleColor }}
         watermark={
           isLocked ? (
             <TinyCardWatermark
-              IconComponent={DoorClosed}
+              IconComponent={Lock}
               color={tinyTextTokens.titleColor}
               className="opacity-15"
             />
           ) : (
             <TinyCardWatermark
-              IconComponent={DoorOpen}
+              IconComponent={Unlock}
               color={tinyTextTokens.titleColor}
               className="opacity-15"
             />
@@ -131,25 +131,13 @@ export const LockCard = memo(function LockCard({
           align="center"
           tone={isLocked ? 'primary' : 'red'}
           titleClassName="text-white"
-          subtitleClassName={`${
-            isLocked
-              ? theme === 'light'
-                ? 'text-green-700'
-                : theme === 'glass'
-                  ? 'text-green-100'
-                  : 'text-green-300'
-              : theme === 'light'
-                ? 'text-red-700'
-                : theme === 'glass'
-                  ? 'text-red-100'
-                  : 'text-red-300'
-          }`}
+          subtitleClassName={statusTextClassName}
           className="h-full"
           contentClassName="justify-center"
           marginBottomClassName="mb-0"
           leading={
             <EntityCardHeaderIcon
-              IconComponent={isLocked ? DoorClosed : DoorOpen}
+              IconComponent={isLocked ? Lock : Unlock}
               isActive={isLocked}
               size="small"
               tone={isLocked ? 'primary' : 'red'}
@@ -201,7 +189,7 @@ export const LockCard = memo(function LockCard({
           tone={isLocked ? 'primary' : 'red'}
           leading={
             <EntityCardHeaderIcon
-              IconComponent={isLocked ? DoorClosed : DoorOpen}
+              IconComponent={isLocked ? Lock : Unlock}
               isActive={isLocked}
               size={size}
               tone={isLocked ? 'primary' : 'red'}
@@ -230,19 +218,7 @@ export const LockCard = memo(function LockCard({
 
           <div className={`text-center ${isExtraSmall ? 'mt-2' : 'mt-3'}`}>
             <div
-              className={`${isExtraSmall ? 'text-[11px]' : 'text-xs'} ${
-                isLocked
-                  ? theme === 'light'
-                    ? 'text-green-700'
-                    : theme === 'glass'
-                      ? 'text-green-200'
-                      : 'text-green-400'
-                  : theme === 'light'
-                    ? 'text-red-700'
-                    : theme === 'glass'
-                      ? 'text-red-200'
-                      : 'text-red-400'
-              } transition-colors duration-500`}
+              className={`${isExtraSmall ? 'text-[11px]' : 'text-xs'} ${statusTextClassName} transition-colors duration-500`}
             >
               {isLocked ? t('security.locked') : t('security.unlocked')}
             </div>

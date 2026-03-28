@@ -628,6 +628,7 @@ export const frMessages = {
   'pwa.updateAvailableTitle': 'Mise à jour Navet disponible',
   'pwa.updateAvailableDescription': 'Une nouvelle version a été installée en arrière-plan.',
   'pwa.reload': 'Recharger',
+  'pwa.refreshApp': "Actualiser l'application",
   'pwa.later': 'Plus tard',
   'entityRoomSelector.movedTo': 'Carte deplacee vers {room}',
   'entityRoomSelector.updateFailed': 'Impossible de mettre à jour la pièce',

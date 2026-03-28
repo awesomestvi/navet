@@ -345,6 +345,15 @@ function getPortraitLaneCount(sectionGridCols: number) {
   return 2;
 }
 
+function getCardGridTargetWidth(renderedGridCols: number, gridGapPx: number) {
+  const microCardMinWidth = Math.max(80, Math.round((MIN_HOME_CARD_TRACK_WIDTH - gridGapPx) / 2));
+  return {
+    microCardMinWidth,
+    targetGridWidth:
+      renderedGridCols * microCardMinWidth + Math.max(0, renderedGridCols - 1) * gridGapPx,
+  };
+}
+
 function getHomeEffectiveCols(cols: number) {
   const { width: viewportWidth, height: viewportHeight } = getVisibleViewportSize();
   const logicalViewportWidth = getLogicalViewportWidth();
@@ -1275,15 +1284,25 @@ const CardGrid = memo(function CardGrid({
 }: CardGridProps) {
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
-  const renderedGridCols = logicalGridCols * 2;
   const gridGapPx = getCardGridGapPx(breakpointCols);
-  const microCardMinWidth = Math.max(80, Math.round((MIN_HOME_CARD_TRACK_WIDTH - gridGapPx) / 2));
-  const targetGridWidth =
-    renderedGridCols * microCardMinWidth + Math.max(0, renderedGridCols - 1) * gridGapPx;
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [outerWidth, setOuterWidth] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
+  const resolvedCardSizes = cardIds.map((cardId) => {
+    const entry = allCards.get(cardId);
+    const storedSize = cardSizes[cardId] ?? entry?.size ?? 'small';
+    return !showHero && storedSize === 'hero' ? 'large' : storedSize;
+  });
+  const hasOnlyTinyCards =
+    resolvedCardSizes.length > 0 && resolvedCardSizes.every((size) => size === 'tiny');
+  const preferredRenderedGridCols = logicalGridCols * 2;
+  const renderedGridCols = isEditMode && hasOnlyTinyCards ? 1 : preferredRenderedGridCols;
+
+  const { microCardMinWidth, targetGridWidth } = getCardGridTargetWidth(
+    renderedGridCols,
+    gridGapPx
+  );
 
   useEffect(() => {
     const outer = outerRef.current;

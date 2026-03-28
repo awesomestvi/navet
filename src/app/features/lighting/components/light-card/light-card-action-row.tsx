@@ -45,47 +45,48 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   presetOverflow,
 }: LightCardActionRowProps) {
   const { theme } = useTheme();
-  const gapClass = size === 'small' ? 'gap-1.5' : 'gap-2';
+  const gapClass = size === 'small' ? 'gap-1' : 'gap-2';
+  const leftControls = (
+    <div className={`flex min-w-0 items-center ${gapClass}`}>
+      {supportsColorTemperature && (
+        <KelvinColorTrigger
+          isOn={isOn}
+          currentTempColor={currentTempColor}
+          isActive={isKelvinMode}
+          size={size}
+          onClick={onKelvinToggle}
+        />
+      )}
+
+      {supportsColorControl && (
+        <CustomColorTrigger
+          isOn={isOn}
+          currentColor={currentColor}
+          onColorChange={onColorChange}
+          size={size}
+        />
+      )}
+
+      <div className={`flex min-w-0 items-center ${gapClass}`}>
+        <BrightnessPresetsInline
+          presets={brightnessPresets}
+          currentBrightness={brightness}
+          isOn={isOn}
+          onBrightnessChange={onBrightnessCommit}
+          size={size}
+          maxVisible={presetMaxVisible}
+          overflow={presetOverflow}
+          buttonVariant="soft"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <CardActionRow
       theme={theme}
       size={size}
-      leftContent={
-        <>
-          {supportsColorTemperature && (
-            <KelvinColorTrigger
-              isOn={isOn}
-              currentTempColor={currentTempColor}
-              isActive={isKelvinMode}
-              size={size}
-              onClick={onKelvinToggle}
-            />
-          )}
-
-          {supportsColorControl && (
-            <CustomColorTrigger
-              isOn={isOn}
-              currentColor={currentColor}
-              onColorChange={onColorChange}
-              size={size}
-            />
-          )}
-
-          <div className={`flex min-w-0 items-center ${gapClass}`}>
-            <BrightnessPresetsInline
-              presets={brightnessPresets}
-              currentBrightness={brightness}
-              isOn={isOn}
-              onBrightnessChange={onBrightnessCommit}
-              size={size}
-              maxVisible={presetMaxVisible}
-              overflow={presetOverflow}
-              buttonVariant="soft"
-            />
-          </div>
-        </>
-      }
+      leftContent={leftControls}
       rightContent={
         showSettingsButton ? (
           <CardSettingsActionButton

@@ -65,11 +65,11 @@ export const getHVACModeButtonColor = (
   if (currentMode === buttonMode && isOn) {
     switch (buttonMode) {
       case 'cool':
-        return 'bg-gradient-to-br from-blue-400 to-blue-600 text-white';
+        return '!border-0 shadow-none bg-gradient-to-br from-blue-400 to-blue-600 text-white';
       case 'heat':
-        return 'bg-gradient-to-br from-red-400 to-red-600 text-white';
+        return '!border-0 shadow-none bg-gradient-to-br from-red-400 to-red-600 text-white';
       case 'fan':
-        return 'bg-gradient-to-br from-green-400 to-green-600 text-white';
+        return '!border-0 shadow-none bg-gradient-to-br from-green-400 to-green-600 text-white';
       default:
         return theme === 'light' ? 'bg-gray-100 text-gray-500' : 'bg-white/10 text-gray-300';
     }

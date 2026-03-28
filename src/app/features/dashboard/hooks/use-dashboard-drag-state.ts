@@ -2,7 +2,8 @@ import {
   type DragEndEvent,
   type DragOverEvent,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -26,25 +27,39 @@ const NO_DRAG_SELECTOR = [
   '[data-card-nodrag="true"]:not([data-draggable-card="true"])',
 ].join(', ');
 
-class DashboardPointerSensor extends PointerSensor {
+function canStartDashboardDrag(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  if (target.closest('[data-dashboard-drag-handle="true"]')) {
+    return true;
+  }
+
+  if (target.closest(NO_DRAG_SELECTOR)) {
+    return false;
+  }
+
+  return true;
+}
+
+class DashboardMouseSensor extends MouseSensor {
   static activators = [
     {
-      eventName: 'onPointerDown' as const,
-      handler: ({ nativeEvent }: { nativeEvent: PointerEvent }) => {
-        const target = nativeEvent.target;
-        if (!(target instanceof Element)) {
-          return false;
-        }
+      eventName: 'onMouseDown' as const,
+      handler: ({ nativeEvent }: { nativeEvent: MouseEvent }) => {
+        return nativeEvent.button === 0 && canStartDashboardDrag(nativeEvent.target);
+      },
+    },
+  ];
+}
 
-        if (target.closest('[data-dashboard-drag-handle="true"]')) {
-          return nativeEvent.isPrimary && nativeEvent.button === 0;
-        }
-
-        if (target.closest(NO_DRAG_SELECTOR)) {
-          return false;
-        }
-
-        return nativeEvent.isPrimary && nativeEvent.button === 0;
+class DashboardTouchSensor extends TouchSensor {
+  static activators = [
+    {
+      eventName: 'onTouchStart' as const,
+      handler: ({ nativeEvent }: { nativeEvent: TouchEvent }) => {
+        return canStartDashboardDrag(nativeEvent.target);
       },
     },
   ];
@@ -101,7 +116,13 @@ export function useDashboardDragState({
   const lastResolvedOverRef = useRef<DropMeta | null>(null);
 
   const sensors = useSensors(
-    useSensor(DashboardPointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(DashboardMouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(DashboardTouchSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 10,
+      },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 

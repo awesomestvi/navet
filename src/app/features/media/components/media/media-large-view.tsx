@@ -228,12 +228,12 @@ export function MediaLargeView({
           <div className="mt-3 min-w-0">
             <MediaMarqueeText
               text={title}
-              className={`text-lg font-semibold ${iconTone}`}
+              className={`text-sm font-semibold ${iconTone}`}
               style={{ color: textTokens.titleColor }}
             />
             <MediaMarqueeText
               text={artist}
-              className={`text-sm ${subtitleTone}`}
+              className={`text-xs ${subtitleTone}`}
               threshold={28}
               style={{ color: textTokens.subtitleColor }}
             />

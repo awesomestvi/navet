@@ -118,7 +118,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       ref={setNodeRef}
       {...(draggable ? attributes : {})}
       {...(draggable ? listeners : {})}
-      className={`relative h-full ${device?.type === 'lights' && ambientLightBleed ? '[contain:layout_style]' : '[contain:layout_style_paint]'} ${spanClass} ${isDragging ? 'opacity-40' : ''}`}
+      className={`relative h-full ${device?.type === 'lights' && ambientLightBleed ? '[contain:layout_style]' : '[contain:layout_style_paint]'} ${spanClass} ${draggable ? 'touch-none' : ''} ${isDragging ? 'opacity-40' : ''}`}
       style={getDndTransformStyle(transform)}
       data-card-nodrag={draggable ? undefined : 'true'}
       data-draggable-card="true"

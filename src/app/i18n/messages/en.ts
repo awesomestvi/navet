@@ -614,6 +614,7 @@ export const enMessages = {
   'pwa.updateAvailableTitle': 'Navet update available',
   'pwa.updateAvailableDescription': 'A new version has been installed in the background.',
   'pwa.reload': 'Reload',
+  'pwa.refreshApp': 'Refresh app',
   'pwa.later': 'Later',
   'entityRoomSelector.movedTo': 'Card moved to {room}',
   'entityRoomSelector.updateFailed': 'Unable to update room',

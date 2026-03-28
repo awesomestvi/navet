@@ -625,6 +625,7 @@ export const deMessages = {
   'pwa.updateAvailableTitle': 'Navet-Update verfügbar',
   'pwa.updateAvailableDescription': 'Eine neue Version wurde im Hintergrund installiert.',
   'pwa.reload': 'Neu laden',
+  'pwa.refreshApp': 'App neu laden',
   'pwa.later': 'Später',
   'entityRoomSelector.movedTo': 'Karte nach {room} verschoben',
   'entityRoomSelector.updateFailed': 'Raum konnte nicht aktualisiert werden',

@@ -620,6 +620,7 @@ export const svMessages = {
   'pwa.updateAvailableTitle': 'Navet-uppdatering tillgänglig',
   'pwa.updateAvailableDescription': 'En ny version har installerats i bakgrunden.',
   'pwa.reload': 'Ladda om',
+  'pwa.refreshApp': 'Uppdatera appen',
   'pwa.later': 'Senare',
   'entityRoomSelector.movedTo': 'Kort flyttat till {room}',
   'entityRoomSelector.updateFailed': 'Det gick inte att uppdatera rummet',

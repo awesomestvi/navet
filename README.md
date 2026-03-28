@@ -35,7 +35,6 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Multi-Language UI** - English, Swedish, German, French, and Spanish interface support with locale-aware date, time, and number formatting
 - **Dynamic Greeting** - Header greeting rotates on each session: time-of-day greetings (Good morning/afternoon/evening/night) with occasional casual variants (Hi, Hey, Welcome back), fully localized across all five languages
 - **Responsive Grid** - 2 columns (mobile) → 4 (`md`) → 6 (`xl`) → 8 (`2xl`) → 12 (`4xl`)
-- **Adaptive Cards** - Extra-Small, Small, Medium, and Large card sizes
 - **Adaptive Cards** - Tiny, Extra-Small, Small, Medium, and Large card sizes, with compact action-card layouts for the smallest tiles
 
 ### 🏠 Smart Home Control
@@ -43,6 +42,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Unified Climate Controls** - Home Assistant climate entities now render through the HVAC card and settings flow across the dashboard
 - **Home Assistant Media Controls** - Media player cards now use live Home Assistant playback, local mute/unmute volume memory, metadata, remaining-time, and artwork data
 - **Real-Time Updates** - Live state updates from your smart home system
+- **Resilient Connection Recovery** - Home Assistant reconnect now retries automatically with bounded exponential backoff after disconnects
 - **Quick Actions** - Toggle, adjust, and control devices with intuitive controls
 - **Room Organization** - Organized by rooms with dedicated room views
 - **Configurable Card Interactions** - Choose whether card tap toggles devices or opens controls
@@ -59,6 +59,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Person Entities** - Home Assistant `person.*` entities render as live person cards with profile images and normalized presence/location text
 - **Helpers and Scripts** - Home Assistant helper domains and scripts can be added through the existing sensor and switch-style card paths
 - **Home Assistant Notifications** - Navet notifications now show Home Assistant persistent notifications, repairs/issues, update actions, and markdown-formatted message content
+- **Manual App Refresh** - User menu now includes a refresh action that applies a pending PWA update when available, otherwise reloads immediately
 - **Card-Level Room Editing** - Supported entity cards, including calendar and weather, can reassign their room directly from the settings dialog
 - **Settings** - Comprehensive theme and customization options
 - **User Management** - Login system with user profiles
@@ -78,6 +79,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Lazy-Loaded UI** - Settings, add-card flows, widgets, and media dialogs load on demand
 - **Deferred Room Rendering** - Offscreen room groups are deferred in the Home room view
 - **Batched Room Mounting** - Visible Home room sections now hydrate cards in smaller batches instead of one large render burst
+- **Interactive Energy Charts** - Energy bar/area/sparkline charts support mouse and touch point inspection with inline value tooltips
 - **Offscreen Card Skipping** - Non-edit dashboard cards now use browser offscreen rendering hints to reduce Home room scroll cost on large boards
 - **Virtualized Entity Picker** - The Add Entity dialog window-renders large Home Assistant entity lists
 - **Smart Re-renders** - Per-entity subscriptions mean each card reacts only to its own HA state changes; the device map rebuilds only when entities are added or removed, not on every state update

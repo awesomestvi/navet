@@ -16,20 +16,15 @@ export function getBrightnessPresetSelectedStyle(
   return {
     backgroundColor:
       isOn && theme === 'glass' ? `${activeColor}26` : isOn ? activeColor : neutralSelectedBg,
-    borderColor:
-      isOn && theme === 'glass'
-        ? 'rgba(255,255,255,0.16)'
-        : isOn
-          ? `${activeColor}33`
-          : 'transparent',
-    boxShadow: `0 0 0 2px ${
-      isOn
-        ? theme === 'glass'
-          ? 'rgba(255,255,255,0.10)'
-          : theme === 'light'
-            ? `${activeColor}33`
-            : `${activeColor}55`
-        : neutralSelectedRing
-    }`,
+    borderColor: 'transparent',
+    boxShadow: isOn
+      ? `0 10px 24px -18px ${
+          theme === 'glass'
+            ? `${activeColor}aa`
+            : theme === 'light'
+              ? `${activeColor}88`
+              : `${activeColor}cc`
+        }`
+      : `0 10px 24px -18px ${neutralSelectedRing}`,
   };
 }

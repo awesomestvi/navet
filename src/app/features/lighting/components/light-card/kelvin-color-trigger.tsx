@@ -41,7 +41,9 @@ export const KelvinColorTrigger = memo(function KelvinColorTrigger({
         e.stopPropagation();
         onClick();
       }}
-      className={`${swatchSize} ${controlSizes.button} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border transition-all duration-200 ${
+      className={`${swatchSize} ${controlSizes.button} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ${
+        isActive && isOn ? 'border-0' : 'border'
+      } transition-all duration-200 ${
         !isOn ? 'cursor-not-allowed opacity-50' : 'hover:scale-105 cursor-pointer'
       }`}
       style={{ background: isActive ? activeBg : mutedBg, borderColor }}

@@ -156,12 +156,12 @@ export function MediaMediumView({
             <div className="min-w-0">
               <MediaMarqueeText
                 text={title}
-                className={`text-[15px] font-medium ${iconTone}`}
+                className={`text-sm font-semibold ${iconTone}`}
                 style={{ color: textTokens.titleColor }}
               />
               <MediaMarqueeText
                 text={artist}
-                className={`mt-0.5 text-[13px] ${subtitleTone}`}
+                className={`mt-0.5 text-xs ${subtitleTone}`}
                 threshold={24}
                 style={{ color: textTokens.subtitleColor }}
               />
