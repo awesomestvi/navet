@@ -1,6 +1,6 @@
 import { Battery, BatteryLow } from 'lucide-react';
 import { useMemo } from 'react';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -40,7 +40,7 @@ export function BatteryOverviewWidget({ size = 'large' }: BatteryOverviewWidgetP
       .sort((a, b) => a.level - b.level);
   }, [entities]);
 
-  const isCompact = size === 'extra-small' || size === 'small';
+  const isCompact = isCompactCardSize(size);
   const accentHex = getThemeColorValue(primaryColor);
 
   const getLevelColor = (level: number) => {

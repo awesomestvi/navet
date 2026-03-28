@@ -76,6 +76,7 @@ export const PowerCard = memo(function PowerCard({
         <EntityCardHeader
           title={t('power.title')}
           subtitle={t('power.subtitle')}
+          layout="eyebrow-first"
           size={size}
           tone="yellow"
           titleClassName={textPrimary}

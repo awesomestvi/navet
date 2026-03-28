@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import type { LucideIcon } from 'lucide-react';
 import { Gauge, Plus, Search, Trash2 } from 'lucide-react';
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
@@ -74,13 +73,13 @@ export function SensorGroupSettingsView({
   };
 
   return (
-    <Dialog.Content
-      className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md h-[85vh] rounded-3xl border shadow-2xl z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 ${
+    <div
+      className={`h-full w-full overflow-hidden rounded-3xl border shadow-2xl flex flex-col ${
         theme === 'light'
-          ? 'bg-gradient-to-br from-white via-gray-50/95 to-white'
+          ? 'bg-linear-to-br from-white via-gray-50/95 to-white'
           : isGlass
-            ? 'bg-gradient-to-br from-white/14 via-slate-900/80 to-slate-950/88 backdrop-blur-2xl'
-            : 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 backdrop-blur-xl'
+            ? 'bg-linear-to-br from-white/14 via-slate-900/80 to-slate-950/88 backdrop-blur-2xl'
+            : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 backdrop-blur-xl'
       } ${surface.border}`}
     >
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -127,7 +126,7 @@ export function SensorGroupSettingsView({
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div
-                              className={`w-8 h-8 rounded-full ${colors.iconBg} flex items-center justify-center flex-shrink-0`}
+                              className={`w-8 h-8 rounded-full ${colors.iconBg} flex items-center justify-center shrink-0`}
                             >
                               <Icon className={`w-4 h-4 ${colors.iconColor}`} />
                             </div>
@@ -143,7 +142,7 @@ export function SensorGroupSettingsView({
                           <button
                             type="button"
                             onClick={() => handleRemoveSensor(index)}
-                            className="w-7 h-7 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors flex-shrink-0"
+                            className="w-7 h-7 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors shrink-0"
                             aria-label={t('sensors.groupSettings.removeSensor')}
                           >
                             <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -279,7 +278,7 @@ export function SensorGroupSettingsView({
                                 }`}
                               >
                                 <div
-                                  className={`w-8 h-8 rounded-full ${colors.iconBg} flex items-center justify-center flex-shrink-0`}
+                                  className={`w-8 h-8 rounded-full ${colors.iconBg} flex items-center justify-center shrink-0`}
                                 >
                                   <Icon className={`w-4 h-4 ${colors.iconColor}`} />
                                 </div>
@@ -295,11 +294,11 @@ export function SensorGroupSettingsView({
                                   </p>
                                 </div>
                                 {isSelected ? (
-                                  <span className={`text-xs flex-shrink-0 ${surface.textMuted}`}>
+                                  <span className={`text-xs shrink-0 ${surface.textMuted}`}>
                                     {t('sensors.groupSettings.added')}
                                   </span>
                                 ) : !isDisabled ? (
-                                  <Plus className={`w-4 h-4 flex-shrink-0 ${surface.textMuted}`} />
+                                  <Plus className={`w-4 h-4 shrink-0 ${surface.textMuted}`} />
                                 ) : null}
                               </button>
                             );
@@ -338,6 +337,6 @@ export function SensorGroupSettingsView({
           {t('sensors.groupSettings.save')}
         </button>
       </div>
-    </Dialog.Content>
+    </div>
   );
 }

@@ -93,6 +93,7 @@ export const CalendarCard = memo(function CalendarCard({
               <EntityCardHeader
                 title={selectedCalendarLabel || displayName}
                 subtitle={t('calendar.upcomingAgenda')}
+                layout="eyebrow-first"
                 size={effectiveSize}
                 tone="indigo"
                 titleClassName={isSmall ? 'text-[11px]' : ''}
@@ -111,6 +112,7 @@ export const CalendarCard = memo(function CalendarCard({
             <EntityCardHeader
               title={selectedCalendarLabel || displayName}
               subtitle={t('calendar.upcomingAgenda')}
+              layout="eyebrow-first"
               size={effectiveSize}
               tone="indigo"
               titleClassName={isSmall ? 'text-[11px]' : ''}

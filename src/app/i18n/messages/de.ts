@@ -233,6 +233,7 @@ export const deMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-vertical',
   'dashboard.addCard.size.large': 'large',
   'dashboard.addCard.size.hero': 'hero',
+  'dashboard.addCard.size.tiny': 'tiny',
   'dashboard.addCard.templates.rss.name': 'RSS-Feed',
   'dashboard.addCard.templates.rss.description':
     'Verfolge Artikel aus deinen ausgewählten Feed-Quellen',

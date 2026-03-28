@@ -51,8 +51,18 @@ interface CallServiceTarget {
   device_id?: string | string[];
 }
 
-export type HAServiceEventType = 'entities' | 'config' | 'registries' | 'connection';
-type HAServiceListener = (event: HAServiceEventType) => void;
+export interface HAServiceEventMap {
+  entities: HassEntities;
+  config: HassConfig;
+  registries: {
+    areas: HomeAssistantAreaRegistryEntry[];
+    devices: HomeAssistantDeviceRegistryEntry[];
+    entities: HomeAssistantEntityRegistryEntry[];
+  };
+  connection: { connected: boolean; connection: Connection | null };
+}
+
+export type HAServiceEventType = keyof HAServiceEventMap;
 
 class HomeAssistantService {
   private connection: Connection | null = null;
@@ -63,7 +73,9 @@ class HomeAssistantService {
   private deviceRegistry: HomeAssistantDeviceRegistryEntry[] = [];
   private entityRegistry: HomeAssistantEntityRegistryEntry[] = [];
   private connected: boolean = false;
-  private listeners: HAServiceListener[] = [];
+  private listeners: {
+    [K in HAServiceEventType]?: Array<(data: HAServiceEventMap[K]) => void>;
+  } = {};
   private registryLoadInProgress = false;
   private pendingRegistryLoad = false;
 
@@ -97,29 +109,29 @@ class HomeAssistantService {
       // Subscribe to entities
       subscribeEntities(this.connection, (entities) => {
         this.entities = entities;
-        this.notifyListeners('entities');
+        this.notifyListeners('entities', entities);
       });
 
       // Subscribe to config
       subscribeConfig(this.connection, (config) => {
         this.config = config;
-        this.notifyListeners('config');
+        this.notifyListeners('config', config);
       });
 
       // Connection events
       this.connection.addEventListener('ready', () => {
         this.connected = true;
-        this.notifyListeners('connection');
+        this.notifyListeners('connection', { connected: true, connection: this.connection });
       });
 
       this.connection.addEventListener('disconnected', () => {
         this.connected = false;
-        this.notifyListeners('connection');
+        this.notifyListeners('connection', { connected: false, connection: this.connection });
       });
 
       this.connection.addEventListener('reconnect-error', () => {
         this.connected = false;
-        this.notifyListeners('connection');
+        this.notifyListeners('connection', { connected: false, connection: this.connection });
       });
 
       // Clear auth query string if present
@@ -160,7 +172,7 @@ class HomeAssistantService {
       this.areas = areas;
       this.deviceRegistry = devices;
       this.entityRegistry = entities;
-      this.notifyListeners('registries');
+      this.notifyListeners('registries', { areas, devices, entities });
     } catch {
       this.areas = [];
       this.deviceRegistry = [];
@@ -195,25 +207,37 @@ class HomeAssistantService {
   }
 
   /**
-   * Notify all listeners of a specific state change
+   * Notify all listeners of a specific event with its typed data
    */
-  private notifyListeners(event: HAServiceEventType): void {
-    for (const listener of this.listeners) {
-      listener(event);
+  private notifyListeners<K extends HAServiceEventType>(
+    event: K,
+    data: HAServiceEventMap[K]
+  ): void {
+    const handlers = this.listeners[event];
+    if (!handlers) return;
+    for (const handler of handlers) {
+      handler(data);
     }
   }
 
   /**
-   * Add a typed listener for state change events
+   * Subscribe to a specific typed HA service event.
+   * Returns an unsubscribe function.
    */
-  addListener(callback: HAServiceListener): () => void {
-    this.listeners.push(callback);
+  addListener<K extends HAServiceEventType>(
+    event: K,
+    callback: (data: HAServiceEventMap[K]) => void
+  ): () => void {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    (this.listeners[event] as Array<(data: HAServiceEventMap[K]) => void>).push(callback);
 
     return () => {
-      const index = this.listeners.indexOf(callback);
-      if (index !== -1) {
-        this.listeners.splice(index, 1);
-      }
+      const handlers = this.listeners[event] as
+        | Array<(data: HAServiceEventMap[K]) => void>
+        | undefined;
+      if (!handlers) return;
+      const index = handlers.indexOf(callback);
+      if (index !== -1) handlers.splice(index, 1);
     };
   }
 
@@ -437,7 +461,7 @@ class HomeAssistantService {
       this.areas = [];
       this.deviceRegistry = [];
       this.entityRegistry = [];
-      this.notifyListeners('connection');
+      this.notifyListeners('connection', { connected: false, connection: null });
     }
   }
 }

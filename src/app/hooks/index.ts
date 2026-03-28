@@ -23,5 +23,6 @@ export { useNavigation } from './use-navigation';
 export { usePersistedState } from './use-persisted-state';
 export { useRoomNavigation } from './use-room-navigation';
 export { useSearch } from './use-search';
+export { useServiceActionHandler } from './use-service-action-handler';
 export type { PrimaryColor, ThemeType } from './use-theme';
 export { useTheme } from './use-theme';

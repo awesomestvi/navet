@@ -92,6 +92,7 @@ export function RSSFeedCardView({
         <EntityCardHeader
           title={t('rss.title')}
           subtitle={selectedFeedLabel}
+          layout="eyebrow-first"
           size={size}
           tone="orange"
           titleClassName={surface.textPrimary}

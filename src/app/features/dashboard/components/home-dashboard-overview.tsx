@@ -88,6 +88,7 @@ interface HomeDashboardOverviewProps {
 }
 
 const overlayClass: Record<CardSize, string> = {
+  tiny: 'w-[87px] h-[87px]',
   'extra-small': 'w-[190px] h-[87px]',
   small: 'w-[190px] h-[190px]',
   medium: 'w-[396px] h-[190px]',
@@ -1273,10 +1274,12 @@ const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const breakpointCols = useBreakpointCols();
-  const renderedGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
+  const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
+  const renderedGridCols = logicalGridCols * 2;
   const gridGapPx = getCardGridGapPx(breakpointCols);
+  const microCardMinWidth = Math.max(80, Math.round((MIN_HOME_CARD_TRACK_WIDTH - gridGapPx) / 2));
   const targetGridWidth =
-    renderedGridCols * MIN_HOME_CARD_TRACK_WIDTH + Math.max(0, renderedGridCols - 1) * gridGapPx;
+    renderedGridCols * microCardMinWidth + Math.max(0, renderedGridCols - 1) * gridGapPx;
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [outerWidth, setOuterWidth] = useState(0);
@@ -1326,7 +1329,7 @@ const CardGrid = memo(function CardGrid({
         style={
           {
             '--home-card-cols': renderedGridCols,
-            '--home-card-min': `${MIN_HOME_CARD_TRACK_WIDTH}px`,
+            '--home-card-min': `${microCardMinWidth}px`,
             gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
             ...(isAutoScaled
               ? {

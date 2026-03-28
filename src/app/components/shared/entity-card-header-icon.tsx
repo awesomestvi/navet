@@ -41,9 +41,11 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   const iconTextClassName =
     size === 'large' || size === 'hero'
       ? 'text-base'
-      : size === 'extra-small'
-        ? 'text-xs'
-        : 'text-sm';
+      : size === 'tiny'
+        ? 'text-[10px]'
+        : size === 'extra-small'
+          ? 'text-xs'
+          : 'text-sm';
 
   const icon = IconComponent ? (
     <IconComponent aria-hidden="true" className={iconClassName} style={iconStyle} />

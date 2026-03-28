@@ -1,6 +1,7 @@
 /**
  * Theme hook and derived palette utilities backed by the theme store.
  */
+
 import { useMemo } from 'react';
 import {
   resolvePrimaryColorToken,
@@ -805,18 +806,34 @@ export function useTheme(): ThemeValue {
     [customPrimaryColor, primaryColor, effectiveTheme]
   );
 
-  return {
-    theme: effectiveTheme,
-    setTheme,
-    followSystemTheme,
-    setFollowSystemTheme,
-    colors,
-    primaryColor,
-    setPrimaryColor,
-    customPrimaryColor,
-    setCustomPrimaryColor,
-    accentColor,
-    wallpaper,
-    setWallpaper,
-  };
+  return useMemo(
+    () => ({
+      theme: effectiveTheme,
+      setTheme,
+      followSystemTheme,
+      setFollowSystemTheme,
+      colors,
+      primaryColor,
+      setPrimaryColor,
+      customPrimaryColor,
+      setCustomPrimaryColor,
+      accentColor,
+      wallpaper,
+      setWallpaper,
+    }),
+    [
+      effectiveTheme,
+      setTheme,
+      followSystemTheme,
+      setFollowSystemTheme,
+      colors,
+      primaryColor,
+      setPrimaryColor,
+      customPrimaryColor,
+      setCustomPrimaryColor,
+      accentColor,
+      wallpaper,
+      setWallpaper,
+    ]
+  );
 }

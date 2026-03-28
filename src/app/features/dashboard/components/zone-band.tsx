@@ -1,6 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
 import { type CSSProperties, memo } from 'react';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getDashboardGridColumnCount,
+} from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
@@ -51,7 +54,7 @@ export const ZoneBand = memo(function ZoneBand({
     <div
       ref={setNodeRef}
       className={`grid w-full auto-rows-[87px] grid-flow-row-dense gap-2 md:gap-3 lg:gap-4 [grid-template-columns:repeat(var(--zone-cols),minmax(0,1fr))] ${isOver ? 'rounded-2xl ring-1 ring-white/20' : ''}`}
-      style={{ '--zone-cols': colCount } as CSSProperties}
+      style={{ '--zone-cols': getDashboardGridColumnCount(colCount) } as CSSProperties}
     >
       {orderedIds.map((id) => {
         const device = deviceMap.get(id);

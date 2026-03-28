@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
@@ -23,10 +24,10 @@ function AppContent() {
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
   const { accentColor } = useTheme();
-  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
-  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const pageZoomScale = useSettingsStore(settingsSelectors.pageZoomScale);
+  const { disableAnimations, lowPowerMode, effectsQuality, pageZoom } = useSettingsStore(
+    useShallow(settingsSelectors.displaySettings)
+  );
+  const pageZoomScale = pageZoom / 100;
   const resolvedEffectsQuality = resolveEffectsQuality(
     effectsQuality,
     disableAnimations || lowPowerMode

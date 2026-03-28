@@ -76,9 +76,6 @@ function formatWeatherValue(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
-let cachedWeatherForecasts: Record<string, WeatherForecastEntry[]> = {};
-let cachedCalendarEvents: Record<string, CalendarServiceEvent[]> = {};
-
 async function fetchWeatherForecast(
   connection: Connection,
   entityId: string
@@ -166,15 +163,12 @@ export const useHADevices = (): DeviceCollection => {
       .sort((left, right) => left.localeCompare(right));
   }, [entities]);
   const [weatherForecasts, setWeatherForecasts] = useState<Record<string, WeatherForecastEntry[]>>(
-    () => cachedWeatherForecasts
+    {}
   );
-  const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>(
-    () => cachedCalendarEvents
-  );
+  const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
 
   useEffect(() => {
     if (!connection || !primaryWeatherEntityId) {
-      cachedWeatherForecasts = {};
       setWeatherForecasts({});
       return;
     }
@@ -187,16 +181,13 @@ export const useHADevices = (): DeviceCollection => {
           return;
         }
 
-        const nextForecasts = { [primaryWeatherEntityId]: forecast };
-        cachedWeatherForecasts = nextForecasts;
-        setWeatherForecasts(nextForecasts);
+        setWeatherForecasts({ [primaryWeatherEntityId]: forecast });
       })
       .catch(() => {
         if (cancelled) {
           return;
         }
 
-        cachedWeatherForecasts = {};
         setWeatherForecasts({});
       });
 
@@ -207,7 +198,6 @@ export const useHADevices = (): DeviceCollection => {
 
   useEffect(() => {
     if (!connection || calendarEntityIds.length === 0) {
-      cachedCalendarEvents = {};
       setCalendarEvents({});
       return;
     }
@@ -224,9 +214,7 @@ export const useHADevices = (): DeviceCollection => {
         return;
       }
 
-      const nextCalendarEvents = Object.fromEntries(entries);
-      cachedCalendarEvents = nextCalendarEvents;
-      setCalendarEvents(nextCalendarEvents);
+      setCalendarEvents(Object.fromEntries(entries));
     });
 
     return () => {

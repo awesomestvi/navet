@@ -32,6 +32,13 @@ const sizes: {
   preview: string;
 }[] = [
   {
+    value: 'tiny',
+    label: 'Tiny',
+    description: '0.5 × 0.5',
+    dimensions: 'Micro tile',
+    preview: 'w-3.5 h-3.5',
+  },
+  {
     value: 'extra-small',
     label: 'Extra-Small',
     description: '1 × 0.5',
@@ -208,29 +215,39 @@ export const CardSizeSelector = memo(function CardSizeSelector({
 // Helper function to get grid span classes based on iOS widget size
 export function getCardSpanClass(size: CardSize): string {
   switch (size) {
-    case 'extra-small':
+    case 'tiny':
       return 'col-span-1 row-span-1';
+    case 'extra-small':
+      return 'col-span-2 row-span-1';
     case 'small':
-      return 'col-span-1 row-span-2'; // 1 column × 1 row
+      return 'col-span-2 row-span-2'; // 1 logical column × 1 row
     case 'medium':
-      return 'col-span-2 row-span-2'; // 2 columns × 1 row
+      return 'col-span-4 row-span-2'; // 2 logical columns × 1 row
     case 'medium-vertical':
-      return 'col-span-1 row-span-4'; // 1 column × 2 rows
+      return 'col-span-2 row-span-4'; // 1 logical column × 2 rows
     case 'large':
-      return 'col-span-2 row-span-4'; // 2 columns × 2 rows
+      return 'col-span-4 row-span-4'; // 2 logical columns × 2 rows
     case 'hero':
       return 'col-span-full row-span-3'; // full zone width × 3 rows
     default:
-      return 'col-span-1 row-span-2';
+      return 'col-span-2 row-span-2';
   }
 }
 
-export function getCompactCardSize(size: CardSize): Exclude<CardSize, 'extra-small'> {
-  if (size === 'extra-small') {
+export function getDashboardGridColumnCount(logicalColumns: number): number {
+  return logicalColumns * 2;
+}
+
+export function getCompactCardSize(size: CardSize): Exclude<CardSize, 'tiny' | 'extra-small'> {
+  if (size === 'tiny' || size === 'extra-small') {
     return 'small';
   }
 
-  return size;
+  return size as Exclude<CardSize, 'tiny' | 'extra-small'>;
+}
+
+export function isTinyCardSize(size: CardSize): boolean {
+  return size === 'tiny';
 }
 
 export function isExtraSmallCardSize(size: CardSize): boolean {
@@ -238,5 +255,5 @@ export function isExtraSmallCardSize(size: CardSize): boolean {
 }
 
 export function isCompactCardSize(size: CardSize): boolean {
-  return size === 'extra-small' || size === 'small';
+  return size === 'tiny' || size === 'extra-small' || size === 'small';
 }

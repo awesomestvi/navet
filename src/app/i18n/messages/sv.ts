@@ -230,6 +230,7 @@ export const svMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-vertical',
   'dashboard.addCard.size.large': 'large',
   'dashboard.addCard.size.hero': 'hero',
+  'dashboard.addCard.size.tiny': 'tiny',
   'dashboard.addCard.templates.rss.name': 'RSS-flöde',
   'dashboard.addCard.templates.rss.description': 'Följ artiklar från dina valda flödeskällor',
   'dashboard.addCard.templates.photo.name': 'Fotoram',

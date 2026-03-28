@@ -1,14 +1,20 @@
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { memo, useState } from 'react';
-import { toast } from 'sonner';
-import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  isCompactCardSize,
+  isTinyCardSize,
+} from '@/app/components/shared/card-size-selector';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
+import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
+import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
+import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface SceneCardProps {
@@ -34,22 +40,76 @@ export const SceneCard = memo(function SceneCard({
   const surface = getThemeSurfaceTokens(theme);
   const accentColor = getThemeColorValue(primaryColor);
   const [isActivating, setIsActivating] = useState(false);
+  const runAction = useServiceActionHandler();
+  const isTiny = isTinyCardSize(size);
   const isCompact = isCompactCardSize(size);
+  const tinyTextTokens = getCardReadableTextTokens({
+    theme,
+    tone: 'primary',
+    accentColor,
+  });
 
-  const handleActivate = async () => {
+  const handleActivate = () => {
     if (isEditMode || isActivating) {
       return;
     }
 
     setIsActivating(true);
-    try {
-      await homeAssistantService.callService('scene', 'turn_on', {}, { entity_id: id });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('scene.activateFailed'));
-    } finally {
+    void runAction(
+      () => homeAssistantService.callService('scene', 'turn_on', {}, { entity_id: id }),
+      t('scene.activateFailed')
+    ).finally(() => {
       setIsActivating(false);
-    }
+    });
   };
+
+  if (isTiny) {
+    return (
+      <TinyActionCard
+        rootClassName={`relative h-full w-full overflow-hidden rounded-[26px] border px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+        metadata={t('deviceType.scene')}
+        title={name}
+        metadataClassName={surface.textMuted}
+        titleClassName={surface.textPrimary}
+        metadataStyle={{ color: tinyTextTokens.subtitleColor }}
+        titleStyle={{ color: tinyTextTokens.titleColor }}
+        watermark={
+          isActivating ? (
+            <TinyCardWatermark
+              IconComponent={Loader2}
+              color={tinyTextTokens.titleColor}
+              className="opacity-20"
+              spin
+            />
+          ) : (
+            <TinyCardWatermark
+              IconComponent={Sparkles}
+              color={tinyTextTokens.titleColor}
+              className="opacity-20"
+            />
+          )
+        }
+        overlays={
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 18% 12%, ${accentColor}28, transparent 34%), linear-gradient(155deg, transparent 24%, ${accentColor}14 100%)`,
+              }}
+            />
+            {cardShell.sheenOverlayClassName ? (
+              <div className={cardShell.sheenOverlayClassName} />
+            ) : null}
+          </>
+        }
+        actionButtonProps={{
+          onClick: handleActivate,
+          disabled: isEditMode || isActivating,
+          'aria-label': isActivating ? t('scene.activating') : t('scene.activate'),
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -68,6 +128,7 @@ export const SceneCard = memo(function SceneCard({
         <EntityCardHeader
           title={name}
           subtitle={t('deviceType.scene')}
+          layout="eyebrow-first"
           size={size}
           tone="primary"
           titleClassName={surface.textPrimary}

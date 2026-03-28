@@ -75,6 +75,7 @@ export const PersonCard = memo(function PersonCard({
         <EntityCardHeader
           title={name}
           subtitle={t('deviceType.person')}
+          layout="eyebrow-first"
           size={size}
           tone={liveState === 'home' ? 'primary' : 'neutral'}
           titleClassName={surface.titleClassName}

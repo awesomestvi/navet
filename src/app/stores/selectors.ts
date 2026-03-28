@@ -176,9 +176,8 @@ export const customCardsSelectors = {
  * const setTheme = useThemeStore(themeSelectors.setTheme);
  *
  * // ✅ Multiple values with shallow equality
- * import { shallow } from 'zustand/shallow';
+ * import { useShallow } from 'zustand/react/shallow';
  * const { theme, primaryColor } = useThemeStore(
- *   themeSelectors.themeAndColor,
- *   shallow
+ *   useShallow(themeSelectors.themeAndColor)
  * );
  */

@@ -35,6 +35,7 @@ export const LightCardHeader = memo(function LightCardHeader({
     <EntityCardHeader
       title={name}
       subtitle={t('lighting.type.light')}
+      layout="eyebrow-first"
       size={size}
       tone={isOn ? 'primary' : 'neutral'}
       titleClassName={stateSurface.primaryTextClassName}

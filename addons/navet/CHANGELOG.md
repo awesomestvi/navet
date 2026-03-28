@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- Updated bundled Navet frontend assets for the latest release line
+- Synced add-on package metadata with current published version
+
+## 0.1.6
+
+- Refreshed Home Assistant add-on bundle for release maintenance
+
 ## 0.1.5
 
 - Added Home Assistant add-on presentation assets for the store view

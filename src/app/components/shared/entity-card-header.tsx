@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react';
-import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  isExtraSmallCardSize,
+  isTinyCardSize,
+} from '@/app/components/shared/card-size-selector';
+import { EntityCardTitleBlock } from '@/app/components/shared/entity-card-title-block';
 import {
   type CardTextTone,
   getCardReadableTextTokens,
@@ -11,6 +16,7 @@ interface EntityCardHeaderProps {
   title: string;
   subtitle: string;
   size: CardSize;
+  layout?: 'title-first' | 'eyebrow-first';
   leading?: ReactNode;
   trailing?: ReactNode;
   align?: 'start' | 'center';
@@ -26,6 +32,7 @@ export function EntityCardHeader({
   title,
   subtitle,
   size,
+  layout = 'title-first',
   leading,
   trailing,
   align = 'start',
@@ -39,33 +46,37 @@ export function EntityCardHeader({
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const textTokens = getCardReadableTextTokens({ theme, tone, accentColor });
+  const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const isStandardCompact = size === 'small' || size === 'medium';
-  const titleSize = isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
+  const titleSize = isTiny || isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
   const marginBottom =
-    marginBottomClassName ?? (isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
-  const headerGap = isExtraSmall ? 'gap-2' : isStandardCompact ? 'gap-3' : 'gap-3';
-  const subtitleMarginTop = 'mt-0';
+    marginBottomClassName ??
+    (isTiny || isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
+  const headerGap = isTiny
+    ? 'gap-1.5'
+    : isExtraSmall
+      ? 'gap-2'
+      : isStandardCompact
+        ? 'gap-3'
+        : 'gap-3';
+  const subtitleClassBase =
+    layout === 'eyebrow-first' ? 'truncate text-[10px] tracking-normal' : 'truncate text-[10px]';
   const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';
 
   return (
     <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div className={`min-w-0 flex-1 ${contentClassName}`}>
-        <h3
-          className={`truncate font-semibold ${titleSize} ${titleClassName}`}
-          style={{ color: textTokens.titleColor }}
-        >
-          {title}
-        </h3>
-        {subtitle ? (
-          <p
-            className={`truncate text-[10px] ${surface.textMuted} ${subtitleMarginTop} ${subtitleClassName}`}
-            style={{ color: textTokens.subtitleColor }}
-          >
-            {subtitle}
-          </p>
-        ) : null}
+        <EntityCardTitleBlock
+          title={title}
+          subtitle={subtitle}
+          layout={layout}
+          titleClassName={`truncate font-semibold ${titleSize} ${titleClassName}`}
+          subtitleClassName={`${subtitleClassBase} ${surface.textMuted} ${subtitleClassName}`}
+          titleStyle={{ color: textTokens.titleColor }}
+          subtitleStyle={{ color: textTokens.subtitleColor }}
+        />
       </div>
       {trailing ? <div className="shrink-0">{trailing}</div> : null}
     </div>

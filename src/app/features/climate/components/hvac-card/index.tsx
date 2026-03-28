@@ -95,6 +95,7 @@ export const HVACCard = memo(function HVACCard({
           <EntityCardHeader
             title={name}
             subtitle={t('climate.subtitle')}
+            layout="eyebrow-first"
             size={size}
             tone={tone}
             titleClassName={stateSurface.primaryTextClassName}

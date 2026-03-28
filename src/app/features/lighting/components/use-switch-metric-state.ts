@@ -41,6 +41,8 @@ export function useSwitchMetricState({
 
   const metricLimit = useMemo(() => {
     switch (size) {
+      case 'tiny':
+        return 1;
       case 'extra-small':
         return 1;
       case 'small':

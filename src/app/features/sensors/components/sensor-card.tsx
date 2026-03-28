@@ -70,6 +70,7 @@ export const SensorCard = memo(function SensorCard({
         <EntityCardHeader
           title={name}
           subtitle={subtitle || t('sensors.single')}
+          layout="eyebrow-first"
           size={size}
           tone="teal"
           leading={

@@ -1,7 +1,7 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { DialogHeader } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
@@ -39,59 +39,57 @@ export function PhotoFrameSettingsDialog({
   };
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content
-          className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      overlayClassName="bg-black/60 backdrop-blur-sm"
+      contentClassName={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
+    >
+      <DialogHeader title={t('widgets.photoFrame.settings.title')} isOn={theme !== 'light'} />
+
+      <div className="mb-3 flex gap-2">
+        <input
+          type="url"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={t('widgets.photoFrame.settings.urlPlaceholder')}
+          className={`flex-1 rounded-xl border px-3 py-2 text-sm outline-none ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted}`}
+        />
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border transition-opacity hover:opacity-70"
+          style={{ borderColor: surface.subtleFill }}
         >
-          <DialogHeader title={t('widgets.photoFrame.settings.title')} isOn={theme !== 'light'} />
+          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+        </button>
+      </div>
 
-          <div className="mb-3 flex gap-2">
-            <input
-              type="url"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t('widgets.photoFrame.settings.urlPlaceholder')}
-              className={`flex-1 rounded-xl border px-3 py-2 text-sm outline-none ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted}`}
-            />
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border transition-opacity hover:opacity-70"
-              style={{ borderColor: surface.subtleFill }}
+      {photoUrls.length === 0 ? (
+        <p className={`py-4 text-center text-sm ${surface.textMuted}`}>
+          {t('widgets.photoFrame.settings.noPhotos')}
+        </p>
+      ) : (
+        <ul className="max-h-60 space-y-1.5 overflow-y-auto">
+          {photoUrls.map((url, index) => (
+            <li
+              key={`${url}-${index}`}
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm`}
+              style={{ background: surface.subtleFill }}
             >
-              <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-            </button>
-          </div>
-
-          {photoUrls.length === 0 ? (
-            <p className={`py-4 text-center text-sm ${surface.textMuted}`}>
-              {t('widgets.photoFrame.settings.noPhotos')}
-            </p>
-          ) : (
-            <ul className="max-h-60 space-y-1.5 overflow-y-auto">
-              {photoUrls.map((url, index) => (
-                <li
-                  key={`${url}-${index}`}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm`}
-                  style={{ background: surface.subtleFill }}
-                >
-                  <span className={`flex-1 truncate ${surface.textSecondary}`}>{url}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(index)}
-                    className={`shrink-0 ${surface.textMuted} hover:opacity-70`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+              <span className={`flex-1 truncate ${surface.textSecondary}`}>{url}</span>
+              <button
+                type="button"
+                onClick={() => handleRemove(index)}
+                className={`shrink-0 ${surface.textMuted} hover:opacity-70`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DialogShell>
   );
 }

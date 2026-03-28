@@ -1,13 +1,17 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Check, Power, Settings2 } from 'lucide-react';
 import { memo } from 'react';
+import { isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
+import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import type { SwitchCardProps } from './switch-card.types';
 import { useSwitchCardController } from './use-switch-card-controller';
 
@@ -16,30 +20,187 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   const cardShell = getCardShellSurfaceTokens(controller.theme);
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
   const primaryMetric = controller.selectedMetrics[0];
+  const isTiny = isTinyCardSize(props.size);
+  const tinyTextTokens = getCardReadableTextTokens({
+    theme: controller.theme,
+    tone: controller.isOn ? 'primary' : 'neutral',
+    accentColor: controller.accentColor,
+  });
+  const stateOverlay = stateSurface.overlayClassName ? (
+    <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
+  ) : null;
+  const sheenOverlay = cardShell.sheenOverlayClassName ? (
+    <div className={cardShell.sheenOverlayClassName} />
+  ) : null;
+  const lightOverlay =
+    controller.theme === 'light' ? <div className="absolute inset-0 bg-white/58" /> : null;
+
+  const controlsDialog =
+    controller.hasControlsDialog && controller.isDialogOpen ? (
+      <DialogShell
+        isOpen={controller.isDialogOpen}
+        onOpenChange={controller.setIsDialogOpen}
+        overlayClassName="bg-black/70 backdrop-blur-sm"
+        contentClassName={`fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border p-6 shadow-2xl ${controller.dialogSurface}`}
+      >
+        <DialogHeader
+          title={props.name}
+          description={controller.entityType}
+          isOn={controller.theme !== 'light'}
+        />
+        <DialogSectionRow label={controller.roomLabel}>
+          <EntityRoomSelector entityId={props.id} label={controller.roomLabel} compact />
+        </DialogSectionRow>
+
+        <div className="space-y-4">
+          {controller.hasMetrics && (
+            <div
+              className={`rounded-2xl p-4 ${
+                controller.theme === 'light'
+                  ? 'bg-gray-100'
+                  : controller.theme === 'glass'
+                    ? 'bg-white/8'
+                    : 'bg-white/5'
+              }`}
+            >
+              <p className={`text-xs uppercase tracking-[0.16em] ${controller.labelColor}`}>
+                {controller.metricSectionTitle}
+              </p>
+              <p className={`mt-1 text-xs ${controller.labelColor}`}>
+                {controller.metricSectionDescription}
+              </p>
+              <div className="mt-3 space-y-2">
+                {controller.availableMetrics.map((metric) => {
+                  const isSelected = controller.selectedMetricLabels.includes(metric.label);
+                  return (
+                    <button
+                      type="button"
+                      key={`dialog-${metric.label}`}
+                      onClick={() => controller.handleMetricToggle(metric.label)}
+                      className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-colors ${
+                        !isSelected
+                          ? controller.theme === 'light'
+                            ? 'border-transparent bg-white/60 hover:bg-white'
+                            : 'border-transparent bg-white/5 hover:bg-white/10'
+                          : ''
+                      }`}
+                      style={
+                        isSelected
+                          ? {
+                              borderColor: `${controller.accentColor}55`,
+                              backgroundColor:
+                                controller.theme === 'light'
+                                  ? `${controller.accentColor}10`
+                                  : `${controller.accentColor}18`,
+                            }
+                          : undefined
+                      }
+                    >
+                      <span className={`min-w-0 flex items-center gap-2 ${controller.labelColor}`}>
+                        {controller.renderMetricIcon(metric, 'h-4 w-4 flex-shrink-0')}
+                        <span className="truncate">{controller.getMetricLabel(metric)}</span>
+                      </span>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className={`font-medium ${controller.textColor}`}>
+                          {controller.formatMetricValue(metric)}
+                        </span>
+                        <span
+                          className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+                            !isSelected
+                              ? controller.theme === 'light'
+                                ? 'border-gray-400 bg-transparent'
+                                : 'border-white/40 bg-transparent'
+                              : ''
+                          }`}
+                          style={
+                            isSelected
+                              ? {
+                                  borderColor: controller.accentColor,
+                                  backgroundColor: controller.accentColor,
+                                }
+                              : undefined
+                          }
+                        >
+                          {isSelected ? (
+                            <Check
+                              className={`h-3 w-3 ${
+                                controller.theme === 'light' ? 'text-white' : 'text-black'
+                              }`}
+                            />
+                          ) : null}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogShell>
+    ) : null;
+
+  if (isTiny) {
+    return (
+      <>
+        <TinyActionCard
+          rootProps={controller.cardInteraction.cardProps}
+          rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${
+            props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
+          }`}
+          metadata={controller.entityType}
+          title={props.name}
+          detail={primaryMetric ? controller.formatMetricValue(primaryMetric) : null}
+          metadataClassName={stateSurface.mutedTextClassName}
+          titleClassName={stateSurface.primaryTextClassName}
+          detailClassName={`w-full ${stateSurface.mutedTextClassName}`}
+          metadataStyle={{ color: tinyTextTokens.subtitleColor }}
+          titleStyle={{ color: tinyTextTokens.titleColor }}
+          detailStyle={{ color: tinyTextTokens.subtitleColor }}
+          watermark={
+            <TinyCardWatermark
+              IconComponent={Power}
+              color={tinyTextTokens.titleColor}
+              className={controller.isOn ? 'opacity-18' : 'opacity-12'}
+            />
+          }
+          overlays={
+            <>
+              {controller.isOn ? (
+                <div
+                  className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
+                />
+              ) : null}
+              {lightOverlay}
+              {sheenOverlay}
+              {stateOverlay}
+            </>
+          }
+        />
+
+        {controlsDialog}
+      </>
+    );
+  }
 
   if (controller.isExtraSmall) {
     return (
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-gradient-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${
+          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${
             props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
           }`}
         >
           {controller.isOn ? (
             <div
-              className={`absolute inset-0 bg-gradient-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 transition-all duration-500`}
+              className={`absolute inset-0 bg-linear-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 transition-all duration-500`}
             />
           ) : null}
 
-          {controller.theme === 'light' ? <div className="absolute inset-0 bg-white/58" /> : null}
-
-          {cardShell.sheenOverlayClassName ? (
-            <div className={cardShell.sheenOverlayClassName} />
-          ) : null}
-          {stateSurface.overlayClassName ? (
-            <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
-          ) : null}
+          {lightOverlay}
+          {sheenOverlay}
+          {stateOverlay}
 
           <div className="relative flex h-full items-center">
             <EntityCardHeader
@@ -50,6 +211,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               }
               size="extra-small"
               align="center"
+              layout={primaryMetric ? 'title-first' : 'eyebrow-first'}
               tone={controller.isOn ? 'primary' : 'neutral'}
               titleClassName={stateSurface.primaryTextClassName}
               subtitleClassName={stateSurface.mutedTextClassName}
@@ -70,115 +232,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           </div>
         </div>
 
-        {controller.hasControlsDialog && controller.isDialogOpen ? (
-          <Dialog.Root open={controller.isDialogOpen} onOpenChange={controller.setIsDialogOpen}>
-            <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
-              <Dialog.Content
-                className={`fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border p-6 shadow-2xl ${controller.dialogSurface}`}
-              >
-                <DialogHeader
-                  title={props.name}
-                  description={controller.entityType}
-                  isOn={controller.theme !== 'light'}
-                />
-                <DialogSectionRow label={controller.roomLabel}>
-                  <EntityRoomSelector entityId={props.id} label={controller.roomLabel} compact />
-                </DialogSectionRow>
-
-                <div className="space-y-4">
-                  {controller.hasMetrics ? (
-                    <div
-                      className={`rounded-2xl p-4 ${
-                        controller.theme === 'light'
-                          ? 'bg-gray-100'
-                          : controller.theme === 'glass'
-                            ? 'bg-white/8'
-                            : 'bg-white/5'
-                      }`}
-                    >
-                      <p className={`text-xs uppercase tracking-[0.16em] ${controller.labelColor}`}>
-                        {controller.metricSectionTitle}
-                      </p>
-                      <p className={`mt-1 text-xs ${controller.labelColor}`}>
-                        {controller.metricSectionDescription}
-                      </p>
-                      <div className="mt-3 space-y-2">
-                        {controller.availableMetrics.map((metric) => {
-                          const isSelected = controller.selectedMetricLabels.includes(metric.label);
-                          return (
-                            <button
-                              type="button"
-                              key={`dialog-${metric.label}`}
-                              onClick={() => controller.handleMetricToggle(metric.label)}
-                              className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-colors ${
-                                !isSelected
-                                  ? controller.theme === 'light'
-                                    ? 'border-transparent bg-white/60 hover:bg-white'
-                                    : 'border-transparent bg-white/5 hover:bg-white/10'
-                                  : ''
-                              }`}
-                              style={
-                                isSelected
-                                  ? {
-                                      borderColor: `${controller.accentColor}55`,
-                                      backgroundColor:
-                                        controller.theme === 'light'
-                                          ? `${controller.accentColor}10`
-                                          : `${controller.accentColor}18`,
-                                    }
-                                  : undefined
-                              }
-                            >
-                              <span
-                                className={`min-w-0 flex items-center gap-2 ${controller.labelColor}`}
-                              >
-                                {controller.renderMetricIcon(metric, 'h-4 w-4 flex-shrink-0')}
-                                <span className="truncate">
-                                  {controller.getMetricLabel(metric)}
-                                </span>
-                              </span>
-                              <div className="flex flex-shrink-0 items-center gap-3">
-                                <span className={`font-medium ${controller.textColor}`}>
-                                  {controller.formatMetricValue(metric)}
-                                </span>
-                                <span
-                                  className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                                    !isSelected
-                                      ? controller.theme === 'light'
-                                        ? 'border-gray-400 bg-transparent'
-                                        : 'border-white/40 bg-transparent'
-                                      : ''
-                                  }`}
-                                  style={
-                                    isSelected
-                                      ? {
-                                          borderColor: controller.accentColor,
-                                          backgroundColor: controller.accentColor,
-                                        }
-                                      : undefined
-                                  }
-                                >
-                                  {isSelected ? (
-                                    <Check
-                                      className={`h-3 w-3 ${
-                                        controller.theme === 'light' ? 'text-white' : 'text-black'
-                                      }`}
-                                    />
-                                  ) : null}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog.Root>
-        ) : null}
+        {controlsDialog}
       </>
     );
   }
@@ -187,30 +241,27 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
     <>
       <div
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full bg-gradient-to-br ${controller.cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${controller.cardColors.border} overflow-hidden transition-all duration-500 ${
+        className={`relative h-full w-full bg-linear-to-br ${controller.cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${controller.cardColors.border} overflow-hidden transition-all duration-500 ${
           props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
         } ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
       >
         {controller.isOn && (
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
+            className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
           />
         )}
 
         {controller.theme === 'light' && <div className="absolute inset-0 bg-white/60" />}
 
-        {cardShell.sheenOverlayClassName ? (
-          <div className={cardShell.sheenOverlayClassName} />
-        ) : null}
+        {sheenOverlay}
 
-        {stateSurface.overlayClassName && (
-          <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
-        )}
+        {stateOverlay}
 
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
             title={props.name}
             subtitle={controller.entityType}
+            layout="eyebrow-first"
             size={controller.isExtraSmall ? 'extra-small' : 'small'}
             tone={controller.isOn ? 'primary' : 'neutral'}
             titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left ${controller.isExtraSmall ? 'text-[11px]' : ''}`}
@@ -261,7 +312,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                       <span className="truncate">{controller.getMetricLabel(metric)}</span>
                     </span>
                     <span
-                      className={`${stateSurface.primaryTextClassName} ${controller.isExtraSmall ? 'pl-[14px] text-[10px]' : 'pl-[16px] text-xs'} font-medium`}
+                      className={`${stateSurface.primaryTextClassName} ${controller.isExtraSmall ? 'pl-3.5 text-[10px]' : 'pl-4 text-xs'} font-medium`}
                     >
                       {controller.formatMetricValue(metric)}
                     </span>
@@ -273,113 +324,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         </div>
       </div>
 
-      {controller.hasControlsDialog && controller.isDialogOpen ? (
-        <Dialog.Root open={controller.isDialogOpen} onOpenChange={controller.setIsDialogOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
-            <Dialog.Content
-              className={`fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border p-6 shadow-2xl ${controller.dialogSurface}`}
-            >
-              <DialogHeader
-                title={props.name}
-                description={controller.entityType}
-                isOn={controller.theme !== 'light'}
-              />
-              <DialogSectionRow label={controller.roomLabel}>
-                <EntityRoomSelector entityId={props.id} label={controller.roomLabel} compact />
-              </DialogSectionRow>
-
-              <div className="space-y-4">
-                {controller.hasMetrics && (
-                  <div
-                    className={`rounded-2xl p-4 ${
-                      controller.theme === 'light'
-                        ? 'bg-gray-100'
-                        : controller.theme === 'glass'
-                          ? 'bg-white/8'
-                          : 'bg-white/5'
-                    }`}
-                  >
-                    <p className={`text-xs uppercase tracking-[0.16em] ${controller.labelColor}`}>
-                      {controller.metricSectionTitle}
-                    </p>
-                    <p className={`mt-1 text-xs ${controller.labelColor}`}>
-                      {controller.metricSectionDescription}
-                    </p>
-                    <div className="mt-3 space-y-2">
-                      {controller.availableMetrics.map((metric) => {
-                        const isSelected = controller.selectedMetricLabels.includes(metric.label);
-                        return (
-                          <button
-                            type="button"
-                            key={`dialog-${metric.label}`}
-                            onClick={() => controller.handleMetricToggle(metric.label)}
-                            className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-colors ${
-                              !isSelected
-                                ? controller.theme === 'light'
-                                  ? 'border-transparent bg-white/60 hover:bg-white'
-                                  : 'border-transparent bg-white/5 hover:bg-white/10'
-                                : ''
-                            }`}
-                            style={
-                              isSelected
-                                ? {
-                                    borderColor: `${controller.accentColor}55`,
-                                    backgroundColor:
-                                      controller.theme === 'light'
-                                        ? `${controller.accentColor}10`
-                                        : `${controller.accentColor}18`,
-                                  }
-                                : undefined
-                            }
-                          >
-                            <span
-                              className={`min-w-0 flex items-center gap-2 ${controller.labelColor}`}
-                            >
-                              {controller.renderMetricIcon(metric, 'h-4 w-4 flex-shrink-0')}
-                              <span className="truncate">{controller.getMetricLabel(metric)}</span>
-                            </span>
-                            <div className="flex flex-shrink-0 items-center gap-3">
-                              <span className={`font-medium ${controller.textColor}`}>
-                                {controller.formatMetricValue(metric)}
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                                  !isSelected
-                                    ? controller.theme === 'light'
-                                      ? 'border-gray-400 bg-transparent'
-                                      : 'border-white/40 bg-transparent'
-                                    : ''
-                                }`}
-                                style={
-                                  isSelected
-                                    ? {
-                                        borderColor: controller.accentColor,
-                                        backgroundColor: controller.accentColor,
-                                      }
-                                    : undefined
-                                }
-                              >
-                                {isSelected ? (
-                                  <Check
-                                    className={`h-3 w-3 ${
-                                      controller.theme === 'light' ? 'text-white' : 'text-black'
-                                    }`}
-                                  />
-                                ) : null}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
-      ) : null}
+      {controlsDialog}
     </>
   );
 });

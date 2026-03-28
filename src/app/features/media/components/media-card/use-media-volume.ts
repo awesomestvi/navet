@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import type { TranslateFn } from '@/app/hooks';
+import { useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaVolumeParams {
@@ -26,13 +26,7 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
     };
   }, []);
 
-  const runVolumeAction = useCallback(async (action: () => Promise<void>, errorMessage: string) => {
-    try {
-      await action();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : errorMessage);
-    }
-  }, []);
+  const runVolumeAction = useServiceActionHandler();
 
   const toggleMute = useCallback(() => {
     const nextMuted = !isMuted;

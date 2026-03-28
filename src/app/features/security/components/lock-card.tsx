@@ -1,10 +1,17 @@
 import { DoorClosed, DoorOpen, Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
-import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  isExtraSmallCardSize,
+  isTinyCardSize,
+} from '@/app/components/shared/card-size-selector';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
+import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
@@ -34,20 +41,83 @@ export const LockCard = memo(function LockCard({
     }
     setIsLocked(initialState);
   }, [liveEntity, initialState]);
-  const { theme, colors } = useTheme();
+  const { theme, colors, accentColor } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
+  const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
 
   const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
+  const tinyTextTokens = getCardReadableTextTokens({
+    theme,
+    tone: isLocked ? 'primary' : 'red',
+    accentColor,
+  });
+
+  if (isTiny) {
+    return (
+      <TinyActionCard
+        rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
+        metadata={t('security.lock')}
+        title={name}
+        detail={isLocked ? t('security.locked') : t('security.unlocked')}
+        metadataClassName="text-white/70"
+        titleClassName="text-white"
+        detailClassName={`${
+          isLocked
+            ? theme === 'light'
+              ? 'text-green-700'
+              : theme === 'glass'
+                ? 'text-green-100'
+                : 'text-green-300'
+            : theme === 'light'
+              ? 'text-red-700'
+              : theme === 'glass'
+                ? 'text-red-100'
+                : 'text-red-300'
+        }`}
+        metadataStyle={{ color: tinyTextTokens.subtitleColor }}
+        titleStyle={{ color: tinyTextTokens.titleColor }}
+        watermark={
+          isLocked ? (
+            <TinyCardWatermark
+              IconComponent={DoorClosed}
+              color={tinyTextTokens.titleColor}
+              className="opacity-15"
+            />
+          ) : (
+            <TinyCardWatermark
+              IconComponent={DoorOpen}
+              color={tinyTextTokens.titleColor}
+              className="opacity-15"
+            />
+          )
+        }
+        overlays={
+          <>
+            <div
+              className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
+            />
+            {securitySurface.overlayClassName ? (
+              <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+            ) : null}
+          </>
+        }
+        actionButtonProps={{
+          onClick: () => setIsLocked(!isLocked),
+          'aria-label': isLocked ? t('security.unlocked') : t('security.locked'),
+        }}
+      />
+    );
+  }
 
   if (isExtraSmall) {
     return (
       <div
-        className={`relative h-full overflow-hidden rounded-3xl bg-gradient-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
+        className={`relative h-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
       >
         <div
-          className={`absolute inset-0 bg-gradient-to-r ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+          className={`absolute inset-0 bg-linear-to-r ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
         />
 
         {securitySurface.overlayClassName ? (
@@ -93,8 +163,8 @@ export const LockCard = memo(function LockCard({
               onClick={() => setIsLocked(!isLocked)}
               className={`h-9 w-9 ${
                 isLocked
-                  ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
-                  : 'bg-gradient-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
+                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
+                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
               }`}
             >
               {isLocked ? (
@@ -111,10 +181,10 @@ export const LockCard = memo(function LockCard({
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-3xl bg-gradient-to-br ${isExtraSmall ? 'p-3' : 'p-4'} ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
+      className={`relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${isExtraSmall ? 'p-3' : 'p-4'} ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
     >
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
+        className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
       ></div>
 
       {/* Light theme frosted overlay */}
@@ -126,6 +196,7 @@ export const LockCard = memo(function LockCard({
         <EntityCardHeader
           title={name}
           subtitle={t('security.lock')}
+          layout="eyebrow-first"
           size={size}
           tone={isLocked ? 'primary' : 'red'}
           leading={
@@ -146,8 +217,8 @@ export const LockCard = memo(function LockCard({
             onClick={() => setIsLocked(!isLocked)}
             className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
               isLocked
-                ? 'bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
-                : 'bg-gradient-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
+                ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
+                : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
             }`}
           >
             {isLocked ? (

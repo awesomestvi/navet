@@ -91,6 +91,7 @@ export const VacuumCard = memo(function VacuumCard({
           <EntityCardHeader
             title={name}
             subtitle={t('vacuum.subtitle')}
+            layout="eyebrow-first"
             size={size}
             tone={
               currentStatus === 'returning'

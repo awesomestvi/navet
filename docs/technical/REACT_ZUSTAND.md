@@ -90,6 +90,17 @@ Feature controller hooks should remain orchestration-focused and delegate respon
 The controller should compose these slices and return view state, rather than accumulating large
 inline sync/action/display blocks.
 
+### Shared compact-card presentation contract
+
+When adding or revising dense card variants:
+
+- Reuse shared presentational primitives such as the entity title block and tiny action-card shell
+- Prefer passing feature data into a shared compact shell over building new one-off tiny layouts
+- Keep title/subtitle ordering explicit through the shared title block (`title-first` vs `eyebrow-first`) so compact cards stay visually consistent across domains
+
+This keeps tiny, extra-small, and other compressed card variants aligned while still letting
+features supply their own actions, metrics, and visual accents.
+
 ### Typed i18n callback contract
 
 Use shared translator function types exported by the i18n module for hook/component dependencies

@@ -1,7 +1,7 @@
 import { Home, MapPin, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { useAuth } from '@/app/contexts/auth-context';
@@ -27,7 +27,7 @@ export function PresenceOverviewWidget({ size = 'large' }: PresenceOverviewWidge
   const { config } = useAuth();
   const surface = getDashboardWidgetSurfaceTokens(theme);
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
-  const isCompact = size === 'extra-small' || size === 'small';
+  const isCompact = isCompactCardSize(size);
 
   const persons = useMemo<PresencePerson[]>(() => {
     if (!entities) return [];
@@ -72,6 +72,7 @@ export function PresenceOverviewWidget({ size = 'large' }: PresenceOverviewWidge
           home: homeCount,
           away: Math.max(0, persons.length - homeCount),
         })}
+        layout="eyebrow-first"
         size={isCompact ? 'small' : 'medium'}
         titleClassName={surface.textPrimary}
         subtitleClassName={surface.textMuted}

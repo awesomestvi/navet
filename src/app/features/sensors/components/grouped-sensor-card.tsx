@@ -81,6 +81,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
           <EntityCardHeader
             title={name}
             subtitle={t('sensors.group')}
+            layout="eyebrow-first"
             size={size}
             tone={accentColor}
             leading={

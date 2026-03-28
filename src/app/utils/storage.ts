@@ -12,7 +12,8 @@ class LocalStorage {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
-    } catch (_error) {
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn(`[storage] get("${key}") failed:`, error);
       return defaultValue;
     }
   }
@@ -25,7 +26,9 @@ class LocalStorage {
 
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (_error) {}
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn(`[storage] set("${key}") failed:`, error);
+    }
   }
 
   /**
@@ -36,7 +39,9 @@ class LocalStorage {
 
     try {
       window.localStorage.removeItem(key);
-    } catch (_error) {}
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn(`[storage] remove("${key}") failed:`, error);
+    }
   }
 
   /**
@@ -47,7 +52,9 @@ class LocalStorage {
 
     try {
       window.localStorage.clear();
-    } catch (_error) {}
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn('[storage] clear() failed:', error);
+    }
   }
 
   /**
@@ -59,7 +66,8 @@ class LocalStorage {
     try {
       const keys = Object.keys(window.localStorage);
       return prefix ? keys.filter((key) => key.startsWith(prefix)) : keys;
-    } catch (_error) {
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn('[storage] keys() failed:', error);
       return [];
     }
   }

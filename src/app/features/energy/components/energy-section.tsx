@@ -13,6 +13,10 @@ import { EnergyNowWidget } from './widgets/energy-now-widget';
 
 const rangeOptions: EnergyRange[] = ['live', 'day', 'week', 'month'];
 
+function energyRangeKey(range: EnergyRange): `energy.range.${EnergyRange}` {
+  return `energy.range.${range}`;
+}
+
 function EnergySectionBand({
   title,
   description,
@@ -122,7 +126,7 @@ export const EnergySection = memo(function EnergySection() {
                 }`}
                 style={range === option ? { backgroundColor: accentColor } : undefined}
               >
-                {t(`energy.range.${option}`)}
+                {t(energyRangeKey(option))}
               </button>
             ))}
           </>

@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -7,6 +6,7 @@ import {
   DialogHeader,
   getNamedIconComponent,
 } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -85,101 +85,99 @@ function ButtonSettingsDialog({
     : DEVICE_EDITOR_ICON_OPTIONS;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content
-          className={`fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
-        >
-          <DialogHeader title={t('widgets.button.configure')} isOn={theme !== 'light'} />
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      overlayClassName="bg-black/60 backdrop-blur-sm"
+      contentClassName={`fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
+    >
+      <DialogHeader title={t('widgets.button.configure')} isOn={theme !== 'light'} />
 
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder={t('widgets.button.labelPlaceholder')}
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              placeholder={t('widgets.button.servicePlaceholder')}
-              className={inputClass}
-            />
-            <input
-              type="text"
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value)}
-              placeholder={t('widgets.button.entityPlaceholder')}
-              className={inputClass}
-            />
-            <textarea
-              value={serviceData}
-              onChange={(e) => setServiceData(e.target.value)}
-              placeholder={t('widgets.button.serviceDataPlaceholder')}
-              className={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
-            />
+      <div className="space-y-3">
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder={t('widgets.button.labelPlaceholder')}
+          className={inputClass}
+        />
+        <input
+          type="text"
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+          placeholder={t('widgets.button.servicePlaceholder')}
+          className={inputClass}
+        />
+        <input
+          type="text"
+          value={entityId}
+          onChange={(e) => setEntityId(e.target.value)}
+          placeholder={t('widgets.button.entityPlaceholder')}
+          className={inputClass}
+        />
+        <textarea
+          value={serviceData}
+          onChange={(e) => setServiceData(e.target.value)}
+          placeholder={t('widgets.button.serviceDataPlaceholder')}
+          className={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
+        />
 
-            <div className="space-y-3">
-              <div className={`text-xs font-medium ${surface.textSecondary}`}>
-                {t('widgets.button.iconLabel')}
-              </div>
-              <div className="relative">
-                <Search
-                  className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${surface.textMuted}`}
-                />
-                <input
-                  type="text"
-                  value={iconQuery}
-                  onChange={(e) => setIconQuery(e.target.value)}
-                  placeholder={t('widgets.button.iconSearchPlaceholder')}
-                  className={`${inputClass} pl-10`}
-                />
-              </div>
-              <div className="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto pr-1">
-                {filteredIcons.map((icon) => {
-                  const IconComponent = icon.component;
-                  const isSelected = selectedIcon === icon.name;
-                  return (
-                    <button
-                      type="button"
-                      key={icon.name}
-                      onClick={() => setSelectedIcon(icon.name)}
-                      className={`flex aspect-square items-center justify-center rounded-2xl border transition-all ${
-                        isSelected ? '' : `${surface.borderClassName} ${surface.textMuted}`
-                      }`}
-                      style={
-                        isSelected
-                          ? {
-                              borderColor: `${accentHex}88`,
-                              backgroundColor: `${accentHex}22`,
-                              color: accentHex,
-                            }
-                          : undefined
-                      }
-                      title={t(icon.labelKey)}
-                    >
-                      <IconComponent className="h-4 w-4" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="space-y-3">
+          <div className={`text-xs font-medium ${surface.textSecondary}`}>
+            {t('widgets.button.iconLabel')}
           </div>
+          <div className="relative">
+            <Search
+              className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${surface.textMuted}`}
+            />
+            <input
+              type="text"
+              value={iconQuery}
+              onChange={(e) => setIconQuery(e.target.value)}
+              placeholder={t('widgets.button.iconSearchPlaceholder')}
+              className={`${inputClass} pl-10`}
+            />
+          </div>
+          <div className="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto pr-1">
+            {filteredIcons.map((icon) => {
+              const IconComponent = icon.component;
+              const isSelected = selectedIcon === icon.name;
+              return (
+                <button
+                  type="button"
+                  key={icon.name}
+                  onClick={() => setSelectedIcon(icon.name)}
+                  className={`flex aspect-square items-center justify-center rounded-2xl border transition-all ${
+                    isSelected ? '' : `${surface.borderClassName} ${surface.textMuted}`
+                  }`}
+                  style={
+                    isSelected
+                      ? {
+                          borderColor: `${accentHex}88`,
+                          backgroundColor: `${accentHex}22`,
+                          color: accentHex,
+                        }
+                      : undefined
+                  }
+                  title={t(icon.labelKey)}
+                >
+                  <IconComponent className="h-4 w-4" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            className="mt-4 w-full rounded-xl py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
-            style={{ backgroundColor: getThemeColorValue('blue') }}
-          >
-            {t('widgets.button.configure')}
-          </button>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      <button
+        type="button"
+        onClick={handleSave}
+        className="mt-4 w-full rounded-xl py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
+        style={{ backgroundColor: getThemeColorValue('blue') }}
+      >
+        {t('widgets.button.configure')}
+      </button>
+    </DialogShell>
   );
 }
 
@@ -253,7 +251,7 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
             {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
           </span>
           {isConfigured && data.entityId ? (
-            <span className={`max-w-[12rem] truncate text-[11px] ${surface.textMuted}`}>
+            <span className={`max-w-48 truncate text-[11px] ${surface.textMuted}`}>
               {data.entityId}
             </span>
           ) : null}

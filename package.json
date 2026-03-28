@@ -1,7 +1,7 @@
 {
   "name": "navet",
   "private": true,
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -12,6 +12,8 @@
     "format": "biome format --write ./src",
     "check": "biome check ./src",
     "check:fix": "biome check --apply ./src",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
     "typecheck": "tsc --noEmit",
     "setup:hooks": "node scripts/setup-hooks.mjs"
   },
@@ -31,7 +33,7 @@
     "@radix-ui/react-slider": "1.3.6",
     "clsx": "2.1.1",
     "home-assistant-js-websocket": "^9.6.0",
-    "lucide-react": "1.0.1",
+    "lucide-react": "1.7.0",
     "sonner": "2.0.7",
     "tailwind-merge": "3.5.0",
     "workbox-window": "^7.4.0",
@@ -39,16 +41,21 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8",
+    "@biomejs/biome": "^2.4.9",
     "@tailwindcss/vite": "4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "6.0.1",
+    "@vitest/coverage-v8": "^4.1.2",
+    "jsdom": "^29.0.1",
     "tailwindcss": "4.2.2",
     "typescript": "^6.0.2",
-    "vite": "8.0.2",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite": "8.0.3",
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.1.2"
   },
   "peerDependencies": {
     "react": "18.3.1",

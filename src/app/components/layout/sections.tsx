@@ -1,6 +1,10 @@
 import { Clipboard, Lightbulb, Lock, type LucideIcon, Tv, Video } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode } from 'react';
-import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardSpanClass,
+  getDashboardGridColumnCount,
+} from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { DashboardCardItem } from '@/app/features/dashboard';
@@ -251,7 +255,7 @@ const EntityGrid = memo(function EntityGrid({
         className="grid w-full auto-rows-[87px] grid-flow-row-dense gap-2 md:gap-3 lg:gap-4"
         style={
           {
-            gridTemplateColumns: `repeat(${breakpointCols}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
           } as CSSProperties
         }
       >

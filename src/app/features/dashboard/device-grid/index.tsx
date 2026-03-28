@@ -1,5 +1,8 @@
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getDashboardGridColumnCount,
+} from '@/app/components/shared/card-size-selector';
 import { useSearch } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { DashboardCardItem } from '../components/dashboard-card-item';
@@ -81,7 +84,7 @@ export const DeviceGrid = memo(function DeviceGrid({
       className="grid w-full grid-flow-row-dense gap-2 auto-rows-[87px] md:gap-3 lg:gap-4"
       style={
         {
-          gridTemplateColumns: `repeat(${breakpointCols}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
         } as CSSProperties
       }
     >

@@ -59,35 +59,31 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
       set({ connecting: true, error: null });
 
       try {
-        // Subscribe to typed events — only update the slice of state that changed
-        const unsubscribe = homeAssistantService.addListener((event) => {
-          switch (event) {
-            case 'entities':
-              if (entityDebounceTimer !== null) clearTimeout(entityDebounceTimer);
-              entityDebounceTimer = setTimeout(() => {
-                entityDebounceTimer = null;
-                set({ entities: homeAssistantService.getEntities() });
-              }, ENTITY_DEBOUNCE_MS);
-              break;
-            case 'config':
-              set({ config: homeAssistantService.getConfig() });
-              break;
-            case 'registries':
-              set({
-                areas: homeAssistantService.getAreas(),
-                deviceRegistry: homeAssistantService.getDeviceRegistry(),
-                entityRegistry: homeAssistantService.getEntityRegistry(),
-              });
-              break;
-            case 'connection':
-              set({
-                connected: homeAssistantService.isConnected(),
-                connection: homeAssistantService.getConnection(),
-                connecting: false,
-              });
-              break;
-          }
-        });
+        // Subscribe to each typed event — only update the slice of state that changed
+        const unsubscribers = [
+          homeAssistantService.addListener('entities', (entities) => {
+            if (entityDebounceTimer !== null) clearTimeout(entityDebounceTimer);
+            entityDebounceTimer = setTimeout(() => {
+              entityDebounceTimer = null;
+              set({ entities });
+            }, ENTITY_DEBOUNCE_MS);
+          }),
+          homeAssistantService.addListener('config', (config) => {
+            set({ config });
+          }),
+          homeAssistantService.addListener(
+            'registries',
+            ({ areas, devices, entities: entityRegistry }) => {
+              set({ areas, deviceRegistry: devices, entityRegistry });
+            }
+          ),
+          homeAssistantService.addListener('connection', ({ connected, connection }) => {
+            set({ connected, connection, connecting: false });
+          }),
+        ];
+        const unsubscribe = () => {
+          for (const fn of unsubscribers) fn();
+        };
 
         // Authenticate and connect
         await homeAssistantService.authenticate(config);

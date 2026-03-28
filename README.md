@@ -24,7 +24,7 @@
 
 Navet (Swedish for "the hub") is a modern, responsive smart home dashboard built with React and Tailwind CSS v4. It maintains a premium glass-inspired design language while scaling visual effects across powerful and low-power devices, with comprehensive smart home control capabilities and an intuitive editing system.
 
-Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONING.md) for the beta versioning policy and tag-driven GitHub release flow.
+Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONING.md) for the beta versioning policy and tag-driven GitHub release flow.
 
 ## ✨ Features
 
@@ -36,6 +36,7 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Dynamic Greeting** - Header greeting rotates on each session: time-of-day greetings (Good morning/afternoon/evening/night) with occasional casual variants (Hi, Hey, Welcome back), fully localized across all five languages
 - **Responsive Grid** - 2 columns (mobile) → 4 (`md`) → 6 (`xl`) → 8 (`2xl`) → 12 (`4xl`)
 - **Adaptive Cards** - Extra-Small, Small, Medium, and Large card sizes
+- **Adaptive Cards** - Tiny, Extra-Small, Small, Medium, and Large card sizes, with compact action-card layouts for the smallest tiles
 
 ### 🏠 Smart Home Control
 - **Multi-Entity Support** - Lights, HVAC, switches, covers, locks, sensors, helpers, scripts, people, media players, vacuums, and more
@@ -90,6 +91,7 @@ Current release channel: `0.1.0-beta.1`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Feature-Owned Modules** - Dashboard, lighting, settings, sensors, weather, and other major areas expose feature-level entry points under `src/app/features/*`
 - **Feature-Colocated State** - Dashboard and lighting hooks/stores live with their owning features instead of generic global folders
 - **Shared UI Foundation** - Cross-feature pieces such as card sizing, empty states, interaction previews, and theme color helpers live under shared component modules
+- **Shared Title + Tiny Card Primitives** - Compact action cards and eyebrow-first title blocks now come from shared primitives so small card layouts stay consistent across feature types
 - **Shared Visual Primitives** - Cross-theme icon pills and interactive nav/action pills are centralized behind reusable shared primitives instead of feature-level inline theme branches
 - **Shared Card State Styling** - Off/inactive card treatment for light, HVAC, switch, and media cards now resolves through one shared card-state surface token helper
 - **Artwork-Led Media Layouts** - Small, medium, medium-vertical, and large media cards use artwork-driven layouts with shared transport controls, speaker/room headers, and empty-state fallbacks
@@ -195,6 +197,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Use the card remove action to remove entities from the dashboard
 - Edit-mode remove/delete/resize actions are delegated from the grid container instead of attaching separate edit handlers and menus to every card
 - Use the top-right resize action to change card size (`extra-small`/small/medium/large, depending on card type)
+- Some compact action-style cards now also support a `tiny` micro-tile size for denser dashboard layouts
 - **Save changes** when done
 
 #### Search
@@ -293,7 +296,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
   - **⚡ Button** - One-tap action button that calls any Home Assistant service
 - Calendar is now provided by live Home Assistant `calendar.*` entity cards instead of a custom widget
 - Available in **3 sizes**: Small, Medium, Large
-- Some dashboard cards also support an **Extra-Small** `1 × 0.5` size for denser layouts where that variant exists
+- Some dashboard cards also support an **Extra-Small** `1 × 0.5` size and a new **Tiny** `0.5 × 0.5` micro tile where that compact treatment exists
 - Widgets persist across browser sessions
 - Full drag-and-drop and delete support
 - See [WIDGETS.md](docs/WIDGETS.md) for detailed documentation
@@ -303,6 +306,11 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - **Media** now renders live Home Assistant media players in its own section view
 - **Locks** now renders live Home Assistant lock entities in its own section view
 - **Tasks** remains a placeholder until that domain is mapped into Navet card/device types
+
+#### Compact Card Presentation
+- Many card headers now use an eyebrow-first text layout so small and extra-small cards show type/context before the main title
+- Shared compact action-card treatment is now used for the smallest interactive cards, reducing per-feature layout drift in tiny and very compact tiles
+- Switch, lock, and scene-style cards now share the same tiny-card visual language when rendered in the smallest footprint
 
 #### Navigation Sections
 - **Home** for the main dashboard

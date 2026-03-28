@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -37,6 +37,7 @@ export function useSwitchCardController({
   const resolvedEntityType = entityType || t('lighting.type.switch');
   const resolvedServiceDomain = serviceDomain || id.split('.')[0];
   const resolvedServiceAction = serviceAction || 'binary';
+  const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
 
   useEffect(() => {
@@ -128,6 +129,7 @@ export function useSwitchCardController({
     hasMetrics: metricState.hasMetrics,
     isDialogOpen,
     isOn,
+    isTiny,
     labelColor,
     metricLimit: metricState.metricLimit,
     metricSectionDescription:

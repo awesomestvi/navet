@@ -3,6 +3,7 @@ import {
   type CardSize,
   isCompactCardSize,
   isExtraSmallCardSize,
+  isTinyCardSize,
 } from '@/app/components/shared/card-size-selector';
 import {
   type CardTextTone,
@@ -21,6 +22,10 @@ type EntityIconPillStyles = {
 };
 
 function getBadgeSizeClass(size: CardSize) {
+  if (isTinyCardSize(size)) {
+    return 'h-6 w-6';
+  }
+
   if (isExtraSmallCardSize(size)) {
     return 'h-7 w-7';
   }
@@ -33,6 +38,10 @@ function getBadgeSizeClass(size: CardSize) {
 }
 
 function getIconSizeClass(size: CardSize) {
+  if (isTinyCardSize(size)) {
+    return 'h-3 w-3';
+  }
+
   if (isExtraSmallCardSize(size)) {
     return 'h-3.5 w-3.5';
   }

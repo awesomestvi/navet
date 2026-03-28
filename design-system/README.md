@@ -66,6 +66,7 @@ Complete feature implementation guide:
 9. **One Climate Card Pattern** - Climate entities should use the HVAC card pattern; do not reintroduce a parallel legacy climate-card implementation
 10. **Composable Controller Layers** - Keep feature controllers as orchestration shells and extract sync/action/display responsibilities into dedicated helper hooks
 11. **Shared i18n Function Types** - Use exported i18n function types for translator dependencies across hooks/components instead of redefining local translator signatures
+12. **Shared Compact Card Layouts** - Tiny and other dense card variants should use shared title/action primitives rather than bespoke per-feature micro layouts
 
 ### Authentication System
 - **Login Page** - Secure authentication with Home Assistant URL and long-lived access token
@@ -103,6 +104,7 @@ Complete feature implementation guide:
 - **Borders**: `border-{color}-700/20` (20% opacity) or `border-gray-200` (light theme)
 
 ### Card Sizes
+- **Tiny (0.5×0.5)**: Micro action/status tile for ultra-dense dashboards; intended for highly compressed interactive cards such as compact switch, lock, or scene-style layouts using the shared tiny-action-card primitive
 - **Extra-Small (1×0.5)**: Dense status or single-control layouts, compact padding and minimal controls
   Light cards keep an unlabeled brightness slider visible here; tap behavior determines whether a compact settings action shares that row or the slider uses the full width.
 - **Small (1×1)**: Minimal info, quick toggle, `p-4`, one responsive grid column wide and two auto-rows tall
@@ -158,6 +160,8 @@ When creating a new card component:
 ### Key Files
 ```
 /src/app/components/shared/             → Shared UI building blocks
+/src/app/components/shared/entity-card-title-block.tsx → Shared title/subtitle ordering for card headers
+/src/app/components/shared/tiny-action-card.tsx → Shared compact action-card shell for tiny tiles
 /src/app/components/layout/             → Header, sidebar, bottom nav
 /src/app/features/dashboard/            → Dashboard layout, routing, and card registry
 /src/app/features/settings/             → Settings page and section implementations

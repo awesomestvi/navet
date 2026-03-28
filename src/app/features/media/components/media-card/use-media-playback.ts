@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { toast } from 'sonner';
 import type { TranslateFn } from '@/app/hooks';
+import { useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaPlaybackParams {
@@ -11,14 +11,7 @@ interface UseMediaPlaybackParams {
 
 export function useMediaPlayback({ entityId, isPlaying, t }: UseMediaPlaybackParams) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const runAction = useCallback(async (action: () => Promise<void>, errorMessage: string) => {
-    try {
-      await action();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : errorMessage);
-    }
-  }, []);
+  const runAction = useServiceActionHandler();
 
   const togglePlay = useCallback(() => {
     void runAction(

@@ -277,6 +277,13 @@ export function DashboardResizeTrigger({
 function getDefaultSizeOptions(): SizeOption[] {
   return [
     {
+      value: 'tiny',
+      label: 'Tiny',
+      description: 'Micro tile',
+      dimensions: '0.5 x 0.5',
+      preview: 'h-7 w-3.5',
+    },
+    {
       value: 'extra-small',
       label: 'Extra-Small',
       description: 'Compact tile',

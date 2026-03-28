@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
-import type { AllViewGrouping } from '@/app/features/dashboard/all-view-grid';
+import type { AllViewGrouping } from '@/app/features/dashboard';
 import { useI18n, useTheme } from '@/app/hooks';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 

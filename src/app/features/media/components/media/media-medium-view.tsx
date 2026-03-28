@@ -124,7 +124,7 @@ export function MediaMediumView({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div
-                className={`truncate text-[10px] uppercase tracking-[0.16em] ${subtitleTone}`}
+                className={`truncate text-[10px] tracking-normal ${subtitleTone}`}
                 style={{ color: textTokens.subtitleColor }}
               >
                 {playerName}

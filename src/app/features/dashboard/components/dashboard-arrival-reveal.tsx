@@ -2,10 +2,26 @@ import { useEffect, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 
+type ArrivalVariant = 'all' | 'blank' | 'import';
+type ArrivalField =
+  | 'bakingKicker'
+  | 'bakingHeading'
+  | 'bakingBody'
+  | 'revealKicker'
+  | 'revealHeading'
+  | 'revealBody';
+
+function arrivalKey(
+  variant: ArrivalVariant,
+  field: ArrivalField
+): `dashboard.arrival.${ArrivalVariant}.${ArrivalField}` {
+  return `dashboard.arrival.${variant}.${field}`;
+}
+
 interface DashboardArrivalRevealProps {
   open: boolean;
   onComplete: () => void;
-  variant: 'all' | 'blank' | 'import';
+  variant: ArrivalVariant;
 }
 
 export function DashboardArrivalReveal({ open, onComplete, variant }: DashboardArrivalRevealProps) {
@@ -35,12 +51,12 @@ export function DashboardArrivalReveal({ open, onComplete, variant }: DashboardA
   if (!open) return null;
 
   const copy = {
-    bakingKicker: t(`dashboard.arrival.${variant}.bakingKicker` as const),
-    bakingHeading: t(`dashboard.arrival.${variant}.bakingHeading` as const),
-    bakingBody: t(`dashboard.arrival.${variant}.bakingBody` as const),
-    revealKicker: t(`dashboard.arrival.${variant}.revealKicker` as const),
-    revealHeading: t(`dashboard.arrival.${variant}.revealHeading` as const),
-    revealBody: t(`dashboard.arrival.${variant}.revealBody` as const),
+    bakingKicker: t(arrivalKey(variant, 'bakingKicker')),
+    bakingHeading: t(arrivalKey(variant, 'bakingHeading')),
+    bakingBody: t(arrivalKey(variant, 'bakingBody')),
+    revealKicker: t(arrivalKey(variant, 'revealKicker')),
+    revealHeading: t(arrivalKey(variant, 'revealHeading')),
+    revealBody: t(arrivalKey(variant, 'revealBody')),
   };
   const accentColor = getThemeColorValue(primaryColor);
   const panelBackground =

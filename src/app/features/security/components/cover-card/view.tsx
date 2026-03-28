@@ -6,6 +6,7 @@ import { CardActionRow } from '@/app/components/shared/card-action-row';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
@@ -88,9 +89,9 @@ export function CoverCardView({
   return (
     <div
       {...cardProps}
-      className={`relative h-full bg-gradient-to-br ${cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${cardColors.border} overflow-hidden ${securitySurface.containerShadowClassName}`}
+      className={`relative h-full bg-linear-to-br ${cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${cardColors.border} overflow-hidden ${securitySurface.containerShadowClassName}`}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent`}></div>
+      <div className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent`}></div>
 
       {/* Light theme frosted overlay */}
       {securitySurface.overlayClassName && (
@@ -100,6 +101,7 @@ export function CoverCardView({
         <EntityCardHeader
           title={name}
           subtitle={t(deviceClassConfig[deviceClass].labelKey)}
+          layout="eyebrow-first"
           size={size}
           tone={position > 50 ? 'primary' : 'neutral'}
           leading={
@@ -197,7 +199,7 @@ export function CoverCardView({
                 <Slider.Track
                   className={`relative h-1 grow rounded-full ${securitySurface.sliderTrackClassName}`}
                 >
-                  <Slider.Range className="absolute rounded-full h-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
+                  <Slider.Range className="absolute rounded-full h-full bg-linear-to-r from-indigo-400 to-indigo-600" />
                 </Slider.Track>
                 <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" />
               </Slider.Root>
@@ -262,7 +264,7 @@ export function CoverCardView({
                 <Slider.Track
                   className={`relative h-1 grow rounded-full ${securitySurface.sliderTrackClassName}`}
                 >
-                  <Slider.Range className="absolute rounded-full h-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
+                  <Slider.Range className="absolute rounded-full h-full bg-linear-to-r from-indigo-400 to-indigo-600" />
                 </Slider.Track>
                 <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" />
               </Slider.Root>
@@ -316,76 +318,72 @@ export function CoverCardView({
 
       {/* Device Class Settings Dialog */}
       {isSettingsOpen ? (
-        <Dialog.Root open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay
-              className={`fixed inset-0 z-50 animate-in fade-in ${surface.dialogBackdrop}`}
-            />
-            <Dialog.Content
-              className={`fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-6 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${securitySurface.dialogContentClassName}`}
-            >
-              <DialogHeader
-                title={t('cover.settings.deviceType')}
-                description={t('cover.settings.description', { name })}
-                isOn
-              />
-              <DialogSectionRow label={t('common.room')}>
-                <EntityRoomSelector entityId={entityId} label={t('common.room')} compact />
-              </DialogSectionRow>
+        <DialogShell
+          isOpen={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+          contentClassName={`fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-6 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${securitySurface.dialogContentClassName}`}
+        >
+          <DialogHeader
+            title={t('cover.settings.deviceType')}
+            description={t('cover.settings.description', { name })}
+            isOn
+          />
+          <DialogSectionRow label={t('common.room')}>
+            <EntityRoomSelector entityId={entityId} label={t('common.room')} compact />
+          </DialogSectionRow>
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {
-                  const config = deviceClassConfig[type];
-                  const Icon = config.icon;
-                  const isSelected = deviceClass === type;
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {
+              const config = deviceClassConfig[type];
+              const Icon = config.icon;
+              const isSelected = deviceClass === type;
 
-                  return (
-                    <button
-                      type="button"
-                      key={type}
-                      onClick={() => setDeviceClass(type)}
-                      className={`rounded-2xl border-2 p-4 transition-all duration-200 ${securitySurface.dialogOptionClassName(isSelected)}`}
+              return (
+                <button
+                  type="button"
+                  key={type}
+                  onClick={() => setDeviceClass(type)}
+                  className={`rounded-2xl border-2 p-4 transition-all duration-200 ${securitySurface.dialogOptionClassName(isSelected)}`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded-full ${securitySurface.dialogOptionIconWrapClassName(isSelected)}`}
                     >
-                      <div className="flex flex-col items-center gap-2">
-                        <div
-                          className={`flex h-12 w-12 items-center justify-center rounded-full ${securitySurface.dialogOptionIconWrapClassName(isSelected)}`}
-                        >
-                          <Icon
-                            className={`h-6 w-6 ${securitySurface.dialogOptionIconClassName(isSelected)}`}
-                          />
-                        </div>
-                        <span
-                          className={`text-center text-xs font-medium ${securitySurface.dialogOptionTextClassName(isSelected)}`}
-                        >
-                          {t(config.labelKey)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                      <Icon
+                        className={`h-6 w-6 ${securitySurface.dialogOptionIconClassName(isSelected)}`}
+                      />
+                    </div>
+                    <span
+                      className={`text-center text-xs font-medium ${securitySurface.dialogOptionTextClassName(isSelected)}`}
+                    >
+                      {t(config.labelKey)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-              <div className="flex gap-3">
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className={`flex-1 rounded-xl py-2.5 text-sm font-medium text-white transition-colors ${securitySurface.dialogCancelButtonClassName}`}
-                  >
-                    {t('common.cancel')}
-                  </button>
-                </Dialog.Close>
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white text-sm font-medium transition-colors"
-                  >
-                    {t('common.done')}
-                  </button>
-                </Dialog.Close>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+          <div className="flex gap-3">
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className={`flex-1 rounded-xl py-2.5 text-sm font-medium text-white transition-colors ${securitySurface.dialogCancelButtonClassName}`}
+              >
+                {t('common.cancel')}
+              </button>
+            </Dialog.Close>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white text-sm font-medium transition-colors"
+              >
+                {t('common.done')}
+              </button>
+            </Dialog.Close>
+          </div>
+        </DialogShell>
       ) : null}
     </div>
   );

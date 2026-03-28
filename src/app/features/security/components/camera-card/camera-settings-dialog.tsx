@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { memo, useCallback } from 'react';
 import {
@@ -6,6 +5,7 @@ import {
   DialogHeader,
   DialogSectionRow,
 } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { useI18n } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -173,88 +173,82 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const hasControls = switches.length > 0 || selects.length > 0 || numbers.length > 0;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-in fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200">
-          <CustomScrollbar isOn>
-            <div className="p-6">
-              {/* Header */}
-              <DialogHeader
-                title={t('camera.settings.title')}
-                description={`${name} · ${room}`}
-                isOn
-              />
-              <DialogSectionRow label={t('camera.settings.room')}>
-                <EntityRoomSelector entityId={entityId} label={t('camera.settings.room')} compact />
-              </DialogSectionRow>
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      overlayClassName="bg-black/80 backdrop-blur-sm animate-in fade-in"
+      contentClassName="fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200"
+    >
+      <CustomScrollbar isOn>
+        <div className="p-6">
+          {/* Header */}
+          <DialogHeader title={t('camera.settings.title')} description={`${name} · ${room}`} isOn />
+          <DialogSectionRow label={t('camera.settings.room')}>
+            <EntityRoomSelector entityId={entityId} label={t('camera.settings.room')} compact />
+          </DialogSectionRow>
 
-              {hasControls ? (
-                <div className="space-y-6">
-                  {/* Switches */}
-                  {switches.length > 0 && (
-                    <div className="space-y-2">
-                      {switches.map(({ id, entity }) => (
-                        <SwitchRow
-                          key={id}
-                          entityId={id}
-                          label={getDisplayName(id, entity)}
-                          isOn={entity.state === 'on'}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Selects */}
-                  {selects.length > 0 && (
-                    <div className="space-y-4">
-                      {selects.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        const options = Array.isArray(attrs?.options)
-                          ? (attrs.options as string[])
-                          : [];
-                        return (
-                          <SelectRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            current={entity.state}
-                            options={options}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Numbers */}
-                  {numbers.length > 0 && (
-                    <div className="space-y-4">
-                      {numbers.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        return (
-                          <NumberRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            value={Number(entity.state)}
-                            min={Number(attrs?.min ?? 0)}
-                            max={Number(attrs?.max ?? 100)}
-                            step={Number(attrs?.step ?? 1)}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
+          {hasControls ? (
+            <div className="space-y-6">
+              {/* Switches */}
+              {switches.length > 0 && (
+                <div className="space-y-2">
+                  {switches.map(({ id, entity }) => (
+                    <SwitchRow
+                      key={id}
+                      entityId={id}
+                      label={getDisplayName(id, entity)}
+                      isOn={entity.state === 'on'}
+                    />
+                  ))}
                 </div>
-              ) : (
-                <p className="text-center text-sm text-white/40">
-                  {t('camera.settings.noControls')}
-                </p>
+              )}
+
+              {/* Selects */}
+              {selects.length > 0 && (
+                <div className="space-y-4">
+                  {selects.map(({ id, entity }) => {
+                    const attrs = entity.attributes as Record<string, unknown>;
+                    const options = Array.isArray(attrs?.options)
+                      ? (attrs.options as string[])
+                      : [];
+                    return (
+                      <SelectRow
+                        key={id}
+                        entityId={id}
+                        label={getDisplayName(id, entity)}
+                        current={entity.state}
+                        options={options}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Numbers */}
+              {numbers.length > 0 && (
+                <div className="space-y-4">
+                  {numbers.map(({ id, entity }) => {
+                    const attrs = entity.attributes as Record<string, unknown>;
+                    return (
+                      <NumberRow
+                        key={id}
+                        entityId={id}
+                        label={getDisplayName(id, entity)}
+                        value={Number(entity.state)}
+                        min={Number(attrs?.min ?? 0)}
+                        max={Number(attrs?.max ?? 100)}
+                        step={Number(attrs?.step ?? 1)}
+                      />
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </CustomScrollbar>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          ) : (
+            <p className="text-center text-sm text-white/40">{t('camera.settings.noControls')}</p>
+          )}
+        </div>
+      </CustomScrollbar>
+    </DialogShell>
   );
 });

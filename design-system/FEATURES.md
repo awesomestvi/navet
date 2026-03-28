@@ -138,6 +138,8 @@ Recent UI cleanup moved repeated theme logic into shared primitives so cross-the
 - **Round control button** - shared circular action control primitive for card actions across lighting, media, HVAC, security, and vacuum cards; supports `neutral`, `soft` (glass/frosted), and `emphasis` variants
 - **Card state surface tokens** - centralized off/inactive card shell, overlay, text, and media-artwork dimming treatment for light, HVAC, switch, and media cards
 - **Theme surface tokens** - still define the shared panel, border, text, and input surfaces used by these primitives
+- **Entity card title block** - centralized title/subtitle ordering so cards can switch between title-first and eyebrow-first header composition without duplicating text layout logic
+- **Tiny action card** - shared compact shell for the smallest interactive cards, including watermark, overlay, eyebrow/title text stack, and bottom action slot
 
 ---
 
@@ -162,6 +164,7 @@ Navet now uses a single HVAC-based card path for Home Assistant climate entities
 #### Implementation Notes
 - Climate entities are registered through the dashboard card registry and rendered via the HVAC feature module
 - Shared HVAC card structure is reused across dashboard sizes instead of maintaining a second climate-specific card implementation
+- HVAC headers now also participate in the shared eyebrow-first header layout used across many compact and mid-sized cards
 
 ---
 
@@ -186,6 +189,17 @@ Navet now uses a live Home Assistant-backed media card flow.
 - Production artwork color extraction uses the Navet Home Assistant proxy path instead of direct cross-origin image reads
 - The media dialog and card views share the same transport/action visual language
 - Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
+- Media card headers now use the same shared eyebrow-first title treatment as other feature cards, aligning subtitle/type placement across the dashboard
+
+### Compact Card Sizing
+
+Navet now includes a `tiny` card size for ultra-dense tiles.
+
+- `tiny` maps to a `0.5 × 0.5` micro tile in the size picker
+- It is intended for compact action/status cards rather than detail-heavy layouts
+- Shared compact presentation primitives keep tiny variants visually aligned instead of each feature building a different smallest-card treatment
+
+Current adoption in this change set centers on compact switch, lock, and scene-style cards, while other cards adopt the shared eyebrow-first header ordering for consistency at small sizes.
 
 ### Media Section Layout
 

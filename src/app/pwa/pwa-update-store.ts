@@ -59,7 +59,11 @@ function emit() {
 }
 
 function setState(nextState: Partial<PwaUpdateState>) {
-  state = { ...state, ...nextState };
+  const next = { ...state, ...nextState };
+  if (next.offlineReady === state.offlineReady && next.updateAvailable === state.updateAvailable) {
+    return;
+  }
+  state = next;
   emit();
 }
 

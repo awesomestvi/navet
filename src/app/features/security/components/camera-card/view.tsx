@@ -84,6 +84,7 @@ export function CameraCardView({
           <EntityCardHeader
             title={name}
             subtitle={isCompact ? '' : room}
+            layout="eyebrow-first"
             size={size}
             titleClassName="text-white leading-tight"
             subtitleClassName="text-zinc-300"

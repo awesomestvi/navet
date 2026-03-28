@@ -151,11 +151,11 @@ function getAllowedSizes(
     case 'weather':
       return heroAllowed ? ['large', 'hero'] : ['large'];
     case 'switches':
-      return ['extra-small', 'small'];
+      return ['tiny', 'extra-small', 'small'];
     case 'locks':
-      return ['extra-small', 'small'];
+      return ['tiny', 'extra-small', 'small'];
     case 'scenes':
-      return ['small', 'medium'];
+      return ['tiny', 'extra-small', 'small', 'medium'];
     default:
       return ['extra-small', 'small', 'medium', 'large'];
   }

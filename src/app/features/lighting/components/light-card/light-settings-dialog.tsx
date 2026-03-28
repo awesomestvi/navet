@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { memo } from 'react';
 import {
   BrightnessPresetEditor,
@@ -10,6 +9,7 @@ import {
   DialogSectionRow,
   IconPicker,
 } from '@/app/components/shared/device-editor';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
@@ -91,83 +91,73 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   const activeDialogColors = colorMap[resolvePrimaryColorToken(primaryColor)];
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in" />
-        <Dialog.Content
-          className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md h-[85vh] backdrop-blur-xl rounded-3xl border shadow-2xl z-50 animate-in fade-in zoom-in duration-200 overflow-hidden ${
-            isOn
-              ? `bg-gradient-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
-              : 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10'
-          }`}
-        >
-          <CustomScrollbar isOn={isOn}>
-            <div className="p-8">
-              <DialogHeader
-                title={t('lighting.settings.title')}
-                description={`${name} - ${room}`}
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      overlayClassName="bg-black/80 backdrop-blur-sm animate-in fade-in"
+      contentClassName={`fixed top-1/2 left-1/2 z-50 h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${
+        isOn
+          ? `bg-gradient-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
+          : 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10'
+      }`}
+    >
+      <CustomScrollbar isOn={isOn}>
+        <div className="p-8">
+          <DialogHeader
+            title={t('lighting.settings.title')}
+            description={`${name} - ${room}`}
+            isOn={isOn}
+          />
+          <DialogSectionRow label={t('lighting.settings.room')}>
+            <EntityRoomSelector entityId={entityId} label={t('lighting.settings.room')} compact />
+          </DialogSectionRow>
+
+          <div className="space-y-8">
+            {supportsColorTemperature && (
+              <ColorTemperatureSection
+                colorTemp={colorTemp}
                 isOn={isOn}
+                minTemp={minColorTemp}
+                maxTemp={maxColorTemp}
+                tempOptions={tempOptions}
+                onTempChange={onTempChange}
+                onTempCommit={onTempCommit}
               />
-              <DialogSectionRow label={t('lighting.settings.room')}>
-                <EntityRoomSelector
-                  entityId={entityId}
-                  label={t('lighting.settings.room')}
-                  compact
-                />
-              </DialogSectionRow>
+            )}
 
-              <div className="space-y-8">
-                {supportsColorTemperature && (
-                  <ColorTemperatureSection
-                    colorTemp={colorTemp}
-                    isOn={isOn}
-                    minTemp={minColorTemp}
-                    maxTemp={maxColorTemp}
-                    tempOptions={tempOptions}
-                    onTempChange={onTempChange}
-                    onTempCommit={onTempCommit}
-                  />
-                )}
+            {supportsColorControl && (
+              <ColorSelectorSection
+                colors={Array.from(PRESET_COLORS)}
+                selectedColor={selectedColor}
+                customColor={customColor}
+                isOn={isOn}
+                onColorChange={onColorChange}
+                onCustomColorChange={onCustomColorChange}
+              />
+            )}
 
-                {supportsColorControl && (
-                  <ColorSelectorSection
-                    colors={Array.from(PRESET_COLORS)}
-                    selectedColor={selectedColor}
-                    customColor={customColor}
-                    isOn={isOn}
-                    onColorChange={onColorChange}
-                    onCustomColorChange={onCustomColorChange}
-                  />
-                )}
+            <BrightnessPresets
+              presets={brightnessPresets}
+              currentBrightness={brightness}
+              isOn={isOn}
+              onBrightnessChange={onBrightnessChange}
+            />
 
-                <BrightnessPresets
-                  presets={brightnessPresets}
-                  currentBrightness={brightness}
-                  isOn={isOn}
-                  onBrightnessChange={onBrightnessChange}
-                />
+            <BrightnessPresetEditor
+              presets={brightnessPresets}
+              isOn={isOn}
+              onPresetValueChange={onBrightnessPresetValueChange}
+              onPresetOrderChange={onBrightnessPresetOrderChange}
+              onlyApplyToThisLight={!applyBrightnessPresetsToAll}
+              onOnlyApplyToThisLightChange={(checked) =>
+                onApplyBrightnessPresetsToAllChange(!checked)
+              }
+            />
 
-                <BrightnessPresetEditor
-                  presets={brightnessPresets}
-                  isOn={isOn}
-                  onPresetValueChange={onBrightnessPresetValueChange}
-                  onPresetOrderChange={onBrightnessPresetOrderChange}
-                  onlyApplyToThisLight={!applyBrightnessPresetsToAll}
-                  onOnlyApplyToThisLightChange={(checked) =>
-                    onApplyBrightnessPresetsToAllChange(!checked)
-                  }
-                />
-
-                <IconPicker
-                  selectedIcon={selectedIcon}
-                  onIconChange={onIconChange}
-                  isLightOn={isOn}
-                />
-              </div>
-            </div>
-          </CustomScrollbar>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            <IconPicker selectedIcon={selectedIcon} onIconChange={onIconChange} isLightOn={isOn} />
+          </div>
+        </div>
+      </CustomScrollbar>
+    </DialogShell>
   );
 });

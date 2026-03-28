@@ -4,6 +4,10 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { type ThemeType, useI18n } from '@/app/hooks';
 import type { CardTemplate, CardType } from './types';
 
+function cardSizeKey(size: CardSize): `dashboard.addCard.size.${CardSize}` {
+  return `dashboard.addCard.size.${size}`;
+}
+
 interface AddCardDialogViewProps {
   open: boolean;
   onClose: () => void;
@@ -176,7 +180,7 @@ export function AddCardDialogView({
                         }}
                       />
                       <p className={`text-xs font-medium ${textColor} capitalize`}>
-                        {t(`dashboard.addCard.size.${size}` as const)}
+                        {t(cardSizeKey(size))}
                       </p>
                     </div>
                   </button>
@@ -207,7 +211,7 @@ export function AddCardDialogView({
                   </h4>
                   <p className={`text-xs ${mutedColor}`}>
                     {t('dashboard.addCard.previewSize', {
-                      size: t(`dashboard.addCard.size.${selectedSize}` as const),
+                      size: t(cardSizeKey(selectedSize)),
                     })}
                   </p>
                 </div>
