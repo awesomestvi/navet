@@ -119,11 +119,13 @@ export function DashboardArrivalReveal({ open, onComplete, variant }: DashboardA
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[90] overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label={phase === 'baking' ? copy.bakingHeading : copy.revealHeading}
+      className="pointer-events-none fixed inset-0 z-90 overflow-hidden"
       style={{
         background: backdropColor,
       }}
-      aria-hidden="true"
     >
       <style>{`
         @keyframes navet-dashboard-bake-panel {

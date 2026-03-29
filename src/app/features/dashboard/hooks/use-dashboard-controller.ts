@@ -1,4 +1,4 @@
-import { startTransition, useMemo, useState } from 'react';
+import { startTransition, useCallback, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
   useCardState,
@@ -14,6 +14,7 @@ import {
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { AllViewGrouping } from '../all-view-grid';
+import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useCardOrdering } from './use-card-ordering';
 import { useCardZones } from './use-card-zones';
 import { useCustomCards } from './use-custom-cards';
@@ -78,24 +79,37 @@ export function useDashboardController(): DashboardController {
       hiddenEntityIds,
       rooms,
     });
-  const onboarding = useOnboardingController({ allEntityIds, changeRoom });
+  const resetDashboard = useCallback(() => {
+    homeLayoutController.resetLayout();
+    useCustomCardsStore.getState().replaceCards([]);
+  }, [homeLayoutController]);
+
+  const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
 
   const customCards = getCardsForRoom(activeRoom);
 
-  const { handleAddCard, handleDeleteCard, handleAddEntity, handleRemoveEntity, handleUpdateCard } =
-    useDashboardCardActions({
-      activeRoom,
-      activeSection,
-      isEditMode,
-      addCard,
-      removeCard,
-      updateCard,
-      hideAutoEntity,
-      showAutoEntity,
-      t,
-      addCardTargetSectionId: dialogs.addCardTargetSectionId,
-      homeLayoutController,
-    });
+  const {
+    handleAddCard,
+    handleAddLibraryCard,
+    handleDeleteCard,
+    handleAddEntity,
+    handleRemoveEntity,
+    handleUpdateCard,
+  } = useDashboardCardActions({
+    activeRoom,
+    activeSection,
+    isEditMode,
+    deviceMap,
+    availableDeviceMap,
+    addCard,
+    removeCard,
+    updateCard,
+    hideAutoEntity,
+    showAutoEntity,
+    t,
+    addCardTargetSectionId: dialogs.addCardTargetSectionId,
+    homeLayoutController,
+  });
 
   return {
     activeRoom,
@@ -114,6 +128,7 @@ export function useDashboardController(): DashboardController {
     connecting,
     devicesLoaded,
     handleAddCard,
+    handleAddLibraryCard,
     handleAddEntity,
     handleDeleteCard,
     handleRemoveEntity,

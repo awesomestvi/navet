@@ -1,8 +1,9 @@
-import { Search, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { InlineEmptyState } from '@/app/components/shared/inline-empty-state';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { getDeviceTypeIcon } from '@/app/constants/device-type-icons';
 import { getDeviceTypeLabel } from '@/app/constants/device-type-labels';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { DeviceWithType } from '@/app/types/device.types';
@@ -40,33 +41,37 @@ const AddEntityRow = memo(function AddEntityRow({
   primaryColor,
   textColor,
 }: AddEntityRowProps) {
+  const IconComponent = getDeviceTypeIcon(
+    device.device.type,
+    'deviceClass' in device.device && typeof device.device.deviceClass === 'string'
+      ? device.device.deviceClass
+      : undefined
+  );
   return (
     <div
-      className={`flex h-19 items-center justify-between gap-4 rounded-xl border ${borderColor} ${cardBg} p-4`}
+      className={`flex h-19 items-center gap-3 rounded-xl border ${borderColor} ${cardBg} px-3 py-3`}
     >
-      <div className="min-w-0">
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+      >
+        <IconComponent className={`h-4 w-4 ${mutedColor}`} aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
         <p className={`truncate text-sm font-medium ${textColor}`}>{device.name}</p>
-        <p className={`mt-1 truncate text-xs ${mutedColor}`}>
+        <p className={`mt-0.5 truncate text-xs ${mutedColor}`}>
           {device.typeLabel} · {device.room}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span
-          className={`max-w-28 truncate rounded-full px-3 py-2 text-xs ${mutedColor}`}
-          style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-          title={device.room}
-        >
-          {device.room}
-        </span>
-        <button
-          type="button"
-          onClick={() => onAddEntity(device.id)}
-          className="rounded-lg px-3 py-2 text-xs font-medium text-white"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {actionLabel}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => onAddEntity(device.id)}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition-opacity hover:opacity-80"
+        style={{ backgroundColor: primaryColor }}
+        aria-label={`${actionLabel} ${device.name}`}
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
     </div>
   );
 });

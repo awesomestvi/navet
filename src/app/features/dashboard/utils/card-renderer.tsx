@@ -154,6 +154,19 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
+  helpers: ({ device, size, isEditMode }) => (
+    <SwitchCard
+      id={device.id as string}
+      name={device.name as string}
+      size={size}
+      initialState={device.state as boolean | undefined}
+      entityType={device.entityType as string | undefined}
+      serviceDomain={device.serviceDomain as string | undefined}
+      serviceAction={device.serviceAction as string | undefined}
+      isEditMode={isEditMode}
+    />
+  ),
+
   covers: ({ device, size, handleSizeChange, isEditMode }) => (
     <CoverCard
       id={device.id as string}

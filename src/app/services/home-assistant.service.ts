@@ -436,6 +436,15 @@ class HomeAssistantService {
     );
   }
 
+  async updateLock(entityId: string, state: 'locked' | 'unlocked'): Promise<void> {
+    await this.callService(
+      'lock',
+      state === 'locked' ? 'lock' : 'unlock',
+      {},
+      { entity_id: entityId }
+    );
+  }
+
   async updateMediaPlayerPlayback(
     entityId: string,
     action: 'toggle' | 'play' | 'pause' | 'previous' | 'next'
@@ -471,6 +480,14 @@ class HomeAssistantService {
       { is_volume_muted: isMuted },
       { entity_id: entityId }
     );
+  }
+
+  async setMediaPlayerShuffle(entityId: string, shuffle: boolean): Promise<void> {
+    await this.callService('media_player', 'shuffle_set', { shuffle }, { entity_id: entityId });
+  }
+
+  async setMediaPlayerRepeat(entityId: string, repeat: 'off' | 'one' | 'all'): Promise<void> {
+    await this.callService('media_player', 'repeat_set', { repeat }, { entity_id: entityId });
   }
 
   async joinMediaPlayers(entityId: string, memberEntityIds: string[]): Promise<void> {

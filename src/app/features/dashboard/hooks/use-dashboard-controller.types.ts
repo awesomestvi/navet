@@ -38,6 +38,7 @@ export type DashboardController = OnboardingController &
     connecting: boolean;
     devicesLoaded: boolean;
     handleAddCard: (type: CardType, size: CardSize) => void;
+    handleAddLibraryCard: (cardId: string) => void;
     handleAddEntity: (entityId: string) => void;
     handleDeleteCard: (cardId: string) => void;
     handleRemoveEntity: (entityId: string) => void;

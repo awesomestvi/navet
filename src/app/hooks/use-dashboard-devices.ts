@@ -16,6 +16,7 @@ export const useDashboardDevices = (
       media: devices.media.filter((device) => !hiddenIds.has(device.id)),
       weather: devices.weather.filter((device) => !hiddenIds.has(device.id)),
       switches: devices.switches.filter((device) => !hiddenIds.has(device.id)),
+      helpers: devices.helpers.filter((device) => !hiddenIds.has(device.id)),
       covers: devices.covers.filter((device) => !hiddenIds.has(device.id)),
       locks: devices.locks.filter((device) => !hiddenIds.has(device.id)),
       scenes: devices.scenes.filter((device) => !hiddenIds.has(device.id)),

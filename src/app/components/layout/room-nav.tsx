@@ -30,7 +30,6 @@ interface RoomNavProps {
   isEditMode: boolean;
   onAllViewGroupingChange?: (grouping: AllViewGrouping) => void;
   onToggleEditMode: () => void;
-  onAddCard?: () => void;
   onAddEntity?: () => void;
   addEntityLabel?: string;
 }
@@ -103,12 +102,11 @@ export const RoomNav = memo(function RoomNav({
   isEditMode,
   onAllViewGroupingChange,
   onToggleEditMode,
-  onAddCard,
   onAddEntity,
   addEntityLabel = 'Add Entity',
 }: RoomNavProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const { stickyMarkerRef, stickyRef, shellRef } = useStickyActivation();
   const visibleRooms = ['All', ...rooms];
@@ -150,9 +148,7 @@ export const RoomNav = memo(function RoomNav({
     } as CSSProperties;
   }, [theme]);
   const showAllViewGrouping = activeRoom === 'All' && onAllViewGroupingChange;
-  const hasEditMenus = Boolean(
-    (isEditMode && showAllViewGrouping) || (isEditMode && (onAddEntity || onAddCard))
-  );
+  const hasEditMenus = Boolean((isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity));
   const actionPillClassName = `flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${inactiveBg} ${hoverBg}`;
   const dropdownItemClassName = `rounded-xl px-3 py-2 ${surface.textPrimary} ${hoverBg}`;
   const allViewGroupingOptions: Array<{ label: string; value: AllViewGrouping }> = [
@@ -221,7 +217,7 @@ export const RoomNav = memo(function RoomNav({
                 </DropdownMenu>
               ) : null}
 
-              {isEditMode && (onAddEntity || onAddCard) ? (
+              {isEditMode && onAddEntity ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <RoomNavMenuButton
@@ -232,18 +228,10 @@ export const RoomNav = memo(function RoomNav({
                     />
                   </DropdownMenuTrigger>
                   <ThemeDropdownContent theme={theme} align="end">
-                    {onAddEntity ? (
-                      <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
-                        <Lightbulb className="h-4 w-4" />
-                        {addEntityLabel}
-                      </DropdownMenuItem>
-                    ) : null}
-                    {onAddCard ? (
-                      <DropdownMenuItem className={dropdownItemClassName} onClick={onAddCard}>
-                        <LayoutGrid className="h-4 w-4" />
-                        {t('dashboard.roomNav.addCard')}
-                      </DropdownMenuItem>
-                    ) : null}
+                    <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
+                      <Lightbulb className="h-4 w-4" />
+                      {addEntityLabel}
+                    </DropdownMenuItem>
                   </ThemeDropdownContent>
                 </DropdownMenu>
               ) : null}
@@ -262,6 +250,15 @@ export const RoomNav = memo(function RoomNav({
                 className={`room-nav-action-pill flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${
                   isEditMode ? 'shadow-sm' : `${inactiveBg} ${hoverBg}`
                 }`}
+                style={
+                  isEditMode
+                    ? {
+                        backgroundColor: accentColor,
+                        borderColor: `${accentColor}66`,
+                        boxShadow: `0 14px 28px -18px ${accentColor}`,
+                      }
+                    : undefined
+                }
               >
                 {isEditMode ? (
                   <>

@@ -99,7 +99,6 @@ function resolveDropMeta(
 interface UseDashboardDragStateParams {
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
-  addHomeCard: (cardId: string, sectionId?: string) => void;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
   moveHomeSection: (sourceId: string, targetId: string) => void;
 }
@@ -107,7 +106,6 @@ interface UseDashboardDragStateParams {
 export function useDashboardDragState({
   allCards,
   cardSizes,
-  addHomeCard,
   moveHomeCard,
   moveHomeSection,
 }: UseDashboardDragStateParams) {
@@ -187,12 +185,6 @@ export function useDashboardDragState({
 
     const targetSectionId = overMeta.sectionId;
     const overCardId = overMeta.type === 'card' ? overMeta.cardId : null;
-
-    if (activeMeta.source === 'library') {
-      addHomeCard(activeMeta.cardId, targetSectionId);
-      moveHomeCard(activeMeta.cardId, overCardId, targetSectionId);
-      return;
-    }
 
     if (activeMeta.cardId === overCardId) return;
 

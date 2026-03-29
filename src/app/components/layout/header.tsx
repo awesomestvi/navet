@@ -207,7 +207,7 @@ export const Header = memo(function Header() {
             <div className="min-w-0">
               <div className="mb-0.5 md:mb-1">
                 <h1
-                  className={`min-w-0 text-[1.55rem] leading-none md:text-4xl font-bold ${textPrimary}`}
+                  className={`min-w-0 text-[1.55rem] leading-none font-bold md:text-[2rem] xl:text-4xl ${textPrimary}`}
                 >
                   <span>{t(greetingKey, { name: firstName })}</span>
                   <AppReleaseBadge className="ml-3 hidden align-middle translate-y-[-3px] shrink-0 lg:inline-flex" />

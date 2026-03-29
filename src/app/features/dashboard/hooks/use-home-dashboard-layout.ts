@@ -549,6 +549,10 @@ export function useHomeDashboardLayout(
     [cardSizes, persistLayout]
   );
 
+  const resetLayout = useCallback(() => {
+    persistLayout(DEFAULT_LAYOUT);
+  }, [persistLayout]);
+
   const addCard = useCallback(
     (cardId: string, sectionId?: string) => {
       if (!validIdSet.has(cardId) && !cardId.startsWith(CUSTOM_CARD_ID_PREFIX)) {
@@ -682,6 +686,7 @@ export function useHomeDashboardLayout(
 
   return {
     layout,
+    resetLayout,
     setMode,
     setShowHero,
     addSection,

@@ -75,6 +75,7 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.rss.description',
     icon: <Newspaper className="w-5 h-5" />,
     defaultSize: 'large',
+    supportedSizes: ['medium', 'large'],
   },
   {
     id: 'photo',
@@ -82,6 +83,7 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.photo.description',
     icon: <Image className="w-5 h-5" />,
     defaultSize: 'large',
+    supportedSizes: ['small', 'medium', 'large'],
   },
   {
     id: 'note',
@@ -89,6 +91,7 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.note.description',
     icon: <StickyNote className="w-5 h-5" />,
     defaultSize: 'small',
+    supportedSizes: ['small', 'medium', 'large'],
   },
   {
     id: 'battery',
@@ -96,6 +99,7 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.battery.description',
     icon: <BatteryIcon className="w-5 h-5" />,
     defaultSize: 'large',
+    supportedSizes: ['small', 'medium', 'large'],
   },
   {
     id: 'button',
@@ -103,12 +107,14 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.button.description',
     icon: <Zap className="w-5 h-5" />,
     defaultSize: 'small',
+    supportedSizes: ['tiny', 'extra-small', 'small'],
   },
   {
     id: 'presence',
     nameKey: 'dashboard.addCard.templates.presence.name',
     descriptionKey: 'dashboard.addCard.templates.presence.description',
     icon: <Users className="w-5 h-5" />,
-    defaultSize: 'large',
+    defaultSize: 'small',
+    supportedSizes: ['tiny', 'extra-small', 'small'],
   },
 ];

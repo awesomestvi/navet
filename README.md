@@ -40,7 +40,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 ### 🏠 Smart Home Control
 - **Multi-Entity Support** - Lights, HVAC, switches, covers, locks, sensors, helpers, scripts, people, media players, vacuums, and more
 - **Unified Climate Controls** - Home Assistant climate entities now render through the HVAC card and settings flow across the dashboard
-- **Home Assistant Media Controls** - Media player cards now use live Home Assistant playback, local mute/unmute volume memory, metadata, remaining-time, and artwork data
+- **Home Assistant Media Controls** - Media player cards now use live Home Assistant playback, local mute/unmute volume memory, shuffle and repeat cycle controls, up-next track display, metadata, remaining-time, and artwork data
 - **Real-Time Updates** - Live state updates from your smart home system
 - **Resilient Connection Recovery** - Home Assistant reconnect now retries automatically with bounded exponential backoff after disconnects
 - **Quick Actions** - Toggle, adjust, and control devices with intuitive controls
@@ -317,7 +317,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 #### Navigation Sections
 - **Home** for the main dashboard
 - **Security**, **Tasks**, **Locks**, **Lights**, and **Media** as dedicated sections
-- **Dashboard Builder** for building the Home screen: add cards from the floating library panel, choose between flow and sectioned layout, manage sections with drag-and-drop, and resize column widths with snap controls in each section header
+- **Dashboard Builder** for building the Home screen: add entity cards from the tabbed add-card dialog (Entity Library with fuzzy search, or Custom Widgets), choose between flow and sectioned layout, manage sections with drag-and-drop, and resize column widths with snap controls in each section header
 - **Settings** for appearance, dashboard, config export/import, and onboarding reset
 - On mobile, the bottom navigation hides on downward scroll and reappears when you return near the top of the page
 

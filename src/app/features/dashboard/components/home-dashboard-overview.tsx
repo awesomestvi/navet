@@ -1,19 +1,14 @@
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
 import {
-  ChevronLeft,
-  ChevronRight,
   Columns2,
-  EyeOff,
   GripVertical,
   LayoutPanelTop,
   LayoutTemplate,
   Minus,
   Plus,
   Rows3,
-  Search,
   Wand2,
-  X,
 } from 'lucide-react';
 import {
   type CSSProperties,
@@ -37,14 +32,12 @@ import {
   type DragMeta,
   type DropMeta,
   type HomeEditorSection,
-  type LibraryCard,
   useHomeDashboardEditor,
 } from '../hooks/use-home-dashboard-editor';
 import type {
   HomeDashboardLayoutState,
   HomeDashboardSectionSpan,
 } from '../hooks/use-home-dashboard-layout';
-import { useLibraryPanel } from '../hooks/use-library-panel';
 import type { CustomCard } from '../stores/custom-cards-store';
 import {
   getRenderedRowLayouts,
@@ -59,14 +52,12 @@ import { DashboardHeroSection } from './dashboard-hero-section';
 
 interface HomeDashboardOverviewProps {
   deviceMap: Map<string, DeviceWithType>;
-  availableDeviceMap: Map<string, DeviceWithType>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   hiddenEntityCount: number;
   allCustomCards: CustomCard[];
   homeLayout: HomeDashboardLayoutState;
-  addHomeCard: (cardId: string, sectionId?: string) => void;
   removeHomeCard: (cardId: string) => void;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
   setHomeLayoutMode: (mode: HomeDashboardLayoutState['mode']) => void;
@@ -84,7 +75,6 @@ interface HomeDashboardOverviewProps {
   onOpenAddCardDialog?: (targetSectionId?: string) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onToggleEditMode?: () => void;
-  onShowEntity: (entityId: string) => void;
 }
 
 const overlayClass: Record<CardSize, string> = {
@@ -97,9 +87,6 @@ const overlayClass: Record<CardSize, string> = {
   hero: 'w-full h-[277px]',
 };
 
-const LIBRARY_LIST_HEIGHT = 360; // 6 rows × 60px
-const LIBRARY_ROW_HEIGHT = 60; // ~44px row (text + py-2) + 8px gap (gap-2 slot)
-const LIBRARY_LIST_OVERSCAN = 1;
 const SECTION_GRID_GAP_CLASS = 'gap-x-6 md:gap-x-7 lg:gap-x-8';
 const PORTRAIT_HOME_MAX_COLS = 4;
 const PORTRAIT_HOME_RELAXED_COLS = 6;
@@ -132,6 +119,7 @@ type CardGridProps = {
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onRemoveFromLayout: (cardId: string) => void;
   showHero: boolean;
+  onOpenAddCardDialog?: (sectionId?: string) => void;
   sortable?: boolean;
 };
 
@@ -151,6 +139,7 @@ type SectionCanvasProps = {
   showHero: boolean;
   onSelectSection: (sectionId: string) => void;
   onOpenLibraryForSection: (sectionId: string) => void;
+  onOpenAddCardDialog?: (sectionId?: string) => void;
   onRenameSection: (sectionId: string, title: string) => void;
   onRemoveSection: (sectionId: string) => void;
   span: number;
@@ -402,14 +391,12 @@ function useHomeLayoutViewport() {
 
 export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   deviceMap,
-  availableDeviceMap,
   cardSizes,
   updateCardSize,
   isEditMode,
   hiddenEntityCount,
   allCustomCards,
   homeLayout,
-  addHomeCard,
   removeHomeCard,
   moveHomeCard,
   setHomeLayoutMode,
@@ -423,26 +410,13 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   onOpenAddCardDialog,
   onUpdateCard,
   onToggleEditMode,
-  onShowEntity,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const deferredDeviceMap = useDeferredValue(deviceMap);
-  const deferredAvailableDeviceMap = useDeferredValue(availableDeviceMap);
   const deferredAllCustomCards = useDeferredValue(allCustomCards);
-  const {
-    libraryPanelRef,
-    isLibraryVisible,
-    isLibraryCollapsed,
-    libraryPosition,
-    handleStartLibraryDrag,
-    toggleLibraryVisibility,
-    expandLibrary,
-    collapseLibraryToDock,
-  } = useLibraryPanel();
-
   const {
     allCards,
     flowCards,
@@ -457,30 +431,16 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     sensors,
     handleDragOver,
     handleDragEnd,
-    libraryCards,
-    libraryQuery,
-    setLibraryQuery,
-    filteredLibraryCards,
-    handleAddFromLibrary,
     summaryItems,
   } = useHomeDashboardEditor({
     deviceMap: deferredDeviceMap,
-    availableDeviceMap: deferredAvailableDeviceMap,
     allCustomCards: deferredAllCustomCards,
     homeLayout,
     cardSizes,
     hiddenEntityCount,
-    addHomeCard,
     moveHomeCard,
     moveHomeSection,
-    addHomeSection,
-    onShowEntity,
   });
-
-  const primaryButtonStyle = {
-    background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
-    boxShadow: `0 20px 44px -24px ${accentColor}88`,
-  };
 
   if (!isEditMode) {
     return (
@@ -536,41 +496,27 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
           title={t('dashboard.homePersonal.title')}
           description={t('dashboard.homePersonal.description')}
           actions={
-            <>
-              {libraryCards.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={toggleLibraryVisibility}
-                  className={
-                    isLibraryVisible
-                      ? `inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${surface.border} ${surface.hoverBg}`
-                      : 'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-white'
-                  }
-                  style={isLibraryVisible ? undefined : primaryButtonStyle}
-                >
-                  {isLibraryVisible ? <EyeOff className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  <span className={isLibraryVisible ? surface.textPrimary : undefined}>
-                    {!isLibraryVisible ? 'Show card library' : 'Hide card library'}
-                  </span>
-                </button>
-              ) : null}
-              {onOpenAddCardDialog ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onOpenAddCardDialog(
-                      homeLayout.mode === 'sectioned'
-                        ? (activeSectionId ?? homeLayout.sections[0]?.id)
-                        : undefined
-                    )
-                  }
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${surface.border} ${surface.hoverBg}`}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className={surface.textPrimary}>Add Custom Widget</span>
-                </button>
-              ) : null}
-            </>
+            onOpenAddCardDialog ? (
+              <button
+                type="button"
+                onClick={() =>
+                  onOpenAddCardDialog(
+                    homeLayout.mode === 'sectioned'
+                      ? (activeSectionId ?? homeLayout.sections[0]?.id)
+                      : undefined
+                  )
+                }
+                className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium text-white transition-colors"
+                style={{
+                  borderColor: `${accentColor}66`,
+                  backgroundColor: accentColor,
+                  boxShadow: `0 14px 28px -18px ${accentColor}`,
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                <span>{t('dashboard.roomNav.addCard')}</span>
+              </button>
+            ) : null
           }
           aside={
             <div className="flex flex-wrap gap-2 xl:justify-end">
@@ -634,34 +580,51 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       <div className="hidden h-8 self-center w-px rounded-full bg-white/24 md:block" />
                     </>
                   ) : null}
-                  <ModeChip
-                    active
-                    icon={
-                      homeLayout.mode === 'sectioned' ? (
-                        <LayoutPanelTop className="h-4 w-4" />
-                      ) : (
-                        <LayoutTemplate className="h-4 w-4" />
-                      )
-                    }
-                    label={
-                      homeLayout.mode === 'sectioned'
-                        ? t('dashboard.homePersonal.mode.flow')
-                        : t('dashboard.homePersonal.mode.sectioned')
-                    }
-                    onClick={() => {
-                      if (homeLayout.mode === 'sectioned') {
-                        setHomeLayoutMode('flow');
-                        return;
+                  <div className="hidden items-center gap-2 md:flex">
+                    <ModeChip
+                      active={homeLayout.mode === 'sectioned'}
+                      icon={<LayoutPanelTop className="h-4 w-4" />}
+                      label={t('dashboard.homePersonal.mode.sectioned')}
+                      onClick={() => setHomeLayoutMode('sectioned')}
+                      surface={surface}
+                      accentColor={accentColor}
+                    />
+                    <ModeChip
+                      active={homeLayout.mode === 'flow'}
+                      icon={<LayoutTemplate className="h-4 w-4" />}
+                      label={t('dashboard.homePersonal.mode.flow')}
+                      onClick={() => setHomeLayoutMode('flow')}
+                      surface={surface}
+                      accentColor={accentColor}
+                    />
+                  </div>
+                  <div className="md:hidden">
+                    <ModeChip
+                      active
+                      icon={
+                        homeLayout.mode === 'sectioned' ? (
+                          <LayoutPanelTop className="h-4 w-4" />
+                        ) : (
+                          <LayoutTemplate className="h-4 w-4" />
+                        )
                       }
+                      label={
+                        homeLayout.mode === 'sectioned'
+                          ? t('dashboard.homePersonal.mode.flow')
+                          : t('dashboard.homePersonal.mode.sectioned')
+                      }
+                      onClick={() => {
+                        if (homeLayout.mode === 'sectioned') {
+                          setHomeLayoutMode('flow');
+                          return;
+                        }
 
-                      setHomeLayoutMode('sectioned');
-                      if (homeLayout.sections.length === 0) {
-                        addHomeSection();
-                      }
-                    }}
-                    surface={surface}
-                    accentColor={accentColor}
-                  />
+                        setHomeLayoutMode('sectioned');
+                      }}
+                      surface={surface}
+                      accentColor={accentColor}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -683,8 +646,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       onSelectSection={setActiveSectionId}
                       onOpenLibraryForSection={(sectionId) => {
                         setActiveSectionId(sectionId);
-                        expandLibrary();
                       }}
+                      onOpenAddCardDialog={onOpenAddCardDialog}
                       onAddSectionBelow={addHomeSectionBelow}
                       onRenameSection={renameHomeSection}
                       onRemoveSection={removeHomeSection}
@@ -711,6 +674,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                     onRemoveFromLayout={removeHomeCard}
                     showHero={homeLayout.showHero}
                     surface={surface}
+                    onOpenAddCardDialog={onOpenAddCardDialog}
                   />
                 )}
               </div>
@@ -718,95 +682,6 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
           </DashboardEditActions>
         </div>
       </div>
-
-      {isLibraryVisible && isLibraryCollapsed ? (
-        <button
-          type="button"
-          onClick={expandLibrary}
-          className={`fixed z-40 flex items-center gap-2 rounded-l-2xl border px-3 py-3 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
-          style={{
-            right: 0,
-            top: `${libraryPosition.y + 12}px`,
-          }}
-          aria-label="Show card library"
-        >
-          <ChevronLeft className={`h-4 w-4 ${surface.textPrimary}`} />
-          <span className={`text-sm font-medium ${surface.textPrimary}`}>
-            {t('dashboard.homePersonal.libraryTitle')}
-          </span>
-        </button>
-      ) : null}
-
-      {isLibraryVisible && !isLibraryCollapsed ? (
-        <aside
-          ref={libraryPanelRef}
-          className={`fixed left-0 top-0 z-40 w-90 cursor-grab rounded-[28px] border p-5 active:cursor-grabbing md:p-6 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
-          onPointerDown={(event) => {
-            const target = event.target as HTMLElement;
-            if (
-              target.closest(
-                'button, input, textarea, select, a, [role="button"], [data-library-interactive="true"]'
-              )
-            ) {
-              return;
-            }
-
-            handleStartLibraryDrag(event);
-          }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className={`text-xl font-semibold ${surface.textPrimary}`}>
-                {t('dashboard.homePersonal.libraryTitle')}
-              </h2>
-              <p className={`mt-1 text-sm ${surface.textSecondary}`}>
-                {t('dashboard.homePersonal.libraryDescription')}
-              </p>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                onClick={collapseLibraryToDock}
-                className={`rounded-full border p-2 ${surface.border} ${surface.hoverBg}`}
-                aria-label="Put away card library"
-              >
-                <ChevronRight className={`h-4 w-4 ${surface.textPrimary}`} />
-              </button>
-              <button
-                type="button"
-                onClick={toggleLibraryVisibility}
-                className={`rounded-full border p-2 ${surface.border} ${surface.hoverBg}`}
-                aria-label="Close card library"
-              >
-                <X className={`h-4 w-4 ${surface.textPrimary}`} />
-              </button>
-            </div>
-          </div>
-
-          <div
-            data-library-interactive="true"
-            className={`mt-4 flex items-center gap-2 rounded-[18px] border px-3 py-3 ${surface.border} ${surface.panelMuted}`}
-          >
-            <Search className={`h-4 w-4 shrink-0 ${surface.textMuted}`} />
-            <input
-              type="text"
-              value={libraryQuery}
-              onChange={(event) => setLibraryQuery(event.target.value)}
-              placeholder={t('dashboard.addEntity.searchPlaceholder')}
-              className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${surface.textPrimary}`}
-              style={{ caretColor: accentColor }}
-            />
-          </div>
-
-          <LibraryList
-            key={filteredLibraryCards.map((card) => card.id).join('|')}
-            cards={filteredLibraryCards}
-            surface={surface}
-            emptyText={t('dashboard.homePersonal.libraryEmptyDescription')}
-            onAdd={handleAddFromLibrary}
-          />
-        </aside>
-      ) : null}
 
       <DragOverlay dropAnimation={null}>
         {activeDragSection ? (
@@ -848,6 +723,7 @@ const SectionCanvas = memo(function SectionCanvas({
   showHero,
   onSelectSection,
   onOpenLibraryForSection,
+  onOpenAddCardDialog,
   onRenameSection,
   onRemoveSection,
   span,
@@ -974,6 +850,7 @@ const SectionCanvas = memo(function SectionCanvas({
                 onUpdateCard={onUpdateCard}
                 onRemoveFromLayout={onRemoveFromLayout}
                 showHero={showHero}
+                onOpenAddCardDialog={onOpenAddCardDialog}
               />
             ) : (
               <EmptyCanvas
@@ -981,7 +858,14 @@ const SectionCanvas = memo(function SectionCanvas({
                 description="Drag device cards or widgets into this section."
                 surface={surface}
                 compact
-                onClick={() => onOpenLibraryForSection(sectionId)}
+                onClick={() => {
+                  if (onOpenAddCardDialog) {
+                    onOpenAddCardDialog(sectionId);
+                    return;
+                  }
+
+                  onOpenLibraryForSection(sectionId);
+                }}
               />
             )}
           </HomeContainerDropZone>
@@ -1043,6 +927,7 @@ function SectionCanvasGrid({
   showHero,
   onSelectSection,
   onOpenLibraryForSection,
+  onOpenAddCardDialog,
   onAddSectionBelow,
   onRenameSection,
   onRemoveSection,
@@ -1063,6 +948,7 @@ function SectionCanvasGrid({
   showHero: boolean;
   onSelectSection: (sectionId: string) => void;
   onOpenLibraryForSection: (sectionId: string) => void;
+  onOpenAddCardDialog?: (sectionId?: string) => void;
   onAddSectionBelow: (sectionId: string) => void;
   onRenameSection: (sectionId: string, title: string) => void;
   onRemoveSection: (sectionId: string) => void;
@@ -1156,6 +1042,7 @@ function SectionCanvasGrid({
                         showHero={showHero}
                         onSelectSection={onSelectSection}
                         onOpenLibraryForSection={onOpenLibraryForSection}
+                        onOpenAddCardDialog={onOpenAddCardDialog}
                         onRenameSection={onRenameSection}
                         onRemoveSection={onRemoveSection}
                         span={getStoredSectionSpan(leadSection)}
@@ -1193,6 +1080,7 @@ function FlowCanvas({
   onRemoveFromLayout,
   showHero,
   surface,
+  onOpenAddCardDialog,
 }: {
   cardIds: string[];
   gridCols: number;
@@ -1204,6 +1092,7 @@ function FlowCanvas({
   onRemoveFromLayout: (cardId: string) => void;
   showHero: boolean;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  onOpenAddCardDialog?: (targetSectionId?: string) => void;
 }) {
   return (
     <SortableContext
@@ -1222,12 +1111,14 @@ function FlowCanvas({
             onUpdateCard={onUpdateCard}
             onRemoveFromLayout={onRemoveFromLayout}
             showHero={showHero}
+            onOpenAddCardDialog={onOpenAddCardDialog}
           />
         ) : (
           <EmptyCanvas
             label="Start with an empty canvas"
             description="Drag cards in from the library and keep only what belongs on your home view."
             surface={surface}
+            onClick={onOpenAddCardDialog}
           />
         )}
       </HomeContainerDropZone>
@@ -1280,11 +1171,13 @@ const CardGrid = memo(function CardGrid({
   onUpdateCard,
   onRemoveFromLayout,
   showHero,
+  onOpenAddCardDialog,
   sortable = true,
 }: CardGridProps) {
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
+  const hasTrailingAddCardSlot = isEditMode && Boolean(onOpenAddCardDialog);
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [outerWidth, setOuterWidth] = useState(0);
@@ -1303,6 +1196,8 @@ const CardGrid = memo(function CardGrid({
     renderedGridCols,
     gridGapPx
   );
+  const addCardSlotCols = Math.min(renderedGridCols, 2);
+  const hasInlineAddCardSlot = hasTrailingAddCardSlot;
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -1344,12 +1239,9 @@ const CardGrid = memo(function CardGrid({
     >
       <div
         ref={innerRef}
-        className={`grid w-full grid-flow-row-dense auto-rows-[87px] gap-2 md:gap-3 lg:gap-4${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+        className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
         style={
           {
-            '--home-card-cols': renderedGridCols,
-            '--home-card-min': `${microCardMinWidth}px`,
-            gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
             ...(isAutoScaled
               ? {
                   transform: `scale(${autoScale})`,
@@ -1359,50 +1251,84 @@ const CardGrid = memo(function CardGrid({
           } as CSSProperties
         }
       >
-        {cardIds.map((cardId) => {
-          const entry = allCards.get(cardId);
-          if (!entry) {
-            return null;
+        <div
+          className={`grid w-full auto-rows-[87px] gap-2 md:gap-3 lg:gap-4 ${
+            hasInlineAddCardSlot ? 'grid-flow-row' : 'grid-flow-row-dense'
+          }`}
+          style={
+            {
+              '--home-card-cols': renderedGridCols,
+              '--home-card-min': `${microCardMinWidth}px`,
+              gridTemplateColumns:
+                'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
+            } as CSSProperties
           }
+        >
+          {cardIds.map((cardId) => {
+            const entry = allCards.get(cardId);
+            if (!entry) {
+              return null;
+            }
 
-          const storedSize = cardSizes[cardId] ?? entry.size;
-          const size = !showHero && storedSize === 'hero' ? 'large' : storedSize;
-          const spanClass = getCardSpanClass(size);
+            const storedSize = cardSizes[cardId] ?? entry.size;
+            const size = !showHero && storedSize === 'hero' ? 'large' : storedSize;
+            const spanClass = getCardSpanClass(size);
 
-          return (
-            <HomeCardSlot
-              key={cardId}
-              sortable={sortable}
-              cardId={cardId}
-              sectionId={sectionId}
-              className={spanClass}
-              content={
-                !isCustomCard(entry) ? (
-                  <DashboardCardItem
-                    id={cardId}
-                    device={entry}
-                    size={size}
-                    isEditMode={isEditMode}
-                    handleSizeChange={updateCardSize}
-                    onRemoveFromLayout={onRemoveFromLayout}
-                    allowHeroSizes={showHero}
-                  />
-                ) : (
-                  <DashboardCardItem
-                    id={cardId}
-                    card={entry}
-                    size={size}
-                    isEditMode={isEditMode}
-                    handleSizeChange={updateCardSize}
-                    onUpdateCard={onUpdateCard}
-                    onRemoveFromLayout={onRemoveFromLayout}
-                    allowHeroSizes={showHero}
-                  />
-                )
-              }
-            />
-          );
-        })}
+            return (
+              <HomeCardSlot
+                key={cardId}
+                sortable={sortable}
+                cardId={cardId}
+                sectionId={sectionId}
+                className={spanClass}
+                content={
+                  !isCustomCard(entry) ? (
+                    <DashboardCardItem
+                      id={cardId}
+                      device={entry}
+                      size={size}
+                      isEditMode={isEditMode}
+                      handleSizeChange={updateCardSize}
+                      onRemoveFromLayout={onRemoveFromLayout}
+                      allowHeroSizes={showHero}
+                    />
+                  ) : (
+                    <DashboardCardItem
+                      id={cardId}
+                      card={entry}
+                      size={size}
+                      isEditMode={isEditMode}
+                      handleSizeChange={updateCardSize}
+                      onUpdateCard={onUpdateCard}
+                      onRemoveFromLayout={onRemoveFromLayout}
+                      allowHeroSizes={showHero}
+                    />
+                  )
+                }
+              />
+            );
+          })}
+          {hasInlineAddCardSlot ? (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAddCardDialog?.();
+              }}
+              className="flex min-h-[87px] min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-[20px] border-2 border-dashed px-4 text-center"
+              style={{
+                gridColumn: `span ${addCardSlotCols} / span ${addCardSlotCols}`,
+                borderColor: 'rgba(255,255,255,0.16)',
+                background:
+                  'radial-gradient(circle at top left, rgba(159,176,255,0.1), transparent 34%), radial-gradient(circle at bottom right, rgba(159,176,255,0.06), transparent 28%)',
+              }}
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                <Plus className="h-4 w-4 text-white/80" />
+              </span>
+              <span className="text-sm font-semibold text-white/90">Add card</span>
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -1694,6 +1620,7 @@ function areCardGridPropsEqual(previous: CardGridProps, next: CardGridProps) {
     previous.onUpdateCard === next.onUpdateCard &&
     previous.onRemoveFromLayout === next.onRemoveFromLayout &&
     previous.showHero === next.showHero &&
+    previous.onOpenAddCardDialog === next.onOpenAddCardDialog &&
     previous.sortable === next.sortable &&
     areCardIdsStable(
       previous.cardIds,
@@ -1720,6 +1647,7 @@ function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionC
     previous.showHero === next.showHero &&
     previous.onSelectSection === next.onSelectSection &&
     previous.onOpenLibraryForSection === next.onOpenLibraryForSection &&
+    previous.onOpenAddCardDialog === next.onOpenAddCardDialog &&
     previous.onRenameSection === next.onRenameSection &&
     previous.onRemoveSection === next.onRemoveSection &&
     previous.span === next.span &&
@@ -1738,114 +1666,6 @@ function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionC
     )
   );
 }
-
-const LibraryCardRow = memo(function LibraryCardRow({
-  card,
-  surface,
-  onAdd,
-}: {
-  card: LibraryCard;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-  onAdd: () => void;
-}) {
-  return (
-    <div
-      data-library-interactive="true"
-      className={`flex w-full items-center gap-2 rounded-2xl border px-2.5 py-2 text-left ${surface.border} ${surface.panelMuted}`}
-    >
-      <GripVertical className={`h-3.5 w-3.5 shrink-0 ${surface.textMuted}`} />
-      <div className="min-w-0 flex-1">
-        <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>{card.title}</div>
-        <div className={`truncate text-xs ${surface.textSecondary}`}>
-          {card.meta} · {card.subtitle}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onAdd();
-        }}
-        className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${surface.border} ${surface.textPrimary} ${surface.hoverBg}`}
-      >
-        Add
-      </button>
-    </div>
-  );
-});
-
-const LibraryList = memo(function LibraryList({
-  cards,
-  surface,
-  emptyText,
-  onAdd,
-}: {
-  cards: LibraryCard[];
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-  emptyText: string;
-  onAdd: (cardId: string) => void;
-}) {
-  const [scrollTop, setScrollTop] = useState(0);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  const visibleCount = Math.ceil(LIBRARY_LIST_HEIGHT / LIBRARY_ROW_HEIGHT);
-  const startIndex = Math.max(
-    0,
-    Math.floor(scrollTop / LIBRARY_ROW_HEIGHT) - LIBRARY_LIST_OVERSCAN
-  );
-  const endIndex = Math.min(cards.length, startIndex + visibleCount + LIBRARY_LIST_OVERSCAN * 2);
-  const virtualCards = cards.slice(startIndex, endIndex);
-  const topOffset = startIndex * LIBRARY_ROW_HEIGHT;
-  const totalHeight = cards.length * LIBRARY_ROW_HEIGHT;
-
-  return (
-    <div
-      ref={listRef}
-      data-library-interactive="true"
-      className="mt-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      style={{ height: `${LIBRARY_LIST_HEIGHT}px` }}
-      onScroll={(event) => {
-        const next = event.currentTarget.scrollTop;
-        if (rafRef.current !== null) return;
-        rafRef.current = window.requestAnimationFrame(() => {
-          rafRef.current = null;
-          setScrollTop(next);
-        });
-      }}
-    >
-      {cards.length > 0 ? (
-        <div className="relative" style={{ height: totalHeight }}>
-          <div
-            className="absolute inset-x-0 top-0 flex flex-col gap-2"
-            style={{ transform: `translateY(${topOffset}px)` }}
-          >
-            {virtualCards.map((card) => (
-              <LibraryCardRow
-                key={card.id}
-                card={card}
-                surface={surface}
-                onAdd={() => onAdd(card.id)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`rounded-[18px] border border-dashed p-4 text-sm ${surface.borderStrong} ${surface.textSecondary}`}
-        >
-          {emptyText}
-        </div>
-      )}
-    </div>
-  );
-});
 
 function ModeChip({
   active,
@@ -1884,7 +1704,7 @@ function ModeChip({
 
 function EmptyCanvas({
   label,
-  description,
+  description: _description,
   surface,
   compact = false,
   onClick,
@@ -1897,29 +1717,25 @@ function EmptyCanvas({
 }) {
   const content = (
     <div
-      className={`relative overflow-hidden rounded-[20px] border-2 border-dashed text-center ${
+      className={`relative flex items-center justify-center overflow-hidden rounded-[20px] border-2 border-dashed text-center ${
         compact ? 'min-h-45 px-5 py-6' : 'min-h-55 px-5 py-8'
       } ${surface.panelMuted}`}
       style={{
-        borderColor: 'rgba(255,255,255,0.16)',
+        borderColor: 'rgba(255,255,255,0.12)',
         background:
-          'radial-gradient(circle at top left, rgba(159,176,255,0.1), transparent 34%), radial-gradient(circle at bottom right, rgba(159,176,255,0.06), transparent 28%)',
+          'radial-gradient(circle at top left, rgba(159,176,255,0.08), transparent 32%), radial-gradient(circle at bottom right, rgba(159,176,255,0.05), transparent 26%)',
       }}
     >
       <div className="relative mx-auto flex max-w-lg flex-col items-center justify-center">
         <div
-          className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+          className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full border ${surface.border} ${surface.textMuted}`}
+          style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
         >
-          Empty section
+          <Plus className="h-4 w-4" />
         </div>
-        <h3 className={`mt-2 text-base font-semibold tracking-tight ${surface.textPrimary}`}>
-          {label}
-        </h3>
-        <p className={`mt-2 max-w-md text-sm leading-6 ${surface.textSecondary}`}>{description}</p>
-        <div
-          className={`mt-4 text-[11px] font-medium uppercase tracking-[0.16em] ${surface.textMuted}`}
-        >
-          Drag cards here or click to open the library
+        <h3 className={`text-base font-semibold tracking-tight ${surface.textPrimary}`}>{label}</h3>
+        <div className={`mt-2 text-sm ${surface.textSecondary}`}>
+          Add cards to start this section
         </div>
       </div>
     </div>
@@ -1930,11 +1746,7 @@ function EmptyCanvas({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="block w-full text-left transition-transform hover:scale-[1.01]"
-    >
+    <button type="button" onClick={onClick} className="block w-full text-left">
       {content}
     </button>
   );

@@ -36,7 +36,7 @@ export function useBreakpointCols(): number {
 
   if (logicalViewportWidth >= FOUR_XL_BREAKPOINT) return 12;
   if (logicalViewportWidth >= XXL_BREAKPOINT) return 8;
-  if (logicalViewportWidth > XL_BREAKPOINT) return 6;
+  if (logicalViewportWidth >= XL_BREAKPOINT) return 6;
   if (logicalViewportWidth >= MD_BREAKPOINT) return 4;
   return 2;
 }

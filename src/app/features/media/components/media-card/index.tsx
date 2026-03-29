@@ -62,6 +62,7 @@ export const MediaCard = memo(function MediaCard({
   const mediaSize = getCompactCardSize(size);
   const {
     albumArt: resolvedAlbumArt,
+    cycleRepeat,
     closeDialog,
     durationSeconds,
     displayArtist,
@@ -77,14 +78,18 @@ export const MediaCard = memo(function MediaCard({
     isMuted,
     isOpen,
     openDialog,
+    repeatMode,
     availableGroupingPlayers,
     attachGroupMember,
     detachGroupMember,
+    shuffleEnabled,
     supportsGrouping,
     startVolumeInteraction,
     endVolumeInteraction,
+    toggleShuffle,
     toggleMute,
     togglePlay,
+    upNextTitle,
     volume,
   } = useMediaCardController({
     entityId: id,
@@ -280,6 +285,11 @@ export const MediaCard = memo(function MediaCard({
             onPrevious={handlePrevious}
             onTogglePlay={togglePlay}
             onNext={handleNext}
+            shuffleEnabled={shuffleEnabled}
+            repeatMode={repeatMode}
+            onToggleShuffle={toggleShuffle}
+            onCycleRepeat={cycleRepeat}
+            upNextTitle={upNextTitle}
             onToggleMute={toggleMute}
             onVolumeChange={handleVolumeChange}
             onVolumeInteractionStart={startVolumeInteraction}

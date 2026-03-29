@@ -78,6 +78,7 @@ export interface MediaDevice extends BaseDevice {
   title: string;
   artist: string;
   entityType?: string;
+  deviceClass?: string;
   entityPicture?: string;
   state: 'playing' | 'paused' | 'idle' | 'off';
   volume: number;
@@ -101,6 +102,11 @@ export interface SwitchDevice extends BaseDevice {
   energy?: number;
   metrics?: DeviceMetric[];
 }
+
+export type HelperDevice = Pick<
+  SwitchDevice,
+  'id' | 'name' | 'room' | 'size' | 'state' | 'entityType' | 'serviceDomain' | 'serviceAction'
+>;
 
 // Cover device
 export interface CoverDevice extends BaseDevice {
@@ -193,6 +199,7 @@ export type Device =
   | PowerDevice
   | MediaDevice
   | SwitchDevice
+  | HelperDevice
   | CoverDevice
   | LockDevice
   | SceneDevice
@@ -212,6 +219,7 @@ export interface DeviceCollection {
   media: MediaDevice[];
   weather: WeatherDevice[];
   switches: SwitchDevice[];
+  helpers: HelperDevice[];
   covers: CoverDevice[];
   locks: LockDevice[];
   scenes: SceneDevice[];

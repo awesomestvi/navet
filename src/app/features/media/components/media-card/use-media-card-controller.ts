@@ -39,6 +39,17 @@ export function useMediaCardController({
   );
 
   const isPlaying = state === 'playing';
+  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const repeatMode = (
+    liveAttrs?.repeat === 'one' || liveAttrs?.repeat === 'all' ? liveAttrs.repeat : 'off'
+  ) as 'off' | 'one' | 'all';
+  const shuffleEnabled = liveAttrs?.shuffle === true;
+  const upNextTitle = [
+    liveAttrs?.next_title,
+    liveAttrs?.next_track_title,
+    liveAttrs?.up_next_title,
+    liveAttrs?.next_track,
+  ].find((value): value is string => typeof value === 'string' && value.trim().length > 0);
 
   const {
     volume: volumeLevel,
@@ -52,11 +63,19 @@ export function useMediaCardController({
     startVolumeInteraction,
     endVolumeInteraction,
   } = useMediaVolume({ entityId, initialVolume, initialMuted, t });
-  const { isOpen, runAction, togglePlay, handlePrevious, handleNext, openDialog, closeDialog } =
-    useMediaPlayback({ entityId, isPlaying, t });
+  const {
+    cycleRepeat,
+    handleNext,
+    handlePrevious,
+    isOpen,
+    runAction,
+    togglePlay,
+    toggleShuffle,
+    openDialog,
+    closeDialog,
+  } = useMediaPlayback({ entityId, isPlaying, shuffleEnabled, repeatMode, t });
 
   // Derive playback fields from liveEntity when available, fall back to initial props.
-  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const { displayArtist, displayTitle, liveArtworkKey, liveEntityPicture } = useMediaDisplayFields({
     liveAttrs,
     entityPicture,
@@ -134,10 +153,15 @@ export function useMediaCardController({
     isOpen,
     isPlaying,
     openDialog,
+    repeatMode,
+    shuffleEnabled,
     startVolumeInteraction,
     supportsGrouping,
+    cycleRepeat,
+    toggleShuffle,
     toggleMute,
     togglePlay,
+    upNextTitle,
     volume: volumeLevel,
   };
 }

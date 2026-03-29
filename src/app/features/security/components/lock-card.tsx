@@ -12,7 +12,8 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
 
@@ -33,6 +34,7 @@ export const LockCard = memo(function LockCard({
   const [isLocked, setIsLocked] = useState(initialState);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { t } = useI18n();
+  const runAction = useServiceActionHandler();
 
   useEffect(() => {
     if (liveEntity) {
@@ -65,6 +67,13 @@ export const LockCard = memo(function LockCard({
     tone: isLocked ? 'primary' : 'red',
     accentColor,
   });
+  const handleToggleLock = () => {
+    const nextState: 'locked' | 'unlocked' = isLocked ? 'unlocked' : 'locked';
+    void runAction(
+      () => homeAssistantService.updateLock(id, nextState),
+      t('security.feedback.updateLockFailed')
+    );
+  };
 
   if (isTiny) {
     return (
@@ -104,7 +113,7 @@ export const LockCard = memo(function LockCard({
           </>
         }
         actionButtonProps={{
-          onClick: () => setIsLocked(!isLocked),
+          onClick: handleToggleLock,
           'aria-label': isLocked ? t('security.unlocked') : t('security.locked'),
         }}
       />
@@ -148,7 +157,7 @@ export const LockCard = memo(function LockCard({
               theme={theme}
               size="extra-small"
               variant="emphasis"
-              onClick={() => setIsLocked(!isLocked)}
+              onClick={handleToggleLock}
               className={`h-9 w-9 ${
                 isLocked
                   ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
@@ -202,7 +211,7 @@ export const LockCard = memo(function LockCard({
             theme={theme}
             size={isExtraSmall ? 'extra-small' : 'large'}
             variant="emphasis"
-            onClick={() => setIsLocked(!isLocked)}
+            onClick={handleToggleLock}
             className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
               isLocked
                 ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'

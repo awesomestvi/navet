@@ -47,7 +47,6 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     isEditMode,
     lightDeviceMap,
     lightRooms,
-    onOpenAddCardDialog,
     onOpenAddEntityDialog,
     onToggleEditMode,
     orderedCardIds,
@@ -148,7 +147,6 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
             activeRoom === 'All' ? undefined : controller.onSetAllViewGrouping
           }
           onToggleEditMode={onToggleEditMode}
-          onAddCard={activeRoom === 'All' ? undefined : onOpenAddCardDialog}
           onAddEntity={
             activeRoom === 'All' || addableEntityIds.length === 0
               ? undefined
@@ -161,14 +159,12 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
           <RenderProfiler id="HomeDashboardOverview">
             <HomeDashboardOverview
               deviceMap={deviceMap}
-              availableDeviceMap={controller.availableDeviceMap}
               cardSizes={cardSizes}
               updateCardSize={updateCardSize}
               isEditMode={isEditMode}
               hiddenEntityCount={hiddenEntityIds.length}
               allCustomCards={controller.allCustomCards}
               homeLayout={controller.homeLayout}
-              addHomeCard={controller.addHomeCard}
               removeHomeCard={controller.removeHomeCard}
               moveHomeCard={controller.moveHomeCard}
               setHomeLayoutMode={controller.setHomeLayoutMode}
@@ -182,7 +178,6 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
               onOpenAddCardDialog={controller.onOpenAddCardDialog}
               onUpdateCard={handleUpdateCard}
               onToggleEditMode={controller.onToggleEditMode}
-              onShowEntity={controller.handleAddEntity}
             />
           </RenderProfiler>
         ) : (

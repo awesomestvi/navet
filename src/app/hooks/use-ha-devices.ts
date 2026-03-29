@@ -9,6 +9,7 @@ import type {
   CoverDevice,
   DeviceCollection,
   DeviceMetric,
+  HelperDevice,
   LightDevice,
   LockDevice,
   MediaDevice,
@@ -232,6 +233,7 @@ export const useHADevices = (): DeviceCollection => {
         media: [],
         weather: [],
         switches: [],
+        helpers: [],
         covers: [],
         locks: [],
         scenes: [],
@@ -251,6 +253,7 @@ export const useHADevices = (): DeviceCollection => {
     // Process entities into device collections
     const lights: LightDevice[] = [];
     const switches: SwitchDevice[] = [];
+    const helpers: HelperDevice[] = [];
     const climate: ClimateDevice[] = [];
     const media: MediaDevice[] = [];
     const persons: PersonDevice[] = [];
@@ -427,7 +430,7 @@ export const useHADevices = (): DeviceCollection => {
         }
 
         case 'input_boolean':
-          switches.push({
+          helpers.push({
             id: entityId,
             name,
             room,
@@ -439,7 +442,7 @@ export const useHADevices = (): DeviceCollection => {
           break;
 
         case 'script':
-          switches.push({
+          helpers.push({
             id: entityId,
             name,
             room,
@@ -453,7 +456,7 @@ export const useHADevices = (): DeviceCollection => {
 
         case 'button':
         case 'input_button':
-          switches.push({
+          helpers.push({
             id: entityId,
             name,
             room,
@@ -537,6 +540,10 @@ export const useHADevices = (): DeviceCollection => {
             title: mediaTitle,
             artist: mediaArtist,
             entityType: mediaEntityType,
+            deviceClass:
+              typeof entity.attributes?.device_class === 'string'
+                ? entity.attributes.device_class
+                : undefined,
             entityPicture,
             state: normalizedState,
             volume:
@@ -946,6 +953,7 @@ export const useHADevices = (): DeviceCollection => {
       power: [],
       weather,
       switches,
+      helpers,
       covers,
       locks,
       scenes,

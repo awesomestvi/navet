@@ -1,7 +1,10 @@
-import { X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Layers2, Search, Sparkles, X } from 'lucide-react';
 import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type ThemeType, useI18n } from '@/app/hooks';
+import { type DashboardLibraryCard, DashboardLibraryList } from '../dashboard-library-list';
 import type { CardTemplate, CardType } from './types';
 
 function cardSizeKey(size: CardSize): `dashboard.addCard.size.${CardSize}` {
@@ -12,6 +15,14 @@ interface AddCardDialogViewProps {
   open: boolean;
   onClose: () => void;
   currentRoom: string;
+  activeTab: 'cards' | 'widgets';
+  setActiveTab: (tab: 'cards' | 'widgets') => void;
+  showCardsTab: boolean;
+  libraryQuery: string;
+  setLibraryQuery: (query: string) => void;
+  hasLibraryQuery: boolean;
+  libraryCount: number;
+  filteredLibraryCards: DashboardLibraryCard[];
   theme: ThemeType;
   primaryColor: string;
   cardTemplates: CardTemplate[];
@@ -19,15 +30,23 @@ interface AddCardDialogViewProps {
   setSelectedType: (type: CardType) => void;
   selectedSize: CardSize;
   setSelectedSize: (size: CardSize) => void;
-  selectedTemplate: CardTemplate | undefined;
   getColorValue: (color: string) => string;
   handleAdd: () => void;
+  handleAddFromLibrary: (cardId: string) => void;
 }
 
 export function AddCardDialogView({
   open,
   onClose,
   currentRoom,
+  activeTab,
+  setActiveTab,
+  showCardsTab,
+  libraryQuery,
+  setLibraryQuery,
+  hasLibraryQuery,
+  libraryCount,
+  filteredLibraryCards,
   theme,
   primaryColor,
   cardTemplates,
@@ -35,9 +54,9 @@ export function AddCardDialogView({
   setSelectedType,
   selectedSize,
   setSelectedSize,
-  selectedTemplate,
   getColorValue,
   handleAdd,
+  handleAddFromLibrary,
 }: AddCardDialogViewProps) {
   const { t } = useI18n();
   if (!open) return null;
@@ -49,201 +68,281 @@ export function AddCardDialogView({
   const borderColor = surface.border;
   const cardBg = surface.panelMuted;
   const hoverBg = surface.hoverBg;
+  const accent = getColorValue(primaryColor);
+  const cardsTabActive = activeTab === 'cards';
+  const widgetsTabActive = activeTab === 'widgets';
+  const cardsSummary = hasLibraryQuery
+    ? `${libraryCount} matching entities`
+    : `${libraryCount} entities available`;
+  const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
+  const sizeOptions = selectedTemplate?.supportedSizes ?? [];
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${surface.dialogBackdrop}`}
+    <DialogShell
+      isOpen={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose();
+        }
+      }}
+      overlayClassName={surface.dialogBackdrop}
+      contentClassName={`${bgColor} fixed left-1/2 top-1/2 z-50 flex w-[min(calc(100vw-2rem),38rem)] max-h-[min(84vh,46rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border ${borderColor}`}
+      contentStyle={{ boxShadow: '0 24px 80px rgba(0, 0, 0, 0.36)' }}
     >
-      <div
-        className={`${bgColor} rounded-2xl border ${borderColor} w-full max-w-2xl max-h-[80vh] overflow-y-auto`}
-        style={{
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-inherit z-10">
-          <div>
-            <h2 className={`text-xl font-semibold ${textColor}`}>{t('dashboard.addCard.title')}</h2>
-            <p className={`text-sm ${mutedColor} mt-1`}>
-              {t('dashboard.addCard.description', {
-                room: currentRoom === 'All' ? t('dashboard.addCard.allRooms') : currentRoom,
-              })}
-            </p>
+      <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-5 pb-4 pt-5 backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className={`mb-2 text-[11px] font-medium tracking-[0.16em] ${surface.textMuted}`}>
+              {cardsTabActive ? 'ENTITY LIBRARY' : 'CUSTOM WIDGETS'}
+            </div>
+            <Dialog.Title className={`text-[1.625rem] font-semibold leading-none ${textColor}`}>
+              {t('dashboard.addCard.title')}
+            </Dialog.Title>
+            <Dialog.Description className={`mt-2 max-w-[32rem] text-sm leading-6 ${mutedColor}`}>
+              {cardsTabActive
+                ? t('dashboard.addCard.libraryDescription')
+                : t('dashboard.addCard.description', {
+                    room: currentRoom === 'All' ? t('dashboard.addCard.allRooms') : currentRoom,
+                  })}
+            </Dialog.Description>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className={`w-8 h-8 rounded-full ${cardBg} ${hoverBg} flex items-center justify-center transition-colors`}
+            className={`mt-1 flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${hoverBg}`}
+            style={{
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(255,255,255,0.04)',
+            }}
           >
-            <X className={`w-4 h-4 ${mutedColor}`} />
+            <X className={`h-4 w-4 ${mutedColor}`} />
           </button>
         </div>
 
-        {/* Card Templates Grid */}
-        <div className="p-6 space-y-6">
-          <div>
-            <h3 className={`text-sm font-medium ${textColor} mb-3`}>
-              {t('dashboard.addCard.chooseType')}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {cardTemplates.map((template) => (
-                <button
-                  type="button"
-                  key={template.id}
-                  onClick={() => {
-                    setSelectedType(template.id);
-                    setSelectedSize(template.defaultSize);
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${
-                    selectedType === template.id
-                      ? 'border-current'
-                      : `border-transparent ${cardBg} ${hoverBg}`
-                  }`}
-                  style={{
-                    borderColor:
-                      selectedType === template.id ? getColorValue(primaryColor) : undefined,
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{
-                        backgroundColor:
-                          selectedType === template.id
-                            ? `${getColorValue(primaryColor)}20`
-                            : theme === 'light'
-                              ? '#f3f4f6'
-                              : 'rgba(255, 255, 255, 0.05)',
-                        color:
-                          selectedType === template.id ? getColorValue(primaryColor) : undefined,
-                      }}
-                    >
-                      {template.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-medium ${textColor} mb-0.5`}>
-                        {t(template.nameKey)}
-                      </h4>
-                      <p className={`text-xs ${mutedColor}`}>{t(template.descriptionKey)}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+        {showCardsTab ? (
+          <div
+            className="mt-5 grid grid-cols-2 gap-2 rounded-[22px] border p-1.5"
+            style={{
+              borderColor: 'rgba(255,255,255,0.08)',
+              backgroundColor: 'rgba(255,255,255,0.03)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTab('cards')}
+              className={`rounded-[18px] px-4 py-3 text-left transition-colors ${
+                cardsTabActive ? textColor : mutedColor
+              }`}
+              style={{
+                backgroundColor: cardsTabActive ? `${accent}24` : 'transparent',
+                boxShadow: cardsTabActive ? `inset 0 0 0 1px ${accent}22` : 'none',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Layers2 className="h-4 w-4" />
+                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.cards')}</span>
+              </div>
+              <div className="mt-1 text-xs opacity-80">Browse every Home Assistant entity</div>
+            </button>
 
-          {/* Size Selection */}
-          {selectedType && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('widgets')}
+              className={`rounded-[18px] px-4 py-3 text-left transition-colors ${
+                widgetsTabActive ? textColor : mutedColor
+              }`}
+              style={{
+                backgroundColor: widgetsTabActive ? `${accent}24` : 'transparent',
+                boxShadow: widgetsTabActive ? `inset 0 0 0 1px ${accent}22` : 'none',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.widgets')}</span>
+              </div>
+              <div className="mt-1 text-xs opacity-80">Create utility cards for dashboards</div>
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        {activeTab === 'cards' ? (
+          <div className="space-y-4">
+            <div
+              className={`rounded-[24px] border p-3 ${borderColor}`}
+              style={{ backgroundColor: 'rgba(255,255,255,0.025)' }}
+            >
+              <div
+                data-library-interactive="true"
+                className={`flex items-center gap-2 rounded-[18px] border px-3 py-3 ${borderColor} ${cardBg}`}
+              >
+                <Search className={`h-4 w-4 shrink-0 ${mutedColor}`} />
+                <input
+                  type="text"
+                  value={libraryQuery}
+                  onChange={(event) => setLibraryQuery(event.target.value)}
+                  placeholder={t('dashboard.addCard.searchPlaceholder')}
+                  className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${textColor}`}
+                  style={{ caretColor: accent }}
+                />
+              </div>
+              <div className={`mt-3 flex items-center justify-between px-1 text-xs ${mutedColor}`}>
+                <span>{cardsSummary}</span>
+                <span>Tap any row to add it</span>
+              </div>
+            </div>
+
+            <DashboardLibraryList
+              cards={filteredLibraryCards}
+              surface={surface}
+              emptyText={t('dashboard.addCard.libraryEmpty')}
+              onAdd={handleAddFromLibrary}
+              height={360}
+            />
+          </div>
+        ) : (
+          <div className="space-y-6">
             <div>
-              <h3 className={`text-sm font-medium ${textColor} mb-3`}>
-                {t('dashboard.addCard.chooseSize')}
+              <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
+                {t('dashboard.addCard.chooseType')}
               </h3>
-              <div className="flex gap-3">
-                {(['extra-small', 'small', 'medium', 'large'] as const).map((size) => (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {cardTemplates.map((template) => (
                   <button
                     type="button"
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                      selectedSize === size
+                    key={template.id}
+                    onClick={() => {
+                      setSelectedType(template.id);
+                      setSelectedSize(template.defaultSize);
+                    }}
+                    className={`flex items-start rounded-[22px] border p-4 text-left transition-all ${
+                      selectedType === template.id
                         ? 'border-current'
                         : `border-transparent ${cardBg} ${hoverBg}`
                     }`}
                     style={{
-                      borderColor: selectedSize === size ? getColorValue(primaryColor) : undefined,
+                      borderColor: selectedType === template.id ? accent : 'rgba(255,255,255,0.05)',
+                      backgroundColor: selectedType === template.id ? `${accent}10` : undefined,
                     }}
                   >
-                    <div className="text-center">
+                    <div className="flex items-start gap-3">
                       <div
-                        className="mx-auto mb-2 rounded"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
                         style={{
-                          width: isExtraSmallCardSize(size)
-                            ? '24px'
-                            : size === 'small'
-                              ? '24px'
-                              : size === 'medium'
-                                ? '40px'
-                                : '56px',
-                          height: isExtraSmallCardSize(size)
-                            ? '12px'
-                            : size === 'small'
-                              ? '24px'
-                              : size === 'medium'
-                                ? '24px'
-                                : '48px',
                           backgroundColor:
-                            selectedSize === size
-                              ? getColorValue(primaryColor)
+                            selectedType === template.id
+                              ? `${accent}22`
                               : theme === 'light'
-                                ? '#d1d5db'
-                                : 'rgba(255, 255, 255, 0.2)',
+                                ? '#f3f4f6'
+                                : 'rgba(255, 255, 255, 0.05)',
+                          color:
+                            selectedType === template.id
+                              ? accent
+                              : theme === 'light'
+                                ? '#374151'
+                                : 'rgba(255, 255, 255, 0.78)',
                         }}
-                      />
-                      <p className={`text-xs font-medium ${textColor} capitalize`}>
-                        {t(cardSizeKey(size))}
-                      </p>
+                      >
+                        {template.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`mb-1 text-sm font-semibold ${textColor}`}>
+                          {t(template.nameKey)}
+                        </h4>
+                        <p className={`text-xs leading-5 ${mutedColor}`}>
+                          {t(template.descriptionKey)}
+                        </p>
+                      </div>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Preview */}
-          {selectedTemplate && (
-            <div className={`p-4 rounded-xl ${cardBg} border ${borderColor}`}>
-              <p className={`text-xs font-medium ${mutedColor} mb-2`}>
-                {t('dashboard.addCard.previewLabel')}
-              </p>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{
-                    backgroundColor: `${getColorValue(primaryColor)}20`,
-                    color: getColorValue(primaryColor),
-                  }}
-                >
-                  {selectedTemplate.icon}
-                </div>
-                <div>
-                  <h4 className={`text-sm font-medium ${textColor}`}>
-                    {t(selectedTemplate.nameKey)}
-                  </h4>
-                  <p className={`text-xs ${mutedColor}`}>
-                    {t('dashboard.addCard.previewSize', {
-                      size: t(cardSizeKey(selectedSize)),
-                    })}
-                  </p>
+            {selectedType ? (
+              <div>
+                <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
+                  {t('dashboard.addCard.chooseSize')}
+                </h3>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {sizeOptions.map((size) => (
+                    <button
+                      type="button"
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`rounded-[20px] border p-3 transition-all ${
+                        selectedSize === size
+                          ? 'border-current'
+                          : `border-transparent ${cardBg} ${hoverBg}`
+                      }`}
+                      style={{
+                        borderColor: selectedSize === size ? accent : 'rgba(255,255,255,0.05)',
+                        backgroundColor: selectedSize === size ? `${accent}10` : undefined,
+                      }}
+                    >
+                      <div className="text-center">
+                        <div
+                          className="mx-auto mb-2 rounded"
+                          style={{
+                            width:
+                              size === 'tiny'
+                                ? '14px'
+                                : isExtraSmallCardSize(size)
+                                  ? '24px'
+                                  : size === 'small'
+                                    ? '24px'
+                                    : size === 'medium'
+                                      ? '40px'
+                                      : '56px',
+                            height:
+                              size === 'tiny'
+                                ? '14px'
+                                : isExtraSmallCardSize(size)
+                                  ? '12px'
+                                  : size === 'small'
+                                    ? '24px'
+                                    : size === 'medium'
+                                      ? '24px'
+                                      : '48px',
+                            backgroundColor:
+                              selectedSize === size
+                                ? accent
+                                : theme === 'light'
+                                  ? '#d1d5db'
+                                  : 'rgba(255, 255, 255, 0.2)',
+                          }}
+                        />
+                        <p className={`text-xs font-medium ${textColor}`}>{t(cardSizeKey(size))}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-white/10">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`flex-1 px-4 py-3 rounded-xl border ${borderColor} ${textColor} text-sm font-medium ${hoverBg} transition-all`}
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={!selectedType}
-            className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-white transition-all"
-            style={{
-              backgroundColor: selectedType ? getColorValue(primaryColor) : '#6b7280',
-              opacity: selectedType ? 1 : 0.5,
-              cursor: selectedType ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {t('dashboard.addCard.action')}
-          </button>
-        </div>
+            ) : null}
+          </div>
+        )}
       </div>
-    </div>
+
+      {activeTab === 'widgets' ? (
+        <div className="border-t border-white/10 px-5 py-4">
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!selectedType}
+              className="rounded-full px-4 py-2.5 text-sm font-medium text-white transition-all"
+              style={{
+                backgroundColor: selectedType ? accent : '#6b7280',
+                opacity: selectedType ? 1 : 0.5,
+                cursor: selectedType ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {t('dashboard.addCard.action')}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </DialogShell>
   );
 }

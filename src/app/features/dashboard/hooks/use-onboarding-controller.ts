@@ -9,6 +9,7 @@ type OnboardingTransition = 'all' | 'blank' | 'import' | null;
 interface UseOnboardingControllerOptions {
   allEntityIds: string[];
   changeRoom: (room: string) => void;
+  resetDashboard: () => void;
 }
 
 export interface OnboardingController {
@@ -27,6 +28,7 @@ export interface OnboardingController {
 export function useOnboardingController({
   allEntityIds,
   changeRoom,
+  resetDashboard,
 }: UseOnboardingControllerOptions): OnboardingController {
   const { setActiveSection } = useNavigation();
   const { t } = useI18n();
@@ -91,6 +93,7 @@ export function useOnboardingController({
     if (onboardingTransition === 'all') {
       completeOnboarding(allEntityIds, false);
     } else if (onboardingTransition === 'blank') {
+      resetDashboard();
       completeOnboarding(allEntityIds, true);
     } else if (onboardingTransition === 'import') {
       markOnboardingCompleted();
@@ -100,7 +103,13 @@ export function useOnboardingController({
 
     setOnboardingTransition(null);
     setShowImportedDashboardReveal(true);
-  }, [allEntityIds, completeOnboarding, markOnboardingCompleted, onboardingTransition]);
+  }, [
+    allEntityIds,
+    completeOnboarding,
+    markOnboardingCompleted,
+    onboardingTransition,
+    resetDashboard,
+  ]);
 
   return {
     dashboardArrivalVariant,
