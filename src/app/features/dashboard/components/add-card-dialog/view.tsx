@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Layers2, Search, Sparkles, X } from 'lucide-react';
-import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import { type CardSize, getCardSizeRatio } from '@/app/components/shared/card-size-selector';
 import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type ThemeType, useI18n } from '@/app/hooks';
@@ -72,8 +72,8 @@ export function AddCardDialogView({
   const cardsTabActive = activeTab === 'cards';
   const widgetsTabActive = activeTab === 'widgets';
   const cardsSummary = hasLibraryQuery
-    ? `${libraryCount} matching entities`
-    : `${libraryCount} entities available`;
+    ? t('dashboard.addCard.librarySummary.matching', { count: libraryCount })
+    : t('dashboard.addCard.librarySummary.available', { count: libraryCount });
   const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
   const sizeOptions = selectedTemplate?.supportedSizes ?? [];
 
@@ -93,7 +93,9 @@ export function AddCardDialogView({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className={`mb-2 text-[11px] font-medium tracking-[0.16em] ${surface.textMuted}`}>
-              {cardsTabActive ? 'ENTITY LIBRARY' : 'CUSTOM WIDGETS'}
+              {cardsTabActive
+                ? t('dashboard.addCard.header.library')
+                : t('dashboard.addCard.header.widgets')}
             </div>
             <Dialog.Title className={`text-[1.625rem] font-semibold leading-none ${textColor}`}>
               {t('dashboard.addCard.title')}
@@ -142,7 +144,7 @@ export function AddCardDialogView({
                 <Layers2 className="h-4 w-4" />
                 <span className="text-sm font-semibold">{t('dashboard.addCard.tab.cards')}</span>
               </div>
-              <div className="mt-1 text-xs opacity-80">Browse every Home Assistant entity</div>
+              <div className="mt-1 text-xs opacity-80">{t('dashboard.addCard.tab.cardsHint')}</div>
             </button>
 
             <button
@@ -160,7 +162,9 @@ export function AddCardDialogView({
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-semibold">{t('dashboard.addCard.tab.widgets')}</span>
               </div>
-              <div className="mt-1 text-xs opacity-80">Create utility cards for dashboards</div>
+              <div className="mt-1 text-xs opacity-80">
+                {t('dashboard.addCard.tab.widgetsHint')}
+              </div>
             </button>
           </div>
         ) : null}
@@ -189,7 +193,7 @@ export function AddCardDialogView({
               </div>
               <div className={`mt-3 flex items-center justify-between px-1 text-xs ${mutedColor}`}>
                 <span>{cardsSummary}</span>
-                <span>Tap any row to add it</span>
+                <span>{t('dashboard.addCard.libraryHint.tapToAdd')}</span>
               </div>
             </div>
 
@@ -283,36 +287,28 @@ export function AddCardDialogView({
                     >
                       <div className="text-center">
                         <div
-                          className="mx-auto mb-2 rounded"
+                          className="mx-auto mb-2 flex h-12 items-center justify-center rounded-xl"
                           style={{
-                            width:
-                              size === 'tiny'
-                                ? '14px'
-                                : isExtraSmallCardSize(size)
-                                  ? '24px'
-                                  : size === 'small'
-                                    ? '24px'
-                                    : size === 'medium'
-                                      ? '40px'
-                                      : '56px',
-                            height:
-                              size === 'tiny'
-                                ? '14px'
-                                : isExtraSmallCardSize(size)
-                                  ? '12px'
-                                  : size === 'small'
-                                    ? '24px'
-                                    : size === 'medium'
-                                      ? '24px'
-                                      : '48px',
                             backgroundColor:
-                              selectedSize === size
-                                ? accent
-                                : theme === 'light'
-                                  ? '#d1d5db'
-                                  : 'rgba(255, 255, 255, 0.2)',
+                              theme === 'light' ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.03)',
                           }}
-                        />
+                        >
+                          <div
+                            className="rounded"
+                            style={{
+                              ...(() => {
+                                const { cols, rows } = getCardSizeRatio(size);
+                                return { width: cols * 18, height: rows * 18 };
+                              })(),
+                              backgroundColor:
+                                selectedSize === size
+                                  ? accent
+                                  : theme === 'light'
+                                    ? '#d1d5db'
+                                    : 'rgba(255, 255, 255, 0.2)',
+                            }}
+                          />
+                        </div>
                         <p className={`text-xs font-medium ${textColor}`}>{t(cardSizeKey(size))}</p>
                       </div>
                     </button>

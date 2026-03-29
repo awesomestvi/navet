@@ -1,7 +1,7 @@
 import { ChevronsRightLeft } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface GridAllocationItem {
@@ -20,13 +20,14 @@ export const EnergyGridAllocationWidget = memo(function EnergyGridAllocationWidg
   importTodayKWh,
   allocation,
 }: EnergyGridAllocationWidgetProps) {
+  const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <EnergyWidgetShell
-      title="Grid energy to devices"
-      eyebrow="Estimated allocation"
+      title={t('energy.widgets.gridAllocation.title')}
+      eyebrow={t('energy.widgets.gridAllocation.eyebrow')}
       action={<ChevronsRightLeft className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div
@@ -34,25 +35,26 @@ export const EnergyGridAllocationWidget = memo(function EnergyGridAllocationWidg
       >
         <div>
           <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-            Allocation basis
+            {t('energy.widgets.gridAllocation.basisTitle')}
           </div>
           <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-            Estimated from each device's share of monitored daily energy
+            {t('energy.widgets.gridAllocation.basisDescription')}
           </div>
         </div>
         <div className="text-right">
           <div className={`text-lg font-semibold ${surface.textPrimary}`}>
             {importTodayKWh.toFixed(1)} kWh
           </div>
-          <div className={`mt-1 text-xs ${surface.textMuted}`}>grid import today</div>
+          <div className={`mt-1 text-xs ${surface.textMuted}`}>
+            {t('energy.widgets.gridAllocation.importTodayLabel')}
+          </div>
         </div>
       </div>
 
       <div className="space-y-3">
         {allocation.length === 0 ? (
           <div className={`rounded-3xl border p-4 text-sm ${surface.border} ${surface.textMuted}`}>
-            No allocation data yet. Add daily kWh sensors for individual devices and a grid import
-            energy sensor.
+            {t('energy.widgets.gridAllocation.empty')}
           </div>
         ) : (
           allocation.map((item) => (

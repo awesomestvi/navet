@@ -24,6 +24,10 @@ This project includes components from [shadcn/ui](https://ui.shadcn.com/) used u
 
 - [`ha-fusion`](https://github.com/matt8707/ha-fusion) inspired me to build Navet, and I just want to say: tack så mycket, Mattias.
 
+## Community Acknowledgement
+
+- Thanks to the Home Assistant community for feedback, testing, and ideas that helped shape Navet.
+
 ---
 
 Copyright © 2026 Navet Contributors

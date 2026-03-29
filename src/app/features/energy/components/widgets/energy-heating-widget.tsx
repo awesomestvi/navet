@@ -1,7 +1,7 @@
 import { Flame } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
@@ -12,13 +12,14 @@ interface EnergyHeatingWidgetProps {
 export const EnergyHeatingWidget = memo(function EnergyHeatingWidget({
   consumers,
 }: EnergyHeatingWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <EnergyWidgetShell
-      title="Heating and hot water"
-      eyebrow="Thermal systems"
+      title={t('energy.widgets.heating.title')}
+      eyebrow={t('energy.widgets.heating.eyebrow')}
       action={<Flame className={`h-5 w-5 ${surface.textMuted}`} />}
     >
       <div className="space-y-3">
@@ -33,7 +34,7 @@ export const EnergyHeatingWidget = memo(function EnergyHeatingWidget({
                   {consumer.name}
                 </div>
                 <div className={`mt-1 text-xs ${surface.textSecondary}`}>
-                  {consumer.energyKWh.toFixed(1)} kWh today
+                  {t('energy.widgets.heating.kwhToday', { value: consumer.energyKWh.toFixed(1) })}
                 </div>
               </div>
               <div className={`text-base font-semibold ${surface.textPrimary}`}>

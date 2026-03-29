@@ -5,17 +5,25 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import type { PrimaryColor } from '@/app/hooks';
 import type { Notification } from './use-notifications';
 
-export const formatTimestamp = (date: Date): string => {
+export const formatTimestamp = (
+  date: Date,
+  labels: {
+    daysAgo: string;
+    hoursAgo: string;
+    justNow: string;
+    minutesAgo: string;
+  }
+): string => {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
+  if (diffMins < 1) return labels.justNow;
+  if (diffMins < 60) return labels.minutesAgo.replace('{count}', String(diffMins));
+  if (diffHours < 24) return labels.hoursAgo.replace('{count}', String(diffHours));
+  return labels.daysAgo.replace('{count}', String(diffDays));
 };
 
 export const getColorValue = getThemeColorValue;
@@ -69,7 +77,11 @@ function resolveNotificationAssetUrl(url: string, hassUrl?: string): string {
   }
 }
 
-function renderInlineMarkdown(content: string, hassUrl?: string): ReactNode[] {
+function renderInlineMarkdown(
+  content: string,
+  hassUrl?: string,
+  imageAltText?: string
+): ReactNode[] {
   const pattern =
     /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*/g;
   const parts: ReactNode[] = [];
@@ -88,7 +100,7 @@ function renderInlineMarkdown(content: string, hassUrl?: string): ReactNode[] {
         <ImageWithFallback
           key={`${imageUrl}-${match.index}`}
           src={resolveNotificationAssetUrl(imageUrl, hassUrl)}
-          alt={imageAlt || 'Notification image'}
+          alt={imageAlt || imageAltText || ''}
           className="mt-2 max-h-36 w-full rounded-2xl border border-white/10 object-cover"
         />
       );
@@ -138,7 +150,11 @@ function renderInlineMarkdown(content: string, hassUrl?: string): ReactNode[] {
   return parts;
 }
 
-export function renderNotificationMarkdown(message: string, hassUrl?: string): ReactNode {
+export function renderNotificationMarkdown(
+  message: string,
+  hassUrl?: string,
+  imageAltText?: string
+): ReactNode {
   const blocks = message
     .split(/\n{2,}/)
     .map((block) => block.trim())
@@ -153,7 +169,7 @@ export function renderNotificationMarkdown(message: string, hassUrl?: string): R
         <ul key={`list-${blockIndex}`} className="ml-4 list-disc space-y-1">
           {lines.map((line, lineIndex) => (
             <li key={`item-${blockIndex}-${lineIndex}`}>
-              {renderInlineMarkdown(line.replace(/^[-*+]\s+/, ''), hassUrl)}
+              {renderInlineMarkdown(line.replace(/^[-*+]\s+/, ''), hassUrl, imageAltText)}
             </li>
           ))}
         </ul>
@@ -174,7 +190,9 @@ export function renderNotificationMarkdown(message: string, hassUrl?: string): R
                     : 'text-[13px] font-semibold text-inherit';
 
                 return (
-                  <p className={headingClassName}>{renderInlineMarkdown(headingText, hassUrl)}</p>
+                  <p className={headingClassName}>
+                    {renderInlineMarkdown(headingText, hassUrl, imageAltText)}
+                  </p>
                 );
               }
 
@@ -182,7 +200,9 @@ export function renderNotificationMarkdown(message: string, hassUrl?: string): R
                 return null;
               }
 
-              return <p className="text-inherit">{renderInlineMarkdown(line, hassUrl)}</p>;
+              return (
+                <p className="text-inherit">{renderInlineMarkdown(line, hassUrl, imageAltText)}</p>
+              );
             })()}
           </Fragment>
         ))}

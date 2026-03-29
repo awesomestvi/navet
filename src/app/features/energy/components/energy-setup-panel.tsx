@@ -1,7 +1,8 @@
 import { AlertCircle, CheckCircle, Loader, Trash2, Zap } from 'lucide-react';
 import { useId, useState } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import type { TranslationKey } from '@/app/i18n';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getEnergyPrefs, mapPrefsToConfig } from '../services/energy-ha-service';
@@ -17,56 +18,56 @@ type FormFields = Omit<EnergySourceConfig, 'devices'>;
 
 const FIELD_META: {
   key: keyof FormFields;
-  label: string;
-  description: string;
+  labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
   domain: string;
 }[] = [
   {
     key: 'solarPowerEntityId',
-    label: 'Solar power',
-    description: 'Live W output from solar panels',
+    labelKey: 'energy.setup.fields.solarPower.label',
+    descriptionKey: 'energy.setup.fields.solarPower.description',
     domain: 'sensor',
   },
   {
     key: 'batterySocEntityId',
-    label: 'Battery state of charge',
-    description: 'Battery level 0–100%',
+    labelKey: 'energy.setup.fields.batterySoc.label',
+    descriptionKey: 'energy.setup.fields.batterySoc.description',
     domain: 'sensor',
   },
   {
     key: 'batteryPowerEntityId',
-    label: 'Battery power',
-    description: 'W — positive = charging, negative = discharging',
+    labelKey: 'energy.setup.fields.batteryPower.label',
+    descriptionKey: 'energy.setup.fields.batteryPower.description',
     domain: 'sensor',
   },
   {
     key: 'gridImportPowerEntityId',
-    label: 'Grid import power',
-    description: 'Live W drawn from the grid',
+    labelKey: 'energy.setup.fields.gridImportPower.label',
+    descriptionKey: 'energy.setup.fields.gridImportPower.description',
     domain: 'sensor',
   },
   {
     key: 'gridExportPowerEntityId',
-    label: 'Grid export power',
-    description: 'Live W fed back to the grid',
+    labelKey: 'energy.setup.fields.gridExportPower.label',
+    descriptionKey: 'energy.setup.fields.gridExportPower.description',
     domain: 'sensor',
   },
   {
     key: 'homeLoadPowerEntityId',
-    label: 'Home load power',
-    description: 'Total home consumption W (derived from other sensors if left empty)',
+    labelKey: 'energy.setup.fields.homeLoadPower.label',
+    descriptionKey: 'energy.setup.fields.homeLoadPower.description',
     domain: 'sensor',
   },
   {
     key: 'solarEnergyEntityId',
-    label: 'Solar energy (kWh)',
-    description: 'Cumulative kWh stat — used by the trend chart',
+    labelKey: 'energy.setup.fields.solarEnergy.label',
+    descriptionKey: 'energy.setup.fields.solarEnergy.description',
     domain: 'sensor',
   },
   {
     key: 'gridImportEnergyEntityId',
-    label: 'Grid import energy (kWh)',
-    description: 'Cumulative kWh stat for trend chart',
+    labelKey: 'energy.setup.fields.gridImportEnergy.label',
+    descriptionKey: 'energy.setup.fields.gridImportEnergy.description',
     domain: 'sensor',
   },
 ];
@@ -102,6 +103,7 @@ function configToFields(config: EnergySourceConfig): FormFields {
 export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetupPanelProps) {
   const id = useId();
   const { theme, accentColor } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
 
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
@@ -136,7 +138,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
     // object may not have its prototype methods intact after state diffing.
     const liveConnection = homeAssistantService.getConnection();
     if (!liveConnection) {
-      setDetectError('Not connected to Home Assistant');
+      setDetectError(t('energy.setup.errors.notConnected'));
       return;
     }
     setDetecting(true);
@@ -155,7 +157,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
           : err instanceof Error
             ? err.message
             : String(err);
-      setDetectError(`Auto-detect failed: ${detail}`);
+      setDetectError(t('energy.setup.errors.autoDetectFailed', { detail }));
     } finally {
       setDetecting(false);
     }
@@ -176,18 +178,17 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
       {/* Header */}
       <div className="flex items-start gap-4">
         <div
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
           style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
         >
           <Zap className="h-5 w-5" />
         </div>
         <div>
           <h2 className={`text-base font-semibold ${surface.textPrimary}`}>
-            Connect to Home Assistant Energy
+            {t('energy.setup.panelTitle')}
           </h2>
           <p className={`mt-1 text-sm ${surface.textSecondary}`}>
-            Map your HA sensor entities to each energy source. Auto-detect reads your HA Energy
-            configuration — review and correct the guessed sensor IDs before saving.
+            {t('energy.setup.panelDescription')}
           </p>
         </div>
       </div>
@@ -198,10 +199,10 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
       >
         <div className="flex-1">
           <div className={`text-sm font-medium ${surface.textPrimary}`}>
-            Auto-detect from HA Energy
+            {t('energy.setup.autoDetect.title')}
           </div>
           <div className={`mt-0.5 text-xs ${surface.textMuted}`}>
-            Reads your Energy dashboard configuration and pre-fills the fields below.
+            {t('energy.setup.autoDetect.description')}
           </div>
         </div>
 
@@ -213,18 +214,18 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
           style={{ backgroundColor: accentColor }}
         >
           {detecting && <Loader className="h-3.5 w-3.5 animate-spin" />}
-          {detecting ? 'Detecting…' : 'Auto-detect'}
+          {detecting ? t('energy.setup.autoDetect.detecting') : t('energy.setup.autoDetect.action')}
         </button>
 
         {detected && !detectError && (
           <div className="flex items-center gap-1.5 text-xs text-emerald-400">
             <CheckCircle className="h-3.5 w-3.5" />
-            Filled from HA — review below
+            {t('energy.setup.autoDetect.success')}
           </div>
         )}
         {detectError && (
           <div className="flex items-start gap-1.5 text-xs text-rose-400">
-            <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {detectError}
           </div>
         )}
@@ -241,7 +242,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                 htmlFor={inputId}
                 className={`mb-1.5 block text-xs font-medium ${surface.textPrimary}`}
               >
-                {meta.label}
+                {t(meta.labelKey)}
               </label>
               <input
                 id={inputId}
@@ -249,7 +250,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                 list={listId}
                 value={fields[meta.key] ?? ''}
                 onChange={(e) => setField(meta.key, e.target.value)}
-                placeholder={`${meta.domain}.your_sensor`}
+                placeholder={t('energy.setup.sensorPlaceholder', { domain: meta.domain })}
                 className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-colors ${surface.border} ${surface.inputBg} ${surface.textPrimary}`}
                 style={{ outlineOffset: '0px' }}
                 onFocus={(e) => {
@@ -264,7 +265,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                   <option key={sid} value={sid} />
                 ))}
               </datalist>
-              <p className={`mt-1 text-xs ${surface.textMuted}`}>{meta.description}</p>
+              <p className={`mt-1 text-xs ${surface.textMuted}`}>{t(meta.descriptionKey)}</p>
             </div>
           );
         })}
@@ -276,7 +277,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
           <div
             className={`mb-3 text-xs font-semibold uppercase tracking-wider ${surface.textMuted}`}
           >
-            Individual devices ({devices.length})
+            {t('energy.setup.individualDevices', { count: devices.length })}
           </div>
           <div className="flex flex-col gap-2">
             {devices.map((device, index) => {
@@ -293,9 +294,9 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                     </div>
                     <div className={`truncate text-xs ${surface.textMuted}`}>{device.entityId}</div>
                   </div>
-                  <div className="w-48 flex-shrink-0">
+                  <div className="w-48 shrink-0">
                     <label htmlFor={powerInputId} className="sr-only">
-                      Power sensor for {device.name}
+                      {t('energy.setup.powerSensorFor', { name: device.name })}
                     </label>
                     <input
                       id={powerInputId}
@@ -303,7 +304,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                       list={powerListId}
                       value={device.powerEntityId ?? ''}
                       onChange={(e) => setDevicePowerEntity(index, e.target.value)}
-                      placeholder="sensor.power (optional)"
+                      placeholder={t('energy.setup.powerSensorPlaceholder')}
                       className={`w-full rounded-xl border px-3 py-1.5 text-xs outline-none transition-colors ${surface.border} ${surface.inputBg} ${surface.textPrimary}`}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = accentColor;
@@ -321,8 +322,8 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                   <button
                     type="button"
                     onClick={() => removeDevice(index)}
-                    className={`flex-shrink-0 rounded-full p-1.5 transition-colors ${surface.textMuted} ${surface.hoverBg}`}
-                    title="Remove device"
+                    className={`shrink-0 rounded-full p-1.5 transition-colors ${surface.textMuted} ${surface.hoverBg}`}
+                    title={t('energy.setup.removeDevice')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -341,7 +342,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
           className="rounded-full px-5 py-2 text-sm font-medium text-white"
           style={{ backgroundColor: accentColor }}
         >
-          Save configuration
+          {t('energy.setup.saveConfiguration')}
         </button>
         {onCancel && (
           <button
@@ -349,7 +350,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
             onClick={onCancel}
             className={`rounded-full border px-5 py-2 text-sm font-medium ${surface.border} ${surface.textSecondary}`}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
       </div>

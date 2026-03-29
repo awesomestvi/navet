@@ -1,7 +1,7 @@
 import { Bath, Heater } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
@@ -16,26 +16,29 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
   currentPowerW,
   consumers,
 }: EnergyFocusZonesWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <EnergyWidgetShell
-      title="Bathroom and toilet"
-      eyebrow="Focus zone"
+      title={t('energy.widgets.focusZones.title')}
+      eyebrow={t('energy.widgets.focusZones.eyebrow')}
       action={<Bath className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div className="grid gap-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
-            <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>Today</div>
+            <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
+              {t('energy.widgets.common.today')}
+            </div>
             <div className={`mt-3 text-3xl font-semibold ${surface.textPrimary}`}>
               {todayKWh.toFixed(1)} kWh
             </div>
           </div>
           <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-              Current power
+              {t('energy.widgets.now.currentPower')}
             </div>
             <div className={`mt-3 text-3xl font-semibold ${surface.textPrimary}`}>
               {Math.round(currentPowerW)} W
@@ -48,7 +51,7 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
             <div
               className={`rounded-3xl border p-4 text-sm ${surface.border} ${surface.textMuted}`}
             >
-              No bathroom or toilet consumers detected from the configured device monitors.
+              {t('energy.widgets.focusZones.empty')}
             </div>
           ) : (
             consumers.map((consumer) => (
@@ -66,7 +69,7 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
                         {consumer.name}
                       </div>
                       <div className={`mt-1 text-xs ${surface.textSecondary}`}>
-                        {consumer.room ?? 'Unassigned room'}
+                        {consumer.room ?? t('energy.widgets.common.unassignedRoom')}
                       </div>
                     </div>
                   </div>
@@ -75,7 +78,9 @@ export const EnergyFocusZonesWidget = memo(function EnergyFocusZonesWidget({
                       {consumer.energyKWh.toFixed(2)} kWh
                     </div>
                     <div className={`mt-1 text-xs ${surface.textMuted}`}>
-                      {Math.round(consumer.powerW)} W now
+                      {t('energy.widgets.deviceTotals.powerNow', {
+                        value: Math.round(consumer.powerW),
+                      })}
                     </div>
                   </div>
                 </div>

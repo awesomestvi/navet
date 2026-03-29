@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { FLOW_TO_NODE_ID, FLOW_TONE_ACCENT } from '../../data/energy-constants';
 import type { EnergyFlowDatum } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
@@ -15,11 +15,15 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
   flow,
   onNodeSelect,
 }: EnergyFlowWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <EnergyWidgetShell title="Energy flow" eyebrow="Live balance">
+    <EnergyWidgetShell
+      title={t('energy.widgets.flow.title')}
+      eyebrow={t('energy.widgets.flow.eyebrow')}
+    >
       <div className="grid gap-3 lg:grid-cols-3">
         {flow.map((item) => (
           <button
@@ -32,10 +36,10 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
               <div>
                 <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
                   {item.direction === 'sink'
-                    ? 'Usage'
+                    ? t('energy.widgets.flow.direction.usage')
                     : item.direction === 'storage'
-                      ? 'Storage'
-                      : 'Supply'}
+                      ? t('energy.widgets.flow.direction.storage')
+                      : t('energy.widgets.flow.direction.supply')}
                 </div>
                 <div className={`mt-2 text-base font-semibold ${surface.textPrimary}`}>
                   {item.label}
@@ -44,7 +48,11 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
               <span
                 className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${surface.border} ${surface.textSecondary}`}
               >
-                {item.direction}
+                {item.direction === 'sink'
+                  ? t('energy.widgets.flow.directionLabel.sink')
+                  : item.direction === 'storage'
+                    ? t('energy.widgets.flow.directionLabel.storage')
+                    : t('energy.widgets.flow.directionLabel.source')}
               </span>
             </div>
 
@@ -67,10 +75,10 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
             </div>
             <div className={`mt-1 text-xs ${surface.textSecondary}`}>
               {item.direction === 'sink'
-                ? 'Live demand from this branch'
+                ? t('energy.widgets.flow.branchDemand')
                 : item.direction === 'storage'
-                  ? 'Buffer contribution right now'
-                  : 'Active supply into the home'}
+                  ? t('energy.widgets.flow.branchBuffer')
+                  : t('energy.widgets.flow.branchSupply')}
             </div>
           </button>
         ))}

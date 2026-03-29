@@ -12,7 +12,7 @@ Comprehensive design system covering:
 - Icon sizing standards
 - Glass morphism effects
 - Interactive states and animations
-- Card size system (extra-small/small/medium/large/hero)
+- Card size system (tiny/extra-small/small/medium/medium-vertical/large/extra-large)
 - Accessibility guidelines
 - Component patterns
 - Best practices
@@ -104,13 +104,16 @@ Complete feature implementation guide:
 - **Borders**: `border-{color}-700/20` (20% opacity) or `border-gray-200` (light theme)
 
 ### Card Sizes
+
+All seven sizes are defined in `src/app/components/shared/card-size.ts` and their metadata (label, description, `cols`, `rows`) lives in `src/app/components/shared/card-size-selector.tsx` as the single source of truth. Visual previews and drag-overlay dimensions are derived from `cols × rows` rather than hardcoded pixels.
+
 - **Tiny (0.5×0.5)**: Micro action/status tile for ultra-dense dashboards; intended for highly compressed interactive cards such as compact switch, lock, or scene-style layouts using the shared tiny-action-card primitive
-- **Extra-Small (1×0.5)**: Dense status or single-control layouts, compact padding and minimal controls
-  Light cards keep an unlabeled brightness slider visible here; tap behavior determines whether a compact settings action shares that row or the slider uses the full width.
+- **Extra-Small (1×0.5)**: Dense status or single-control layouts, compact padding and minimal controls. Light cards keep an unlabeled brightness slider visible here; tap behavior determines whether a compact settings action shares that row or the slider uses the full width.
 - **Small (1×1)**: Minimal info, quick toggle, `p-4`, one responsive grid column wide and two auto-rows tall
 - **Medium (2×1)**: Primary controls + info, `p-5`, two responsive grid columns wide and two auto-rows tall
+- **Medium-Vertical (1×2)**: Tall single-column layout, `p-5`, one responsive grid column wide and four auto-rows tall; used by media cards for artwork-led portrait layouts
 - **Large (2×2)**: Full controls + advanced features, `p-6`, two responsive grid columns wide and four auto-rows tall
-- **Hero (6×3)**: Full-width feature card for weather, calendars, photo, and RSS; only offered in the Overview zone
+- **Extra-Large (3×2)**: Full-width feature card for weather, calendars, photo, and RSS; three responsive grid columns wide and four auto-rows tall; only offered in the Overview zone
 
 Room views use a fixed responsive column grid:
 - mobile: `grid-cols-2`
@@ -159,12 +162,23 @@ When creating a new card component:
 
 ### Key Files
 ```
-/src/app/components/shared/             → Shared UI building blocks
+/src/app/components/shared/                          → Shared UI building blocks
+/src/app/components/shared/card-size.ts              → CardSize union type (single source of truth)
+/src/app/components/shared/card-size-selector.tsx    → Size registry (metadata, helpers, overlay classes, selector UI)
 /src/app/components/shared/entity-card-title-block.tsx → Shared title/subtitle ordering for card headers
-/src/app/components/shared/tiny-action-card.tsx → Shared compact action-card shell for tiny tiles
-/src/app/components/layout/             → Header, sidebar, bottom nav
-/src/app/features/dashboard/            → Dashboard layout, routing, and card registry
-/src/app/features/settings/             → Settings page and section implementations
+/src/app/components/shared/tiny-action-card.tsx      → Shared compact action-card shell for tiny tiles
+/src/app/components/layout/                          → Header, sidebar, bottom nav
+/src/app/components/layout/use-header-controller.ts  → Header orchestration hook (greeting, search, date/time, user identity)
+/src/app/components/layout/header-actions.tsx        → HeaderMobileActions / HeaderDesktopActions split components
+/src/app/components/layout/header-search-input.tsx   → Stateless search input primitive
+/src/app/features/dashboard/                         → Dashboard layout, routing, and card registry
+/src/app/features/dashboard/components/dashboard-arrival-reveal.view.tsx → Arrival animation view
+/src/app/features/dashboard/components/dashboard-onboarding-dialog/ → Multi-step first-run wizard
+/src/app/features/dashboard/components/home-dashboard-overview-card-grid.tsx → CardGrid with auto-scaling
+/src/app/features/dashboard/components/home-dashboard-overview-sections.tsx → Section canvas and presentation views
+/src/app/features/media/components/media/            → Media dialog (content, sections, controller, types)
+/src/app/features/settings/                          → Settings page and section implementations
+/src/app/features/settings/components/settings-appearance-content.tsx → Appearance setting item components
 /src/app/features/lighting/             → Light cards, presets, and feature-owned stores
 /src/app/features/lighting/components/light-card/use-light-runtime-state.ts → Light runtime sync orchestration
 /src/app/features/lighting/components/light-card/build-light-card-controller-state.ts → Light controller output shaping
@@ -215,4 +229,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 26, 2026
+**Last Updated:** March 29, 2026

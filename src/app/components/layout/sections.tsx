@@ -168,12 +168,20 @@ export function MediaSection() {
       return groups;
     }, new Map());
 
-  const sections: Array<{ key: string; title: string; devices: DeviceWithType[] }> = [];
+  const sections: Array<{
+    key: string;
+    title: string;
+    singularLabel: string;
+    pluralLabel: string;
+    devices: DeviceWithType[];
+  }> = [];
 
   if (audioDevices.length > 0) {
     sections.push({
       key: 'audio',
-      title: 'Players & speakers',
+      title: t('sections.media.audio.title'),
+      singularLabel: t('sections.media.audio.singular'),
+      pluralLabel: t('sections.media.audio.plural'),
       devices: audioDevices,
     });
   }
@@ -181,15 +189,21 @@ export function MediaSection() {
   if (tvDevices.length > 0) {
     sections.push({
       key: 'tv',
-      title: 'TVs',
+      title: t('sections.media.tv.title'),
+      singularLabel: t('sections.media.tv.singular'),
+      pluralLabel: t('sections.media.tv.plural'),
       devices: tvDevices,
     });
   }
 
   for (const [label, groupedDevices] of otherGroups) {
+    const groupTitle = groupedDevices.length > 1 ? `${label}s` : label;
+
     sections.push({
       key: label,
-      title: groupedDevices.length > 1 ? `${label}s` : label,
+      title: groupTitle,
+      singularLabel: label,
+      pluralLabel: groupTitle,
       devices: groupedDevices,
     });
   }
@@ -206,8 +220,8 @@ export function MediaSection() {
           devices={section.devices}
           rawDevices={devices}
           title={section.title}
-          singularLabel={section.title}
-          pluralLabel={section.title}
+          singularLabel={section.singularLabel}
+          pluralLabel={section.pluralLabel}
           isEditMode={isEditMode}
           cardSizeStorageKey="mediaSectionCardSizes"
         />

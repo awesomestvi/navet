@@ -181,7 +181,6 @@ export const RoomSection = memo(function RoomSection({
           isEditMode={isEditMode}
           onDeleteCard={onDeleteCard}
           onRemoveEntity={onRemoveEntity}
-          onSizeChange={handleSizeChange}
         >
           {gridContent}
         </DashboardEditActions>

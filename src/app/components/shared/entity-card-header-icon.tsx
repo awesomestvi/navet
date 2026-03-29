@@ -39,7 +39,7 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     tone,
   });
   const iconTextClassName =
-    size === 'large' || size === 'hero'
+    size === 'large' || size === 'extra-large'
       ? 'text-base'
       : size === 'tiny'
         ? 'text-[10px]'

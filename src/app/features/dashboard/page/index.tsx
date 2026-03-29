@@ -1,10 +1,12 @@
 import { LoadingSpinner } from '@/app/components/shared/loading-spinner';
+import { useI18n } from '@/app/hooks';
 import { DashboardArrivalReveal } from '../components/dashboard-arrival-reveal';
 import { DashboardOverlays } from '../components/dashboard-overlays';
 import { DashboardSectionRouter } from '../components/dashboard-section-router';
 import { useDashboardController } from '../hooks/use-dashboard-controller';
 
 export function DashboardPage() {
+  const { t } = useI18n();
   const controller = useDashboardController();
   const isDashboardReady =
     controller.devicesLoaded &&
@@ -14,8 +16,8 @@ export function DashboardPage() {
 
   if (!isDashboardReady) {
     const message = controller.connecting
-      ? 'Connecting to Home Assistant...'
-      : 'Loading devices...';
+      ? t('dashboard.page.connectingHomeAssistant')
+      : t('dashboard.page.loadingDevices');
     return <LoadingSpinner message={message} fullScreen />;
   }
 

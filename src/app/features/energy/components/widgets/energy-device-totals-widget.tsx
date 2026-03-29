@@ -1,7 +1,7 @@
 import { PlugZap } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { useEnergyLoadHistory } from '../../hooks/use-energy-load-history';
 import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
@@ -44,19 +44,20 @@ const DeviceHistorySparkline = memo(function DeviceHistorySparkline({
 export const EnergyDeviceTotalsWidget = memo(function EnergyDeviceTotalsWidget({
   consumers,
 }: EnergyDeviceTotalsWidgetProps) {
+  const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <EnergyWidgetShell
-      title="Individual device totals"
-      eyebrow="Today"
+      title={t('energy.widgets.deviceTotals.title')}
+      eyebrow={t('energy.widgets.common.today')}
       action={<PlugZap className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div className="space-y-3">
         {consumers.length === 0 ? (
           <div className={`rounded-3xl border p-4 text-sm ${surface.border} ${surface.textMuted}`}>
-            No device totals available yet. Add kWh sensors for the devices you want to rank.
+            {t('energy.widgets.deviceTotals.empty')}
           </div>
         ) : (
           consumers.map((consumer, index) => (
@@ -75,7 +76,7 @@ export const EnergyDeviceTotalsWidget = memo(function EnergyDeviceTotalsWidget({
                     </div>
                   </div>
                   <div className={`mt-1 pl-8 text-xs ${surface.textSecondary}`}>
-                    {consumer.room ?? 'Unassigned room'}
+                    {consumer.room ?? t('energy.widgets.common.unassignedRoom')}
                   </div>
                 </div>
                 <div className="text-right">
@@ -83,7 +84,9 @@ export const EnergyDeviceTotalsWidget = memo(function EnergyDeviceTotalsWidget({
                     {consumer.energyKWh.toFixed(2)} kWh
                   </div>
                   <div className={`mt-1 text-xs ${surface.textMuted}`}>
-                    {Math.round(consumer.powerW)} W now
+                    {t('energy.widgets.deviceTotals.powerNow', {
+                      value: Math.round(consumer.powerW),
+                    })}
                   </div>
                 </div>
               </div>

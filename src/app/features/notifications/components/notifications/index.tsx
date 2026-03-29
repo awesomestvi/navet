@@ -1,11 +1,11 @@
 import type { RefObject } from 'react';
-import { useClickOutside, useTheme } from '@/app/hooks';
+import { type PrimaryColor, type ThemeType, useClickOutside, useI18n, useTheme } from '@/app/hooks';
 import { NotificationEmptyState } from './notification-empty-state';
 import { NotificationHeader } from './notification-header';
 import { NotificationItem } from './notification-item';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import { formatTimestamp, getColorValue } from './notification-utils';
-import { useNotifications } from './use-notifications';
+import { type Notification, useNotifications } from './use-notifications';
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface NotificationPanelProps {
 
 export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: NotificationPanelProps) {
   const panelRef = useClickOutside<HTMLDivElement>(onClose, isOpen, triggerRefs);
+  const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getNotificationSurfaceTokens(theme);
   const {
@@ -25,6 +26,19 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
     deleteNotification,
     clearAll,
   } = useNotifications();
+  const updateNotifications = notifications.filter(
+    (notification) => notification.source === 'update'
+  );
+  const regularNotifications = notifications.filter(
+    (notification) => notification.source !== 'update'
+  );
+  const formatRelativeTimestamp = (date: Date) =>
+    formatTimestamp(date, {
+      daysAgo: t('notifications.time.daysAgo', { count: '{count}' }),
+      hoursAgo: t('notifications.time.hoursAgo', { count: '{count}' }),
+      justNow: t('notifications.time.justNow'),
+      minutesAgo: t('notifications.time.minutesAgo', { count: '{count}' }),
+    });
 
   if (!isOpen) return null;
 
@@ -35,7 +49,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
       <div
         ref={panelRef}
         onPointerDown={(e) => e.stopPropagation()}
-        className={`absolute inset-x-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-10 max-h-[min(78vh,42rem)] overflow-hidden rounded-3xl md:inset-auto md:right-0 md:top-0 md:z-auto md:w-96 md:max-h-[60vh] md:rounded-2xl ${surface.panelClassName}`}
+        className={`absolute inset-x-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-10 flex max-h-[min(78vh,42rem)] flex-col overflow-hidden rounded-3xl md:inset-auto md:right-0 md:top-0 md:z-auto md:w-96 md:max-h-[60vh] md:rounded-2xl ${surface.panelClassName}`}
       >
         <NotificationHeader
           onClose={onClose}
@@ -48,26 +62,95 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           getColorValue={getColorValue}
         />
 
-        <div className="max-h-[calc(min(78vh,42rem)-7.5rem)] overflow-y-auto md:max-h-[60vh]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
           {notifications.length === 0 ? (
             <NotificationEmptyState />
           ) : (
-            <div className={`divide-y ${surface.dividerClassName}`}>
-              {notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
+            <div className="p-3">
+              {updateNotifications.length > 0 ? (
+                <NotificationSection
+                  title={t('notifications.section.updates')}
+                  notifications={updateNotifications}
+                  dividerClassName={surface.dividerClassName}
                   onPrimaryAction={runPrimaryAction}
                   onDelete={deleteNotification}
                   theme={theme}
                   primaryColor={primaryColor}
-                  formatTimestamp={formatTimestamp}
+                  formatTimestamp={formatRelativeTimestamp}
                 />
-              ))}
+              ) : null}
+
+              {regularNotifications.length > 0 ? (
+                <NotificationSection
+                  title={t('notifications.section.notifications')}
+                  notifications={regularNotifications}
+                  dividerClassName={surface.dividerClassName}
+                  onPrimaryAction={runPrimaryAction}
+                  onDelete={deleteNotification}
+                  theme={theme}
+                  primaryColor={primaryColor}
+                  formatTimestamp={formatRelativeTimestamp}
+                  className={updateNotifications.length > 0 ? 'mt-4' : undefined}
+                />
+              ) : null}
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+interface NotificationSectionProps {
+  className?: string;
+  dividerClassName: string;
+  formatTimestamp: (date: Date) => string;
+  notifications: Notification[];
+  onDelete: (id: string) => Promise<void>;
+  onPrimaryAction: (id: string) => Promise<void>;
+  primaryColor: PrimaryColor;
+  theme: ThemeType;
+  title: string;
+}
+
+function NotificationSection({
+  className,
+  dividerClassName,
+  formatTimestamp,
+  notifications,
+  onDelete,
+  onPrimaryAction,
+  primaryColor,
+  theme,
+  title,
+}: NotificationSectionProps) {
+  const surface = getNotificationSurfaceTokens(theme);
+
+  return (
+    <section className={className}>
+      <div className="mb-2 px-1">
+        <h4
+          className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+        >
+          {title}
+        </h4>
+      </div>
+
+      <div
+        className={`overflow-hidden rounded-2xl border divide-y ${dividerClassName} ${surface.borderClassName}`}
+      >
+        {notifications.map((notification) => (
+          <NotificationItem
+            key={notification.id}
+            notification={notification}
+            onPrimaryAction={onPrimaryAction}
+            onDelete={onDelete}
+            theme={theme}
+            primaryColor={primaryColor}
+            formatTimestamp={formatTimestamp}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

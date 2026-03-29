@@ -1,5 +1,5 @@
 import { memo, useCallback, useId, useState } from 'react';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 export interface EnergySparklinePoint {
@@ -48,6 +48,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   accentColor,
   height = 40,
 }: EnergySparklineProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
@@ -107,13 +108,15 @@ export const EnergySparkline = memo(function EnergySparkline({
     <div className="relative">
       {activePoint && tooltipTimestamp && tooltipLeftPercent !== null ? (
         <div
-          className="pointer-events-none absolute top-0 z-10 w-max max-w-[220px] -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md"
+          className="pointer-events-none absolute top-0 z-10 w-max max-w-55 -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md"
           style={{ left: `${tooltipLeftPercent}%` }}
         >
           <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
           <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
-            <span>Use: {Math.round(activePoint.value)} W</span>
+            <span>
+              {t('charts.powerSparkline.useLabel', { value: Math.round(activePoint.value) })}
+            </span>
           </div>
         </div>
       ) : null}
@@ -122,7 +125,7 @@ export const EnergySparkline = memo(function EnergySparkline({
         viewBox={`0 0 ${VB_W} ${height}`}
         className="w-full"
         role="img"
-        aria-label="Power sparkline"
+        aria-label={t('charts.powerSparkline.ariaLabel')}
         preserveAspectRatio="none"
         onMouseLeave={() => setHoverIndex(null)}
         onMouseMove={(event) => {

@@ -1,5 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
+import { useI18n } from '@/app/i18n';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { storage } from '@/app/utils/storage';
@@ -153,6 +154,7 @@ const inferNotificationType = (
 };
 
 export function useNotifications(): UseNotificationsReturn {
+  const { t } = useI18n();
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
   const [readNotifications, setReadNotifications] = useState<string[]>(loadReadNotifications);
@@ -386,7 +388,7 @@ export function useNotifications(): UseNotificationsReturn {
         const title =
           (typeof entity.attributes?.friendly_name === 'string' &&
             entity.attributes.friendly_name) ||
-          'Update available';
+          t('notifications.update.available');
         const installedVersion =
           typeof entity.attributes?.installed_version === 'string'
             ? entity.attributes.installed_version
@@ -418,20 +420,23 @@ export function useNotifications(): UseNotificationsReturn {
 
         const versionMessage =
           installedVersion && latestVersion
-            ? `Update available: ${installedVersion} -> ${latestVersion}`
+            ? t('notifications.update.availableFromTo', {
+                from: installedVersion,
+                to: latestVersion,
+              })
             : latestVersion
-              ? `Update available to ${latestVersion}`
-              : 'Update available';
+              ? t('notifications.update.availableTo', { version: latestVersion })
+              : t('notifications.update.available');
         const message = releaseSummary?.trim() || versionMessage;
         const statusLabel = requiresRestart
-          ? 'Restart Home Assistant to finish update'
+          ? t('notifications.update.restartToFinish')
           : isBusy
             ? progress !== null
-              ? `Installing ${progress}%`
-              : 'Installing update...'
+              ? t('notifications.update.installingProgress', { progress })
+              : t('notifications.update.installing')
             : latestVersion
-              ? `Ready to install ${latestVersion}`
-              : 'Update available';
+              ? t('notifications.update.readyToInstall', { version: latestVersion })
+              : t('notifications.update.available');
         const timestampSource =
           typeof entity.last_changed === 'string'
             ? entity.last_changed
@@ -466,6 +471,7 @@ export function useNotifications(): UseNotificationsReturn {
     persistentNotifications,
     readNotifications,
     repairIssues,
+    t,
   ]);
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;

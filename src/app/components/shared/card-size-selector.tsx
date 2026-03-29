@@ -19,7 +19,8 @@ interface CardSizeSelectorProps {
     label: string;
     description: string;
     dimensions: string;
-    preview: string;
+    cols: number;
+    rows: number;
   }[];
 }
 
@@ -29,56 +30,64 @@ const sizes: {
   label: string;
   description: string;
   dimensions: string;
-  preview: string;
+  cols: number;
+  rows: number;
 }[] = [
   {
     value: 'tiny',
     label: 'Tiny',
     description: '0.5 × 0.5',
     dimensions: 'Micro tile',
-    preview: 'w-3.5 h-3.5',
+    cols: 0.5,
+    rows: 0.5,
   },
   {
     value: 'extra-small',
     label: 'Extra-Small',
     description: '1 × 0.5',
     dimensions: 'Compact tile',
-    preview: 'w-7 h-3.5',
+    cols: 1,
+    rows: 0.5,
   },
   {
     value: 'small',
     label: 'Small',
     description: '1 × 1',
     dimensions: 'Single tile',
-    preview: 'w-7 h-7',
+    cols: 1,
+    rows: 1,
   },
   {
     value: 'medium',
     label: 'Medium',
     description: '2 × 1',
     dimensions: 'Wide tile',
-    preview: 'w-14 h-7',
+    cols: 2,
+    rows: 1,
   },
   {
     value: 'medium-vertical',
     label: 'Medium Vertical',
     description: '1 × 2',
     dimensions: 'Tall tile',
-    preview: 'w-7 h-14',
+    cols: 1,
+    rows: 2,
   },
   {
     value: 'large',
     label: 'Large',
     description: '2 × 2',
     dimensions: 'Large tile',
-    preview: 'w-14 h-14',
+    cols: 2,
+    rows: 2,
   },
   {
-    value: 'hero',
-    label: 'Hero',
-    description: '6 × 3',
-    dimensions: 'Full-width feature',
-    preview: 'w-full h-10',
+    value: 'extra-large',
+    label: 'Extra-Large',
+    description: '3 × 2',
+    dimensions: 'Extra-large tile',
+    cols: 3,
+    rows: 2,
   },
 ];
 
@@ -99,6 +108,8 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   const availableSizes = allowedSizes
     ? sourceSizes.filter((size) => allowedSizes.includes(size.value))
     : sourceSizes;
+  const selectedSize =
+    availableSizes.find((size) => size.value === currentSize) ?? availableSizes[0];
 
   useEffect(() => {
     const draggableCard = triggerRef.current?.closest('[data-draggable-card="true"]');
@@ -131,79 +142,61 @@ export const CardSizeSelector = memo(function CardSizeSelector({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className={`z-50 min-w-[260px] rounded-2xl border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+          className={`z-50 rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
           sideOffset={8}
         >
-          <div className="space-y-1.5">
-            <h3
-              className={`mb-2 px-1 text-xs font-semibold uppercase tracking-wider ${surface.textSecondary}`}
-            >
-              Widget Size
-            </h3>
-            {availableSizes.map((size) => (
-              <button
-                type="button"
-                key={size.value}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSizeChange(size.value);
-                  setOpen(false); // Close popover after selection
-                }}
-                className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all duration-200 ${
-                  currentSize === size.value
-                    ? ''
-                    : `${surface.subtleBg} ${surface.hoverBg} ${surface.border}`
-                }`}
-                style={
-                  currentSize === size.value
-                    ? {
-                        backgroundColor:
-                          theme === 'light' ? `${accentColor}12` : `${accentColor}18`,
-                        borderColor: `${accentColor}55`,
-                      }
-                    : undefined
-                }
-              >
-                <div
-                  className={`flex h-16 w-16 items-center justify-center rounded-lg border ${
-                    theme === 'light' ? 'bg-black/[0.03]' : 'bg-black/20'
-                  }`}
-                  style={{
-                    borderColor:
-                      theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <div
-                    className={`rounded-md shadow-lg ${size.preview}`}
-                    style={{
-                      background:
-                        currentSize === size.value
-                          ? `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`
-                          : theme === 'light'
-                            ? 'linear-gradient(135deg, rgba(148,163,184,0.9), rgba(100,116,139,0.92))'
-                            : 'linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.12))',
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {availableSizes.map((size) => {
+                const isActive = currentSize === size.value;
+
+                return (
+                  <button
+                    type="button"
+                    key={size.value}
+                    aria-label={`${size.label} (${size.description})`}
+                    title={size.label}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSizeChange(size.value);
+                      setOpen(false);
                     }}
-                  />
-                </div>
-                <div className="flex-1 text-left">
-                  <div
-                    className={`mb-0.5 text-sm font-semibold ${
-                      currentSize === size.value ? surface.textPrimary : surface.textPrimary
-                    }`}
+                    className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-all duration-200"
+                    style={{
+                      borderColor: isActive
+                        ? `${accentColor}30`
+                        : theme === 'light'
+                          ? 'rgba(15,23,42,0.05)'
+                          : 'rgba(255,255,255,0.06)',
+                      backgroundColor: isActive
+                        ? theme === 'light'
+                          ? `${accentColor}18`
+                          : `${accentColor}22`
+                        : 'transparent',
+                      boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}28` : 'none',
+                    }}
                   >
-                    {size.label}
-                  </div>
-                  <div className={`text-xs ${surface.textSecondary}`}>{size.dimensions}</div>
-                  <div className={`text-[10px] ${surface.textSecondary}`}>{size.description}</div>
+                    <SizePreviewGlyph
+                      size={size}
+                      active={isActive}
+                      accentColor={accentColor}
+                      theme={theme}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedSize ? (
+              <div className="px-1 text-center">
+                <div className={`text-sm font-semibold ${surface.textPrimary}`}>
+                  {selectedSize.label}
                 </div>
-                {currentSize === size.value && (
-                  <div
-                    className="h-1.5 w-1.5 rounded-full animate-pulse"
-                    style={{ backgroundColor: accentColor }}
-                  />
-                )}
-              </button>
-            ))}
+                <div className={`mt-0.5 text-[11px] ${surface.textSecondary}`}>
+                  {selectedSize.description} • {selectedSize.dimensions}
+                </div>
+              </div>
+            ) : null}
           </div>
           <Popover.Arrow className={theme === 'light' ? 'fill-white' : 'fill-[#1c1c1e]'} />
         </Popover.Content>
@@ -212,7 +205,80 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   );
 });
 
-// Helper function to get grid span classes based on iOS widget size
+const GLYPH_UNIT = 18;
+
+function SizePreviewGlyph({
+  size,
+  active,
+  accentColor,
+  theme,
+}: {
+  size: { value: CardSize; cols: number; rows: number };
+  active: boolean;
+  accentColor: string;
+  theme: 'glass' | 'dark' | 'light' | 'contrast';
+}) {
+  const strokeColor = active
+    ? theme === 'light'
+      ? '#ffffff'
+      : 'rgba(255,255,255,0.96)'
+    : theme === 'light'
+      ? 'rgba(17,24,39,0.78)'
+      : 'rgba(255,255,255,0.88)';
+  const fillColor = active
+    ? `${accentColor}20`
+    : theme === 'light'
+      ? 'rgba(17,24,39,0.08)'
+      : 'rgba(255,255,255,0.08)';
+
+  const w = size.cols * GLYPH_UNIT;
+  const h = size.rows * GLYPH_UNIT;
+  const chipSize =
+    size.value === 'extra-large' ? 5 : size.value === 'large' || size.value === 'medium' ? 5 : 4;
+
+  if (size.value === 'extra-small') {
+    return (
+      <div
+        className="relative rounded-[8px] border"
+        style={{ width: w, height: h, borderColor: strokeColor }}
+      >
+        <div
+          className="absolute left-[4px] top-1/2 rounded-[3px] -translate-y-1/2"
+          style={{ width: '4px', height: '4px', backgroundColor: strokeColor }}
+        />
+      </div>
+    );
+  }
+
+  const cornerInset =
+    size.value === 'tiny' ? '3px' : size.value === 'medium-vertical' ? '4px' : '5px';
+
+  return (
+    <div
+      className="relative rounded-[8px] border"
+      style={{
+        width: w,
+        height: h,
+        borderColor: strokeColor,
+        backgroundColor: size.value === 'tiny' ? fillColor : 'transparent',
+      }}
+    >
+      {size.value === 'tiny' ? null : (
+        <div
+          className="absolute rounded-[3px]"
+          style={{
+            top: cornerInset,
+            left: cornerInset,
+            width: `${chipSize}px`,
+            height: `${chipSize}px`,
+            backgroundColor: strokeColor,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function getCardSpanClass(size: CardSize): string {
   switch (size) {
     case 'tiny':
@@ -227,8 +293,8 @@ export function getCardSpanClass(size: CardSize): string {
       return 'col-span-2 row-span-4'; // 1 logical column × 2 rows
     case 'large':
       return 'col-span-4 row-span-4'; // 2 logical columns × 2 rows
-    case 'hero':
-      return 'col-span-full row-span-3'; // full zone width × 3 rows
+    case 'extra-large':
+      return 'col-span-6 row-span-4'; // 3 logical columns × 2 rows
     default:
       return 'col-span-2 row-span-2';
   }
@@ -237,6 +303,20 @@ export function getCardSpanClass(size: CardSize): string {
 export function getDashboardGridColumnCount(logicalColumns: number): number {
   return logicalColumns * 2;
 }
+
+export function getCardSizeRatio(size: CardSize): { cols: number; rows: number } {
+  return sizes.find((s) => s.value === size) ?? { cols: 1, rows: 1 };
+}
+
+export const cardSizeOverlayClass: Record<CardSize, string> = {
+  tiny: 'w-[87px] h-[87px]',
+  'extra-small': 'w-[190px] h-[87px]',
+  small: 'w-[190px] h-[190px]',
+  medium: 'w-[396px] h-[190px]',
+  'medium-vertical': 'w-[190px] h-[396px]',
+  large: 'w-[396px] h-[396px]',
+  'extra-large': 'w-[602px] h-[396px]',
+};
 
 export function getCompactCardSize(size: CardSize): Exclude<CardSize, 'tiny' | 'extra-small'> {
   if (size === 'tiny' || size === 'extra-small') {

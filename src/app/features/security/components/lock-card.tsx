@@ -135,12 +135,13 @@ export const LockCard = memo(function LockCard({
 
         <EntityCardHeader
           title={name}
-          subtitle={isLocked ? t('security.locked') : t('security.unlocked')}
+          subtitle={t('security.lock')}
+          layout="eyebrow-first"
           size="extra-small"
           align="center"
           tone={isLocked ? 'primary' : 'red'}
           titleClassName="text-white"
-          subtitleClassName={statusTextClassName}
+          subtitleClassName="text-white/70"
           className="h-full"
           contentClassName="justify-center"
           marginBottomClassName="mb-0"

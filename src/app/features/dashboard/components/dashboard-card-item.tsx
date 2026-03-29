@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { CardEditActionButton } from '@/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
+import { useI18n } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
@@ -26,7 +27,7 @@ interface DashboardCardItemProps {
   onRemoveFromLayout?: (cardId: string) => void;
   onRemoveEntity?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
-  allowHeroSizes?: boolean;
+  allowExtraLargeSizes?: boolean;
   usesHideAction?: boolean;
 }
 
@@ -43,15 +44,16 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   onRemoveFromLayout,
   onRemoveEntity,
   allowEntityRemoval = false,
-  allowHeroSizes = zone === 'hero' || zone === undefined,
+  allowExtraLargeSizes = zone === 'hero' || zone === undefined,
   usesHideAction = false,
 }: DashboardCardItemProps) {
+  const { t } = useI18n();
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
-  const removeAriaLabel = 'Remove entity from dashboard';
+  const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
   const spanClass = getCardSpanClass(size);
   const editControlSize = device?.type === 'media' && size === 'medium-vertical' ? 'medium' : size;
-  const allowedSizes = getAllowedSizes(device, card, allowHeroSizes);
+  const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
 
   // Drag is only enabled in edit mode when the card is inside a zone band.
   const draggable = isEditMode && zone !== undefined;
@@ -82,7 +84,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           variant="neutral"
           data-dashboard-edit-action="remove-layout"
           data-card-id={id}
-          aria-label="Remove from home"
+          aria-label={t('dashboard.edit.removeFromHome')}
         />
       ) : null}
       {isEditMode && !onRemoveFromLayout && !device && card && onDeleteCard && (
@@ -93,16 +95,15 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           variant="destructive"
           data-dashboard-edit-action="delete-card"
           data-card-id={id}
-          aria-label="Delete widget"
+          aria-label={t('widgets.delete')}
         />
       )}
       {isEditMode ? (
         <DashboardResizeTrigger
-          cardId={id}
           cardSize={size}
           triggerSize={editControlSize}
           allowedSizes={allowedSizes}
-          cardType={device?.type ?? (card ? 'widget' : undefined)}
+          onSizeChange={(nextSize) => handleSizeChange(id, nextSize)}
         />
       ) : null}
       {device
@@ -132,24 +133,28 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 function getAllowedSizes(
   device?: DeviceWithType,
   card?: CustomCard,
-  heroAllowed = true
+  extraLargeAllowed = true
 ): CardSize[] {
   if (card) {
-    if (heroAllowed && (card.type === 'photo' || card.type === 'rss')) {
-      return ['small', 'medium', 'large', 'hero'];
+    if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
+      return ['small', 'medium', 'large', 'extra-large'];
     }
     return ['small', 'medium', 'large'];
   }
 
   switch (device?.type) {
+    case 'cameras':
+      return ['medium', 'large', 'extra-large'];
     case 'media':
       return ['small', 'medium', 'medium-vertical', 'large'];
     case 'grouped-sensors':
       return ['small', 'medium'];
     case 'calendars':
-      return heroAllowed ? ['small', 'medium', 'large', 'hero'] : ['small', 'medium', 'large'];
+      return extraLargeAllowed
+        ? ['small', 'medium', 'large', 'extra-large']
+        : ['small', 'medium', 'large'];
     case 'weather':
-      return heroAllowed ? ['large', 'hero'] : ['large'];
+      return extraLargeAllowed ? ['large', 'extra-large'] : ['large'];
     case 'switches':
       return ['tiny', 'extra-small', 'small'];
     case 'locks':
@@ -178,7 +183,7 @@ function areDashboardCardItemPropsEqual(
     previous.onRemoveFromLayout === next.onRemoveFromLayout &&
     previous.onRemoveEntity === next.onRemoveEntity &&
     previous.allowEntityRemoval === next.allowEntityRemoval &&
-    previous.allowHeroSizes === next.allowHeroSizes &&
+    previous.allowExtraLargeSizes === next.allowExtraLargeSizes &&
     previous.usesHideAction === next.usesHideAction
   );
 }

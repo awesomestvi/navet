@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 interface EnergyQualityBarProps {
@@ -21,13 +21,16 @@ const BAR_H = 14;
 export const EnergyQualityBar = memo(function EnergyQualityBar({
   value,
   label,
-  badLabel = 'Bad',
-  goodLabel = 'Good',
+  badLabel,
+  goodLabel,
   segments = 44,
   accentColor,
 }: EnergyQualityBarProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const tokens = getEnergyChartTokens(theme, accentColor);
+  const badText = badLabel ?? t('charts.quality.badLabel');
+  const goodText = goodLabel ?? t('charts.quality.goodLabel');
   const activeCount = Math.round(Math.min(1, Math.max(0, value / 100)) * segments);
   const segW = VB_W / segments;
 
@@ -36,7 +39,7 @@ export const EnergyQualityBar = memo(function EnergyQualityBar({
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       className="h-12 w-full"
       role="img"
-      aria-label={label ?? 'Quality bar'}
+      aria-label={label ?? t('charts.quality.ariaLabel')}
     >
       {Array.from({ length: segments }, (_, i) => {
         const t = i / (segments - 1);
@@ -56,10 +59,10 @@ export const EnergyQualityBar = memo(function EnergyQualityBar({
       })}
 
       <text x={0} y={VB_H - 4} fontSize="9" fill={tokens.labelSubtle}>
-        {badLabel}
+        {badText}
       </text>
       <text x={VB_W} y={VB_H - 4} textAnchor="end" fontSize="9" fill={tokens.labelSubtle}>
-        {goodLabel}
+        {goodText}
       </text>
 
       {label && (

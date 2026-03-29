@@ -1,5 +1,5 @@
 import { memo, useCallback, useId, useState } from 'react';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 export interface EnergyAreaPoint {
@@ -27,6 +27,7 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   yUnit = '%',
   accentColor,
 }: EnergyAreaChartProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
@@ -84,7 +85,7 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         className="h-28 w-full"
         role="img"
-        aria-label="Area chart"
+        aria-label={t('charts.area.ariaLabel')}
         onMouseLeave={() => setActiveIndex(null)}
         onMouseMove={(event) => {
           updateActiveIndex(event.clientX, event.currentTarget.getBoundingClientRect());

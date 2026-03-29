@@ -5,4 +5,4 @@ export type CardSize =
   | 'medium'
   | 'medium-vertical'
   | 'large'
-  | 'hero';
+  | 'extra-large';

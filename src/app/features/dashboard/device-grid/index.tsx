@@ -136,7 +136,6 @@ export const DeviceGrid = memo(function DeviceGrid({
       isEditMode={isEditMode}
       onDeleteCard={onDeleteCard}
       onRemoveEntity={onRemoveEntity}
-      onSizeChange={handleSizeChange}
     >
       {gridContent}
     </DashboardEditActions>

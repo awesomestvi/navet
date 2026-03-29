@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 interface EnergyGaugeProps {
@@ -27,12 +27,18 @@ export const EnergyGauge = memo(function EnergyGauge({
   label,
   sublabel,
 }: EnergyGaugeProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const tokens = getEnergyChartTokens(theme, accentColor);
   const filled = Math.min(1, Math.max(0, value / 100)) * SEMI_CIRC;
 
   return (
-    <svg viewBox="0 0 200 110" className="h-44 w-full" role="img" aria-label={label ?? 'Gauge'}>
+    <svg
+      viewBox="0 0 200 110"
+      className="h-44 w-full"
+      role="img"
+      aria-label={label ?? t('charts.gauge.ariaLabel')}
+    >
       <path
         d={ARC_D}
         fill="none"

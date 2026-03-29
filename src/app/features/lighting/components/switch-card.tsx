@@ -19,7 +19,6 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   const controller = useSwitchCardController(props);
   const cardShell = getCardShellSurfaceTokens(controller.theme);
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
-  const primaryMetric = controller.selectedMetrics[0];
   const isTiny = isTinyCardSize(props.size);
   const tinyTextTokens = getCardReadableTextTokens({
     theme: controller.theme,
@@ -205,13 +204,10 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           <div className="relative flex h-full items-center">
             <EntityCardHeader
               title={props.name}
-              subtitle={
-                (primaryMetric ? controller.formatMetricValue(primaryMetric) : null) ??
-                controller.entityType
-              }
+              subtitle={controller.entityType}
               size="extra-small"
               align="center"
-              layout={primaryMetric ? 'title-first' : 'eyebrow-first'}
+              layout="eyebrow-first"
               tone={controller.isOn ? 'primary' : 'neutral'}
               titleClassName={stateSurface.primaryTextClassName}
               subtitleClassName={stateSurface.mutedTextClassName}

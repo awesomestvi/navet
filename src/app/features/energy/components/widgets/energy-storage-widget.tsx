@@ -1,7 +1,7 @@
 import { Zap } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { EnergyGauge } from '../charts/energy-gauge';
 import { EnergyQualityBar } from '../charts/energy-quality-bar';
 import { EnergyWidgetShell } from '../energy-widget-shell';
@@ -23,6 +23,7 @@ export const EnergyStorageWidget = memo(function EnergyStorageWidget({
   hasBattery = true,
   hasSolar = true,
 }: EnergyStorageWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const solarCoverage = Math.round((solarW / Math.max(currentLoadW, 1)) * 100);
@@ -30,18 +31,21 @@ export const EnergyStorageWidget = memo(function EnergyStorageWidget({
   const gridQuality = Math.max(0, Math.round(100 - (importW / Math.max(currentLoadW, 1)) * 100));
 
   return (
-    <EnergyWidgetShell title="Storage and solar" eyebrow="Resilience">
+    <EnergyWidgetShell
+      title={t('energy.widgets.storage.title')}
+      eyebrow={t('energy.widgets.storage.eyebrow')}
+    >
       <div className="grid gap-4">
         {hasBattery && (
           <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-              Battery reserve
+              {t('energy.widgets.storage.batteryReserve')}
             </div>
             <EnergyGauge
               value={batteryPercent}
               accentColor="#34d399"
               label={`${batteryPercent}%`}
-              sublabel="charge"
+              sublabel={t('energy.widgets.storage.charge')}
             />
           </div>
         )}
@@ -49,13 +53,13 @@ export const EnergyStorageWidget = memo(function EnergyStorageWidget({
         {hasSolar && (
           <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-              Solar coverage
+              {t('energy.widgets.storage.solarCoverage')}
             </div>
             <EnergyGauge
               value={solarCoverage}
               accentColor="#f59e0b"
               label={`${solarCoverage}%`}
-              sublabel="of current load"
+              sublabel={t('energy.widgets.storage.ofCurrentLoad')}
             />
           </div>
         )}
@@ -63,20 +67,20 @@ export const EnergyStorageWidget = memo(function EnergyStorageWidget({
         <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
           <div className={`flex items-center justify-between gap-4`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-              Grid dependency
+              {t('energy.widgets.storage.gridDependency')}
             </div>
             <div
               className={`flex items-center gap-1.5 text-sm font-semibold ${surface.textPrimary}`}
             >
               <Zap className="h-3.5 w-3.5" />
-              {(importW / 1000).toFixed(1)} kW import
+              {t('energy.widgets.storage.importKw', { value: (importW / 1000).toFixed(1) })}
             </div>
           </div>
           <div className="mt-3">
             <EnergyQualityBar
               value={gridQuality}
-              badLabel="Grid heavy"
-              goodLabel="Self-sufficient"
+              badLabel={t('energy.widgets.storage.gridHeavy')}
+              goodLabel={t('energy.widgets.storage.selfSufficient')}
               accentColor="#34d399"
             />
           </div>

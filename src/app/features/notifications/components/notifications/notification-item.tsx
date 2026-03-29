@@ -69,7 +69,7 @@ export function NotificationItem({
       <div className="flex gap-3">
         {/* Icon */}
         <div
-          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-2xl border ${iconToneClassName}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border ${iconToneClassName}`}
         >
           <NotificationIcon className="h-4 w-4" />
         </div>
@@ -80,7 +80,7 @@ export function NotificationItem({
             <div className="flex min-w-0 items-center gap-2">
               {!notification.read && (
                 <span
-                  className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: unreadIndicatorColor }}
                 />
               )}
@@ -93,7 +93,11 @@ export function NotificationItem({
             </span>
           </div>
           <div className={`mb-2 space-y-2 text-xs leading-relaxed ${surface.textSecondary}`}>
-            {renderNotificationMarkdown(notification.message, config?.url)}
+            {renderNotificationMarkdown(
+              notification.message,
+              config?.url,
+              t('notifications.imageAlt')
+            )}
           </div>
 
           {notification.source === 'update' &&
@@ -114,7 +118,7 @@ export function NotificationItem({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {notification.source === 'update' && notification.statusLabel && (
                 <span className={`mr-1 text-[11px] font-medium ${surface.textSecondary}`}>
                   {notification.statusLabel}
@@ -125,7 +129,7 @@ export function NotificationItem({
                   onClick={() => void onPrimaryAction(notification.id)}
                   active={notification.source === 'update'}
                   intent="action"
-                  className="h-7 rounded-full px-2.5 text-[11px] font-medium"
+                  className="h-7 shrink-0 whitespace-nowrap rounded-full px-2.5 text-[11px] font-medium"
                 >
                   {primaryActionLabel}
                 </InteractivePill>
@@ -133,7 +137,7 @@ export function NotificationItem({
               <InteractivePill
                 onClick={() => void onDelete(notification.id)}
                 intent="action"
-                className="h-7 rounded-full px-2.5 text-[11px] font-medium"
+                className="h-7 shrink-0 whitespace-nowrap rounded-full px-2.5 text-[11px] font-medium"
               >
                 {secondaryActionLabel}
               </InteractivePill>

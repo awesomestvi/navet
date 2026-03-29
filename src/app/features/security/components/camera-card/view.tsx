@@ -5,6 +5,7 @@ import {
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
+import { useI18n } from '@/app/hooks';
 
 interface CameraCardViewProps {
   id: string;
@@ -35,6 +36,7 @@ export function CameraCardView({
   onTogglePower,
   onOpenSettings,
 }: CameraCardViewProps) {
+  const { t } = useI18n();
   const isCompact = isCompactCardSize(size);
 
   return (
@@ -52,7 +54,7 @@ export function CameraCardView({
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <Camera className="h-8 w-8 text-zinc-500" />
           <span className="text-xs text-zinc-500">
-            {isUnavailable ? 'Unavailable' : 'No signal'}
+            {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
           </span>
         </div>
       )}
@@ -71,7 +73,7 @@ export function CameraCardView({
         <button
           type="button"
           onClick={onRefresh}
-          aria-label="Refresh camera snapshot"
+          aria-label={t('camera.actions.refreshSnapshot')}
           className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -99,7 +101,7 @@ export function CameraCardView({
               <button
                 type="button"
                 onClick={onTogglePower}
-                aria-label={isOff ? 'Turn camera on' : 'Turn camera off'}
+                aria-label={isOff ? t('camera.actions.turnOn') : t('camera.actions.turnOff')}
                 className={`flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
                   isOff
                     ? 'bg-white/20 text-white/60 hover:bg-white/30'
@@ -113,7 +115,7 @@ export function CameraCardView({
               <button
                 type="button"
                 onClick={onOpenSettings}
-                aria-label="Camera settings"
+                aria-label={t('camera.actions.openSettings')}
                 className="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
               >
                 <Settings2 className="h-3.5 w-3.5" />

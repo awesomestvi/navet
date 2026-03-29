@@ -1,7 +1,7 @@
 import { Battery, BatteryLow } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface BatteryDevice {
@@ -17,6 +17,7 @@ interface EnergyBatteryDevicesWidgetProps {
 export const EnergyBatteryDevicesWidget = memo(function EnergyBatteryDevicesWidget({
   devices,
 }: EnergyBatteryDevicesWidgetProps) {
+  const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
@@ -28,14 +29,14 @@ export const EnergyBatteryDevicesWidget = memo(function EnergyBatteryDevicesWidg
 
   return (
     <EnergyWidgetShell
-      title="Battery-powered devices"
-      eyebrow="Remaining battery"
+      title={t('energy.widgets.batteryDevices.title')}
+      eyebrow={t('energy.widgets.batteryDevices.eyebrow')}
       action={<Battery className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div className="space-y-3">
         {devices.length === 0 ? (
           <div className={`rounded-3xl border p-4 text-sm ${surface.border} ${surface.textMuted}`}>
-            No battery sensors detected in Home Assistant.
+            {t('energy.widgets.batteryDevices.empty')}
           </div>
         ) : (
           devices.map((device) => (

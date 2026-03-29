@@ -105,7 +105,7 @@ export function RSSFeedSettingsDialog({
           <div className="space-y-4">
             {homeAssistantProviders.length > 0 ? (
               <RSSProviderGroup
-                title="Available Home Assistant feeds"
+                title={t('rss.settings.availableHomeAssistantFeeds')}
                 providers={homeAssistantProviders}
                 selectedProviderIds={selectedProviderIds}
                 onToggleProvider={handleToggleProvider}
@@ -117,7 +117,7 @@ export function RSSFeedSettingsDialog({
 
             {directProviders.length > 0 ? (
               <RSSProviderGroup
-                title="Saved direct feeds"
+                title={t('rss.settings.savedDirectFeeds')}
                 providers={directProviders}
                 selectedProviderIds={selectedProviderIds}
                 onToggleProvider={handleToggleProvider}
@@ -132,7 +132,7 @@ export function RSSFeedSettingsDialog({
           <div
             className={`rounded-2xl border border-dashed px-4 py-5 text-sm ${surface.border} ${surface.textSecondary}`}
           >
-            No RSS sources yet. Add a direct feed to get started.
+            {t('rss.settings.emptyState')}
           </div>
         )}
 
@@ -143,9 +143,11 @@ export function RSSFeedSettingsDialog({
             className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
           >
             <div>
-              <div className={`text-sm font-medium ${surface.textPrimary}`}>Add feed</div>
+              <div className={`text-sm font-medium ${surface.textPrimary}`}>
+                {t('rss.settings.addFeed')}
+              </div>
               <div className={`mt-1 text-xs ${surface.textSecondary}`}>
-                Add a custom RSS URL and select it automatically for this card.
+                {t('rss.settings.addFeedDescription')}
               </div>
             </div>
             {isAddFeedOpen ? (
@@ -178,7 +180,7 @@ export function RSSFeedSettingsDialog({
                   style={{ backgroundColor: primaryColorValue }}
                 >
                   <Plus className="h-4 w-4" />
-                  Add feed
+                  {t('rss.settings.addFeed')}
                 </button>
                 <button
                   type="button"

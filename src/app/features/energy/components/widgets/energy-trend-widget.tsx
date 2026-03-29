@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { EnergySeriesPoint } from '../../types/energy.types';
 import { EnergyAreaChart } from '../charts/energy-area-chart';
 import { EnergyBarChart } from '../charts/energy-bar-chart';
@@ -15,6 +15,7 @@ export const EnergyTrendWidget = memo(function EnergyTrendWidget({
   trend,
   accentColor,
 }: EnergyTrendWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const barData = trend.map((p) => ({
@@ -29,15 +30,20 @@ export const EnergyTrendWidget = memo(function EnergyTrendWidget({
   }));
 
   return (
-    <EnergyWidgetShell title="Trends over time" eyebrow="Usage vs solar">
+    <EnergyWidgetShell
+      title={t('energy.widgets.trend.title')}
+      eyebrow={t('energy.widgets.trend.eyebrow')}
+    >
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
           <div className={`mb-3 flex items-end justify-between gap-3`}>
             <div>
               <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-                Consumption
+                {t('energy.widgets.trend.consumptionTitle')}
               </div>
-              <div className={`mt-1 text-sm ${surface.textSecondary}`}>Near-term load trend</div>
+              <div className={`mt-1 text-sm ${surface.textSecondary}`}>
+                {t('energy.widgets.trend.consumptionDescription')}
+              </div>
             </div>
             <div className={`text-xs ${surface.textMuted}`}>kW</div>
           </div>
@@ -48,10 +54,10 @@ export const EnergyTrendWidget = memo(function EnergyTrendWidget({
           <div className={`mb-3 flex items-end justify-between gap-3`}>
             <div>
               <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-                Solar share
+                {t('energy.widgets.trend.solarShareTitle')}
               </div>
               <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-                Relative production support
+                {t('energy.widgets.trend.solarShareDescription')}
               </div>
             </div>
             <div className={`text-xs ${surface.textMuted}`}>%</div>

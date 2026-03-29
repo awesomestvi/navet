@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
@@ -11,16 +11,17 @@ interface EnergyConsumersWidgetProps {
 export const EnergyConsumersWidget = memo(function EnergyConsumersWidget({
   consumers,
 }: EnergyConsumersWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <EnergyWidgetShell title="Top consumers" eyebrow="Action priority">
+    <EnergyWidgetShell
+      title={t('energy.widgets.consumers.title')}
+      eyebrow={t('energy.widgets.consumers.eyebrow')}
+    >
       {consumers.length === 0 ? (
-        <p className={`text-sm ${surface.textMuted}`}>
-          No individual devices configured. Add device monitors in your HA Energy settings, then
-          re-run auto-detect.
-        </p>
+        <p className={`text-sm ${surface.textMuted}`}>{t('energy.widgets.consumers.empty')}</p>
       ) : null}
       <div className="space-y-3">
         {consumers.slice(0, 5).map((consumer) => (
@@ -34,7 +35,10 @@ export const EnergyConsumersWidget = memo(function EnergyConsumersWidget({
                   {consumer.name}
                 </div>
                 <div className={`mt-1 text-xs ${surface.textSecondary}`}>
-                  {consumer.room} • {(consumer.shareOfLoad * 100).toFixed(0)}% of load
+                  {consumer.room} •{' '}
+                  {t('energy.widgets.consumers.loadShare', {
+                    value: (consumer.shareOfLoad * 100).toFixed(0),
+                  })}
                 </div>
               </div>
               <div className="text-right">
@@ -47,7 +51,9 @@ export const EnergyConsumersWidget = memo(function EnergyConsumersWidget({
                   <div
                     className={`text-sm font-semibold ${consumer.powerW > 0 ? surface.textSecondary : surface.textPrimary}`}
                   >
-                    {consumer.energyKWh.toFixed(2)} kWh today
+                    {t('energy.widgets.consumers.kwhToday', {
+                      value: consumer.energyKWh.toFixed(2),
+                    })}
                   </div>
                 ) : null}
               </div>

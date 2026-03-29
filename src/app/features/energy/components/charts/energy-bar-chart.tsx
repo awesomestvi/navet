@@ -1,5 +1,5 @@
 import { memo, useCallback, useId, useState } from 'react';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 export interface EnergyBarDatum {
@@ -24,6 +24,7 @@ export const EnergyBarChart = memo(function EnergyBarChart({
   data,
   accentColor,
 }: EnergyBarChartProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
@@ -65,7 +66,7 @@ export const EnergyBarChart = memo(function EnergyBarChart({
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         className="h-40 w-full"
         role="img"
-        aria-label="Bar chart"
+        aria-label={t('charts.bar.ariaLabel')}
         onMouseLeave={() => setActiveIndex(null)}
         onMouseMove={(event) => {
           updateActiveIndex(event.clientX, event.currentTarget.getBoundingClientRect());

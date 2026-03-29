@@ -105,11 +105,7 @@ export const ZoneBand = memo(function ZoneBand({
         <div className={`h-px flex-1 ${surface.borderStrong}`} />
       </div>
 
-      <DashboardEditActions
-        isEditMode={isEditMode}
-        onDeleteCard={onDeleteCard}
-        onSizeChange={handleSizeChange}
-      >
+      <DashboardEditActions isEditMode={isEditMode} onDeleteCard={onDeleteCard}>
         {gridContent}
       </DashboardEditActions>
     </div>

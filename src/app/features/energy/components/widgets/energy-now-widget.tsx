@@ -1,7 +1,7 @@
 import { Bolt } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { EnergySeriesPoint } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
@@ -19,6 +19,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
   trend,
   accentColor,
 }: EnergyNowWidgetProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const maxTickCount = 6;
@@ -29,22 +30,22 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
 
   return (
     <EnergyWidgetShell
-      title="Power in use now"
-      eyebrow="Current load"
+      title={t('energy.widgets.now.title')}
+      eyebrow={t('energy.widgets.now.eyebrow')}
       action={<Bolt className={`h-4 w-4 ${surface.textMuted}`} />}
     >
       <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
         <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
           <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-            Current power
+            {t('energy.widgets.now.currentPower')}
           </div>
           <div className={`mt-3 text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
             {Math.round(currentLoadW)} W
           </div>
           <div className={`mt-3 text-sm ${surface.textSecondary}`}>
             {gridImportW > 0
-              ? `${Math.round(gridImportW)} W currently coming from the grid`
-              : 'No active grid import right now'}
+              ? t('energy.widgets.now.gridImportActive', { value: Math.round(gridImportW) })
+              : t('energy.widgets.now.gridImportInactive')}
           </div>
         </div>
 
@@ -52,10 +53,10 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-                5-minute sparkline
+                {t('energy.widgets.now.sparklineTitle')}
               </div>
               <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-                Last 24 hours, Home Assistant 5-minute mean
+                {t('energy.widgets.now.sparklineDescription')}
               </div>
             </div>
             <div className={`text-xs ${surface.textMuted}`}>W</div>

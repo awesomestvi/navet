@@ -123,25 +123,18 @@ export function ThemeAppearancePicker({
               })}
             </div>
 
-            <div
-              className={`mt-3 rounded-[18px] border px-3.5 py-3 md:rounded-[20px] md:px-4 ${pickerTokens.optionBorderClassName} ${pickerTokens.optionCardClassName}`}
-            >
-              <p
-                className={`text-xs font-semibold uppercase tracking-[0.16em] ${pickerTokens.mutedClassName}`}
-              >
-                {t('themePicker.currentAppearance')}
-              </p>
-              <p className={`mt-1 text-sm font-semibold ${pickerTokens.textClassName}`}>
+            <p className={`mt-3 px-0.5 text-sm ${pickerTokens.mutedClassName}`}>
+              <span className={`font-semibold ${pickerTokens.textClassName}`}>
                 {followSystemTheme
                   ? t('themePicker.systemActiveSummary', { mode: activeThemeLabel })
                   : t('themePicker.manualActiveSummary', { mode: selectedThemeLabel })}
-              </p>
-              <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+              </span>{' '}
+              <span>
                 {followSystemTheme
                   ? t('themePicker.systemActiveDetail')
                   : t('themePicker.manualActiveDetail')}
-              </p>
-            </div>
+              </span>
+            </p>
           </div>
         ) : null}
 

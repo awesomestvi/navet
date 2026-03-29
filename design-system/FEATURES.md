@@ -55,6 +55,40 @@ await login(url, token);
 
 ---
 
+## Header Architecture
+
+**Location**: `src/app/components/layout/`
+
+The header is split into a controller hook and three focused sub-components, keeping orchestration and presentation separate.
+
+### `useHeaderController`
+
+**File**: `use-header-controller.ts`
+
+Owns all header logic. Responsibilities:
+- **Greeting** — generates a time-of-day greeting key with a 25% chance of casual variants; updates every 30 seconds
+- **Date/time/week** — formatted display values updated on the same 30-second interval
+- **Search** — dispatches queries across all device groups (lights, climate, switches, covers, locks, media_player, person, sensor, vacuum, weather, power)
+- **User identity** — derives first name and avatar URL from the HA `person` entity
+
+### `HeaderSearchInput`
+
+**File**: `header-search-input.tsx`
+
+Stateless search input with a search icon on the left and a clear (×) button on the right. Accepts dynamic accent/hover/background color props so it adapts to all four themes without internal theme branches.
+
+### `HeaderMobileActions` / `HeaderDesktopActions`
+
+**File**: `header-actions.tsx`
+
+Splits action buttons by viewport:
+- **Mobile** (`md:hidden`): search icon toggle, notification button with unread badge, user dropdown
+- **Desktop** (hidden below `md`): notification button with unread badge, user dropdown
+
+Both variants share the internal `HeaderNotificationButton` component.
+
+---
+
 ## Theme System
 
 ### Theme Hook + Store
@@ -191,15 +225,54 @@ Navet now uses a live Home Assistant-backed media card flow.
 - Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
 - Media card headers now use the same shared eyebrow-first title treatment as other feature cards, aligning subtitle/type placement across the dashboard
 
+### Media Dialog Architecture
+
+**Location**: `src/app/features/media/components/media/`
+
+The media dialog follows the same split pattern as other complex dialogs:
+
+| File | Role |
+|---|---|
+| `media-dialog.tsx` | Entry point — mounts the controller hook, renders the content shell |
+| `media-dialog-content.tsx` | `DialogShell` wrapper; assembles sections in order (header → artwork → playback → volume → up-next → grouping); applies artwork-palette gradient backdrop |
+| `media-dialog-sections.tsx` | All section components: `MediaDialogHeader`, `MediaDialogArtwork`, `MediaDialogPlaybackControls`, `MediaDialogVolumeControl`, `MediaDialogUpNext`, `MediaDialogGrouping`, `GroupingChip` |
+| `use-media-dialog-controller.ts` | Derives all styling (artwork palette, gradient, button variants) and formatted time strings; returns a single controller object |
+| `media-dialog.types.ts` | Shared prop types |
+
+Playback controls (shuffle, previous, play/pause, next, repeat) use the shared `RoundControlButton` primitive. Volume uses a slim slider with artwork-palette-driven fill color.
+
+### Card Size Registry
+
+**Location**: `src/app/components/shared/card-size-selector.tsx`
+
+The card size system uses a single source of truth. The `sizes[]` array stores the canonical metadata for all seven sizes:
+
+| Size | `cols` | `rows` | Label |
+|---|---|---|---|
+| `tiny` | 0.5 | 0.5 | Tiny |
+| `extra-small` | 1 | 0.5 | Extra-Small |
+| `small` | 1 | 1 | Small |
+| `medium` | 2 | 1 | Medium |
+| `medium-vertical` | 1 | 2 | Medium Vertical |
+| `large` | 2 | 2 | Large |
+| `extra-large` | 3 | 2 | Extra-Large |
+
+Visual previews (size picker glyphs, add-card dialog rectangles) and drag-overlay Tailwind classes are all derived from `cols × rows` — there are no separate hardcoded pixel maps. Key exports:
+
+- `getCardSizeRatio(size)` — returns `{ cols, rows }` for computing proportional pixel dimensions
+- `cardSizeOverlayClass` — `Record<CardSize, string>` of Tailwind `w-[…] h-[…]` classes for the drag overlay
+- `getCardSpanClass(size)` — CSS grid span classes (the internal grid doubles logical columns)
+- `isCompactCardSize`, `isTinyCardSize`, `isExtraSmallCardSize` — type guard helpers
+
 ### Compact Card Sizing
 
-Navet now includes a `tiny` card size for ultra-dense tiles.
+Navet includes a `tiny` card size for ultra-dense tiles.
 
 - `tiny` maps to a `0.5 × 0.5` micro tile in the size picker
-- It is intended for compact action/status cards rather than detail-heavy layouts
+- Intended for compact action/status cards rather than detail-heavy layouts
 - Shared compact presentation primitives keep tiny variants visually aligned instead of each feature building a different smallest-card treatment
 
-Current adoption in this change set centers on compact switch, lock, and scene-style cards, while other cards adopt the shared eyebrow-first header ordering for consistency at small sizes.
+Compact switch, lock, and scene-style cards adopt the shared `tiny-action-card` shell and eyebrow-first header ordering for consistency at small sizes.
 
 ### Media Section Layout
 
@@ -371,6 +444,52 @@ Room reassignment is available directly in the dialog header via `EntityRoomSele
 
 ---
 
+## Onboarding Flow
+
+### Arrival Reveal Animation
+
+**Location**: `src/app/features/dashboard/components/dashboard-arrival-reveal.view.tsx` + `use-dashboard-arrival-reveal.ts`
+
+A full-screen animated overlay shown on first load. Follows the hook/view split pattern — all state and theming logic lives in `useDashboardArrivalReveal`, the view is purely presentational.
+
+#### Phases
+
+| Phase | Duration | Description |
+|---|---|---|
+| `baking` | 3.2 s | Orbiting accent dots + pulsing glow + animated logo; communicates that the dashboard is loading |
+| `revealed` | — | Expanding ring borders + glow overlay; the main card slides in with heading and call-to-action |
+| `exiting` | 900 ms | Fade-out; `onDone` is called when the animation clears |
+
+#### Implementation Notes
+- CSS keyframes are scoped to the component via a `<style>` tag injected into the view
+- `useDashboardArrivalReveal` derives all color and copy values from the active theme; the view receives a single controller object
+- I18n keys are namespaced under `dashboard.arrival.*`
+
+### Onboarding Wizard
+
+**Location**: `src/app/features/dashboard/components/dashboard-onboarding-dialog/`
+
+| File | Role |
+|---|---|
+| `index.tsx` | Public export |
+| `onboarding-shell.tsx` | Full-screen backdrop + centered modal container |
+| `onboarding-steps.tsx` | Step UI components (`RouteStep`, `LocalizationStep`, `ThemeStep`, `StepActions`) |
+| `use-dashboard-onboarding-controller.ts` | Wizard orchestration hook |
+
+#### Steps
+
+1. **Route** — choose between *All Entities* (auto-populate), *Blank Dashboard*, or *Import Config* (file picker)
+2. **Localization** — language, time format (12/24 h), temperature unit (°C/°F)
+3. **Theme** — theme mode + accent color with live preview via the shared `ThemeAppearancePicker`
+
+#### Controller Responsibilities
+- Manages step progression and back/continue navigation
+- Handles file import with loading state
+- Previews theme/accent changes during step 3 and applies them on finish
+- Prevents body scroll while the dialog is open
+
+---
+
 ## Dashboard Builder
 
 **Location**: `src/app/features/dashboard/components/home-dashboard-overview.tsx`
@@ -430,6 +549,22 @@ Each section is stored as a `SectionLayoutItem` with `x`, `y`, `w`, and `h` coor
 
 `buildSectionStacks` (in `home-dashboard-overview.tsx`) groups the flat section list into a `rowStacks` structure for rendering — each row is an array of stacks, each stack an array of sections sharing the same column slot.
 
+### Component Architecture
+
+The overview has been split into focused files to keep each file under the 150-line controller limit:
+
+| File | Role |
+|---|---|
+| `home-dashboard-overview.tsx` | Root component — wires drag context, `DragOverlay`, and renders `HomeDashboardOverview` |
+| `home-dashboard-overview-content.tsx` | Re-exports for `CardGrid`, `EmptyCanvas`, `FlowCanvas`, `HomePresentation`, `SectionCanvasGrid`; owns `ModeChip` |
+| `home-dashboard-overview-card-grid.tsx` | `CardGrid` (with auto-scaling ResizeObserver logic), `FlowCanvas`, `EmptyCanvas`, sortable card wrappers |
+| `home-dashboard-overview-sections.tsx` | `SectionCanvasGrid`, `SectionCanvas`, `HomePresentation`, `HomePresentationSection`, `SectionInsertDropZone` |
+| `home-dashboard-overview.shared.ts` | Shared prop types, `useHomeLayoutViewport` hook |
+
+`CardGrid` uses a `ResizeObserver` to detect container width and applies a proportional `scale()` transform when the natural card grid would overflow, keeping cards readable on small or narrow screens without reflow.
+
+The drag overlay sizing (`cardSizeOverlayClass`) is exported from `src/app/components/shared/card-size-selector.tsx` — not defined inline — so it stays consistent with the card size registry.
+
 ### Hook Architecture
 
 | Hook | Location | Responsibility |
@@ -468,9 +603,11 @@ The Home layout is persisted to `STORAGE_KEYS.homeDashboardLayout` (`ha-dashboar
 
 ### Settings Page
 
-**Location**: `/src/app/features/settings/components/settings-section.tsx`
+**Location**: `src/app/features/settings/components/settings-section.tsx`
 
-Full-page settings interface with card-based organization.
+Appearance items are implemented in a dedicated file (`settings-appearance-content.tsx`) and composed into the settings section, keeping each item self-contained:
+
+Full-page settings interface with card-based organization. Appearance section items are each implemented as named components in `settings-appearance-content.tsx` (`AppearanceThemeAccentItem`, `AppearanceEffectsQualityItem`, `AppearancePageZoomItem`, `AppearanceAmbienceItem`, `AppearanceWallpaperItem`).
 
 #### Sections
 
