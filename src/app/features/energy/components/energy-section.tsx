@@ -1,5 +1,6 @@
-import { Settings } from 'lucide-react';
+import { Settings, Zap } from 'lucide-react';
 import { memo, type ReactNode } from 'react';
+import { EmptyState } from '@/app/components/shared/empty-state';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { DashboardHeroSection } from '../../dashboard/components/dashboard-hero-section';
@@ -59,6 +60,7 @@ export const EnergySection = memo(function EnergySection() {
     overview,
     range,
     setRange,
+    isConnected,
     isConfigured,
     sourceConfig,
     showSetup,
@@ -92,6 +94,29 @@ export const EnergySection = memo(function EnergySection() {
   ];
 
   const showBatteryDevices = batteryDevices.length > 0;
+
+  if (!isConnected && !showSetup) {
+    return (
+      <EmptyState
+        icon={Zap}
+        title={t('network.disconnectedTitle')}
+        description={t('network.disconnectedDescription')}
+      />
+    );
+  }
+
+  if (!isConfigured && !showSetup) {
+    return (
+      <EmptyState
+        icon={Zap}
+        title={t('energy.setup.panelTitle')}
+        description={t('energy.setup.panelDescription')}
+        actionIcon={Settings}
+        actionLabel={t('energy.demo.connect')}
+        onAction={openSetup}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -151,25 +176,6 @@ export const EnergySection = memo(function EnergySection() {
           </div>
         }
       />
-
-      {!isConfigured && !showSetup ? (
-        <div
-          className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border px-5 py-4 ${surface.border} ${surface.panelMuted}`}
-        >
-          <p className={`text-sm ${surface.textSecondary}`}>
-            {t('energy.demo.message')}{' '}
-            <span className={surface.textMuted}>{t('energy.demo.hint')}</span>
-          </p>
-          <button
-            type="button"
-            onClick={openSetup}
-            className="rounded-full px-4 py-2 text-sm font-medium text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            {t('energy.demo.connect')}
-          </button>
-        </div>
-      ) : null}
 
       {showSetup ? (
         <EnergySetupPanel

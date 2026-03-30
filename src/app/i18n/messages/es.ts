@@ -864,6 +864,9 @@ export const esMessages = {
   'widgets.presence.title': 'Resumen de presencia',
   'widgets.presence.empty': 'No se encontraron personas',
   'widgets.presence.summary': '{home} en casa • {away} fuera',
+  'widgets.energySparkline.needsSetup':
+    'Configura Energy primero para mostrar aquí la tendencia en vivo.',
+  'widgets.energySparkline.noHistory': 'Todavía no hay historial para la sparkline.',
   'widgets.button.title': 'Botón de acción',
   'widgets.button.labelPlaceholder': 'Etiqueta del botón',
   'widgets.button.servicePlaceholder': 'ej. scene.turn_on',
@@ -884,6 +887,9 @@ export const esMessages = {
   'dashboard.addCard.templates.presence.name': 'Resumen de presencia',
   'dashboard.addCard.templates.presence.description':
     'Muestra quién está en casa de un vistazo en todas las entidades person de Home Assistant.',
+  'dashboard.addCard.templates.sparkline.name': 'Sparkline de 5 minutos',
+  'dashboard.addCard.templates.sparkline.description':
+    'Muestra la potencia actual con una sparkline media de 5 minutos durante 24 horas.',
   'widgets.note.title': 'Nota rápida',
   'widgets.note.emptyState': 'Haz clic para agregar una nota...',
   'widgets.note.placeholder': 'Escribe tu nota aquí...',
@@ -956,6 +962,15 @@ export const esMessages = {
   'energy.setup.errors.notConnected': 'No conectado a Home Assistant',
   'energy.setup.errors.autoDetectFailed': 'La auto-deteccion fallo: {detail}',
   'energy.setup.sensorPlaceholder': '{domain}.your_sensor',
+  'energy.setup.quickStart.title': 'Empieza con lo basico',
+  'energy.setup.quickStart.description':
+    'No necesitas todos los sensores. Empieza con las lecturas que ya tienes y añade mas despues si quieres un desglose mas profundo.',
+  'energy.setup.advanced.show': 'Mostrar sensores opcionales',
+  'energy.setup.advanced.hide': 'Ocultar sensores opcionales',
+  'energy.setup.advanced.title': 'Sensores opcionales y mapeo de dispositivos',
+  'energy.setup.advanced.description':
+    'Añade esto solo si ya lo tienes. Solar, bateria, exportacion y seguimiento por dispositivo son mejoras opcionales.',
+  'energy.setup.optional': 'Opcional',
   'energy.setup.fields.solarPower.label': 'Potencia solar',
   'energy.setup.fields.solarPower.description': 'Salida en W en vivo de paneles solares',
   'energy.setup.fields.batterySoc.label': 'Estado de carga de bateria',
@@ -966,15 +981,15 @@ export const esMessages = {
   'energy.setup.fields.gridImportPower.description': 'W en vivo tomados de la red',
   'energy.setup.fields.gridExportPower.label': 'Potencia de exportacion de red',
   'energy.setup.fields.gridExportPower.description': 'W en vivo enviados de vuelta a la red',
-  'energy.setup.fields.homeLoadPower.label': 'Potencia de consumo del hogar',
+  'energy.setup.fields.homeLoadPower.label': 'Potencia actual',
   'energy.setup.fields.homeLoadPower.description':
-    'Consumo total del hogar en W (derivado de otros sensores si queda vacio)',
+    'Consumo total en vivo del hogar en W ahora mismo',
   'energy.setup.fields.solarEnergy.label': 'Energia solar (kWh)',
   'energy.setup.fields.solarEnergy.description':
     'Estadistica acumulada de kWh - usada por el grafico de tendencia',
-  'energy.setup.fields.gridImportEnergy.label': 'Energia de importacion de red (kWh)',
+  'energy.setup.fields.gridImportEnergy.label': 'Consumo total de hoy (kWh)',
   'energy.setup.fields.gridImportEnergy.description':
-    'Estadistica acumulada de kWh para el grafico de tendencia',
+    'Usa tu sensor de consumo total, por ejemplo sensor.power_consumed',
   'energy.setup.individualDevices': 'Dispositivos individuales ({count})',
   'energy.setup.powerSensorFor': 'Sensor de potencia para {name}',
   'energy.setup.powerSensorPlaceholder': 'sensor.power (optional)',
@@ -1088,6 +1103,12 @@ export const esMessages = {
   'energy.band.today.description': 'Cómo se distribuye la energía importada en el hogar.',
   'energy.band.devices.title': 'Dispositivos',
   'energy.band.devices.description': 'Los dispositivos que más energía consumen en este momento.',
+  'energy.customCards.title': 'Tarjetas de energía',
+  'energy.customCards.description':
+    'Coloca aquí widgets de energía reutilizables junto al panel principal.',
+  'energy.customCards.emptyTitle': 'Todavía no hay tarjetas de energía',
+  'energy.customCards.emptyDescription':
+    'Añade una tarjeta de sparkline de 5 minutos para fijar la tendencia en vivo en el panel de energía.',
   'dashboard.section.addBelow': 'Añadir sección',
   'dashboard.section.moveHere': 'Mover sección aquí',
   'dashboard.section.moveDragLabel': 'Mover sección',

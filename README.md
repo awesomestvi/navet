@@ -49,7 +49,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 
 ### 🛠️ Functionality
 - **Edit Mode** - Card resizing, entered from **Customize**
-- **Custom Widgets** - Add RSS Feed, Photo Frame, Quick Note, Battery Overview, and Button widgets
+- **Custom Widgets** - Add RSS Feed, Photo Frame, Quick Note, Battery Overview, Button, and Energy Sparkline widgets
 - **Entity Visibility Control** - Start with all entities, a blank board, or import a saved config, then add/remove entities as needed
 - **Search & Filter** - Real-time search filters dashboard view, including Home Assistant-style entity id queries such as `light.`, `sensor.`, and full ids, with compact mobile search access from the header
 - **Home Room Grouping** - Switch the Home room between custom, room, type, or no-grouping layouts

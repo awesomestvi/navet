@@ -254,13 +254,38 @@ function getInferredHomeLoadPowerSensor(entities: EntityMap | null | undefined):
   };
 }
 
+function createEmptyOverview(): EnergyOverview {
+  return {
+    liveStats: [],
+    flow: [],
+    trend: [],
+    topConsumers: [],
+    insights: [],
+    totals: {
+      currentLoadW: 0,
+      solarW: 0,
+      batteryPercent: 0,
+      importW: 0,
+      exportW: 0,
+      importTodayKWh: 0,
+      solarTodayKWh: 0,
+      gasTodayKWh: 0,
+      hotWaterTodayKWh: 0,
+      costToday: 0,
+      projectedMonthCost: 0,
+    },
+    nodes: [],
+  };
+}
+
 /**
  * Reads live HA entity states for each configured source and builds an
- * EnergyOverview. Falls back to mock data when sourceConfig is null so the
- * dashboard remains useful before the user connects their sensors.
+ * EnergyOverview. When no energy sources are configured yet, it returns an
+ * empty overview so the section can render a proper empty state.
  *
- * Trend data uses mock values — a follow-up will replace this with
- * recorder/statistics_during_period once the setup flow is validated.
+ * Trend data uses mock values for configured dashboards — a follow-up will
+ * replace this with recorder/statistics_during_period once the setup flow is
+ * validated.
  */
 export function useEnergyHaData(range: EnergyRange): {
   overview: EnergyOverview;
@@ -274,7 +299,7 @@ export function useEnergyHaData(range: EnergyRange): {
   const { overview, currentLoadStatisticId } = useMemo(() => {
     if (!sourceConfig) {
       return {
-        overview: getMockEnergyOverview(range),
+        overview: createEmptyOverview(),
         currentLoadStatisticId: undefined,
       };
     }

@@ -77,7 +77,7 @@ export interface SettingsState extends UserSettings {
   resetSettings: () => void;
 }
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence' | 'sparkline';
 
 export interface CustomCard {
   id: string;

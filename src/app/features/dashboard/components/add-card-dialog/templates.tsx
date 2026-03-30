@@ -68,6 +68,16 @@ function Users(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function Sparkline(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <title>Sparkline</title>
+      <path d="M3 18h18" />
+      <path d="M4 15c2.5 0 2.5-7 5-7s2.5 10 5 10 2.5-6 6-6" />
+    </svg>
+  );
+}
+
 export const cardTemplates: CardTemplate[] = [
   {
     id: 'rss',
@@ -116,5 +126,13 @@ export const cardTemplates: CardTemplate[] = [
     icon: <Users className="w-5 h-5" />,
     defaultSize: 'small',
     supportedSizes: ['tiny', 'extra-small', 'small'],
+  },
+  {
+    id: 'sparkline',
+    nameKey: 'dashboard.addCard.templates.sparkline.name',
+    descriptionKey: 'dashboard.addCard.templates.sparkline.description',
+    icon: <Sparkline className="w-5 h-5" />,
+    defaultSize: 'medium',
+    supportedSizes: ['small', 'medium'],
   },
 ];

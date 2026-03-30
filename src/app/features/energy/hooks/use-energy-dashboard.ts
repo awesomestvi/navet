@@ -18,6 +18,7 @@ export function useEnergyDashboard() {
   const sourceConfig = useEnergyDashboardStore((state) => state.sourceConfig);
   const setSourceConfig = useEnergyDashboardStore((state) => state.setSourceConfig);
   const clearSourceConfig = useEnergyDashboardStore((state) => state.clearSourceConfig);
+  const isConnected = useHomeAssistant(homeAssistantSelectors.connected);
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
 
   const [showSetup, setShowSetup] = useState(false);
@@ -132,6 +133,7 @@ export function useEnergyDashboard() {
     setSelectedNodeId,
     visibleWidgetSet,
     toggleWidgetVisibility,
+    isConnected,
     isConfigured,
     sourceConfig,
     showSetup,

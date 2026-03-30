@@ -868,6 +868,9 @@ export const frMessages = {
   'widgets.presence.title': 'Aperçu de présence',
   'widgets.presence.empty': 'Aucune personne trouvée',
   'widgets.presence.summary': '{home} à la maison • {away} absent',
+  'widgets.energySparkline.needsSetup':
+    'Configurez d abord Energy pour afficher ici la tendance en direct.',
+  'widgets.energySparkline.noHistory': 'Aucun historique sparkline disponible pour le moment.',
   'widgets.button.title': "Bouton d'action",
   'widgets.button.labelPlaceholder': 'Libellé du bouton',
   'widgets.button.servicePlaceholder': 'ex. scene.turn_on',
@@ -888,6 +891,9 @@ export const frMessages = {
   'dashboard.addCard.templates.presence.name': 'Aperçu de présence',
   'dashboard.addCard.templates.presence.description':
     'Voyez en un coup d’œil qui est à la maison sur toutes les entités person de Home Assistant.',
+  'dashboard.addCard.templates.sparkline.name': 'Sparkline 5 minutes',
+  'dashboard.addCard.templates.sparkline.description':
+    'Affiche la puissance actuelle avec une sparkline moyenne sur 5 minutes sur 24 heures.',
   'widgets.note.title': 'Note rapide',
   'widgets.note.emptyState': 'Cliquez pour ajouter une note...',
   'widgets.note.placeholder': 'Ecrivez votre note ici...',
@@ -960,6 +966,15 @@ export const frMessages = {
   'energy.setup.errors.notConnected': 'Non connecte a Home Assistant',
   'energy.setup.errors.autoDetectFailed': 'Echec de l auto-detection: {detail}',
   'energy.setup.sensorPlaceholder': '{domain}.your_sensor',
+  'energy.setup.quickStart.title': 'Commencez par l essentiel',
+  'energy.setup.quickStart.description':
+    'Vous n avez pas besoin de tous les capteurs. Commencez avec les mesures que vous avez deja, puis ajoutez-en plus tard si vous voulez plus de detail.',
+  'energy.setup.advanced.show': 'Afficher les capteurs optionnels',
+  'energy.setup.advanced.hide': 'Masquer les capteurs optionnels',
+  'energy.setup.advanced.title': 'Capteurs optionnels et mappage des appareils',
+  'energy.setup.advanced.description':
+    'Ajoutez-les seulement si vous les avez deja. Le solaire, la batterie, l export et le suivi par appareil sont des options.',
+  'energy.setup.optional': 'Optionnel',
   'energy.setup.fields.solarPower.label': 'Puissance solaire',
   'energy.setup.fields.solarPower.description': 'Production W en direct des panneaux solaires',
   'energy.setup.fields.batterySoc.label': 'Niveau de charge batterie',
@@ -970,15 +985,15 @@ export const frMessages = {
   'energy.setup.fields.gridImportPower.description': 'W en direct tires du reseau',
   'energy.setup.fields.gridExportPower.label': 'Puissance export reseau',
   'energy.setup.fields.gridExportPower.description': 'W en direct reinjectes dans le reseau',
-  'energy.setup.fields.homeLoadPower.label': 'Puissance charge maison',
+  'energy.setup.fields.homeLoadPower.label': 'Puissance actuelle',
   'energy.setup.fields.homeLoadPower.description':
-    'Consommation totale maison en W (derivee d autres capteurs si vide)',
+    'Consommation totale en direct de la maison en W en ce moment',
   'energy.setup.fields.solarEnergy.label': 'Energie solaire (kWh)',
   'energy.setup.fields.solarEnergy.description':
     'Statistique kWh cumulative - utilisee par le graphique de tendance',
-  'energy.setup.fields.gridImportEnergy.label': 'Energie import reseau (kWh)',
+  'energy.setup.fields.gridImportEnergy.label': 'Consommation totale aujourd hui (kWh)',
   'energy.setup.fields.gridImportEnergy.description':
-    'Statistique kWh cumulative pour le graphique de tendance',
+    'Utilisez votre capteur de consommation totale, par exemple sensor.power_consumed',
   'energy.setup.individualDevices': 'Appareils individuels ({count})',
   'energy.setup.powerSensorFor': 'Capteur de puissance pour {name}',
   'energy.setup.powerSensorPlaceholder': 'sensor.power (optionnel)',
@@ -1092,6 +1107,12 @@ export const frMessages = {
   'energy.band.today.description': "Comment l'énergie importée est répartie dans le foyer.",
   'energy.band.devices.title': 'Appareils',
   'energy.band.devices.description': "Les consommateurs utilisant le plus d'énergie en ce moment.",
+  'energy.customCards.title': 'Cartes énergie',
+  'energy.customCards.description':
+    'Placez ici des widgets énergie réutilisables à côté du tableau principal.',
+  'energy.customCards.emptyTitle': 'Pas encore de cartes énergie',
+  'energy.customCards.emptyDescription':
+    'Ajoutez une carte sparkline 5 minutes pour épingler la tendance en direct dans le tableau énergie.',
   'dashboard.section.addBelow': 'Ajouter une section',
   'dashboard.section.moveHere': 'Déplacer la section ici',
   'dashboard.section.moveDragLabel': 'Déplacer la section',

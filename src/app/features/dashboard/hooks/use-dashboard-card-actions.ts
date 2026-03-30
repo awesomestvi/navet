@@ -4,7 +4,7 @@ import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { TranslateFn } from '@/app/hooks';
 import type { CardType } from '../components/add-card-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
-import { HOME_WIDGET_ROOM } from './use-custom-cards';
+import { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM } from './use-custom-cards';
 
 interface UseDashboardCardActionsParams {
   activeRoom: string;
@@ -47,8 +47,18 @@ export function useDashboardCardActions({
   const handleAddCard = useCallback(
     (type: CardType, size: CardSize) => {
       const isHomeCanvasTarget = activeSection === 'home' && activeRoom === 'All' && isEditMode;
-      const newCard = addCard(type, size, isHomeCanvasTarget ? HOME_WIDGET_ROOM : activeRoom);
-      const targetRoomLabel = isHomeCanvasTarget ? t('dashboard.roomNav.all') : activeRoom;
+      const isEnergyDashboardTarget = activeSection === 'energy';
+      const targetRoom = isHomeCanvasTarget
+        ? HOME_WIDGET_ROOM
+        : isEnergyDashboardTarget
+          ? ENERGY_WIDGET_ROOM
+          : activeRoom;
+      const newCard = addCard(type, size, targetRoom);
+      const targetRoomLabel = isHomeCanvasTarget
+        ? t('dashboard.roomNav.all')
+        : isEnergyDashboardTarget
+          ? t('sidebar.energy')
+          : activeRoom;
 
       if (isHomeCanvasTarget) {
         if (homeLayoutController.layout.mode !== 'sectioned') {

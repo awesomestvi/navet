@@ -41,4 +41,5 @@ export const ZONE_DEFAULTS_BY_DEVICE_TYPE: Record<string, ZoneName> = {
   battery: 'status',
   button: 'actions',
   presence: 'status',
+  sparkline: 'analytics',
 };

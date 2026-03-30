@@ -852,6 +852,8 @@ export const enMessages = {
   'widgets.presence.title': 'Presence Overview',
   'widgets.presence.empty': 'No people found',
   'widgets.presence.summary': '{home} home • {away} away',
+  'widgets.energySparkline.needsSetup': 'Set up Energy first to show the live trend here.',
+  'widgets.energySparkline.noHistory': 'No sparkline history available yet.',
   'widgets.button.title': 'Action Button',
   'widgets.button.labelPlaceholder': 'Button label',
   'widgets.button.servicePlaceholder': 'e.g. scene.turn_on',
@@ -872,6 +874,9 @@ export const enMessages = {
   'dashboard.addCard.templates.presence.name': 'Presence Overview',
   'dashboard.addCard.templates.presence.description':
     'See who is home at a glance across all Home Assistant person entities.',
+  'dashboard.addCard.templates.sparkline.name': '5-minute Sparkline',
+  'dashboard.addCard.templates.sparkline.description':
+    'Show live current power with a 24-hour 5-minute mean sparkline.',
   'widgets.note.title': 'Quick Note',
   'widgets.note.emptyState': 'Click to add a note...',
   'widgets.note.placeholder': 'Write your note here...',
@@ -944,6 +949,15 @@ export const enMessages = {
   'energy.setup.errors.notConnected': 'Not connected to Home Assistant',
   'energy.setup.errors.autoDetectFailed': 'Auto-detect failed: {detail}',
   'energy.setup.sensorPlaceholder': '{domain}.your_sensor',
+  'energy.setup.quickStart.title': 'Start with the basics',
+  'energy.setup.quickStart.description':
+    'You do not need every sensor. Begin with the few readings you already have, then add more later if you want deeper breakdowns.',
+  'energy.setup.advanced.show': 'Show optional sensors',
+  'energy.setup.advanced.hide': 'Hide optional sensors',
+  'energy.setup.advanced.title': 'Optional sensors and device mapping',
+  'energy.setup.advanced.description':
+    'Add these only if you already have them. Solar, battery, export, and per-device tracking all work as optional upgrades.',
+  'energy.setup.optional': 'Optional',
   'energy.setup.fields.solarPower.label': 'Solar power',
   'energy.setup.fields.solarPower.description': 'Live W output from solar panels',
   'energy.setup.fields.batterySoc.label': 'Battery state of charge',
@@ -954,13 +968,13 @@ export const enMessages = {
   'energy.setup.fields.gridImportPower.description': 'Live W drawn from the grid',
   'energy.setup.fields.gridExportPower.label': 'Grid export power',
   'energy.setup.fields.gridExportPower.description': 'Live W fed back to the grid',
-  'energy.setup.fields.homeLoadPower.label': 'Home load power',
-  'energy.setup.fields.homeLoadPower.description':
-    'Total home consumption W (derived from other sensors if left empty)',
+  'energy.setup.fields.homeLoadPower.label': 'Current power',
+  'energy.setup.fields.homeLoadPower.description': 'Live total home consumption in W right now',
   'energy.setup.fields.solarEnergy.label': 'Solar energy (kWh)',
   'energy.setup.fields.solarEnergy.description': 'Cumulative kWh stat - used by the trend chart',
-  'energy.setup.fields.gridImportEnergy.label': 'Grid import energy (kWh)',
-  'energy.setup.fields.gridImportEnergy.description': 'Cumulative kWh stat for trend chart',
+  'energy.setup.fields.gridImportEnergy.label': 'Total consumed today (kWh)',
+  'energy.setup.fields.gridImportEnergy.description':
+    'Use your total consumption energy sensor, for example sensor.power_consumed',
   'energy.setup.individualDevices': 'Individual devices ({count})',
   'energy.setup.powerSensorFor': 'Power sensor for {name}',
   'energy.setup.powerSensorPlaceholder': 'sensor.power (optional)',
@@ -1072,6 +1086,12 @@ export const enMessages = {
   'energy.band.today.description': 'How imported energy is being absorbed across the home.',
   'energy.band.devices.title': 'Devices',
   'energy.band.devices.description': 'The individual loads currently taking the most energy.',
+  'energy.customCards.title': 'Energy cards',
+  'energy.customCards.description':
+    'Place reusable energy widgets here alongside the main dashboard.',
+  'energy.customCards.emptyTitle': 'No energy cards yet',
+  'energy.customCards.emptyDescription':
+    'Add a 5-minute sparkline card to pin the live trend in the energy dashboard.',
   'dashboard.section.addBelow': 'Add section',
   'dashboard.section.moveHere': 'Move section here',
   'dashboard.section.moveDragLabel': 'Move section',

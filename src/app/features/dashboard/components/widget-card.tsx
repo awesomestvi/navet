@@ -50,6 +50,11 @@ const PresenceOverviewWidget = lazy(async () => {
   return { default: module.PresenceOverviewWidget };
 });
 
+const EnergySparklineWidget = lazy(async () => {
+  const module = await import('@/app/features/energy');
+  return { default: module.EnergySparklineCardWidget };
+});
+
 interface WidgetCardProps {
   card: CustomCard;
   isEditMode: boolean;
@@ -146,6 +151,9 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
       break;
     case 'presence':
       widgetContent = <PresenceOverviewWidget size={card.size} />;
+      break;
+    case 'sparkline':
+      widgetContent = <EnergySparklineWidget size={card.size} />;
       break;
     default:
       widgetContent = null;

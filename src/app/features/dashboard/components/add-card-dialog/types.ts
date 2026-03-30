@@ -10,9 +10,10 @@ export interface AddCardDialogContainerProps {
   onAddLibraryCard: (cardId: string) => void;
   currentRoom: string;
   libraryCards: DashboardLibraryCard[];
+  showCardsTab?: boolean;
 }
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence' | 'sparkline';
 
 export interface CardTemplate {
   id: CardType;

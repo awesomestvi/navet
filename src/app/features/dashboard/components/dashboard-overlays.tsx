@@ -88,8 +88,9 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
           onClose={onCloseAddCardDialog}
           onAddCard={handleAddCard}
           onAddLibraryCard={handleAddNormalCard}
-          currentRoom={activeRoom}
+          currentRoom={activeSection === 'energy' ? t('sidebar.energy') : activeRoom}
           libraryCards={normalCards}
+          showCardsTab={activeSection !== 'energy'}
         />
       )}
 

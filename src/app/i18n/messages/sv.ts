@@ -859,6 +859,8 @@ export const svMessages = {
   'widgets.presence.title': 'Närvaroöversikt',
   'widgets.presence.empty': 'Inga personer hittades',
   'widgets.presence.summary': '{home} hemma • {away} borta',
+  'widgets.energySparkline.needsSetup': 'Ställ in Energy först för att visa den live-trenden här.',
+  'widgets.energySparkline.noHistory': 'Ingen sparkline-historik tillgänglig ännu.',
   'widgets.button.title': 'Åtgärdsknapp',
   'widgets.button.labelPlaceholder': 'Knappetikett',
   'widgets.button.servicePlaceholder': 't.ex. scene.turn_on',
@@ -879,6 +881,9 @@ export const svMessages = {
   'dashboard.addCard.templates.presence.name': 'Närvaroöversikt',
   'dashboard.addCard.templates.presence.description':
     'Se vem som är hemma direkt från alla Home Assistant-personentiteter.',
+  'dashboard.addCard.templates.sparkline.name': '5-minuterssparkline',
+  'dashboard.addCard.templates.sparkline.description':
+    'Visa aktuell effekt med en 24-timmars sparkline med 5-minutersmedel.',
   'widgets.note.title': 'Snabb anteckning',
   'widgets.note.emptyState': 'Klicka för att lägga till en anteckning...',
   'widgets.note.placeholder': 'Skriv din anteckning här...',
@@ -951,6 +956,15 @@ export const svMessages = {
   'energy.setup.errors.notConnected': 'Inte ansluten till Home Assistant',
   'energy.setup.errors.autoDetectFailed': 'Auto-detektering misslyckades: {detail}',
   'energy.setup.sensorPlaceholder': '{domain}.your_sensor',
+  'energy.setup.quickStart.title': 'Börja med grunderna',
+  'energy.setup.quickStart.description':
+    'Du behöver inte alla sensorer. Börja med de värden du redan har och lägg till fler senare om du vill ha mer detaljer.',
+  'energy.setup.advanced.show': 'Visa valfria sensorer',
+  'energy.setup.advanced.hide': 'Dölj valfria sensorer',
+  'energy.setup.advanced.title': 'Valfria sensorer och enhetsmappning',
+  'energy.setup.advanced.description':
+    'Lägg bara till dessa om du redan har dem. Sol, batteri, export och spårning per enhet är helt valfria.',
+  'energy.setup.optional': 'Valfri',
   'energy.setup.fields.solarPower.label': 'Solkraft',
   'energy.setup.fields.solarPower.description': 'Live W-utgång från solpaneler',
   'energy.setup.fields.batterySoc.label': 'Batteriets laddningsnivå',
@@ -961,14 +975,14 @@ export const svMessages = {
   'energy.setup.fields.gridImportPower.description': 'Live W som tas från nätet',
   'energy.setup.fields.gridExportPower.label': 'Natexportkraft',
   'energy.setup.fields.gridExportPower.description': 'Live W som matas tillbaka till nätet',
-  'energy.setup.fields.homeLoadPower.label': 'Hemmets förbrukningskraft',
-  'energy.setup.fields.homeLoadPower.description':
-    'Total hemförbrukning i W (hämtas från andra sensorer om tomt)',
+  'energy.setup.fields.homeLoadPower.label': 'Aktuell effekt',
+  'energy.setup.fields.homeLoadPower.description': 'Hemmets totala liveförbrukning i W just nu',
   'energy.setup.fields.solarEnergy.label': 'Solenergi (kWh)',
   'energy.setup.fields.solarEnergy.description':
     'Kumulativ kWh-statistik - används av trenddiagrammet',
-  'energy.setup.fields.gridImportEnergy.label': 'Nätimportenergi (kWh)',
-  'energy.setup.fields.gridImportEnergy.description': 'Kumulativ kWh-statistik för trenddiagrammet',
+  'energy.setup.fields.gridImportEnergy.label': 'Total förbrukning idag (kWh)',
+  'energy.setup.fields.gridImportEnergy.description':
+    'Använd din totalsensor för förbrukning, till exempel sensor.power_consumed',
   'energy.setup.individualDevices': 'Individuella enheter ({count})',
   'energy.setup.powerSensorFor': 'Effektsensor för {name}',
   'energy.setup.powerSensorPlaceholder': 'sensor.power (valfritt)',
@@ -1079,6 +1093,12 @@ export const svMessages = {
   'energy.band.today.description': 'Hur importerad energi fördelas i hemmet.',
   'energy.band.devices.title': 'Enheter',
   'energy.band.devices.description': 'De enheter som just nu förbrukar mest energi.',
+  'energy.customCards.title': 'Energikort',
+  'energy.customCards.description':
+    'Placera återanvändbara energiwidgets här bredvid huvudpanelen.',
+  'energy.customCards.emptyTitle': 'Inga energikort ännu',
+  'energy.customCards.emptyDescription':
+    'Lägg till ett 5-minuterssparkline-kort för att fästa live-trenden i energivyn.',
   'dashboard.section.addBelow': 'Lägg till sektion',
   'dashboard.section.moveHere': 'Flytta sektion hit',
   'dashboard.section.moveDragLabel': 'Flytta sektion',

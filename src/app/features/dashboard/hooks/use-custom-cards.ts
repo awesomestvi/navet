@@ -1,7 +1,7 @@
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 
 export type { CustomCard } from '../stores/custom-cards-store';
-export { HOME_WIDGET_ROOM } from '../stores/custom-cards-store';
+export { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM } from '../stores/custom-cards-store';
 
 export function useCustomCards() {
   const cards = useCustomCardsStore((state) => state.cards);

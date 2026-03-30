@@ -3,8 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { ZoneName } from '../zones/zone-types';
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence' | 'sparkline';
 export const HOME_WIDGET_ROOM = '__home__';
+export const ENERGY_WIDGET_ROOM = '__energy__';
 
 export interface CustomCard {
   id: string;
@@ -15,6 +16,14 @@ export interface CustomCard {
   zone?: ZoneName;
   data?: Record<string, unknown>;
   createdAt: number;
+}
+
+function normalizeCustomCard(card: CustomCard): CustomCard {
+  if (card.type === 'sparkline' && card.size !== 'small' && card.size !== 'medium') {
+    return { ...card, size: 'medium' };
+  }
+
+  return card;
 }
 
 interface CustomCardsState {
@@ -35,16 +44,16 @@ export const useCustomCardsStore = create<CustomCardsState>()(
   persist(
     (set, get) => ({
       cards: [],
-      replaceCards: (cards) => set({ cards }),
+      replaceCards: (cards) => set({ cards: cards.map(normalizeCustomCard) }),
       addCard: (type, size, room, data) => {
-        const newCard: CustomCard = {
+        const newCard = normalizeCustomCard({
           id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type,
           size,
           room,
           data,
           createdAt: Date.now(),
-        };
+        });
 
         set((state) => ({ cards: [...state.cards, newCard] }));
         return newCard;
@@ -54,7 +63,9 @@ export const useCustomCardsStore = create<CustomCardsState>()(
       },
       updateCard: (cardId, updates) => {
         set((state) => ({
-          cards: state.cards.map((card) => (card.id === cardId ? { ...card, ...updates } : card)),
+          cards: state.cards.map((card) =>
+            card.id === cardId ? normalizeCustomCard({ ...card, ...updates }) : card
+          ),
         }));
       },
       getCardsForRoom: (room) => {
@@ -83,7 +94,8 @@ export const useCustomCardsStore = create<CustomCardsState>()(
             .map((card) => ({
               ...card,
               type: card.type === 'news' ? 'rss' : card.type,
-            })) as CustomCard[],
+            }))
+            .map((card) => normalizeCustomCard(card as CustomCard)),
         };
       },
     }

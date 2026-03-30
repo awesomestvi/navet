@@ -866,6 +866,9 @@ export const deMessages = {
   'widgets.presence.title': 'Anwesenheitsübersicht',
   'widgets.presence.empty': 'Keine Personen gefunden',
   'widgets.presence.summary': '{home} zuhause • {away} unterwegs',
+  'widgets.energySparkline.needsSetup':
+    'Richten Sie Energy zuerst ein, um hier den Live-Trend anzuzeigen.',
+  'widgets.energySparkline.noHistory': 'Noch keine Sparkline-Historie verfügbar.',
   'widgets.button.title': 'Aktionsschaltfläche',
   'widgets.button.labelPlaceholder': 'Schaltflächenbeschriftung',
   'widgets.button.servicePlaceholder': 'z.B. scene.turn_on',
@@ -886,6 +889,9 @@ export const deMessages = {
   'dashboard.addCard.templates.presence.name': 'Anwesenheitsübersicht',
   'dashboard.addCard.templates.presence.description':
     'Zeigt auf einen Blick, wer über alle Home Assistant-Personen zuhause ist.',
+  'dashboard.addCard.templates.sparkline.name': '5-Minuten-Sparkline',
+  'dashboard.addCard.templates.sparkline.description':
+    'Zeigt aktuelle Leistung mit einer 24-Stunden-Sparkline im 5-Minuten-Mittel.',
   'widgets.note.title': 'Schnelle Notiz',
   'widgets.note.emptyState': 'Klicken Sie, um eine Notiz hinzuzufugen...',
   'widgets.note.placeholder': 'Schreiben Sie Ihre Notiz hier...',
@@ -958,6 +964,15 @@ export const deMessages = {
   'energy.setup.errors.notConnected': 'Nicht mit Home Assistant verbunden',
   'energy.setup.errors.autoDetectFailed': 'Auto-Erkennung fehlgeschlagen: {detail}',
   'energy.setup.sensorPlaceholder': '{domain}.your_sensor',
+  'energy.setup.quickStart.title': 'Mit dem Wesentlichen beginnen',
+  'energy.setup.quickStart.description':
+    'Sie brauchen nicht jeden Sensor. Beginnen Sie mit den Werten, die Sie schon haben, und ergänzen Sie später mehr, wenn Sie tiefere Einblicke möchten.',
+  'energy.setup.advanced.show': 'Optionale Sensoren anzeigen',
+  'energy.setup.advanced.hide': 'Optionale Sensoren ausblenden',
+  'energy.setup.advanced.title': 'Optionale Sensoren und Gerätezuordnung',
+  'energy.setup.advanced.description':
+    'Fügen Sie diese nur hinzu, wenn Sie sie bereits haben. Solar, Batterie, Export und Pro-Gerät-Tracking sind optionale Erweiterungen.',
+  'energy.setup.optional': 'Optional',
   'energy.setup.fields.solarPower.label': 'Solarleistung',
   'energy.setup.fields.solarPower.description': 'Live-W-Ausgabe der Solarpaneele',
   'energy.setup.fields.batterySoc.label': 'Batterie-Ladezustand',
@@ -968,14 +983,14 @@ export const deMessages = {
   'energy.setup.fields.gridImportPower.description': 'Live-W aus dem Netz bezogen',
   'energy.setup.fields.gridExportPower.label': 'Netzexportleistung',
   'energy.setup.fields.gridExportPower.description': 'Live-W ins Netz eingespeist',
-  'energy.setup.fields.homeLoadPower.label': 'Hauslastleistung',
-  'energy.setup.fields.homeLoadPower.description':
-    'Gesamter Hausverbrauch in W (aus anderen Sensoren abgeleitet, wenn leer)',
+  'energy.setup.fields.homeLoadPower.label': 'Aktuelle Leistung',
+  'energy.setup.fields.homeLoadPower.description': 'Aktueller Gesamtverbrauch des Hauses in W',
   'energy.setup.fields.solarEnergy.label': 'Solarenergie (kWh)',
   'energy.setup.fields.solarEnergy.description':
     'Kumulierter kWh-Wert - für das Trenddiagramm verwendet',
-  'energy.setup.fields.gridImportEnergy.label': 'Netzimportenergie (kWh)',
-  'energy.setup.fields.gridImportEnergy.description': 'Kumulierter kWh-Wert für das Trenddiagramm',
+  'energy.setup.fields.gridImportEnergy.label': 'Gesamtverbrauch heute (kWh)',
+  'energy.setup.fields.gridImportEnergy.description':
+    'Verwenden Sie Ihren Gesamtverbrauchssensor, zum Beispiel sensor.power_consumed',
   'energy.setup.individualDevices': 'Einzelne Geräte ({count})',
   'energy.setup.powerSensorFor': 'Leistungssensor für {name}',
   'energy.setup.powerSensorPlaceholder': 'sensor.power (optional)',
@@ -1088,6 +1103,12 @@ export const deMessages = {
   'energy.band.today.description': 'Wie die importierte Energie im Haus verteilt wird.',
   'energy.band.devices.title': 'Geräte',
   'energy.band.devices.description': 'Die Verbraucher mit dem höchsten Energiebedarf.',
+  'energy.customCards.title': 'Energiekarten',
+  'energy.customCards.description':
+    'Platzieren Sie hier wiederverwendbare Energiewidgets neben dem Hauptdashboard.',
+  'energy.customCards.emptyTitle': 'Noch keine Energiekarten',
+  'energy.customCards.emptyDescription':
+    'Fügen Sie eine 5-Minuten-Sparkline-Karte hinzu, um den Live-Trend im Energiebereich anzuheften.',
   'dashboard.section.addBelow': 'Abschnitt hinzufügen',
   'dashboard.section.moveHere': 'Abschnitt hierher verschieben',
   'dashboard.section.moveDragLabel': 'Abschnitt verschieben',

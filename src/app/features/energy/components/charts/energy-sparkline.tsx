@@ -15,11 +15,14 @@ interface EnergySparklineProps {
   accentColor: string;
   /** Height in viewBox units — controls aspect ratio (default 40) */
   height?: number;
+  className?: string;
+  showYAxisMarks?: boolean;
 }
 
 const VB_W = 200;
-const PAD_X = 2;
-const PAD_Y = 3;
+const PAD_X = 1;
+const PAD_TOP = 2;
+const PAD_BOTTOM = 0;
 
 /** Compute a smooth cubic bezier path through points using Catmull-Rom → cubic bezier conversion */
 function smoothPath(pts: { x: number; y: number }[]): string {
@@ -43,10 +46,17 @@ function smoothPath(pts: { x: number; y: number }[]): string {
   return d;
 }
 
+function roundYAxisMark(value: number): number {
+  const step = value >= 1000 ? 1000 : 100;
+  return Math.max(step, Math.round(value / step) * step);
+}
+
 export const EnergySparkline = memo(function EnergySparkline({
   data,
   accentColor,
   height = 40,
+  className,
+  showYAxisMarks = false,
 }: EnergySparklineProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
@@ -76,23 +86,30 @@ export const EnergySparkline = memo(function EnergySparkline({
     [locale]
   );
 
-  const { baseline, line, pts, chartHeight } = useMemo(() => {
+  const { baseline, line, pts, chartHeight, minVal, maxVal } = useMemo(() => {
     if (data.length < 2) {
-      const chartH = height - PAD_Y * 2;
+      const chartH = height - PAD_TOP - PAD_BOTTOM;
       return {
-        baseline: PAD_Y + chartH,
+        baseline: PAD_TOP + chartH,
         line: '',
         pts: [] as { x: number; y: number }[],
         chartHeight: chartH,
+        minVal: 0,
+        maxVal: 0,
       };
     }
 
     const chartW = VB_W - PAD_X * 2;
-    const chartH = height - PAD_Y * 2;
-    const nextBaseline = PAD_Y + chartH;
-    const maxVal = Math.max(...data.map((d) => d.value), 1);
+    const chartH = height - PAD_TOP - PAD_BOTTOM;
+    const nextBaseline = PAD_TOP + chartH;
+    const rawMin = Math.min(...data.map((d) => d.value));
+    const rawMax = Math.max(...data.map((d) => d.value), 1);
+    const valueRange = Math.max(rawMax - rawMin, Math.max(rawMax * 0.04, 1));
+    const nextMinVal = rawMin;
+    const nextMaxVal = rawMax + valueRange * 0.04;
     const xAt = (i: number) => PAD_X + (i / (data.length - 1)) * chartW;
-    const yAt = (v: number) => PAD_Y + (1 - v / maxVal) * chartH;
+    const yAt = (v: number) =>
+      PAD_TOP + (1 - (v - nextMinVal) / Math.max(nextMaxVal - nextMinVal, 1)) * chartH;
     const nextPoints = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
 
     return {
@@ -100,6 +117,8 @@ export const EnergySparkline = memo(function EnergySparkline({
       line: smoothPath(nextPoints),
       pts: nextPoints,
       chartHeight: chartH,
+      minVal: nextMinVal,
+      maxVal: nextMaxVal,
     };
   }, [data, height]);
 
@@ -118,13 +137,32 @@ export const EnergySparkline = memo(function EnergySparkline({
     [tooltipDateFormatter]
   );
 
-  if (data.length < 2) {
-    return null;
-  }
-
   const tooltipTimestamp = formatTooltipTimestamp(activePoint?.timestampMs);
   const tooltipLeftPercent =
     activeCoords === null ? null : Math.max(18, Math.min(82, (activeCoords.x / VB_W) * 100));
+  const yAxisMarks = useMemo(() => {
+    if (!showYAxisMarks) {
+      return [];
+    }
+
+    const span = Math.max(maxVal - minVal, 1);
+    const values = [maxVal, minVal + span * 0.5];
+    return values.map((value) => {
+      const roundedValue = roundYAxisMark(value);
+      const y = PAD_TOP + (1 - (value - minVal) / span) * chartHeight;
+      return {
+        key: value,
+        label: new Intl.NumberFormat(locale, {
+          maximumFractionDigits: 0,
+        }).format(roundedValue),
+        topPercent: (y / height) * 100,
+      };
+    });
+  }, [chartHeight, height, locale, maxVal, minVal, showYAxisMarks]);
+
+  if (data.length < 2) {
+    return null;
+  }
 
   // Closed area path
   const area =
@@ -133,7 +171,22 @@ export const EnergySparkline = memo(function EnergySparkline({
     ` L ${pts[pts.length - 1].x} ${baseline} Z`;
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
+      {yAxisMarks.map((mark) => (
+        <div
+          key={`y-mark-${mark.key}`}
+          className="pointer-events-none absolute inset-x-0 z-0"
+          style={{ top: `${mark.topPercent}%` }}
+        >
+          <div className="relative -translate-y-1/2">
+            <div className="border-t border-dashed border-white/6" />
+            <div className="absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-medium text-white/35">
+              {mark.label}
+            </div>
+          </div>
+        </div>
+      ))}
+
       {activePoint && tooltipTimestamp && tooltipLeftPercent !== null ? (
         <div
           className="pointer-events-none absolute top-0 z-10 w-max max-w-55 -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md"
@@ -151,7 +204,9 @@ export const EnergySparkline = memo(function EnergySparkline({
 
       <svg
         viewBox={`0 0 ${VB_W} ${height}`}
-        className="w-full"
+        width="100%"
+        height="100%"
+        className={`block ${className ?? 'w-full'}`}
         role="img"
         aria-label={t('charts.powerSparkline.ariaLabel')}
         preserveAspectRatio="none"
@@ -177,30 +232,21 @@ export const EnergySparkline = memo(function EnergySparkline({
           </linearGradient>
         </defs>
 
-        <line
-          x1={PAD_X}
-          y1={baseline}
-          x2={VB_W - PAD_X}
-          y2={baseline}
-          stroke={tokens.grid}
-          strokeWidth="1"
-        />
-
         <path d={area} fill={`url(#${id}-sg)`} />
         <path
           d={line}
           fill="none"
           stroke={tokens.accent}
-          strokeWidth="0.6"
+          strokeWidth="1.1"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
         {hoverIndex !== null && activeCoords ? (
           <line
             x1={activeCoords.x}
-            y1={PAD_Y}
+            y1={PAD_TOP}
             x2={activeCoords.x}
-            y2={PAD_Y + chartHeight}
+            y2={PAD_TOP + chartHeight}
             stroke={tokens.accent}
             strokeOpacity="0.45"
             strokeDasharray="2 2"

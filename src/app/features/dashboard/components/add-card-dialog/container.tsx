@@ -13,9 +13,12 @@ export function AddCardDialogContainer({
   onAddLibraryCard,
   currentRoom,
   libraryCards,
+  showCardsTab = true,
 }: AddCardDialogContainerProps) {
   const { theme, primaryColor } = useTheme();
-  const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>('cards');
+  const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>(
+    showCardsTab ? 'cards' : 'widgets'
+  );
   const [libraryQuery, setLibraryQuery] = useState('');
   const [recentlyAddedLibraryCardIds, setRecentlyAddedLibraryCardIds] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<CardType | null>(null);
@@ -27,12 +30,12 @@ export function AddCardDialogContainer({
       return;
     }
 
-    setActiveTab('cards');
+    setActiveTab(showCardsTab ? 'cards' : 'widgets');
     setLibraryQuery('');
     setRecentlyAddedLibraryCardIds([]);
     setSelectedType(null);
     setSelectedSize('medium');
-  }, [open]);
+  }, [open, showCardsTab]);
 
   const handleAdd = () => {
     if (selectedType) {
@@ -107,7 +110,7 @@ export function AddCardDialogContainer({
       currentRoom={currentRoom}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      showCardsTab
+      showCardsTab={showCardsTab}
       libraryQuery={libraryQuery}
       setLibraryQuery={setLibraryQuery}
       hasLibraryQuery={hasLibraryQuery}
