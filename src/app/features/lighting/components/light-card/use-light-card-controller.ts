@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
+import { useHomeAssistant } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { useBrightnessPresets } from '../../hooks/use-brightness-presets';
 import { useLightMemoryStore } from '../../stores/light-memory-store';
@@ -27,7 +27,6 @@ export function useLightCardController({
 
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const { t } = useI18n();
   const brightnessPresets = useBrightnessPresets(id);
   const rememberLightState = useLightMemoryStore((state) => state.rememberState);
   const {
@@ -84,7 +83,6 @@ export function useLightCardController({
     isEditMode,
     isSmall,
     toggleLightState,
-    lightTypeLabel: t('lighting.type.light'),
     setIsOpen,
   });
   return buildLightCardControllerState({

@@ -131,6 +131,9 @@ export const Sidebar = memo(function Sidebar() {
               <InteractivePill
                 key={index}
                 onClick={item.onClick}
+                aria-label={item.label}
+                aria-current={activeSection === item.section ? 'page' : undefined}
+                title={item.label}
                 active={activeSection === item.section}
                 className={`flex h-10 w-10 items-center justify-center rounded-[22px] transition-colors ${
                   activeSection === item.section ? '' : inactiveColor
@@ -182,6 +185,7 @@ export const Sidebar = memo(function Sidebar() {
                   key={index}
                   onClick={item.onClick}
                   aria-label={item.label}
+                  aria-current={activeSection === item.section ? 'page' : undefined}
                   active={activeSection === item.section}
                   className={`flex h-12.25 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.75 rounded-3xl px-1 py-1 transition-colors ${
                     activeSection === item.section ? '' : inactiveColor

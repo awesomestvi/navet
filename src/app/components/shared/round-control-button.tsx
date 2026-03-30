@@ -40,11 +40,14 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
         : variant === 'soft'
           ? styles.softIcon
           : styles.defaultIcon;
+    const resolvedAriaLabel =
+      props['aria-label'] ?? (typeof props.title === 'string' ? props.title : undefined);
 
     return (
       <button
         ref={ref}
         type="button"
+        aria-label={resolvedAriaLabel}
         className={`${controlSizes.button} flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${buttonClasses} ${className}`}
         {...props}
       >

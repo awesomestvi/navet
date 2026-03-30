@@ -271,6 +271,7 @@ export function MediaSmallView({
             />
             <input
               type="range"
+              aria-label={t('media.volume')}
               min="0"
               max="100"
               value={displayVolume}

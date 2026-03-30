@@ -110,6 +110,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
         </Slider.Track>
         <Slider.Thumb
           className={`block ${thumbSizeClass} rounded-full shadow-lg focus:outline-none cursor-pointer touch-none`}
+          aria-label={t('lighting.brightness')}
           style={{ backgroundColor: thumbBg, boxShadow: `0 0 0 2px ${thumbRing}` }}
         />
       </Slider.Root>

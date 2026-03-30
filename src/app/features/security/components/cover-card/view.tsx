@@ -201,7 +201,10 @@ export function CoverCardView({
                 >
                   <Slider.Range className="absolute rounded-full h-full bg-linear-to-r from-indigo-400 to-indigo-600" />
                 </Slider.Track>
-                <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" />
+                <Slider.Thumb
+                  className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  aria-label={t('cover.ariaLabel', { name })}
+                />
               </Slider.Root>
             </div>
             <div className="mt-auto pt-2">
@@ -266,7 +269,10 @@ export function CoverCardView({
                 >
                   <Slider.Range className="absolute rounded-full h-full bg-linear-to-r from-indigo-400 to-indigo-600" />
                 </Slider.Track>
-                <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" />
+                <Slider.Thumb
+                  className="block w-4 h-4 bg-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  aria-label={t('cover.ariaLabel', { name })}
+                />
               </Slider.Root>
             </div>
             <div className="mt-auto pt-4">

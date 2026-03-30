@@ -194,7 +194,7 @@ export function MediaLargeView({
       <div className="pointer-events-none absolute inset-0" style={colorTintStyle} />
       <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
 
-      <div className="relative z-[1] flex h-full min-h-0 flex-col px-5 pb-5 pt-4">
+      <div className="relative z-1 flex h-full min-h-0 flex-col px-5 pb-5 pt-4">
         <div className="flex min-h-0 flex-1 flex-col justify-end">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -364,6 +364,7 @@ export function MediaLargeView({
               />
               <input
                 type="range"
+                aria-label={t('media.volume')}
                 min="0"
                 max="100"
                 value={displayVolume}

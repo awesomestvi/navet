@@ -81,6 +81,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Batched Room Mounting** - Visible Home room sections now hydrate cards in smaller batches instead of one large render burst
 - **Interactive Energy Charts** - Energy bar/area/sparkline charts support mouse and touch point inspection with inline value tooltips
 - **Offscreen Card Skipping** - Non-edit dashboard cards now use browser offscreen rendering hints to reduce Home room scroll cost on large boards
+- **Edit-Only DnD Loading** - Dashboard drag-and-drop code now loads only in edit mode to keep default startup lighter
 - **Virtualized Entity Picker** - The Add Entity dialog window-renders large Home Assistant entity lists
 - **Smart Re-renders** - Per-entity subscriptions mean each card reacts only to its own HA state changes; the device map rebuilds only when entities are added or removed, not on every state update
 - **Off-screen Skip** - Room sections use `content-visibility: auto` so the browser skips layout, paint, and compositing for rooms outside the viewport; single-room view batch-loads cards on idle frames

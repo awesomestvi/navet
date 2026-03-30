@@ -1,9 +1,7 @@
-import { useDraggable } from '@dnd-kit/core';
 import { EyeOff, X } from 'lucide-react';
-import { memo } from 'react';
+import { lazy, memo, Suspense } from 'react';
 import { CardEditActionButton } from '@/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
-import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { useI18n } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
@@ -31,6 +29,11 @@ interface DashboardCardItemProps {
   usesHideAction?: boolean;
 }
 
+const DashboardCardItemDraggable = lazy(async () => {
+  const module = await import('./dashboard-card-item-draggable');
+  return { default: module.DashboardCardItemDraggable };
+});
+
 export const DashboardCardItem = memo(function DashboardCardItem({
   id,
   size,
@@ -57,11 +60,6 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 
   // Drag is only enabled in edit mode when the card is inside a zone band.
   const draggable = isEditMode && zone !== undefined;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    disabled: !draggable,
-    data: { zone },
-  });
 
   const cardContent = (
     <>
@@ -114,19 +112,35 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </>
   );
 
+  const containerClassName = `relative h-full ${
+    device?.type === 'lights' && ambientLightBleed
+      ? '[contain:layout_style]'
+      : '[contain:layout_style_paint]'
+  } ${spanClass} [&>*]:cursor-inherit`;
+
+  if (draggable && zone) {
+    return (
+      <Suspense
+        fallback={
+          <div className={`${containerClassName} touch-none cursor-grab active:cursor-grabbing`}>
+            {cardContent}
+          </div>
+        }
+      >
+        <DashboardCardItemDraggable
+          id={id}
+          zone={zone}
+          spanClass={spanClass}
+          ambientLightBleed={device?.type === 'lights' && ambientLightBleed}
+        >
+          {cardContent}
+        </DashboardCardItemDraggable>
+      </Suspense>
+    );
+  }
+
   return (
-    <div
-      ref={setNodeRef}
-      {...(draggable ? attributes : {})}
-      {...(draggable ? listeners : {})}
-      className={`relative h-full ${device?.type === 'lights' && ambientLightBleed ? '[contain:layout_style]' : '[contain:layout_style_paint]'} ${spanClass} ${
-        draggable ? 'touch-none cursor-grab active:cursor-grabbing' : 'cursor-inherit'
-      } [&>*]:cursor-inherit ${isDragging ? 'opacity-40' : ''}`}
-      style={getDndTransformStyle(transform)}
-      data-card-nodrag={draggable ? undefined : 'true'}
-      data-draggable-card="true"
-      data-card-drag-surface={draggable ? 'true' : undefined}
-    >
+    <div className={`${containerClassName} cursor-inherit`} data-card-nodrag="true">
       {cardContent}
     </div>
   );

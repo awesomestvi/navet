@@ -87,7 +87,7 @@ export function useSwitchCardController({
   });
 
   const cardInteraction = useEntityCardInteractionController({
-    ariaLabel: `${name} ${t('lighting.type.switch').toLowerCase()}`,
+    ariaLabel: name,
     ariaPressed: isOn,
     isEditMode,
     onToggle: handleToggle,

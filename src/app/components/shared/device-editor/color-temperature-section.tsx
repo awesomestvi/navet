@@ -78,6 +78,7 @@ export const ColorTemperatureSection = memo(function ColorTemperatureSection({
                 ? 'bg-white border-white cursor-pointer'
                 : 'bg-gray-600 border-gray-600 focus:ring-gray-500/50 cursor-not-allowed'
             }`}
+            aria-label={t('lighting.colorTemperature')}
             style={isOn ? { boxShadow: `0 0 0 2px ${activeColor}` } : undefined}
           />
         </Slider.Root>

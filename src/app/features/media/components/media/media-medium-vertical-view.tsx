@@ -209,6 +209,7 @@ export function MediaMediumVerticalView({
               />
               <input
                 type="range"
+                aria-label={t('media.volume')}
                 min="0"
                 max="100"
                 value={displayVolume}

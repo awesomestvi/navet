@@ -2,6 +2,7 @@ import { Settings2 } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { RoundControlButton } from '@/app/components/shared/round-control-button';
+import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
 interface CardSettingsActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,11 +21,14 @@ export function CardSettingsActionButton({
   variant = 'neutral',
   ...props
 }: CardSettingsActionButtonProps) {
+  const { t } = useI18n();
+
   return (
     <RoundControlButton
       theme={theme}
       size={size}
       variant={variant}
+      aria-label={props['aria-label'] ?? t('common.moreActions')}
       className={`${
         tone === 'muted' ? 'opacity-50' : 'hover:scale-105 active:scale-95'
       } ${className}`}

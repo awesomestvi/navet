@@ -1,6 +1,7 @@
 import { Bell, Search, X } from 'lucide-react';
 import type { RefObject } from 'react';
 import { NotificationPanel } from '@/app/features/notifications';
+import { useI18n } from '@/app/hooks';
 import { UserDropdown } from './user-dropdown';
 
 interface HeaderActionsProps {
@@ -115,12 +116,14 @@ function HeaderNotificationButton({
   unreadCount: number;
 }) {
   const buttonRef = mobile ? mobileNotificationButtonRef : desktopNotificationButtonRef;
+  const { t } = useI18n();
 
   return (
     <div className={mobile ? 'relative h-9 w-9' : 'relative'}>
       <button
         ref={buttonRef}
         type="button"
+        aria-label={t('notifications.title')}
         onClick={() => setIsNotificationOpen(!isNotificationOpen)}
         className={
           mobile

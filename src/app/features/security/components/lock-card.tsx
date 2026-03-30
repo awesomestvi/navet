@@ -179,6 +179,7 @@ export const LockCard = memo(function LockCard({
                 theme={theme}
                 size="extra-small"
                 variant="emphasis"
+                aria-label={isLocked ? t('security.unlocked') : t('security.lock')}
                 onClick={handleToggleLock}
                 className={`h-9 w-9 ${
                   isLocked
@@ -251,6 +252,7 @@ export const LockCard = memo(function LockCard({
               theme={theme}
               size={isExtraSmall ? 'extra-small' : 'large'}
               variant="emphasis"
+              aria-label={isLocked ? t('security.unlocked') : t('security.lock')}
               onClick={handleToggleLock}
               className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
                 isLocked

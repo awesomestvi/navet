@@ -5,7 +5,6 @@ import { SectionCustomizeShell } from '@/app/components/layout/section-customize
 import { EmptyState } from '@/app/components/shared/empty-state';
 import { LoadingSpinner } from '@/app/components/shared/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
-import { EnergySection } from '@/app/features/energy';
 import { useI18n } from '@/app/hooks';
 import { AllViewGrid } from '../all-view-grid';
 import { DeviceGrid } from '../device-grid';
@@ -20,6 +19,10 @@ const SecuritySection = lazy(() => lazySections().then((m) => ({ default: m.Secu
 const TasksSection = lazy(() => lazySections().then((m) => ({ default: m.TasksSection })));
 const LocksSection = lazy(() => lazySections().then((m) => ({ default: m.LocksSection })));
 const MediaSection = lazy(() => lazySections().then((m) => ({ default: m.MediaSection })));
+const EnergySection = lazy(async () => {
+  const module = await import('@/app/features/energy');
+  return { default: module.EnergySection };
+});
 const SettingsSection = lazy(async () => {
   const module = await import('@/app/features/settings');
   return { default: module.SettingsSection };
@@ -67,9 +70,11 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     );
   } else if (activeSection === 'energy') {
     sectionContent = (
-      <RenderProfiler id="EnergySection">
-        <EnergySection />
-      </RenderProfiler>
+      <Suspense fallback={<LoadingSpinner />}>
+        <RenderProfiler id="EnergySection">
+          <EnergySection />
+        </RenderProfiler>
+      </Suspense>
     );
   } else if (activeSection === 'tasks') {
     sectionContent = (

@@ -111,6 +111,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
       {/* biome-ignore lint/a11y/useSemanticElements: This preview card contains nested interactive controls, so a semantic button wrapper is not valid here. */}
       <div
         role="button"
+        aria-label={t('interactionPreview.preview.deviceName')}
         tabIndex={0}
         onClick={handleCardTap}
         onKeyDown={(event) => {
@@ -127,11 +128,12 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           <div className="flex min-w-0 flex-1 items-start gap-2.5">
             <button
               type="button"
+              aria-label={t('interactionPreview.iconTap.toggle')}
               onClick={(event) => {
                 event.stopPropagation();
                 setIsOn((current) => !current);
               }}
-              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${focusRingClass} ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${focusRingClass} ${
                 !isOn ? (isLightTheme ? 'bg-gray-200' : 'bg-white/5') : ''
               }`}
               style={iconButtonStyle}
@@ -183,6 +185,11 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
             <button
               type="button"
               key={label}
+              aria-label={
+                index === 2
+                  ? `${t('interactionPreview.preview.brightness')} 100%`
+                  : `${t('interactionPreview.preview.brightness')} ${label}`
+              }
               onClick={(event) => {
                 event.stopPropagation();
                 setBrightness(index === 0 ? 25 : index === 1 ? 60 : 100);
@@ -203,6 +210,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           ))}
           <button
             type="button"
+            aria-label={t('interactionPreview.cardTap.controls')}
             onClick={(event) => event.stopPropagation()}
             className="ml-1 flex h-7 w-7 items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95"
             style={{
@@ -215,11 +223,12 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           {showsTrailingButton && (
             <button
               type="button"
+              aria-label={t('interactionPreview.iconTap.settings')}
               onClick={(event) => {
                 event.stopPropagation();
                 showControlsOpenedToast();
               }}
-              className={`ml-auto flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${quietPillClass} transition-all hover:scale-105 active:scale-95`}
+              className={`ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${quietPillClass} transition-all hover:scale-105 active:scale-95`}
             >
               <Settings2 className="h-3 w-3" />
             </button>

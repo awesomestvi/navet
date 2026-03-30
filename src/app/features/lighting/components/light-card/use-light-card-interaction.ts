@@ -7,7 +7,6 @@ interface UseLightCardInteractionParams {
   isEditMode: boolean;
   isSmall: boolean;
   toggleLightState: (nextIsOn: boolean) => void;
-  lightTypeLabel: string;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -17,13 +16,12 @@ export function useLightCardInteraction({
   isEditMode,
   isSmall,
   toggleLightState,
-  lightTypeLabel,
   setIsOpen,
 }: UseLightCardInteractionParams) {
   const handleSettingsClick = useCallback(() => setIsOpen(true), [setIsOpen]);
 
   const cardInteraction = useEntityCardInteractionController({
-    ariaLabel: `${name} ${lightTypeLabel.toLowerCase()}`,
+    ariaLabel: name,
     ariaPressed: isOn,
     isEditMode,
     onToggle: () => toggleLightState(!isOn),
