@@ -1,5 +1,6 @@
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { SensorIconType } from '../features/sensors';
+import type { WeatherForecastMode } from '../stores/settings-store';
 
 export interface DeviceMetric {
   label: string;
@@ -57,6 +58,7 @@ export interface WeatherDevice extends BaseDevice {
   rainForecast: string;
   highTemp: number;
   lowTemp: number;
+  forecastMode: WeatherForecastMode;
   forecast: Array<{
     day: string;
     condition: string;

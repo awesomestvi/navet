@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type HTMLAttributes,
   memo,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -13,6 +14,7 @@ interface CardWrapperProps {
   children: ReactNode;
   onClick?: (event: ReactMouseEvent<HTMLDivElement> | ReactKeyboardEvent<HTMLDivElement>) => void;
   className?: string;
+  style?: CSSProperties;
   isDisabled?: boolean;
   lightOverlayClassName?: string;
   showShadow?: boolean;
@@ -33,6 +35,7 @@ export const CardWrapper = memo(function CardWrapper({
   children,
   onClick,
   className = '',
+  style,
   isDisabled = false,
   lightOverlayClassName,
   showShadow = true,
@@ -61,6 +64,7 @@ export const CardWrapper = memo(function CardWrapper({
         }
       }}
       className={`relative h-full rounded-3xl overflow-hidden transition-all duration-500 ${theme !== 'dark' ? 'border' : ''} ${onClick && !isDisabled ? 'cursor-pointer' : ''} ${showShadow ? surface.cardShadow : ''} ${interactionClassName || ''} ${className}`}
+      style={style}
       {...restInteractionProps}
     >
       {children}

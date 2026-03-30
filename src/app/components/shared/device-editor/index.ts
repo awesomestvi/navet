@@ -12,6 +12,7 @@ export { ColorSelectorSection } from './color-selector-section';
 export { ColorTemperaturePresets } from './color-temperature-presets';
 export { ColorTemperatureSection } from './color-temperature-section';
 export { CompactRoomSelector } from './compact-room-selector';
+export { CustomCardTintPicker } from './custom-card-tint-picker';
 export { CustomScrollbar } from './custom-scrollbar';
 export { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 export { DialogHeader } from './dialog-header';

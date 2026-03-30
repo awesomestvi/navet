@@ -1,22 +1,12 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
-import { GripVertical, Minus, Plus, Wand2 } from 'lucide-react';
-import { type CSSProperties, memo } from 'react';
-import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
+import { Wand2 } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n } from '@/app/hooks';
 import type { DeviceWithType } from '@/app/types/device.types';
-import type { DragMeta, DropMeta, HomeEditorSection } from '../hooks/use-home-dashboard-editor';
+import type { HomeEditorSection } from '../hooks/use-home-dashboard-editor';
 import type { CustomCard } from '../stores/custom-cards-store';
-import {
-  getRenderedRowLayouts,
-  getSectionCardMinColumns,
-  getSectionMinBaseWidth,
-  SECTION_LAYOUT_COLUMNS,
-} from '../utils/layout-engine';
+import { getRenderedRowLayouts, getSectionMinBaseWidth } from '../utils/layout-engine';
 import { DashboardEmptyState } from './dashboard-empty-state';
 import {
-  areCardIdsStable,
   buildPortraitStackRows,
   buildSectionStacks,
   getPortraitLaneCount,
@@ -24,19 +14,22 @@ import {
   getRenderedSectionSpan,
   getStackMinSpan,
   getStoredSectionSpan,
-  type HomePresentationSectionProps,
   NOOP_REMOVE_FROM_LAYOUT,
   SECTION_GRID_GAP_CLASS,
-  type SectionCanvasProps,
   splitRowStacksByMinSpan,
 } from './home-dashboard-overview.shared';
-import { CardGrid, EmptyCanvas } from './home-dashboard-overview-card-grid';
+import { CardGrid } from './home-dashboard-overview-card-grid';
+import { ColumnCanvas, SectionInsertDropZone } from './home-dashboard-overview-column-canvas';
+import { HomePresentationSection, SectionCanvas } from './home-dashboard-overview-section-canvas';
 
 export function SectionCanvasGrid({
   sections,
   sectionGridCols,
   isPortraitHome,
   activeSectionId,
+  activeDragColumn,
+  activeDragSection,
+  activeDragCard,
   accentColor,
   allCards,
   cardSizes,
@@ -58,6 +51,9 @@ export function SectionCanvasGrid({
   sectionGridCols: number;
   isPortraitHome: boolean;
   activeSectionId: string | null;
+  activeDragColumn: string | null;
+  activeDragSection: string | null;
+  activeDragCard: string | null;
   accentColor: string;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, import('@/app/components/shared/card-size-selector').CardSize>;
@@ -116,7 +112,7 @@ export function SectionCanvasGrid({
         return (
           <div key={rowIndex} className="space-y-4">
             <div
-              className={`grid ${SECTION_GRID_GAP_CLASS}`}
+              className={`grid items-start ${SECTION_GRID_GAP_CLASS}`}
               style={
                 isPortraitHome
                   ? ({
@@ -128,7 +124,7 @@ export function SectionCanvasGrid({
                     } as CSSProperties)
               }
             >
-              {rowStacks.map((stack) => {
+              {rowStacks.map((stack, columnIndex) => {
                 const leadSection = stack[0];
                 const rowLayout = rowLayouts.get(leadSection.id);
                 const renderedSpan = isPortraitHome
@@ -146,54 +142,67 @@ export function SectionCanvasGrid({
                 return (
                   <div
                     key={leadSection.id}
+                    className="relative self-stretch"
                     style={
                       isPortraitHome
                         ? undefined
                         : { gridColumn: `${renderedColumnStart} / span ${renderedSpan}` }
                     }
-                    className="space-y-4"
                   >
-                    {stack.map((section) => (
-                      <SectionCanvas
-                        key={section.id}
-                        sectionId={section.id}
-                        title={section.title}
-                        gridCols={renderedSpan}
-                        isActive={activeSectionId === section.id}
-                        accentColor={accentColor}
-                        cardIds={section.cardIds}
-                        allCards={allCards}
-                        cardSizes={cardSizes}
-                        updateCardSize={updateCardSize}
-                        isEditMode={isEditMode}
-                        onUpdateCard={onUpdateCard}
-                        onRemoveFromLayout={onRemoveFromLayout}
-                        showHero={showHero}
-                        onSelectSection={onSelectSection}
-                        onOpenLibraryForSection={onOpenLibraryForSection}
-                        onOpenAddCardDialog={onOpenAddCardDialog}
-                        onRenameSection={onRenameSection}
-                        onRemoveSection={onRemoveSection}
-                        span={getStoredSectionSpan(section)}
-                        layoutCols={sectionGridCols}
-                        minWidthsBySection={minWidthsBySection}
-                        rowSiblingCount={rowStacks.length}
-                        onResizeSection={onResizeSection}
+                    {columnIndex > 0 ? (
+                      <div
+                        aria-hidden="true"
+                        className={`pointer-events-none absolute bottom-1 -left-3 top-0 z-10 w-px border-l border-dashed md:-left-3.5 lg:-left-4 ${surface.borderStrong}`}
+                      />
+                    ) : null}
+                    <ColumnCanvas
+                      columnId={leadSection.id}
+                      columnTitle={`Column ${columnIndex + 1}`}
+                      isPreviewHidden={activeDragColumn === leadSection.id}
+                      accentColor={accentColor}
+                      surface={surface}
+                    >
+                      {stack.map((section) => (
+                        <SectionCanvas
+                          key={section.id}
+                          sectionId={section.id}
+                          title={section.title}
+                          gridCols={renderedSpan}
+                          isActive={activeSectionId === section.id}
+                          isPreviewHidden={activeDragSection === section.id}
+                          activeDragCard={activeDragCard}
+                          accentColor={accentColor}
+                          cardIds={section.cardIds}
+                          allCards={allCards}
+                          cardSizes={cardSizes}
+                          updateCardSize={updateCardSize}
+                          isEditMode={isEditMode}
+                          onUpdateCard={onUpdateCard}
+                          onRemoveFromLayout={onRemoveFromLayout}
+                          showHero={showHero}
+                          onSelectSection={onSelectSection}
+                          onOpenLibraryForSection={onOpenLibraryForSection}
+                          onOpenAddCardDialog={onOpenAddCardDialog}
+                          onRenameSection={onRenameSection}
+                          onRemoveSection={onRemoveSection}
+                          span={getStoredSectionSpan(section)}
+                          layoutCols={sectionGridCols}
+                          minWidthsBySection={minWidthsBySection}
+                          rowSiblingCount={rowStacks.length}
+                          onResizeSection={onResizeSection}
+                          surface={surface}
+                        />
+                      ))}
+                      <SectionInsertDropZone
+                        sectionId={stack[stack.length - 1]?.id ?? leadSection.id}
+                        onAddSectionBelow={onAddSectionBelow}
                         surface={surface}
                       />
-                    ))}
+                    </ColumnCanvas>
                   </div>
                 );
               })}
             </div>
-            <SectionInsertDropZone
-              sectionId={
-                rowStacks[rowStacks.length - 1]?.[rowStacks[rowStacks.length - 1].length - 1]?.id ??
-                ''
-              }
-              onAddSectionBelow={onAddSectionBelow}
-              surface={surface}
-            />
           </div>
         );
       })}
@@ -377,327 +386,5 @@ export function HomePresentation({
         />
       ) : null}
     </div>
-  );
-}
-
-const SectionCanvas = memo(function SectionCanvas({
-  sectionId,
-  title,
-  gridCols,
-  isActive,
-  accentColor,
-  cardIds,
-  allCards,
-  cardSizes,
-  updateCardSize,
-  isEditMode,
-  onUpdateCard,
-  onRemoveFromLayout,
-  showHero,
-  onSelectSection,
-  onOpenLibraryForSection,
-  onOpenAddCardDialog,
-  onRenameSection,
-  onRemoveSection,
-  span,
-  layoutCols,
-  minWidthsBySection,
-  rowSiblingCount,
-  onResizeSection,
-  surface,
-}: SectionCanvasProps) {
-  const { t } = useI18n();
-  const renderedSpan = Math.max(1, getRenderedSectionSpan(span, layoutCols));
-  const minRenderedWidth = Math.max(
-    1,
-    ...cardIds.map((cardId) => getSectionCardMinColumns(cardSizes[cardId]))
-  );
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `home-section-drag-${sectionId}`,
-    data: { source: 'section', sectionId, type: 'section' } as DragMeta,
-  });
-
-  return (
-    <section
-      ref={setNodeRef}
-      className={`relative rounded-3xl border p-4 transition-[border-color,box-shadow,background-color] ${
-        isActive
-          ? `${surface.borderStrong} ${surface.panel}`
-          : `${surface.border} ${surface.panelMuted}`
-      } ${isDragging ? 'opacity-60' : ''}`}
-      style={{
-        ...getDndTransformStyle(transform, undefined),
-        boxShadow: isActive
-          ? `0 0 0 2px ${accentColor}55, 0 22px 52px -34px ${accentColor}aa`
-          : undefined,
-      }}
-    >
-      <button
-        type="button"
-        aria-label={t('dashboard.edit.selectSection', { section: title })}
-        className="absolute inset-0 rounded-3xl"
-        onClick={() => onSelectSection(sectionId)}
-      />
-      <div className="relative z-10 mb-4 flex items-center gap-3">
-        <button
-          type="button"
-          aria-label={t('dashboard.edit.moveSection', { section: title })}
-          data-dashboard-drag-handle="true"
-          className={`cursor-grab rounded-full border p-1.5 transition-colors active:cursor-grabbing ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-          onClick={(event) => event.stopPropagation()}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => onRenameSection(sectionId, event.target.value)}
-          onFocus={() => onSelectSection(sectionId)}
-          onClick={(event) => event.stopPropagation()}
-          className={`min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none ${surface.textPrimary}`}
-        />
-        {rowSiblingCount > 1 ? (
-          <>
-            <button
-              type="button"
-              aria-label={t('dashboard.edit.shrinkSection')}
-              disabled={renderedSpan <= minRenderedWidth}
-              onClick={(event) => {
-                event.stopPropagation();
-                const nextRenderedWidth = Math.max(minRenderedWidth, renderedSpan - 1);
-                onResizeSection(
-                  sectionId,
-                  Math.floor((nextRenderedWidth / layoutCols) * SECTION_LAYOUT_COLUMNS),
-                  minWidthsBySection
-                );
-              }}
-              className={`rounded-full border p-1.5 transition-colors disabled:opacity-30 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label={t('dashboard.edit.growSection')}
-              onClick={(event) => {
-                event.stopPropagation();
-                const nextRenderedWidth = Math.min(layoutCols, renderedSpan + 1);
-                onResizeSection(
-                  sectionId,
-                  Math.ceil((nextRenderedWidth / layoutCols) * SECTION_LAYOUT_COLUMNS),
-                  minWidthsBySection
-                );
-              }}
-              className={`rounded-full border p-1.5 transition-colors disabled:opacity-30 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </>
-        ) : null}
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRemoveSection(sectionId);
-          }}
-          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-        >
-          {t('dashboard.edit.removeSection')}
-        </button>
-      </div>
-
-      <SortableContext
-        items={cardIds.map((cardId) => `home-card-${cardId}`)}
-        strategy={rectSortingStrategy}
-      >
-        <div className="relative z-10">
-          <HomeContainerDropZone sectionId={sectionId} cardIds={cardIds}>
-            {cardIds.length > 0 ? (
-              <CardGrid
-                cardIds={cardIds}
-                sectionId={sectionId}
-                gridCols={gridCols}
-                allCards={allCards}
-                cardSizes={cardSizes}
-                updateCardSize={updateCardSize}
-                isEditMode={isEditMode}
-                onUpdateCard={onUpdateCard}
-                onRemoveFromLayout={onRemoveFromLayout}
-                showHero={showHero}
-                onOpenAddCardDialog={onOpenAddCardDialog}
-              />
-            ) : (
-              <EmptyCanvas
-                label="Drop cards here"
-                description="Drag device cards or widgets into this section."
-                surface={surface}
-                compact
-                onClick={() => {
-                  if (onOpenAddCardDialog) {
-                    onOpenAddCardDialog(sectionId);
-                    return;
-                  }
-
-                  onOpenLibraryForSection(sectionId);
-                }}
-              />
-            )}
-          </HomeContainerDropZone>
-        </div>
-      </SortableContext>
-    </section>
-  );
-}, areSectionCanvasPropsEqual);
-
-function SectionInsertDropZone({
-  sectionId,
-  onAddSectionBelow,
-  surface,
-}: {
-  sectionId: string;
-  onAddSectionBelow: (sectionId: string) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { t } = useI18n();
-  const { setNodeRef, isOver, active } = useDroppable({
-    id: `home-section-insert-${sectionId}`,
-    data: { type: 'section-insert', sectionId } satisfies DropMeta,
-  });
-  const isSectionDrag = active?.data.current?.source === 'section';
-
-  return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      onClick={() => onAddSectionBelow(sectionId)}
-      className={`flex w-full items-center justify-center gap-2 rounded-[18px] border border-dashed px-3 py-3 text-sm font-medium transition-colors ${
-        isOver && isSectionDrag
-          ? `${surface.borderStrong} ${surface.panel}`
-          : `${surface.borderStrong} ${surface.textSecondary} ${surface.hoverBg}`
-      }`}
-    >
-      <Plus className="h-4 w-4" />
-      <span>
-        {isOver && isSectionDrag
-          ? t('dashboard.section.moveHere')
-          : t('dashboard.section.addBelow')}
-      </span>
-    </button>
-  );
-}
-
-const HomePresentationSection = memo(function HomePresentationSection({
-  section,
-  renderedSpan,
-  allCards,
-  cardSizes,
-  updateCardSize,
-  onUpdateCard,
-  showHero,
-  surface,
-}: HomePresentationSectionProps) {
-  return (
-    <div>
-      <div className="mb-3 flex items-center gap-3">
-        <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-          {section.title}
-        </h2>
-        <div className={`h-px flex-1 ${surface.borderStrong}`} />
-      </div>
-      <CardGrid
-        cardIds={section.cardIds}
-        gridCols={renderedSpan}
-        allCards={allCards}
-        cardSizes={cardSizes}
-        updateCardSize={updateCardSize}
-        isEditMode={false}
-        onUpdateCard={onUpdateCard}
-        onRemoveFromLayout={NOOP_REMOVE_FROM_LAYOUT}
-        showHero={showHero}
-        sortable={false}
-      />
-    </div>
-  );
-}, areHomePresentationSectionPropsEqual);
-
-function HomeContainerDropZone({
-  children,
-  sectionId,
-  cardIds,
-}: {
-  children: React.ReactNode;
-  sectionId?: string;
-  cardIds: string[];
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: sectionId ? `home-container-${sectionId}` : 'home-container-flow',
-    data: { type: 'container', sectionId } satisfies DropMeta,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={isOver && cardIds.length === 0 ? 'rounded-3xl ring-1 ring-white/20' : undefined}
-    >
-      {children}
-    </div>
-  );
-}
-
-function areHomePresentationSectionPropsEqual(
-  previous: HomePresentationSectionProps,
-  next: HomePresentationSectionProps
-) {
-  return (
-    previous.renderedSpan === next.renderedSpan &&
-    previous.showHero === next.showHero &&
-    previous.updateCardSize === next.updateCardSize &&
-    previous.onUpdateCard === next.onUpdateCard &&
-    previous.surface === next.surface &&
-    previous.section.id === next.section.id &&
-    previous.section.title === next.section.title &&
-    areCardIdsStable(
-      previous.section.cardIds,
-      next.section.cardIds,
-      previous.allCards,
-      next.allCards,
-      previous.cardSizes,
-      next.cardSizes
-    )
-  );
-}
-
-function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionCanvasProps) {
-  return (
-    previous.sectionId === next.sectionId &&
-    previous.title === next.title &&
-    previous.gridCols === next.gridCols &&
-    previous.isActive === next.isActive &&
-    previous.accentColor === next.accentColor &&
-    previous.updateCardSize === next.updateCardSize &&
-    previous.isEditMode === next.isEditMode &&
-    previous.onUpdateCard === next.onUpdateCard &&
-    previous.onRemoveFromLayout === next.onRemoveFromLayout &&
-    previous.showHero === next.showHero &&
-    previous.onSelectSection === next.onSelectSection &&
-    previous.onOpenLibraryForSection === next.onOpenLibraryForSection &&
-    previous.onOpenAddCardDialog === next.onOpenAddCardDialog &&
-    previous.onRenameSection === next.onRenameSection &&
-    previous.onRemoveSection === next.onRemoveSection &&
-    previous.span === next.span &&
-    previous.layoutCols === next.layoutCols &&
-    previous.rowSiblingCount === next.rowSiblingCount &&
-    previous.onResizeSection === next.onResizeSection &&
-    previous.surface === next.surface &&
-    previous.minWidthsBySection[previous.sectionId] === next.minWidthsBySection[next.sectionId] &&
-    areCardIdsStable(
-      previous.cardIds,
-      next.cardIds,
-      previous.allCards,
-      next.allCards,
-      previous.cardSizes,
-      next.cardSizes
-    )
   );
 }

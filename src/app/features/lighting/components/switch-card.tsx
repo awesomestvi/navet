@@ -1,7 +1,7 @@
 import { Check, Play, Power, Settings2 } from 'lucide-react';
 import { memo } from 'react';
 import { isTinyCardSize } from '@/app/components/shared/card-size-selector';
-import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { DialogHeader } from '@/app/components/shared/device-editor';
 import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
@@ -10,6 +10,7 @@ import { RoundControlButton } from '@/app/components/shared/round-control-button
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import type { SwitchCardProps } from './switch-card.types';
@@ -19,6 +20,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   const controller = useSwitchCardController(props);
   const cardShell = getCardShellSurfaceTokens(controller.theme);
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
+  const themeSurface = getThemeSurfaceTokens(controller.theme);
   const isTiny = isTinyCardSize(props.size);
   const tinyTextTokens = getCardReadableTextTokens({
     theme: controller.theme,
@@ -40,17 +42,17 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <DialogShell
         isOpen={controller.isDialogOpen}
         onOpenChange={controller.setIsDialogOpen}
-        overlayClassName="bg-black/70 backdrop-blur-sm"
+        overlayClassName={themeSurface.dialogBackdrop}
         contentClassName={`fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[28px] border p-6 shadow-2xl ${controller.dialogSurface}`}
       >
         <DialogHeader
           title={props.name}
           description={controller.entityType}
           isOn={controller.theme !== 'light'}
+          supportingContent={
+            <EntityRoomSelector entityId={props.id} label={controller.roomLabel} compact />
+          }
         />
-        <DialogSectionRow label={controller.roomLabel}>
-          <EntityRoomSelector entityId={props.id} label={controller.roomLabel} compact />
-        </DialogSectionRow>
 
         <div className="space-y-4">
           {controller.hasMetrics && (
@@ -145,9 +147,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <TinyActionCard
           rootProps={controller.cardInteraction.cardProps}
-          rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${
-            props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
-          }`}
+          rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           metadata={controller.entityType}
           title={props.name}
           metadataClassName={stateSurface.mutedTextClassName}
@@ -187,9 +187,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${
-            props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
-          }`}
+          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
         >
           {controller.isOn ? (
             <div
@@ -237,9 +235,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
     <>
       <div
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full bg-linear-to-br ${controller.cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${controller.cardColors.border} overflow-hidden transition-all duration-500 ${
-          props.isEditMode ? 'cursor-move active:cursor-grabbing' : 'cursor-pointer'
-        } ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
+        className={`relative h-full w-full bg-linear-to-br ${controller.cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${controller.cardColors.border} overflow-hidden transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
       >
         {controller.isOn && (
           <div

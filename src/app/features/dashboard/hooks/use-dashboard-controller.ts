@@ -144,6 +144,7 @@ export function useDashboardController(): DashboardController {
     addHomeColumnSection: homeLayoutController.addColumnSection,
     addHomeSectionBelow: homeLayoutController.addSectionBelow,
     moveHomeSection: homeLayoutController.moveSection,
+    moveHomeColumn: homeLayoutController.moveColumn,
     renameHomeSection: homeLayoutController.renameSection,
     removeHomeSection: homeLayoutController.removeSection,
     resizeHomeSection: homeLayoutController.resizeSection,

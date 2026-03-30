@@ -1,7 +1,8 @@
 import type { Connection, HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
-import { homeAssistantSelectors } from '../stores/selectors';
+import { homeAssistantSelectors, settingsSelectors } from '../stores/selectors';
+import { useSettingsStore } from '../stores/settings-store';
 import type {
   CalendarDevice,
   CameraDevice,
@@ -58,6 +59,16 @@ type WeatherForecastServiceEnvelope = WeatherForecastServicePayload & {
   result?: WeatherForecastServicePayload;
 };
 
+type WeatherForecastType = 'daily' | 'hourly';
+
+type WeatherForecastState = Record<
+  string,
+  {
+    daily: WeatherForecastEntry[];
+    hourly: WeatherForecastEntry[];
+  }
+>;
+
 type CalendarServiceEvent = Record<string, unknown>;
 
 type CalendarEventsServicePayload = {
@@ -79,14 +90,15 @@ function formatWeatherValue(value: number): string {
 
 async function fetchWeatherForecast(
   connection: Connection,
-  entityId: string
+  entityId: string,
+  type: WeatherForecastType
 ): Promise<WeatherForecastEntry[]> {
   const response = (await connection.sendMessagePromise({
     type: 'call_service',
     domain: 'weather',
     service: 'get_forecasts',
     target: { entity_id: entityId },
-    service_data: { type: 'daily' },
+    service_data: { type },
     return_response: true,
   })) as WeatherForecastServiceEnvelope;
 
@@ -147,6 +159,7 @@ export const useHADevices = (): DeviceCollection => {
   const entities = useHomeAssistant(homeAssistantSelectors.entities, entityStructureEqual);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const { locale, t } = useI18n();
+  const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const primaryWeatherEntityId = useMemo(() => {
     if (!entities) {
       return null;
@@ -163,9 +176,7 @@ export const useHADevices = (): DeviceCollection => {
       .filter((entityId) => entityId.startsWith('calendar.'))
       .sort((left, right) => left.localeCompare(right));
   }, [entities]);
-  const [weatherForecasts, setWeatherForecasts] = useState<Record<string, WeatherForecastEntry[]>>(
-    {}
-  );
+  const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
   const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
 
   useEffect(() => {
@@ -176,21 +187,21 @@ export const useHADevices = (): DeviceCollection => {
 
     let cancelled = false;
 
-    void fetchWeatherForecast(connection, primaryWeatherEntityId)
-      .then((forecast) => {
-        if (cancelled) {
-          return;
-        }
+    void Promise.all([
+      fetchWeatherForecast(connection, primaryWeatherEntityId, 'daily').catch(() => []),
+      fetchWeatherForecast(connection, primaryWeatherEntityId, 'hourly').catch(() => []),
+    ]).then(([daily, hourly]) => {
+      if (cancelled) {
+        return;
+      }
 
-        setWeatherForecasts({ [primaryWeatherEntityId]: forecast });
-      })
-      .catch(() => {
-        if (cancelled) {
-          return;
-        }
-
-        setWeatherForecasts({});
+      setWeatherForecasts({
+        [primaryWeatherEntityId]: {
+          daily,
+          hourly,
+        },
       });
+    });
 
     return () => {
       cancelled = true;
@@ -831,13 +842,28 @@ export const useHADevices = (): DeviceCollection => {
             break;
           }
 
-          const forecastSource = Array.isArray(weatherForecasts[entityId])
-            ? weatherForecasts[entityId]
-            : Array.isArray(entity.attributes?.forecast)
-              ? (entity.attributes.forecast as WeatherForecastEntry[])
+          const storedForecasts = weatherForecasts[entityId];
+          const fallbackDailyForecast = Array.isArray(entity.attributes?.forecast)
+            ? (entity.attributes.forecast as WeatherForecastEntry[])
+            : [];
+          const dailyForecastSource =
+            storedForecasts?.daily && storedForecasts.daily.length > 0
+              ? storedForecasts.daily
+              : fallbackDailyForecast;
+          const hourlyForecastSource =
+            storedForecasts?.hourly && storedForecasts.hourly.length > 0
+              ? storedForecasts.hourly
               : [];
+          const selectedForecastSource =
+            weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0
+              ? hourlyForecastSource
+              : dailyForecastSource;
+          const effectiveForecastMode =
+            weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0
+              ? 'hourly'
+              : 'weekly';
 
-          const forecast = forecastSource
+          const forecast = selectedForecastSource
             .slice(0, 7)
             .map((entry: Record<string, unknown>, index) => {
               const forecastDate =
@@ -848,27 +874,38 @@ export const useHADevices = (): DeviceCollection => {
                     : null;
               const dayLabel =
                 forecastDate && !Number.isNaN(forecastDate.getTime())
-                  ? index === 0
-                    ? t('weather.today')
-                    : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(forecastDate)
-                  : index === 0
-                    ? t('weather.today')
-                    : t('weather.dayFallback', { day: index + 1 });
+                  ? effectiveForecastMode === 'hourly'
+                    ? new Intl.DateTimeFormat(locale, { hour: 'numeric' }).format(forecastDate)
+                    : index === 0
+                      ? t('weather.today')
+                      : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(forecastDate)
+                  : effectiveForecastMode === 'hourly'
+                    ? `+${index + 1}h`
+                    : index === 0
+                      ? t('weather.today')
+                      : t('weather.dayFallback', { day: index + 1 });
+              const forecastTemperature =
+                parseRoundedNumberish(entry.temperature) ??
+                parseRoundedNumberish(entry.native_temperature) ??
+                0;
 
               return {
                 day: dayLabel,
                 condition: (typeof entry.condition === 'string' && entry.condition) || entity.state,
-                high: parseRoundedNumberish(entry.temperature) ?? 0,
-                low: parseRoundedNumberish(entry.templow) ?? 0,
+                high: forecastTemperature,
+                low:
+                  effectiveForecastMode === 'hourly'
+                    ? forecastTemperature
+                    : (parseRoundedNumberish(entry.templow) ?? 0),
               };
             });
 
           const highTemp =
-            forecast[0]?.high ??
+            parseRoundedNumberish(dailyForecastSource[0]?.temperature) ??
             parseRoundedNumberish(entity.attributes?.temperature) ??
             parseRoundedNumberish(entity.attributes?.native_temperature) ??
             0;
-          const lowTemp = forecast[0]?.low ?? highTemp;
+          const lowTemp = parseRoundedNumberish(dailyForecastSource[0]?.templow) ?? highTemp;
           const precipitationUnit =
             (typeof entity.attributes?.precipitation_unit === 'string' &&
               entity.attributes.precipitation_unit) ||
@@ -877,7 +914,7 @@ export const useHADevices = (): DeviceCollection => {
             parseNumberish(entity.attributes?.precipitation_probability) ??
             parseNumberish(entity.attributes?.precipitation) ??
             0;
-          const tomorrowForecast = forecastSource[1] as Record<string, unknown> | undefined;
+          const tomorrowForecast = dailyForecastSource[1] as Record<string, unknown> | undefined;
           const tomorrowPrecipitationProbability = tomorrowForecast
             ? parseNumberish(tomorrowForecast.precipitation_probability)
             : null;
@@ -938,6 +975,7 @@ export const useHADevices = (): DeviceCollection => {
                   : '',
             highTemp,
             lowTemp,
+            forecastMode: effectiveForecastMode,
             forecast,
           });
           break;
@@ -974,6 +1012,7 @@ export const useHADevices = (): DeviceCollection => {
     locale,
     primaryWeatherEntityId,
     t,
+    weatherForecastMode,
     weatherForecasts,
   ]);
 };

@@ -62,13 +62,16 @@ export function AddCardDialogView({
   if (!open) return null;
 
   const surface = getThemeSurfaceTokens(theme);
-  const bgColor = theme === 'light' ? 'bg-white' : surface.panel;
   const textColor = surface.textPrimary;
   const mutedColor = surface.textSecondary;
   const borderColor = surface.border;
   const cardBg = surface.panelMuted;
   const hoverBg = surface.hoverBg;
   const accent = getColorValue(primaryColor);
+  const inactiveIconBg = theme === 'light' ? '#f3f4f6' : 'rgba(255, 255, 255, 0.05)';
+  const inactiveIconColor = theme === 'light' ? '#374151' : 'rgba(255, 255, 255, 0.78)';
+  const sizePreviewTileBg = theme === 'light' ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.03)';
+  const inactiveSizeSwatchBg = theme === 'light' ? '#d1d5db' : 'rgba(255, 255, 255, 0.2)';
   const cardsTabActive = activeTab === 'cards';
   const widgetsTabActive = activeTab === 'widgets';
   const cardsSummary = hasLibraryQuery
@@ -86,7 +89,7 @@ export function AddCardDialogView({
         }
       }}
       overlayClassName={surface.dialogBackdrop}
-      contentClassName={`${bgColor} fixed left-1/2 top-1/2 z-50 flex w-[min(calc(100vw-2rem),38rem)] max-h-[min(84vh,46rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border ${borderColor}`}
+      contentClassName={`${surface.panel} fixed left-1/2 top-1/2 z-50 flex w-[min(calc(100vw-2rem),38rem)] max-h-[min(84vh,46rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border ${borderColor}`}
       contentStyle={{ boxShadow: '0 24px 80px rgba(0, 0, 0, 0.36)' }}
     >
       <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-5 pb-4 pt-5 backdrop-blur-xl">
@@ -235,17 +238,8 @@ export function AddCardDialogView({
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
                         style={{
                           backgroundColor:
-                            selectedType === template.id
-                              ? `${accent}22`
-                              : theme === 'light'
-                                ? '#f3f4f6'
-                                : 'rgba(255, 255, 255, 0.05)',
-                          color:
-                            selectedType === template.id
-                              ? accent
-                              : theme === 'light'
-                                ? '#374151'
-                                : 'rgba(255, 255, 255, 0.78)',
+                            selectedType === template.id ? `${accent}22` : inactiveIconBg,
+                          color: selectedType === template.id ? accent : inactiveIconColor,
                         }}
                       >
                         {template.icon}
@@ -265,7 +259,7 @@ export function AddCardDialogView({
             </div>
 
             {selectedType ? (
-              <div>
+              <div className="space-y-6">
                 <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
                   {t('dashboard.addCard.chooseSize')}
                 </h3>
@@ -288,10 +282,7 @@ export function AddCardDialogView({
                       <div className="text-center">
                         <div
                           className="mx-auto mb-2 flex h-12 items-center justify-center rounded-xl"
-                          style={{
-                            backgroundColor:
-                              theme === 'light' ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.03)',
-                          }}
+                          style={{ backgroundColor: sizePreviewTileBg }}
                         >
                           <div
                             className="rounded"
@@ -301,11 +292,7 @@ export function AddCardDialogView({
                                 return { width: cols * 18, height: rows * 18 };
                               })(),
                               backgroundColor:
-                                selectedSize === size
-                                  ? accent
-                                  : theme === 'light'
-                                    ? '#d1d5db'
-                                    : 'rgba(255, 255, 255, 0.2)',
+                                selectedSize === size ? accent : inactiveSizeSwatchBg,
                             }}
                           />
                         </div>

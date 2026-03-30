@@ -1,13 +1,13 @@
-import { CalendarDays } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { memo, useState } from 'react';
 import {
   type CardSize,
   getCompactCardSize,
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
 import { CalendarEventDialog } from './calendar/calendar-event-dialog';
 import { CalendarLargeView } from './calendar/calendar-large-view';
@@ -46,16 +46,19 @@ export const CalendarCard = memo(function CalendarCard({
   const {
     availableCalendars,
     selectedCalendarIds,
-    selectedCalendarLabel,
     selectedEvents,
     setSelectedCalendarIds,
+    setTintColor,
     setViewMode,
+    tintColor,
     viewMode,
   } = useCalendarCardSources(id, events ?? []);
   const { nextEvent, smallGroups, mediumGroups, largeGroups } = useCalendarData(selectedEvents);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const hasCustomTint = Boolean(tintSurface.panelStyle);
 
   const { textPrimary, textSecondary, overlayBg, dividerColor, hoverBg, hoverText } =
-    useCalendarTheme(theme);
+    useCalendarTheme(theme, tintColor);
 
   const isSmall = isCompactCardSize(effectiveSize);
   const isMedium = effectiveSize === 'medium';
@@ -68,68 +71,51 @@ export const CalendarCard = memo(function CalendarCard({
         className={`
           relative group overflow-hidden
           h-full w-full rounded-3xl
-          bg-gradient-to-br ${colors.calendar.gradient}
-          ${cardShell.backdropClassName} border ${colors.calendar.border}
+          ${hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}
+          ${cardShell.backdropClassName} border ${hasCustomTint ? '' : colors.calendar.border}
           ${theme === 'light' ? 'shadow-lg' : 'shadow-lg hover:shadow-xl'}
           transition-all duration-300
-          ${inEditMode ? 'cursor-move' : 'cursor-pointer'}
+          ${!inEditMode ? 'cursor-pointer' : ''}
         `}
+        style={tintSurface.panelStyle}
       >
         <div className={`absolute inset-0 ${overlayBg}`} />
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${colors.calendar.glow} to-transparent`}
-        />
+        {tintSurface.glowStyle ? (
+          <div className="absolute inset-0" style={tintSurface.glowStyle} />
+        ) : null}
+        {tintSurface.overlayClassName ? (
+          <div className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`} />
+        ) : null}
+        {!hasCustomTint ? (
+          <div
+            className={`absolute inset-0 bg-linear-to-br ${colors.calendar.glow} to-transparent`}
+          />
+        ) : null}
 
         <div className={`relative flex h-full flex-col ${isSmall ? 'p-3' : 'p-4'}`}>
           {canOpenSettings ? (
-            <button
-              type="button"
-              className={`${isSmall ? 'mb-2' : 'mb-3'} block w-full text-left`}
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsSettingsOpen(true);
-              }}
-            >
-              <EntityCardHeader
-                title={selectedCalendarLabel || displayName}
-                subtitle={t('calendar.upcomingAgenda')}
-                layout="eyebrow-first"
+            <div className="absolute bottom-3 right-3 z-10">
+              <EntityCardHeaderIcon
+                IconComponent={Settings2}
+                isActive={true}
                 size={effectiveSize}
                 tone="indigo"
-                titleClassName={isSmall ? 'text-[11px]' : ''}
-                subtitleClassName={isSmall ? 'text-[9px]' : ''}
-                leading={
-                  <EntityCardHeaderIcon
-                    IconComponent={CalendarDays}
-                    isActive={true}
-                    size={effectiveSize}
-                    tone="indigo"
-                  />
-                }
+                baseColor={tintColor}
+                ariaLabel={t('calendar.settings.title')}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsSettingsOpen(true);
+                }}
               />
-            </button>
-          ) : (
-            <EntityCardHeader
-              title={selectedCalendarLabel || displayName}
-              subtitle={t('calendar.upcomingAgenda')}
-              layout="eyebrow-first"
-              size={effectiveSize}
-              tone="indigo"
-              titleClassName={isSmall ? 'text-[11px]' : ''}
-              subtitleClassName={isSmall ? 'text-[9px]' : ''}
-              leading={
-                <EntityCardHeaderIcon
-                  IconComponent={CalendarDays}
-                  isActive={true}
-                  size={effectiveSize}
-                  tone="indigo"
-                />
-              }
-            />
-          )}
+            </div>
+          ) : null}
 
           {!nextEvent ? (
-            <div className={`flex flex-1 items-center justify-center text-sm ${textSecondary}`}>
+            <div
+              className="flex flex-1 items-center justify-center text-sm"
+              style={{ color: textSecondary }}
+            >
               {t('calendar.noUpcomingEvents')}
             </div>
           ) : isSmall ? (
@@ -139,7 +125,7 @@ export const CalendarCard = memo(function CalendarCard({
               textSecondary={textSecondary}
               hoverText={hoverText}
               hoverBg={hoverBg}
-              onEventClick={setSelectedEvent}
+              onEventClick={inEditMode ? undefined : setSelectedEvent}
             />
           ) : isMedium ? (
             <CalendarMediumView
@@ -149,7 +135,7 @@ export const CalendarCard = memo(function CalendarCard({
               hoverText={hoverText}
               hoverBg={hoverBg}
               dividerColor={dividerColor}
-              onEventClick={setSelectedEvent}
+              onEventClick={inEditMode ? undefined : setSelectedEvent}
             />
           ) : (
             <CalendarLargeView
@@ -159,7 +145,7 @@ export const CalendarCard = memo(function CalendarCard({
               hoverText={hoverText}
               hoverBg={hoverBg}
               dividerColor={dividerColor}
-              onEventClick={setSelectedEvent}
+              onEventClick={inEditMode ? undefined : setSelectedEvent}
             />
           )}
         </div>
@@ -182,6 +168,8 @@ export const CalendarCard = memo(function CalendarCard({
           onSelectedCalendarIdsChange={setSelectedCalendarIds}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          tintColor={tintColor}
+          onTintColorChange={setTintColor}
         />
       ) : null}
 

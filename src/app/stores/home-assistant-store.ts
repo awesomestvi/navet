@@ -19,6 +19,7 @@ interface HomeAssistantState {
   connection: Connection | null;
   error: string | null;
   connecting: boolean;
+  reconnecting: boolean;
 }
 
 interface HomeAssistantActions {
@@ -40,6 +41,7 @@ const initialState: HomeAssistantState = {
   connection: null,
   error: null,
   connecting: false,
+  reconnecting: false,
 };
 
 // Debounce window for entity state updates. Multiple HA entity changes arriving
@@ -77,9 +79,12 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
               set({ areas, deviceRegistry: devices, entityRegistry });
             }
           ),
-          homeAssistantService.addListener('connection', ({ connected, connection }) => {
-            set({ connected, connection, connecting: false });
-          }),
+          homeAssistantService.addListener(
+            'connection',
+            ({ connected, connection, reconnecting }) => {
+              set({ connected, connection, connecting: reconnecting, reconnecting });
+            }
+          ),
         ];
         const unsubscribe = () => {
           for (const fn of unsubscribers) fn();
@@ -99,6 +104,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
           entityRegistry: homeAssistantService.getEntityRegistry(),
           connection: homeAssistantService.getConnection(),
           connecting: false,
+          reconnecting: false,
         });
 
         return unsubscribe;
@@ -106,6 +112,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
         set({
           error: error instanceof Error ? error.message : 'Failed to connect',
           connecting: false,
+          reconnecting: false,
           connected: false,
         });
         throw error;

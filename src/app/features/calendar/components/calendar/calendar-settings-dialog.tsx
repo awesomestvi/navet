@@ -1,8 +1,18 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Check } from 'lucide-react';
-import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  CustomDialogDoneButton,
+  customCardDialogShellProps,
+  DialogFooter,
+  DialogShell,
+} from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import {
+  getCustomCardTintSurface,
+  getInheritedDialogSectionStyle,
+  normalizeCustomCardTint,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
@@ -26,6 +36,8 @@ interface CalendarSettingsDialogProps {
   onSelectedCalendarIdsChange: (ids: string[]) => void;
   viewMode: 'week' | 'month';
   onViewModeChange: (viewMode: 'week' | 'month') => void;
+  tintColor?: string;
+  onTintColorChange?: (color: string) => void;
 }
 
 export function CalendarSettingsDialog({
@@ -39,29 +51,57 @@ export function CalendarSettingsDialog({
   onSelectedCalendarIdsChange,
   viewMode,
   onViewModeChange,
+  tintColor,
+  onTintColorChange,
 }: CalendarSettingsDialogProps) {
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const { primaryColor } = useTheme();
+  const { primaryColor, colors } = useTheme();
+  const cardShell = getCardShellSurfaceTokens(theme);
   const isOn = theme !== 'light';
   const accentColor = getThemeColorValue(primaryColor);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const resolvedTintColor = normalizeCustomCardTint(tintColor);
+  const activeAccentColor = resolvedTintColor ?? accentColor;
+  const dialogShell = customCardDialogShellProps(surface, tintSurface, {
+    fallbackDecoration: {
+      glowClassName: `bg-linear-to-br ${colors.calendar.glow} to-transparent`,
+      overlayClassName:
+        theme === 'light' ? 'bg-white/60 backdrop-blur-sm' : 'bg-black/20 backdrop-blur-sm',
+    },
+    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border p-6 shadow-2xl ${cardShell.backdropClassName} bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`,
+  });
+  const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, '#6366f1');
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       overlayClassName={surface.dialogBackdrop}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-6 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowClassName={dialogShell.contentGlowClassName}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <DialogHeader
         title={t('calendar.settings.title')}
         description={t('calendar.settings.description', { title })}
         isOn={isOn}
+        supportingContent={
+          entityId ? (
+            <EntityRoomSelector entityId={entityId} label={t('calendar.settings.room')} compact />
+          ) : null
+        }
       />
-      {entityId ? (
-        <DialogSectionRow label={t('calendar.settings.room')}>
-          <EntityRoomSelector entityId={entityId} label={t('calendar.settings.room')} compact />
-        </DialogSectionRow>
+
+      {onTintColorChange ? (
+        <CustomCardTintPicker
+          value={tintColor}
+          onChange={onTintColorChange}
+          defaultColor="#6366f1"
+          className={surface.textMuted}
+        />
       ) : null}
 
       <div className="mb-4">
@@ -80,16 +120,16 @@ export function CalendarSettingsDialog({
                 className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
                   isSelected
                     ? `${surface.textPrimary}`
-                    : `${surface.border} ${surface.subtleBg} ${surface.textPrimary} ${surface.hoverBg}`
+                    : `${surface.border} ${surface.textPrimary} ${surface.hoverBg}`
                 }`}
                 style={
                   isSelected
                     ? {
                         backgroundColor:
-                          theme === 'light' ? `${accentColor}12` : `${accentColor}1c`,
-                        borderColor: `${accentColor}66`,
+                          theme === 'light' ? `${activeAccentColor}12` : `${activeAccentColor}1c`,
+                        borderColor: `${activeAccentColor}66`,
                       }
-                    : undefined
+                    : sectionStyle
                 }
               >
                 {option === 'week'
@@ -116,14 +156,15 @@ export function CalendarSettingsDialog({
                     : [...selectedCalendarIds, calendar.id]
                 );
               }}
-              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${surface.border} ${surface.subtleBg} ${surface.hoverBg}`}
+              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
               style={
                 isSelected
                   ? {
-                      backgroundColor: theme === 'light' ? `${accentColor}0d` : `${accentColor}16`,
-                      borderColor: `${accentColor}4d`,
+                      backgroundColor:
+                        theme === 'light' ? `${activeAccentColor}0d` : `${activeAccentColor}16`,
+                      borderColor: `${activeAccentColor}4d`,
                     }
-                  : undefined
+                  : sectionStyle
               }
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -143,8 +184,8 @@ export function CalendarSettingsDialog({
                 style={
                   isSelected
                     ? {
-                        backgroundColor: accentColor,
-                        borderColor: accentColor,
+                        backgroundColor: activeAccentColor,
+                        borderColor: activeAccentColor,
                       }
                     : {
                         borderColor:
@@ -162,16 +203,12 @@ export function CalendarSettingsDialog({
         })}
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Dialog.Close asChild>
-          <button
-            type="button"
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${surface.textPrimary} ${surface.subtleBg} ${surface.hoverBg}`}
-          >
-            {t('common.done')}
-          </button>
-        </Dialog.Close>
-      </div>
+      <DialogFooter>
+        <CustomDialogDoneButton
+          label={t('common.done')}
+          style={{ backgroundColor: activeAccentColor }}
+        />
+      </DialogFooter>
     </DialogShell>
   );
 }

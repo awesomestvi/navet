@@ -6,6 +6,7 @@ import type { CalendarEvent } from './types';
 type PersistedCalendarSources = Record<string, string[]>;
 type CalendarViewMode = 'week' | 'month';
 type PersistedCalendarViewModes = Record<string, CalendarViewMode>;
+type PersistedCalendarTintColors = Record<string, string>;
 
 const SOURCE_COLOR_CLASSES = [
   'bg-blue-500',
@@ -26,6 +27,8 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
     STORAGE_KEYS.calendarCardViewModes,
     {}
   );
+  const [calendarTintColors, setCalendarTintColors] =
+    usePersistedState<PersistedCalendarTintColors>(STORAGE_KEYS.calendarCardTintColors, {});
 
   const availableCalendars = useMemo(
     () =>
@@ -55,6 +58,13 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
 
     return calendarViewModes[cardId] ?? 'week';
   }, [calendarViewModes, cardId]);
+  const tintColor = useMemo(() => {
+    if (!cardId) {
+      return undefined;
+    }
+
+    return calendarTintColors[cardId];
+  }, [calendarTintColors, cardId]);
 
   const selectedEvents = useMemo(() => {
     if (!cardId) {
@@ -138,13 +148,33 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
     }));
   };
 
+  const setTintColor = (nextTintColor?: string) => {
+    if (!cardId) {
+      return;
+    }
+
+    setCalendarTintColors((current) => {
+      if (!nextTintColor) {
+        const { [cardId]: _removedTintColor, ...rest } = current;
+        return rest;
+      }
+
+      return {
+        ...current,
+        [cardId]: nextTintColor,
+      };
+    });
+  };
+
   return {
     availableCalendars,
     selectedCalendarIds,
     selectedCalendarLabel,
     selectedEvents,
     setSelectedCalendarIds,
+    setTintColor,
     setViewMode,
+    tintColor,
     viewMode,
   };
 }

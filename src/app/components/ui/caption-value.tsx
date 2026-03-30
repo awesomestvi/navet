@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from 'react';
+import { type CSSProperties, memo, type ReactNode } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 
@@ -8,6 +8,8 @@ interface CaptionValueProps {
   align?: 'left' | 'right';
   captionClassName?: string;
   valueClassName?: string;
+  captionStyle?: CSSProperties;
+  valueStyle?: CSSProperties;
 }
 
 /**
@@ -21,6 +23,8 @@ export const CaptionValue = memo(function CaptionValue({
   align = 'left',
   captionClassName = '',
   valueClassName = '',
+  captionStyle,
+  valueStyle,
 }: CaptionValueProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -30,8 +34,15 @@ export const CaptionValue = memo(function CaptionValue({
 
   return (
     <div className={`flex items-center gap-3 ${justifyClass}`}>
-      <span className={`text-xs ${defaultCaptionColor} ${captionClassName}`}>{caption}</span>
-      <span className={`text-xs ${defaultValueColor} font-medium ${valueClassName}`}>{value}</span>
+      <span className={`text-xs ${defaultCaptionColor} ${captionClassName}`} style={captionStyle}>
+        {caption}
+      </span>
+      <span
+        className={`text-xs ${defaultValueColor} font-medium ${valueClassName}`}
+        style={valueStyle}
+      >
+        {value}
+      </span>
     </div>
   );
 });

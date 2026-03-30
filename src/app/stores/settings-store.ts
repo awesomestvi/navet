@@ -6,6 +6,7 @@ import { storage } from '@/app/utils/storage';
 
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
+export type WeatherForecastMode = 'weekly' | 'hourly';
 export const PAGE_ZOOM_OPTIONS = [50, 67, 75, 80, 90, 100] as const;
 export type PageZoom = (typeof PAGE_ZOOM_OPTIONS)[number];
 
@@ -53,6 +54,7 @@ export interface UserSettings {
   pageZoom: PageZoom;
   entityInteractionMode: EntityInteractionMode;
   ambientLightBleed: boolean;
+  weatherForecastMode: WeatherForecastMode;
 }
 
 interface SettingsState extends UserSettings {
@@ -77,6 +79,7 @@ export const defaultSettings: UserSettings = {
   pageZoom: 100,
   entityInteractionMode: 'toggle-first',
   ambientLightBleed: true,
+  weatherForecastMode: 'weekly',
 };
 
 /**

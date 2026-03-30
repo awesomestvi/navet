@@ -51,24 +51,6 @@ export function BatteryOverviewWidget({ size = 'large' }: BatteryOverviewWidgetP
 
   return (
     <div className={`${surface.panelClassName} flex h-full flex-col`}>
-      {/* Header */}
-      <div className="mb-3 flex items-center gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-          style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
-        >
-          <Battery className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>
-            {t('widgets.battery.title')}
-          </h3>
-          <p className={`text-[10px] ${surface.textMuted}`}>
-            {batteries.length} {t('widgets.common.widget').toLowerCase()}
-          </p>
-        </div>
-      </div>
-
       {batteries.length === 0 ? (
         <div className={`flex flex-1 items-center justify-center text-sm ${surface.textMuted}`}>
           {t('widgets.battery.noBatteries')}

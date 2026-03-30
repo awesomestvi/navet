@@ -58,6 +58,7 @@ export function getEntityIconPillStyles({
   isInteractive,
   primaryColor,
   accentColor,
+  baseColor,
   size,
   theme,
   tone,
@@ -66,6 +67,7 @@ export function getEntityIconPillStyles({
   isInteractive: boolean;
   primaryColor: PrimaryColor;
   accentColor?: string | null;
+  baseColor?: string | null;
   size: CardSize;
   theme: ThemeType;
   tone?: CardTextTone;
@@ -78,11 +80,16 @@ export function getEntityIconPillStyles({
         ? 'primary'
         : resolvePrimaryColorToken(primaryColor)
       : 'neutral');
-  const baseColor = resolveCardToneBaseColor({ tone: resolvedTone, accentColor });
+  const resolvedBaseColor = resolveCardToneBaseColor({
+    tone: resolvedTone,
+    accentColor,
+    baseColor,
+  });
   const textTokens = getCardReadableTextTokens({
     theme,
     tone: resolvedTone,
     accentColor,
+    baseColor: resolvedBaseColor,
     backgroundColor:
       theme === 'light'
         ? '#ffffff'
@@ -118,28 +125,28 @@ export function getEntityIconPillStyles({
     ? {
         backgroundColor:
           theme === 'light'
-            ? `${baseColor}1f`
+            ? `${resolvedBaseColor}1f`
             : theme === 'glass'
-              ? `${baseColor}24`
+              ? `${resolvedBaseColor}24`
               : theme === 'contrast'
-                ? `${baseColor}26`
-                : `${baseColor}2e`,
+                ? `${resolvedBaseColor}26`
+                : `${resolvedBaseColor}2e`,
         borderColor:
           theme === 'light'
-            ? `${baseColor}4f`
+            ? `${resolvedBaseColor}4f`
             : theme === 'glass'
-              ? `${baseColor}54`
+              ? `${resolvedBaseColor}54`
               : theme === 'contrast'
-                ? `${baseColor}66`
-                : `${baseColor}66`,
+                ? `${resolvedBaseColor}66`
+                : `${resolvedBaseColor}66`,
         boxShadow:
           theme === 'light'
-            ? `0 0 0 2px ${baseColor}18, 0 10px 28px ${baseColor}2e`
+            ? `0 0 0 2px ${resolvedBaseColor}18, 0 10px 28px ${resolvedBaseColor}2e`
             : theme === 'glass'
-              ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${baseColor}52`
+              ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${resolvedBaseColor}52`
               : theme === 'contrast'
                 ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
-                : `0 0 0 1px ${baseColor}18, 0 12px 30px ${baseColor}22`,
+                : `0 0 0 1px ${resolvedBaseColor}18, 0 12px 30px ${resolvedBaseColor}22`,
       }
     : undefined;
 

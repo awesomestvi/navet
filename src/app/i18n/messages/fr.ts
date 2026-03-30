@@ -208,6 +208,7 @@ export const frMessages = {
     'Connexion réinitialisée. Veuillez vous reconnecter à votre système.',
   'settings.feedback.wallpaperReadFailed': 'Impossible de lire le fichier image',
   'settings.feedback.configExported': 'Configuration du tableau exportée',
+  'settings.feedback.configExportFailed': 'Échec de l’export de la configuration du tableau',
   'settings.feedback.configImported': 'Configuration du tableau importée. Rechargement...',
   'settings.feedback.configImportFailed': 'Échec de l’import de la configuration du tableau',
   'dashboard.addEntity.title': 'Ajouter une entité',
@@ -516,6 +517,11 @@ export const frMessages = {
     'Surfaces noires profondes avec un contraste idéal pour l’OLED.',
   'weather.subtitle': 'Météo',
   'weather.settings.title': 'Réglages de {name}',
+  'weather.settings.forecast': 'Prévisions',
+  'weather.settings.hourly': 'Par heure',
+  'weather.settings.weekly': 'Hebdomadaire',
+  'weather.settings.locationManaged':
+    "La position provient actuellement de l'entité météo Home Assistant connectée.",
   'weather.precipitation': 'Précipitations',
   'weather.humidity': 'Humidite',
   'weather.wind': 'Vent',
@@ -675,6 +681,9 @@ export const frMessages = {
   'network.disconnectedTitle': 'Home Assistant déconnecté',
   'network.disconnectedDescription':
     'Navet ne peut pas joindre Home Assistant pour le moment. L’interface mise en cache reste disponible pendant la reconnexion.',
+  'network.reconnectingTitle': 'Reconnexion à Home Assistant',
+  'network.reconnectingDescription':
+    'Navet a perdu la connexion en direct à Home Assistant et tente de se reconnecter maintenant.',
   'pwa.updateAvailableTitle': 'Mise à jour Navet disponible',
   'pwa.updateAvailableDescription': 'Une nouvelle version a été installée en arrière-plan.',
   'pwa.reload': 'Recharger',
@@ -834,6 +843,8 @@ export const frMessages = {
   'widgets.common.widget': 'Widget',
   'widgets.delete': 'Supprimer le widget',
   'widgets.deleteConfirm': 'Supprimer ce widget ?',
+  'widgets.customCard.color': 'Couleur de la carte',
+  'widgets.customCard.colorPicker': 'Choisir une couleur de carte personnalisée',
   'widgets.photoFrame.title': 'Cadre photo',
   'widgets.photoFrame.photo.goldenHour.title': 'Golden Hour',
   'widgets.photoFrame.photo.goldenHour.subtitle': 'Palette ambiante chaleureuse',

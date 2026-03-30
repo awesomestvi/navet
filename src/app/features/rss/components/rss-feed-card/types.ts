@@ -27,4 +27,6 @@ export interface RSSFeedCardProps {
   onSizeChange?: (size: CardSize) => void;
   room?: string;
   onRoomChange?: (room: string) => void;
+  tintColor?: string;
+  onTintColorChange?: (color: string) => void;
 }

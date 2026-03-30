@@ -246,6 +246,162 @@ export function moveSectionBelow(items: SectionLayoutItem[], sourceId: string, t
   return insertSectionBelow(withoutSource, targetId, source.id, source.title);
 }
 
+type SectionStack = {
+  lead: SectionLayoutItem;
+  items: SectionLayoutItem[];
+};
+
+function buildSectionStacks(items: SectionLayoutItem[]): SectionStack[] {
+  const rows = groupRows(items);
+  const sortedYs = [...rows.keys()].sort((a, b) => a - b);
+  const consumedIds = new Set<string>();
+  const stacks: SectionStack[] = [];
+
+  for (const y of sortedYs) {
+    const rowItems = rows.get(y) ?? [];
+
+    for (const item of rowItems) {
+      if (consumedIds.has(item.id)) {
+        continue;
+      }
+
+      const stack = [item];
+      consumedIds.add(item.id);
+
+      let nextY = y + 1;
+      while (true) {
+        const nextRowItems = rows.get(nextY) ?? [];
+        const nextItem = nextRowItems.find(
+          (candidate) =>
+            !consumedIds.has(candidate.id) && candidate.x === item.x && candidate.w === item.w
+        );
+
+        if (!nextItem) {
+          break;
+        }
+
+        stack.push(nextItem);
+        consumedIds.add(nextItem.id);
+        nextY += 1;
+      }
+
+      stacks.push({ lead: item, items: stack });
+    }
+  }
+
+  return stacks;
+}
+
+export function moveSectionStack<T extends SectionLayoutItem>(
+  items: T[],
+  sourceId: string,
+  targetId: string
+) {
+  if (sourceId === targetId) {
+    return items;
+  }
+
+  const stacks = buildSectionStacks(items);
+  const sourceStack = stacks.find((stack) => stack.lead.id === sourceId);
+  const targetStack = stacks.find((stack) => stack.lead.id === targetId);
+
+  if (!sourceStack || !targetStack || sourceStack.lead.y !== targetStack.lead.y) {
+    return items;
+  }
+
+  const rowStacks = stacks
+    .filter((stack) => stack.lead.y === sourceStack.lead.y)
+    .sort((left, right) => left.lead.x - right.lead.x);
+  const sourceIndex = rowStacks.findIndex((stack) => stack.lead.id === sourceId);
+  const targetIndex = rowStacks.findIndex((stack) => stack.lead.id === targetId);
+
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+    return items;
+  }
+
+  const reorderedStacks = [...rowStacks];
+  const [movedStack] = reorderedStacks.splice(sourceIndex, 1);
+  if (!movedStack) {
+    return items;
+  }
+
+  reorderedStacks.splice(targetIndex, 0, movedStack);
+
+  const repositionedRow = layoutRow(
+    reorderedStacks.map((stack) => ({
+      ...stack.lead,
+      w: stack.lead.w,
+      h: stack.lead.h,
+    })),
+    sourceStack.lead.y
+  );
+  const nextLeadById = new Map(repositionedRow.map((item) => [item.id, item]));
+  const movedStackIds = new Set(
+    reorderedStacks.flatMap((stack) => stack.items.map((item) => item.id))
+  );
+
+  return sortSectionLayout(
+    items.map((item) => {
+      if (!movedStackIds.has(item.id)) {
+        return item;
+      }
+
+      const parentStack = reorderedStacks.find((stack) =>
+        stack.items.some((entry) => entry.id === item.id)
+      );
+      const nextLead = parentStack ? nextLeadById.get(parentStack.lead.id) : undefined;
+
+      if (!parentStack || !nextLead) {
+        return item;
+      }
+
+      return {
+        ...item,
+        x: nextLead.x,
+        w: nextLead.w,
+      };
+    })
+  ) as T[];
+}
+
+export function moveSectionToPosition<T extends SectionLayoutItem>(
+  items: T[],
+  sourceId: string,
+  targetId: string
+) {
+  if (sourceId === targetId) {
+    return items;
+  }
+
+  const source = items.find((item) => item.id === sourceId);
+  if (!source) {
+    return items;
+  }
+
+  const withoutSource = removeSectionFromLayout(items, sourceId) as T[];
+  const target = withoutSource.find((item) => item.id === targetId);
+
+  if (!target) {
+    return items;
+  }
+
+  const shiftedTargetColumn = withoutSource.map((item) =>
+    item.x === target.x && item.w === target.w && item.y >= target.y
+      ? { ...item, y: item.y + 1 }
+      : item
+  );
+
+  return sortSectionLayout([
+    ...shiftedTargetColumn,
+    {
+      ...source,
+      x: target.x,
+      y: target.y,
+      w: target.w,
+    },
+  ]) as T[];
+}
+
 export function removeSectionFromLayout(items: SectionLayoutItem[], sectionId: string) {
   const target = items.find((item) => item.id === sectionId);
   if (!target) {

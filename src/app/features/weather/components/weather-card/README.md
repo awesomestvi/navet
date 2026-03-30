@@ -15,22 +15,22 @@ weather-card/
 
 ## Card Sizes
 
-### Extra-Small / Small
+### Small
 
-- Uses the compact layout path
-- Shows location, icon, current temperature, condition, and high/low summary
-- Hides timestamp, detail metrics, and forecast rows
+- Matches the medium card styling exactly
+- Shows compact location header, temperature + H/L summary, condition icon, and a 4-day forecast strip
+- Hides the detail metrics column and sunrise/sunset timeline
 
 ### Medium
 
-- Shows current temperature plus detail metrics
-- Shows date/time and sun information
-- Hides the multi-day forecast
+- Shows compact location header, temperature + H/L summary, condition icon, and a 7-day forecast strip
+- Hides the detail metrics column and sunrise/sunset timeline
+- Forecast strip can switch between hourly and weekly from the settings dialog
 
 ### Large
 
-- Shows the full medium layout
-- Adds the forecast row
+- Shows the legacy detailed weather layout
+- Includes detail metrics, sunrise/sunset timeline, and forecast row
 
 ## Props
 
@@ -60,8 +60,9 @@ interface WeatherCardProps {
 
 - Uses the shared `CardWrapper`
 - Uses the same edit-mode size selector pattern as other dashboard cards
-- Treats `extra-small` as part of the compact rendering path
-- Keeps the weather icon in the header trailing slot for this feature’s layout
+- Opens a settings dialog on card tap outside edit mode
+- Keeps `large` / `extra-large` on the detailed layout path
+- Uses the same compact header + forecast strip layout for both `small` and `medium`
 
 ## Maintenance Notes
 

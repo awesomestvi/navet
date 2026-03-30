@@ -208,6 +208,7 @@ export const deMessages = {
     'Verbindung zurückgesetzt. Bitte verbinde dich erneut mit deinem System.',
   'settings.feedback.wallpaperReadFailed': 'Bilddatei konnte nicht gelesen werden',
   'settings.feedback.configExported': 'Dashboard-Konfiguration exportiert',
+  'settings.feedback.configExportFailed': 'Dashboard-Konfiguration konnte nicht exportiert werden',
   'settings.feedback.configImported': 'Dashboard-Konfiguration importiert. Neu laden...',
   'settings.feedback.configImportFailed': 'Dashboard-Konfiguration konnte nicht importiert werden',
   'dashboard.addEntity.title': 'Gerät hinzufügen',
@@ -513,6 +514,11 @@ export const deMessages = {
   'themeOption.contrast.description': 'Tiefschwarze Flächen mit OLED-freundlichem Kontrast.',
   'weather.subtitle': 'Wetter',
   'weather.settings.title': '{name}-Einstellungen',
+  'weather.settings.forecast': 'Vorhersage',
+  'weather.settings.hourly': 'Stündlich',
+  'weather.settings.weekly': 'Wöchentlich',
+  'weather.settings.locationManaged':
+    'Der Ort stammt derzeit von der verbundenen Home-Assistant-Wetterentität.',
   'weather.precipitation': 'Niederschlag',
   'weather.humidity': 'Luftfeuchtigkeit',
   'weather.wind': 'Wind',
@@ -672,6 +678,9 @@ export const deMessages = {
   'network.disconnectedTitle': 'Home Assistant getrennt',
   'network.disconnectedDescription':
     'Navet kann Home Assistant im Moment nicht erreichen. Die zwischengespeicherte Oberfläche bleibt verfügbar, während die Verbindung wiederhergestellt wird.',
+  'network.reconnectingTitle': 'Verbindung zu Home Assistant wird wiederhergestellt',
+  'network.reconnectingDescription':
+    'Navet hat die Live-Verbindung zu Home Assistant verloren und versucht jetzt, sich erneut zu verbinden.',
   'pwa.updateAvailableTitle': 'Navet-Update verfügbar',
   'pwa.updateAvailableDescription': 'Eine neue Version wurde im Hintergrund installiert.',
   'pwa.reload': 'Neu laden',
@@ -832,6 +841,8 @@ export const deMessages = {
   'widgets.common.widget': 'Widget',
   'widgets.delete': 'Widget löschen',
   'widgets.deleteConfirm': 'Dieses Widget löschen?',
+  'widgets.customCard.color': 'Kartenfarbe',
+  'widgets.customCard.colorPicker': 'Benutzerdefinierte Kartenfarbe wählen',
   'widgets.photoFrame.title': 'Fotorahmen',
   'widgets.photoFrame.photo.goldenHour.title': 'Golden Hour',
   'widgets.photoFrame.photo.goldenHour.subtitle': 'Wärme Ambient-Palette',

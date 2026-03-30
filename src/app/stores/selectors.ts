@@ -104,6 +104,7 @@ export const settingsSelectors = {
   pageZoomScale: (state: SettingsState) => state.pageZoom / 100,
   entityInteractionMode: (state: SettingsState) => state.entityInteractionMode,
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
+  weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
 
   // Actions
   updateSettings: (state: SettingsState) => state.updateSettings,
@@ -121,6 +122,7 @@ export const settingsSelectors = {
     pageZoom: state.pageZoom,
     entityInteractionMode: state.entityInteractionMode,
     ambientLightBleed: state.ambientLightBleed,
+    weatherForecastMode: state.weatherForecastMode,
   }),
   notificationSettings: (state: SettingsState) => ({
     showNotifications: state.showNotifications,
@@ -134,6 +136,7 @@ export const settingsSelectors = {
 export const homeAssistantSelectors = {
   connected: (state: HomeAssistantStore) => state.connected,
   connecting: (state: HomeAssistantStore) => state.connecting,
+  reconnecting: (state: HomeAssistantStore) => state.reconnecting,
   config: (state: HomeAssistantStore) => state.config,
   entities: (state: HomeAssistantStore) => state.entities,
   // Per-entity selector — only re-renders when that specific entity's reference changes.

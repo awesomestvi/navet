@@ -8,6 +8,7 @@ import { getThemeColorValue } from './theme/theme-colors';
 import { getThemeSurfaceTokens } from './theme/theme-surface-tokens';
 
 export type { CardSize } from './card-size';
+export { CARD_GRID_ROW_CLASS } from './card-size';
 
 interface CardSizeSelectorProps {
   currentSize: CardSize;
@@ -104,6 +105,11 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const accentColor = getThemeColorValue(primaryColor);
 
+  const inactiveButtonBorderColor =
+    theme === 'light' ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)';
+  const activeAccentBgAlpha = theme === 'light' ? '18' : '22';
+  const arrowFillClass = theme === 'light' ? 'fill-white' : 'fill-[#1c1c1e]';
+
   const sourceSizes = options ?? sizes;
   const availableSizes = allowedSizes
     ? sourceSizes.filter((size) => allowedSizes.includes(size.value))
@@ -163,15 +169,9 @@ export const CardSizeSelector = memo(function CardSizeSelector({
                     }}
                     className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-all duration-200"
                     style={{
-                      borderColor: isActive
-                        ? `${accentColor}30`
-                        : theme === 'light'
-                          ? 'rgba(15,23,42,0.05)'
-                          : 'rgba(255,255,255,0.06)',
+                      borderColor: isActive ? `${accentColor}30` : inactiveButtonBorderColor,
                       backgroundColor: isActive
-                        ? theme === 'light'
-                          ? `${accentColor}18`
-                          : `${accentColor}22`
+                        ? `${accentColor}${activeAccentBgAlpha}`
                         : 'transparent',
                       boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}28` : 'none',
                     }}
@@ -198,26 +198,18 @@ export const CardSizeSelector = memo(function CardSizeSelector({
               </div>
             ) : null}
           </div>
-          <Popover.Arrow className={theme === 'light' ? 'fill-white' : 'fill-[#1c1c1e]'} />
+          <Popover.Arrow className={arrowFillClass} />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
   );
 });
 
-const GLYPH_UNIT = 18;
-
-function SizePreviewGlyph({
-  size,
-  active,
-  accentColor,
-  theme,
-}: {
-  size: { value: CardSize; cols: number; rows: number };
-  active: boolean;
-  accentColor: string;
-  theme: 'glass' | 'dark' | 'light' | 'contrast';
-}) {
+function getSizeGlyphTokens(
+  theme: 'glass' | 'dark' | 'light' | 'contrast',
+  active: boolean,
+  accentColor: string
+) {
   const strokeColor = active
     ? theme === 'light'
       ? '#ffffff'
@@ -230,16 +222,59 @@ function SizePreviewGlyph({
     : theme === 'light'
       ? 'rgba(17,24,39,0.08)'
       : 'rgba(255,255,255,0.08)';
+  return { strokeColor, fillColor };
+}
 
-  const w = size.cols * GLYPH_UNIT;
-  const h = size.rows * GLYPH_UNIT;
+const GLYPH_UNIT = 18;
+
+function getPreviewGlyphRadius(size: CardSize) {
+  switch (size) {
+    case 'tiny':
+      return 'rounded-[3px]';
+    case 'extra-small':
+      return 'rounded-[4px]';
+    case 'small':
+    case 'medium':
+      return 'rounded-[5px]';
+    default:
+      return 'rounded-[8px]';
+  }
+}
+
+function getPreviewGlyphUnit(size: CardSize) {
+  switch (size) {
+    case 'tiny':
+    case 'extra-small':
+    case 'small':
+    case 'medium':
+      return 20;
+    default:
+      return GLYPH_UNIT;
+  }
+}
+
+function SizePreviewGlyph({
+  size,
+  active,
+  accentColor,
+  theme,
+}: {
+  size: { value: CardSize; cols: number; rows: number };
+  active: boolean;
+  accentColor: string;
+  theme: 'glass' | 'dark' | 'light' | 'contrast';
+}) {
+  const { strokeColor, fillColor } = getSizeGlyphTokens(theme, active, accentColor);
+  const glyphUnit = getPreviewGlyphUnit(size.value);
+  const w = size.cols * glyphUnit;
+  const h = size.rows * glyphUnit;
   const chipSize =
     size.value === 'extra-large' ? 5 : size.value === 'large' || size.value === 'medium' ? 5 : 4;
 
   if (size.value === 'extra-small') {
     return (
       <div
-        className="relative rounded-[8px] border"
+        className={`relative border ${getPreviewGlyphRadius(size.value)}`}
         style={{ width: w, height: h, borderColor: strokeColor }}
       >
         <div
@@ -255,7 +290,7 @@ function SizePreviewGlyph({
 
   return (
     <div
-      className="relative rounded-[8px] border"
+      className={`relative border ${getPreviewGlyphRadius(size.value)}`}
       style={{
         width: w,
         height: h,

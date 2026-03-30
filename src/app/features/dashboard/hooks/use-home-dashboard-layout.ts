@@ -12,7 +12,8 @@ import {
   insertSectionBelow,
   insertSectionRow,
   layoutRow,
-  moveSectionBelow,
+  moveSectionStack,
+  moveSectionToPosition,
   removeSectionFromLayout,
   replaceRow,
   SECTION_LAYOUT_COLUMNS,
@@ -674,7 +675,21 @@ export function useHomeDashboardLayout(
     (sourceId: string, targetId: string) => {
       persistLayout((previous) => ({
         ...previous,
-        sections: moveSectionBelow(
+        sections: moveSectionToPosition(
+          previous.sections.map(toSectionLayoutItem),
+          sourceId,
+          targetId
+        ).map(toHomeSection),
+      }));
+    },
+    [persistLayout]
+  );
+
+  const moveColumn = useCallback(
+    (sourceId: string, targetId: string) => {
+      persistLayout((previous) => ({
+        ...previous,
+        sections: moveSectionStack(
           previous.sections.map(toSectionLayoutItem),
           sourceId,
           targetId
@@ -693,6 +708,7 @@ export function useHomeDashboardLayout(
     addColumnSection,
     addSectionBelow,
     moveSection,
+    moveColumn,
     renameSection,
     removeSection,
     resizeSection,

@@ -1,5 +1,6 @@
 import { type CSSProperties, memo, startTransition, useEffect, useRef, useState } from 'react';
 import {
+  CARD_GRID_ROW_CLASS,
   type CardSize,
   getDashboardGridColumnCount,
 } from '@/app/components/shared/card-size-selector';
@@ -94,7 +95,7 @@ export const RoomSection = memo(function RoomSection({
   const visibleOrderedIds = orderedIds.slice(0, visibleCount);
   const gridContent = (
     <div
-      className="grid w-full grid-flow-row-dense gap-2 auto-rows-[87px] md:gap-3 lg:gap-4"
+      className={`grid w-full grid-flow-row-dense gap-2 ${CARD_GRID_ROW_CLASS} md:gap-3 lg:gap-4`}
       style={
         {
           gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,

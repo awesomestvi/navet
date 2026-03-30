@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Gauge, Plus, Search, Trash2 } from 'lucide-react';
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
-import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
@@ -90,14 +90,14 @@ export function SensorGroupSettingsView({
               title={t('sensors.groupSettings.title', { name: groupName })}
               description={t('sensors.groupSettings.description')}
               isOn={theme !== 'light'}
+              supportingContent={
+                <EntityRoomSelector
+                  entityId={entityId}
+                  label={t('sensors.groupSettings.room')}
+                  compact
+                />
+              }
             />
-            <DialogSectionRow label={t('sensors.groupSettings.room')}>
-              <EntityRoomSelector
-                entityId={entityId}
-                label={t('sensors.groupSettings.room')}
-                compact
-              />
-            </DialogSectionRow>
 
             <div className="space-y-4">
               {/* Selected Sensors Section */}

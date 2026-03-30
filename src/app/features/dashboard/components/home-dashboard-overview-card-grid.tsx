@@ -1,14 +1,17 @@
 import { useDroppable } from '@dnd-kit/core';
-import { rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useEffect, useRef, useState } from 'react';
-import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
-import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
+import {
+  CARD_GRID_ROW_CLASS,
+  type CardSize,
+  getCardSpanClass,
+} from '@/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceWithType } from '@/app/types/device.types';
-import type { DragMeta, DropMeta } from '../hooks/use-home-dashboard-editor';
+import type { DropMeta } from '../hooks/use-home-dashboard-editor';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
 import {
@@ -18,10 +21,12 @@ import {
   getCardGridTargetWidth,
   isCustomCard,
 } from './home-dashboard-overview.shared';
+import { HomeCardSlot } from './home-dashboard-overview-card-slot';
 
 export function FlowCanvas({
   cardIds,
   gridCols,
+  activeDragCard,
   allCards,
   cardSizes,
   updateCardSize,
@@ -34,6 +39,7 @@ export function FlowCanvas({
 }: {
   cardIds: string[];
   gridCols: number;
+  activeDragCard?: string | null;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
@@ -56,6 +62,7 @@ export function FlowCanvas({
           <CardGrid
             cardIds={cardIds}
             gridCols={gridCols}
+            activeDragCard={activeDragCard}
             allCards={allCards}
             cardSizes={cardSizes}
             updateCardSize={updateCardSize}
@@ -123,6 +130,7 @@ export const CardGrid = memo(function CardGrid({
   cardIds,
   sectionId,
   gridCols,
+  activeDragCard,
   allCards,
   cardSizes,
   updateCardSize,
@@ -211,7 +219,7 @@ export const CardGrid = memo(function CardGrid({
         }
       >
         <div
-          className={`grid w-full auto-rows-[87px] gap-2 md:gap-3 lg:gap-4 ${
+          className={`grid w-full ${CARD_GRID_ROW_CLASS} gap-3.5 md:gap-3 lg:gap-4 ${
             hasInlineAddCardSlot ? 'grid-flow-row' : 'grid-flow-row-dense'
           }`}
           style={
@@ -238,6 +246,7 @@ export const CardGrid = memo(function CardGrid({
                 sortable={sortable}
                 cardId={cardId}
                 sectionId={sectionId}
+                isPreviewHidden={activeDragCard === cardId}
                 className={spanClass}
                 content={
                   !isCustomCard(entry) ? (
@@ -294,7 +303,7 @@ export const CardGrid = memo(function CardGrid({
   );
 }, areCardGridPropsEqual);
 
-function HomeContainerDropZone({
+export function HomeContainerDropZone({
   children,
   sectionId,
   cardIds,
@@ -318,64 +327,11 @@ function HomeContainerDropZone({
   );
 }
 
-function SortableHomeCard({
-  cardId,
-  sectionId,
-  className,
-  children,
-}: {
-  cardId: string;
-  sectionId?: string;
-  className: string;
-  children: ReactNode;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `home-card-${cardId}`,
-    data: { source: 'home', cardId, sectionId, type: 'card' } as DragMeta & DropMeta,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      style={getDndTransformStyle(transform, transition)}
-      className={`${className} relative h-full cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40' : ''}`}
-      data-card-id={cardId}
-    >
-      {children}
-    </div>
-  );
-}
-
-function HomeCardSlot({
-  sortable,
-  cardId,
-  sectionId,
-  className,
-  content,
-}: {
-  sortable: boolean;
-  cardId: string;
-  sectionId?: string;
-  className: string;
-  content: ReactNode;
-}) {
-  if (!sortable) {
-    return content;
-  }
-
-  return (
-    <SortableHomeCard cardId={cardId} sectionId={sectionId} className={className}>
-      {content}
-    </SortableHomeCard>
-  );
-}
-
 function areCardGridPropsEqual(previous: CardGridProps, next: CardGridProps) {
   return (
     previous.sectionId === next.sectionId &&
     previous.gridCols === next.gridCols &&
+    previous.activeDragCard === next.activeDragCard &&
     previous.updateCardSize === next.updateCardSize &&
     previous.isEditMode === next.isEditMode &&
     previous.onUpdateCard === next.onUpdateCard &&

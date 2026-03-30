@@ -12,6 +12,7 @@ interface EntityCardHeaderIconProps {
   isActive: boolean;
   size: CardSize;
   tone?: CardTextTone;
+  baseColor?: string | null;
   ariaLabel?: string;
   onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
@@ -23,6 +24,7 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   isActive,
   size,
   tone,
+  baseColor,
   ariaLabel,
   onClick,
   onPointerDown,
@@ -34,6 +36,7 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     isInteractive,
     primaryColor,
     accentColor,
+    baseColor,
     size,
     theme,
     tone,

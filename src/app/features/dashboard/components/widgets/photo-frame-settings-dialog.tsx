@@ -1,7 +1,8 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { DialogHeader } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import { customCardDialogShellProps, DialogShell } from '@/app/components/shared/dialog-shell';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
@@ -10,6 +11,8 @@ interface PhotoFrameSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   photoUrls: string[];
   onUpdateUrls: (urls: string[]) => void;
+  tintColor?: string;
+  onTintColorChange?: (color: string) => void;
 }
 
 export function PhotoFrameSettingsDialog({
@@ -17,10 +20,20 @@ export function PhotoFrameSettingsDialog({
   onOpenChange,
   photoUrls,
   onUpdateUrls,
+  tintColor,
+  onTintColorChange,
 }: PhotoFrameSettingsDialogProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const surface = getDashboardWidgetSurfaceTokens(theme);
+  const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const dialogShell = customCardDialogShellProps(
+    { panel: surface.panelClassName, border: surface.borderClassName },
+    tintSurface,
+    {
+      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`,
+    }
+  );
   const [inputValue, setInputValue] = useState('');
 
   const handleAdd = () => {
@@ -42,10 +55,22 @@ export function PhotoFrameSettingsDialog({
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName="bg-black/60 backdrop-blur-sm"
-      contentClassName={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
+      overlayClassName={surface.dialogBackdrop}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <DialogHeader title={t('widgets.photoFrame.settings.title')} isOn={theme !== 'light'} />
+
+      {onTintColorChange ? (
+        <CustomCardTintPicker
+          value={tintColor}
+          onChange={onTintColorChange}
+          defaultColor="#f97316"
+          className={surface.textMuted}
+        />
+      ) : null}
 
       <div className="mb-3 flex gap-2">
         <input

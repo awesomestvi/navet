@@ -1,13 +1,10 @@
 import { Flame, Power, Snowflake, Wind } from 'lucide-react';
 import { memo } from 'react';
-import {
-  CustomScrollbar,
-  DialogHeader,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
+import { CustomScrollbar, DialogHeader } from '@/app/components/shared/device-editor';
 import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
-import { useI18n } from '@/app/hooks';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { useI18n, useTheme } from '@/app/hooks';
 import { getHVACSettingsDialogStyles } from './styles';
 import type { HVACSettingsDialogProps } from './types';
 
@@ -25,13 +22,15 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   onTogglePower,
 }: HVACSettingsDialogProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
   const styles = getHVACSettingsDialogStyles(mode, isOn);
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName="bg-black/80 backdrop-blur-sm animate-in fade-in"
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
     >
       <CustomScrollbar isOn={isOn}>
@@ -40,10 +39,10 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
             title={t('climate.settings.title')}
             description={`${name} - ${room}`}
             isOn={isOn}
+            supportingContent={
+              <EntityRoomSelector entityId={entityId} label={t('climate.settings.room')} compact />
+            }
           />
-          <DialogSectionRow label={t('climate.settings.room')}>
-            <EntityRoomSelector entityId={entityId} label={t('climate.settings.room')} compact />
-          </DialogSectionRow>
 
           <div className="space-y-8">
             {/* Temperature Display */}

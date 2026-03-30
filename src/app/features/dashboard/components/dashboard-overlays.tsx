@@ -28,6 +28,7 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     handleChooseBlankDashboard,
     handleOnboardingImportDashboardConfig,
     hiddenEntityIds,
+    homeLayout,
     isEditMode,
     isOnboardingClosing,
     onboardingCompleted,
@@ -40,10 +41,11 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
   } = controller;
 
   const normalCards = useMemo<DashboardLibraryCard[]>(() => {
-    const visibleCardIds = new Set(orderedCardIds);
+    const isHomeCanvasTarget = activeSection === 'home' && activeRoom === 'All' && isEditMode;
+    const placedCardIds = new Set(isHomeCanvasTarget ? homeLayout.cardIds : orderedCardIds);
 
     return [...availableDeviceMap.values()]
-      .filter((device) => !visibleCardIds.has(device.id))
+      .filter((device) => !placedCardIds.has(device.id))
       .map((device) => ({
         id: device.id,
         title: typeof device.name === 'string' ? device.name : device.id,
@@ -63,7 +65,15 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
         (left, right) =>
           left.subtitle.localeCompare(right.subtitle) || left.title.localeCompare(right.title)
       );
-  }, [availableDeviceMap, orderedCardIds, t]);
+  }, [
+    activeRoom,
+    activeSection,
+    availableDeviceMap,
+    homeLayout.cardIds,
+    isEditMode,
+    orderedCardIds,
+    t,
+  ]);
 
   const handleAddNormalCard =
     activeSection === 'home' && activeRoom === 'All' && isEditMode

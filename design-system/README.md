@@ -109,7 +109,7 @@ All seven sizes are defined in `src/app/components/shared/card-size.ts` and thei
 
 - **Tiny (0.5×0.5)**: Micro action/status tile for ultra-dense dashboards; intended for highly compressed interactive cards such as compact switch, lock, or scene-style layouts using the shared tiny-action-card primitive
 - **Extra-Small (1×0.5)**: Dense status or single-control layouts, compact padding and minimal controls. Light cards keep an unlabeled brightness slider visible here; tap behavior determines whether a compact settings action shares that row or the slider uses the full width.
-- **Small (1×1)**: Minimal info, quick toggle, `p-4`, one responsive grid column wide and two auto-rows tall
+- **Small (1×1)**: Minimal info, quick toggle, `p-5`, one responsive grid column wide and two auto-rows tall
 - **Medium (2×1)**: Primary controls + info, `p-5`, two responsive grid columns wide and two auto-rows tall
 - **Medium-Vertical (1×2)**: Tall single-column layout, `p-5`, one responsive grid column wide and four auto-rows tall; used by media cards for artwork-led portrait layouts
 - **Large (2×2)**: Full controls + advanced features, `p-6`, two responsive grid columns wide and four auto-rows tall
@@ -229,4 +229,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 29, 2026
+**Last Updated:** March 30, 2026

@@ -107,7 +107,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  weather: ({ device, isEditMode }) => (
+  weather: ({ device, size, isEditMode }) => (
     <WeatherCard
       id={device.id as string}
       location={device.location as string}
@@ -129,9 +129,10 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
           low: number;
         }>) ?? []
       }
+      forecastMode={(device.forecastMode as 'weekly' | 'hourly' | undefined) ?? 'weekly'}
       highTemp={device.highTemp as number}
       lowTemp={device.lowTemp as number}
-      size="large"
+      size={size}
       onSizeChange={() => {}}
       isEditMode={isEditMode}
     />
@@ -179,12 +180,13 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  locks: ({ device, size }) => (
+  locks: ({ device, size, isEditMode }) => (
     <LockCard
       id={device.id as string}
       name={device.name as string}
       initialState={device.state as boolean | undefined}
       size={size}
+      isEditMode={isEditMode}
     />
   ),
 

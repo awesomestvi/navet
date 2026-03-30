@@ -643,7 +643,7 @@ const generateThemeColors = (
         },
       },
       rss: {
-        gradient: 'from-black via-black to-orange-950',
+        gradient: 'from-black via-orange-950 to-red-900',
         border: 'border-orange-400/85',
         glow: 'from-orange-400/18',
       },

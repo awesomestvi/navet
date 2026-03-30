@@ -119,7 +119,9 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       ref={setNodeRef}
       {...(draggable ? attributes : {})}
       {...(draggable ? listeners : {})}
-      className={`relative h-full ${device?.type === 'lights' && ambientLightBleed ? '[contain:layout_style]' : '[contain:layout_style_paint]'} ${spanClass} ${draggable ? 'touch-none' : ''} ${isDragging ? 'opacity-40' : ''}`}
+      className={`relative h-full ${device?.type === 'lights' && ambientLightBleed ? '[contain:layout_style]' : '[contain:layout_style_paint]'} ${spanClass} ${
+        draggable ? 'touch-none cursor-grab active:cursor-grabbing' : 'cursor-inherit'
+      } [&>*]:cursor-inherit ${isDragging ? 'opacity-40' : ''}`}
       style={getDndTransformStyle(transform)}
       data-card-nodrag={draggable ? undefined : 'true'}
       data-draggable-card="true"
@@ -154,7 +156,9 @@ function getAllowedSizes(
         ? ['small', 'medium', 'large', 'extra-large']
         : ['small', 'medium', 'large'];
     case 'weather':
-      return extraLargeAllowed ? ['large', 'extra-large'] : ['large'];
+      return extraLargeAllowed
+        ? ['small', 'medium', 'large', 'extra-large']
+        : ['small', 'medium', 'large'];
     case 'switches':
       return ['tiny', 'extra-small', 'small'];
     case 'locks':

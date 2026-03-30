@@ -206,6 +206,7 @@ export const svMessages = {
     'Anslutningen nollställdes. Anslut till systemet igen.',
   'settings.feedback.wallpaperReadFailed': 'Det gick inte att läsa bildfilen',
   'settings.feedback.configExported': 'Dashboard-konfiguration exporterad',
+  'settings.feedback.configExportFailed': 'Det gick inte att exportera dashboard-konfigurationen',
   'settings.feedback.configImported': 'Dashboard-konfiguration importerad. Laddar om...',
   'settings.feedback.configImportFailed': 'Det gick inte att importera dashboard-konfigurationen',
   'dashboard.addEntity.title': 'Lägg till enhet',
@@ -508,6 +509,11 @@ export const svMessages = {
   'themeOption.contrast.description': 'Djupsvarta ytor med OLED-vänlig kontrast.',
   'weather.subtitle': 'Väder',
   'weather.settings.title': '{name}-inställningar',
+  'weather.settings.forecast': 'Prognos',
+  'weather.settings.hourly': 'Timvis',
+  'weather.settings.weekly': 'Veckovis',
+  'weather.settings.locationManaged':
+    'Platsen hämtas just nu från den anslutna väderentiteten i Home Assistant.',
   'weather.precipitation': 'Nederbörd',
   'weather.humidity': 'Luftfuktighet',
   'weather.wind': 'Vind',
@@ -666,6 +672,9 @@ export const svMessages = {
   'network.disconnectedTitle': 'Home Assistant är frånkopplat',
   'network.disconnectedDescription':
     'Navet kan inte nå Home Assistant just nu. Cachad UI finns fortfarande tillgängligt medan appen ansluter igen.',
+  'network.reconnectingTitle': 'Återansluter till Home Assistant',
+  'network.reconnectingDescription':
+    'Navet tappade liveanslutningen till Home Assistant och försöker ansluta igen nu.',
   'pwa.updateAvailableTitle': 'Navet-uppdatering tillgänglig',
   'pwa.updateAvailableDescription': 'En ny version har installerats i bakgrunden.',
   'pwa.reload': 'Ladda om',
@@ -825,6 +834,8 @@ export const svMessages = {
   'widgets.common.widget': 'Widget',
   'widgets.delete': 'Ta bort widget',
   'widgets.deleteConfirm': 'Ta bort den här widgeten?',
+  'widgets.customCard.color': 'Kortfärg',
+  'widgets.customCard.colorPicker': 'Välj anpassad kortfärg',
   'widgets.photoFrame.title': 'Fotoram',
   'widgets.photoFrame.photo.goldenHour.title': 'Golden Hour',
   'widgets.photoFrame.photo.goldenHour.subtitle': 'Varm omgivande palett',

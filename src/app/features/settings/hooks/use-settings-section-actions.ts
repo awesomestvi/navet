@@ -74,9 +74,17 @@ export function useSettingsSectionActions({
     setWallpaper(nextWallpaper);
   };
 
-  const handleExportDashboardConfig = () => {
-    downloadDashboardConfig();
-    toast.success(t('settings.feedback.configExported'));
+  const handleExportDashboardConfig = async () => {
+    try {
+      await downloadDashboardConfig();
+      toast.success(t('settings.feedback.configExported'));
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
+      toast.error(t('settings.feedback.configExportFailed'));
+    }
   };
 
   const handleImportDashboardConfig = async (event: ChangeEvent<HTMLInputElement>) => {

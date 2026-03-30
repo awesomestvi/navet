@@ -81,6 +81,18 @@ function resolveDropMeta(
     return { type: 'card', cardId: rawId.slice('home-card-'.length) };
   }
 
+  if (rawId.startsWith('home-column-drop-')) {
+    return { type: 'column-target', sectionId: rawId.slice('home-column-drop-'.length) };
+  }
+
+  if (rawId.startsWith('home-column-drag-')) {
+    return { type: 'column-target', sectionId: rawId.slice('home-column-drag-'.length) };
+  }
+
+  if (rawId.startsWith('home-section-target-')) {
+    return { type: 'section-target', sectionId: rawId.slice('home-section-target-'.length) };
+  }
+
   if (rawId.startsWith('home-section-insert-')) {
     return { type: 'section-insert', sectionId: rawId.slice('home-section-insert-'.length) };
   }
@@ -101,6 +113,8 @@ interface UseDashboardDragStateParams {
   cardSizes: Record<string, CardSize>;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
   moveHomeSection: (sourceId: string, targetId: string) => void;
+  moveHomeColumn: (sourceId: string, targetId: string) => void;
+  sectionToColumnId: Record<string, string>;
 }
 
 export function useDashboardDragState({
@@ -108,9 +122,14 @@ export function useDashboardDragState({
   cardSizes,
   moveHomeCard,
   moveHomeSection,
+  moveHomeColumn,
+  sectionToColumnId,
 }: UseDashboardDragStateParams) {
   const [activeDragCard, setActiveDragCard] = useState<string | null>(null);
   const [activeDragSection, setActiveDragSection] = useState<string | null>(null);
+  const [activeDragColumn, setActiveDragColumn] = useState<string | null>(null);
+  const [activeSectionDropTarget, setActiveSectionDropTarget] = useState<string | null>(null);
+  const [activeColumnDropTarget, setActiveColumnDropTarget] = useState<string | null>(null);
   const lastResolvedOverRef = useRef<DropMeta | null>(null);
 
   const sensors = useSensors(
@@ -140,13 +159,43 @@ export function useDashboardDragState({
       event.over?.id
     );
 
-    if (!activeMeta || !overMeta) {
+    if (!activeMeta) {
+      return;
+    }
+
+    if (!overMeta) {
+      if (activeMeta.source === 'column') {
+        setActiveColumnDropTarget(null);
+      }
+
+      if (activeMeta.source === 'section') {
+        setActiveSectionDropTarget(null);
+      }
+      return;
+    }
+
+    if (activeMeta.source === 'column') {
+      const targetColumnId = overMeta.sectionId
+        ? (sectionToColumnId[overMeta.sectionId] ?? overMeta.sectionId)
+        : null;
+
+      if (targetColumnId && targetColumnId !== activeMeta.sectionId) {
+        lastResolvedOverRef.current = { type: 'column-target', sectionId: targetColumnId };
+        setActiveColumnDropTarget(targetColumnId);
+      } else {
+        setActiveColumnDropTarget(null);
+      }
       return;
     }
 
     if (activeMeta.source === 'section') {
-      if (overMeta.type === 'section-insert' && overMeta.sectionId !== activeMeta.sectionId) {
-        lastResolvedOverRef.current = overMeta;
+      const targetSectionId = overMeta.sectionId ?? null;
+
+      if (targetSectionId && targetSectionId !== activeMeta.sectionId) {
+        lastResolvedOverRef.current = { type: 'section-target', sectionId: targetSectionId };
+        setActiveSectionDropTarget(targetSectionId);
+      } else {
+        setActiveSectionDropTarget(null);
       }
       return;
     }
@@ -170,16 +219,34 @@ export function useDashboardDragState({
 
     setActiveDragCard(null);
     setActiveDragSection(null);
+    setActiveDragColumn(null);
+    setActiveSectionDropTarget(null);
+    setActiveColumnDropTarget(null);
     lastResolvedOverRef.current = null;
 
     if (!activeMeta || !overMeta) return;
 
-    if (activeMeta.source === 'section') {
-      if (overMeta.type !== 'section-insert' || activeMeta.sectionId === overMeta.sectionId) {
+    if (activeMeta.source === 'column') {
+      const targetColumnId = overMeta.sectionId
+        ? (sectionToColumnId[overMeta.sectionId] ?? overMeta.sectionId)
+        : null;
+
+      if (!targetColumnId || activeMeta.sectionId === targetColumnId) {
         return;
       }
 
-      moveHomeSection(activeMeta.sectionId, overMeta.sectionId);
+      moveHomeColumn(activeMeta.sectionId, targetColumnId);
+      return;
+    }
+
+    if (activeMeta.source === 'section') {
+      const targetSectionId = overMeta.sectionId ?? null;
+
+      if (!targetSectionId || activeMeta.sectionId === targetSectionId) {
+        return;
+      }
+
+      moveHomeSection(activeMeta.sectionId, targetSectionId);
       return;
     }
 
@@ -196,6 +263,10 @@ export function useDashboardDragState({
     setActiveDragCard,
     activeDragSection,
     setActiveDragSection,
+    activeDragColumn,
+    setActiveDragColumn,
+    activeSectionDropTarget,
+    activeColumnDropTarget,
     activeDragSize,
     sensors,
     handleDragOver,

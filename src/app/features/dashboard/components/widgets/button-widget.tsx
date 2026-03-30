@@ -2,11 +2,13 @@ import { Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
+  CustomCardTintPicker,
   DEVICE_EDITOR_ICON_OPTIONS,
   DialogHeader,
   getNamedIconComponent,
 } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import { customCardDialogShellProps, DialogShell } from '@/app/components/shared/dialog-shell';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -18,6 +20,7 @@ export interface ButtonWidgetData {
   entityId?: string;
   icon?: string;
   serviceData?: Record<string, unknown>;
+  tintColor?: string;
 }
 
 interface ButtonWidgetProps {
@@ -39,15 +42,25 @@ function ButtonSettingsDialog({
 }) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const surface = getDashboardWidgetSurfaceTokens(theme);
   const accentHex = getThemeColorValue(primaryColor);
   const [label, setLabel] = useState(data.label ?? '');
   const [service, setService] = useState(data.service ?? '');
   const [entityId, setEntityId] = useState(data.entityId ?? '');
   const [selectedIcon, setSelectedIcon] = useState(data.icon ?? 'Zap');
   const [iconQuery, setIconQuery] = useState('');
+  const [tintColor, setTintColor] = useState(data.tintColor ?? '');
   const [serviceData, setServiceData] = useState(
     data.serviceData ? JSON.stringify(data.serviceData, null, 2) : ''
+  );
+  const surface = getDashboardWidgetSurfaceTokens(theme, tintColor || undefined);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor || undefined);
+  const dialogShell = customCardDialogShellProps(
+    { panel: surface.panelClassName, border: surface.borderClassName },
+    tintSurface,
+    {
+      maxWidth: 'sm',
+      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`,
+    }
   );
 
   const handleSave = () => {
@@ -73,6 +86,7 @@ function ButtonSettingsDialog({
       entityId: entityId.trim() || undefined,
       icon: selectedIcon,
       serviceData: parsedServiceData,
+      tintColor: tintColor.trim() || undefined,
     });
     onOpenChange(false);
   };
@@ -88,12 +102,22 @@ function ButtonSettingsDialog({
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName="bg-black/60 backdrop-blur-sm"
-      contentClassName={`fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`}
+      overlayClassName={surface.dialogBackdrop}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <DialogHeader title={t('widgets.button.configure')} isOn={theme !== 'light'} />
 
       <div className="space-y-3">
+        <CustomCardTintPicker
+          value={tintColor || undefined}
+          onChange={setTintColor}
+          defaultColor="#f97316"
+          className={surface.textMuted}
+        />
+
         <input
           type="text"
           value={label}
@@ -184,7 +208,7 @@ function ButtonSettingsDialog({
 export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: ButtonWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const surface = getDashboardWidgetSurfaceTokens(theme);
+  const surface = getDashboardWidgetSurfaceTokens(theme, data.tintColor);
   const [isSettingsOpen, setIsSettingsOpen] = useState(!data.service);
   const [isPressed, setIsPressed] = useState(false);
   const accentHex = getThemeColorValue(primaryColor);
@@ -215,57 +239,67 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   return (
     <div
       className={`${surface.panelClassName} relative flex h-full flex-col items-center justify-center`}
+      style={surface.panelStyle}
     >
-      {(isEditMode || !isConfigured) && onUpdate && (
+      {surface.glowStyle ? <div className="absolute inset-0" style={surface.glowStyle} /> : null}
+      {surface.overlayClassName ? (
+        <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
+      ) : null}
+
+      <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center">
+        {(isEditMode || !isConfigured) && onUpdate && (
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
+            aria-label={t('widgets.button.configure')}
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+        )}
+
         <button
           type="button"
-          onClick={() => setIsSettingsOpen(true)}
-          className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
-          aria-label={t('widgets.button.configure')}
+          onClick={handleTap}
+          disabled={isEditMode || !isConfigured}
+          aria-label={
+            data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))
+          }
+          className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
+          style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
         >
-          <Settings2 className="h-4 w-4" />
-        </button>
-      )}
-
-      <button
-        type="button"
-        onClick={handleTap}
-        disabled={isEditMode || !isConfigured}
-        aria-label={data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
-        className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
-        style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
-      >
-        <div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
-          style={{
-            backgroundColor: isConfigured ? `${accentHex}22` : surface.subtleFill,
-            color: isConfigured ? accentHex : undefined,
-          }}
-        >
-          <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
-        </div>
-        <div className="flex flex-col items-center gap-0.5">
-          <span
-            className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+            style={{
+              backgroundColor: isConfigured ? `${accentHex}22` : surface.subtleFill,
+              color: isConfigured ? accentHex : undefined,
+            }}
           >
-            {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
-          </span>
-          {isConfigured && data.entityId ? (
-            <span className={`max-w-48 truncate text-[11px] ${surface.textMuted}`}>
-              {data.entityId}
+            <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <span
+              className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
+            >
+              {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
             </span>
-          ) : null}
-        </div>
-      </button>
+            {isConfigured && data.entityId ? (
+              <span className={`max-w-48 truncate text-[11px] ${surface.textMuted}`}>
+                {data.entityId}
+              </span>
+            ) : null}
+          </div>
+        </button>
 
-      {onUpdate && (
-        <ButtonSettingsDialog
-          isOpen={isSettingsOpen}
-          onOpenChange={setIsSettingsOpen}
-          data={data}
-          onSave={onUpdate}
-        />
-      )}
+        {onUpdate && (
+          <ButtonSettingsDialog
+            isOpen={isSettingsOpen}
+            onOpenChange={setIsSettingsOpen}
+            data={data}
+            onSave={onUpdate}
+          />
+        )}
+      </div>
     </div>
   );
 }

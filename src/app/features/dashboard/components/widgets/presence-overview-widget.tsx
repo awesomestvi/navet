@@ -2,8 +2,6 @@ import { Home, MapPin, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -62,30 +60,14 @@ export function PresenceOverviewWidget({ size = 'large' }: PresenceOverviewWidge
       });
   }, [config?.url, entities, t]);
 
-  const homeCount = persons.filter((person) => person.state === 'home').length;
-
   return (
     <div className={`${surface.panelClassName} flex h-full flex-col`}>
-      <EntityCardHeader
-        title={t('widgets.presence.title')}
-        subtitle={t('widgets.presence.summary', {
-          home: homeCount,
-          away: Math.max(0, persons.length - homeCount),
-        })}
-        layout="eyebrow-first"
-        size={isCompact ? 'small' : 'medium'}
-        titleClassName={surface.textPrimary}
-        subtitleClassName={surface.textMuted}
-        className="mb-3"
-        leading={<EntityCardHeaderIcon IconComponent={Users} isActive={true} size="medium" />}
-      />
-
       {persons.length === 0 ? (
         <div className={`flex flex-1 items-center justify-center text-sm ${surface.textMuted}`}>
           {t('widgets.presence.empty')}
         </div>
       ) : (
-        <ul className="flex-1 space-y-2 overflow-y-auto">
+        <ul className={`flex-1 overflow-y-auto ${isCompact ? 'space-y-1.5' : 'space-y-2'}`}>
           {persons.map((person) => (
             <li key={person.id} className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10">

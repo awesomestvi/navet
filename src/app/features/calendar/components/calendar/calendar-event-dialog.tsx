@@ -1,7 +1,11 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Calendar, CalendarDays, ExternalLink, FileText, MapPin } from 'lucide-react';
 import { DialogHeader } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import {
+  DialogFooter,
+  DialogShell,
+  SettingsDialogDoneButton,
+  settingsDialogContentClass,
+} from '@/app/components/shared/dialog-shell';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
@@ -34,7 +38,7 @@ export function CalendarEventDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       overlayClassName={surface.dialogBackdrop}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-6 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+      contentClassName={settingsDialogContentClass(surface, { padding: true })}
     >
       <DialogHeader
         title={event.title}
@@ -95,16 +99,11 @@ export function CalendarEventDialog({
               {t('calendar.event.openMap')}
             </button>
           )}
-
-          <Dialog.Close asChild>
-            <button
-              type="button"
-              className={`rounded-xl px-4 py-2 text-sm font-medium ${surface.textPrimary} ${surface.subtleBg} ${surface.hoverBg}`}
-            >
-              {t('common.done')}
-            </button>
-          </Dialog.Close>
         </div>
+
+        <DialogFooter>
+          <SettingsDialogDoneButton label={t('common.done')} surface={surface} />
+        </DialogFooter>
       </div>
     </DialogShell>
   );

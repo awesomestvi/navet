@@ -203,6 +203,7 @@ export const enMessages = {
   'settings.feedback.resetConnectionSuccess': 'Connection reset. Please reconnect to your system.',
   'settings.feedback.wallpaperReadFailed': 'Failed to read image file',
   'settings.feedback.configExported': 'Dashboard config exported',
+  'settings.feedback.configExportFailed': 'Failed to export dashboard config',
   'settings.feedback.configImported': 'Dashboard config imported. Reloading...',
   'settings.feedback.configImportFailed': 'Failed to import dashboard config',
   'dashboard.addEntity.title': 'Add Entity',
@@ -502,6 +503,11 @@ export const enMessages = {
   'themeOption.contrast.description': 'Deep black surfaces with OLED-friendly contrast.',
   'weather.subtitle': 'Weather',
   'weather.settings.title': '{name} Settings',
+  'weather.settings.forecast': 'Forecast',
+  'weather.settings.hourly': 'Hourly',
+  'weather.settings.weekly': 'Weekly',
+  'weather.settings.locationManaged':
+    'Location currently comes from the connected Home Assistant weather entity.',
   'weather.precipitation': 'Precipitation',
   'weather.humidity': 'Humidity',
   'weather.wind': 'Wind',
@@ -660,6 +666,9 @@ export const enMessages = {
   'network.disconnectedTitle': 'Home Assistant disconnected',
   'network.disconnectedDescription':
     'Navet cannot reach Home Assistant right now. Cached UI is still available while it reconnects.',
+  'network.reconnectingTitle': 'Reconnecting to Home Assistant',
+  'network.reconnectingDescription':
+    'Navet lost its live connection to Home Assistant and is trying to reconnect now.',
   'pwa.updateAvailableTitle': 'Navet update available',
   'pwa.updateAvailableDescription': 'A new version has been installed in the background.',
   'pwa.reload': 'Reload',
@@ -819,6 +828,8 @@ export const enMessages = {
   'widgets.common.widget': 'Widget',
   'widgets.delete': 'Delete widget',
   'widgets.deleteConfirm': 'Delete this widget?',
+  'widgets.customCard.color': 'Card color',
+  'widgets.customCard.colorPicker': 'Choose custom card color',
   'widgets.photoFrame.title': 'Photo Frame',
   'widgets.photoFrame.photo.goldenHour.title': 'Golden Hour',
   'widgets.photoFrame.photo.goldenHour.subtitle': 'Warm ambient palette',

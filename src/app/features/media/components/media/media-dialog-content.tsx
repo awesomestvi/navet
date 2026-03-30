@@ -1,4 +1,9 @@
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import {
+  CustomDialogDoneButton,
+  DialogFooter,
+  DialogShell,
+} from '@/app/components/shared/dialog-shell';
+import { useI18n } from '@/app/hooks';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
   MediaDialogArtwork,
@@ -45,6 +50,8 @@ export function MediaDialogContent({
   upNextTitle,
   volume,
 }: MediaDialogContentProps) {
+  const { t } = useI18n();
+
   return (
     <DialogShell
       isOpen={isOpen}
@@ -111,6 +118,13 @@ export function MediaDialogContent({
             onDetachGroupMember={onDetachGroupMember}
           />
         ) : null}
+
+        <DialogFooter>
+          <CustomDialogDoneButton
+            label={t('common.done')}
+            style={controller.activeMiniControlStyle}
+          />
+        </DialogFooter>
       </div>
     </DialogShell>
   );

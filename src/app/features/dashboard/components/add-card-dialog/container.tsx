@@ -17,6 +17,7 @@ export function AddCardDialogContainer({
   const { theme, primaryColor } = useTheme();
   const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>('cards');
   const [libraryQuery, setLibraryQuery] = useState('');
+  const [recentlyAddedLibraryCardIds, setRecentlyAddedLibraryCardIds] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<CardType | null>(null);
   const [selectedSize, setSelectedSize] = useState<CardSize>('medium');
   const resolveColorValue = (color: string) => getThemeColorValue(color as typeof primaryColor);
@@ -28,6 +29,9 @@ export function AddCardDialogContainer({
 
     setActiveTab('cards');
     setLibraryQuery('');
+    setRecentlyAddedLibraryCardIds([]);
+    setSelectedType(null);
+    setSelectedSize('medium');
   }, [open]);
 
   const handleAdd = () => {
@@ -39,6 +43,9 @@ export function AddCardDialogContainer({
   };
 
   const handleAddFromLibrary = (cardId: string) => {
+    setRecentlyAddedLibraryCardIds((current) =>
+      current.includes(cardId) ? current : [...current, cardId]
+    );
     onAddLibraryCard(cardId);
   };
 
@@ -53,14 +60,23 @@ export function AddCardDialogContainer({
     []
   );
 
+  const visibleLibraryCards = useMemo(() => {
+    if (recentlyAddedLibraryCardIds.length === 0) {
+      return libraryCards;
+    }
+
+    const recentlyAddedIds = new Set(recentlyAddedLibraryCardIds);
+    return libraryCards.filter((card) => !recentlyAddedIds.has(card.id));
+  }, [libraryCards, recentlyAddedLibraryCardIds]);
+
   const filteredLibraryCards = useMemo(() => {
     const rawTerms = libraryQuery.trim().split(/\s+/).filter(Boolean);
 
     if (rawTerms.length === 0) {
-      return libraryCards;
+      return visibleLibraryCards;
     }
 
-    return libraryCards.filter((card) => {
+    return visibleLibraryCards.filter((card) => {
       const rawSearchableText =
         `${card.title} ${card.subtitle} ${card.meta} ${card.kind} ${card.id}`.toLowerCase();
       const searchableText = normalizeSearchText(rawSearchableText);
@@ -80,7 +96,7 @@ export function AddCardDialogContainer({
         );
       });
     });
-  }, [libraryCards, libraryQuery, normalizeSearchText]);
+  }, [libraryQuery, normalizeSearchText, visibleLibraryCards]);
 
   const hasLibraryQuery = libraryQuery.trim().length > 0;
 

@@ -77,6 +77,12 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           size={card.size}
           room={card.room}
           onRoomChange={onUpdate ? (room) => onUpdate(card.id, { room }) : undefined}
+          tintColor={card.data?.tintColor as string | undefined}
+          onTintColorChange={
+            onUpdate
+              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
+              : undefined
+          }
         />
       );
       break;
@@ -90,13 +96,28 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
               ? (urls) => onUpdate(card.id, { data: { ...card.data, photoUrls: urls } })
               : undefined
           }
+          tintColor={card.data?.tintColor as string | undefined}
+          onTintColorChange={
+            onUpdate
+              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
+              : undefined
+          }
           isEditMode={isEditMode}
         />
       );
       break;
     case 'note':
       widgetContent = (
-        <NoteWidget initialNote={card.data?.note as string} onNoteChange={handleNoteChange} />
+        <NoteWidget
+          initialNote={card.data?.note as string}
+          onNoteChange={handleNoteChange}
+          tintColor={card.data?.tintColor as string | undefined}
+          onTintColorChange={
+            onUpdate
+              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
+              : undefined
+          }
+        />
       );
       break;
     case 'battery':

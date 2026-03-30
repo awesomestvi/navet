@@ -59,7 +59,7 @@ export interface HAServiceEventMap {
     devices: HomeAssistantDeviceRegistryEntry[];
     entities: HomeAssistantEntityRegistryEntry[];
   };
-  connection: { connected: boolean; connection: Connection | null };
+  connection: { connected: boolean; connection: Connection | null; reconnecting: boolean };
 }
 
 export type HAServiceEventType = keyof HAServiceEventMap;
@@ -144,18 +144,30 @@ class HomeAssistantService {
         this.clearReconnectTimer();
         this.reconnectAttempt = 0;
         this.connected = true;
-        this.notifyListeners('connection', { connected: true, connection: this.connection });
+        this.notifyListeners('connection', {
+          connected: true,
+          connection: this.connection,
+          reconnecting: false,
+        });
       });
 
       this.connection.addEventListener('disconnected', () => {
         this.connected = false;
-        this.notifyListeners('connection', { connected: false, connection: this.connection });
+        this.notifyListeners('connection', {
+          connected: false,
+          connection: this.connection,
+          reconnecting: !this.manuallyDisconnected && Boolean(this.activeConfiguration),
+        });
         this.scheduleReconnect();
       });
 
       this.connection.addEventListener('reconnect-error', () => {
         this.connected = false;
-        this.notifyListeners('connection', { connected: false, connection: this.connection });
+        this.notifyListeners('connection', {
+          connected: false,
+          connection: this.connection,
+          reconnecting: !this.manuallyDisconnected && Boolean(this.activeConfiguration),
+        });
         this.scheduleReconnect();
       });
 
@@ -531,7 +543,11 @@ class HomeAssistantService {
       this.areas = [];
       this.deviceRegistry = [];
       this.entityRegistry = [];
-      this.notifyListeners('connection', { connected: false, connection: null });
+      this.notifyListeners('connection', {
+        connected: false,
+        connection: null,
+        reconnecting: false,
+      });
     }
   }
 }

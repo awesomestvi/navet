@@ -6,12 +6,16 @@ import {
   ColorTemperatureSection,
   CustomScrollbar,
   DialogHeader,
-  DialogSectionRow,
   IconPicker,
 } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import {
+  CustomDialogDoneButton,
+  DialogFooter,
+  DialogShell,
+} from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { BrightnessPresetKey } from '../../stores/light-preset-store';
@@ -76,8 +80,9 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onBrightnessPresetOrderChange,
   onIconChange,
 }: LightSettingsDialogProps) {
-  const { primaryColor } = useTheme();
+  const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
+  const surface = getThemeSurfaceTokens(theme);
   const colorMap = {
     orange: { from: 'from-orange-900/95', to: 'to-orange-950/95', border: 'border-orange-500/20' },
     blue: { from: 'from-blue-900/95', to: 'to-blue-950/95', border: 'border-blue-500/20' },
@@ -94,7 +99,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName="bg-black/80 backdrop-blur-sm animate-in fade-in"
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${
         isOn
           ? `bg-gradient-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
@@ -107,10 +112,10 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
             title={t('lighting.settings.title')}
             description={`${name} - ${room}`}
             isOn={isOn}
+            supportingContent={
+              <EntityRoomSelector entityId={entityId} label={t('lighting.settings.room')} compact />
+            }
           />
-          <DialogSectionRow label={t('lighting.settings.room')}>
-            <EntityRoomSelector entityId={entityId} label={t('lighting.settings.room')} compact />
-          </DialogSectionRow>
 
           <div className="space-y-8">
             {supportsColorTemperature && (
@@ -156,6 +161,10 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
 
             <IconPicker selectedIcon={selectedIcon} onIconChange={onIconChange} isLightOn={isOn} />
           </div>
+
+          <DialogFooter>
+            <CustomDialogDoneButton label={t('common.done')} />
+          </DialogFooter>
         </div>
       </CustomScrollbar>
     </DialogShell>

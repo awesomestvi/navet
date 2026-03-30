@@ -264,6 +264,10 @@ export const importDashboardConfig = (value: unknown) => {
       settings.entityInteractionMode === 'toggle-first'
         ? settings.entityInteractionMode
         : defaultSettings.entityInteractionMode,
+    weatherForecastMode:
+      settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
+        ? settings.weatherForecastMode
+        : defaultSettings.weatherForecastMode,
     ambientLightBleed:
       typeof settings.ambientLightBleed === 'boolean'
         ? settings.ambientLightBleed
@@ -311,18 +315,42 @@ export const importDashboardConfig = (value: unknown) => {
   storage.set(STORAGE_KEYS.roomOrder, Array.isArray(value.roomOrder) ? value.roomOrder : []);
 };
 
-export const downloadDashboardConfig = () => {
+export const downloadDashboardConfig = async (): Promise<'shared' | 'downloaded'> => {
   const payload = exportDashboardConfig();
-  const blob = new Blob([stringifyYaml(payload)], { type: 'application/yaml' });
+  const yamlContent = stringifyYaml(payload);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const fileName = `navet-dashboard-config-${dateStamp}.yaml`;
+  const blob = new Blob([yamlContent], { type: 'text/yaml;charset=utf-8' });
+  const file = new File([blob], fileName, { type: 'text/yaml;charset=utf-8' });
+
+  if (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function' &&
+    navigator.canShare({ files: [file] })
+  ) {
+    await navigator.share({
+      files: [file],
+      title: 'Navet dashboard config',
+    });
+    return 'shared';
+  }
+
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  const dateStamp = new Date().toISOString().slice(0, 10);
 
   link.href = url;
-  link.download = `navet-dashboard-config-${dateStamp}.yaml`;
+  link.download = fileName;
+  link.style.display = 'none';
+  document.body.append(link);
   link.click();
 
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => {
+    URL.revokeObjectURL(url);
+    link.remove();
+  }, 1000);
+
+  return 'downloaded';
 };
 
 export const importDashboardConfigFromFile = async (file: File) => {
@@ -331,7 +359,7 @@ export const importDashboardConfigFromFile = async (file: File) => {
     throw new Error('Unsupported dashboard config file. Use a .yaml or .yml export.');
   }
 
-  const content = await file.text();
+  const content = (await file.text()).replace(/^\uFEFF/, '');
   const parsed = parseYaml(content);
   importDashboardConfig(parsed);
 };

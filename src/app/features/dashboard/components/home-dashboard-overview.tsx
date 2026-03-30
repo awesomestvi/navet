@@ -34,6 +34,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   addHomeColumnSection,
   addHomeSectionBelow,
   moveHomeSection,
+  moveHomeColumn,
   renameHomeSection,
   removeHomeSection,
   resizeHomeSection,
@@ -57,6 +58,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     setActiveDragCard,
     activeDragSection,
     setActiveDragSection,
+    activeDragColumn,
+    setActiveDragColumn,
     activeDragSize,
     sensors,
     handleDragOver,
@@ -70,6 +73,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     hiddenEntityCount,
     moveHomeCard,
     moveHomeSection,
+    moveHomeColumn,
   });
 
   if (!isEditMode) {
@@ -100,14 +104,23 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       collisionDetection={closestCenter}
       onDragStart={(event) => {
         const dragMeta = event.active.data.current as DragMeta | undefined;
+        if (dragMeta?.source === 'column') {
+          setActiveDragCard(null);
+          setActiveDragSection(null);
+          setActiveDragColumn(dragMeta.sectionId);
+          return;
+        }
+
         if (dragMeta?.source === 'section') {
           setActiveDragCard(null);
+          setActiveDragColumn(null);
           setActiveDragSection(dragMeta.sectionId);
           return;
         }
 
         setActiveDragCard(dragMeta && 'cardId' in dragMeta ? dragMeta.cardId : null);
         setActiveDragSection(null);
+        setActiveDragColumn(null);
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -265,6 +278,9 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       sections={sectionCards}
                       sectionGridCols={sectionGridCols}
                       activeSectionId={activeSectionId}
+                      activeDragColumn={activeDragColumn}
+                      activeDragSection={activeDragSection}
+                      activeDragCard={activeDragCard}
                       accentColor={accentColor}
                       allCards={allCards}
                       cardSizes={cardSizes}
@@ -296,6 +312,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                   <FlowCanvas
                     cardIds={flowCards}
                     gridCols={sectionGridCols}
+                    activeDragCard={activeDragCard}
                     allCards={allCards}
                     cardSizes={cardSizes}
                     updateCardSize={updateCardSize}
@@ -314,11 +331,18 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {activeDragSection ? (
+        {activeDragColumn ? (
+          <div className="w-70 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
+            <div className="flex items-center gap-3 text-white/80">
+              <Columns2 className="h-5 w-5" />
+              <div className="text-sm font-semibold">Move column</div>
+            </div>
+          </div>
+        ) : activeDragSection ? (
           <div className="w-70 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
             <div className="flex items-center gap-3 text-white/80">
               <GripVertical className="h-5 w-5" />
-              <div className="text-sm font-semibold">{t('dashboard.section.moveDragLabel')}</div>
+              <div className="text-sm font-semibold">Move section</div>
             </div>
           </div>
         ) : activeDragCard && activeDragSize ? (

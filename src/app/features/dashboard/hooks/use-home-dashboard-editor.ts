@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { buildSectionStacks } from '../components/home-dashboard-overview.shared';
 import type { CustomCard } from '../stores/custom-cards-store';
+import { moveSectionStack } from '../utils/layout-engine';
 import { useDashboardDragState } from './use-dashboard-drag-state';
 import type { HomeDashboardLayoutState } from './use-home-dashboard-layout';
 
@@ -12,11 +14,14 @@ export type HomeEditorSection = HomeDashboardLayoutState['sections'][number] & {
 
 export type DragMeta =
   | { source: 'home'; cardId: string; sectionId?: string; type: 'card' }
+  | { source: 'column'; sectionId: string; type: 'column' }
   | { source: 'section'; sectionId: string; type: 'section' };
 
 export type DropMeta =
   | { type: 'card'; cardId: string; sectionId?: string }
   | { type: 'container'; sectionId?: string }
+  | { type: 'column-target'; sectionId: string }
+  | { type: 'section-target'; sectionId: string }
   | { type: 'section-insert'; sectionId: string };
 
 interface UseHomeDashboardEditorParams {
@@ -27,6 +32,7 @@ interface UseHomeDashboardEditorParams {
   hiddenEntityCount: number;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
   moveHomeSection: (sourceId: string, targetId: string) => void;
+  moveHomeColumn: (sourceId: string, targetId: string) => void;
 }
 
 export function useHomeDashboardEditor({
@@ -37,6 +43,7 @@ export function useHomeDashboardEditor({
   hiddenEntityCount,
   moveHomeCard,
   moveHomeSection,
+  moveHomeColumn,
 }: UseHomeDashboardEditorParams) {
   const { t } = useI18n();
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -91,12 +98,45 @@ export function useHomeDashboardEditor({
     });
   }, [homeLayout.cardSectionAssignments, homeLayout.mode, sectionIds, selectedIds]);
 
+  const sectionToColumnId = useMemo(() => {
+    const mappings: Record<string, string> = {};
+
+    for (const rowStacks of buildSectionStacks(sectionCards)) {
+      for (const stack of rowStacks) {
+        const leadSectionId = stack[0]?.id;
+        if (!leadSectionId) {
+          continue;
+        }
+
+        for (const section of stack) {
+          mappings[section.id] = leadSectionId;
+        }
+      }
+    }
+
+    return mappings;
+  }, [sectionCards]);
+
   const dragState = useDashboardDragState({
     allCards,
     cardSizes,
     moveHomeCard,
     moveHomeSection,
+    moveHomeColumn,
+    sectionToColumnId,
   });
+
+  const previewSectionCards = useMemo(
+    () =>
+      dragState.activeDragColumn && dragState.activeColumnDropTarget
+        ? moveSectionStack(
+            sectionCards,
+            dragState.activeDragColumn,
+            dragState.activeColumnDropTarget
+          )
+        : sectionCards,
+    [dragState.activeColumnDropTarget, dragState.activeDragColumn, sectionCards]
+  );
 
   const summaryItems = [
     { label: t('dashboard.homePersonal.stats.cards'), value: selectedIds.length },
@@ -107,7 +147,7 @@ export function useHomeDashboardEditor({
   return {
     allCards,
     flowCards,
-    sectionCards,
+    sectionCards: previewSectionCards,
     activeSectionId,
     setActiveSectionId,
     ...dragState,

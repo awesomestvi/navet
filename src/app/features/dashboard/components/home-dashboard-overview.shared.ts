@@ -27,6 +27,7 @@ export interface HomeDashboardOverviewProps {
   addHomeColumnSection: (targetSectionId?: string) => string;
   addHomeSectionBelow: (targetSectionId: string) => string;
   moveHomeSection: (sourceId: string, targetId: string) => void;
+  moveHomeColumn: (sourceId: string, targetId: string) => void;
   renameHomeSection: (sectionId: string, title: string) => void;
   removeHomeSection: (sectionId: string) => void;
   resizeHomeSection: (
@@ -58,6 +59,7 @@ export type CardGridProps = {
   cardIds: string[];
   sectionId?: string;
   gridCols?: number;
+  activeDragCard?: string | null;
   allCards: Map<string, DeviceWithType | CustomCard>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
@@ -74,6 +76,8 @@ export type SectionCanvasProps = {
   title: string;
   gridCols: number;
   isActive: boolean;
+  isPreviewHidden?: boolean;
+  activeDragCard?: string | null;
   accentColor: string;
   cardIds: string[];
   allCards: Map<string, DeviceWithType | CustomCard>;
@@ -291,7 +295,8 @@ export function getPortraitLaneCount(sectionGridCols: number) {
 }
 
 export function getCardGridTargetWidth(renderedGridCols: number, gridGapPx: number) {
-  const microCardMinWidth = Math.max(80, Math.round((MIN_HOME_CARD_TRACK_WIDTH - gridGapPx) / 2));
+  const compactTrackWidth = renderedGridCols <= 4 ? 168 : MIN_HOME_CARD_TRACK_WIDTH;
+  const microCardMinWidth = Math.max(80, Math.round((compactTrackWidth - gridGapPx) / 2));
   return {
     microCardMinWidth,
     targetGridWidth:

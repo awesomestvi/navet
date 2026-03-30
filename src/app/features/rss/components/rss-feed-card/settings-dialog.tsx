@@ -1,15 +1,27 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import {
   CompactRoomSelector,
+  CustomCardTintPicker,
   DialogHeader,
-  DialogSectionRow,
 } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
+import {
+  CustomDialogDoneButton,
+  customCardDialogShellProps,
+  DialogFooter,
+  DialogShell,
+} from '@/app/components/shared/dialog-shell';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import {
+  getCustomCardTintSurface,
+  getInheritedDialogSectionStyle,
+  normalizeCustomCardTint,
+  withTintAlpha,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { type TranslateFn, useI18n } from '@/app/hooks';
+import { type TranslateFn, useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import { getRSSFeedCardSurfaceTokens } from './surface-tokens';
 import type { RSSProvider } from './types';
 
 interface RSSFeedSettingsDialogProps {
@@ -30,6 +42,8 @@ interface RSSFeedSettingsDialogProps {
   articleCount: number;
   onArticleCountChange: (count: number) => void;
   onRoomChange?: (room: string) => void;
+  tintColor?: string;
+  onTintColorChange?: (color: string) => void;
 }
 
 export function RSSFeedSettingsDialog({
@@ -50,13 +64,35 @@ export function RSSFeedSettingsDialog({
   articleCount,
   onArticleCountChange,
   onRoomChange,
+  tintColor,
+  onTintColorChange,
 }: RSSFeedSettingsDialogProps) {
   const surface = getThemeSurfaceTokens(theme);
+  const { colors } = useTheme();
+  const cardShell = getCardShellSurfaceTokens(theme);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const rssSurface = getRSSFeedCardSurfaceTokens(theme, 'blue', tintColor);
+  const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const { t } = useI18n();
   const [providerName, setProviderName] = useState('');
   const [providerUrl, setProviderUrl] = useState('');
   const [isAddFeedOpen, setIsAddFeedOpen] = useState(false);
   const canAddProvider = providerName.trim().length > 0 && providerUrl.trim().length > 0;
+  const dialogShell = customCardDialogShellProps(surface, tintSurface, {
+    maxWidth: 'lg',
+    fallbackDecoration: {
+      glowClassName: `bg-linear-to-br ${colors.rss.glow} to-transparent`,
+      overlayClassName: rssSurface.overlayClassName,
+    },
+    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border p-6 shadow-2xl ${cardShell.backdropClassName} bg-linear-to-br ${colors.rss.gradient} ${colors.rss.border}`,
+  });
+  const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, '#06b6d4');
+  const softButtonStyle = resolvedTintColor
+    ? {
+        backgroundColor: withTintAlpha(resolvedTintColor, theme === 'light' ? 0.12 : 0.16),
+        borderColor: withTintAlpha(resolvedTintColor, theme === 'light' ? 0.2 : 0.28),
+      }
+    : sectionStyle;
 
   const directProviders = providers.filter((provider) => provider.type === 'url');
   const hasProviders = providers.length > 0;
@@ -84,21 +120,34 @@ export function RSSFeedSettingsDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       overlayClassName={surface.dialogBackdrop}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 w-[90vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border p-6 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowClassName={dialogShell.contentGlowClassName}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <DialogHeader
         title={t('rss.settings.title')}
         description={t('rss.settings.description', { title })}
         isOn={theme !== 'light'}
+        supportingContent={
+          <CompactRoomSelector
+            value={roomValue}
+            label={roomLabel}
+            options={roomOptions}
+            onChange={onRoomChange}
+          />
+        }
       />
-      <DialogSectionRow label={t('common.room')}>
-        <CompactRoomSelector
-          value={roomValue}
-          label={roomLabel}
-          options={roomOptions}
-          onChange={onRoomChange}
+
+      {onTintColorChange ? (
+        <CustomCardTintPicker
+          value={tintColor}
+          onChange={onTintColorChange}
+          defaultColor="#06b6d4"
+          className={surface.textMuted}
         />
-      </DialogSectionRow>
+      ) : null}
 
       <div className="mb-5 space-y-4">
         {hasProviders ? (
@@ -110,6 +159,8 @@ export function RSSFeedSettingsDialog({
                 selectedProviderIds={selectedProviderIds}
                 onToggleProvider={handleToggleProvider}
                 primaryColorValue={primaryColorValue}
+                sectionStyle={sectionStyle}
+                softButtonStyle={softButtonStyle}
                 surface={surface}
                 t={t}
               />
@@ -123,6 +174,8 @@ export function RSSFeedSettingsDialog({
                 onToggleProvider={handleToggleProvider}
                 onRemoveProvider={onRemoveProvider}
                 primaryColorValue={primaryColorValue}
+                sectionStyle={sectionStyle}
+                softButtonStyle={softButtonStyle}
                 surface={surface}
                 t={t}
               />
@@ -136,7 +189,7 @@ export function RSSFeedSettingsDialog({
           </div>
         )}
 
-        <div className={`rounded-2xl border ${surface.border} ${surface.subtleBg}`}>
+        <div className={`rounded-2xl border ${surface.border}`} style={sectionStyle}>
           <button
             type="button"
             onClick={() => setIsAddFeedOpen((current) => !current)}
@@ -158,18 +211,27 @@ export function RSSFeedSettingsDialog({
           </button>
 
           {isAddFeedOpen ? (
-            <div className="space-y-3 border-t px-4 py-4">
+            <div
+              className="space-y-3 border-t px-4 py-4"
+              style={
+                resolvedTintColor
+                  ? { borderColor: withTintAlpha(resolvedTintColor, 0.18) }
+                  : undefined
+              }
+            >
               <input
                 value={providerName}
                 onChange={(event) => setProviderName(event.target.value)}
                 placeholder={t('rss.settings.providerName')}
                 className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none ${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder}`}
+                style={sectionStyle}
               />
               <input
                 value={providerUrl}
                 onChange={(event) => setProviderUrl(event.target.value)}
                 placeholder={t('rss.settings.providerUrl')}
                 className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none ${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder}`}
+                style={sectionStyle}
               />
               <div className="flex items-center gap-2">
                 <button
@@ -186,6 +248,7 @@ export function RSSFeedSettingsDialog({
                   type="button"
                   onClick={() => setIsAddFeedOpen(false)}
                   className={`rounded-2xl border px-4 py-2 text-sm font-medium ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+                  style={softButtonStyle}
                 >
                   {t('common.cancel')}
                 </button>
@@ -207,9 +270,18 @@ export function RSSFeedSettingsDialog({
               onClick={() => onArticleCountChange(count)}
               className={`rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
                 articleCount === count
-                  ? `${surface.textPrimary} ${surface.subtleBg} ring-1 ring-inset ring-white/20`
+                  ? `${surface.textPrimary} ring-1 ring-inset ring-white/20`
                   : `${surface.textSecondary} ${surface.hoverBg}`
               }`}
+              style={
+                articleCount === count
+                  ? {
+                      backgroundColor: primaryColorValue,
+                      borderColor: primaryColorValue,
+                      color: '#ffffff',
+                    }
+                  : softButtonStyle
+              }
             >
               {count}
             </button>
@@ -217,16 +289,13 @@ export function RSSFeedSettingsDialog({
         </div>
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <Dialog.Close asChild>
-          <button
-            type="button"
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${surface.textPrimary} ${surface.subtleBg} ${surface.hoverBg}`}
-          >
-            {t('common.done')}
-          </button>
-        </Dialog.Close>
-      </div>
+      <DialogFooter>
+        <CustomDialogDoneButton
+          label={t('common.done')}
+          className={`rounded-xl px-4 py-2 text-sm font-medium ${surface.textPrimary} ${surface.hoverBg}`}
+          style={softButtonStyle}
+        />
+      </DialogFooter>
     </DialogShell>
   );
 }
@@ -238,6 +307,8 @@ function RSSProviderGroup({
   onToggleProvider,
   onRemoveProvider,
   primaryColorValue,
+  sectionStyle,
+  softButtonStyle,
   surface,
   t,
 }: {
@@ -247,6 +318,8 @@ function RSSProviderGroup({
   onToggleProvider: (providerId: string) => void;
   onRemoveProvider?: (providerId: string) => void;
   primaryColorValue: string;
+  sectionStyle?: CSSProperties;
+  softButtonStyle?: CSSProperties;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   t: TranslateFn;
 }) {
@@ -262,7 +335,8 @@ function RSSProviderGroup({
         return (
           <div
             key={provider.id}
-            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${surface.border} ${surface.subtleBg}`}
+            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${surface.border}`}
+            style={sectionStyle}
           >
             <button
               type="button"
@@ -304,6 +378,7 @@ function RSSProviderGroup({
                     onRemoveProvider?.(provider.id);
                   }}
                   className={`rounded-xl p-2 ${surface.textSecondary} ${surface.hoverBg}`}
+                  style={softButtonStyle}
                   aria-label={t('rss.settings.removeProvider', { name: provider.name })}
                 >
                   <Trash2 className="h-4 w-4" />

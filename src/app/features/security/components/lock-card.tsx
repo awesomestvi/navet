@@ -23,6 +23,7 @@ interface LockCardProps {
   room: string;
   initialState?: boolean; // true = locked, false = unlocked
   size?: CardSize;
+  isEditMode?: boolean;
 }
 
 export const LockCard = memo(function LockCard({
@@ -30,6 +31,7 @@ export const LockCard = memo(function LockCard({
   name,
   initialState = true,
   size = 'small',
+  isEditMode = false,
 }: Omit<LockCardProps, 'room'>) {
   const [isLocked, setIsLocked] = useState(initialState);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
@@ -112,10 +114,14 @@ export const LockCard = memo(function LockCard({
             ) : null}
           </>
         }
-        actionButtonProps={{
-          onClick: handleToggleLock,
-          'aria-label': isLocked ? t('security.unlocked') : t('security.locked'),
-        }}
+        actionButtonProps={
+          isEditMode
+            ? undefined
+            : {
+                onClick: handleToggleLock,
+                'aria-label': isLocked ? t('security.unlocked') : t('security.locked'),
+              }
+        }
       />
     );
   }
@@ -154,23 +160,39 @@ export const LockCard = memo(function LockCard({
             />
           }
           trailing={
-            <RoundControlButton
-              theme={theme}
-              size="extra-small"
-              variant="emphasis"
-              onClick={handleToggleLock}
-              className={`h-9 w-9 ${
-                isLocked
-                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
-                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
-              }`}
-            >
-              {isLocked ? (
-                <Lock className="h-4.5 w-4.5 text-white" />
-              ) : (
-                <Unlock className="h-4.5 w-4.5 text-white" />
-              )}
-            </RoundControlButton>
+            isEditMode ? (
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  isLocked
+                    ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
+                    : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
+                }`}
+              >
+                {isLocked ? (
+                  <Lock className="h-4.5 w-4.5 text-white" />
+                ) : (
+                  <Unlock className="h-4.5 w-4.5 text-white" />
+                )}
+              </div>
+            ) : (
+              <RoundControlButton
+                theme={theme}
+                size="extra-small"
+                variant="emphasis"
+                onClick={handleToggleLock}
+                className={`h-9 w-9 ${
+                  isLocked
+                    ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
+                    : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
+                }`}
+              >
+                {isLocked ? (
+                  <Lock className="h-4.5 w-4.5 text-white" />
+                ) : (
+                  <Unlock className="h-4.5 w-4.5 text-white" />
+                )}
+              </RoundControlButton>
+            )
           }
         />
       </div>
@@ -208,23 +230,41 @@ export const LockCard = memo(function LockCard({
         />
 
         <div className="flex-1 flex flex-col items-center justify-center">
-          <RoundControlButton
-            theme={theme}
-            size={isExtraSmall ? 'extra-small' : 'large'}
-            variant="emphasis"
-            onClick={handleToggleLock}
-            className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
-              isLocked
-                ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
-                : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
-            }`}
-          >
-            {isLocked ? (
-              <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-            ) : (
-              <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-            )}
-          </RoundControlButton>
+          {isEditMode ? (
+            <div
+              className={`flex shrink-0 items-center justify-center rounded-full ${
+                isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'
+              } ${
+                isLocked
+                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
+                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
+              }`}
+            >
+              {isLocked ? (
+                <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+              ) : (
+                <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+              )}
+            </div>
+          ) : (
+            <RoundControlButton
+              theme={theme}
+              size={isExtraSmall ? 'extra-small' : 'large'}
+              variant="emphasis"
+              onClick={handleToggleLock}
+              className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
+                isLocked
+                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
+                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
+              }`}
+            >
+              {isLocked ? (
+                <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+              ) : (
+                <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+              )}
+            </RoundControlButton>
+          )}
 
           <div className={`text-center ${isExtraSmall ? 'mt-2' : 'mt-3'}`}>
             <div

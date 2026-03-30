@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'react';
 import { CardActionRow } from '@/app/components/shared/card-action-row';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { DialogHeader, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { DialogHeader } from '@/app/components/shared/device-editor';
 import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
@@ -328,10 +328,10 @@ export function CoverCardView({
             title={t('cover.settings.deviceType')}
             description={t('cover.settings.description', { name })}
             isOn
+            supportingContent={
+              <EntityRoomSelector entityId={entityId} label={t('common.room')} compact />
+            }
           />
-          <DialogSectionRow label={t('common.room')}>
-            <EntityRoomSelector entityId={entityId} label={t('common.room')} compact />
-          </DialogSectionRow>
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {

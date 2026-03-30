@@ -5,24 +5,36 @@ import { useI18n, useTheme } from '@/app/hooks';
 interface NetworkStatusBannerProps {
   connected: boolean;
   connecting: boolean;
+  reconnecting: boolean;
   isOnline: boolean;
 }
 
-export function NetworkStatusBanner({ connected, connecting, isOnline }: NetworkStatusBannerProps) {
+export function NetworkStatusBanner({
+  connected,
+  connecting,
+  reconnecting,
+  isOnline,
+}: NetworkStatusBannerProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
 
-  if (isOnline && (connected || connecting)) {
+  if (isOnline && connected) {
     return null;
   }
 
   const isOffline = !isOnline;
   const Icon = isOffline ? WifiOff : AlertTriangle;
-  const title = isOffline ? t('network.offlineTitle') : t('network.disconnectedTitle');
+  const title = isOffline
+    ? t('network.offlineTitle')
+    : reconnecting || connecting
+      ? t('network.reconnectingTitle')
+      : t('network.disconnectedTitle');
   const description = isOffline
     ? t('network.offlineDescription')
-    : t('network.disconnectedDescription');
+    : reconnecting || connecting
+      ? t('network.reconnectingDescription')
+      : t('network.disconnectedDescription');
 
   return (
     <div className="fixed inset-x-0 top-0 z-[70] px-3 pt-3 md:px-6">

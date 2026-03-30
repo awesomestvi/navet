@@ -19,6 +19,8 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   onSizeChange,
   room,
   onRoomChange,
+  tintColor,
+  onTintColorChange,
 }: RSSFeedCardProps) {
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const { theme, colors, primaryColor } = useTheme();
@@ -54,10 +56,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 
   const roomValue = room === 'All' || !room ? HOME_WIDGET_ROOM : room;
   const roomLabel = roomValue === HOME_WIDGET_ROOM ? t('dashboard.roomNav.all') : roomValue;
-  const selectedFeedLabel =
-    selectedProviders.length > 0
-      ? selectedProviders.map((provider) => provider.name).join(', ')
-      : t('rss.title');
   const roomOptions = [
     { label: t('dashboard.roomNav.all'), value: HOME_WIDGET_ROOM },
     ...rooms.map((entry) => ({ label: entry, value: entry })),
@@ -72,9 +70,9 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         theme={theme}
         primaryColor={primaryColor}
         colors={colors}
+        tintColor={tintColor}
         isSmall={isSmall}
         isMedium={isMedium}
-        selectedFeedLabel={selectedFeedLabel}
         latestArticle={latestArticle}
         items={items}
         handleArticleClick={handleArticleClick}
@@ -125,6 +123,8 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
           articleCount={articleCount}
           onArticleCountChange={setArticleCount}
           onRoomChange={onRoomChange}
+          tintColor={tintColor}
+          onTintColorChange={onTintColorChange}
         />
       ) : null}
     </>

@@ -22,6 +22,7 @@ function AppContent() {
   const { config: haConfig } = useConfig();
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
+  const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
   const { accentColor } = useTheme();
   const { disableAnimations, lowPowerMode, effectsQuality, pageZoom } = useSettingsStore(
@@ -105,7 +106,12 @@ function AppContent() {
   return (
     <>
       <PwaUpdatePrompt />
-      <NetworkStatusBanner connected={connected} connecting={connecting} isOnline={isOnline} />
+      <NetworkStatusBanner
+        connected={connected}
+        connecting={connecting}
+        reconnecting={reconnecting}
+        isOnline={isOnline}
+      />
       <Toaster />
       {!isAuthenticated ? <LoginPage /> : <DashboardPage />}
     </>
