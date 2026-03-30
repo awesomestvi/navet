@@ -1,7 +1,16 @@
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
-import { type CSSProperties, memo, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   CARD_GRID_ROW_CLASS,
   type CardSize,
@@ -51,12 +60,10 @@ export function FlowCanvas({
   onOpenAddCardDialog?: (targetSectionId?: string) => void;
 }) {
   const { t } = useI18n();
+  const sortableItems = useMemo(() => cardIds.map((cardId) => `home-card-${cardId}`), [cardIds]);
 
   return (
-    <SortableContext
-      items={cardIds.map((cardId) => `home-card-${cardId}`)}
-      strategy={rectSortingStrategy}
-    >
+    <SortableContext items={sortableItems} strategy={rectSortingStrategy}>
       <HomeContainerDropZone cardIds={cardIds}>
         {cardIds.length > 0 ? (
           <CardGrid
@@ -150,86 +157,137 @@ export const CardGrid = memo(function CardGrid({
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [outerWidth, setOuterWidth] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const resolvedCardSizes = cardIds.map((cardId) => {
-    const entry = allCards.get(cardId);
-    return cardSizes[cardId] ?? entry?.size ?? 'small';
-  });
-  const hasOnlyTinyCards =
-    resolvedCardSizes.length > 0 && resolvedCardSizes.every((size) => size === 'tiny');
+  const resolvedCardSizes = useMemo(
+    () =>
+      cardIds.map((cardId) => {
+        const entry = allCards.get(cardId);
+        return cardSizes[cardId] ?? entry?.size ?? 'small';
+      }),
+    [allCards, cardIds, cardSizes]
+  );
+  const hasOnlyTinyCards = useMemo(
+    () => resolvedCardSizes.length > 0 && resolvedCardSizes.every((size) => size === 'tiny'),
+    [resolvedCardSizes]
+  );
   const preferredRenderedGridCols = logicalGridCols * 2;
   const renderedGridCols = isEditMode && hasOnlyTinyCards ? 1 : preferredRenderedGridCols;
 
-  const { microCardMinWidth, targetGridWidth } = getCardGridTargetWidth(
-    renderedGridCols,
-    gridGapPx
+  const { microCardMinWidth, targetGridWidth } = useMemo(
+    () => getCardGridTargetWidth(renderedGridCols, gridGapPx),
+    [gridGapPx, renderedGridCols]
   );
   const addCardSlotCols = Math.min(renderedGridCols, 2);
   const hasInlineAddCardSlot = hasTrailingAddCardSlot;
+  const handleAddCard = useCallback(() => {
+    onOpenAddCardDialog?.();
+  }, [onOpenAddCardDialog]);
 
   useEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
-    if (!outer || !inner || typeof ResizeObserver === 'undefined') {
+    if (
+      !outer ||
+      !inner ||
+      typeof ResizeObserver === 'undefined' ||
+      typeof window === 'undefined'
+    ) {
       return;
     }
 
+    let pendingWidth = outer.clientWidth;
+    let pendingHeight = inner.offsetHeight;
+    let frameId: number | null = null;
+
+    const flush = () => {
+      frameId = null;
+      setOuterWidth((previous) => (previous === pendingWidth ? previous : pendingWidth));
+      setContentHeight((previous) => (previous === pendingHeight ? previous : pendingHeight));
+    };
+
+    const scheduleFlush = () => {
+      if (frameId !== null) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(flush);
+    };
+
     const outerObserver = new ResizeObserver((entries) => {
-      const nextWidth = entries[0]?.contentRect.width ?? outer.clientWidth;
-      setOuterWidth((previous) => (previous === nextWidth ? previous : nextWidth));
+      pendingWidth = entries[0]?.contentRect.width ?? outer.clientWidth;
+      scheduleFlush();
     });
+
     const innerObserver = new ResizeObserver((entries) => {
-      const nextHeight = entries[0]?.contentRect.height ?? inner.offsetHeight;
-      setContentHeight((previous) => (previous === nextHeight ? previous : nextHeight));
+      pendingHeight = entries[0]?.contentRect.height ?? inner.offsetHeight;
+      scheduleFlush();
     });
 
     outerObserver.observe(outer);
     innerObserver.observe(inner);
 
-    setOuterWidth(outer.clientWidth);
-    setContentHeight(inner.offsetHeight);
+    scheduleFlush();
 
     return () => {
       outerObserver.disconnect();
       innerObserver.disconnect();
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
     };
   }, []);
 
   const autoScale =
     renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;
   const isAutoScaled = autoScale < 0.999;
+  const outerContainerStyle = useMemo(
+    () => (isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined),
+    [autoScale, contentHeight, isAutoScaled]
+  );
+  const innerContainerStyle = useMemo(
+    () =>
+      ({
+        ...(isAutoScaled
+          ? {
+              transform: `scale(${autoScale})`,
+              width: `${targetGridWidth}px`,
+            }
+          : {}),
+      }) as CSSProperties,
+    [autoScale, isAutoScaled, targetGridWidth]
+  );
+  const gridStyle = useMemo(
+    () =>
+      ({
+        '--home-card-cols': renderedGridCols,
+        '--home-card-min': `${microCardMinWidth}px`,
+        gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
+      }) as CSSProperties,
+    [microCardMinWidth, renderedGridCols]
+  );
+  const addCardSlotStyle = useMemo(
+    () =>
+      ({
+        gridColumn: `span ${addCardSlotCols} / span ${addCardSlotCols}`,
+        borderColor: 'rgba(255,255,255,0.16)',
+        background:
+          'radial-gradient(circle at top left, rgba(159,176,255,0.1), transparent 34%), radial-gradient(circle at bottom right, rgba(159,176,255,0.06), transparent 28%)',
+      }) as CSSProperties,
+    [addCardSlotCols]
+  );
 
   return (
-    <div
-      ref={outerRef}
-      className="relative w-full"
-      style={isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined}
-    >
+    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
         ref={innerRef}
         className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
-        style={
-          {
-            ...(isAutoScaled
-              ? {
-                  transform: `scale(${autoScale})`,
-                  width: `${targetGridWidth}px`,
-                }
-              : {}),
-          } as CSSProperties
-        }
+        style={innerContainerStyle}
       >
         <div
           className={`grid w-full ${CARD_GRID_ROW_CLASS} gap-3.5 md:gap-3 lg:gap-4 ${
             hasInlineAddCardSlot ? 'grid-flow-row' : 'grid-flow-row-dense'
           }`}
-          style={
-            {
-              '--home-card-cols': renderedGridCols,
-              '--home-card-min': `${microCardMinWidth}px`,
-              gridTemplateColumns:
-                'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
-            } as CSSProperties
-          }
+          style={gridStyle}
         >
           {cardIds.map((cardId) => {
             const entry = allCards.get(cardId);
@@ -278,16 +336,9 @@ export const CardGrid = memo(function CardGrid({
           {hasInlineAddCardSlot ? (
             <button
               type="button"
-              onClick={() => {
-                onOpenAddCardDialog?.();
-              }}
+              onClick={handleAddCard}
               className="flex min-h-21.75 min-w-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-[20px] border-2 border-dashed px-4 text-center"
-              style={{
-                gridColumn: `span ${addCardSlotCols} / span ${addCardSlotCols}`,
-                borderColor: 'rgba(255,255,255,0.16)',
-                background:
-                  'radial-gradient(circle at top left, rgba(159,176,255,0.1), transparent 34%), radial-gradient(circle at bottom right, rgba(159,176,255,0.06), transparent 28%)',
-              }}
+              style={addCardSlotStyle}
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5">
                 <Plus className="h-4 w-4 text-white/80" />

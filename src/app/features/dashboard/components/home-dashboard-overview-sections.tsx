@@ -1,5 +1,5 @@
 import { Wand2 } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { HomeEditorSection } from '../hooks/use-home-dashboard-editor';
@@ -78,24 +78,42 @@ export function SectionCanvasGrid({
   ) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
-  const sectionStacksByRow = buildSectionStacks(sections);
-  const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
-  const visibleRows = (
-    isPortraitHome
-      ? buildPortraitStackRows(sectionStacksByRow, portraitLaneCount)
-      : sectionStacksByRow
-  ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes));
-  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
-  const minWidthsBySection = Object.fromEntries(
-    sections.map((section) => [
-      section.id,
-      getSectionMinBaseWidth(section.cardIds, cardSizes, sectionGridCols),
-    ])
+  const sectionStacksByRow = useMemo(() => buildSectionStacks(sections), [sections]);
+  const portraitLaneCount = useMemo(() => getPortraitLaneCount(sectionGridCols), [sectionGridCols]);
+  const visibleRows = useMemo(
+    () =>
+      (isPortraitHome
+        ? buildPortraitStackRows(sectionStacksByRow, portraitLaneCount)
+        : sectionStacksByRow
+      ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes)),
+    [cardSizes, isPortraitHome, portraitLaneCount, sectionGridCols, sectionStacksByRow]
   );
-
-  return (
-    <div className="flex flex-col gap-5">
-      {visibleRows.map((rowStacks, rowIndex) => {
+  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
+  const rowGridStyle = useMemo(
+    () =>
+      isPortraitHome
+        ? ({
+            gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
+          } as CSSProperties)
+        : ({
+            '--home-section-cols': sectionGridCols,
+            gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
+          } as CSSProperties),
+    [isPortraitHome, portraitLaneCount, sectionGridCols]
+  );
+  const minWidthsBySection = useMemo(
+    () =>
+      Object.fromEntries(
+        sections.map((section) => [
+          section.id,
+          getSectionMinBaseWidth(section.cardIds, cardSizes, sectionGridCols),
+        ])
+      ),
+    [cardSizes, sectionGridCols, sections]
+  );
+  const visibleRowLayouts = useMemo(
+    () =>
+      visibleRows.map((rowStacks) => {
         const rowMinSpansById = Object.fromEntries(
           rowStacks.map((stack) => [stack[0].id, getStackMinSpan(stack, cardSizes)])
         );
@@ -109,21 +127,17 @@ export function SectionCanvasGrid({
           rowMinSpansById
         );
 
+        return { rowLayouts, rowStacks };
+      }),
+    [cardSizes, sectionGridCols, visibleRows]
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      {visibleRowLayouts.map(({ rowLayouts, rowStacks }, rowIndex) => {
         return (
           <div key={rowIndex} className="space-y-4">
-            <div
-              className={`grid items-start ${SECTION_GRID_GAP_CLASS}`}
-              style={
-                isPortraitHome
-                  ? ({
-                      gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
-                    } as CSSProperties)
-                  : ({
-                      '--home-section-cols': sectionGridCols,
-                      gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-                    } as CSSProperties)
-              }
-            >
+            <div className={`grid items-start ${SECTION_GRID_GAP_CLASS}`} style={rowGridStyle}>
               {rowStacks.map((stack, columnIndex) => {
                 const leadSection = stack[0];
                 const rowLayout = rowLayouts.get(leadSection.id);
@@ -248,6 +262,56 @@ export function HomePresentation({
 }) {
   const sectionGridCols = gridCols;
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
+  const nonEmptySections = useMemo(
+    () => sections.filter((section) => section.cardIds.length > 0),
+    [sections]
+  );
+  const presentationRowStacks = useMemo(
+    () => buildSectionStacks(nonEmptySections),
+    [nonEmptySections]
+  );
+  const portraitLaneCount = useMemo(() => getPortraitLaneCount(sectionGridCols), [sectionGridCols]);
+  const visibleRows = useMemo(
+    () =>
+      (isPortraitHome
+        ? buildPortraitStackRows(presentationRowStacks, portraitLaneCount)
+        : presentationRowStacks
+      ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes)),
+    [cardSizes, isPortraitHome, portraitLaneCount, presentationRowStacks, sectionGridCols]
+  );
+  const presentationRowLayouts = useMemo(
+    () =>
+      visibleRows.map((rowStacks) => {
+        const rowMinSpansById = Object.fromEntries(
+          rowStacks.map((stack) => [stack[0].id, getStackMinSpan(stack, cardSizes)])
+        );
+        const rowLayouts = getRenderedRowLayouts(
+          rowStacks.map((stack) => ({
+            id: stack[0].id,
+            x: stack[0].x,
+            span: getStoredSectionSpan(stack[0]),
+          })),
+          sectionGridCols,
+          rowMinSpansById
+        );
+
+        return { rowLayouts, rowStacks };
+      }),
+    [cardSizes, sectionGridCols, visibleRows]
+  );
+  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
+  const presentationRowGridStyle = useMemo(
+    () =>
+      isPortraitHome
+        ? ({
+            gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
+          } as CSSProperties)
+        : ({
+            '--home-section-cols': sectionGridCols,
+            gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
+          } as CSSProperties),
+    [isPortraitHome, portraitLaneCount, sectionGridCols]
+  );
 
   if (!hasCards) {
     return (
@@ -283,48 +347,15 @@ export function HomePresentation({
     );
   }
 
-  const presentationRowStacks = buildSectionStacks(
-    sections.filter((section) => section.cardIds.length > 0)
-  );
-  const portraitLaneCount = getPortraitLaneCount(sectionGridCols);
-  const visibleRows = (
-    isPortraitHome
-      ? buildPortraitStackRows(presentationRowStacks, portraitLaneCount)
-      : presentationRowStacks
-  ).flatMap((rowStacks) => splitRowStacksByMinSpan(rowStacks, sectionGridCols, cardSizes));
-  const portraitLaneCols = Math.max(1, Math.floor(sectionGridCols / portraitLaneCount));
-
   return (
     <div className="space-y-7 md:space-y-8">
       <div className="flex flex-col gap-6">
-        {visibleRows.map((rowStacks, rowIndex) => {
-          const rowMinSpansById = Object.fromEntries(
-            rowStacks.map((stack) => [stack[0].id, getStackMinSpan(stack, cardSizes)])
-          );
-          const rowLayouts = getRenderedRowLayouts(
-            rowStacks.map((stack) => ({
-              id: stack[0].id,
-              x: stack[0].x,
-              span: getStoredSectionSpan(stack[0]),
-            })),
-            sectionGridCols,
-            rowMinSpansById
-          );
-
+        {presentationRowLayouts.map(({ rowLayouts, rowStacks }, rowIndex) => {
           return (
             <div
               key={rowIndex}
               className={`grid ${SECTION_GRID_GAP_CLASS}`}
-              style={
-                isPortraitHome
-                  ? ({
-                      gridTemplateColumns: `repeat(${portraitLaneCount}, minmax(0, 1fr))`,
-                    } as CSSProperties)
-                  : ({
-                      '--home-section-cols': sectionGridCols,
-                      gridTemplateColumns: 'repeat(var(--home-section-cols), minmax(0, 1fr))',
-                    } as CSSProperties)
-              }
+              style={presentationRowGridStyle}
             >
               {rowStacks.map((stack) => {
                 const leadSection = stack[0];

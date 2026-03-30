@@ -198,6 +198,84 @@ rebuild, each new device object is compared against its previous version (primit
 reference. When no devices changed, the same Map instance is returned, collapsing the
 entire cascade.
 
+---
+
+## Performance optimization patterns
+
+### useShallow for multi-value subscriptions
+
+When subscribing to multiple related values from a store, use `useShallow` from Zustand to
+enable shallow equality checking instead of referential equality. This prevents re-renders
+when multiple fields are extracted but only some have changed:
+
+```ts
+import { useShallow } from 'zustand/react/shallow';
+import { useSettingsStore } from '@/app/stores';
+
+// ✅ Good — only re-renders when effectsQuality or lowPowerMode actually change
+const { effectsQuality, lowPowerMode } = useSettingsStore(
+  useShallow((state) => ({
+    effectsQuality: state.effectsQuality,
+    lowPowerMode: state.lowPowerMode,
+  }))
+);
+
+// ❌ Avoid — creates new object every render, always re-renders
+const { effectsQuality, lowPowerMode } = useSettingsStore(
+  (state) => ({
+    effectsQuality: state.effectsQuality,
+    lowPowerMode: state.lowPowerMode,
+  })
+);
+```
+
+### Memoize complex computations and callbacks
+
+Use `useMemo` for expensive transformations and `useCallback` for stable callback references
+passed to child components or event handlers:
+
+```ts
+// ✅ Memoize derived arrays and objects
+const sortableItems = useMemo(() => 
+  cardIds.map((cardId) => `home-card-${cardId}`), 
+  [cardIds]
+);
+
+// ✅ Memoize callback closures
+const handleAddCard = useCallback(() => {
+  onOpenAddCardDialog?.();
+}, [onOpenAddCardDialog]);
+```
+
+### Cache Intl formatters
+
+Intl formatters are expensive to create. Cache them in a module-level Map keyed by locale,
+or memoize within components:
+
+```ts
+// Module-level cache for date/time formatters
+const timeFormatterByLocale = new Map<string, Intl.DateTimeFormat>();
+
+function getTimeFormatter(locale: string): Intl.DateTimeFormat {
+  const existing = timeFormatterByLocale.get(locale);
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' });
+  timeFormatterByLocale.set(locale, formatter);
+  return formatter;
+}
+```
+
+### Theme surface token memoization
+
+Use `useMemo` to prevent recalculation of theme surface tokens on every render:
+
+```ts
+const surface = useMemo(
+  () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
+  [resolvedEffectsQuality, theme]
+);
+```
+
 **`RoomSection` custom memo comparator** — Default `memo` re-renders all sections
 whenever `deviceMap` changes reference. The custom comparator (`areRoomSectionPropsEqual`)
 only iterates `orderedIds` that belong to *this* section when checking `deviceMap` and

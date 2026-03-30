@@ -1,5 +1,6 @@
 import { Clipboard, Home, Lightbulb, Lock, Settings, Tv, Video, Zap } from 'lucide-react';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { InteractivePill } from '@/app/components/shared/interactive-pill';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type Section, useI18n, useMediaQuery, useNavigation, useTheme } from '@/app/hooks';
@@ -11,10 +12,17 @@ export const Sidebar = memo(function Sidebar() {
   const { theme } = useTheme();
   const { t } = useI18n();
   const { activeSection, setActiveSection } = useNavigation();
-  const effectsQuality = useSettingsStore((state) => state.effectsQuality);
-  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode);
+  const { effectsQuality, lowPowerMode } = useSettingsStore(
+    useShallow((state) => ({
+      effectsQuality: state.effectsQuality,
+      lowPowerMode: state.lowPowerMode,
+    }))
+  );
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
-  const surface = getThemeSurfaceTokens(theme, resolvedEffectsQuality);
+  const surface = useMemo(
+    () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
+    [resolvedEffectsQuality, theme]
+  );
   const isGlass = theme === 'glass';
   const isHighEffects = resolvedEffectsQuality === 'high';
   const inactiveColor = `${surface.textMuted} ${surface.hoverBg}`;
@@ -161,7 +169,7 @@ export const Sidebar = memo(function Sidebar() {
           ) : null}
 
           <div
-            className={`relative flex min-h-[49px] items-stretch justify-around px-1 py-1 ${
+            className={`relative flex min-h-12.25 items-stretch justify-around px-1 py-1 ${
               isGlass ? surface.panelMuted : surface.shellPanel
             }`}
           >
@@ -175,7 +183,7 @@ export const Sidebar = memo(function Sidebar() {
                   onClick={item.onClick}
                   aria-label={item.label}
                   active={activeSection === item.section}
-                  className={`flex h-[49px] min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-[3px] rounded-[24px] px-1 py-1 transition-colors ${
+                  className={`flex h-12.25 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.75 rounded-3xl px-1 py-1 transition-colors ${
                     activeSection === item.section ? '' : inactiveColor
                   }`}
                 >

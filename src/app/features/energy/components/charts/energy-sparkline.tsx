@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useState } from 'react';
+import { memo, useCallback, useId, useMemo, useState } from 'react';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
@@ -48,7 +48,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   accentColor,
   height = 40,
 }: EnergySparklineProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { theme } = useTheme();
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
@@ -62,37 +62,65 @@ export const EnergySparkline = memo(function EnergySparkline({
     [data.length]
   );
 
-  if (data.length < 2) return null;
+  const tooltipDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }),
+    [locale]
+  );
 
-  const chartW = VB_W - PAD_X * 2;
-  const chartH = height - PAD_Y * 2;
-  const baseline = PAD_Y + chartH;
+  const { baseline, line, pts, chartHeight } = useMemo(() => {
+    if (data.length < 2) {
+      const chartH = height - PAD_Y * 2;
+      return {
+        baseline: PAD_Y + chartH,
+        line: '',
+        pts: [] as { x: number; y: number }[],
+        chartHeight: chartH,
+      };
+    }
 
-  const maxVal = Math.max(...data.map((d) => d.value), 1);
-  const xAt = (i: number) => PAD_X + (i / (data.length - 1)) * chartW;
-  const yAt = (v: number) => PAD_Y + (1 - v / maxVal) * chartH;
+    const chartW = VB_W - PAD_X * 2;
+    const chartH = height - PAD_Y * 2;
+    const nextBaseline = PAD_Y + chartH;
+    const maxVal = Math.max(...data.map((d) => d.value), 1);
+    const xAt = (i: number) => PAD_X + (i / (data.length - 1)) * chartW;
+    const yAt = (v: number) => PAD_Y + (1 - v / maxVal) * chartH;
+    const nextPoints = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
 
-  const pts = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
-  const line = smoothPath(pts);
+    return {
+      baseline: nextBaseline,
+      line: smoothPath(nextPoints),
+      pts: nextPoints,
+      chartHeight: chartH,
+    };
+  }, [data, height]);
+
   const activeIndex = hoverIndex;
   const activePoint = activeIndex === null ? null : data[activeIndex];
   const activeCoords = activeIndex === null ? null : pts[activeIndex];
 
-  const formatTooltipTimestamp = (timestampMs?: number) => {
-    if (!timestampMs || Number.isNaN(timestampMs)) {
-      return null;
-    }
+  const formatTooltipTimestamp = useCallback(
+    (timestampMs?: number) => {
+      if (!timestampMs || Number.isNaN(timestampMs)) {
+        return null;
+      }
 
-    return new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(new Date(timestampMs));
-  };
+      return tooltipDateFormatter.format(new Date(timestampMs));
+    },
+    [tooltipDateFormatter]
+  );
+
+  if (data.length < 2) {
+    return null;
+  }
 
   const tooltipTimestamp = formatTooltipTimestamp(activePoint?.timestampMs);
   const tooltipLeftPercent =
@@ -172,7 +200,7 @@ export const EnergySparkline = memo(function EnergySparkline({
             x1={activeCoords.x}
             y1={PAD_Y}
             x2={activeCoords.x}
-            y2={baseline}
+            y2={PAD_Y + chartHeight}
             stroke={tokens.accent}
             strokeOpacity="0.45"
             strokeDasharray="2 2"

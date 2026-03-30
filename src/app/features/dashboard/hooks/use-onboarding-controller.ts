@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n, useNavigation } from '@/app/hooks';
 import { importDashboardConfigFromFile } from '@/app/utils/dashboard-config';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
@@ -33,11 +34,14 @@ export function useOnboardingController({
   const { setActiveSection } = useNavigation();
   const { t } = useI18n();
 
-  const onboardingCompleted = useDashboardEntitiesStore((state) => state.onboardingCompleted);
-  const completeOnboarding = useDashboardEntitiesStore((state) => state.completeOnboarding);
-  const markOnboardingCompleted = useDashboardEntitiesStore(
-    (state) => state.markOnboardingCompleted
-  );
+  const { onboardingCompleted, completeOnboarding, markOnboardingCompleted } =
+    useDashboardEntitiesStore(
+      useShallow((state) => ({
+        onboardingCompleted: state.onboardingCompleted,
+        completeOnboarding: state.completeOnboarding,
+        markOnboardingCompleted: state.markOnboardingCompleted,
+      }))
+    );
 
   const [onboardingTransition, setOnboardingTransition] = useState<OnboardingTransition>(null);
   const [dashboardArrivalVariant, setDashboardArrivalVariant] =

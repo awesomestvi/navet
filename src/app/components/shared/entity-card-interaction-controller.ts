@@ -5,7 +5,7 @@ import {
   useMemo,
 } from 'react';
 import { useI18n } from '@/app/hooks';
-import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
+import { useSettingsStore } from '@/app/stores';
 
 type CardAction = 'toggle' | 'controls' | 'settings';
 
@@ -29,9 +29,6 @@ const NESTED_INTERACTIVE_SELECTOR = [
   '[role="switch"]',
   '[role="button"]',
 ].join(', ');
-
-export const normalizeInteractionMode = (mode: string | null | undefined): EntityInteractionMode =>
-  mode === 'control-first' ? 'control-first' : 'toggle-first';
 
 export function useEntityCardInteractionController({
   ariaLabel,
@@ -149,16 +146,27 @@ export function useEntityCardInteractionController({
     [runAction]
   );
 
+  const toggleButtonLabel = useMemo(
+    () => t('entityCardInteraction.toggle', { name: ariaLabel }),
+    [ariaLabel, t]
+  );
+  const settingsButtonLabel = useMemo(
+    () => t('entityCardInteraction.openSettings', { name: ariaLabel }),
+    [ariaLabel, t]
+  );
+  const iconButtonProps = useMemo(
+    () => getButtonProps('toggle', toggleButtonLabel),
+    [getButtonProps, toggleButtonLabel]
+  );
+  const settingsButtonProps = useMemo(
+    () => getButtonProps('settings', settingsButtonLabel),
+    [getButtonProps, settingsButtonLabel]
+  );
+
   return {
     interactionMode,
     cardProps,
-    iconButtonProps: getButtonProps(
-      'toggle',
-      t('entityCardInteraction.toggle', { name: ariaLabel })
-    ),
-    settingsButtonProps: getButtonProps(
-      'settings',
-      t('entityCardInteraction.openSettings', { name: ariaLabel })
-    ),
+    iconButtonProps,
+    settingsButtonProps,
   };
 }

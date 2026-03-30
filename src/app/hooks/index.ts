@@ -16,8 +16,7 @@ export { useDevices, useRooms } from './use-devices';
 export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
 export { useHomeAssistant } from './use-home-assistant';
-export { useInterval } from './use-interval';
-export { useBreakpoints, useMediaQuery } from './use-media-query';
+export { useMediaQuery } from './use-media-query';
 export { useNavigation } from './use-navigation';
 // New reusable hooks
 export { usePersistedState } from './use-persisted-state';

@@ -1,5 +1,5 @@
 import { Clipboard, Lightbulb, Lock, type LucideIcon, Tv, Video } from 'lucide-react';
-import { type CSSProperties, memo, type ReactNode } from 'react';
+import { type CSSProperties, memo, type ReactNode, useMemo } from 'react';
 import {
   CARD_GRID_ROW_CLASS,
   type CardSize,
@@ -126,7 +126,108 @@ export function MediaSection() {
   const { t } = useI18n();
   const devices = useDevices();
   const { isEditMode, toggleEditMode } = useEditMode();
-  const mediaDevices = devices.media.map((d) => ({ ...d, type: 'media' as const }));
+  const mediaDevices = useMemo(
+    () => devices.media.map((d) => ({ ...d, type: 'media' as const })),
+    [devices.media]
+  );
+
+  const playerType = t('media.type.player');
+  const speakerType = t('media.type.speaker');
+  const receiverType = t('media.type.receiver');
+  const soundbarType = t('media.type.soundbar');
+  const tvType = t('media.type.tv');
+  const audioTitle = t('sections.media.audio.title');
+  const audioSingular = t('sections.media.audio.singular');
+  const audioPlural = t('sections.media.audio.plural');
+  const tvTitle = t('sections.media.tv.title');
+  const tvSingular = t('sections.media.tv.singular');
+  const tvPlural = t('sections.media.tv.plural');
+
+  const sections = useMemo(() => {
+    const audioTypes = new Set([playerType, speakerType, receiverType, soundbarType]);
+    const audioDevices: DeviceWithType[] = [];
+    const tvDevices: DeviceWithType[] = [];
+    const otherGroups = new Map<string, DeviceWithType[]>();
+
+    for (const device of mediaDevices) {
+      const typeLabel =
+        typeof device.entityType === 'string' && device.entityType.trim()
+          ? device.entityType
+          : playerType;
+
+      if (audioTypes.has(typeLabel)) {
+        audioDevices.push(device);
+        continue;
+      }
+
+      if (typeLabel === tvType) {
+        tvDevices.push(device);
+        continue;
+      }
+
+      const existing = otherGroups.get(typeLabel);
+      if (existing) {
+        existing.push(device);
+      } else {
+        otherGroups.set(typeLabel, [device]);
+      }
+    }
+
+    const groupedSections: Array<{
+      key: string;
+      title: string;
+      singularLabel: string;
+      pluralLabel: string;
+      devices: DeviceWithType[];
+    }> = [];
+
+    if (audioDevices.length > 0) {
+      groupedSections.push({
+        key: 'audio',
+        title: audioTitle,
+        singularLabel: audioSingular,
+        pluralLabel: audioPlural,
+        devices: audioDevices,
+      });
+    }
+
+    if (tvDevices.length > 0) {
+      groupedSections.push({
+        key: 'tv',
+        title: tvTitle,
+        singularLabel: tvSingular,
+        pluralLabel: tvPlural,
+        devices: tvDevices,
+      });
+    }
+
+    for (const [label, groupedDevices] of otherGroups) {
+      const groupTitle = groupedDevices.length > 1 ? `${label}s` : label;
+
+      groupedSections.push({
+        key: label,
+        title: groupTitle,
+        singularLabel: label,
+        pluralLabel: groupTitle,
+        devices: groupedDevices,
+      });
+    }
+
+    return groupedSections;
+  }, [
+    audioPlural,
+    audioSingular,
+    audioTitle,
+    mediaDevices,
+    playerType,
+    receiverType,
+    soundbarType,
+    speakerType,
+    tvPlural,
+    tvSingular,
+    tvTitle,
+    tvType,
+  ]);
 
   if (mediaDevices.length === 0) {
     return (
@@ -136,77 +237,6 @@ export function MediaSection() {
         description={t('sections.media.emptyDescription')}
       />
     );
-  }
-
-  const audioTypes = new Set([
-    t('media.type.player'),
-    t('media.type.speaker'),
-    t('media.type.receiver'),
-    t('media.type.soundbar'),
-  ]);
-  const tvType = t('media.type.tv');
-
-  const audioDevices = mediaDevices.filter((device) =>
-    audioTypes.has(
-      typeof device.entityType === 'string' ? device.entityType : t('media.type.player')
-    )
-  );
-  const tvDevices = mediaDevices.filter((device) => device.entityType === tvType);
-
-  const otherGroups = mediaDevices
-    .filter((device) => !audioDevices.includes(device) && !tvDevices.includes(device))
-    .reduce<Map<string, DeviceWithType[]>>((groups, device) => {
-      const label =
-        typeof device.entityType === 'string' && device.entityType.trim()
-          ? device.entityType
-          : t('media.type.player');
-      const existing = groups.get(label);
-      if (existing) {
-        existing.push(device);
-      } else {
-        groups.set(label, [device]);
-      }
-      return groups;
-    }, new Map());
-
-  const sections: Array<{
-    key: string;
-    title: string;
-    singularLabel: string;
-    pluralLabel: string;
-    devices: DeviceWithType[];
-  }> = [];
-
-  if (audioDevices.length > 0) {
-    sections.push({
-      key: 'audio',
-      title: t('sections.media.audio.title'),
-      singularLabel: t('sections.media.audio.singular'),
-      pluralLabel: t('sections.media.audio.plural'),
-      devices: audioDevices,
-    });
-  }
-
-  if (tvDevices.length > 0) {
-    sections.push({
-      key: 'tv',
-      title: t('sections.media.tv.title'),
-      singularLabel: t('sections.media.tv.singular'),
-      pluralLabel: t('sections.media.tv.plural'),
-      devices: tvDevices,
-    });
-  }
-
-  for (const [label, groupedDevices] of otherGroups) {
-    const groupTitle = groupedDevices.length > 1 ? `${label}s` : label;
-
-    sections.push({
-      key: label,
-      title: groupTitle,
-      singularLabel: label,
-      pluralLabel: groupTitle,
-      devices: groupedDevices,
-    });
   }
 
   return (

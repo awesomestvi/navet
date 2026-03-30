@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
@@ -35,9 +36,13 @@ export const LightCard = memo(function LightCard({
   isEditMode,
 }: LightCardProps) {
   const { theme, colors, accentColor } = useTheme();
-  const ambientLightBleed = useSettingsStore((state) => state.ambientLightBleed);
-  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode);
-  const effectsQuality = useSettingsStore((state) => state.effectsQuality);
+  const { ambientLightBleed, lowPowerMode, effectsQuality } = useSettingsStore(
+    useShallow((state) => ({
+      ambientLightBleed: state.ambientLightBleed,
+      lowPowerMode: state.lowPowerMode,
+      effectsQuality: state.effectsQuality,
+    }))
+  );
   const [isKelvinMode, setIsKelvinMode] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const kelvinResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,7 +139,7 @@ export const LightCard = memo(function LightCard({
           <div
             data-ambient-light-bleed="true"
             aria-hidden="true"
-            className={`pointer-events-none absolute -inset-[100%] z-0 blur-3xl transition-all duration-500 ${
+            className={`pointer-events-none absolute -inset-full z-0 blur-3xl transition-all duration-500 ${
               theme === 'light' ? 'opacity-40' : 'opacity-20'
             }`}
             style={{

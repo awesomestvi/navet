@@ -65,13 +65,33 @@ export function useHomeDashboardEditor({
     [homeLayout.sections]
   );
 
+  const cardsBySection = useMemo(() => {
+    const grouped = new Map<string, string[]>();
+
+    for (const id of selectedIds) {
+      const sectionId = homeLayout.cardSectionAssignments[id];
+      if (!sectionId || !sectionIds.has(sectionId)) {
+        continue;
+      }
+
+      const existing = grouped.get(sectionId);
+      if (existing) {
+        existing.push(id);
+      } else {
+        grouped.set(sectionId, [id]);
+      }
+    }
+
+    return grouped;
+  }, [homeLayout.cardSectionAssignments, sectionIds, selectedIds]);
+
   const sectionCards = useMemo<HomeEditorSection[]>(
     () =>
       homeLayout.sections.map((section) => ({
         ...section,
-        cardIds: selectedIds.filter((id) => homeLayout.cardSectionAssignments[id] === section.id),
+        cardIds: cardsBySection.get(section.id) ?? [],
       })),
-    [homeLayout.cardSectionAssignments, homeLayout.sections, selectedIds]
+    [cardsBySection, homeLayout.sections]
   );
 
   useEffect(() => {
@@ -138,11 +158,14 @@ export function useHomeDashboardEditor({
     [dragState.activeColumnDropTarget, dragState.activeDragColumn, sectionCards]
   );
 
-  const summaryItems = [
-    { label: t('dashboard.homePersonal.stats.cards'), value: selectedIds.length },
-    { label: t('dashboard.homePersonal.stats.widgets'), value: allCustomCards.length },
-    { label: t('dashboard.homePersonal.stats.hidden'), value: hiddenEntityCount },
-  ];
+  const summaryItems = useMemo(
+    () => [
+      { label: t('dashboard.homePersonal.stats.cards'), value: selectedIds.length },
+      { label: t('dashboard.homePersonal.stats.widgets'), value: allCustomCards.length },
+      { label: t('dashboard.homePersonal.stats.hidden'), value: hiddenEntityCount },
+    ],
+    [allCustomCards.length, hiddenEntityCount, selectedIds.length, t]
+  );
 
   return {
     allCards,

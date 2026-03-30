@@ -5,6 +5,19 @@ import { UNKNOWN_ROOM_LABEL } from '../utils/device-location';
 
 type TFunc = (key: TranslationKey, values?: Record<string, string | number>) => string;
 
+const timeFormatterByLocale = new Map<string, Intl.DateTimeFormat>();
+
+function getTimeFormatter(locale: string): Intl.DateTimeFormat {
+  const existing = timeFormatterByLocale.get(locale);
+  if (existing) {
+    return existing;
+  }
+
+  const formatter = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' });
+  timeFormatterByLocale.set(locale, formatter);
+  return formatter;
+}
+
 // --- Numeric utilities ---
 
 export function parseNumberish(value: unknown): number | null {
@@ -141,7 +154,7 @@ export function formatClock(value: unknown, locale: string): string {
   if (typeof value !== 'string' || !value) return '--';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(date);
+  return getTimeFormatter(locale).format(date);
 }
 
 export function formatDaylight(sunrise: unknown, sunset: unknown): string {
@@ -184,7 +197,7 @@ export function isAllDayCalendarValue(value: unknown): boolean {
 
 export function formatCalendarTime(date: Date | null, locale: string): string {
   if (!date) return '--';
-  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(date);
+  return getTimeFormatter(locale).format(date);
 }
 
 export function inferCalendarEventType(title: string, location?: string) {

@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useConfig } from '@/app/contexts/config-context';
@@ -32,21 +33,44 @@ export function useSettingsSectionController() {
   const { languageOptions, t } = useI18n();
   const { logout, config } = useAuth();
   const { clearConfig } = useConfig();
-  const disableAnimations = useSettingsStore((state) => state.disableAnimations);
-  const effectsQuality = useSettingsStore((state) => state.effectsQuality);
-  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode);
-  const language = useSettingsStore((state) => state.language);
-  const pageZoom = useSettingsStore((state) => state.pageZoom);
-  const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
-  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
-  const entityInteractionMode = useSettingsStore((state) => state.entityInteractionMode);
-  const ambientLightBleed = useSettingsStore((state) => state.ambientLightBleed);
-  const updateSettings = useSettingsStore((state) => state.updateSettings);
-  const hiddenEntityIds = useDashboardEntitiesStore((state) => state.hiddenEntityIds);
-  const showAllEntities = useDashboardEntitiesStore((state) => state.showAllEntities);
-  const reopenOnboarding = useDashboardEntitiesStore((state) => state.reopenOnboarding);
-  const setActiveSection = useNavigationStore((state) => state.setActiveSection);
-  const setCurrentRoom = useNavigationStore((state) => state.setCurrentRoom);
+  const {
+    disableAnimations,
+    effectsQuality,
+    lowPowerMode,
+    language,
+    pageZoom,
+    temperatureUnit,
+    use24HourTime,
+    entityInteractionMode,
+    ambientLightBleed,
+    updateSettings,
+  } = useSettingsStore(
+    useShallow((state) => ({
+      disableAnimations: state.disableAnimations,
+      effectsQuality: state.effectsQuality,
+      lowPowerMode: state.lowPowerMode,
+      language: state.language,
+      pageZoom: state.pageZoom,
+      temperatureUnit: state.temperatureUnit,
+      use24HourTime: state.use24HourTime,
+      entityInteractionMode: state.entityInteractionMode,
+      ambientLightBleed: state.ambientLightBleed,
+      updateSettings: state.updateSettings,
+    }))
+  );
+  const { hiddenEntityIds, showAllEntities, reopenOnboarding } = useDashboardEntitiesStore(
+    useShallow((state) => ({
+      hiddenEntityIds: state.hiddenEntityIds,
+      showAllEntities: state.showAllEntities,
+      reopenOnboarding: state.reopenOnboarding,
+    }))
+  );
+  const { setActiveSection, setCurrentRoom } = useNavigationStore(
+    useShallow((state) => ({
+      setActiveSection: state.setActiveSection,
+      setCurrentRoom: state.setCurrentRoom,
+    }))
+  );
 
   const {
     showLicense,

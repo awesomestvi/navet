@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Header } from '@/app/components/layout/header';
 import { Sidebar } from '@/app/components/layout/sidebar';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
@@ -15,8 +16,12 @@ import type { DashboardLayoutProps } from './types';
  */
 export const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme, wallpaper, primaryColor } = useTheme();
-  const lowPowerMode = useSettingsStore((state) => state.lowPowerMode);
-  const effectsQuality = useSettingsStore((state) => state.effectsQuality);
+  const { lowPowerMode, effectsQuality } = useSettingsStore(
+    useShallow((state) => ({
+      lowPowerMode: state.lowPowerMode,
+      effectsQuality: state.effectsQuality,
+    }))
+  );
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
   const isContrast = theme === 'contrast';
@@ -110,7 +115,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
             }}
           />
           {showSharedGlassBlur ? (
-            <div className="absolute inset-0 backdrop-blur-[28px] [transform:translateZ(0)]" />
+            <div className="absolute inset-0 transform-[translateZ(0)] backdrop-blur-[28px]" />
           ) : null}
         </div>
       )}

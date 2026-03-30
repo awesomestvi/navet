@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import {
   getThemeColorValue,
   sanitizeCustomPrimaryColor,
@@ -36,10 +37,14 @@ export function useDashboardOnboardingController({
   setTheme: (theme: ThemeType) => void;
   theme: ThemeType;
 }) {
-  const language = useSettingsStore((state) => state.language);
-  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
-  const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
-  const updateSettings = useSettingsStore((state) => state.updateSettings);
+  const { language, use24HourTime, temperatureUnit, updateSettings } = useSettingsStore(
+    useShallow((state) => ({
+      language: state.language,
+      use24HourTime: state.use24HourTime,
+      temperatureUnit: state.temperatureUnit,
+      updateSettings: state.updateSettings,
+    }))
+  );
 
   const {
     fileInputRef,

@@ -41,7 +41,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.9",
+    "@biomejs/biome": "^2.4.10",
     "@tailwindcss/vite": "4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -53,7 +53,7 @@
     "jsdom": "^29.0.1",
     "tailwindcss": "4.2.2",
     "typescript": "^6.0.2",
-    "vite": "8.0.3",
+    "vite": "8.0.2",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.2"
   },

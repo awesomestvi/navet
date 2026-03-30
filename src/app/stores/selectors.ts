@@ -20,30 +20,29 @@ import type {
 export const themeSelectors = {
   // Single value selectors
   theme: (state: ThemeState) => state.theme,
+  followSystemTheme: (state: ThemeState) => state.followSystemTheme,
   primaryColor: (state: ThemeState) => state.primaryColor,
   customPrimaryColor: (state: ThemeState) => state.customPrimaryColor,
   wallpaper: (state: ThemeState) => state.wallpaper,
 
   // Action selectors (never cause re-renders)
   setTheme: (state: ThemeState) => state.setTheme,
+  setFollowSystemTheme: (state: ThemeState) => state.setFollowSystemTheme,
   setPrimaryColor: (state: ThemeState) => state.setPrimaryColor,
   setCustomPrimaryColor: (state: ThemeState) => state.setCustomPrimaryColor,
   setWallpaper: (state: ThemeState) => state.setWallpaper,
 
   // Combined selectors (use with shallow equality)
-  themeAndColor: (state: ThemeState) => ({
-    theme: state.theme,
-    primaryColor: state.primaryColor,
-    customPrimaryColor: state.customPrimaryColor,
-  }),
   allValues: (state: ThemeState) => ({
     theme: state.theme,
+    followSystemTheme: state.followSystemTheme,
     primaryColor: state.primaryColor,
     customPrimaryColor: state.customPrimaryColor,
     wallpaper: state.wallpaper,
   }),
   allActions: (state: ThemeState) => ({
     setTheme: state.setTheme,
+    setFollowSystemTheme: state.setFollowSystemTheme,
     setPrimaryColor: state.setPrimaryColor,
     setCustomPrimaryColor: state.setCustomPrimaryColor,
     setWallpaper: state.setWallpaper,
@@ -124,10 +123,6 @@ export const settingsSelectors = {
     ambientLightBleed: state.ambientLightBleed,
     weatherForecastMode: state.weatherForecastMode,
   }),
-  notificationSettings: (state: SettingsState) => ({
-    showNotifications: state.showNotifications,
-    showWeatherInHeader: state.showWeatherInHeader,
-  }),
 };
 
 /**
@@ -163,10 +158,6 @@ export const customCardsSelectors = {
   removeCard: (state: CustomCardsState) => state.removeCard,
   updateCard: (state: CustomCardsState) => state.updateCard,
   getCardsForRoom: (state: CustomCardsState) => state.getCardsForRoom,
-
-  // Computed selectors
-  cardsCount: (state: CustomCardsState) => state.cards.length,
-  hasCards: (state: CustomCardsState) => state.cards.length > 0,
 };
 
 /**
@@ -181,6 +172,9 @@ export const customCardsSelectors = {
  * // ✅ Multiple values with shallow equality
  * import { useShallow } from 'zustand/react/shallow';
  * const { theme, primaryColor } = useThemeStore(
- *   useShallow(themeSelectors.themeAndColor)
+ *   useShallow((state) => ({
+ *     theme: state.theme,
+ *     primaryColor: state.primaryColor,
+ *   }))
  * );
  */

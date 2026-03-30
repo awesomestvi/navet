@@ -1,6 +1,6 @@
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
 import { Columns2, GripVertical, LayoutPanelTop, LayoutTemplate, Plus, Rows3 } from 'lucide-react';
-import { memo, useDeferredValue } from 'react';
+import { memo, useCallback, useDeferredValue } from 'react';
 import { cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -76,6 +76,64 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     moveHomeColumn,
   });
 
+  const handleDragStart = useCallback(
+    (event: Parameters<NonNullable<React.ComponentProps<typeof DndContext>['onDragStart']>>[0]) => {
+      const dragMeta = event.active.data.current as DragMeta | undefined;
+      if (dragMeta?.source === 'column') {
+        setActiveDragCard(null);
+        setActiveDragSection(null);
+        setActiveDragColumn(dragMeta.sectionId);
+        return;
+      }
+
+      if (dragMeta?.source === 'section') {
+        setActiveDragCard(null);
+        setActiveDragColumn(null);
+        setActiveDragSection(dragMeta.sectionId);
+        return;
+      }
+
+      setActiveDragCard(dragMeta && 'cardId' in dragMeta ? dragMeta.cardId : null);
+      setActiveDragSection(null);
+      setActiveDragColumn(null);
+    },
+    [setActiveDragCard, setActiveDragColumn, setActiveDragSection]
+  );
+
+  const handleAddCard = useCallback(() => {
+    if (!onOpenAddCardDialog) {
+      return;
+    }
+
+    onOpenAddCardDialog(
+      homeLayout.mode === 'sectioned' ? (activeSectionId ?? homeLayout.sections[0]?.id) : undefined
+    );
+  }, [activeSectionId, homeLayout.mode, homeLayout.sections, onOpenAddCardDialog]);
+
+  const setModeSectioned = useCallback(() => {
+    setHomeLayoutMode('sectioned');
+  }, [setHomeLayoutMode]);
+
+  const setModeFlow = useCallback(() => {
+    setHomeLayoutMode('flow');
+  }, [setHomeLayoutMode]);
+
+  const toggleMode = useCallback(() => {
+    if (homeLayout.mode === 'sectioned') {
+      setHomeLayoutMode('flow');
+      return;
+    }
+
+    setHomeLayoutMode('sectioned');
+  }, [homeLayout.mode, setHomeLayoutMode]);
+
+  const selectSection = useCallback(
+    (sectionId: string) => {
+      setActiveSectionId(sectionId);
+    },
+    [setActiveSectionId]
+  );
+
   if (!isEditMode) {
     return (
       <HomePresentation
@@ -102,26 +160,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={(event) => {
-        const dragMeta = event.active.data.current as DragMeta | undefined;
-        if (dragMeta?.source === 'column') {
-          setActiveDragCard(null);
-          setActiveDragSection(null);
-          setActiveDragColumn(dragMeta.sectionId);
-          return;
-        }
-
-        if (dragMeta?.source === 'section') {
-          setActiveDragCard(null);
-          setActiveDragColumn(null);
-          setActiveDragSection(dragMeta.sectionId);
-          return;
-        }
-
-        setActiveDragCard(dragMeta && 'cardId' in dragMeta ? dragMeta.cardId : null);
-        setActiveDragSection(null);
-        setActiveDragColumn(null);
-      }}
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
@@ -142,13 +181,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
             onOpenAddCardDialog ? (
               <button
                 type="button"
-                onClick={() =>
-                  onOpenAddCardDialog(
-                    homeLayout.mode === 'sectioned'
-                      ? (activeSectionId ?? homeLayout.sections[0]?.id)
-                      : undefined
-                  )
-                }
+                onClick={handleAddCard}
                 className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium text-white transition-colors"
                 style={{
                   borderColor: `${accentColor}66`,
@@ -228,7 +261,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       active={homeLayout.mode === 'sectioned'}
                       icon={<LayoutPanelTop className="h-4 w-4" />}
                       label={t('dashboard.homePersonal.mode.sectioned')}
-                      onClick={() => setHomeLayoutMode('sectioned')}
+                      onClick={setModeSectioned}
                       surface={surface}
                       accentColor={accentColor}
                     />
@@ -236,7 +269,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       active={homeLayout.mode === 'flow'}
                       icon={<LayoutTemplate className="h-4 w-4" />}
                       label={t('dashboard.homePersonal.mode.flow')}
-                      onClick={() => setHomeLayoutMode('flow')}
+                      onClick={setModeFlow}
                       surface={surface}
                       accentColor={accentColor}
                     />
@@ -256,14 +289,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                           ? t('dashboard.homePersonal.mode.flow')
                           : t('dashboard.homePersonal.mode.sectioned')
                       }
-                      onClick={() => {
-                        if (homeLayout.mode === 'sectioned') {
-                          setHomeLayoutMode('flow');
-                          return;
-                        }
-
-                        setHomeLayoutMode('sectioned');
-                      }}
+                      onClick={toggleMode}
                       surface={surface}
                       accentColor={accentColor}
                     />
@@ -289,10 +315,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                       onUpdateCard={onUpdateCard}
                       onRemoveFromLayout={removeHomeCard}
                       showHero={homeLayout.showHero}
-                      onSelectSection={setActiveSectionId}
-                      onOpenLibraryForSection={(sectionId) => {
-                        setActiveSectionId(sectionId);
-                      }}
+                      onSelectSection={selectSection}
+                      onOpenLibraryForSection={selectSection}
                       onOpenAddCardDialog={onOpenAddCardDialog}
                       onAddSectionBelow={addHomeSectionBelow}
                       onRenameSection={renameHomeSection}

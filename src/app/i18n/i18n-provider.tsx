@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '@/app/stores';
 import {
   type AppLanguage,
@@ -40,29 +41,53 @@ const interpolateMessage = (template: string, values?: TranslationValues) => {
 };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const language = useSettingsStore((state) => resolveAppLanguage(state.language));
-  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
+  const { language, use24HourTime } = useSettingsStore(
+    useShallow((state) => ({
+      language: resolveAppLanguage(state.language),
+      use24HourTime: state.use24HourTime,
+    }))
+  );
 
   const value = useMemo<I18nContextValue>(() => {
     const locale = getLocaleForLanguage(language);
     const dictionary = MESSAGES[language];
+    const defaultDateFormatter = new Intl.DateTimeFormat(locale);
+    const defaultDateTimeFormatter = new Intl.DateTimeFormat(locale);
+    const defaultNumberFormatter = new Intl.NumberFormat(locale);
+    const defaultRelativeTimeFormatter = new Intl.RelativeTimeFormat(locale);
+    const defaultTimeFormatter = new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: !use24HourTime,
+    });
 
     return {
       language,
       locale,
       languageOptions: LANGUAGE_OPTIONS,
       t: (key, values) => interpolateMessage(dictionary[key] ?? MESSAGES.en[key] ?? key, values),
-      formatDate: (date, options) => new Intl.DateTimeFormat(locale, options).format(date),
+      formatDate: (date, options) =>
+        options
+          ? new Intl.DateTimeFormat(locale, options).format(date)
+          : defaultDateFormatter.format(date),
       formatTime: (date, options, hour12 = !use24HourTime) =>
-        new Intl.DateTimeFormat(locale, {
-          hour: '2-digit',
-          minute: '2-digit',
-          ...options,
-          hour12,
-        }).format(date),
-      formatDateTime: (date, options) => new Intl.DateTimeFormat(locale, options).format(date),
-      formatNumber: (value, options) => new Intl.NumberFormat(locale, options).format(value),
-      formatRelativeTime: (value, unit) => new Intl.RelativeTimeFormat(locale).format(value, unit),
+        options || hour12 !== !use24HourTime
+          ? new Intl.DateTimeFormat(locale, {
+              hour: '2-digit',
+              minute: '2-digit',
+              ...options,
+              hour12,
+            }).format(date)
+          : defaultTimeFormatter.format(date),
+      formatDateTime: (date, options) =>
+        options
+          ? new Intl.DateTimeFormat(locale, options).format(date)
+          : defaultDateTimeFormatter.format(date),
+      formatNumber: (value, options) =>
+        options
+          ? new Intl.NumberFormat(locale, options).format(value)
+          : defaultNumberFormatter.format(value),
+      formatRelativeTime: (value, unit) => defaultRelativeTimeFormatter.format(value, unit),
     };
   }, [language, use24HourTime]);
 

@@ -38,13 +38,3 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
-
-/**
- * Predefined breakpoint hooks for convenience
- */
-export const useBreakpoints = () => ({
-  isMobile: useMediaQuery('(max-width: 767px)'),
-  isTablet: useMediaQuery('(min-width: 768px) and (max-width: 1023px)'),
-  isDesktop: useMediaQuery('(min-width: 1024px)'),
-  isLargeDesktop: useMediaQuery('(min-width: 1280px)'),
-});

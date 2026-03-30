@@ -1,4 +1,5 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useNavigationStore } from '../stores/navigation-store';
 
 /**
@@ -6,8 +7,13 @@ import { useNavigationStore } from '../stores/navigation-store';
  * Encapsulates active room selection logic
  */
 export const useRoomNavigation = (defaultRoom: string) => {
-  const activeRoom = useNavigationStore((state) => state.currentRoom || defaultRoom);
-  const setCurrentRoom = useNavigationStore((state) => state.setCurrentRoom);
+  const { currentRoom, setCurrentRoom } = useNavigationStore(
+    useShallow((state) => ({
+      currentRoom: state.currentRoom,
+      setCurrentRoom: state.setCurrentRoom,
+    }))
+  );
+  const activeRoom = currentRoom || defaultRoom;
 
   const changeRoom = useCallback(
     (room: string) => {
@@ -16,5 +22,5 @@ export const useRoomNavigation = (defaultRoom: string) => {
     [setCurrentRoom]
   );
 
-  return { activeRoom, changeRoom };
+  return useMemo(() => ({ activeRoom, changeRoom }), [activeRoom, changeRoom]);
 };

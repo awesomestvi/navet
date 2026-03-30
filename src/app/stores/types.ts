@@ -13,10 +13,18 @@ export type ThemeType = ThemeMode;
 
 export interface ThemeState {
   theme: ThemeMode;
+  followSystemTheme: boolean;
   primaryColor: PrimaryColor;
   customPrimaryColor: string | null;
   wallpaper: string | null;
+  applyImportedTheme: (theme: {
+    theme: ThemeMode;
+    primaryColor: PrimaryColor;
+    customPrimaryColor: string | null;
+    wallpaper: string | null;
+  }) => void;
   setTheme: (theme: ThemeMode) => void;
+  setFollowSystemTheme: (follow: boolean) => void;
   setPrimaryColor: (color: PrimaryColor) => void;
   setCustomPrimaryColor: (color: string | null) => void;
   setWallpaper: (wallpaper: string | null) => void;
@@ -31,6 +39,7 @@ export interface EditModeState {
 export interface NavigationState {
   currentRoom: string;
   activeSection: Section;
+  applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
   setCurrentRoom: (room: string) => void;
   setActiveSection: (section: Section) => void;
 }
@@ -64,22 +73,25 @@ interface UserSettings {
 
 export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
+  applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
 
-export type CardType = 'rss' | 'photo' | 'note';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence';
 
 export interface CustomCard {
   id: string;
   type: CardType;
   size: CardSize;
   room: string;
+  zone?: string;
   data?: Record<string, unknown>;
   createdAt: number;
 }
 
 export interface CustomCardsState {
   cards: CustomCard[];
+  replaceCards: (cards: CustomCard[]) => void;
   addCard: (
     type: CardType,
     size: CardSize,

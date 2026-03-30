@@ -16,7 +16,6 @@ import type {
   MediaDevice,
   PersonDevice,
   SceneDevice,
-  SensorDevice,
   SwitchDevice,
   VacuumDevice,
   WeatherDevice,
@@ -28,7 +27,6 @@ import {
   formatDaylight,
   formatEntityType,
   formatMediaEntityType,
-  formatSensorValue,
   getMetricLabel,
   getName,
   helperLabelForDomain,
@@ -257,6 +255,9 @@ export const useHADevices = (): DeviceCollection => {
       };
     }
 
+    const hourlyForecastLabelFormatter = new Intl.DateTimeFormat(locale, { hour: 'numeric' });
+    const weeklyForecastLabelFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+
     const sunEntity = entities['sun.sun'];
     const sunEntitySunrise = sunEntity?.attributes?.next_rising;
     const sunEntitySunset = sunEntity?.attributes?.next_setting;
@@ -268,7 +269,6 @@ export const useHADevices = (): DeviceCollection => {
     const climate: ClimateDevice[] = [];
     const media: MediaDevice[] = [];
     const persons: PersonDevice[] = [];
-    const sensors: SensorDevice[] = [];
     const covers: CoverDevice[] = [];
     const locks: LockDevice[] = [];
     const scenes: SceneDevice[] = [];
@@ -285,15 +285,21 @@ export const useHADevices = (): DeviceCollection => {
 
     const getRoom = (entityId: string, entity: HassEntity) =>
       resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
+    const entityEntries = Object.entries(entities);
+
+    const getDomain = (entityId: string): string => {
+      const separatorIndex = entityId.indexOf('.');
+      return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
+    };
 
     // Pre-pass: collect power/config metrics for switch devices
-    Object.entries(entities).forEach(([entityId, entity]) => {
-      const domain = entityId.split('.')[0];
+    for (const [entityId, entity] of entityEntries) {
+      const domain = getDomain(entityId);
       if (domain === 'sensor') {
         const entityEntry = entityRegistryMap.get(entityId);
         const deviceId = entityEntry?.device_id;
         if (!deviceId) {
-          return;
+          continue;
         }
 
         const rawValue =
@@ -301,7 +307,7 @@ export const useHADevices = (): DeviceCollection => {
           parseNumberish(entity.attributes?.native_value) ??
           parseNumberish(entity.attributes?.value);
         if (rawValue === null) {
-          return;
+          continue;
         }
 
         const metricState = switchMetricsByDeviceId.get(deviceId) ?? [];
@@ -337,7 +343,7 @@ export const useHADevices = (): DeviceCollection => {
         }
 
         switchMetricsByDeviceId.set(deviceId, metricState);
-        return;
+        continue;
       }
 
       if (domain === 'number' || domain === 'input_number' || domain === 'select') {
@@ -346,7 +352,7 @@ export const useHADevices = (): DeviceCollection => {
         const entityCategory = (entityEntry as { entity_category?: string | null } | undefined)
           ?.entity_category;
         if (!deviceId || entityCategory !== 'config') {
-          return;
+          continue;
         }
 
         const metricState = switchMetricsByDeviceId.get(deviceId) ?? [];
@@ -364,7 +370,7 @@ export const useHADevices = (): DeviceCollection => {
               parseNumberish(entity.attributes?.native_value) ??
               parseNumberish(entity.attributes?.value));
         if (parsedValue == null || parsedValue === '') {
-          return;
+          continue;
         }
 
         const nextMetric: DeviceMetric = {
@@ -383,11 +389,11 @@ export const useHADevices = (): DeviceCollection => {
 
         switchMetricsByDeviceId.set(deviceId, metricState);
       }
-    });
+    }
 
     // Process each entity based on domain
-    Object.entries(entities).forEach(([entityId, entity]) => {
-      const domain = entityId.split('.')[0];
+    for (const [entityId, entity] of entityEntries) {
+      const domain = getDomain(entityId);
       const name = getName(entity);
       const room = getRoom(entityId, entity);
 
@@ -653,50 +659,6 @@ export const useHADevices = (): DeviceCollection => {
           });
           break;
 
-        case 'sensor':
-        case 'binary_sensor':
-        case 'number':
-        case 'input_number':
-        case 'select':
-        case 'input_select':
-        case 'input_text':
-        case 'text':
-        case 'input_datetime':
-        case 'datetime':
-        case 'date': {
-          const formatted = formatSensorValue(entity);
-          if (!formatted) {
-            break;
-          }
-
-          const entityType =
-            domain === 'sensor' || domain === 'binary_sensor'
-              ? t('deviceType.sensor')
-              : helperLabelForDomain(domain, t);
-          const icon =
-            domain === 'sensor' || domain === 'binary_sensor'
-              ? inferMetricIcon(
-                  typeof entity.attributes?.device_class === 'string'
-                    ? entity.attributes.device_class.toLowerCase()
-                    : null,
-                  `${entityId} ${name}`,
-                  formatted.unit
-                )
-              : 'gauge';
-
-          sensors.push({
-            id: entityId,
-            name,
-            room,
-            size: 'small',
-            value: formatted.value,
-            unit: formatted.unit,
-            icon,
-            entityType,
-          });
-          break;
-        }
-
         case 'vacuum': {
           const batteryLevel = parseNumberish(entity.attributes?.battery_level);
           const cleanedAreaValue =
@@ -792,6 +754,8 @@ export const useHADevices = (): DeviceCollection => {
               const startDate = parseCalendarDate(eventRecord.start ?? eventRecord.start_time);
               const endDate = parseCalendarDate(eventRecord.end ?? eventRecord.end_time);
               const isAllDay = isAllDayCalendarValue(eventRecord.start ?? eventRecord.start_time);
+              const startTime = formatCalendarTime(startDate, locale);
+              const endTime = formatCalendarTime(endDate, locale);
               const attendees = Array.isArray(eventRecord.attendees)
                 ? eventRecord.attendees.length
                 : typeof eventRecord.attendees === 'number'
@@ -804,9 +768,9 @@ export const useHADevices = (): DeviceCollection => {
                   (typeof eventRecord.id === 'string' && eventRecord.id) ||
                   `${entityId}-${index}`,
                 title,
-                startTime: formatCalendarTime(startDate, locale),
-                endTime: formatCalendarTime(endDate, locale),
-                timeDisplay: formatCalendarTime(startDate, locale),
+                startTime,
+                endTime,
+                timeDisplay: startTime,
                 isAllDay,
                 location,
                 description,
@@ -875,10 +839,10 @@ export const useHADevices = (): DeviceCollection => {
               const dayLabel =
                 forecastDate && !Number.isNaN(forecastDate.getTime())
                   ? effectiveForecastMode === 'hourly'
-                    ? new Intl.DateTimeFormat(locale, { hour: 'numeric' }).format(forecastDate)
+                    ? hourlyForecastLabelFormatter.format(forecastDate)
                     : index === 0
                       ? t('weather.today')
-                      : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(forecastDate)
+                      : weeklyForecastLabelFormatter.format(forecastDate)
                   : effectiveForecastMode === 'hourly'
                     ? `+${index + 1}h`
                     : index === 0
@@ -981,7 +945,7 @@ export const useHADevices = (): DeviceCollection => {
           break;
         }
       }
-    });
+    }
 
     return {
       lights,

@@ -3,10 +3,12 @@
  */
 
 import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   resolvePrimaryColorToken,
   resolvePrimaryColorValue,
 } from '@/app/components/shared/theme/theme-colors';
+import { themeSelectors } from '@/app/stores/selectors';
 import type { PrimaryColor, ThemeMode as ThemeType } from '../stores/theme-store';
 import { useThemeStore } from '../stores/theme-store';
 import { useMediaQuery } from './use-media-query';
@@ -785,16 +787,11 @@ const generateThemeColors = (
 };
 
 export function useTheme(): ThemeValue {
-  const theme = useThemeStore((state) => state.theme);
-  const followSystemTheme = useThemeStore((state) => state.followSystemTheme);
-  const setFollowSystemTheme = useThemeStore((state) => state.setFollowSystemTheme);
-  const primaryColor = useThemeStore((state) => state.primaryColor);
-  const customPrimaryColor = useThemeStore((state) => state.customPrimaryColor);
-  const wallpaper = useThemeStore((state) => state.wallpaper);
-  const setTheme = useThemeStore((state) => state.setTheme);
-  const setPrimaryColor = useThemeStore((state) => state.setPrimaryColor);
-  const setCustomPrimaryColor = useThemeStore((state) => state.setCustomPrimaryColor);
-  const setWallpaper = useThemeStore((state) => state.setWallpaper);
+  const { theme, followSystemTheme, primaryColor, customPrimaryColor, wallpaper } = useThemeStore(
+    useShallow(themeSelectors.allValues)
+  );
+  const { setTheme, setFollowSystemTheme, setPrimaryColor, setCustomPrimaryColor, setWallpaper } =
+    useThemeStore(useShallow(themeSelectors.allActions));
   const sysDark = useMediaQuery('(prefers-color-scheme: dark)');
   const effectiveTheme: ThemeType = followSystemTheme ? (sysDark ? 'dark' : 'light') : theme;
   const accentColor = useMemo(

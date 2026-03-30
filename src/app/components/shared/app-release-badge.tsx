@@ -1,7 +1,7 @@
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@/app/components/ui/utils';
 import { APP_VERSION } from '@/app/constants/app-version';
 import { useTheme } from '@/app/hooks';
-import { cn } from '@/app/utils/cn';
 
 interface AppReleaseBadgeProps {
   className?: string;
