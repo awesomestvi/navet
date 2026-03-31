@@ -21,6 +21,7 @@ Complete documentation for the Navet smart home dashboard.
 
 ### Design & Architecture
 - **[Design System](../design-system/README.md)** - Design principles, card sizes, breakpoints, and key files
+- **[Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)** - Internal system entrypoints and the recommended in-repo Storybook path
 - **[UI Guidelines](../design-system/UI-GUIDELINES.md)** - Color system, typography, glass effects, component patterns
 - **[Layout Structure](../design-system/LAYOUT-STRUCTURE.md)** - Sidebar, header, grid, responsive layout
 - **[Features](../design-system/FEATURES.md)** - Auth, theme system, navigation, camera card, dashboard builder
@@ -49,6 +50,8 @@ Complete documentation for the Navet smart home dashboard.
 
 **Understand the design system** → [Design System](../design-system/README.md)
 
+**Run the UI workshop** → [Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)
+
 **Run Navet in Docker or as a Home Assistant add-on** → [Docker and Home Assistant Add-on](DOCKER_HOME_ASSISTANT_ADDON.md)
 
 **Use Navet branding** → [Branding Guide](branding/BRANDING.md)
@@ -61,4 +64,4 @@ Complete documentation for the Navet smart home dashboard.
 
 ---
 
-**Last Updated:** March 26, 2026
+**Last Updated:** March 31, 2026

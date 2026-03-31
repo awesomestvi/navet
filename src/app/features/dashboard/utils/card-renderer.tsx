@@ -297,6 +297,8 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
   ),
 };
 
+export const DASHBOARD_CARD_TYPES = Object.freeze(Object.keys(cardRegistry));
+
 export const renderCard = (options: CardRendererOptions): ReactElement | null => {
   const renderer = cardRegistry[options.device.type];
   if (!renderer) return null;

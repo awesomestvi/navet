@@ -175,6 +175,28 @@ Recent UI cleanup moved repeated theme logic into shared primitives so cross-the
 - **Entity card title block** - centralized title/subtitle ordering so cards can switch between title-first and eyebrow-first header composition without duplicating text layout logic
 - **Tiny action card** - shared compact shell for the smallest interactive cards, including watermark, overlay, eyebrow/title text stack, and bottom action slot
 
+### Internal Design-System Foundation
+
+**Location**: `/src/app/components/system/`
+
+Navet now has a lightweight in-repo system layer that groups stable UI exports without introducing a monorepo or package workspace.
+
+#### Structure
+
+- **`primitives/`** - low-level reusable pieces such as pills, empty states, dialog shells, header parts, swatches, and compact action-card building blocks
+- **`patterns/`** - composed UI sections such as dashboard heroes, empty states, interaction previews, and preview frames
+- **`tokens/`** - theme surface helpers, accent shell treatments, color helpers, and other shared visual decision utilities
+
+#### Purpose
+
+- gives Storybook one clear entrypoint when we are ready to wire it up
+- reduces feature-to-feature import drift by exposing stable shared exports in one place
+- keeps implementation ownership in existing shared and feature files instead of duplicating components
+
+#### Current Rule
+
+Use `src/app/components/system/` for stable, reusable UI exports that should be documented and reused across features. Do not treat it as a separate package yet; Navet still ships as a single app repo.
+
 ---
 
 ## Climate System

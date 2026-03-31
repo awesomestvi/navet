@@ -8,9 +8,12 @@
     "dev": "vite",
     "preview": "pnpm build && pnpm preview:config && vite preview --host 0.0.0.0 --port 4173",
     "preview:config": "node scripts/write-preview-config.mjs",
+    "storybook": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 6006 --ci",
+    "storybook:build": "STORYBOOK=1 HOME=$PWD/.cache/storybook/home XDG_CONFIG_HOME=$PWD/.cache/storybook STORYBOOK_DISABLE_TELEMETRY=1 storybook build",
     "lint": "biome lint ./src",
     "format": "biome format --write ./src",
     "check": "biome check ./src",
+    "check:stories": "node scripts/check-storybook-standards.mjs",
     "check:fix": "biome check --apply ./src",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
@@ -42,6 +45,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
+    "@storybook/addon-a11y": "^10.3.3",
+    "@storybook/addon-docs": "10.3.3",
+    "@storybook/react": "10.3.3",
+    "@storybook/react-vite": "^10.3.3",
     "@tailwindcss/vite": "4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -51,9 +58,10 @@
     "@vitejs/plugin-react": "6.0.1",
     "@vitest/coverage-v8": "^4.1.2",
     "jsdom": "^29.0.1",
+    "storybook": "^10.3.3",
     "tailwindcss": "4.2.2",
     "typescript": "^6.0.2",
-    "vite": "8.0.2",
+    "vite": "8.0.3",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.2"
   },
@@ -71,7 +79,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "8.0.2"
+      "vite": "8.0.3"
     }
   }
 }

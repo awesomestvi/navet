@@ -1,0 +1,54 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps } from 'react';
+import { HVACCard } from '@/app/features/climate';
+import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+
+function HVACCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>) {
+  return (
+    <EntityCardStoryFrame>
+      <HVACCard {...args} onSizeChange={noopCardSizeChange} />
+    </EntityCardStoryFrame>
+  );
+}
+
+const meta = {
+  title: 'Entity Cards/HVAC',
+  component: HVACCardStory,
+  tags: ['autodocs'],
+  args: {
+    id: 'climate.main_floor',
+    name: 'Main Floor HVAC',
+    room: 'Hallway',
+    initialTemp: 22,
+    initialCurrentTemp: 21,
+    initialMode: 'cool',
+    initialAction: 'cooling',
+    initialState: true,
+    size: 'medium',
+    isEditMode: false,
+  },
+} satisfies Meta<typeof HVACCardStory>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Cooling: Story = {};
+
+export const Heating: Story = {
+  args: {
+    initialMode: 'heat',
+    initialAction: 'heating',
+    initialCurrentTemp: 19,
+    initialTemp: 22,
+  },
+};
+
+export const OffSmall: Story = {
+  args: {
+    initialState: false,
+    initialMode: 'off',
+    initialAction: undefined,
+    size: 'small',
+  },
+};

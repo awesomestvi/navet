@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { WizardStep } from './types';
 
 interface OnboardingShellProps {
@@ -15,6 +15,7 @@ interface OnboardingShellProps {
 }
 
 export function OnboardingShell({
+  accentColor,
   bgColor,
   body,
   children,
@@ -27,7 +28,7 @@ export function OnboardingShell({
 }: OnboardingShellProps) {
   return (
     <div
-      className="fixed inset-0 z-60 overflow-y-auto bg-black/55 p-4 safe-area-pt-4 backdrop-blur-sm sm:flex sm:items-center sm:justify-center"
+      className="fixed inset-0 z-60 overflow-y-auto bg-black/55 p-3 safe-area-pt-3 backdrop-blur-sm sm:p-4 sm:safe-area-pt-4 sm:flex sm:items-center sm:justify-center"
       style={{
         animation: isClosing ? 'navet-onboarding-backdrop-exit 0.9s ease forwards' : undefined,
       }}
@@ -44,22 +45,51 @@ export function OnboardingShell({
         }
       `}</style>
       <div
-        className={`relative mx-auto w-full max-w-3xl rounded-4xl border ${bgColor} p-6 shadow-2xl max-sm:min-h-[calc(100dvh-2rem)] max-sm:overflow-y-auto sm:max-h-[calc(100dvh-2rem)] sm:overflow-y-auto md:p-8`}
+        className={`relative mx-auto w-full max-w-3xl overflow-hidden border ${bgColor} p-4 shadow-2xl max-sm:min-h-[calc(100dvh-1.5rem)] max-sm:overflow-y-auto max-sm:rounded-[2rem] sm:max-h-[calc(100dvh-2rem)] sm:overflow-y-auto sm:rounded-4xl sm:p-6 md:p-8`}
         style={{
           animation: isClosing
             ? 'navet-onboarding-panel-exit 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
             : undefined,
         }}
       >
-        <div>
-          <div className="mb-5 flex items-center">
-            <img src="./logo.svg" alt="" className="h-12 w-12" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-90"
+          style={
+            {
+              background: `radial-gradient(circle at top left, ${accentColor}22, transparent 34%), radial-gradient(circle at bottom right, ${accentColor}16, transparent 32%)`,
+            } as CSSProperties
+          }
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={
+            {
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015) 18%, transparent 42%)',
+            } as CSSProperties
+          }
+        />
+        <div className="relative">
+          <div className="mb-4 flex items-center sm:mb-5">
+            <img src="./logo.svg" alt="" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${mutedColor}`}>
+          <p
+            className={`text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.24em] ${mutedColor}`}
+          >
             {welcomeLabel}
           </p>
-          <h2 className={`mt-3 text-3xl font-semibold tracking-tight ${textColor}`}>{title}</h2>
-          <p className={`mt-3 max-w-2xl text-sm leading-relaxed ${mutedColor}`}>{body}</p>
+          <h2
+            className={`mt-2 text-[1.75rem] font-semibold tracking-tight sm:mt-3 sm:text-3xl ${textColor}`}
+          >
+            {title}
+          </h2>
+          <p
+            className={`mt-2 max-w-2xl text-[13px] leading-relaxed sm:mt-3 sm:text-sm ${mutedColor}`}
+          >
+            {body}
+          </p>
         </div>
 
         {children}

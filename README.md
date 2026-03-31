@@ -94,6 +94,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Feature-Owned Modules** - Dashboard, lighting, settings, sensors, weather, and other major areas expose feature-level entry points under `src/app/features/*`
 - **Feature-Colocated State** - Dashboard and lighting hooks/stores live with their owning features instead of generic global folders
 - **Shared UI Foundation** - Cross-feature pieces such as card sizing, empty states, interaction previews, and theme color helpers live under shared component modules
+- **System Entrypoint Layer** - Stable primitives, patterns, and theme tokens are re-exported from `src/app/components/system/*` so we can document and compose UI from one place without splitting into a monorepo yet
 - **Shared Title + Tiny Card Primitives** - Compact action cards and eyebrow-first title blocks now come from shared primitives so small card layouts stay consistent across feature types
 - **Shared Visual Primitives** - Cross-theme icon pills and interactive nav/action pills are centralized behind reusable shared primitives instead of feature-level inline theme branches
 - **Shared Card State Styling** - Off/inactive card treatment for light, HVAC, switch, and media cards now resolves through one shared card-state surface token helper
@@ -144,6 +145,11 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
    pnpm dev
    ```
 
+   To work on the internal UI system in isolation, run Storybook in a separate terminal:
+   ```bash
+   pnpm storybook
+   ```
+
 5. **Add the local hostname**
 
    Add this entry to your hosts file so the Vite dev host resolves locally:
@@ -168,6 +174,17 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 pnpm typecheck
 pnpm build
 ```
+
+### Storybook
+
+Navet now includes an in-repo Storybook focused on the internal system layer under `src/app/components/system/`.
+
+```bash
+pnpm storybook
+pnpm storybook:build
+```
+
+The first wave of stories covers shared pills, swatches, round control buttons, the dashboard hero section, and the interaction preview card. Storybook uses the existing Navet theme/settings stores so stories can be previewed across all four themes and built-in accent colors.
 
 ### Production Preview
 
@@ -218,6 +235,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Select from **8 built-in accents** or choose a **custom accent color**
 - Choose **Visual Quality** in **Settings -> Appearance**: **High**, **Medium**, or **Low**
 - Choose **Page Zoom** in **Settings -> Appearance** to scale the whole interface with built-in presets (50%, 67%, 75%, 80%, 90%, 100%); a **Reset** button appears inline when a non-default zoom is active
+- Reusable UI work now funnels through the in-repo system layer and [Storybook Foundation](design-system/STORYBOOK_FOUNDATION.md), rather than a separate package workspace
 - Choose the app **Language** in **Settings -> Localization** to switch locale-aware interface formatting
 - Theme mode names and descriptions follow the selected app language
 - First-run onboarding now gives **Localization** its own step for language, time format, and temperature unit before the appearance step

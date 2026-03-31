@@ -52,6 +52,13 @@ Complete feature implementation guide:
 - Responsive behavior patterns
 - Technical implementation details
 
+### [Storybook Foundation](./STORYBOOK_FOUNDATION.md)
+Internal UI-system foundation covering:
+- the `src/app/components/system/` entrypoint structure
+- which primitives, patterns, and tokens are stable enough to document
+- how Storybook is wired in-repo without forcing a package workspace
+- when a monorepo or package split would actually be justified
+
 ## 🎯 Quick Reference
 
 ### Core Design Principles
@@ -67,6 +74,8 @@ Complete feature implementation guide:
 10. **Composable Controller Layers** - Keep feature controllers as orchestration shells and extract sync/action/display responsibilities into dedicated helper hooks
 11. **Shared i18n Function Types** - Use exported i18n function types for translator dependencies across hooks/components instead of redefining local translator signatures
 12. **Shared Compact Card Layouts** - Tiny and other dense card variants should use shared title/action primitives rather than bespoke per-feature micro layouts
+13. **System Entry Points** - Promote stable shared UI through `src/app/components/system/{primitives,patterns,tokens}` before creating new package boundaries
+14. **Workshop Before Extraction** - New shared UI should prove itself in Storybook and the in-repo system layer before it is treated like a publishable package boundary
 
 ### Authentication System
 - **Login Page** - Secure authentication with Home Assistant URL and long-lived access token
@@ -162,7 +171,12 @@ When creating a new card component:
 
 ### Key Files
 ```
+/\.storybook/                                      → Storybook configuration and preview decorators for the in-repo UI workshop
 /src/app/components/shared/                          → Shared UI building blocks
+/src/app/components/system/                          → Storybook-ready system entrypoints for shared primitives, patterns, and tokens
+/src/app/components/system/primitives/index.ts       → Stable low-level component exports
+/src/app/components/system/patterns/index.ts         → Stable composed-pattern exports
+/src/app/components/system/tokens/index.ts           → Shared theme/style token exports
 /src/app/components/shared/card-size.ts              → CardSize union type (single source of truth)
 /src/app/components/shared/card-size-selector.tsx    → Size registry (metadata, helpers, overlay classes, selector UI)
 /src/app/components/shared/entity-card-title-block.tsx → Shared title/subtitle ordering for card headers
@@ -200,6 +214,13 @@ When creating a new card component:
 /src/styles/theme.css                   → Design tokens and variables
 ```
 
+### Storybook Workflow
+
+- Run `pnpm storybook` to develop shared UI in isolation
+- Run `pnpm storybook:build` to validate the static Storybook bundle
+- Start new stories from `src/app/components/system/` entrypoints instead of importing feature internals directly
+- Use the global Storybook toolbar to test all four Navet themes and built-in accent colors
+
 ## 🎨 For Designers
 
 ### Design Tools Integration
@@ -229,4 +250,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 30, 2026
+**Last Updated:** March 31, 2026

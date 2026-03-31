@@ -368,12 +368,11 @@ export const enMessages = {
   'dashboard.onboarding.heading.route': 'How should Navet start your dashboard?',
   'dashboard.onboarding.heading.localization': 'Choose language and formats up front.',
   'dashboard.onboarding.heading.theme': 'Set the look before your first reveal.',
-  'dashboard.onboarding.body.route':
-    'Pick a starting route once. Import jumps straight into restore, while fresh starts let you choose the initial theme first.',
+  'dashboard.onboarding.body.route': 'Choose how Navet should start your dashboard the first time.',
   'dashboard.onboarding.body.localization':
     'Pick the language, time format, and temperature unit Navet should use from the start.',
   'dashboard.onboarding.body.theme':
-    'Choose the base theme and accent color Navet should apply before the dashboard appears for the first time.',
+    "Choose Navet's base theme and accent color before your dashboard appears.",
   'dashboard.onboarding.route.all.title': 'Start with all entities',
   'dashboard.onboarding.route.all.body':
     'Show everything Home Assistant exposes, then hide what you do not want.',
