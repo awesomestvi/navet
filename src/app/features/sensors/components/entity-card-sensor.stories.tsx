@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { SensorCard } from '@/app/features/sensors';
-import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  noopCardSizeChange,
+} from '../../dashboard/stories/entity-card-story-frame';
 
 function SensorCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChange'>) {
   return (

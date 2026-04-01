@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { SwitchCard } from '@/app/features/lighting';
-import { EntityCardStoryFrame } from './entity-card-story-frame';
+import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
 
 function HelperCardStory(args: ComponentProps<typeof SwitchCard>) {
   return (

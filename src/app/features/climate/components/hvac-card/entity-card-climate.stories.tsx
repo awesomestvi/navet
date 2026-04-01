@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { HVACCard } from '@/app/features/climate';
-import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  noopCardSizeChange,
+} from '../../../dashboard/stories/entity-card-story-frame';
 
-function HVACCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>) {
+function ClimateCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>) {
   return (
     <EntityCardStoryFrame>
       <HVACCard {...args} onSizeChange={noopCardSizeChange} />
@@ -12,12 +15,20 @@ function HVACCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange
 }
 
 const meta = {
-  title: 'Cards/Entity/HVAC',
-  component: HVACCardStory,
+  title: 'Cards/Entity/Climate',
+  component: ClimateCardStory,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Alias route coverage for climate entities. Uses the HVAC card component with climate-style input data.',
+      },
+    },
+  },
   args: {
-    id: 'climate.main_floor',
-    name: 'Main Floor HVAC',
+    id: 'climate.downstairs',
+    name: 'Downstairs Climate',
     room: 'Hallway',
     initialTemp: 22,
     initialCurrentTemp: 21,
@@ -27,7 +38,7 @@ const meta = {
     size: 'medium',
     isEditMode: false,
   },
-} satisfies Meta<typeof HVACCardStory>;
+} satisfies Meta<typeof ClimateCardStory>;
 
 export default meta;
 
@@ -40,7 +51,6 @@ export const Heating: Story = {
     initialMode: 'heat',
     initialAction: 'heating',
     initialCurrentTemp: 19,
-    initialTemp: 22,
   },
 };
 

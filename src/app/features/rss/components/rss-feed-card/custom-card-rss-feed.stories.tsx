@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { buildCustomCard, CustomWidgetStoryFrame } from './custom-card-story-helpers';
+import {
+  buildCustomCard,
+  CustomWidgetStoryFrame,
+} from '../../../dashboard/stories/custom-card-story-helpers';
 
 const meta = {
   title: 'Cards/Widget/RSS Feed',

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CalendarCard } from '@/app/features/calendar';
-import { EntityCardStoryFrame } from './entity-card-story-frame';
+import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
 
 function CalendarCardStory(args: Omit<ComponentProps<typeof CalendarCard>, 'onSizeChange'>) {
   return (

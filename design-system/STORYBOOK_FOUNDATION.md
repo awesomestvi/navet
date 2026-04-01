@@ -19,8 +19,19 @@ Navet should grow an internal component workshop before it grows a package works
 
 - Start Storybook with `pnpm storybook`
 - Build the static Storybook bundle with `pnpm storybook:build`
-- Keep the first wave of stories focused on `src/app/components/system/`
 - Storybook preview wiring reuses Navet's existing theme and settings stores so components render inside real theme context
+
+## Story File Placement
+
+Stories are co-located next to the component they document:
+
+- `src/app/components/shared/*.stories.tsx` — shared primitives and patterns
+- `src/app/components/shared/theme/*.stories.tsx` — token documentation
+- `src/app/components/layout/*.stories.tsx` — app shell components
+- `src/app/components/ui/*.stories.tsx` — base Radix UI wrappers
+- `src/app/features/<feature>/components/**/*.stories.tsx` — feature cards and dialogs
+
+Aggregate stories with no single component owner (catalog, all-sizes, state matrices) live in `src/app/features/dashboard/stories/`.
 
 ## Internal System Structure
 

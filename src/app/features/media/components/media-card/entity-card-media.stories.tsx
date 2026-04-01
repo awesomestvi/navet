@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { MediaCard } from '@/app/features/media';
-import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  noopCardSizeChange,
+} from '../../../dashboard/stories/entity-card-story-frame';
 
 function MediaCardStory(args: Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>) {
   return (

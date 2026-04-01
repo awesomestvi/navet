@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CameraCard } from '@/app/features/security';
-import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  noopCardSizeChange,
+} from '../../../dashboard/stories/entity-card-story-frame';
 
 function CameraCardStory(args: Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'>) {
   return (

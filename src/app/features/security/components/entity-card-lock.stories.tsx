@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { LockCard } from '@/app/features/security';
-import { EntityCardStoryFrame } from './entity-card-story-frame';
+import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
 
 function LockCardStory(args: ComponentProps<typeof LockCard>) {
   return (

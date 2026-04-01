@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { PersonCard } from '@/app/features/person';
-import { EntityCardStoryFrame, noopCardSizeChange } from './entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  noopCardSizeChange,
+} from '../../dashboard/stories/entity-card-story-frame';
 
 function PersonCardStory(args: Omit<ComponentProps<typeof PersonCard>, 'onSizeChange'>) {
   return (
