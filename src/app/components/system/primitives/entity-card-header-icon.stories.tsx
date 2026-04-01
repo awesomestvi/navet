@@ -3,7 +3,7 @@ import { Lightbulb, Settings2 } from 'lucide-react';
 import { EntityCardHeaderIcon } from '@/app/components/system/primitives';
 
 const meta = {
-  title: 'Primitives/Entity Card Header Icon',
+  title: 'Foundation/Primitives/Entity Card Header Icon',
   component: EntityCardHeaderIcon,
   tags: ['autodocs'],
   parameters: {

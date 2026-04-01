@@ -12,7 +12,7 @@ function CameraCardStory(args: Omit<ComponentProps<typeof CameraCard>, 'onSizeCh
 }
 
 const meta = {
-  title: 'Entity Cards/Camera',
+  title: 'Cards/Entity/Camera',
   component: CameraCardStory,
   tags: ['autodocs'],
   args: {

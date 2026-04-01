@@ -19,7 +19,7 @@ const forecast = [
 ];
 
 const meta = {
-  title: 'Custom Cards/Weather',
+  title: 'Cards/Entity/Weather',
   component: WeatherCardStory,
   tags: ['autodocs'],
   args: {

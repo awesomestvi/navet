@@ -12,7 +12,7 @@ function HelperCardStory(args: ComponentProps<typeof SwitchCard>) {
 }
 
 const meta = {
-  title: 'Custom Cards/Helper',
+  title: 'Cards/Entity/Helper',
   component: HelperCardStory,
   tags: ['autodocs'],
   parameters: {

@@ -18,7 +18,7 @@ function CheckboxStory({ defaultChecked = false, disabled = false }) {
 }
 
 const meta = {
-  title: 'UI/Checkbox',
+  title: 'Components/Base/Checkbox',
   component: CheckboxStory,
   tags: ['autodocs'],
   parameters: {

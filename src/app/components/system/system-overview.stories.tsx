@@ -131,7 +131,7 @@ function SystemOverviewPage() {
 }
 
 const meta = {
-  title: 'System/Overview',
+  title: 'Foundation/Overview',
   component: SystemOverviewPage,
   tags: ['autodocs'],
   parameters: {

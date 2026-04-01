@@ -12,7 +12,7 @@ function HVACCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange
 }
 
 const meta = {
-  title: 'Entity Cards/HVAC',
+  title: 'Cards/Entity/HVAC',
   component: HVACCardStory,
   tags: ['autodocs'],
   args: {

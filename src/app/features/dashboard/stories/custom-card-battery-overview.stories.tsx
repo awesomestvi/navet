@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { buildCustomCard, CustomWidgetStoryFrame } from './custom-card-story-helpers';
 
 const meta = {
-  title: 'Custom Cards/Battery Overview',
+  title: 'Cards/Widget/Battery Overview',
   component: CustomWidgetStoryFrame,
   tags: ['autodocs'],
 } satisfies Meta<typeof CustomWidgetStoryFrame>;

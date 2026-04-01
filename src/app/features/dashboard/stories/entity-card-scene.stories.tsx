@@ -12,7 +12,7 @@ function SceneCardStory(args: Omit<ComponentProps<typeof SceneCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Entity Cards/Scene',
+  title: 'Cards/Entity/Scene',
   component: SceneCardStory,
   tags: ['autodocs'],
   args: {

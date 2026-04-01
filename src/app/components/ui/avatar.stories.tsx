@@ -3,7 +3,7 @@ import { User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 
 const meta = {
-  title: 'UI/Avatar',
+  title: 'Components/Base/Avatar',
   component: Avatar,
   tags: ['autodocs'],
   parameters: {

@@ -14,7 +14,7 @@ function ThemeAwareSettingsLivePreviewFrame(
 }
 
 const meta = {
-  title: 'Patterns/Settings Live Preview Frame',
+  title: 'Foundation/Patterns/Settings Live Preview Frame',
   component: ThemeAwareSettingsLivePreviewFrame,
   tags: ['autodocs'],
   parameters: {

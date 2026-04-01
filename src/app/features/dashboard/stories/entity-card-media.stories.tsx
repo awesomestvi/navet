@@ -12,7 +12,7 @@ function MediaCardStory(args: Omit<ComponentProps<typeof MediaCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Entity Cards/Media',
+  title: 'Cards/Entity/Media',
   component: MediaCardStory,
   tags: ['autodocs'],
   args: {

@@ -14,7 +14,7 @@ function LocalizationStory() {
 }
 
 const meta = {
-  title: 'Settings/Localization',
+  title: 'Settings/Sections/Localization',
   component: LocalizationStory,
   tags: ['autodocs'],
   parameters: {

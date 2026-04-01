@@ -12,7 +12,7 @@ function SwitchCardStory(args: ComponentProps<typeof SwitchCard>) {
 }
 
 const meta = {
-  title: 'Entity Cards/Switch',
+  title: 'Cards/Entity/Switch',
   component: SwitchCardStory,
   tags: ['autodocs'],
   args: {

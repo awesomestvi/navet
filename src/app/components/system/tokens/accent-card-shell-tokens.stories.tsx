@@ -51,7 +51,7 @@ function AccentCardShellTokensShowcase() {
 }
 
 const meta = {
-  title: 'Tokens/Accent Card Shell Tokens',
+  title: 'Foundation/Tokens/Accent Card Shell',
   component: AccentCardShellTokensShowcase,
   tags: ['autodocs'],
   parameters: {

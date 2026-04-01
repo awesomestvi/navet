@@ -3,7 +3,7 @@ import { Flame, Lightbulb } from 'lucide-react';
 import { CardHeader } from './card-header';
 
 const meta = {
-  title: 'UI/Card Header',
+  title: 'Components/Base/Card Header',
   component: CardHeader,
   tags: ['autodocs'],
   parameters: {

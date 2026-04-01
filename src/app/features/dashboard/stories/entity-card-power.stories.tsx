@@ -12,7 +12,7 @@ function PowerCardStory(args: Omit<ComponentProps<typeof PowerCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Entity Cards/Power',
+  title: 'Cards/Entity/Power',
   component: PowerCardStory,
   tags: ['autodocs'],
   args: {

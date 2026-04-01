@@ -14,7 +14,7 @@ function InteractionStory() {
 }
 
 const meta = {
-  title: 'Settings/Interaction',
+  title: 'Settings/Sections/Interaction',
   component: InteractionStory,
   tags: ['autodocs'],
   parameters: {

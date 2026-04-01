@@ -34,7 +34,7 @@ function ThemeAwareTinyActionCard(props: Omit<ComponentProps<typeof TinyActionCa
 }
 
 const meta = {
-  title: 'Primitives/Tiny Action Card',
+  title: 'Foundation/Primitives/Tiny Action Card',
   component: ThemeAwareTinyActionCard,
   tags: ['autodocs'],
   parameters: {

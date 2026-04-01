@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { buildCustomCard, CustomWidgetStoryFrame } from './custom-card-story-helpers';
 
 const meta = {
-  title: 'Custom Cards/RSS Feed',
+  title: 'Cards/Widget/RSS Feed',
   component: CustomWidgetStoryFrame,
   tags: ['autodocs'],
   parameters: {

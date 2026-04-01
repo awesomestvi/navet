@@ -12,7 +12,7 @@ function LockCardStory(args: ComponentProps<typeof LockCard>) {
 }
 
 const meta = {
-  title: 'Entity Cards/Lock',
+  title: 'Cards/Entity/Lock',
   component: LockCardStory,
   tags: ['autodocs'],
   args: {

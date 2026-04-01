@@ -33,7 +33,7 @@ const events = [
 ];
 
 const meta = {
-  title: 'Custom Cards/Calendar',
+  title: 'Cards/Entity/Calendar',
   component: CalendarCardStory,
   tags: ['autodocs'],
   args: {

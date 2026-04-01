@@ -49,7 +49,7 @@ function EntityIconPillStylesShowcase() {
 }
 
 const meta = {
-  title: 'Tokens/Entity Icon Pill Styles',
+  title: 'Foundation/Tokens/Entity Icon Pill',
   component: EntityIconPillStylesShowcase,
   tags: ['autodocs'],
   parameters: {

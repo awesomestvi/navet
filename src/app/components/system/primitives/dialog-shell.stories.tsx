@@ -89,7 +89,7 @@ function DecoratedDialogStory() {
 }
 
 const meta = {
-  title: 'Primitives/Dialog Shell',
+  title: 'Foundation/Primitives/Dialog Shell',
   component: DialogShell,
   tags: ['autodocs'],
   parameters: {

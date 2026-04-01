@@ -123,7 +123,7 @@ function EntityCardCatalogPage() {
 }
 
 const meta = {
-  title: 'Cards/Catalog',
+  title: 'Cards/Overview/Catalog',
   component: EntityCardCatalogPage,
   tags: ['autodocs'],
   parameters: {

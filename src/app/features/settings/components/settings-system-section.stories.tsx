@@ -14,7 +14,7 @@ function SystemStory() {
 }
 
 const meta = {
-  title: 'Settings/System',
+  title: 'Settings/Sections/System',
   component: SystemStory,
   tags: ['autodocs'],
   parameters: {

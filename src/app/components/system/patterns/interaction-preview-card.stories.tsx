@@ -12,7 +12,7 @@ function ThemeAwareInteractionPreviewCard({
 }
 
 const meta = {
-  title: 'Patterns/Interaction Preview Card',
+  title: 'Foundation/Patterns/Interaction Preview Card',
   component: ThemeAwareInteractionPreviewCard,
   tags: ['autodocs'],
   parameters: {

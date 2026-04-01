@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CaptionValue } from './caption-value';
 
 const meta = {
-  title: 'UI/Caption Value',
+  title: 'Components/Base/Caption Value',
   component: CaptionValue,
   tags: ['autodocs'],
   parameters: {

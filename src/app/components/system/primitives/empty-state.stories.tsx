@@ -3,7 +3,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { EmptyState } from '@/app/components/system/primitives';
 
 const meta = {
-  title: 'Primitives/Empty State',
+  title: 'Foundation/Primitives/Empty State',
   component: EmptyState,
   tags: ['autodocs'],
   parameters: {

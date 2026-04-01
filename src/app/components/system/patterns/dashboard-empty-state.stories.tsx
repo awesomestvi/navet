@@ -15,7 +15,7 @@ function ThemeAwareDashboardEmptyState(
 }
 
 const meta = {
-  title: 'Patterns/Dashboard Empty State',
+  title: 'Foundation/Patterns/Dashboard Empty State',
   component: ThemeAwareDashboardEmptyState,
   tags: ['autodocs'],
   parameters: {

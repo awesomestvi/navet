@@ -12,7 +12,7 @@ function VacuumCardStory(args: Omit<ComponentProps<typeof VacuumCard>, 'onSizeCh
 }
 
 const meta = {
-  title: 'Entity Cards/Vacuum',
+  title: 'Cards/Entity/Vacuum',
   component: VacuumCardStory,
   tags: ['autodocs'],
   args: {

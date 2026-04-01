@@ -34,7 +34,7 @@ function CardShellSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Tokens/Card Shell Surface Tokens',
+  title: 'Foundation/Tokens/Card Shell Surface',
   component: CardShellSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {

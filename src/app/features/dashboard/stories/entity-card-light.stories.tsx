@@ -12,7 +12,7 @@ function LightCardStory(args: Omit<ComponentProps<typeof LightCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Entity Cards/Light',
+  title: 'Cards/Entity/Light',
   component: LightCardStory,
   tags: ['autodocs'],
   args: {

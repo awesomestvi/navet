@@ -28,7 +28,7 @@ function PickerModeStory() {
 }
 
 const meta = {
-  title: 'Primitives/Color Input Swatch',
+  title: 'Foundation/Primitives/Color Input Swatch',
   component: ColorInputSwatch,
   tags: ['autodocs'],
   parameters: {

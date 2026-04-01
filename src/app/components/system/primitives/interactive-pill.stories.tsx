@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { InteractivePill } from '@/app/components/system/primitives';
 
 const meta = {
-  title: 'Primitives/Interactive Pill',
+  title: 'Foundation/Primitives/Interactive Pill',
   component: InteractivePill,
   tags: ['autodocs'],
   parameters: {

@@ -12,7 +12,7 @@ function PersonCardStory(args: Omit<ComponentProps<typeof PersonCard>, 'onSizeCh
 }
 
 const meta = {
-  title: 'Entity Cards/Person',
+  title: 'Cards/Entity/Person',
   component: PersonCardStory,
   tags: ['autodocs'],
   args: {

@@ -52,7 +52,7 @@ function CardCompositeStory() {
 }
 
 const meta = {
-  title: 'UI/Card Wrapper',
+  title: 'Components/Base/Card Wrapper',
   component: CardCompositeStory,
   tags: ['autodocs'],
   parameters: {

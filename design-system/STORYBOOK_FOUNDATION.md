@@ -35,39 +35,28 @@ The code foundation now groups stable exports into three buckets:
 
 These folders re-export existing stable components. They do not duplicate implementations.
 
-## Storybook Scope
+## Story Hierarchy
 
-Start Storybook with only the system layer.
+Stories are organised into a consistent top-level hierarchy:
 
-Recommended story groups:
-
-- `Primitives/Pills`
-- `Primitives/Buttons`
-- `Primitives/Swatches`
-- `Primitives/Headers`
-- `Patterns/Hero`
-- `Patterns/Empty State`
-- `Patterns/Onboarding Step`
-- `Patterns/Settings Preview`
-- `Tokens/Theme Surfaces`
-
-## First Components To Document
-
-- `InteractivePill`
-- `RoundControlButton`
-- `ColorInputSwatch`
-- `EntityCardTitleBlock`
-- `DashboardHeroSection`
-- `DashboardEmptyState`
-- `InteractionPreviewCard`
-
-## Current Stories
-
-- `Primitives/Interactive Pill`
-- `Primitives/Color Input Swatch`
-- `Primitives/Round Control Button`
-- `Patterns/Dashboard Hero Section`
-- `Patterns/Interaction Preview Card`
+- `Foundation/` — design system layer: tokens, primitives, and composed patterns
+  - `Foundation/Tokens/` — theme surface helpers, accent shell treatments, style calculators
+  - `Foundation/Primitives/` — pills, buttons, swatches, headers, shells
+  - `Foundation/Patterns/` — hero sections, empty-state layouts, preview frames
+  - `Foundation/Overview` — cross-token/primitive overview
+- `Components/` — app-level UI components
+  - `Components/Base/` — Radix UI wrappers (buttons, dialogs, selects …)
+  - `Components/Shared/` — cross-feature primitives (card sizing, action rows, icon picker …)
+- `App Shell/` — header, sidebar, room nav, notifications
+- `Cards/` — all dashboard card types
+  - `Cards/Overview/` — catalog, all-sizes matrix, state matrix
+  - `Cards/Entity/` — one story per HA entity domain (light, switch, climate …)
+  - `Cards/Widget/` — custom cards (action, photo frame, RSS, quick note …)
+- `Dashboard/` — add-card dialog, edit actions, onboarding dialog
+- `Settings/` — settings UI
+  - `Settings/Sections/` — full section panels
+  - `Settings/Dialogs/` — per-entity settings dialogs (light, HVAC, weather …)
+- `Energy/` — charts and widgets for the energy feature
 
 ## Story Rules
 

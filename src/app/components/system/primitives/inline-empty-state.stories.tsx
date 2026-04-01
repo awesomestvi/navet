@@ -15,7 +15,7 @@ function ThemeAwareInlineEmptyState(
 }
 
 const meta = {
-  title: 'Primitives/Inline Empty State',
+  title: 'Foundation/Primitives/Inline Empty State',
   component: ThemeAwareInlineEmptyState,
   tags: ['autodocs'],
   parameters: {

@@ -44,7 +44,7 @@ function AlertDialogStory() {
 }
 
 const meta = {
-  title: 'UI/Alert Dialog',
+  title: 'Components/Base/Alert Dialog',
   component: AlertDialogStory,
   tags: ['autodocs'],
   parameters: {

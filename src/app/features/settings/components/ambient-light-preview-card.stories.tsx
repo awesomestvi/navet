@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { AmbientLightPreviewCard } from './ambient-light-preview-card';
 
 const meta = {
-  title: 'Settings/Appearance/Ambient Light Preview',
+  title: 'Settings/Sections/Ambient Light Preview',
   component: AmbientLightPreviewCard,
   tags: ['autodocs'],
   parameters: {

@@ -12,7 +12,7 @@ function CoverCardStory(args: Omit<ComponentProps<typeof CoverCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Entity Cards/Cover',
+  title: 'Cards/Entity/Cover',
   component: CoverCardStory,
   tags: ['autodocs'],
   args: {

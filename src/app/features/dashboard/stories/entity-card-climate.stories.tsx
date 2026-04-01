@@ -12,7 +12,7 @@ function ClimateCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeCha
 }
 
 const meta = {
-  title: 'Entity Cards/Climate',
+  title: 'Cards/Entity/Climate',
   component: ClimateCardStory,
   tags: ['autodocs'],
   parameters: {

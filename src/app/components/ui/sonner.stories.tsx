@@ -27,7 +27,7 @@ function SonnerStory() {
 }
 
 const meta = {
-  title: 'UI/Sonner Toaster',
+  title: 'Components/Base/Sonner Toaster',
   component: SonnerStory,
   tags: ['autodocs'],
   parameters: {

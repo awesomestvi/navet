@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 const meta = {
-  title: 'Settings Dialogs/Vacuum',
+  title: 'Settings/Dialogs/Vacuum',
   component: VacuumSettingsDialog,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

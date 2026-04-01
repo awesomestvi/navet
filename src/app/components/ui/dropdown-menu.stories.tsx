@@ -50,7 +50,7 @@ function DropdownMenuStory() {
 }
 
 const meta = {
-  title: 'UI/Dropdown Menu',
+  title: 'Components/Base/Dropdown Menu',
   component: DropdownMenuStory,
   tags: ['autodocs'],
   parameters: {

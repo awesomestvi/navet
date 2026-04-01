@@ -12,7 +12,7 @@ function ThemeAwareRoundControlButton(
 }
 
 const meta = {
-  title: 'Primitives/Round Control Button',
+  title: 'Foundation/Primitives/Round Control Button',
   component: ThemeAwareRoundControlButton,
   tags: ['autodocs'],
   parameters: {

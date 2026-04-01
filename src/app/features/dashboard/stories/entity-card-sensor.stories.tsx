@@ -12,7 +12,7 @@ function SensorCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeCh
 }
 
 const meta = {
-  title: 'Entity Cards/Sensor',
+  title: 'Cards/Entity/Sensor',
   component: SensorCardStory,
   tags: ['autodocs'],
   args: {

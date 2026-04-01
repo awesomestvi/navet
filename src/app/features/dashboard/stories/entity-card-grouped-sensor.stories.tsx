@@ -21,7 +21,7 @@ const sensors = [
 ];
 
 const meta = {
-  title: 'Custom Cards/Grouped Sensor',
+  title: 'Cards/Entity/Grouped Sensor',
   component: GroupedSensorCardStory,
   tags: ['autodocs'],
   args: {

@@ -99,7 +99,7 @@ function TokenStyleCalculatorsShowcase() {
 }
 
 const meta = {
-  title: 'Tokens/Style Calculators',
+  title: 'Foundation/Tokens/Style Calculators',
   component: TokenStyleCalculatorsShowcase,
   tags: ['autodocs'],
   parameters: {

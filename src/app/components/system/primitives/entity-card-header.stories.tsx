@@ -42,7 +42,7 @@ function FramedEntityCardHeader(args: {
 }
 
 const meta = {
-  title: 'Primitives/Entity Card Header',
+  title: 'Foundation/Primitives/Entity Card Header',
   component: FramedEntityCardHeader,
   tags: ['autodocs'],
   parameters: {

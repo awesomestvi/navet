@@ -52,7 +52,7 @@ function LightSettingsDialogStory() {
 }
 
 const meta = {
-  title: 'Settings Dialogs/Light',
+  title: 'Settings/Dialogs/Light',
   component: LightSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

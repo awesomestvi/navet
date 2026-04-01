@@ -59,7 +59,7 @@ function ThemeSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Tokens/Theme Surface Tokens',
+  title: 'Foundation/Tokens/Theme Surface',
   component: ThemeSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {
