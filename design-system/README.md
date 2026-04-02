@@ -59,6 +59,10 @@ Internal UI-system foundation covering:
 - how Storybook is wired in-repo without forcing a package workspace
 - when a monorepo or package split would actually be justified
 
+### First-Layer Foundations
+- `src/app/components/system/tokens/foundations.ts` is the shared source for spacing, sizing, typography roles, radii, icon sizing, focus treatment, and shared semantic status tones.
+- Storybook reviews these foundations through focused pages in the `Theme/*` section (for radii, colors, fonts, spacing, stroke widths, and typography) before primitive APIs are expanded.
+
 ## 🎯 Quick Reference
 
 ### Core Design Principles
@@ -68,7 +72,7 @@ Internal UI-system foundation covering:
 4. **Consistent Icon Sizing** - Extra-Small: 7×7 (28px container) / 3.5×3.5 (14px icon), Small: 8×8 (32px) / 4×4 (16px), Medium/Large: 10×10 (40px) / 5×5 (20px)
 5. **Smooth Transitions** - 500ms for state changes, 200ms for interactions
 6. **Theme Customization** - Four theme modes (Liquid Glass, Dark, Light, Black) with 8 built-in accents, a custom accent picker, and visual quality tiers
-7. **Section-Based Navigation** - Organized into dedicated sections (Home, Security, Tasks, Locks, Lights, Media, Mock, Settings)
+7. **Section-Based Navigation** - Organized into dedicated sections (Home, Energy, Security, Tasks, Locks, Lights, Media, Settings)
 8. **Shared Primitives First** - Cross-theme icon pills, nav/action pills, and card off-state surfaces should resolve through shared primitives before feature-level custom styling is added
 9. **One Climate Card Pattern** - Climate entities should use the HVAC card pattern; do not reintroduce a parallel legacy climate-card implementation
 10. **Composable Controller Layers** - Keep feature controllers as orchestration shells and extract sync/action/display responsibilities into dedicated helper hooks
@@ -94,7 +98,7 @@ Internal UI-system foundation covering:
 - **Accent Card Shell Tokens** - Shared accent-shell gradients, glow layers, and overlays now document their glass, dark, light, and black variants in Storybook, including readable-text behavior for tinted dark surfaces
 
 ### Navigation Structure
-- **Sections**: Home (dashboard), Security, Tasks, Locks, Lights, Media, Mock, Settings
+- **Sections**: Home (dashboard), Energy, Security, Tasks, Locks, Lights, Media, Settings
 - **Desktop**: Fixed vertical sidebar on left (16px wide)
 - **Mobile**: Compact iOS-style bottom navigation bar with icon + label tabs for 6 key sections
 - **Mobile Scroll Behavior**: Bottom navigation hides on downward scroll and returns near the top of the document
@@ -174,14 +178,17 @@ When creating a new card component:
 ```
 /\.storybook/                                      → Storybook configuration and preview decorators for the in-repo UI workshop
 /src/app/components/shared/                          → Shared UI building blocks
+/src/app/components/primitives/                      → Source-of-truth low-level shared UI primitives
+/src/app/components/patterns/                        → Source-of-truth composed shared UI patterns
 /src/app/components/system/                          → Storybook-ready system entrypoints for shared primitives, patterns, and tokens
 /src/app/components/system/primitives/index.ts       → Stable low-level component exports
 /src/app/components/system/patterns/index.ts         → Stable composed-pattern exports
 /src/app/components/system/tokens/index.ts           → Shared theme/style token exports
+/src/app/components/system/tokens/foundations.ts     → First-layer spacing, sizing, type, radius, icon, and focus tokens
 /src/app/components/shared/card-size.ts              → CardSize union type (single source of truth)
 /src/app/components/shared/card-size-selector.tsx    → Size registry (metadata, helpers, overlay classes, selector UI)
-/src/app/components/shared/entity-card-title-block.tsx → Shared title/subtitle ordering for card headers
-/src/app/components/shared/tiny-action-card.tsx      → Shared compact action-card shell for tiny tiles
+/src/app/components/primitives/entity-card-title-block.tsx → Shared title/subtitle ordering for card headers
+/src/app/components/patterns/tiny-action-card.tsx    → Shared compact action-card shell for tiny tiles
 /src/app/components/layout/                          → Header, sidebar, bottom nav
 /src/app/components/layout/use-header-controller.ts  → Header orchestration hook (greeting, search, date/time, user identity)
 /src/app/components/layout/header-actions.tsx        → HeaderMobileActions / HeaderDesktopActions split components
@@ -219,7 +226,7 @@ When creating a new card component:
 
 - Run `pnpm storybook` to develop UI in isolation on Storybook's local dev server
 - Run `pnpm storybook:build` to validate the static Storybook bundle
-- Run `pnpm check:stories` to validate Storybook title conventions and top-level grouping
+- Run `pnpm check:stories` to validate Storybook title conventions, primitive/pattern story coverage, and colocated story ownership
 - Co-locate stories with the component or feature they document; keep overview/catalog stories with the owning feature
 - Use the global Storybook toolbar to test built-in themes and accent colors
 - The Storybook manager UI, docs pages, and canvas default to dark mode so glass/dark presentation is the baseline workshop context
@@ -229,8 +236,7 @@ When creating a new card component:
 
 - `Concepts/` — workshop overviews and high-level entrypoints
 - `Theme/` — token, surface, typography, and appearance documentation
-- `Components/Base/` — wrapper-level UI such as dialogs, menus, avatar, checkbox, label, and toaster
-- `Components/Primitives/` — low-level reusable UI pieces
+- `Components/Primitives/` — low-level reusable UI pieces, including dialog/menu/avatar/label/toast wrappers and grouped card/header primitives under `Components/Primitives/Cards/`
 - `Components/Patterns/` — composed shared UI sections and layouts
 - `Components/Shared/` — app-specific shared controls that are reused across features
 - `App Shell/` — sidebar, topbar, notifications, search, user dropdown, section customization
@@ -268,4 +274,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** March 31, 2026
+**Last Updated:** April 3, 2026

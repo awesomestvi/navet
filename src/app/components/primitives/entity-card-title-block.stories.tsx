@@ -35,7 +35,7 @@ function FramedEntityCardTitleBlock({
 }
 
 const meta = {
-  title: 'Components/Primitives/Entity Card Title Block',
+  title: 'Components/Primitives/Cards/Entity Card Title Block',
   component: FramedEntityCardTitleBlock,
   tags: ['autodocs'],
   parameters: {

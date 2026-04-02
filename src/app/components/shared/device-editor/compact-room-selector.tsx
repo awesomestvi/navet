@@ -1,5 +1,6 @@
 import { ChevronDown, Home } from 'lucide-react';
 import { memo } from 'react';
+import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 
@@ -23,18 +24,20 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
   return (
     <div className="relative inline-flex items-center">
       {onChange ? (
-        <select
+        <Select
           aria-label={t('common.room')}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
+          containerClassName="absolute inset-0 z-10"
+          selectClassName="h-full cursor-pointer opacity-0"
+          indicatorClassName="hidden"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       ) : null}
       <div className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary}`}>
         <Home className={`h-4 w-4 ${surface.textSecondary}`} />

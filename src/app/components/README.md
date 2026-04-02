@@ -4,7 +4,7 @@ This folder has three distinct roles:
 
 - `primitives/`
   Low-level reusable UI building blocks with one clear responsibility.
-  Examples: `TextField`, `ColorInputSwatch`, `LoadingSpinner`, `ThemeDropdownContent`.
+  Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`, `ThemeDropdownContent`.
   New shared UI should start here when it is generic, behavior-light, and reusable across features.
 
 - `patterns/`
@@ -16,10 +16,11 @@ This folder has three distinct roles:
   Curated public surface for Storybook and cross-app discovery.
   This is the stable export layer for primitives, patterns, and theme tokens.
   Do not treat `system/` as the source of truth for where new shared components are authored.
+  `system/tokens` is the shared home for first-layer foundations such as spacing, radii, icon sizing, and focus behavior.
 
 - `shared/`
-  Existing cross-feature components that predate the primitive/pattern split.
-  This folder now contains both compatibility shims and intentional app-specific shared UI.
+  Existing app-specific shared components that do not belong in the primitive/pattern system.
+  Temporary compatibility shims may appear here during migrations, but they should not be long-lived.
   See `src/app/components/shared/README.md` before extending anything here.
 
 - `layout/` and `ui/`
@@ -30,7 +31,8 @@ Guidelines:
 
 - Create new shared UI in `primitives/` or `patterns/` first.
 - Re-export stable shared pieces through `system/` once they are ready for broader use.
-- Treat compatibility shims in `shared/` as migration paths, not as the preferred import target.
+- Before adding or widening primitives, align them to the existing foundation tokens in `src/app/components/system/tokens/`.
+- Treat any temporary compatibility shim in `shared/` as a migration path, not as the preferred import target.
 - Keep business logic and feature-specific state out of primitives.
 - Reject abstractions that need large prop APIs or mix multiple responsibilities.
 - If a shared component still depends on feature UI or unresolved composition decisions, leave it in `shared/` until its role is clearer.

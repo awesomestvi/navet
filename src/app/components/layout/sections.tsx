@@ -12,7 +12,7 @@ import { DashboardCardItem } from '@/app/features/dashboard';
 import { useCardState, useDevices, useEditMode, useI18n, useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
-import { EmptyState } from '../shared/empty-state';
+import { DashboardEmptyState } from '../patterns/dashboard-empty-state';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 function DeviceSectionLayout({
@@ -39,7 +39,16 @@ function DeviceSectionLayout({
   const { isEditMode, toggleEditMode } = useEditMode();
 
   if (devices.length === 0) {
-    return <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />;
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <DashboardEmptyState
+          icon={emptyIcon}
+          title={emptyTitle}
+          description={emptyDescription}
+          className="w-full max-w-md"
+        />
+      </div>
+    );
   }
 
   const content = (
@@ -85,11 +94,14 @@ export function SecuritySection() {
 export function TasksSection() {
   const { t } = useI18n();
   return (
-    <EmptyState
-      icon={Clipboard}
-      title={t('sections.tasks.emptyTitle')}
-      description={t('sections.tasks.emptyDescription')}
-    />
+    <div className="flex h-full items-center justify-center p-6">
+      <DashboardEmptyState
+        icon={Clipboard}
+        title={t('sections.tasks.emptyTitle')}
+        description={t('sections.tasks.emptyDescription')}
+        className="w-full max-w-md"
+      />
+    </div>
   );
 }
 
@@ -114,11 +126,14 @@ export function LocksSection() {
 export function LightsSection() {
   const { t } = useI18n();
   return (
-    <EmptyState
-      icon={Lightbulb}
-      title={t('sections.lights.emptyTitle')}
-      description={t('sections.lights.emptyDescription')}
-    />
+    <div className="flex h-full items-center justify-center p-6">
+      <DashboardEmptyState
+        icon={Lightbulb}
+        title={t('sections.lights.emptyTitle')}
+        description={t('sections.lights.emptyDescription')}
+        className="w-full max-w-md"
+      />
+    </div>
   );
 }
 
@@ -231,11 +246,14 @@ export function MediaSection() {
 
   if (mediaDevices.length === 0) {
     return (
-      <EmptyState
-        icon={Tv}
-        title={t('sections.media.emptyTitle')}
-        description={t('sections.media.emptyDescription')}
-      />
+      <div className="flex h-full items-center justify-center p-6">
+        <DashboardEmptyState
+          icon={Tv}
+          title={t('sections.media.emptyTitle')}
+          description={t('sections.media.emptyDescription')}
+          className="w-full max-w-md"
+        />
+      </div>
     );
   }
 

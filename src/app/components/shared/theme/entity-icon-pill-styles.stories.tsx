@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Lightbulb } from 'lucide-react';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { getEntityIconPillStyles } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
@@ -9,8 +10,15 @@ function EntityIconPillStylesShowcase() {
   return (
     <div className="space-y-4">
       {THEMES.map((theme) => (
-        <section key={theme} className="rounded-2xl border border-white/14 bg-white/6 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/65">{theme}</p>
+        <section
+          key={theme}
+          className={`rounded-2xl border p-4 ${getThemeSurfaceTokens(theme).border} ${getThemeSurfaceTokens(theme).panelMuted}`}
+        >
+          <p
+            className={`text-xs font-semibold uppercase tracking-[0.2em] ${getThemeSurfaceTokens(theme).textMuted}`}
+          >
+            {theme}
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-2.5">
             {[
               { isActive: true, size: 'small' as const },
@@ -35,7 +43,7 @@ function EntityIconPillStylesShowcase() {
                   <span className={icon.badgeClassName} style={icon.badgeStyle}>
                     <Lightbulb className={icon.iconClassName} style={icon.iconStyle} />
                   </span>
-                  <span className="text-[10px] text-white/70">
+                  <span className={`text-[10px] ${getThemeSurfaceTokens(theme).textSecondary}`}>
                     {item.size} {item.isActive ? 'active' : 'idle'}
                   </span>
                 </div>
@@ -49,14 +57,27 @@ function EntityIconPillStylesShowcase() {
 }
 
 const meta = {
-  title: 'Theme/Entity Icon Pill Styles',
+  title: 'Theme/Cards/Entity Icon Pill Styles',
   component: EntityIconPillStylesShowcase,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component:
-          'Computed-style preview for `getEntityIconPillStyles`, used by entity card header icons to derive badge and glyph classes by theme, size, and active state.',
+        component: [
+          'Computed-style preview for `getEntityIconPillStyles` used by entity card header icon pills.',
+          '',
+          'What this page covers:',
+          '- Active vs idle icon-pill appearance across all themes.',
+          '- Size scaling behavior for small and large icon-pill variants.',
+          '',
+          'Usage notes:',
+          '- Use this calculator output directly in card header icon primitives.',
+          '- Keep icon-pill semantics stable: active state should be obvious without overpowering neighboring text.',
+          '',
+          'Review expectations:',
+          '- Badge/icon contrast should remain legible in all themes.',
+          '- Active and idle variants should be clearly distinguishable at compact sizes.',
+        ].join('\n'),
       },
     },
   },
@@ -66,4 +87,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Matrix: Story = {};
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

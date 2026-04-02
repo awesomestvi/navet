@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Layers2, Search, Sparkles, X } from 'lucide-react';
-import { DialogShell, TextField } from '@/app/components/primitives';
+import { DialogShell, Input } from '@/app/components/primitives';
 import { type CardSize, getCardSizeRatio } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type ThemeType, useI18n } from '@/app/hooks';
@@ -180,7 +180,7 @@ export function AddCardDialogView({
               className={`rounded-[24px] border p-3 ${borderColor}`}
               style={{ backgroundColor: 'rgba(255,255,255,0.025)' }}
             >
-              <TextField
+              <Input
                 type="text"
                 value={libraryQuery}
                 onChange={(event) => setLibraryQuery(event.target.value)}

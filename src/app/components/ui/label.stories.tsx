@@ -2,11 +2,30 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Label } from './label';
 
 const meta = {
-  title: 'Components/Base/Label',
+  title: 'Components/Primitives/Label',
   component: Label,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: [
+          'Base form-label primitive used for accessible control naming.',
+          '',
+          'What this base story covers:',
+          '- Label-to-control association through `htmlFor` and matching input `id`.',
+          '- Minimal baseline typography so higher-level primitives can layer tokenized styles.',
+          '',
+          'Usage notes:',
+          '- Always associate labels with real form controls; avoid decorative labels with no target.',
+          '- Keep label text concise and domain-specific so form scanning remains fast.',
+          '',
+          'Review expectations:',
+          '- Verify label remains legible and contrast-safe in all themes.',
+          '- Verify click/focus behavior correctly targets the associated control.',
+        ].join('\n'),
+      },
+    },
   },
 } satisfies Meta<typeof Label>;
 

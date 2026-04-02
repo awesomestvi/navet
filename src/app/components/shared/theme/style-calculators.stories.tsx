@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Pause, Play } from 'lucide-react';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import {
   getRoundControlStyles,
   resolvePrimaryColorToken,
@@ -16,14 +17,42 @@ function TokenStyleCalculatorsShowcase() {
   const nearestPreset = resolvePrimaryColorToken('custom', customAccent);
   const sanitized = sanitizeCustomPrimaryColor('7C3AED');
 
+  const defaultSurface = getThemeSurfaceTokens('dark');
+
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-white/12 bg-white/6 p-4 backdrop-blur-xl">
-        <h3 className="text-sm font-semibold text-white">Color token helpers</h3>
-        <p className="mt-1 text-xs text-white/70">
-          custom {customAccent} value {resolvedCustom} - nearest preset {nearestPreset} - sanitized{' '}
-          {String(sanitized)}
-        </p>
+      <section
+        className={`rounded-2xl border p-4 backdrop-blur-xl ${defaultSurface.border} ${defaultSurface.panelMuted}`}
+      >
+        <h3 className={`text-sm font-semibold ${defaultSurface.textPrimary}`}>
+          Color token helpers
+        </h3>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className={`rounded-xl border p-3 ${defaultSurface.border} ${defaultSurface.panel}`}>
+            <p className={`text-[11px] uppercase tracking-[0.16em] ${defaultSurface.textMuted}`}>
+              Resolved value
+            </p>
+            <code className={`mt-2 block text-sm ${defaultSurface.textPrimary}`}>
+              {resolvedCustom}
+            </code>
+          </div>
+          <div className={`rounded-xl border p-3 ${defaultSurface.border} ${defaultSurface.panel}`}>
+            <p className={`text-[11px] uppercase tracking-[0.16em] ${defaultSurface.textMuted}`}>
+              Nearest preset
+            </p>
+            <code className={`mt-2 block text-sm ${defaultSurface.textPrimary}`}>
+              {nearestPreset}
+            </code>
+          </div>
+          <div className={`rounded-xl border p-3 ${defaultSurface.border} ${defaultSurface.panel}`}>
+            <p className={`text-[11px] uppercase tracking-[0.16em] ${defaultSurface.textMuted}`}>
+              Sanitized input
+            </p>
+            <code className={`mt-2 block text-sm ${defaultSurface.textPrimary}`}>
+              {String(sanitized)}
+            </code>
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -45,7 +74,7 @@ function TokenStyleCalculatorsShowcase() {
             >
               <h3
                 className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                  getThemeSurfaceTokens(theme).textPrimary
                 }`}
               >
                 {theme}
@@ -71,6 +100,11 @@ function TokenStyleCalculatorsShowcase() {
                   <Play className={`h-4 w-4 ${round.emphasisIcon}`} />
                 </button>
               </div>
+
+              <p className={`mt-3 text-xs ${getThemeSurfaceTokens(theme).textSecondary}`}>
+                `default`, `soft`, and `emphasis` should be derived through the calculator instead
+                of reassembled ad hoc in stories or feature code.
+              </p>
             </section>
           );
         })}
@@ -86,8 +120,21 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Showcase for token helper functions that return computed styles or normalized values rather than standalone components. Includes `getRoundControlStyles` and primary-color normalization helpers so low-level theme behavior can be verified without feature-level UI wrappers.',
+        component: [
+          'Showcase for helper functions that compute styles/values rather than rendering standalone UI.',
+          '',
+          'What this page covers:',
+          '- Primary-color normalization helpers (`resolvePrimaryColorValue`, `resolvePrimaryColorToken`, `sanitizeCustomPrimaryColor`).',
+          '- Round-control style calculators for default/soft/emphasis button states.',
+          '',
+          'Usage notes:',
+          '- Use calculator output as the canonical source for state-specific chrome, not handcrafted variants in features.',
+          '- Keep conversion/normalization logic centralized so accent behavior stays predictable app-wide.',
+          '',
+          'Review expectations:',
+          '- Verify equivalent calculator states remain visually aligned across themes.',
+          '- Verify custom color input is normalized consistently and maps to expected fallback behavior.',
+        ].join('\n'),
       },
     },
   },
@@ -97,4 +144,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Showcase: Story = {};
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

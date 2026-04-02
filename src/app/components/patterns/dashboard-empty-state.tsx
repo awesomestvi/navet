@@ -1,11 +1,15 @@
 import { type LucideIcon, Wand2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import {
+  getThemeSurfaceTokens,
+  type ThemeSurfaceTokens,
+} from '@/app/components/shared/theme/theme-surface-tokens';
+import { useTheme } from '@/app/hooks';
 
 export interface DashboardEmptyStateProps {
   title: string;
   description: string;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  surface?: ThemeSurfaceTokens;
   accentColor?: string;
   className?: string;
   compact?: boolean;
@@ -19,8 +23,8 @@ export interface DashboardEmptyStateProps {
 export function DashboardEmptyState({
   title,
   description,
-  surface,
-  accentColor = '#9fb0ff',
+  surface: surfaceOverride,
+  accentColor: accentColorOverride,
   className,
   compact = false,
   icon: Icon = Wand2,
@@ -29,6 +33,10 @@ export function DashboardEmptyState({
   actionIcon: ActionIcon = Wand2,
   children,
 }: DashboardEmptyStateProps) {
+  const { theme, accentColor: themeAccentColor } = useTheme();
+  const surface = surfaceOverride ?? getThemeSurfaceTokens(theme);
+  const accentColor = accentColorOverride ?? themeAccentColor ?? '#9fb0ff';
+
   return (
     <div
       className={`relative overflow-hidden rounded-[24px] border text-center ${surface.border} ${surface.panelMuted} ${compact ? 'p-5' : 'px-6 py-8 md:px-8 md:py-10'} ${surface.cardShadow} ${className ?? ''}`}

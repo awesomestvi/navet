@@ -190,23 +190,24 @@ This token story exists to validate the accent-shell surface treatment across al
 
 **Location**: `/src/app/components/system/`
 
-Navet now has a lightweight in-repo system layer that groups stable UI exports without introducing a monorepo or package workspace.
+Navet now has a lightweight in-repo system layer that exposes stable UI exports without introducing a monorepo or package workspace.
 
 #### Structure
 
-- **`primitives/`** - low-level reusable pieces such as pills, empty states, dialog shells, header parts, swatches, and compact action-card building blocks
-- **`patterns/`** - composed UI sections such as dashboard heroes, empty states, interaction previews, and preview frames
+- **`src/app/components/primitives/`** - low-level reusable pieces such as pills, dialog shells, header parts, swatches, spinners, and text inputs
+- **`src/app/components/patterns/`** - composed UI sections such as field wrappers, empty states, message bars, and preview cards
+- **`src/app/components/system/`** - curated public export surface for Storybook navigation and cross-app discovery
 - **`tokens/`** - theme surface helpers, accent shell treatments, color helpers, and other shared visual decision utilities
 
 #### Purpose
 
 - gives Storybook a curated set of stable entrypoints for documentation and review today
 - reduces feature-to-feature import drift by exposing stable shared exports in one place
-- keeps implementation ownership in existing shared and feature files instead of duplicating components
+- keeps implementation ownership in `primitives/`, `patterns/`, theme helpers, and feature files instead of duplicating components
 
 #### Current Rule
 
-Use `src/app/components/system/` for stable, reusable UI exports that should be documented and reused across features. Do not treat it as a separate package yet; Navet still ships as a single app repo.
+Author new shared UI in `src/app/components/primitives/` or `src/app/components/patterns/` first, then re-export stable pieces through `src/app/components/system/`. Do not treat `system/` as a separate package or as the authoring location for new components.
 
 ---
 
@@ -368,12 +369,12 @@ Manages section navigation state across desktop and mobile layouts through a dir
 | Section  | URL Path    | Description                    | Icon      | Status    |
 |----------|-------------|--------------------------------|-----------|-----------|
 | Home     | `/`         | Main dashboard with all cards  | Home      | Active    |
+| Energy   | `/energy`   | Energy section and charts      | Zap       | Active    |
 | Security | `/security` | Security cameras and monitoring | Video     | Active |
 | Tasks    | `/tasks`    | Automations and routines       | Clipboard | Placeholder |
 | Locks    | `/locks`    | Smart lock controls            | Lock      | Active    |
 | Lights   | `/lights`   | Lighting control center        | Lightbulb | Active    |
 | Media    | `/media`    | Media player management        | Tv        | Active    |
-| Dashboard Builder | `/mock` | Build homescreen widgets and organize the device library | FlaskConical | Active |
 | Settings | `/settings` | App settings and preferences   | Settings  | Active    |
 
 #### Desktop Sidebar
@@ -384,7 +385,7 @@ Manages section navigation state across desktop and mobile layouts through a dir
 - **Width**: 64px (16 Tailwind units)
 - **Layout**: Vertical icon stack
 - **Icons**: 40px × 40px touch targets
-- **Active state**: Primary color background with 20% opacity
+- **Active state**: Accent-color driven border and glow/shadow treatment (theme-aware for light vs dark/glass/black)
 - **Home icon**: Orange square at top (logo)
 
 #### Mobile Bottom Navigation
@@ -396,7 +397,7 @@ Manages section navigation state across desktop and mobile layouts through a dir
 - **Active state**: theme-aware shared pill treatment
 - **Inactive state**: transparent/ghost buttons; only the selected item carries the pill
 - **Scroll behavior**: slides down and hides on downward scroll, returns when the user is near the top
-- **Sections shown**: Home, Security, Lights, Media, Dashboard Builder, Settings
+- **Sections shown**: Home, Energy, Security, Lights, Media, Settings
 
 #### URL Routing
 
@@ -714,7 +715,7 @@ Full-page settings interface with card-based organization. Appearance section it
 
 ### Empty State Component
 
-**Location**: `/src/app/components/shared/empty-state.tsx`
+**Location**: `/src/app/components/patterns/dashboard-empty-state.tsx`
 
 Beautiful placeholder screens for sections without data.
 
@@ -737,10 +738,11 @@ Beautiful placeholder screens for sections without data.
 
 #### Usage Pattern
 ```tsx
-<EmptyState
+<DashboardEmptyState
   icon={Video}
   title="No Security Cameras"
   description="You don't have any security cameras configured yet."
+  className="w-full max-w-md"
 />
 ```
 
@@ -753,7 +755,7 @@ Beautiful placeholder screens for sections without data.
 
 ### Inline Empty State Component
 
-**Location**: `/src/app/components/shared/inline-empty-state.tsx`
+**Location**: `/src/app/components/patterns/inline-empty-state.tsx`
 
 Compact inline empty state for use inside panels and dialogs where the full-page centered treatment is too heavy.
 

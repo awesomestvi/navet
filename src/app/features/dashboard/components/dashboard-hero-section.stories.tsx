@@ -101,7 +101,7 @@ function ThemeAwareDashboardHeroSection({
 }
 
 const meta = {
-  title: 'Components/Patterns/Dashboard Hero Section',
+  title: 'Components/Patterns/Hero',
   component: ThemeAwareDashboardHeroSection,
   tags: ['autodocs'],
   parameters: {

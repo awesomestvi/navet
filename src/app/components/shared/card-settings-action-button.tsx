@@ -1,7 +1,7 @@
 import { Settings2 } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 

@@ -8,6 +8,10 @@ Our dashboard follows **Apple's iOS widget design principles** with a focus on:
 - **Depth**: Frosted glass morphism creates visual hierarchy and layering
 - **Consistency**: Unified patterns across all card types and interactions
 
+These guidelines are now partially codified in `src/app/components/system/tokens/foundations.ts`.
+When shared primitives need spacing, sizing, typography, radius, icon-size, or focus decisions,
+prefer the foundation tokens before introducing one-off Tailwind values.
+
 ---
 
 ## Color System

@@ -1,8 +1,17 @@
 import { Hand, Lightbulb, MoreHorizontal, Settings2, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { CardActionRow } from '@/app/components/patterns/card-action-row';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
+import { getBrightnessPresetSelectedStyle } from '@/app/components/shared/device-editor/brightness-preset-styles';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
+import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n } from '@/app/hooks';
+import { getLightCardSurfaceTokens } from '@/app/features/lighting';
+import { useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import type { EntityInteractionMode } from '@/app/stores';
 
@@ -16,11 +25,25 @@ const PRESET_LABELS = ['25%', '60%', '100%'];
 
 export function InteractionPreviewCard({ mode, accentColor, theme }: InteractionPreviewCardProps) {
   const { t } = useI18n();
+  const { colors } = useTheme();
   const [isOn, setIsOn] = useState(true);
   const [brightness, setBrightness] = useState(60);
   const surface = getThemeSurfaceTokens(theme);
-  const isLightTheme = theme === 'light';
-  const isBlackTheme = theme === 'black';
+  const stateSurface = getCardStateSurfaceTokens(theme, isOn);
+  const stateText = getCardReadableTextTokens({
+    theme,
+    tone: isOn ? 'primary' : 'neutral',
+    accentColor,
+  });
+  const controlStyles = getRoundControlStyles(theme);
+  const actionSizes = getCardActionControlSizes('medium');
+  const lightSurface = getLightCardSurfaceTokens({
+    isOn,
+    selectedColor: null,
+    theme,
+    lightColors: colors.switch.on,
+    accentColor,
+  });
   const preview =
     mode === 'toggle-first'
       ? {
@@ -32,65 +55,32 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           iconTap: t('interactionPreview.iconTap.toggle'),
         };
   const showsTrailingButton = mode === 'toggle-first';
-
-  const cardClass = isLightTheme
-    ? 'bg-gray-50/90 border-gray-200/80'
-    : isBlackTheme
-      ? 'bg-black border-white/16'
+  const frameClassName =
+    theme === 'light'
+      ? 'bg-gradient-to-b from-slate-100/96 to-slate-200/92'
       : theme === 'glass'
-        ? 'bg-white/8 border-white/12'
-        : 'bg-white/6 border-white/10';
-  const textClass = isOn
-    ? surface.textPrimary
-    : isLightTheme
-      ? 'text-gray-500'
-      : isBlackTheme
-        ? 'text-gray-300'
-        : 'text-gray-400';
-  const labelClass = isLightTheme ? 'text-gray-500' : surface.textMuted;
-  const sectionLabelClass = isLightTheme ? 'text-gray-500' : surface.textSecondary;
+        ? 'bg-[linear-gradient(180deg,rgba(12,18,32,0.82),rgba(15,23,42,0.66))]'
+        : theme === 'black'
+          ? 'bg-[linear-gradient(180deg,rgba(10,10,10,0.98),rgba(0,0,0,1))]'
+          : 'bg-[linear-gradient(180deg,rgba(34,26,32,0.94),rgba(18,18,22,0.98))]';
   const quietPillClass = isOn
-    ? isLightTheme
+    ? theme === 'light'
       ? 'bg-gray-100 text-gray-600'
-      : isBlackTheme
+      : theme === 'black'
         ? 'bg-white/10 text-gray-300'
         : 'bg-white/10 text-gray-300'
-    : isLightTheme
+    : theme === 'light'
       ? 'bg-gray-200/80 text-gray-500'
-      : isBlackTheme
+      : theme === 'black'
         ? 'bg-white/6 text-gray-300'
         : 'bg-white/5 text-gray-500';
-
-  const iconButtonStyle = {
-    backgroundColor: isOn ? (isLightTheme ? '#ffffff' : `${accentColor}cc`) : undefined,
-    borderColor: isOn
-      ? `${accentColor}55`
-      : isLightTheme
-        ? 'rgba(156, 163, 175, 0.45)'
-        : 'rgba(255, 255, 255, 0.12)',
-    color: isOn ? (isLightTheme ? accentColor : '#ffffff') : isLightTheme ? '#6b7280' : '#9ca3af',
-    boxShadow: isLightTheme
-      ? isOn
-        ? `0 0 0 2px ${accentColor}22, 0 10px 28px ${accentColor}40`
-        : 'none'
-      : isOn
-        ? `0 0 0 2px ${accentColor}22, 0 12px 30px ${accentColor}45`
-        : 'none',
-  };
-
-  const sliderTrackClassName = isLightTheme
-    ? 'bg-gray-200'
-    : isBlackTheme
-      ? 'bg-white/14'
-      : 'bg-white/10';
-  const thumbClassName = isLightTheme
-    ? 'border-white bg-white shadow-lg'
-    : isBlackTheme
+  const sliderTrackClassName = theme === 'light' ? 'bg-gray-300/90' : 'bg-white/12';
+  const thumbClassName =
+    theme === 'black'
       ? 'border-black bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.22)]'
       : 'border-white bg-white shadow-lg';
-  const focusRingClass = isLightTheme
-    ? 'focus-visible:ring-gray-900/25 focus-visible:ring-offset-white'
-    : `focus-visible:ring-white/35 ${surface.ringOffset}`;
+  const titleColor = { color: stateText.titleColor };
+  const labelColor = { color: stateText.subtitleColor };
 
   const showControlsOpenedToast = () => {
     toast.success(t('interactionPreview.preview.controlsOpenedTitle'), {
@@ -103,11 +93,24 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
       setIsOn((current) => !current);
       return;
     }
+
     showControlsOpenedToast();
   };
 
   return (
-    <div className="max-w-lg">
+    <div className={`relative max-w-[22.5rem] rounded-[30px] p-3 ${frameClassName}`}>
+      {isOn ? (
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-[-18%] top-1/2 h-36 -translate-y-1/2 blur-3xl transition-opacity duration-300 ${
+            theme === 'light' ? 'opacity-70' : 'opacity-40'
+          }`}
+          style={{
+            background: `radial-gradient(circle, ${lightSurface.glowColor}cc 0%, ${lightSurface.glowColor}55 28%, transparent 72%)`,
+          }}
+        />
+      ) : null}
+
       {/* biome-ignore lint/a11y/useSemanticElements: This preview card contains nested interactive controls, so a semantic button wrapper is not valid here. */}
       <div
         role="button"
@@ -120,156 +123,189 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
             handleCardTap();
           }
         }}
-        className={`cursor-pointer rounded-[20px] border p-3 transition-all duration-300 ${cardClass} ${
-          !isOn ? 'grayscale opacity-40' : ''
+        className={`relative z-10 cursor-pointer overflow-hidden rounded-3xl border p-4 transition-all duration-300 ${lightSurface.cardClassName} ${
+          !isOn ? 'grayscale-[0.08] opacity-90' : ''
         }`}
+        style={lightSurface.cardStyle}
       >
-        <div className="flex items-start gap-2.5">
-          <div className="flex min-w-0 flex-1 items-start gap-2.5">
-            <button
-              type="button"
-              aria-label={t('interactionPreview.iconTap.toggle')}
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsOn((current) => !current);
-              }}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${focusRingClass} ${
-                !isOn ? (isLightTheme ? 'bg-gray-200' : 'bg-white/5') : ''
-              }`}
-              style={iconButtonStyle}
-            >
-              <Lightbulb
-                className="h-4.5 w-4.5"
-                style={{
-                  filter: isLightTheme ? undefined : 'drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35))',
-                }}
-              />
-            </button>
-            <div className="min-w-0">
-              <p className={`truncate text-sm font-semibold ${textClass}`}>
-                {t('interactionPreview.preview.deviceName')}
-              </p>
-              <p className={`mt-0.5 truncate text-[10px] ${labelClass}`}>
-                {t('interactionPreview.preview.deviceType')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className={`text-xs ${labelClass}`}>
-              {t('interactionPreview.preview.brightness')}
-            </span>
-            <span className={`text-sm font-bold ${textClass}`}>{brightness}%</span>
-          </div>
-          <div className="flex h-5 items-center">
-            <div className={`relative h-1 w-full rounded-full ${sliderTrackClassName}`}>
-              <div
-                className="absolute inset-y-0 left-0 rounded-full"
-                style={{
-                  width: `${brightness}%`,
-                  background: `linear-gradient(to right, ${accentColor}aa, ${accentColor})`,
-                }}
-              />
-              <div
-                className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 ${thumbClassName}`}
-                style={{ left: `calc(${brightness}% - 8px)` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center gap-1.5">
-          {PRESET_LABELS.map((label, index) => (
-            <button
-              type="button"
-              key={label}
-              aria-label={
-                index === 2
-                  ? `${t('interactionPreview.preview.brightness')} 100%`
-                  : `${t('interactionPreview.preview.brightness')} ${label}`
-              }
-              onClick={(event) => {
-                event.stopPropagation();
-                setBrightness(index === 0 ? 25 : index === 1 ? 60 : 100);
-              }}
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-medium transition-all hover:scale-105 active:scale-95 ${
-                brightness === (index === 0 ? 25 : index === 1 ? 60 : 100)
-                  ? 'text-white'
-                  : quietPillClass
-              }`}
-              style={
-                brightness === (index === 0 ? 25 : index === 1 ? 60 : 100)
-                  ? { backgroundColor: accentColor }
-                  : undefined
-              }
-            >
-              {index === 2 ? <MoreHorizontal className="h-3.5 w-3.5" /> : label}
-            </button>
-          ))}
-          <button
-            type="button"
-            aria-label={t('interactionPreview.cardTap.controls')}
-            onClick={(event) => event.stopPropagation()}
-            className="ml-1 flex h-7 w-7 items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}cc 45%, rgba(255, 255, 255, 0.9) 100%)`,
-              borderColor: `${accentColor}55`,
-            }}
-          >
-            <Sun className="h-3 w-3 text-white" />
-          </button>
-          {showsTrailingButton ? (
-            <button
-              type="button"
-              aria-label={t('interactionPreview.iconTap.settings')}
-              onClick={(event) => {
-                event.stopPropagation();
-                showControlsOpenedToast();
-              }}
-              className={`ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${quietPillClass} transition-all hover:scale-105 active:scale-95`}
-            >
-              <Settings2 className="h-3 w-3" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
+        {lightSurface.innerOverlayClassName ? (
           <div
-            className={`flex items-center gap-1.5 text-[11px] font-semibold ${sectionLabelClass}`}
-          >
-            <Hand className="h-3 w-3" />
-            <span>{t('interactionPreview.cardTitle')}</span>
+            className={lightSurface.innerOverlayClassName}
+            style={lightSurface.innerOverlayStyle}
+          />
+        ) : null}
+        {lightSurface.shineOverlayClassName ? (
+          <div className={lightSurface.shineOverlayClassName} />
+        ) : null}
+
+        <div className="relative flex h-full flex-col">
+          <EntityCardHeader
+            title={t('interactionPreview.preview.deviceName')}
+            subtitle={t('interactionPreview.preview.deviceType')}
+            layout="eyebrow-first"
+            size="medium"
+            tone={isOn ? 'primary' : 'neutral'}
+            titleClassName={`truncate ${stateSurface.primaryTextClassName}`}
+            subtitleClassName={`truncate ${stateSurface.mutedTextClassName}`}
+            leading={
+              <EntityCardHeaderIcon
+                IconComponent={Lightbulb}
+                isActive={isOn}
+                size="medium"
+                tone={isOn ? 'primary' : 'neutral'}
+                ariaLabel={t('interactionPreview.iconTap.toggle')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsOn((current) => !current);
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+              />
+            }
+          />
+
+          <div className="flex-1 space-y-4">
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-xs font-medium" style={labelColor}>
+                  {t('interactionPreview.preview.brightness')}
+                </span>
+                <span className="text-sm font-bold" style={titleColor}>
+                  {brightness}%
+                </span>
+              </div>
+
+              <div className="flex h-5 items-center">
+                <div className={`relative h-1 w-full rounded-full ${sliderTrackClassName}`}>
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{
+                      width: `${brightness}%`,
+                      background: `linear-gradient(to right, ${accentColor}aa, ${accentColor})`,
+                    }}
+                  />
+                  <div
+                    className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 ${thumbClassName}`}
+                    style={{ left: `calc(${brightness}% - 8px)` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <CardActionRow
+              theme={theme}
+              size="medium"
+              leftContent={
+                <>
+                  {PRESET_LABELS.map((label, index) => {
+                    const nextBrightness = index === 0 ? 25 : index === 1 ? 60 : 100;
+                    const isSelected = brightness === nextBrightness;
+
+                    return (
+                      <button
+                        type="button"
+                        key={label}
+                        aria-label={
+                          index === 2
+                            ? `${t('interactionPreview.preview.brightness')} 100%`
+                            : `${t('interactionPreview.preview.brightness')} ${label}`
+                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setBrightness(nextBrightness);
+                        }}
+                        className={`flex ${actionSizes.button} items-center justify-center rounded-full border text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 ${
+                          isSelected ? controlStyles.selectedText : controlStyles.softButton
+                        }`}
+                        style={
+                          isSelected
+                            ? getBrightnessPresetSelectedStyle(theme, accentColor, isOn)
+                            : undefined
+                        }
+                      >
+                        {index === 2 ? <MoreHorizontal className={actionSizes.icon} /> : label}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    aria-label={t('interactionPreview.cardTap.controls')}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      showControlsOpenedToast();
+                    }}
+                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
+                    style={
+                      mode === 'control-first'
+                        ? getBrightnessPresetSelectedStyle(theme, accentColor, true)
+                        : undefined
+                    }
+                  >
+                    <Sun className={actionSizes.icon} />
+                  </button>
+                </>
+              }
+              rightContent={
+                showsTrailingButton ? (
+                  <button
+                    type="button"
+                    aria-label={t('interactionPreview.iconTap.settings')}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      showControlsOpenedToast();
+                    }}
+                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
+                  >
+                    <Settings2 className={actionSizes.icon} />
+                  </button>
+                ) : undefined
+              }
+            />
           </div>
-          <p className={`mt-1 text-sm ${textClass}`}>{preview.cardTap}</p>
         </div>
 
-        <div className={`grid gap-2 ${showsTrailingButton ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+        <div className="mt-4 space-y-2">
           <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
             <div
-              className={`flex items-center gap-1.5 text-[11px] font-semibold ${sectionLabelClass}`}
+              className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
             >
-              <Lightbulb className="h-3 w-3" />
-              <span>{t('interactionPreview.iconTitle')}</span>
+              <Hand className="h-3 w-3" />
+              <span>{t('interactionPreview.cardTitle')}</span>
             </div>
-            <p className={`mt-1 text-sm ${textClass}`}>{preview.iconTap}</p>
+            <p className="mt-1 text-sm" style={titleColor}>
+              {preview.cardTap}
+            </p>
           </div>
-          {showsTrailingButton ? (
+
+          <div
+            className={`grid gap-2 ${showsTrailingButton ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}
+          >
             <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
               <div
-                className={`flex items-center gap-1.5 text-[11px] font-semibold ${sectionLabelClass}`}
+                className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
               >
-                <Settings2 className="h-3 w-3" />
-                <span>{t('interactionPreview.trailingButtonTitle')}</span>
+                <Lightbulb className="h-3 w-3" />
+                <span>{t('interactionPreview.iconTitle')}</span>
               </div>
-              <p className={`mt-1 text-sm ${textClass}`}>
-                {t('interactionPreview.trailingButtonAction')}
+              <p className="mt-1 text-sm" style={titleColor}>
+                {preview.iconTap}
               </p>
             </div>
-          ) : null}
+
+            {showsTrailingButton ? (
+              <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
+                <div
+                  className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
+                >
+                  <Settings2 className="h-3 w-3" />
+                  <span>{t('interactionPreview.trailingButtonTitle')}</span>
+                </div>
+                <p className="mt-1 text-sm" style={titleColor}>
+                  {t('interactionPreview.trailingButtonAction')}
+                </p>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

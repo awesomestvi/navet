@@ -1,6 +1,11 @@
 import { Check, Edit2 } from 'lucide-react';
 import { useState } from 'react';
-import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
+import {
+  Button,
+  customCardDialogShellProps,
+  DialogShell,
+  Textarea,
+} from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
@@ -117,10 +122,11 @@ export function NoteWidget({
             />
           ) : null}
 
-          <textarea
+          <Textarea
             value={tempNote}
             onChange={(e) => setTempNote(e.target.value)}
-            className={`min-h-40 w-full resize-none rounded-xl p-3 text-sm focus:outline-none ${surface.textPrimary}`}
+            containerClassName="w-full"
+            textareaClassName={`min-h-40 w-full resize-none rounded-xl p-3 text-sm ${surface.textPrimary}`}
             style={{
               backgroundColor: surface.subtleFill,
               border: `2px solid ${getThemeColorValue(primaryColor)}`,
@@ -128,25 +134,24 @@ export function NoteWidget({
             placeholder={t('widgets.note.placeholder')}
           />
           <div className="mt-3 flex gap-2">
-            <button
-              type="button"
+            <Button
               onClick={handleCancel}
-              className={`flex-1 rounded-lg py-2 text-xs font-medium transition-colors ${surface.textSecondary}`}
+              variant="secondary"
+              className={`flex-1 rounded-lg py-2 text-xs ${surface.textSecondary}`}
               style={{ backgroundColor: surface.subtleFill }}
             >
               {t('common.cancel')}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               onClick={handleSave}
-              className="flex-1 rounded-lg py-2 text-xs font-medium text-white transition-colors"
+              className="flex-1 rounded-lg py-2 text-xs text-white"
               style={{ backgroundColor: getThemeColorValue(primaryColor) }}
             >
               <div className="flex items-center justify-center gap-1">
                 <Check className="h-3 w-3" />
                 <span>{t('widgets.note.save')}</span>
               </div>
-            </button>
+            </Button>
           </div>
         </DialogShell>
       </div>

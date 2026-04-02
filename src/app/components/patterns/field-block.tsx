@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { navetSpacingTokens, navetTypographyTokens } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
@@ -42,11 +43,11 @@ export function FieldBlock({
           : 'text-gray-500';
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn(navetSpacingTokens.stack.sm, className)}>
       {label ? (
         <label
           htmlFor={htmlFor}
-          className={cn('block text-sm font-medium', labelTone, labelClassName)}
+          className={cn('block', navetTypographyTokens.label, labelTone, labelClassName)}
         >
           {label}
           {required ? <span className="ml-1 text-red-500">*</span> : null}
@@ -56,9 +57,9 @@ export function FieldBlock({
       {children}
 
       {error ? (
-        <p className={cn('text-xs text-red-500', errorClassName)}>{error}</p>
+        <p className={cn(navetTypographyTokens.helper, 'text-red-500', errorClassName)}>{error}</p>
       ) : hint ? (
-        <p className={cn('text-xs', hintTone, hintClassName)}>{hint}</p>
+        <p className={cn(navetTypographyTokens.helper, hintTone, hintClassName)}>{hint}</p>
       ) : null}
     </div>
   );

@@ -1,8 +1,14 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode, useState } from 'react';
+import {
+  getControlFocusStyles,
+  navetRadiusTokens,
+  navetSizeTokens,
+  navetTypographyTokens,
+} from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
-export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leading?: ReactNode;
   trailing?: ReactNode;
   invalid?: boolean;
@@ -10,8 +16,8 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   inputClassName?: string;
 }
 
-// Shared single-line text input for search, auth, and settings-style forms.
-export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
+// Status: ready. Canonical single-line input primitive for shared search, auth, and settings forms.
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     leading,
     trailing,
@@ -53,7 +59,10 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           onBlur?.(event);
         }}
         className={cn(
-          'w-full rounded-[22px] border py-3 text-sm outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
+          'w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
+          navetRadiusTokens.field,
+          navetSizeTokens.fieldInset,
+          navetTypographyTokens.control,
           leading ? 'pl-10' : 'pl-4',
           trailing ? 'pr-10' : 'pr-4',
           theme === 'light'
@@ -66,9 +75,11 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           inputClassName
         )}
         style={{
-          borderColor: isFocused ? accentColor : baseBorderColor,
-          boxShadow: isFocused ? `0 0 0 2px ${accentColor}22` : undefined,
-          caretColor: accentColor,
+          ...getControlFocusStyles({
+            isFocused,
+            accentColor,
+            invalidBorderColor: baseBorderColor,
+          }),
           ...style,
         }}
       />

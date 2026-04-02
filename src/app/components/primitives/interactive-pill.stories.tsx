@@ -1,22 +1,48 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { ReactNode } from 'react';
-import { useTheme } from '@/app/hooks';
+import type { ComponentProps } from 'react';
+import { useState } from 'react';
 import { InteractivePill } from './interactive-pill';
 
-function PillRow({ children }: { children: ReactNode }) {
-  const { theme } = useTheme();
-  const wrapperClassName =
-    theme === 'light'
-      ? 'border-gray-200/80 bg-gray-50/90'
-      : theme === 'black'
-        ? 'border-white/16 bg-black'
-        : theme === 'glass'
-          ? 'border-white/16 bg-white/[0.08]'
-          : 'border-white/10 bg-white/[0.05]';
+function InteractiveGroupedRowStory(args: ComponentProps<typeof InteractivePill>) {
+  const [selectedTheme, setSelectedTheme] = useState('Dark');
+  const [selectedLanguage, setSelectedLanguage] = useState('Deutsch');
+
+  const themeOptions = ['Liquid Glass', 'Dark', 'Light', 'Black'] as const;
+  const languageOptions = ['English', 'Svenska', 'Deutsch', 'Francais'] as const;
 
   return (
-    <div className={`inline-flex flex-wrap rounded-full border p-1 ${wrapperClassName}`}>
-      {children}
+    <div className="space-y-4">
+      <div>
+        <p className="mb-2 text-xs font-medium text-current/70">Theme mode</p>
+        <div className="flex flex-wrap gap-2">
+          {themeOptions.map((option) => (
+            <InteractivePill
+              key={option}
+              {...args}
+              active={selectedTheme === option}
+              onClick={() => setSelectedTheme(option)}
+            >
+              {option}
+            </InteractivePill>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-medium text-current/70">Language</p>
+        <div className="flex flex-wrap gap-2">
+          {languageOptions.map((option) => (
+            <InteractivePill
+              key={option}
+              {...args}
+              active={selectedLanguage === option}
+              onClick={() => setSelectedLanguage(option)}
+            >
+              {option}
+            </InteractivePill>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -55,6 +81,7 @@ const meta = {
     children: 'English',
     active: false,
     intent: 'navigation',
+    variant: 'default',
   },
   argTypes: {
     onClick: { action: 'clicked' },
@@ -67,42 +94,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
-export const ThemeModeRow: Story = {
-  render: (args) => (
-    <PillRow>
-      <InteractivePill {...args}>Liquid Glass</InteractivePill>
-      <InteractivePill {...args} active>
-        Dark
-      </InteractivePill>
-      <InteractivePill {...args}>Light</InteractivePill>
-      <InteractivePill {...args}>Black</InteractivePill>
-    </PillRow>
-  ),
+export const GroupedRow: Story = {
+  render: (args) => <InteractiveGroupedRowStory {...args} />,
 };
 
-export const LanguageRow: Story = {
-  render: (args) => (
-    <PillRow>
-      <InteractivePill {...args}>English</InteractivePill>
-      <InteractivePill {...args}>Svenska</InteractivePill>
-      <InteractivePill {...args} active>
-        Deutsch
-      </InteractivePill>
-      <InteractivePill {...args}>Français</InteractivePill>
-      <InteractivePill {...args}>Espanol</InteractivePill>
-    </PillRow>
-  ),
-};
-
-export const ActionPills: Story = {
-  render: (args) => (
-    <div className="flex flex-wrap gap-2">
-      <InteractivePill {...args} intent="action">
-        Back
-      </InteractivePill>
-      <InteractivePill {...args} active intent="action">
-        Continue
-      </InteractivePill>
-    </div>
-  ),
+export const GhostRow: Story = {
+  args: {
+    variant: 'ghost',
+  },
+  render: (args) => <InteractiveGroupedRowStory {...args} />,
 };

@@ -50,7 +50,10 @@ src/app/
   components/
     ui/            # Radix UI wrappers (buttons, dialogs, selects …)
     layout/        # Header, sidebar, navigation
-    shared/        # Cross-feature primitives (card sizing, theme tokens, PWA prompt)
+    primitives/    # Low-level reusable UI building blocks
+    patterns/      # Composed shared UI structures
+    system/        # Curated public surface for Storybook and cross-app discovery
+    shared/        # App-specific shared UI + compatibility shims
   stores/          # All Zustand stores (auth, config, HA, settings, theme, navigation …)
   contexts/        # React Context — infrastructure only (i18n, loading, error boundary)
   services/        # HomeAssistantService — WebSocket + HA API
@@ -74,7 +77,9 @@ These rules apply to all code written for this project. Follow them before writi
 - Extract repeated UI, logic, and utility patterns instead of duplicating them.
 - Keep code scalable and easy to extend without rewriting existing functionality.
 - Use clear separation of concerns: UI, state, business logic, and utilities belong in separate layers.
-- Shared cross-feature UI belongs in `src/app/components/shared/`. Feature-specific logic stays in the feature module.
+- New shared cross-feature UI belongs in `src/app/components/primitives/` or `src/app/components/patterns/`. Feature-specific logic stays in the feature module.
+- `src/app/components/system/` is the curated public export surface, not the authoring location for new components.
+- `src/app/components/shared/` is for app-specific shared UI and compatibility shims; do not default new primitives there.
 - Do not add new feature-specific hooks, stores, or utilities to global folders unless they are genuinely shared across multiple features.
 
 ### React Standards
@@ -216,6 +221,7 @@ copy all service state on every event.
 - When moving or renaming files referenced by docs, update the active docs in the same change.
 - Keep these current: `README.md`, `docs/README.md`, `design-system/README.md`, `design-system/FEATURES.md`.
 - Treat `docs/archive/status/*` as historical snapshots — do not rewrite them.
+- If you add or reorganize stories, run `pnpm check:stories` and keep Storybook titles, coverage, and colocated story ownership valid.
 
 ---
 
@@ -268,3 +274,4 @@ copy all service state on every event.
 - Do not import from inside a feature's subdirectories across feature boundaries — use the feature root `index.ts`.
 - Do not duplicate a component, hook, or utility — check if something reusable already exists first.
 - Do not solve a task with shortcut code that makes the codebase harder to maintain.
+- Do not add new low-level shared UI to `src/app/components/shared/` when it should live in `primitives/` or `patterns/`.

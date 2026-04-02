@@ -1,7 +1,7 @@
 import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { InlineEmptyState } from '@/app/components/patterns/inline-empty-state';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@/app/constants/device-type-icons';
@@ -222,7 +222,7 @@ export function AddEntityDialog({
         </div>
 
         <div className="p-6 border-b border-white/10">
-          <TextField
+          <Input
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}

@@ -3,11 +3,30 @@ import { User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 
 const meta = {
-  title: 'Components/Base/Avatar',
+  title: 'Components/Primitives/Avatar',
   component: Avatar,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component: [
+          'Base avatar primitive for user/profile identity surfaces.',
+          '',
+          'What this base story covers:',
+          '- Initials fallback, icon fallback, and image rendering path.',
+          '- Fallback resilience when image URLs are unavailable or slow.',
+          '',
+          'Usage notes:',
+          '- Provide meaningful `alt` text when avatar images are present.',
+          '- Keep fallback content concise (initials or simple icon) for tight header layouts.',
+          '',
+          'Review expectations:',
+          '- Verify fallback remains legible and centered at target sizes.',
+          '- Verify image-to-fallback transition does not create layout shift.',
+        ].join('\n'),
+      },
+    },
   },
 } satisfies Meta<typeof Avatar>;
 

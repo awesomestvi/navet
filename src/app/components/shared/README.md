@@ -1,10 +1,6 @@
 # Shared Components
 
-`shared/` now has two distinct jobs:
-
-- Compatibility shims
-  Thin re-export files that preserve old import paths while the codebase migrates to
-  `src/app/components/primitives/` and `src/app/components/patterns/`.
+`shared/` now has one primary job:
 
 - Intentional shared app UI
   Reused cross-feature pieces that are still too app-specific, stateful, or composition-heavy to
@@ -12,24 +8,10 @@
 
 ## Compatibility Shims
 
-These files are not the source of truth anymore. New imports should point at `primitives/` or
-`patterns/` directly.
+There are currently no active compatibility-shim files in this folder.
 
-- `interactive-pill.tsx` -> `primitives/interactive-pill.tsx`
-- `round-control-button.tsx` -> `primitives/round-control-button.tsx`
-- `dialog-shell.tsx` -> `primitives/dialog-shell.tsx`
-- `entity-card-title-block.tsx` -> `primitives/entity-card-title-block.tsx`
-- `entity-card-header.tsx` -> `primitives/entity-card-header.tsx`
-- `entity-card-header-icon.tsx` -> `primitives/entity-card-header-icon.tsx`
-- `color-input-swatch.tsx` -> `primitives/color-input-swatch.tsx`
-- `loading-spinner.tsx` -> `primitives/loading-spinner.tsx`
-- `theme-dropdown-content.tsx` -> `primitives/theme-dropdown-content.tsx`
-- `interaction-preview-card.tsx` -> `patterns/interaction-preview-card.tsx`
-- `settings-live-preview-frame.tsx` -> `patterns/settings-live-preview-frame.tsx`
-- `tiny-action-card.tsx` -> `patterns/tiny-action-card.tsx`
-- `card-action-row.tsx` -> `patterns/card-action-row.tsx`
-- `empty-state.tsx` -> `patterns/empty-state.tsx`
-- `inline-empty-state.tsx` -> `patterns/inline-empty-state.tsx`
+If we ever need a temporary migration shim again, keep it thin, document it here, and remove it
+once production imports have been updated.
 
 ## Intentional Shared Residents
 
@@ -72,8 +54,8 @@ behavior.
 
 ## Rule of Thumb
 
-- If a file is a compatibility shim, prefer updating imports instead of extending the shim.
+- If a temporary compatibility shim is introduced, prefer updating imports instead of extending the shim.
 - If a file depends on app stores, service calls, release metadata, dashboard edit semantics, or
   Home Assistant-specific workflows, it can stay in `shared/`.
 - If a file becomes a stable source of reusable structure with a clear single responsibility, move
-  it to `primitives/` or `patterns/` and leave a compatibility shim behind only when needed.
+  it to `primitives/` or `patterns/` and leave a compatibility shim behind only when there is a real migration need.

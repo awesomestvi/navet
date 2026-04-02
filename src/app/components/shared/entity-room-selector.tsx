@@ -1,6 +1,7 @@
 import { ChevronDown, Home, Loader2 } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -111,12 +112,13 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
           </>
         ) : (
           <>
-            <select
+            <Select
               aria-label={resolvedLabel}
               value={selectedAreaId}
               disabled={isSaving}
               onChange={(event) => void handleChange(event.target.value)}
-              className={`w-full appearance-none border ${surface.border} ${surface.inputBg} ${baseSelectClassName} disabled:cursor-not-allowed disabled:opacity-60`}
+              containerClassName="w-full"
+              selectClassName={`${surface.border} ${surface.inputBg} ${baseSelectClassName} disabled:opacity-60`}
             >
               <option value="">{t('common.noRoom')}</option>
               {sortedAreas.map((area) => (
@@ -124,27 +126,12 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                   {area.name}
                 </option>
               ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-              {isSaving ? (
+            </Select>
+            {isSaving ? (
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                 <Loader2 className={`h-3.5 w-3.5 animate-spin ${surface.textSecondary}`} />
-              ) : (
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  className={`h-4 w-4 ${surface.textSecondary}`}
-                >
-                  <path
-                    d="M5 7.5 10 12.5 15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </div>
+              </div>
+            ) : null}
           </>
         )}
       </div>

@@ -19,9 +19,7 @@ function AccentCardShellTokensShowcase() {
       {THEMES.map((theme) => (
         <section key={theme} className="space-y-3">
           <h3
-            className={`text-xs font-semibold uppercase tracking-[0.22em] ${
-              getThemeSurfaceTokens(theme).textMuted
-            }`}
+            className={`text-xs font-semibold uppercase tracking-[0.22em] ${getThemeSurfaceTokens(theme).textMuted}`}
           >
             {THEME_LABELS[theme]}
           </h3>
@@ -110,4 +108,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Matrix: Story = {};
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

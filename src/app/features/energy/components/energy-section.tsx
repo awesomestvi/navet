@@ -1,6 +1,6 @@
 import { Settings, Zap } from 'lucide-react';
 import { memo, type ReactNode } from 'react';
-import { EmptyState } from '@/app/components/patterns/empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { DashboardHeroSection } from '../../dashboard/components/dashboard-hero-section';
@@ -97,24 +97,30 @@ export const EnergySection = memo(function EnergySection() {
 
   if (!isConnected && !showSetup) {
     return (
-      <EmptyState
-        icon={Zap}
-        title={t('network.disconnectedTitle')}
-        description={t('network.disconnectedDescription')}
-      />
+      <div className="flex h-full items-center justify-center p-6">
+        <DashboardEmptyState
+          icon={Zap}
+          title={t('network.disconnectedTitle')}
+          description={t('network.disconnectedDescription')}
+          className="w-full max-w-md"
+        />
+      </div>
     );
   }
 
   if (!isConfigured && !showSetup) {
     return (
-      <EmptyState
-        icon={Zap}
-        title={t('energy.setup.panelTitle')}
-        description={t('energy.setup.panelDescription')}
-        actionIcon={Settings}
-        actionLabel={t('energy.demo.connect')}
-        onAction={openSetup}
-      />
+      <div className="flex h-full items-center justify-center p-6">
+        <DashboardEmptyState
+          icon={Zap}
+          title={t('energy.setup.panelTitle')}
+          description={t('energy.setup.panelDescription')}
+          actionIcon={Settings}
+          actionLabel={t('energy.demo.connect')}
+          onAction={openSetup}
+          className="w-full max-w-md"
+        />
+      </div>
     );
   }
 

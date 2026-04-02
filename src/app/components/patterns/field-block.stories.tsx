@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Search } from 'lucide-react';
 import { FieldBlock } from '@/app/components/patterns';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 import { useTheme } from '@/app/hooks';
 
 function FieldBlockStory({
@@ -28,7 +28,7 @@ function FieldBlockStory({
         error={error}
         required={required}
       >
-        <TextField
+        <Input
           id="storybook-field-block"
           type="text"
           placeholder="Find sensors or devices"
@@ -43,7 +43,7 @@ function FieldBlockStory({
 }
 
 const meta = {
-  title: 'Components/Patterns/Field Block',
+  title: 'Components/Patterns/Field',
   component: FieldBlockStory,
   tags: ['autodocs'],
   parameters: {
@@ -54,7 +54,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof FieldBlock>;
+} satisfies Meta<typeof FieldBlockStory>;
 
 export default meta;
 

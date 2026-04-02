@@ -3,11 +3,12 @@
 export {
   CardActionRow,
   DashboardEmptyState,
-  EmptyState,
   FieldBlock,
   InlineEmptyState,
+  InlineMessage,
   InteractionPreviewCard,
   SettingsLivePreviewFrame,
+  TableCellContent,
   TinyActionCard,
 } from '@/app/components/patterns';
 export { DashboardHeroSection } from '@/app/features/dashboard/components/dashboard-hero-section';

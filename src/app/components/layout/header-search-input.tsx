@@ -1,6 +1,6 @@
 import { Search, X } from 'lucide-react';
 import type { RefObject } from 'react';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 
 interface HeaderSearchInputProps {
   activeColorValue: string;
@@ -38,7 +38,7 @@ export function HeaderSearchInput({
   widthClassName = 'w-full',
 }: HeaderSearchInputProps) {
   return (
-    <TextField
+    <Input
       ref={inputRef}
       type="text"
       placeholder={placeholder}

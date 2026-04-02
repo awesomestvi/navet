@@ -1,7 +1,10 @@
 // Public primitive exports for Storybook and cross-app discovery.
 // Prefer authoring new primitives in `src/app/components/primitives`.
 export {
+  Button,
+  Checkbox,
   ColorInputSwatch,
+  Combobox,
   CustomDialogDoneButton,
   customCardDialogShellProps,
   DialogDoneButton,
@@ -10,11 +13,21 @@ export {
   EntityCardHeader,
   EntityCardHeaderIcon,
   EntityCardTitleBlock,
+  Heading,
+  IconButton,
+  Input,
   InteractivePill,
   LoadingSpinner,
+  Panel,
+  Radio,
   RoundControlButton,
+  Select,
   SettingsDialogDoneButton,
+  Switch,
   settingsDialogContentClass,
-  TextField,
+  Tag,
+  Text,
+  Textarea,
   ThemeDropdownContent,
+  Tooltip,
 } from '@/app/components/primitives';

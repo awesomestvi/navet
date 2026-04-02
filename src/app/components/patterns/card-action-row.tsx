@@ -56,7 +56,7 @@ export function CardActionRow({
   rightContent,
   overflowItems = [],
 }: CardActionRowProps) {
-  const gapClass = size === 'small' ? 'gap-1.5' : 'gap-2';
+  const gapClass = size === 'small' ? 'gap-1' : 'gap-2';
 
   return (
     <div className={`flex items-center ${gapClass}`}>

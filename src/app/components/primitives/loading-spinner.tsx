@@ -2,6 +2,11 @@ import { Loader2 } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import {
+  navetIconSizeTokens,
+  navetSpacingTokens,
+  navetTypographyTokens,
+} from '@/app/components/system/tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 
 export interface LoadingSpinnerProps {
@@ -24,12 +29,14 @@ export const LoadingSpinner = memo(function LoadingSpinner({
 
   return (
     <div className={containerClasses}>
-      <div className="flex flex-col items-center gap-4">
+      <div className={`flex flex-col items-center ${navetSpacingTokens.stack.lg}`}>
         <Loader2
-          className="h-8 w-8 animate-spin"
+          className={`${navetIconSizeTokens.xl} animate-spin`}
           style={{ color: getThemeColorValue(primaryColor) }}
         />
-        <p className={`text-sm ${surface.textSecondary}`}>{resolvedMessage}</p>
+        <p className={`${navetTypographyTokens.body} ${surface.textSecondary}`}>
+          {resolvedMessage}
+        </p>
       </div>
     </div>
   );

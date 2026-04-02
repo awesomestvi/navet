@@ -1,7 +1,7 @@
 import { AlertCircle, Eye, EyeOff, Home, Key, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { FieldBlock } from '@/app/components/patterns';
-import { TextField } from '@/app/components/primitives';
+import { Button, Input } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useConfig } from '@/app/contexts/config-context';
@@ -131,7 +131,7 @@ export function LoginPage() {
         <div className={`${cardBg} backdrop-blur-xl border ${border} rounded-3xl shadow-2xl p-8`}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <FieldBlock label={t('login.urlLabel')} htmlFor="url" hint={t('login.urlHelp')}>
-              <TextField
+              <Input
                 id="url"
                 type="text"
                 value={url}
@@ -144,7 +144,7 @@ export function LoginPage() {
             </FieldBlock>
 
             <FieldBlock label={t('login.tokenLabel')} htmlFor="token" hint={t('login.tokenHelp')}>
-              <TextField
+              <Input
                 id="token"
                 type={showToken ? 'text' : 'password'}
                 value={token}
@@ -176,10 +176,11 @@ export function LoginPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-medium rounded-xl transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 disabled:cursor-not-allowed"
+              className="w-full rounded-xl px-4 py-3 shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-600 hover:shadow-orange-500/30"
+              style={{ backgroundColor: '#f97316' }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -189,7 +190,7 @@ export function LoginPage() {
               ) : (
                 t('login.connect')
               )}
-            </button>
+            </Button>
           </form>
 
           {/* Help Text */}

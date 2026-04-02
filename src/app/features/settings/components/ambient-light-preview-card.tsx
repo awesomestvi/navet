@@ -1,5 +1,8 @@
 import { Lightbulb } from 'lucide-react';
 import { SettingsLivePreviewFrame } from '@/app/components/patterns/settings-live-preview-frame';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { getLightCardSurfaceTokens } from '@/app/features/lighting';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -31,6 +34,7 @@ export function AmbientLightPreviewCard({
         : 'bg-gray-900/95 border-white/10';
   const primaryBarColor = previewTokens.previewPrimaryBarColor;
   const secondaryBarColor = previewTokens.previewSecondaryBarColor;
+  const stateSurface = getCardStateSurfaceTokens(theme, true);
   const surfaceTokens = getLightCardSurfaceTokens({
     isOn: true,
     selectedColor: null,
@@ -80,14 +84,26 @@ export function AmbientLightPreviewCard({
             <div className={surfaceTokens.shineOverlayClassName} />
           ) : null}
 
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-xl"
-              style={{ backgroundColor: `${accentColor}26` }}
-            >
-              <Lightbulb className="h-3.5 w-3.5" style={{ color: accentColor }} />
-            </div>
-            <div className="flex-1">
+          <div className="relative">
+            <EntityCardHeader
+              title={t('settings.preview.lightCardTitle')}
+              subtitle={t('lighting.type.light')}
+              layout="eyebrow-first"
+              size="small"
+              tone="primary"
+              titleClassName={stateSurface.primaryTextClassName}
+              subtitleClassName={stateSurface.mutedTextClassName}
+              marginBottomClassName="mb-2.5"
+              leading={
+                <EntityCardHeaderIcon
+                  IconComponent={Lightbulb}
+                  isActive
+                  size="small"
+                  tone="primary"
+                />
+              }
+            />
+            <div className="ml-11">
               <div
                 className="h-2.5 rounded-full"
                 style={{ width: '54%', backgroundColor: primaryBarColor }}

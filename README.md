@@ -93,7 +93,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 ### 🧱 Architecture
 - **Feature-Owned Modules** - Dashboard, lighting, settings, sensors, weather, and other major areas expose feature-level entry points under `src/app/features/*`
 - **Feature-Colocated State** - Dashboard and lighting hooks/stores live with their owning features instead of generic global folders
-- **Shared UI Foundation** - Cross-feature pieces such as card sizing, empty states, interaction previews, and theme color helpers live under shared component modules
+- **Shared UI Foundation** - Cross-feature pieces such as card sizing, empty states, preview cards, and theme color helpers live under shared component modules
 - **Shared UI Authoring Split** - New low-level shared UI lives in `src/app/components/primitives/*`, small composed shared UI lives in `src/app/components/patterns/*`, and `src/app/components/system/*` acts as the curated public export layer
 - **Shared Title + Tiny Card Primitives** - Compact action cards and eyebrow-first title blocks now come from shared primitives so small card layouts stay consistent across feature types
 - **Shared Visual Primitives** - Cross-theme icon pills and interactive nav/action pills are centralized behind reusable shared primitives instead of feature-level inline theme branches
@@ -198,7 +198,9 @@ The current sidebar taxonomy is organized under these top-level groups:
 - `Energy`
 - `Settings`
 
-Use `pnpm check:stories` to validate title conventions before landing Storybook changes.
+Inside `Components`, stories are organized as `Primitives`, `Patterns`, and `Shared`. Recent taxonomy cleanup moved all former base-wrapper stories into `Components/Primitives` (for example dialog, dropdown, avatar, label, and toast), with grouped card header pieces under `Components/Primitives/Cards`.
+
+Use `pnpm check:stories` to validate Storybook title conventions, primitive/pattern story coverage, and colocated story ownership before landing Storybook changes.
 
 ### Production Preview
 

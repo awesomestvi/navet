@@ -1,6 +1,6 @@
 import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 import {
   CustomDialogDoneButton,
   customCardDialogShellProps,
@@ -220,7 +220,7 @@ export function RSSFeedSettingsDialog({
                   : undefined
               }
             >
-              <TextField
+              <Input
                 type="text"
                 value={providerName}
                 onChange={(event) => setProviderName(event.target.value)}
@@ -228,7 +228,7 @@ export function RSSFeedSettingsDialog({
                 inputClassName={`${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder} rounded-2xl`}
                 style={sectionStyle}
               />
-              <TextField
+              <Input
                 type="url"
                 value={providerUrl}
                 onChange={(event) => setProviderUrl(event.target.value)}

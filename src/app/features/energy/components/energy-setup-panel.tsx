@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useId, useState } from 'react';
 import { FieldBlock } from '@/app/components/patterns';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
@@ -220,7 +220,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
         labelClassName={`text-xs ${surface.textPrimary}`}
         hintClassName={surface.textMuted}
       >
-        <TextField
+        <Input
           id={inputId}
           type="text"
           list={listId}
@@ -369,7 +369,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                         <label htmlFor={powerInputId} className="sr-only">
                           {t('energy.setup.powerSensorFor', { name: device.name })}
                         </label>
-                        <TextField
+                        <Input
                           id={powerInputId}
                           type="text"
                           list={powerListId}

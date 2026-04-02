@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Gauge, Plus, Search, Trash2 } from 'lucide-react';
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
-import { TextField } from '@/app/components/primitives';
+import { Input } from '@/app/components/primitives';
 import { DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -162,7 +162,7 @@ export function SensorGroupSettingsView({
                 </h3>
 
                 {/* Search Input */}
-                <TextField
+                <Input
                   ref={inputRef}
                   type="text"
                   value={searchQuery}

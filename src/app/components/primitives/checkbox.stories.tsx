@@ -5,9 +5,12 @@ import { Checkbox } from './checkbox';
 function CheckboxStory({ defaultChecked = false, disabled = false }) {
   const [checked, setChecked] = useState(defaultChecked);
   return (
-    <label htmlFor="checkbox-story" className="flex items-center gap-3 text-sm text-white/80">
+    <label
+      htmlFor="primitive-checkbox-story"
+      className="flex items-center gap-3 text-sm text-white/80"
+    >
       <Checkbox
-        id="checkbox-story"
+        id="primitive-checkbox-story"
         checked={checked}
         onCheckedChange={(value) => setChecked(Boolean(value))}
         disabled={disabled}
@@ -18,26 +21,23 @@ function CheckboxStory({ defaultChecked = false, disabled = false }) {
 }
 
 const meta = {
-  title: 'Components/Base/Checkbox',
+  title: 'Components/Primitives/Checkbox',
   component: CheckboxStory,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component:
+          'Status: ready. Canonical checkbox primitive promoted from the base Radix wrapper for shared form work.',
+      },
+    },
   },
 } satisfies Meta<typeof CheckboxStory>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-export const Unchecked: Story = {
-  args: { defaultChecked: false },
-};
-
-export const Checked: Story = {
-  args: { defaultChecked: true },
-};
-
-export const Disabled: Story = {
-  args: { defaultChecked: true, disabled: true },
-};
+export const Unchecked: Story = { args: { defaultChecked: false } };
+export const Checked: Story = { args: { defaultChecked: true } };
+export const Disabled: Story = { args: { defaultChecked: true, disabled: true } };

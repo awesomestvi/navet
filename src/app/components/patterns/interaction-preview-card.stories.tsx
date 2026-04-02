@@ -12,14 +12,14 @@ function ThemeAwareInteractionPreviewCard({
 }
 
 const meta = {
-  title: 'Components/Patterns/Interaction Preview Card',
+  title: 'Components/Patterns/Preview Cards',
   component: ThemeAwareInteractionPreviewCard,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Pattern card used to preview interaction ordering (toggle-first versus control-first) before applying settings in production card UIs.',
+          'Preview card patterns for settings surfaces, using the same visual language as real Navet cards.',
       },
     },
   },

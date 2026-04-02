@@ -1,64 +1,103 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { LogOut, Moon, Palette, Settings, Sun } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { ThemeDropdownContent } from '@/app/components/primitives/theme-dropdown-content';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@/app/components/ui/utils';
+import { useTheme } from '@/app/hooks';
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './dropdown-menu';
 
 function DropdownMenuStory() {
+  const { theme, accentColor } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const itemClassName = cn(
+    'rounded-xl border border-transparent px-3 py-2 text-sm outline-none transition-colors',
+    surface.textPrimary,
+    'data-[highlighted]:bg-[var(--menu-hover-bg)] data-[highlighted]:border-[var(--menu-hover-border)]',
+    'focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)]'
+  );
+  const itemHoverStyle = {
+    '--menu-hover-bg':
+      theme === 'light'
+        ? `${accentColor}14`
+        : theme === 'glass'
+          ? `${accentColor}1a`
+          : `${accentColor}20`,
+    '--menu-hover-border':
+      theme === 'light'
+        ? `${accentColor}33`
+        : theme === 'glass'
+          ? `${accentColor}40`
+          : `${accentColor}4d`,
+  } as CSSProperties;
+
   return (
     <div className="flex items-center justify-center p-12">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-          >
+          <InteractivePill active intent="action">
             Open menu
-          </button>
+          </InteractivePill>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem>
+        <ThemeDropdownContent theme={theme} align="center">
+          <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Palette className="mr-2 h-4 w-4" />
             Appearance
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Sun className="mr-2 h-4 w-4" />
             Light mode
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Moon className="mr-2 h-4 w-4" />
             Dark mode
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </ThemeDropdownContent>
       </DropdownMenu>
     </div>
   );
 }
 
 const meta = {
-  title: 'Components/Base/Dropdown Menu',
+  title: 'Components/Primitives/Dropdown',
   component: DropdownMenuStory,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
-        component:
-          'Radix DropdownMenu wrapper used in the header actions (theme switcher, user menu) and card overflow menus.',
+        component: [
+          'Radix DropdownMenu wrapper used by header actions and overflow menus.',
+          '',
+          'What this base story covers:',
+          '- Trigger, grouped items, separators, and icon+label row layout.',
+          '- Theme-aware menu chrome when composed with `ThemeDropdownContent`.',
+          '- Highlight/focus styling that follows accent-driven hover tokens.',
+          '',
+          'Usage notes:',
+          '- Keep menu item labels short and action-specific.',
+          '- Group related actions and use separators only for meaningful boundaries.',
+          '',
+          'Review expectations:',
+          '- Verify keyboard navigation and focus-highlight behavior.',
+          '- Verify hover and highlight states remain readable across all themes.',
+        ].join('\n'),
       },
     },
   },

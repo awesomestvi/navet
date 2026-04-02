@@ -44,15 +44,29 @@ function AlertDialogStory() {
 }
 
 const meta = {
-  title: 'Components/Base/Alert Dialog',
+  title: 'Components/Primitives/Dialog',
   component: AlertDialogStory,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
-        component:
-          'Confirmation dialog for destructive actions. Built on Radix AlertDialog. Uses the current theme for backdrop and surface styling.',
+        component: [
+          'Confirmation dialog for destructive and irreversible actions.',
+          '',
+          'What this base story covers:',
+          '- Radix `AlertDialog` structure and focus-trap behavior in Navet styling.',
+          '- Header/body/footer composition for clear action framing.',
+          '- Destructive CTA pairing (`Cancel` + `Delete`) in the same shell used by production dialogs.',
+          '',
+          'Usage notes:',
+          '- Use for high-risk actions (delete/remove/reset), not ordinary settings confirmations.',
+          '- Keep title/action language explicit and short; avoid vague confirmations.',
+          '',
+          'Review expectations:',
+          '- Verify keyboard focus order and escape/cancel behavior.',
+          '- Verify destructive action prominence without making cancel hard to find.',
+        ].join('\n'),
       },
     },
   },

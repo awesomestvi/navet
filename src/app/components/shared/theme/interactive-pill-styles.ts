@@ -4,34 +4,42 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import type { PrimaryColor, ThemeType } from '@/app/hooks/use-theme';
 
 export type InteractivePillIntent = 'navigation' | 'action';
+export type InteractivePillVariant = 'default' | 'ghost';
 
 export function getInteractivePillStyles({
   intent = 'navigation',
   isActive,
   primaryColor,
   theme,
+  variant = 'default',
 }: {
   intent?: InteractivePillIntent;
   isActive: boolean;
   primaryColor: PrimaryColor;
   theme: ThemeType;
+  variant?: InteractivePillVariant;
 }): {
   className: string;
   style?: CSSProperties;
 } {
   const accent = getThemeColorValue(primaryColor);
   const pickerTokens = getThemeAppearancePickerTokens(theme, accent);
-  const baseClassName = `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all`;
+  const isGhost = variant === 'ghost';
+  const baseClassName = isGhost
+    ? `${pickerTokens.textClassName} transition-all`
+    : `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all`;
 
   if (!isActive) {
     void intent;
     return {
-      className: `${baseClassName} ${pickerTokens.optionCardClassName}`,
+      className: isGhost
+        ? `${baseClassName} border-transparent bg-transparent`
+        : `${baseClassName} ${pickerTokens.optionCardClassName}`,
     };
   }
 
   return {
-    className: `${baseClassName} shadow-sm`,
+    className: `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all shadow-sm`,
     style: pickerTokens.activeOptionStyle,
   };
 }

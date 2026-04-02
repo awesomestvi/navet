@@ -2,7 +2,7 @@ import { Lightbulb, Sparkles } from 'lucide-react';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { RoomNav } from '@/app/components/layout/room-nav';
 import { SectionCustomizeShell } from '@/app/components/layout/section-customize-shell';
-import { EmptyState } from '@/app/components/patterns/empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -130,13 +130,16 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
                     onUpdateCard={handleUpdateCard}
                   />
                 ) : isEditMode ? (
-                  <EmptyState
-                    icon={Sparkles}
-                    title={t('energy.customCards.emptyTitle')}
-                    description={t('energy.customCards.emptyDescription')}
-                    actionLabel={t('dashboard.addCard.action')}
-                    onAction={() => controller.onOpenAddCardDialog()}
-                  />
+                  <div className="flex h-full items-center justify-center p-6">
+                    <DashboardEmptyState
+                      icon={Sparkles}
+                      title={t('energy.customCards.emptyTitle')}
+                      description={t('energy.customCards.emptyDescription')}
+                      actionLabel={t('dashboard.addCard.action')}
+                      onAction={() => controller.onOpenAddCardDialog()}
+                      className="w-full max-w-md"
+                    />
+                  </div>
                 ) : null}
               </section>
             ) : null}
@@ -178,18 +181,21 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
             </RenderProfiler>
           </SectionCustomizeShell>
         ) : (
-          <EmptyState
-            icon={Lightbulb}
-            title={t('dashboard.shell.noLightsTitle')}
-            description={
-              hiddenEntityIds.length > 0
-                ? t('dashboard.shell.noLightsHidden')
-                : t('dashboard.shell.noLightsEmpty')
-            }
-            actionIcon={Lightbulb}
-            actionLabel={hiddenEntityIds.length > 0 ? t('dashboard.addEntity.title') : undefined}
-            onAction={hiddenEntityIds.length > 0 ? onOpenAddEntityDialog : undefined}
-          />
+          <div className="flex h-full items-center justify-center p-6">
+            <DashboardEmptyState
+              icon={Lightbulb}
+              title={t('dashboard.shell.noLightsTitle')}
+              description={
+                hiddenEntityIds.length > 0
+                  ? t('dashboard.shell.noLightsHidden')
+                  : t('dashboard.shell.noLightsEmpty')
+              }
+              actionIcon={Lightbulb}
+              actionLabel={hiddenEntityIds.length > 0 ? t('dashboard.addEntity.title') : undefined}
+              onAction={hiddenEntityIds.length > 0 ? onOpenAddEntityDialog : undefined}
+              className="w-full max-w-md"
+            />
+          </div>
         )}
       </div>
     );

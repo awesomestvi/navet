@@ -1,16 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ArrowRight, Layers3, Paintbrush, Sparkles } from 'lucide-react';
+import { toId } from 'storybook/internal/csf';
 import { InteractivePill } from '@/app/components/system/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/system/tokens';
 import { useTheme } from '@/app/hooks';
 
 function toDocsPath(storyName: string) {
-  const id = storyName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return `?path=/docs/${id}--docs`;
+  // Use an absolute manager URL so links work from iframe-rendered stories.
+  return `/?path=/docs/${toId(storyName, 'docs')}`;
 }
 
 function SystemOverviewPage() {
@@ -22,36 +19,54 @@ function SystemOverviewPage() {
       title: 'Theme',
       description:
         'Design tokens and visual decision helpers — typography, surface treatments, state colors, accent shells, and style calculators.',
-      stories: ['Theme/Typography', 'Theme/Surface Tokens', 'Theme/Style Calculators'],
+      stories: [
+        'Theme/Border Radii',
+        'Theme/Colors',
+        'Theme/Fonts',
+        'Theme/Spacing',
+        'Theme/Stroke Widths',
+        'Theme/Typography',
+        'Theme/Accent Card Shell',
+        'Theme/Surface Tokens',
+        'Theme/Style Calculators',
+      ],
       icon: Paintbrush,
     },
     {
       title: 'Primitives',
       description:
-        'Low-level reusable UI elements such as pills, icon headers, dialog shells, and focused field controls.',
+        'Low-level reusable UI elements such as buttons, fields, typography, pills, dialog shells, and compact action controls.',
       stories: [
-        'Components/Primitives/Text Field',
-        'Components/Primitives/Color Input Swatch',
+        'Components/Primitives/Button',
+        'Components/Primitives/Text',
+        'Components/Primitives/Input',
+        'Components/Primitives/Textarea',
+        'Components/Primitives/Select',
+        'Components/Primitives/Combobox',
+        'Components/Primitives/Checkbox',
+        'Components/Primitives/Radio',
+        'Components/Primitives/Switch',
+        'Components/Primitives/Tooltip',
+        'Components/Primitives/Tag',
+        'Components/Primitives/Panel',
+        'Components/Primitives/Color Picker',
         'Components/Primitives/Loading Spinner',
-        'Components/Primitives/Theme Dropdown Content',
         'Components/Primitives/Interactive Pill',
-        'Components/Primitives/Round Control Button',
-        'Components/Primitives/Entity Card Header',
+        'Components/Primitives/Cards/Entity Card Header',
       ],
       icon: Layers3,
     },
     {
       title: 'Patterns',
       description:
-        'Composed sections for dashboard and settings surfaces, including hero layouts, empty states, and compact action compositions.',
+        'Composed sections for dashboard and settings surfaces, including field wrappers, empty states, feedback blocks, and compact action compositions.',
       stories: [
-        'Components/Patterns/Field Block',
+        'Components/Patterns/Field',
+        'Components/Patterns/Messagebar',
+        'Components/Patterns/Table Cell Content',
         'Components/Patterns/Card Action Row',
-        'Components/Patterns/Dashboard Empty State',
         'Components/Patterns/Empty State',
-        'Components/Patterns/Inline Empty State',
-        'Components/Patterns/Interaction Preview Card',
-        'Components/Patterns/Settings Live Preview Frame',
+        'Components/Patterns/Preview Cards',
         'Components/Patterns/Tiny Action Card',
       ],
       icon: Sparkles,
@@ -119,6 +134,8 @@ function SystemOverviewPage() {
                     <ArrowRight className="h-3.5 w-3.5" />
                     <a
                       href={toDocsPath(name)}
+                      target="_top"
+                      rel="noreferrer"
                       className={`underline-offset-2 transition-colors hover:underline ${surface.textPrimary}`}
                     >
                       {name}

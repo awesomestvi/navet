@@ -113,7 +113,7 @@ This project adheres to a code of conduct. By participating, you are expected to
 
 - Use functional components with hooks
 - Keep components focused on a single responsibility
-- Follow existing patterns and the architecture rules in `CLAUDE.md`
+- Follow existing patterns and the architecture rules in `AGENTS.md` and `src/app/components/README.md`
 
 ### Styling
 
@@ -125,7 +125,10 @@ This project adheres to a code of conduct. By participating, you are expected to
 
 ```
 /src/app
-  ├── components/shared/   # Cross-feature UI primitives
+  ├── components/primitives/ # Low-level reusable UI building blocks
+  ├── components/patterns/   # Composed shared UI structures
+  ├── components/system/     # Curated public export surface for shared UI
+  ├── components/shared/     # App-specific shared UI + compatibility shims
   ├── components/layout/   # App shell layout pieces
   ├── features/            # Feature-owned modules, hooks, and stores
   ├── contexts/            # App-shell React contexts
@@ -136,7 +139,10 @@ This project adheres to a code of conduct. By participating, you are expected to
 ```
 
 - Prefer feature-owned modules over generic global folders when the code belongs to one feature
-- Put reusable cross-feature UI under `src/app/components/shared/`
+- Put new low-level reusable UI under `src/app/components/primitives/`
+- Put new composed shared UI under `src/app/components/patterns/`
+- Re-export stable shared UI through `src/app/components/system/`
+- Treat `src/app/components/shared/` as app-specific shared UI or compatibility shims, not the default home for new primitives
 - Use `@/app/...` imports for shared app modules and cross-feature imports
 
 ### Naming Conventions
@@ -184,6 +190,7 @@ pnpm setup:hooks
 The hook currently enforces:
 
 - `pnpm check` for Biome lint/format issues
+- `pnpm check:stories` for Storybook title conventions, primitive/pattern story coverage, and colocated story ownership
 - TypeScript regression detection by comparing `pnpm exec tsc --noEmit` output against the recorded baseline in `.typecheck-baseline.txt`
 - A docs relevance check that blocks commits touching settings, dashboard behavior, or build/deploy workflow without a staged update to `README.md`, `CONTRIBUTING.md`, or `docs/`
 
@@ -208,6 +215,9 @@ If you intentionally change the TypeScript baseline, update `.typecheck-baseline
    - [ ] Comments added for complex code
    - [ ] Documentation updated
    - [ ] No new warnings or errors
+   - [ ] Shared UI is authored in `primitives/` or `patterns/` when appropriate, not added ad hoc to `shared/`
+   - [ ] Storybook stories were added or updated for shared UI changes
+   - [ ] `pnpm check:stories` passes for Storybook changes
    - [ ] Tested on mobile, tablet, and desktop
    - [ ] Tested in light and dark themes
    - [ ] All automated checks pass

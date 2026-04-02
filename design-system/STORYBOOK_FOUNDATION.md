@@ -19,7 +19,7 @@ Navet should grow an internal component workshop before it grows a package works
 
 - Start Storybook with `pnpm storybook`
 - Build the static Storybook bundle with `pnpm storybook:build`
-- Validate title conventions with `pnpm check:stories`
+- Validate title conventions, primitive/pattern story coverage, and colocated story ownership with `pnpm check:stories`
 - Storybook preview wiring reuses Navet's existing theme and settings stores so components render inside real theme context
 - Storybook manager UI, docs pages, and canvas default to dark mode
 - Token stories should document all four Navet themes: glass, dark, light, and black
@@ -28,7 +28,9 @@ Navet should grow an internal component workshop before it grows a package works
 
 Stories are co-located next to the component they document:
 
-- `src/app/components/shared/*.stories.tsx` — shared primitives and patterns
+- `src/app/components/primitives/*.stories.tsx` — low-level reusable UI primitives
+- `src/app/components/patterns/*.stories.tsx` — composed shared UI patterns
+- `src/app/components/shared/*.stories.tsx` — app-specific shared UI and remaining compatibility-era stories
 - `src/app/components/shared/theme/*.stories.tsx` — token documentation
 - `src/app/components/layout/*.stories.tsx` — app shell components
 - `src/app/components/ui/*.stories.tsx` — base Radix UI wrappers
@@ -40,14 +42,16 @@ Aggregate stories with no single component owner (catalog, all-sizes, state matr
 
 The code foundation now groups stable exports into three buckets:
 
-- `src/app/components/system/primitives/`
-  - low-level reusable UI pieces such as pills, empty states, shell dialogs, swatches, and shared card header parts
-- `src/app/components/system/patterns/`
-  - composed UI sections such as heroes, empty-state layouts, and preview frames
+- `src/app/components/primitives/`
+  - low-level reusable UI pieces such as pills, shell dialogs, swatches, inputs, and shared card header parts
+- `src/app/components/patterns/`
+  - composed UI sections such as field wrappers, empty-state layouts, message bars, and preview cards
+- `src/app/components/system/`
+  - curated public export surface for Storybook navigation and cross-app discovery
 - `src/app/components/system/tokens/`
   - theme surface helpers, accent shell treatments, color helpers, and style calculators
 
-These folders re-export existing stable components. They do not duplicate implementations.
+Author shared UI in `primitives/` or `patterns/` first. Re-export stable pieces through `system/`.
 
 ## Story Hierarchy
 
@@ -56,8 +60,7 @@ Stories are organised into a stable top-level hierarchy that keeps the sidebar p
 - `Concepts/` — workshop entrypoints and overview stories
 - `Theme/` — token, surface, typography, and theme-appearance documentation
 - `Components/`
-  - `Components/Base/` — low-level wrapper UI such as dialogs, dropdowns, avatar, checkbox, label, toaster
-  - `Components/Primitives/` — reusable low-level building blocks
+  - `Components/Primitives/` — reusable low-level building blocks, including wrapper UI (dialogs, dropdown, avatar, label, toast), grouped card primitives under `Components/Primitives/Cards/`, and nested button variants
   - `Components/Patterns/` — shared composed layouts and repeatable UI structures
   - `Components/Shared/` — cross-feature app-specific controls such as card sizing, room selection, icon picking, and status banners
 - `App Shell/` — header, sidebar, notifications, room navigation, search, and section customization controls
@@ -96,7 +99,7 @@ Storybook sorting is controlled centrally in `.storybook/preview.tsx`. Avoid inv
 - Keep feature-specific data loaders and Home Assistant wiring out of stories.
 - Co-locate the story with the component or feature it documents.
 - Use hierarchical titles and keep them inside the approved top-level taxonomy.
-- Use `pnpm check:stories` before landing reorganizations or new Storybook areas.
+- Use `pnpm check:stories` before landing reorganizations or new Storybook areas. It should catch title drift, missing primitive/pattern stories, and colocated stories that incorrectly import through the `system/` facade.
 
 ## When To Split Into Packages
 

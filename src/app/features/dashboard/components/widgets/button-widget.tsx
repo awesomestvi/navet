@@ -1,7 +1,13 @@
 import { Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { customCardDialogShellProps, DialogShell, TextField } from '@/app/components/primitives';
+import {
+  Button,
+  customCardDialogShellProps,
+  DialogShell,
+  Input,
+  Textarea,
+} from '@/app/components/primitives';
 import {
   CustomCardTintPicker,
   DEVICE_EDITOR_ICON_OPTIONS,
@@ -119,39 +125,40 @@ function ButtonSettingsDialog({
           className={surface.textMuted}
         />
 
-        <TextField
+        <Input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder={t('widgets.button.labelPlaceholder')}
           inputClassName={textFieldClass}
         />
-        <TextField
+        <Input
           type="text"
           value={service}
           onChange={(e) => setService(e.target.value)}
           placeholder={t('widgets.button.servicePlaceholder')}
           inputClassName={textFieldClass}
         />
-        <TextField
+        <Input
           type="text"
           value={entityId}
           onChange={(e) => setEntityId(e.target.value)}
           placeholder={t('widgets.button.entityPlaceholder')}
           inputClassName={textFieldClass}
         />
-        <textarea
+        <Textarea
           value={serviceData}
           onChange={(e) => setServiceData(e.target.value)}
           placeholder={t('widgets.button.serviceDataPlaceholder')}
-          className={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
+          containerClassName="w-full"
+          textareaClassName={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
         />
 
         <div className="space-y-3">
           <div className={`text-xs font-medium ${surface.textSecondary}`}>
             {t('widgets.button.iconLabel')}
           </div>
-          <TextField
+          <Input
             type="text"
             value={iconQuery}
             onChange={(e) => setIconQuery(e.target.value)}
@@ -190,14 +197,13 @@ function ButtonSettingsDialog({
         </div>
       </div>
 
-      <button
-        type="button"
+      <Button
         onClick={handleSave}
-        className="mt-4 w-full rounded-xl py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
+        className="mt-4 w-full rounded-xl py-2.5 text-sm hover:opacity-80"
         style={{ backgroundColor: getThemeColorValue('blue') }}
       >
         {t('widgets.button.configure')}
-      </button>
+      </Button>
     </DialogShell>
   );
 }

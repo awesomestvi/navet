@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { customCardDialogShellProps, DialogShell, TextField } from '@/app/components/primitives';
+import { customCardDialogShellProps, DialogShell, Input } from '@/app/components/primitives';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -73,7 +73,7 @@ export function PhotoFrameSettingsDialog({
       ) : null}
 
       <div className="mb-3 flex gap-2">
-        <TextField
+        <Input
           type="url"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
