@@ -1,5 +1,5 @@
-import { Check, Monitor, Palette } from 'lucide-react';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+import { Check } from 'lucide-react';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import type { PrimaryColorOption, ThemeOption } from '@/app/constants/theme-options';
 import { useI18n } from '@/app/hooks';
 import type { PrimaryColor, ThemeType } from '@/app/hooks/use-theme';
@@ -69,55 +69,31 @@ export function ThemeAppearancePicker({
               {t('themePicker.systemModeHelp')}
             </p>
 
-            <div className="mt-3 grid gap-2.5 md:grid-cols-2 md:gap-3">
+            <div className="mt-3 flex flex-wrap gap-2">
               {[
                 {
                   value: true,
-                  icon: Monitor,
-                  title: t('settings.appearance.systemTheme.title'),
+                  title: t('settings.appearance.systemTheme.auto'),
                   description: t('settings.appearance.systemTheme.description'),
                 },
                 {
                   value: false,
-                  icon: Palette,
                   title: t('themePicker.manualThemeTitle'),
                   description: t('themePicker.manualThemeDescription'),
                 },
               ].map((option) => {
                 const isActive = followSystemTheme === option.value;
-                const Icon = option.icon;
 
                 return (
                   <button
                     key={option.title}
                     type="button"
                     onClick={() => onFollowSystemThemeChange(option.value)}
-                    className={`flex items-start gap-3 rounded-[18px] border px-3.5 py-3.5 text-left transition-all md:rounded-[22px] md:px-4 md:py-4 ${pickerTokens.optionBorderClassName} ${pickerTokens.optionCardClassName} ${
-                      isActive ? 'shadow-sm' : ''
-                    }`}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} ${!isActive ? pickerTokens.optionCardClassName : ''}`}
                     style={isActive ? pickerTokens.activeOptionStyle : undefined}
                     aria-pressed={isActive}
                   >
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                      style={{ backgroundColor: isActive ? `${accentColor}20` : undefined }}
-                    >
-                      <Icon
-                        className="h-4 w-4"
-                        style={{ color: isActive ? accentColor : undefined }}
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p
-                        className={`text-sm font-semibold ${pickerTokens.textClassName}`}
-                        style={isActive ? { color: accentColor } : undefined}
-                      >
-                        {option.title}
-                      </p>
-                      <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
-                        {option.description}
-                      </p>
-                    </div>
+                    {option.title}
                   </button>
                 );
               })}
@@ -159,11 +135,10 @@ export function ThemeAppearancePicker({
             ) : null}
           </div>
 
-          <div className="mt-3 grid gap-2.5 sm:grid-cols-2 md:gap-3">
+          <div className="mt-3 flex flex-wrap gap-2">
             {themeOptions.map((option) => {
               const isActive = selectedTheme === option.value;
               const optionLabel = t(option.labelKey);
-              const optionDescription = t(option.descriptionKey);
 
               return (
                 <button
@@ -171,24 +146,24 @@ export function ThemeAppearancePicker({
                   type="button"
                   onClick={() => onThemeChange(option.value)}
                   disabled={manualThemeLocked}
-                  className={`flex flex-col items-start justify-start rounded-[18px] border px-3.5 py-3.5 text-left transition-all md:rounded-[22px] md:px-4 md:py-4 ${pickerTokens.optionBorderClassName} ${pickerTokens.optionCardClassName} ${
-                    isActive ? 'shadow-sm' : ''
-                  } ${manualThemeLocked ? 'cursor-not-allowed opacity-50' : ''}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} ${!isActive ? pickerTokens.optionCardClassName : ''} ${
+                    manualThemeLocked ? 'cursor-not-allowed opacity-50' : ''
+                  }`}
                   style={isActive ? pickerTokens.activeOptionStyle : undefined}
+                  aria-pressed={isActive}
                 >
-                  <p
-                    className={`text-sm font-semibold ${pickerTokens.textClassName}`}
-                    style={isActive ? { color: accentColor } : undefined}
-                  >
-                    {optionLabel}
-                  </p>
-                  <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
-                    {optionDescription}
-                  </p>
+                  {optionLabel}
                 </button>
               );
             })}
           </div>
+
+          <p className={`mt-3 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+            {t(
+              themeOptions.find((option) => option.value === selectedTheme)?.descriptionKey ??
+                'themeOption.dark.description'
+            )}
+          </p>
         </div>
 
         <div className="mt-5 md:mt-6">

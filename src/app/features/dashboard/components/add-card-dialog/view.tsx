@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Layers2, Search, Sparkles, X } from 'lucide-react';
+import { DialogShell, TextField } from '@/app/components/primitives';
 import { type CardSize, getCardSizeRatio } from '@/app/components/shared/card-size-selector';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type ThemeType, useI18n } from '@/app/hooks';
 import { type DashboardLibraryCard, DashboardLibraryList } from '../dashboard-library-list';
@@ -180,20 +180,16 @@ export function AddCardDialogView({
               className={`rounded-[24px] border p-3 ${borderColor}`}
               style={{ backgroundColor: 'rgba(255,255,255,0.025)' }}
             >
-              <div
-                data-library-interactive="true"
-                className={`flex items-center gap-2 rounded-[18px] border px-3 py-3 ${borderColor} ${cardBg}`}
-              >
-                <Search className={`h-4 w-4 shrink-0 ${mutedColor}`} />
-                <input
-                  type="text"
-                  value={libraryQuery}
-                  onChange={(event) => setLibraryQuery(event.target.value)}
-                  placeholder={t('dashboard.addCard.searchPlaceholder')}
-                  className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${textColor}`}
-                  style={{ caretColor: accent }}
-                />
-              </div>
+              <TextField
+                type="text"
+                value={libraryQuery}
+                onChange={(event) => setLibraryQuery(event.target.value)}
+                placeholder={t('dashboard.addCard.searchPlaceholder')}
+                leading={<Search className={`h-4 w-4 ${mutedColor}`} />}
+                containerClassName="relative"
+                inputClassName={`${borderColor} ${cardBg} ${textColor}`}
+                style={{ caretColor: accent }}
+              />
               <div className={`mt-3 flex items-center justify-between px-1 text-xs ${mutedColor}`}>
                 <span>{cardsSummary}</span>
                 <span>{t('dashboard.addCard.libraryHint.tapToAdd')}</span>

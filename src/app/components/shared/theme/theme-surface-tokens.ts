@@ -62,7 +62,7 @@ export function getThemeSurfaceTokens(
     };
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return {
       appBg: 'bg-black',
       shellPanel: 'bg-black border-white/16',

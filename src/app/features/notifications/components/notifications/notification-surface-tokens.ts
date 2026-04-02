@@ -23,20 +23,20 @@ export function getNotificationSurfaceTokens(theme: ThemeType): NotificationSurf
     borderClassName:
       theme === 'light'
         ? 'border-gray-200'
-        : theme === 'contrast'
+        : theme === 'black'
           ? 'border-white/20'
           : 'border-white/10',
     dividerClassName: theme === 'light' ? 'divide-gray-200' : 'divide-white/5',
     hoverClassName:
       theme === 'light'
         ? 'hover:bg-gray-50'
-        : theme === 'contrast'
+        : theme === 'black'
           ? 'hover:bg-white/10'
           : 'hover:bg-white/5',
     unreadItemClassName:
-      theme === 'light' ? 'bg-gray-50' : theme === 'contrast' ? 'bg-black/30' : 'bg-white/5',
+      theme === 'light' ? 'bg-gray-50' : theme === 'black' ? 'bg-black/30' : 'bg-white/5',
     emptyStateIconBgClassName:
-      theme === 'light' ? 'bg-gray-50' : theme === 'contrast' ? 'bg-black/30' : 'bg-white/5',
+      theme === 'light' ? 'bg-gray-50' : theme === 'black' ? 'bg-black/30' : 'bg-white/5',
     textPrimary: surface.textPrimary,
     textSecondary: surface.textSecondary,
     textMuted: surface.textSubtle,

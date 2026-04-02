@@ -1,16 +1,16 @@
 import { Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
+import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import {
   type CardSize,
   isExtraSmallCardSize,
   isTinyCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { ColorInputSwatch } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { ColorInputSwatch } from './color-input-swatch';
 
 function PickerModeStory() {
   const [value, setValue] = useState('#f97316');
@@ -28,7 +28,7 @@ function PickerModeStory() {
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Color Input Swatch',
+  title: 'Components/Primitives/Color Input Swatch',
   component: ColorInputSwatch,
   tags: ['autodocs'],
   parameters: {

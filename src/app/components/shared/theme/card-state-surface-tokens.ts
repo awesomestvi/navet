@@ -49,7 +49,7 @@ export function getCardStateSurfaceTokens(
     };
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return {
       containerClassName: '',
       overlayClassName: null,

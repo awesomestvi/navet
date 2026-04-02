@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Plus, Sparkles } from 'lucide-react';
-import { EmptyState } from '@/app/components/system/primitives';
+import { EmptyState } from './empty-state';
 
 const meta = {
-  title: 'Foundation/Primitives/Empty State',
+  title: 'Components/Patterns/Empty State',
   component: EmptyState,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Full-card empty state primitive with icon, title, body, and optional action CTA. Theme-aware styling comes from shared surface tokens.',
+          'Full-card empty-state pattern with icon, title, body, and optional action CTA. Theme-aware styling comes from shared surface tokens.',
       },
     },
   },

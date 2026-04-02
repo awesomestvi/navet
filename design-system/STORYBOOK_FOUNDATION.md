@@ -19,7 +19,10 @@ Navet should grow an internal component workshop before it grows a package works
 
 - Start Storybook with `pnpm storybook`
 - Build the static Storybook bundle with `pnpm storybook:build`
+- Validate title conventions with `pnpm check:stories`
 - Storybook preview wiring reuses Navet's existing theme and settings stores so components render inside real theme context
+- Storybook manager UI, docs pages, and canvas default to dark mode
+- Token stories should document all four Navet themes: glass, dark, light, and black
 
 ## Story File Placement
 
@@ -48,26 +51,41 @@ These folders re-export existing stable components. They do not duplicate implem
 
 ## Story Hierarchy
 
-Stories are organised into a consistent top-level hierarchy:
+Stories are organised into a stable top-level hierarchy that keeps the sidebar predictable as coverage grows:
 
-- `Foundation/` — design system layer: tokens, primitives, and composed patterns
-  - `Foundation/Tokens/` — theme surface helpers, accent shell treatments, style calculators
-  - `Foundation/Primitives/` — pills, buttons, swatches, headers, shells
-  - `Foundation/Patterns/` — hero sections, empty-state layouts, preview frames
-  - `Foundation/Overview` — cross-token/primitive overview
-- `Components/` — app-level UI components
-  - `Components/Base/` — Radix UI wrappers (buttons, dialogs, selects …)
-  - `Components/Shared/` — cross-feature primitives (card sizing, action rows, icon picker …)
-- `App Shell/` — header, sidebar, room nav, notifications
-- `Cards/` — all dashboard card types
-  - `Cards/Overview/` — catalog, all-sizes matrix, state matrix
-  - `Cards/Entity/` — one story per HA entity domain (light, switch, climate …)
-  - `Cards/Widget/` — custom cards (action, photo frame, RSS, quick note …)
+- `Concepts/` — workshop entrypoints and overview stories
+- `Theme/` — token, surface, typography, and theme-appearance documentation
+- `Components/`
+  - `Components/Base/` — low-level wrapper UI such as dialogs, dropdowns, avatar, checkbox, label, toaster
+  - `Components/Primitives/` — reusable low-level building blocks
+  - `Components/Patterns/` — shared composed layouts and repeatable UI structures
+  - `Components/Shared/` — cross-feature app-specific controls such as card sizing, room selection, icon picking, and status banners
+- `App Shell/` — header, sidebar, notifications, room navigation, search, and section customization controls
+- `Cards/`
+  - `Cards/Overview/` — catalog, all-sizes matrix, and state matrices
+  - `Cards/Entity/` — one story per HA entity domain
+  - `Cards/Widget/` — custom/widget cards such as action, photo frame, RSS, note, presence, and sparkline
 - `Dashboard/` — add-card dialog, edit actions, onboarding dialog
-- `Settings/` — settings UI
-  - `Settings/Sections/` — full section panels
-  - `Settings/Dialogs/` — per-entity settings dialogs (light, HVAC, weather …)
-- `Energy/` — charts and widgets for the energy feature
+- `Energy/`
+  - `Energy/Charts/` — charts and gauges
+  - `Energy/Primitives/` — shells and workshop helpers
+  - `Energy/Widgets/` — feature widgets
+- `Settings/`
+  - `Settings/Sections/` — the main settings sections and section-level previews
+  - `Settings/Dialogs/` — per-entity settings dialogs such as light, HVAC, camera, weather, RSS, and vacuum
+
+Storybook sorting is controlled centrally in `.storybook/preview.tsx`. Avoid inventing new top-level roots unless the workshop genuinely has a new product area.
+
+## Token Story Notes
+
+### Accent Card Shell
+
+- Story file: `src/app/components/shared/theme/accent-card-shell-tokens.stories.tsx`
+- Story title: `Theme/Accent Card Shell`
+- Covers all four themes: glass, dark, light, and black
+- Demonstrates the output of `getAccentCardShellTokens(theme, accent)`
+- Uses `getCardReadableTextTokens(...)` for tinted dark, glass, and black rows so text contrast follows the same readable-text system used by production cards
+- Light-theme rows intentionally keep stronger visible accent separation so accent families do not collapse into near-white cards
 
 ## Story Rules
 
@@ -76,6 +94,9 @@ Stories are organised into a consistent top-level hierarchy:
 - Every pattern should have mobile and desktop variants.
 - Prefer real Navet copy and spacing tokens over synthetic examples.
 - Keep feature-specific data loaders and Home Assistant wiring out of stories.
+- Co-locate the story with the component or feature it documents.
+- Use hierarchical titles and keep them inside the approved top-level taxonomy.
+- Use `pnpm check:stories` before landing reorganizations or new Storybook areas.
 
 ## When To Split Into Packages
 

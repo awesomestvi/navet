@@ -1,6 +1,7 @@
 import { Image as ImageIcon, Minus, Plus, Upload, X } from 'lucide-react';
 import { useMemo } from 'react';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
+import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { useI18n } from '@/app/hooks';
 import {
   type EffectsQuality,
@@ -75,8 +76,9 @@ export function AppearanceEffectsQualityItem({
   controller: SettingsSectionController;
 }) {
   const { t } = useI18n();
-  const { effectsQuality, styles, updateSettings } = controller;
+  const { effectsQuality, styles, theme, updateSettings } = controller;
   const detectedTier = useMemo(() => detectDeviceTier(), []);
+  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
   const qualityOptions: Array<{ value: EffectsQuality; label: string }> = [
     { value: 'high', label: t('settings.system.effectsQuality.high') },
     { value: 'medium', label: t('settings.system.effectsQuality.medium') },
@@ -90,9 +92,7 @@ export function AppearanceEffectsQualityItem({
       styles={styles}
     >
       <div className="space-y-2">
-        <div
-          className={`inline-flex flex-wrap rounded-full border p-1 ${styles.borderColor} ${styles.softBg}`}
-        >
+        <div className="flex flex-wrap gap-2">
           {qualityOptions.map((option) => {
             const isActive = effectsQuality === option.value;
             return (
@@ -105,16 +105,9 @@ export function AppearanceEffectsQualityItem({
                     ...getLegacyReducedEffectsFlags(option.value),
                   })
                 }
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: styles.accentColor,
-                        color: '#ffffff',
-                      }
-                    : undefined
-                }
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all md:px-5 ${
-                  isActive ? 'shadow-sm' : styles.chipTextColor
+                style={isActive ? pillTokens.activeOptionStyle : undefined}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
+                  isActive ? 'shadow-sm' : ''
                 }`}
                 aria-pressed={isActive}
               >
@@ -220,6 +213,7 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
   const { ambientLightBleed, effectsQuality, styles, theme, updateSettings } = controller;
   const ambienceDisabled = effectsQuality !== 'high';
   const effectiveAmbientLightBleed = ambientLightBleed && !ambienceDisabled;
+  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
 
   return (
     <SettingsItem
@@ -229,9 +223,7 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
     >
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_13rem] md:gap-5 md:items-start xl:grid-cols-[minmax(0,1fr)_16rem]">
         <div className="space-y-3">
-          <div
-            className={`inline-flex w-fit flex-wrap rounded-full border p-1 ${styles.borderColor} ${styles.softBg}`}
-          >
+          <div className="flex w-fit flex-wrap gap-2">
             {[
               { value: true, label: t('settings.appearance.ambience.ambientBleed') },
               { value: false, label: t('settings.appearance.ambience.contained') },
@@ -243,18 +235,9 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
                   key={option.label}
                   onClick={() => updateSettings({ ambientLightBleed: option.value })}
                   disabled={ambienceDisabled}
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: styles.accentColor,
-                          color: '#ffffff',
-                        }
-                      : {
-                          color: undefined,
-                        }
-                  }
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all md:px-5 ${
-                    isActive ? 'shadow-sm' : styles.chipTextColor
+                  style={isActive ? pillTokens.activeOptionStyle : undefined}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
+                    isActive ? 'shadow-sm' : ''
                   } ${ambienceDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
                   aria-pressed={isActive}
                 >

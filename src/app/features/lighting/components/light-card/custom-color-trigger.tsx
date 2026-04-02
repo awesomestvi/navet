@@ -1,7 +1,7 @@
 import { memo } from 'react';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
 import { useI18n } from '@/app/hooks';
 
 interface CustomColorTriggerProps {

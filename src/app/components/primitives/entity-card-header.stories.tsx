@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChevronRight, Lightbulb } from 'lucide-react';
-import { EntityCardHeader, EntityCardHeaderIcon } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { EntityCardHeader } from './entity-card-header';
+import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
 function FramedEntityCardHeader(args: {
   title: string;
@@ -14,7 +15,7 @@ function FramedEntityCardHeader(args: {
   const frameClassName =
     theme === 'light'
       ? 'border-black/10 bg-white/95'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/18 bg-black'
         : 'border-white/12 bg-white/6';
 
@@ -42,7 +43,7 @@ function FramedEntityCardHeader(args: {
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Entity Card Header',
+  title: 'Components/Primitives/Entity Card Header',
   component: FramedEntityCardHeader,
   tags: ['autodocs'],
   parameters: {

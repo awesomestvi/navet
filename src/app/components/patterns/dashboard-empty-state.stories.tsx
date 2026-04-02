@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Plus, Wand2 } from 'lucide-react';
+import { Plus, Sparkles, Wand2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { DashboardEmptyState } from '@/app/components/system/patterns';
 import { useTheme } from '@/app/hooks';
+import { DashboardEmptyState } from './dashboard-empty-state';
 
 function ThemeAwareDashboardEmptyState(
   props: Omit<ComponentProps<typeof DashboardEmptyState>, 'surface' | 'accentColor'>
@@ -15,23 +15,23 @@ function ThemeAwareDashboardEmptyState(
 }
 
 const meta = {
-  title: 'Foundation/Patterns/Dashboard Empty State',
+  title: 'Components/Patterns/Dashboard Empty State',
   component: ThemeAwareDashboardEmptyState,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Large dashboard-level empty-state pattern with optional action and compact mode. Intended for room or section shells that have no cards yet.',
+          'Large empty-state pattern for dashboard-scale surfaces. Supports a primary call to action and optional child content for contextual guidance.',
       },
     },
   },
   args: {
-    title: 'No cards in this room',
+    title: 'No dashboards configured',
     description:
-      'Start by adding a weather, media, or light card and arrange it exactly where you need it.',
-    icon: Wand2,
-    actionLabel: 'Add first card',
+      'Start with a focused room overview, then add widgets and cards as your setup grows.',
+    icon: Sparkles,
+    actionLabel: 'Create dashboard',
     actionIcon: Plus,
   },
   argTypes: {
@@ -48,5 +48,19 @@ export const Default: Story = {};
 export const Compact: Story = {
   args: {
     compact: true,
+    icon: Wand2,
+    title: 'Nothing pinned here yet',
+    description: 'Pin a few high-signal cards to turn this into a quick control surface.',
+    actionLabel: 'Pin cards',
+  },
+};
+
+export const WithSupportingContent: Story = {
+  args: {
+    children: (
+      <div className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+        Suggestions use your current room and entity setup
+      </div>
+    ),
   },
 };

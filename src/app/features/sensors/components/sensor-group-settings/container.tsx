@@ -1,6 +1,6 @@
 import { memo } from 'react';
+import { DialogShell } from '@/app/components/primitives/dialog-shell';
 import { CustomScrollbar } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { iconMap } from '../sensors';

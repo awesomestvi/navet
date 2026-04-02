@@ -37,10 +37,18 @@ function CardActionRowStory({ size = 'medium' }: { size?: 'small' | 'medium' | '
 }
 
 const meta = {
-  title: 'Components/Shared/Card Action Row',
+  title: 'Components/Patterns/Card Action Row',
   component: CardActionRowStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'Composed card action row pattern for left-aligned controls, optional right-side actions, and overflow menus. Used by HVAC, vacuum, cover, and lighting card layouts.',
+      },
+    },
+  },
 } satisfies Meta<typeof CardActionRowStory>;
 
 export default meta;

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { EntityCardTitleBlock } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { EntityCardTitleBlock } from './entity-card-title-block';
 
 function FramedEntityCardTitleBlock({
   title,
@@ -15,7 +15,7 @@ function FramedEntityCardTitleBlock({
   const frameClassName =
     theme === 'light'
       ? 'border-black/10 bg-white/95'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/18 bg-black'
         : 'border-white/12 bg-white/6';
   const titleClassName = theme === 'light' ? 'text-slate-900' : 'text-white';
@@ -35,7 +35,7 @@ function FramedEntityCardTitleBlock({
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Entity Card Title Block',
+  title: 'Components/Primitives/Entity Card Title Block',
   component: FramedEntityCardTitleBlock,
   tags: ['autodocs'],
   parameters: {

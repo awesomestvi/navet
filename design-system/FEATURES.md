@@ -117,7 +117,7 @@ Exposes global theme state including mode, effects quality, and primary color cu
 - Text: Dark gray primary, mid-gray secondary
 - Best for: Bright environments, accessibility
 
-**4. Black Theme** (internal code: `contrast`)
+**4. Black Theme**
 - Background: `#000000` (OLED black)
 - Cards: Near-pure black with stronger contrast treatment
 - Text: Pure white primary, bright accents
@@ -168,12 +168,23 @@ This keeps the same design language while making the UI practical on devices lik
 Recent UI cleanup moved repeated theme logic into shared primitives so cross-theme behavior can be changed in one place:
 
 - **Entity icon pill styles** - centralized under shared theme helpers for all 4 themes
-- **Interactive nav/action pills** - centralized for active/inactive, light/dark/contrast/glass behavior
+- **Interactive pills** - canonical selection-pill primitive aligned with the Settings `Theme mode` design, reused for compact option rows across light/dark/black/glass themes
+- **Accent card shell tokens** - centralized accent-surface container, glow, and overlay treatments for themed cards, with distinct light, dark, glass, and black behavior instead of one shared dark fallback
 - **Round control button** - shared circular action control primitive for card actions across lighting, media, HVAC, security, and vacuum cards; supports `neutral`, `soft` (glass/frosted), and `emphasis` variants
 - **Card state surface tokens** - centralized off/inactive card shell, overlay, text, and media-artwork dimming treatment for light, HVAC, switch, and media cards
 - **Theme surface tokens** - still define the shared panel, border, text, and input surfaces used by these primitives
 - **Entity card title block** - centralized title/subtitle ordering so cards can switch between title-first and eyebrow-first header composition without duplicating text layout logic
 - **Tiny action card** - shared compact shell for the smallest interactive cards, including watermark, overlay, eyebrow/title text stack, and bottom action slot
+
+#### Accent Card Shell Story
+
+**Storybook**: `Theme/Accent Card Shell`
+
+This token story exists to validate the accent-shell surface treatment across all accent families and all four themes.
+
+- **Dark and Black** - use tint-aware readable text tokens instead of fixed neutral copy colors
+- **Light** - keeps stronger accent separation so cards do not wash back to white
+- **Black** - uses a dedicated black-theme branch instead of reusing the dark-theme gradient path
 
 ### Internal Design-System Foundation
 
@@ -189,7 +200,7 @@ Navet now has a lightweight in-repo system layer that groups stable UI exports w
 
 #### Purpose
 
-- gives Storybook one clear entrypoint when we are ready to wire it up
+- gives Storybook a curated set of stable entrypoints for documentation and review today
 - reduces feature-to-feature import drift by exposing stable shared exports in one place
 - keeps implementation ownership in existing shared and feature files instead of duplicating components
 
@@ -843,7 +854,7 @@ interface AuthState {
 **Theme store** (`src/app/stores/theme-store.ts`)
 ```tsx
 interface ThemeState {
-  theme: 'glass' | 'dark' | 'light' | 'contrast';
+  theme: 'glass' | 'dark' | 'light' | 'black';
   primaryColor: PrimaryColor;
   customPrimaryColor: string | null;
   wallpaper: string | null;

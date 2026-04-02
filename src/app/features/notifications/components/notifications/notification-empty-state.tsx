@@ -1,5 +1,5 @@
 import { Bell } from 'lucide-react';
-import { InlineEmptyState } from '@/app/components/shared/inline-empty-state';
+import { InlineEmptyState } from '@/app/components/patterns/inline-empty-state';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 

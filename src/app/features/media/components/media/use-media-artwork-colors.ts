@@ -29,7 +29,7 @@ const FALLBACK_COLORS: Record<ThemeType, MediaArtworkPalette> = {
     highlight: 'rgb(228, 228, 231)',
     gradientEnd: 'rgb(24, 24, 27)',
   },
-  contrast: {
+  black: {
     dominant: 'rgb(12, 12, 12)',
     vibrant: 'rgb(96, 96, 96)',
     darkMuted: 'rgb(0, 0, 0)',

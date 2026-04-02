@@ -1,6 +1,6 @@
 import * as Slider from '@radix-ui/react-slider';
 import { memo } from 'react';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';

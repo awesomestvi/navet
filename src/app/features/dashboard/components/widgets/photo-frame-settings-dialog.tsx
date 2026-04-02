@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { customCardDialogShellProps, DialogShell, TextField } from '@/app/components/primitives';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
-import { customCardDialogShellProps, DialogShell } from '@/app/components/shared/dialog-shell';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -73,13 +73,13 @@ export function PhotoFrameSettingsDialog({
       ) : null}
 
       <div className="mb-3 flex gap-2">
-        <input
+        <TextField
           type="url"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('widgets.photoFrame.settings.urlPlaceholder')}
-          className={`flex-1 rounded-xl border px-3 py-2 text-sm outline-none ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted}`}
+          inputClassName={`flex-1 ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted} rounded-xl py-2`}
         />
         <button
           type="button"

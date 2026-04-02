@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { CardActionRow } from '@/app/components/shared/card-action-row';
+import { CardActionRow } from '@/app/components/patterns/card-action-row';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { BrightnessPresetsInline } from '@/app/components/shared/device-editor';
 import { useTheme } from '@/app/hooks';

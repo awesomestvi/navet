@@ -1,7 +1,7 @@
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';

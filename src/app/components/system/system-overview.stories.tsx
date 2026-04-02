@@ -19,40 +19,42 @@ function SystemOverviewPage() {
 
   const sections = [
     {
-      title: 'Primitives',
-      count: 10,
+      title: 'Theme',
       description:
-        'Low-level reusable UI elements such as pills, icon headers, dialog shells, and compact card parts.',
+        'Design tokens and visual decision helpers — typography, surface treatments, state colors, accent shells, and style calculators.',
+      stories: ['Theme/Typography', 'Theme/Surface Tokens', 'Theme/Style Calculators'],
+      icon: Paintbrush,
+    },
+    {
+      title: 'Primitives',
+      description:
+        'Low-level reusable UI elements such as pills, icon headers, dialog shells, and focused field controls.',
       stories: [
-        'Primitives/Interactive Pill',
-        'Primitives/Round Control Button',
-        'Primitives/Entity Card Header',
+        'Components/Primitives/Text Field',
+        'Components/Primitives/Color Input Swatch',
+        'Components/Primitives/Loading Spinner',
+        'Components/Primitives/Theme Dropdown Content',
+        'Components/Primitives/Interactive Pill',
+        'Components/Primitives/Round Control Button',
+        'Components/Primitives/Entity Card Header',
       ],
       icon: Layers3,
     },
     {
       title: 'Patterns',
-      count: 4,
       description:
-        'Composed sections for dashboard and settings surfaces, including hero, preview, and empty-state layouts.',
+        'Composed sections for dashboard and settings surfaces, including hero layouts, empty states, and compact action compositions.',
       stories: [
-        'Patterns/Dashboard Hero Section',
-        'Patterns/Interaction Preview Card',
-        'Patterns/Dashboard Empty State',
+        'Components/Patterns/Field Block',
+        'Components/Patterns/Card Action Row',
+        'Components/Patterns/Dashboard Empty State',
+        'Components/Patterns/Empty State',
+        'Components/Patterns/Inline Empty State',
+        'Components/Patterns/Interaction Preview Card',
+        'Components/Patterns/Settings Live Preview Frame',
+        'Components/Patterns/Tiny Action Card',
       ],
       icon: Sparkles,
-    },
-    {
-      title: 'Tokens',
-      count: 6,
-      description:
-        'Visual decision helpers that output classes/styles for shell surfaces, states, accents, and icon treatments.',
-      stories: [
-        'Tokens/Theme Surface Tokens',
-        'Tokens/Style Calculators',
-        'Tokens/Card State Surface Tokens',
-      ],
-      icon: Paintbrush,
     },
   ];
 
@@ -101,7 +103,9 @@ function SystemOverviewPage() {
               <h2 className={`mt-3 text-lg font-semibold ${surface.textPrimary}`}>
                 {section.title}
               </h2>
-              <p className={`mt-1 text-xs ${surface.textMuted}`}>{section.count} story entries</p>
+              <p className={`mt-1 text-xs ${surface.textMuted}`}>
+                {section.stories.length} story entries
+              </p>
               <p className={`mt-2 text-sm leading-6 ${surface.textSecondary}`}>
                 {section.description}
               </p>
@@ -131,14 +135,30 @@ function SystemOverviewPage() {
 }
 
 const meta = {
-  title: 'Foundation/Overview',
+  title: 'Concepts/Overview',
   component: SystemOverviewPage,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
-        component:
-          'High-level navigation page for the internal system layer. Use this as an index into primitive, pattern, and token story groups.',
+        component: [
+          "High-level navigation page for Navet's internal UI system. Use this story as the entry point into the shared token, primitive, and pattern layers before working in feature-level UI.",
+          '',
+          'How the system is organized:',
+          '- `Theme` covers visual decision helpers and documentation stories for shared tokens such as surface treatments, readable text behavior, typography, and accent shells.',
+          '- `Primitives` covers low-level reusable building blocks such as pills, buttons, shells, and header parts.',
+          '- `Patterns` covers composed UI sections such as hero layouts, empty states, and interactive previews.',
+          '',
+          'How to use this page:',
+          '- Start here when you want to understand what already exists before creating new UI.',
+          '- Jump into the linked docs pages for the specific token, primitive, or pattern you want to inspect.',
+          '- Prefer evolving shared stories and shared exports before adding one-off feature styling.',
+          '',
+          'Review expectations:',
+          '- Check components across all four Navet themes using the Storybook toolbar.',
+          '- Use the Storybook toolbar to review glass, dark, light, and black theme behavior.',
+          '- Token stories should verify light-theme readability and tinted-surface text contrast.',
+        ].join('\n'),
       },
     },
   },

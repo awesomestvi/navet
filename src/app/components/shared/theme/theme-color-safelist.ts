@@ -253,7 +253,7 @@ export const _themeColorSafelist: readonly string[] = [
   'via-teal-200/18',
   'from-teal-300/18',
 
-  // ── Contrast theme ───────────────────────────────────────────────────────
+  // ── Black theme ──────────────────────────────────────────────────────────
   'to-orange-950',
   'border-orange-400/85',
   'bg-orange-500/30',

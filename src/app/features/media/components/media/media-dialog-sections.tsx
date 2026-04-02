@@ -10,8 +10,8 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { useI18n } from '@/app/hooks';
 import type { MediaDialogGroupingPlayer, MediaDialogProps } from './media-dialog.types';
 import { MediaFallbackArtwork } from './media-fallback-artwork';

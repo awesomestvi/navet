@@ -28,7 +28,7 @@ export function getDashboardWidgetSurfaceTokens(
   const hasTintSurface = Boolean(tintSurface.panelStyle);
 
   return {
-    panelClassName: `${hasTintSurface ? '' : theme === 'light' ? 'bg-white/70' : theme === 'contrast' ? 'bg-black/50' : surface.panel} ${cardShell.backdropClassName} relative overflow-hidden rounded-2xl p-4 border ${theme === 'light' ? 'border-gray-200/50' : surface.border}`,
+    panelClassName: `${hasTintSurface ? '' : theme === 'light' ? 'bg-white/70' : theme === 'black' ? 'bg-black/50' : surface.panel} ${cardShell.backdropClassName} relative overflow-hidden rounded-2xl p-4 border ${theme === 'light' ? 'border-gray-200/50' : surface.border}`,
     panelStyle: tintSurface.panelStyle,
     glowStyle: tintSurface.glowStyle,
     overlayClassName: tintSurface.overlayClassName,
@@ -42,7 +42,7 @@ export function getDashboardWidgetSurfaceTokens(
       tintSurface.subtleFill ??
       (theme === 'light'
         ? '#f3f4f6'
-        : theme === 'contrast'
+        : theme === 'black'
           ? 'rgba(255,255,255,0.05)'
           : 'rgba(255,255,255,0.08)'),
   };

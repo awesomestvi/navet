@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { useTheme } from '@/app/hooks';
 import {
   DialogDoneButton,
   DialogFooter,
   DialogShell,
   settingsDialogContentClass,
-} from '@/app/components/system/primitives';
-import { useTheme } from '@/app/hooks';
+} from './dialog-shell';
 
 function BasicDialogStory() {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +89,7 @@ function DecoratedDialogStory() {
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Dialog Shell',
+  title: 'Components/Primitives/Dialog Shell',
   component: DialogShell,
   tags: ['autodocs'],
   parameters: {

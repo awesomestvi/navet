@@ -1,5 +1,5 @@
 import { Lightbulb } from 'lucide-react';
-import { SettingsLivePreviewFrame } from '@/app/components/shared/settings-live-preview-frame';
+import { SettingsLivePreviewFrame } from '@/app/components/patterns/settings-live-preview-frame';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { getLightCardSurfaceTokens } from '@/app/features/lighting';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -19,12 +19,12 @@ export function AmbientLightPreviewCard({
   const { t } = useI18n();
   const { colors } = useTheme();
   const isLightTheme = theme === 'light';
-  const isContrastTheme = theme === 'contrast';
+  const isBlackTheme = theme === 'black';
   const previewTokens = getThemeAppearancePickerTokens(theme, accentColor);
 
   const previewSurfaceClassName = isLightTheme
     ? 'bg-transparent'
-    : isContrastTheme
+    : isBlackTheme
       ? 'bg-black border-white/16'
       : theme === 'glass'
         ? 'bg-[#111827]/72 border-white/10'

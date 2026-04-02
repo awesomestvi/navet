@@ -1,15 +1,20 @@
-export { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+// Public primitive exports for Storybook and cross-app discovery.
+// Prefer authoring new primitives in `src/app/components/primitives`.
 export {
+  ColorInputSwatch,
+  CustomDialogDoneButton,
+  customCardDialogShellProps,
   DialogDoneButton,
   DialogFooter,
   DialogShell,
+  EntityCardHeader,
+  EntityCardHeaderIcon,
+  EntityCardTitleBlock,
+  InteractivePill,
+  LoadingSpinner,
+  RoundControlButton,
+  SettingsDialogDoneButton,
   settingsDialogContentClass,
-} from '@/app/components/shared/dialog-shell';
-export { EmptyState } from '@/app/components/shared/empty-state';
-export { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-export { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
-export { EntityCardTitleBlock } from '@/app/components/shared/entity-card-title-block';
-export { InlineEmptyState } from '@/app/components/shared/inline-empty-state';
-export { InteractivePill } from '@/app/components/shared/interactive-pill';
-export { RoundControlButton } from '@/app/components/shared/round-control-button';
-export { TinyActionCard } from '@/app/components/shared/tiny-action-card';
+  TextField,
+  ThemeDropdownContent,
+} from '@/app/components/primitives';

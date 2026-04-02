@@ -1,8 +1,8 @@
 import { Bot } from 'lucide-react';
 import { memo } from 'react';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';

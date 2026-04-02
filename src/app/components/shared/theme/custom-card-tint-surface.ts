@@ -89,7 +89,7 @@ export function getCustomCardTintSurface(
     };
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return {
       panelStyle: {
         background: `linear-gradient(155deg, rgba(0,0,0,0.98) 0%, ${withTintAlpha(

@@ -1,4 +1,4 @@
-import { InteractivePill } from '@/app/components/shared/interactive-pill';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useAuth } from '@/app/contexts/auth-context';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
@@ -47,18 +47,18 @@ export function NotificationItem({
     notification.type === 'success'
       ? theme === 'light'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-        : theme === 'contrast'
+        : theme === 'black'
           ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
           : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
       : notification.type === 'error'
         ? theme === 'light'
           ? 'border-red-200 bg-red-50 text-red-600'
-          : theme === 'contrast'
+          : theme === 'black'
             ? 'border-red-400/40 bg-red-400/10 text-red-300'
             : 'border-red-400/20 bg-red-500/10 text-red-300'
         : theme === 'light'
           ? 'border-amber-200 bg-amber-50 text-amber-600'
-          : theme === 'contrast'
+          : theme === 'black'
             ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
             : 'border-amber-400/20 bg-amber-500/10 text-amber-300';
 

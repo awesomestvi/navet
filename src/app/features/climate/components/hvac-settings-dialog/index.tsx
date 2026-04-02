@@ -1,7 +1,7 @@
 import { Flame, Power, Snowflake, Wind } from 'lucide-react';
 import { memo } from 'react';
+import { DialogShell } from '@/app/components/primitives/dialog-shell';
 import { CustomScrollbar, DialogHeader } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';

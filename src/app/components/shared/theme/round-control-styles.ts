@@ -49,7 +49,7 @@ export function getRoundControlStyles(theme: ThemeType): RoundControlStyles {
     };
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return {
       defaultButton: 'bg-black text-white hover:bg-zinc-900 border border-zinc-700',
       defaultIcon: 'text-white',

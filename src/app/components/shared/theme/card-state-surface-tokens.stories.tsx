@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { getCardStateSurfaceTokens } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'contrast'];
+const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 
 function CardStateSurfaceTokensShowcase() {
   return (
@@ -48,7 +48,7 @@ function CardStateSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Foundation/Tokens/Card State Surface',
+  title: 'Theme/Card State Surface',
   component: CardStateSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {

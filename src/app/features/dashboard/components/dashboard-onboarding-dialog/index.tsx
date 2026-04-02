@@ -61,10 +61,10 @@ export function DashboardOnboardingDialog({
   if (!open) return null;
 
   const isLightTheme = previewTheme === 'light';
-  const isContrast = previewTheme === 'contrast';
+  const isBlack = previewTheme === 'black';
   const bgColor = isLightTheme
     ? 'bg-white/95 border-gray-200/80'
-    : isContrast
+    : isBlack
       ? 'bg-black border-white/16'
       : previewTheme === 'glass'
         ? 'bg-white/10 border-white/18'
@@ -73,26 +73,26 @@ export function DashboardOnboardingDialog({
   const mutedColor = isLightTheme ? 'text-gray-600' : 'text-gray-300';
   const cardBg = isLightTheme
     ? 'bg-gray-50 hover:bg-gray-100'
-    : isContrast
+    : isBlack
       ? 'bg-black hover:bg-black'
       : previewTheme === 'glass'
         ? 'bg-white/8 hover:bg-white/12'
         : 'bg-white/5 hover:bg-white/10';
   const borderColor = isLightTheme
     ? 'border-gray-200/80'
-    : isContrast
+    : isBlack
       ? 'border-white/16'
       : 'border-white/10';
   const staticCardBg = isLightTheme
     ? 'bg-gray-50'
-    : isContrast
+    : isBlack
       ? 'bg-black'
       : previewTheme === 'glass'
         ? 'bg-white/8'
         : 'bg-white/5';
   const disabledCardBg = isLightTheme
     ? 'bg-gray-50 opacity-70'
-    : isContrast
+    : isBlack
       ? 'bg-black opacity-70'
       : previewTheme === 'glass'
         ? 'bg-white/8 opacity-70'

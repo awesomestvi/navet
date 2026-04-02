@@ -70,7 +70,7 @@ Soft Gray: #f9fafb (gray-50)
 - Reduces glare in bright environments
 - Professional, accessible
 
-High Contrast Theme:
+Black Theme:
 Deep Black: #030712 (gray-950)
 - Maximum contrast for visibility
 - Enhanced accessibility

@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { memo } from 'react';
-import { CardActionRow } from '@/app/components/shared/card-action-row';
+import { CardActionRow } from '@/app/components/patterns/card-action-row';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import {
   BrightnessPresetsInline,

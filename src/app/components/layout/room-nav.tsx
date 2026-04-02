@@ -9,9 +9,9 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { InteractivePill } from '@/app/components/shared/interactive-pill';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { ThemeDropdownContent } from '@/app/components/primitives/theme-dropdown-content';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { ThemeDropdownContent } from '@/app/components/shared/theme-dropdown-content';
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -114,7 +114,7 @@ export const RoomNav = memo(function RoomNav({
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
   const dividerClass =
-    theme === 'light' ? 'bg-gray-300/90' : theme === 'contrast' ? 'bg-white/30' : 'bg-white/14';
+    theme === 'light' ? 'bg-gray-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
   const stickyOffset = 'calc(env(safe-area-inset-top, 0px) + 8px)';
   const stickyShellStyle = useMemo<CSSProperties>(() => {
     if (theme === 'light') {
@@ -133,7 +133,7 @@ export const RoomNav = memo(function RoomNav({
       } as CSSProperties;
     }
 
-    if (theme === 'contrast') {
+    if (theme === 'black') {
       return {
         '--room-nav-sticky-border': 'rgba(255, 255, 255, 0.18)',
         '--room-nav-sticky-bg': 'rgba(0, 0, 0, 0.94)',

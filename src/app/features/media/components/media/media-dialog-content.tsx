@@ -2,7 +2,7 @@ import {
   CustomDialogDoneButton,
   DialogFooter,
   DialogShell,
-} from '@/app/components/shared/dialog-shell';
+} from '@/app/components/primitives/dialog-shell';
 import { useI18n } from '@/app/hooks';
 import type { MediaDialogProps } from './media-dialog.types';
 import {

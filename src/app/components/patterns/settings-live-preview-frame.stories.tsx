@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Paintbrush } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { SettingsLivePreviewFrame } from '@/app/components/system/patterns';
-import { InteractivePill } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { InteractivePill } from '../primitives/interactive-pill';
+import { SettingsLivePreviewFrame } from './settings-live-preview-frame';
 
 function ThemeAwareSettingsLivePreviewFrame(
   props: Omit<ComponentProps<typeof SettingsLivePreviewFrame>, 'accentColor' | 'theme'>
@@ -14,7 +14,7 @@ function ThemeAwareSettingsLivePreviewFrame(
 }
 
 const meta = {
-  title: 'Foundation/Patterns/Settings Live Preview Frame',
+  title: 'Components/Patterns/Settings Live Preview Frame',
   component: ThemeAwareSettingsLivePreviewFrame,
   tags: ['autodocs'],
   parameters: {

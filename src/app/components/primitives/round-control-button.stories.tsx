@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Pause, Play, Settings2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { RoundControlButton } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { RoundControlButton } from './round-control-button';
 
 function ThemeAwareRoundControlButton(
   props: Omit<ComponentProps<typeof RoundControlButton>, 'theme'>
@@ -12,7 +12,7 @@ function ThemeAwareRoundControlButton(
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Round Control Button',
+  title: 'Components/Primitives/Round Control Button',
   component: ThemeAwareRoundControlButton,
   tags: ['autodocs'],
   parameters: {

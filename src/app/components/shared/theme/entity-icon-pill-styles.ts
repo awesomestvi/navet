@@ -95,7 +95,7 @@ export function getEntityIconPillStyles({
         ? '#ffffff'
         : theme === 'glass'
           ? '#0f172a'
-          : theme === 'contrast'
+          : theme === 'black'
             ? '#000000'
             : '#09090b',
   });
@@ -128,7 +128,7 @@ export function getEntityIconPillStyles({
             ? `${resolvedBaseColor}1f`
             : theme === 'glass'
               ? `${resolvedBaseColor}24`
-              : theme === 'contrast'
+              : theme === 'black'
                 ? `${resolvedBaseColor}26`
                 : `${resolvedBaseColor}2e`,
         borderColor:
@@ -136,7 +136,7 @@ export function getEntityIconPillStyles({
             ? `${resolvedBaseColor}4f`
             : theme === 'glass'
               ? `${resolvedBaseColor}54`
-              : theme === 'contrast'
+              : theme === 'black'
                 ? `${resolvedBaseColor}66`
                 : `${resolvedBaseColor}66`,
         boxShadow:
@@ -144,7 +144,7 @@ export function getEntityIconPillStyles({
             ? `0 0 0 2px ${resolvedBaseColor}18, 0 10px 28px ${resolvedBaseColor}2e`
             : theme === 'glass'
               ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${resolvedBaseColor}52`
-              : theme === 'contrast'
+              : theme === 'black'
                 ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
                 : `0 0 0 1px ${resolvedBaseColor}18, 0 12px 30px ${resolvedBaseColor}22`,
       }

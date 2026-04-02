@@ -1,11 +1,11 @@
 import { Calendar, CalendarDays, ExternalLink, FileText, MapPin } from 'lucide-react';
-import { DialogHeader } from '@/app/components/shared/device-editor';
 import {
   DialogFooter,
   DialogShell,
   SettingsDialogDoneButton,
   settingsDialogContentClass,
-} from '@/app/components/shared/dialog-shell';
+} from '@/app/components/primitives/dialog-shell';
+import { DialogHeader } from '@/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';

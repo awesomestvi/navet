@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Lightbulb, Settings2 } from 'lucide-react';
-import { EntityCardHeaderIcon } from '@/app/components/system/primitives';
+import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
 const meta = {
-  title: 'Foundation/Primitives/Entity Card Header Icon',
+  title: 'Components/Primitives/Entity Card Header Icon',
   component: EntityCardHeaderIcon,
   tags: ['autodocs'],
   parameters: {

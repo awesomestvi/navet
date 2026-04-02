@@ -1,10 +1,10 @@
-import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
 import {
   CustomDialogDoneButton,
   customCardDialogShellProps,
   DialogFooter,
   DialogShell,
-} from '@/app/components/shared/dialog-shell';
+} from '@/app/components/primitives/dialog-shell';
+import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import {

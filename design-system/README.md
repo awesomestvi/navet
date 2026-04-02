@@ -91,6 +91,7 @@ Internal UI-system foundation covering:
 - **Effects Quality**: High keeps the richest live glass treatment, Medium uses simulated glass, and Low reduces effects for constrained devices
 - **Primary Colors**: Orange (default), Blue, Green, Purple, Pink, Red, Yellow, Teal, or a custom accent color
 - **Dynamic Theming** - All active states, buttons, and indicators adapt to selected primary color
+- **Accent Card Shell Tokens** - Shared accent-shell gradients, glow layers, and overlays now document their glass, dark, light, and black variants in Storybook, including readable-text behavior for tinted dark surfaces
 
 ### Navigation Structure
 - **Sections**: Home (dashboard), Security, Tasks, Locks, Lights, Media, Mock, Settings
@@ -216,10 +217,27 @@ When creating a new card component:
 
 ### Storybook Workflow
 
-- Run `pnpm storybook` to develop shared UI in isolation
+- Run `pnpm storybook` to develop UI in isolation on Storybook's local dev server
 - Run `pnpm storybook:build` to validate the static Storybook bundle
-- Start new stories from `src/app/components/system/` entrypoints instead of importing feature internals directly
-- Use the global Storybook toolbar to test all four Navet themes and built-in accent colors
+- Run `pnpm check:stories` to validate Storybook title conventions and top-level grouping
+- Co-locate stories with the component or feature they document; keep overview/catalog stories with the owning feature
+- Use the global Storybook toolbar to test built-in themes and accent colors
+- The Storybook manager UI, docs pages, and canvas default to dark mode so glass/dark presentation is the baseline workshop context
+- Token stories should explicitly verify light-theme readability, black-theme parity, and whether tinted dark surfaces use shared readable-text tokens
+
+### Current Storybook Taxonomy
+
+- `Concepts/` — workshop overviews and high-level entrypoints
+- `Theme/` — token, surface, typography, and appearance documentation
+- `Components/Base/` — wrapper-level UI such as dialogs, menus, avatar, checkbox, label, and toaster
+- `Components/Primitives/` — low-level reusable UI pieces
+- `Components/Patterns/` — composed shared UI sections and layouts
+- `Components/Shared/` — app-specific shared controls that are reused across features
+- `App Shell/` — sidebar, topbar, notifications, search, user dropdown, section customization
+- `Cards/Overview/`, `Cards/Entity/`, `Cards/Widget/` — dashboard catalog/matrices, HA entity cards, and custom/widget cards
+- `Dashboard/` — add-card, edit-mode, and onboarding flows
+- `Energy/Charts/`, `Energy/Primitives/`, `Energy/Widgets/` — energy feature visuals and shells
+- `Settings/Sections/`, `Settings/Dialogs/` — settings surface docs and per-entity settings dialogs
 
 ## 🎨 For Designers
 

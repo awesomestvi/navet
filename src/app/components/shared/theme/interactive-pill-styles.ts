@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
+import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { PrimaryColor, ThemeType } from '@/app/hooks/use-theme';
 
 export type InteractivePillIntent = 'navigation' | 'action';
@@ -19,74 +19,19 @@ export function getInteractivePillStyles({
   className: string;
   style?: CSSProperties;
 } {
-  const surface = getThemeSurfaceTokens(theme);
   const accent = getThemeColorValue(primaryColor);
+  const pickerTokens = getThemeAppearancePickerTokens(theme, accent);
+  const baseClassName = `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all`;
 
   if (!isActive) {
-    if (intent === 'navigation') {
-      const inactiveClass =
-        theme === 'light'
-          ? 'border border-transparent bg-transparent text-gray-600 hover:bg-gray-100'
-          : theme === 'glass'
-            ? 'border border-transparent bg-transparent text-white/72 hover:bg-white/8'
-            : theme === 'contrast'
-              ? 'border border-transparent bg-transparent text-gray-300 hover:bg-zinc-900'
-              : 'border border-transparent bg-transparent text-gray-400 hover:bg-zinc-800';
-
-      return { className: `${inactiveClass} transition-colors` };
-    }
-
-    const inactiveClass =
-      theme === 'light'
-        ? 'border border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200'
-        : theme === 'glass'
-          ? 'border border-white/12 bg-white/8 text-white/72 hover:bg-white/12'
-          : theme === 'contrast'
-            ? 'border border-zinc-700 bg-black text-gray-300 hover:bg-zinc-900'
-            : `border ${surface.border} ${surface.subtleBg} ${surface.textSecondary} ${surface.hoverBg}`;
-
-    return { className: `${inactiveClass} transition-colors` };
-  }
-
-  if (theme === 'light') {
+    void intent;
     return {
-      className: 'border border-transparent text-white shadow-sm transition-colors',
-      style: {
-        backgroundColor: accent,
-      },
-    };
-  }
-
-  if (theme === 'glass') {
-    return {
-      className: 'border text-white transition-colors',
-      style: {
-        backgroundColor: `${accent}14`,
-        borderColor: 'rgba(255,255,255,0.16)',
-        boxShadow:
-          intent === 'navigation'
-            ? `inset 0 1px 0 rgba(255,255,255,0.16), 0 10px 24px -18px ${accent}`
-            : `inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 28px -20px ${accent}`,
-      },
-    };
-  }
-
-  if (theme === 'contrast') {
-    return {
-      className: 'border text-white transition-colors',
-      style: {
-        backgroundColor: '#000000',
-        borderColor: '#3f3f46',
-      },
+      className: `${baseClassName} ${pickerTokens.optionCardClassName}`,
     };
   }
 
   return {
-    className: 'border text-white transition-colors',
-    style: {
-      backgroundColor: '#18181b',
-      borderColor: '#3f3f46',
-      color: '#ffffff',
-    },
+    className: `${baseClassName} shadow-sm`,
+    style: pickerTokens.activeOptionStyle,
   };
 }

@@ -24,7 +24,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
   );
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
-  const isContrast = theme === 'contrast';
+  const isBlack = theme === 'black';
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
   const isMediumEffects = resolvedEffectsQuality === 'medium';
   const isLowEffects = resolvedEffectsQuality === 'low';
@@ -33,7 +33,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
   const bgColor =
     theme === 'light'
       ? 'bg-gray-50'
-      : isContrast
+      : isBlack
         ? 'bg-black'
         : isGlass
           ? 'bg-slate-950'
@@ -43,7 +43,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
   return (
     <div className={`relative min-h-screen overflow-x-clip ${bgColor} ${textColor}`}>
       {/* Background Wallpaper with Color Blend */}
-      {wallpaper && !isContrast && (
+      {wallpaper && !isBlack && (
         <div className="fixed inset-0 z-0">
           {/* Wallpaper Image */}
           <div

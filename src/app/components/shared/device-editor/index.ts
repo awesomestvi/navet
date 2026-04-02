@@ -1,4 +1,4 @@
-export { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+export { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 export { BrightnessPresetEditor } from './brightness-preset-editor';
 export {
   getBrightnessPresetAccentColor,

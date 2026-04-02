@@ -41,7 +41,7 @@ export function getSettingsSectionStyles(
     chipHoverBg:
       theme === 'light'
         ? 'hover:bg-gray-200'
-        : theme === 'contrast'
+        : theme === 'black'
           ? 'hover:bg-black'
           : theme === 'glass'
             ? 'hover:bg-white/16'

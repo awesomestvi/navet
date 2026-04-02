@@ -1,7 +1,7 @@
 import { Home, Pause, Play } from 'lucide-react';
-import { CardActionRow } from '@/app/components/shared/card-action-row';
+import { CardActionRow } from '@/app/components/patterns/card-action-row';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import type { VacuumStatus } from './vacuum-utils';

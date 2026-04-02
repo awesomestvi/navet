@@ -1,11 +1,11 @@
 import { Settings2 } from 'lucide-react';
 import { memo, useState } from 'react';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import {
   type CardSize,
   getCompactCardSize,
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';

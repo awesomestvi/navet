@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { getThemeSurfaceTokens } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'contrast'];
+const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 const EFFECTS = ['high', 'medium', 'low'] as const;
 
 function ThemeSurfaceTokensShowcase() {
@@ -59,7 +59,7 @@ function ThemeSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Foundation/Tokens/Theme Surface',
+  title: 'Theme/Surface Tokens',
   component: ThemeSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {

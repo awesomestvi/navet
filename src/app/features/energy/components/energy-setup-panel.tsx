@@ -8,6 +8,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { useId, useState } from 'react';
+import { FieldBlock } from '@/app/components/patterns';
+import { TextField } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
@@ -201,41 +203,39 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
     const listId = `${id}-${meta.key}-list`;
 
     return (
-      <div key={meta.key}>
-        <label
-          htmlFor={inputId}
-          className={`mb-1.5 block text-xs font-medium ${surface.textPrimary}`}
-        >
-          {t(meta.labelKey)}
-          {meta.section === 'advanced' ? (
-            <span className={`ml-2 text-[10px] uppercase tracking-[0.14em] ${surface.textMuted}`}>
-              {t('energy.setup.optional')}
-            </span>
-          ) : null}
-        </label>
-        <input
+      <FieldBlock
+        key={meta.key}
+        htmlFor={inputId}
+        label={
+          <>
+            {t(meta.labelKey)}
+            {meta.section === 'advanced' ? (
+              <span className={`ml-2 text-[10px] uppercase tracking-[0.14em] ${surface.textMuted}`}>
+                {t('energy.setup.optional')}
+              </span>
+            ) : null}
+          </>
+        }
+        hint={t(meta.descriptionKey)}
+        labelClassName={`text-xs ${surface.textPrimary}`}
+        hintClassName={surface.textMuted}
+      >
+        <TextField
           id={inputId}
           type="text"
           list={listId}
           value={fields[meta.key] ?? ''}
           onChange={(e) => setField(meta.key, e.target.value)}
           placeholder={t('energy.setup.sensorPlaceholder', { domain: meta.domain })}
-          className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-colors ${surface.border} ${surface.inputBg} ${surface.textPrimary}`}
+          inputClassName={`${surface.border} ${surface.inputBg} ${surface.textPrimary} rounded-xl py-2`}
           style={{ outlineOffset: '0px' }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = accentColor;
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = '';
-          }}
         />
         <datalist id={listId}>
           {sensorIds.map((sid) => (
             <option key={sid} value={sid} />
           ))}
         </datalist>
-        <p className={`mt-1 text-xs ${surface.textMuted}`}>{t(meta.descriptionKey)}</p>
-      </div>
+      </FieldBlock>
     );
   }
 
@@ -369,20 +369,14 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
                         <label htmlFor={powerInputId} className="sr-only">
                           {t('energy.setup.powerSensorFor', { name: device.name })}
                         </label>
-                        <input
+                        <TextField
                           id={powerInputId}
                           type="text"
                           list={powerListId}
                           value={device.powerEntityId ?? ''}
                           onChange={(e) => setDevicePowerEntity(index, e.target.value)}
                           placeholder={t('energy.setup.powerSensorPlaceholder')}
-                          className={`w-full rounded-xl border px-3 py-1.5 text-xs outline-none transition-colors ${surface.border} ${surface.inputBg} ${surface.textPrimary}`}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = accentColor;
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = '';
-                          }}
+                          inputClassName={`${surface.border} ${surface.inputBg} ${surface.textPrimary} rounded-xl py-1.5 text-xs`}
                         />
                         <datalist id={powerListId}>
                           {sensorIds.map((sid) => (

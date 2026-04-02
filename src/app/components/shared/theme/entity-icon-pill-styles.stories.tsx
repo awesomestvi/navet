@@ -3,7 +3,7 @@ import { Lightbulb } from 'lucide-react';
 import { getEntityIconPillStyles } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'contrast'];
+const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 
 function EntityIconPillStylesShowcase() {
   return (
@@ -49,7 +49,7 @@ function EntityIconPillStylesShowcase() {
 }
 
 const meta = {
-  title: 'Foundation/Tokens/Entity Icon Pill',
+  title: 'Theme/Entity Icon Pill Styles',
   component: EntityIconPillStylesShowcase,
   tags: ['autodocs'],
   parameters: {

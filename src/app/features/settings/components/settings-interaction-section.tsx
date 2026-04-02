@@ -1,5 +1,6 @@
 import { Hand } from 'lucide-react';
-import { InteractionPreviewCard } from '@/app/components/shared/interaction-preview-card';
+import { InteractionPreviewCard } from '@/app/components/patterns/interaction-preview-card';
+import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { useI18n } from '@/app/hooks';
 import type {
   SettingsInteractionOption,
@@ -14,6 +15,7 @@ interface SettingsInteractionSectionProps {
 export function SettingsInteractionSection({ controller }: SettingsInteractionSectionProps) {
   const { t } = useI18n();
   const { entityInteractionMode, styles, theme, updateSettings } = controller;
+  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
   const interactionOptions: SettingsInteractionOption[] = [
     { value: 'toggle-first', label: t('settings.dashboard.interaction.toggleFirst') },
     { value: 'control-first', label: t('settings.dashboard.interaction.controlFirst') },
@@ -33,9 +35,7 @@ export function SettingsInteractionSection({ controller }: SettingsInteractionSe
         styles={styles}
       >
         <div className="grid items-start gap-4 md:gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <div
-            className={`inline-flex w-fit flex-wrap rounded-full border p-1 ${styles.borderColor} ${styles.softBg}`}
-          >
+          <div className="flex w-fit flex-wrap gap-2">
             {interactionOptions.map((option) => {
               const isActive = entityInteractionMode === option.value;
               return (
@@ -43,16 +43,9 @@ export function SettingsInteractionSection({ controller }: SettingsInteractionSe
                   type="button"
                   key={option.value}
                   onClick={() => updateSettings({ entityInteractionMode: option.value })}
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: styles.accentColor,
-                          color: '#ffffff',
-                        }
-                      : undefined
-                  }
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all md:px-5 ${
-                    isActive ? 'shadow-sm' : styles.chipTextColor
+                  style={isActive ? pillTokens.activeOptionStyle : undefined}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
+                    isActive ? 'shadow-sm' : ''
                   }`}
                   aria-pressed={isActive}
                 >

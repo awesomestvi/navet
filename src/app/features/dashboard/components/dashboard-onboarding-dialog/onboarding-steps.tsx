@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from 'lucide-react';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
 import type { TranslateFn } from '@/app/hooks';
 import type { PrimaryColor, ThemeType } from '@/app/hooks/use-theme';

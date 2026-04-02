@@ -45,19 +45,33 @@ const AlertDialogOverlay = React.forwardRef<
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(function AlertDialogContent({ className, ...props }, ref) {
+>(function AlertDialogContent({ children, className, ...props }, ref) {
   const { theme, primaryColor } = useTheme();
   const accentColor = getThemeColorValue(primaryColor);
   const surface = getThemeSurfaceTokens(theme);
   const surfaceClass = `${surface.borderStrong} ${surface.textPrimary}`;
   const background =
     theme === 'light'
-      ? `linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 72%, ${accentColor}10 100%)`
-      : theme === 'contrast'
-        ? `linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.98) 72%, ${accentColor}18 100%)`
+      ? 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 100%)'
+      : theme === 'black'
+        ? 'linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.98) 100%)'
         : theme === 'glass'
-          ? `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.08) 72%, ${accentColor}1A 100%)`
-          : `linear-gradient(180deg, rgba(18,18,20,0.96) 0%, rgba(12,12,14,0.94) 72%, ${accentColor}14 100%)`;
+          ? 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.08) 100%)'
+          : 'linear-gradient(180deg, rgba(18,18,20,0.96) 0%, rgba(12,12,14,0.94) 100%)';
+  const glowBackground =
+    theme === 'light'
+      ? `radial-gradient(circle at 16% 14%, ${accentColor}1f, transparent 32%), linear-gradient(155deg, ${accentColor}14, transparent 58%)`
+      : theme === 'black'
+        ? `radial-gradient(circle at 14% 12%, ${accentColor}29, transparent 28%), linear-gradient(155deg, ${accentColor}0d, transparent 58%)`
+        : theme === 'glass'
+          ? `radial-gradient(circle at 16% 14%, ${accentColor}1f, transparent 32%), linear-gradient(155deg, ${accentColor}12, transparent 58%)`
+          : `radial-gradient(circle at 16% 14%, ${accentColor}29, transparent 32%), linear-gradient(155deg, ${accentColor}14, transparent 58%)`;
+  const glareBackground =
+    theme === 'light'
+      ? 'linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0.12) 32%, transparent 72%)'
+      : theme === 'black'
+        ? 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.012) 34%, transparent 68%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015) 34%, transparent 68%)';
 
   return (
     <AlertDialogPortal>
@@ -66,13 +80,25 @@ const AlertDialogContent = React.forwardRef<
         ref={ref}
         data-slot="alert-dialog-content"
         className={cn(
-          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-5 rounded-[32px] border p-6 shadow-2xl backdrop-blur-xl duration-200 sm:max-w-lg sm:p-8',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-5 overflow-hidden rounded-[32px] border p-6 shadow-2xl backdrop-blur-xl duration-200 sm:max-w-lg sm:p-8',
           surfaceClass,
           className
         )}
         style={{ background }}
         {...props}
-      />
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-90"
+          style={{ background: glowBackground }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-80"
+          style={{ background: glareBackground }}
+        />
+        <div className="relative z-10 grid gap-5">{children}</div>
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   );
 });
@@ -155,7 +181,7 @@ const AlertDialogCancel = React.forwardRef<
   const cancelClass =
     theme === 'light'
       ? 'border-gray-200/80 bg-gray-100 text-gray-900 hover:bg-gray-200'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/16 bg-black text-white hover:bg-white/10'
         : theme === 'glass'
           ? 'border-white/18 bg-white/[0.08] text-white hover:bg-white/[0.14]'

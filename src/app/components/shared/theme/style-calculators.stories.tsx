@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Pause, Play } from 'lucide-react';
 import {
-  getInteractivePillStyles,
   getRoundControlStyles,
   resolvePrimaryColorToken,
   resolvePrimaryColorValue,
@@ -9,7 +8,7 @@ import {
 } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'contrast'];
+const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 
 function TokenStyleCalculatorsShowcase() {
   const customAccent = '#7c3aed';
@@ -29,46 +28,28 @@ function TokenStyleCalculatorsShowcase() {
 
       <div className="grid gap-3 lg:grid-cols-2">
         {THEMES.map((theme) => {
-          const pillActive = getInteractivePillStyles({
-            theme,
-            primaryColor: 'orange',
-            isActive: true,
-            intent: 'navigation',
-          });
-          const pillIdle = getInteractivePillStyles({
-            theme,
-            primaryColor: 'orange',
-            isActive: false,
-            intent: 'action',
-          });
           const round = getRoundControlStyles(theme);
-          const fallbackText = theme === 'light' ? 'text-slate-900' : 'text-white';
+          const frameClassName =
+            theme === 'light'
+              ? 'border-gray-200/80 bg-white/95'
+              : theme === 'black'
+                ? 'border-white/16 bg-black'
+                : theme === 'glass'
+                  ? 'border-white/16 bg-white/[0.06]'
+                  : 'border-white/10 bg-white/[0.045]';
 
           return (
             <section
               key={theme}
-              className="rounded-2xl border border-white/12 bg-white/6 p-4 backdrop-blur-xl"
+              className={`rounded-2xl border p-4 backdrop-blur-xl ${frameClassName}`}
             >
-              <h3 className={`text-xs font-semibold uppercase tracking-[0.2em] ${fallbackText}`}>
+              <h3
+                className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
                 {theme}
               </h3>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${pillIdle.className}`}
-                  style={pillIdle.style}
-                >
-                  idle action pill
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${pillActive.className}`}
-                  style={pillActive.style}
-                >
-                  active nav pill
-                </button>
-              </div>
 
               <div className="mt-3 flex items-center gap-2.5">
                 <button
@@ -99,14 +80,14 @@ function TokenStyleCalculatorsShowcase() {
 }
 
 const meta = {
-  title: 'Foundation/Tokens/Style Calculators',
+  title: 'Theme/Style Calculators',
   component: TokenStyleCalculatorsShowcase,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Showcase for token helper functions that return computed styles rather than components. Includes `getInteractivePillStyles`, `getRoundControlStyles`, and primary-color normalization helpers so theme behavior can be verified without feature-level UI wrappers.',
+          'Showcase for token helper functions that return computed styles or normalized values rather than standalone components. Includes `getRoundControlStyles` and primary-color normalization helpers so low-level theme behavior can be verified without feature-level UI wrappers.',
       },
     },
   },

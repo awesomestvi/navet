@@ -1,7 +1,7 @@
 import { Clipboard, Home, Lightbulb, Lock, Settings, Tv, Video, Zap } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { InteractivePill } from '@/app/components/shared/interactive-pill';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type Section, useI18n, useMediaQuery, useNavigation, useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';

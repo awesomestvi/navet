@@ -444,7 +444,7 @@
     box-shadow: var(--room-nav-sticky-shadow);
   }
 
-  .room-nav-shell.is-stuck[data-theme="contrast"] {
+  .room-nav-shell.is-stuck[data-theme="black"] {
     border-color: var(--room-nav-sticky-border);
     background: var(--room-nav-sticky-bg);
     box-shadow: var(--room-nav-sticky-shadow);

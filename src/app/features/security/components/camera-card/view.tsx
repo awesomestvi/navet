@@ -1,10 +1,10 @@
 import { Camera, Power, RefreshCw, Settings2 } from 'lucide-react';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import {
   type CardSize,
   CardSizeSelector,
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { useI18n } from '@/app/hooks';
 
 interface CameraCardViewProps {

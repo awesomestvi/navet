@@ -1,5 +1,7 @@
 import { AlertCircle, Eye, EyeOff, Home, Key, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { FieldBlock } from '@/app/components/patterns';
+import { TextField } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useConfig } from '@/app/contexts/config-context';
@@ -74,7 +76,7 @@ export function LoginPage() {
   const bgPrimary =
     theme === 'light'
       ? 'bg-gray-50'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'bg-black'
         : theme === 'glass'
           ? 'bg-slate-950'
@@ -83,7 +85,7 @@ export function LoginPage() {
   const cardBg =
     theme === 'light'
       ? 'bg-white/80'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'bg-gray-950/95'
         : theme === 'glass'
           ? 'bg-white/10'
@@ -92,7 +94,7 @@ export function LoginPage() {
   const border =
     theme === 'light'
       ? 'border-gray-200'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/30'
         : theme === 'glass'
           ? 'border-white/20'
@@ -101,24 +103,15 @@ export function LoginPage() {
   const inputBg =
     theme === 'light'
       ? 'bg-gray-100'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'bg-black/50'
         : theme === 'glass'
           ? 'bg-white/8'
           : 'bg-white/5';
 
-  const inputFocus =
-    theme === 'light'
-      ? 'focus:bg-white focus:border-orange-500'
-      : theme === 'contrast'
-        ? 'focus:bg-black/70 focus:border-orange-500'
-        : theme === 'glass'
-          ? 'focus:bg-white/12 focus:border-orange-400'
-          : 'focus:bg-white/10 focus:border-orange-500/50';
-
   const textPrimary = surface.textPrimary;
   const textSecondary = surface.textSecondary;
-  const textMuted = theme === 'contrast' ? 'text-gray-300' : surface.textMuted;
+  const textMuted = theme === 'black' ? 'text-gray-300' : surface.textMuted;
 
   return (
     <div className={`min-h-screen ${bgPrimary} flex items-center justify-center p-4`}>
@@ -137,58 +130,42 @@ export function LoginPage() {
         {/* Login Form */}
         <div className={`${cardBg} backdrop-blur-xl border ${border} rounded-3xl shadow-2xl p-8`}>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* URL Input */}
-            <div>
-              <label htmlFor="url" className={`block text-sm font-medium ${textPrimary} mb-2`}>
-                {t('login.urlLabel')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Home className={`w-5 h-5 ${textMuted}`} />
-                </div>
-                <input
-                  id="url"
-                  type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={t('login.urlPlaceholder')}
-                  className={`w-full pl-12 pr-4 py-3 ${inputBg} border ${border} rounded-xl ${textPrimary} placeholder-${textMuted} transition-all ${inputFocus} outline-none`}
-                  disabled={isLoading}
-                />
-              </div>
-              <p className={`mt-2 text-xs ${textMuted}`}>{t('login.urlHelp')}</p>
-            </div>
+            <FieldBlock label={t('login.urlLabel')} htmlFor="url" hint={t('login.urlHelp')}>
+              <TextField
+                id="url"
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={t('login.urlPlaceholder')}
+                leading={<Home className={`h-5 w-5 ${textMuted}`} />}
+                inputClassName={`${inputBg} ${border} ${textPrimary}`}
+                disabled={isLoading}
+              />
+            </FieldBlock>
 
-            {/* Token Input */}
-            <div>
-              <label htmlFor="token" className={`block text-sm font-medium ${textPrimary} mb-2`}>
-                {t('login.tokenLabel')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Key className={`w-5 h-5 ${textMuted}`} />
-                </div>
-                <input
-                  id="token"
-                  type={showToken ? 'text' : 'password'}
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={t('login.tokenPlaceholder')}
-                  className={`w-full pl-12 pr-12 py-3 ${inputBg} border ${border} rounded-xl ${textPrimary} placeholder-${textMuted} transition-all ${inputFocus} outline-none`}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken(!showToken)}
-                  className={`absolute inset-y-0 right-0 pr-4 flex items-center ${textMuted} hover:${textSecondary} transition-colors`}
-                  disabled={isLoading}
-                  aria-label={showToken ? t('login.hideToken') : t('login.showToken')}
-                >
-                  {showToken ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className={`mt-2 text-xs ${textMuted}`}>{t('login.tokenHelp')}</p>
-            </div>
+            <FieldBlock label={t('login.tokenLabel')} htmlFor="token" hint={t('login.tokenHelp')}>
+              <TextField
+                id="token"
+                type={showToken ? 'text' : 'password'}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder={t('login.tokenPlaceholder')}
+                leading={<Key className={`h-5 w-5 ${textMuted}`} />}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    className={`flex items-center ${textMuted} transition-colors`}
+                    disabled={isLoading}
+                    aria-label={showToken ? t('login.hideToken') : t('login.showToken')}
+                  >
+                    {showToken ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                }
+                inputClassName={`${inputBg} ${border} ${textPrimary}`}
+                disabled={isLoading}
+              />
+            </FieldBlock>
 
             {/* Error Message */}
             {error && (

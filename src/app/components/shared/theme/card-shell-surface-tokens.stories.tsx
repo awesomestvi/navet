@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { getCardShellSurfaceTokens } from '@/app/components/system/tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'contrast'];
+const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 
 function CardShellSurfaceTokensShowcase() {
   return (
@@ -34,7 +34,7 @@ function CardShellSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Foundation/Tokens/Card Shell Surface',
+  title: 'Theme/Card Shell Surface',
   component: CardShellSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {

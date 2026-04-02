@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { DialogSectionRow } from './dialog-section-row';

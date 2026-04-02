@@ -1,8 +1,8 @@
 import { Check, Edit2 } from 'lucide-react';
 import { useState } from 'react';
+import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
-import { customCardDialogShellProps, DialogShell } from '@/app/components/shared/dialog-shell';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';

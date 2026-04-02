@@ -4,7 +4,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const panelBackground =
     theme === 'light'
       ? 'rgba(255, 255, 255, 0.78)'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'rgba(0, 0, 0, 0.88)'
         : theme === 'glass'
           ? 'rgba(15, 23, 42, 0.48)'
@@ -12,7 +12,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const panelBackgroundBottom =
     theme === 'light'
       ? 'rgba(255,255,255,0.62)'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'rgba(0,0,0,0.94)'
         : theme === 'glass'
           ? 'rgba(15, 23, 42, 0.34)'
@@ -21,7 +21,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const subtleColor =
     theme === 'light'
       ? '#4b5563'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'rgba(255,255,255,0.86)'
         : theme === 'glass'
           ? 'rgba(255,255,255,0.82)'
@@ -29,7 +29,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const backdropColor =
     theme === 'light'
       ? 'rgba(248, 250, 252, 0.84)'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'rgba(0, 0, 0, 0.92)'
         : theme === 'glass'
           ? 'rgba(6, 10, 18, 0.72)'
@@ -37,7 +37,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const revealBorderColor =
     theme === 'light'
       ? `${accentColor}30`
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'rgba(255,255,255,0.14)'
         : theme === 'glass'
           ? 'rgba(255,255,255,0.16)'
@@ -45,13 +45,13 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const revealButtonBackground =
     theme === 'light'
       ? `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`
-      : theme === 'contrast'
+      : theme === 'black'
         ? `linear-gradient(135deg, ${accentColor}, ${accentColor})`
         : `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`;
   const revealButtonShadow =
     theme === 'light'
       ? `0 18px 40px ${accentColor}38`
-      : theme === 'contrast'
+      : theme === 'black'
         ? '0 18px 40px rgba(0, 0, 0, 0.56)'
         : theme === 'glass'
           ? `0 18px 40px ${accentColor}44`
@@ -59,7 +59,7 @@ export function getDashboardArrivalRevealTokens(theme: ThemeType, accentColor: s
   const panelShadow =
     theme === 'light'
       ? '0 24px 80px rgba(15, 23, 42, 0.16)'
-      : theme === 'contrast'
+      : theme === 'black'
         ? '0 24px 80px rgba(0, 0, 0, 0.56)'
         : theme === 'glass'
           ? '0 24px 80px rgba(5, 10, 20, 0.42)'

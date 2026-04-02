@@ -30,9 +30,9 @@ export const THEME_OPTIONS: ThemeOption[] = [
     descriptionKey: 'themeOption.light.description',
   },
   {
-    value: 'contrast',
-    labelKey: 'themeOption.contrast.label',
-    descriptionKey: 'themeOption.contrast.description',
+    value: 'black',
+    labelKey: 'themeOption.black.label',
+    descriptionKey: 'themeOption.black.description',
   },
 ];
 

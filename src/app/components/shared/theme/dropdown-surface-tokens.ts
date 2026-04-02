@@ -18,7 +18,7 @@ export function getThemeDropdownSurfaceClasses(
     return 'rounded-2xl border border-gray-200/80 bg-white text-gray-900';
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return 'rounded-2xl border border-white/16 bg-black text-white';
   }
 

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
-import { InteractionPreviewCard } from '@/app/components/system/patterns';
 import { useTheme } from '@/app/hooks';
+import { InteractionPreviewCard } from './interaction-preview-card';
 
 function ThemeAwareInteractionPreviewCard({
   mode,
@@ -12,7 +12,7 @@ function ThemeAwareInteractionPreviewCard({
 }
 
 const meta = {
-  title: 'Foundation/Patterns/Interaction Preview Card',
+  title: 'Components/Patterns/Interaction Preview Card',
   component: ThemeAwareInteractionPreviewCard,
   tags: ['autodocs'],
   parameters: {

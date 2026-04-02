@@ -1,5 +1,5 @@
 import { lazy, memo, Suspense, useMemo } from 'react';
-import { LoadingSpinner } from '@/app/components/shared/loading-spinner';
+import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { DeviceWithType } from '@/app/types/device.types';

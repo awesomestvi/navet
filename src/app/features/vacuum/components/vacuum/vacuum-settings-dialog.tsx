@@ -1,6 +1,6 @@
 import { Home, Play } from 'lucide-react';
+import { DialogShell } from '@/app/components/primitives/dialog-shell';
 import { DialogHeader } from '@/app/components/shared/device-editor';
-import { DialogShell } from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';

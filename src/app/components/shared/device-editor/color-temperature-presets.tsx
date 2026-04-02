@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { type CardSize, isCompactCardSize } from '../card-size-selector';
 
 interface ColorTemperature {

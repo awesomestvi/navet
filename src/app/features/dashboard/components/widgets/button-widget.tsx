@@ -1,13 +1,13 @@
 import { Search, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { customCardDialogShellProps, DialogShell, TextField } from '@/app/components/primitives';
 import {
   CustomCardTintPicker,
   DEVICE_EDITOR_ICON_OPTIONS,
   DialogHeader,
   getNamedIconComponent,
 } from '@/app/components/shared/device-editor';
-import { customCardDialogShellProps, DialogShell } from '@/app/components/shared/dialog-shell';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -97,6 +97,7 @@ function ButtonSettingsDialog({
         `${icon.name} ${t(icon.labelKey)}`.toLowerCase().includes(iconQuery.trim().toLowerCase())
       )
     : DEVICE_EDITOR_ICON_OPTIONS;
+  const textFieldClass = `${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:opacity-40 rounded-xl`;
 
   return (
     <DialogShell
@@ -118,26 +119,26 @@ function ButtonSettingsDialog({
           className={surface.textMuted}
         />
 
-        <input
+        <TextField
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder={t('widgets.button.labelPlaceholder')}
-          className={inputClass}
+          inputClassName={textFieldClass}
         />
-        <input
+        <TextField
           type="text"
           value={service}
           onChange={(e) => setService(e.target.value)}
           placeholder={t('widgets.button.servicePlaceholder')}
-          className={inputClass}
+          inputClassName={textFieldClass}
         />
-        <input
+        <TextField
           type="text"
           value={entityId}
           onChange={(e) => setEntityId(e.target.value)}
           placeholder={t('widgets.button.entityPlaceholder')}
-          className={inputClass}
+          inputClassName={textFieldClass}
         />
         <textarea
           value={serviceData}
@@ -150,18 +151,14 @@ function ButtonSettingsDialog({
           <div className={`text-xs font-medium ${surface.textSecondary}`}>
             {t('widgets.button.iconLabel')}
           </div>
-          <div className="relative">
-            <Search
-              className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${surface.textMuted}`}
-            />
-            <input
-              type="text"
-              value={iconQuery}
-              onChange={(e) => setIconQuery(e.target.value)}
-              placeholder={t('widgets.button.iconSearchPlaceholder')}
-              className={`${inputClass} pl-10`}
-            />
-          </div>
+          <TextField
+            type="text"
+            value={iconQuery}
+            onChange={(e) => setIconQuery(e.target.value)}
+            placeholder={t('widgets.button.iconSearchPlaceholder')}
+            leading={<Search className={`h-4 w-4 ${surface.textMuted}`} />}
+            inputClassName={textFieldClass}
+          />
           <div className="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto pr-1">
             {filteredIcons.map((icon) => {
               const IconComponent = icon.component;

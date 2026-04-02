@@ -27,17 +27,26 @@ const CANVAS_BACKGROUNDS: Record<ThemeMode, string> = {
     'radial-gradient(circle at top left, rgba(249,115,22,0.18), transparent 28%), radial-gradient(circle at bottom right, rgba(255,255,255,0.1), transparent 26%), linear-gradient(180deg, #050816 0%, #0f172a 100%)',
   light:
     'radial-gradient(circle at top left, rgba(249,115,22,0.08), transparent 28%), linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)',
-  contrast: 'linear-gradient(180deg, #000000 0%, #080808 100%)',
+  black: 'linear-gradient(180deg, #000000 0%, #080808 100%)',
 };
+
+const TOOLBAR_CANVAS_BACKGROUNDS = {
+  'canvas-dark': CANVAS_BACKGROUNDS.dark,
+  'canvas-glass': CANVAS_BACKGROUNDS.glass,
+  'canvas-light': CANVAS_BACKGROUNDS.light,
+  'canvas-black': CANVAS_BACKGROUNDS.black,
+} as const;
 
 interface StorybookEnvironmentProps {
   children: ReactNode;
+  canvasBackgroundName?: keyof typeof TOOLBAR_CANVAS_BACKGROUNDS;
   theme: ThemeMode;
   primaryColor: Exclude<PrimaryColor, 'custom'>;
 }
 
 function StorybookEnvironment({
   children,
+  canvasBackgroundName,
   theme,
   primaryColor,
 }: StorybookEnvironmentProps) {
@@ -117,7 +126,9 @@ function StorybookEnvironment({
       <div
         className="min-h-screen p-6 md:p-10"
         style={{
-          background: CANVAS_BACKGROUNDS[theme],
+          background:
+            (canvasBackgroundName ? TOOLBAR_CANVAS_BACKGROUNDS[canvasBackgroundName] : null) ??
+            CANVAS_BACKGROUNDS[theme],
         }}
       >
         {children}
@@ -133,20 +144,14 @@ const preview: Preview = {
     options: {
       storySort: {
         order: [
-          'System',
-          'Tokens',
-          'Primitives',
-          'Patterns',
-          'UI',
+          'Concepts',
+          'Theme',
           'Components',
           'App Shell',
           'Cards',
-          'Entity Cards',
-          'Custom Cards',
           'Dashboard',
           'Energy',
           'Settings',
-          'Settings Dialogs',
         ],
         method: 'alphabetical',
       },
@@ -162,6 +167,7 @@ const preview: Preview = {
       values: [
         { name: 'canvas-dark', value: '#09090b' },
         { name: 'canvas-glass', value: '#050816' },
+        { name: 'canvas-light', value: '#f8fafc' },
         { name: 'canvas-black', value: '#000000' },
       ],
       grid: {
@@ -180,7 +186,7 @@ const preview: Preview = {
           { value: 'glass', title: 'Glass' },
           { value: 'dark', title: 'Dark' },
           { value: 'light', title: 'Light' },
-          { value: 'contrast', title: 'Black' },
+          { value: 'black', title: 'Black' },
         ],
       },
     },
@@ -206,6 +212,7 @@ const preview: Preview = {
   decorators: [
     (Story, context) => (
       <StorybookEnvironment
+        canvasBackgroundName={context.globals.backgrounds?.name}
         theme={context.globals.theme as ThemeMode}
         primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
       >

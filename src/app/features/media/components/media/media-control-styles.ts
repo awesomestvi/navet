@@ -38,7 +38,7 @@ export function getMediaControlStyles(theme: ThemeType): MediaControlStyles {
     };
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return {
       primaryButton: roundControl.emphasisButton,
       secondaryButton: roundControl.defaultButton,

@@ -1,18 +1,18 @@
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { memo, useState } from 'react';
+import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import {
   type CardSize,
   isCompactCardSize,
   isTinyCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
-import { RoundControlButton } from '@/app/components/shared/round-control-button';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { TinyActionCard } from '@/app/components/shared/tiny-action-card';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';

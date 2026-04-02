@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Plus, Wand2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { InlineEmptyState } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { InlineEmptyState } from './inline-empty-state';
 
 function ThemeAwareInlineEmptyState(
   props: Omit<ComponentProps<typeof InlineEmptyState>, 'surface' | 'accentColor'>
@@ -15,14 +15,14 @@ function ThemeAwareInlineEmptyState(
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Inline Empty State',
+  title: 'Components/Patterns/Inline Empty State',
   component: ThemeAwareInlineEmptyState,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Compact empty-state primitive for dense panels and card internals. Supports optional action and extra child content for contextual hints.',
+          'Compact empty-state pattern for dense panels and card internals. Supports optional action and extra child content for contextual hints.',
       },
     },
   },

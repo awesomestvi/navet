@@ -1,7 +1,7 @@
 import { ChevronRight, Settings2 } from 'lucide-react';
 import { useState } from 'react';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
 import { getRSSFeedCardSurfaceTokens } from './surface-tokens';

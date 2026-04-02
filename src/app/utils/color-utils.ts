@@ -44,7 +44,7 @@ export const getGradientColors = (
       };
     }
 
-    if (theme === 'contrast') {
+    if (theme === 'black') {
       return {
         from: 'from-black',
         to: 'to-black',

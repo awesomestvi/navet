@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Gauge, Plus, Search, Trash2 } from 'lucide-react';
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
+import { TextField } from '@/app/components/primitives';
 import { DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -161,64 +162,60 @@ export function SensorGroupSettingsView({
                 </h3>
 
                 {/* Search Input */}
-                <div className="relative">
-                  <Search
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${surface.textSecondary}`}
-                  />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setSearchQuery(e.target.value);
-                      setIsDropdownOpen(true);
-                      setHighlightedIndex(-1);
-                    }}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                    }}
-                    onFocus={() => {
-                      setIsDropdownOpen(true);
-                      setHighlightedIndex(-1);
-                    }}
-                    onBlur={() => {
-                      // Delay closing to allow click on dropdown items
-                      setTimeout(() => setIsDropdownOpen(false), 200);
-                    }}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setHighlightedIndex((prev) =>
-                          prev < filteredSensors.length - 1 ? prev + 1 : 0
-                        );
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setHighlightedIndex((prev) =>
-                          prev > 0 ? prev - 1 : filteredSensors.length - 1
-                        );
-                      } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-                        e.preventDefault();
-                        const sensor = filteredSensors[highlightedIndex];
-                        if (sensor && !isSensorSelected(sensor.id)) {
-                          handleAddSensor(sensor);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setIsDropdownOpen(false);
-                        setSearchQuery('');
-                        inputRef.current?.blur();
+                <TextField
+                  ref={inputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSearchQuery(e.target.value);
+                    setIsDropdownOpen(true);
+                    setHighlightedIndex(-1);
+                  }}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onFocus={() => {
+                    setIsDropdownOpen(true);
+                    setHighlightedIndex(-1);
+                  }}
+                  onBlur={() => {
+                    // Delay closing to allow click on dropdown items
+                    setTimeout(() => setIsDropdownOpen(false), 200);
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setHighlightedIndex((prev) =>
+                        prev < filteredSensors.length - 1 ? prev + 1 : 0
+                      );
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setHighlightedIndex((prev) =>
+                        prev > 0 ? prev - 1 : filteredSensors.length - 1
+                      );
+                    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+                      e.preventDefault();
+                      const sensor = filteredSensors[highlightedIndex];
+                      if (sensor && !isSensorSelected(sensor.id)) {
+                        handleAddSensor(sensor);
                       }
-                    }}
-                    placeholder={t('sensors.groupSettings.searchPlaceholder')}
-                    className={`w-full ${surface.inputBg} border ${surface.border} rounded-[22px] pl-11 pr-4 py-3 text-sm ${surface.textPrimary} ${surface.placeholder} focus:outline-none focus:ring-2 focus:ring-white/20 transition-all`}
-                    disabled={selectedSensors.length >= maxSensors}
-                    autoComplete="off"
-                  />
-                </div>
+                    } else if (e.key === 'Escape') {
+                      setIsDropdownOpen(false);
+                      setSearchQuery('');
+                      inputRef.current?.blur();
+                    }
+                  }}
+                  placeholder={t('sensors.groupSettings.searchPlaceholder')}
+                  leading={<Search className={`h-4 w-4 ${surface.textSecondary}`} />}
+                  inputClassName={`${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder}`}
+                  disabled={selectedSensors.length >= maxSensors}
+                  autoComplete="off"
+                />
 
                 {/* Autocomplete Dropdown */}
                 {isDropdownOpen && (

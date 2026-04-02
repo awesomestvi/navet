@@ -1,9 +1,9 @@
 import { Flame, Snowflake, Thermometer, Wind } from 'lucide-react';
 import { memo } from 'react';
-import { CardActionRow } from '@/app/components/shared/card-action-row';
+import { CardActionRow } from '@/app/components/patterns/card-action-row';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/shared/entity-card-header-icon';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';

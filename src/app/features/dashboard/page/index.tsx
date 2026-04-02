@@ -1,4 +1,4 @@
-import { LoadingSpinner } from '@/app/components/shared/loading-spinner';
+import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { useI18n } from '@/app/hooks';
 import { DashboardArrivalReveal } from '../components/dashboard-arrival-reveal';
 import { DashboardOverlays } from '../components/dashboard-overlays';

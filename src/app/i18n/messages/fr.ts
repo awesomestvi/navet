@@ -512,9 +512,8 @@ export const frMessages = {
   'themeOption.dark.description': 'Dégradés subtils aux couleurs atténuées',
   'themeOption.light.label': 'Clair',
   'themeOption.light.description': 'Pastels lumineux avec des accents doux',
-  'themeOption.contrast.label': 'Noir',
-  'themeOption.contrast.description':
-    'Surfaces noires profondes avec un contraste idéal pour l’OLED.',
+  'themeOption.black.label': 'Noir',
+  'themeOption.black.description': 'Surfaces noires profondes avec un contraste idéal pour l’OLED.',
   'weather.subtitle': 'Météo',
   'weather.settings.title': 'Réglages de {name}',
   'weather.settings.forecast': 'Prévisions',

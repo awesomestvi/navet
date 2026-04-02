@@ -1,7 +1,7 @@
 import { TrendingDown, Zap } from 'lucide-react';
 import { memo } from 'react';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';

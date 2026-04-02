@@ -1,5 +1,10 @@
 import { memo } from 'react';
 import {
+  CustomDialogDoneButton,
+  DialogFooter,
+  DialogShell,
+} from '@/app/components/primitives/dialog-shell';
+import {
   BrightnessPresetEditor,
   BrightnessPresets,
   ColorSelectorSection,
@@ -8,11 +13,6 @@ import {
   DialogHeader,
   IconPicker,
 } from '@/app/components/shared/device-editor';
-import {
-  CustomDialogDoneButton,
-  DialogFooter,
-  DialogShell,
-} from '@/app/components/shared/dialog-shell';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';

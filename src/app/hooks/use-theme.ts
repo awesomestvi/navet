@@ -110,7 +110,7 @@ const getInactiveThemeTone = (themeType: ThemeType) => {
     };
   }
 
-  if (themeType === 'contrast') {
+  if (themeType === 'black') {
     return {
       gradient: 'from-black via-black to-black',
       border: 'border-zinc-700',
@@ -527,7 +527,7 @@ const generateThemeColors = (
     };
   }
 
-  if (themeType === 'contrast') {
+  if (themeType === 'black') {
     return {
       light: {
         gradient: `from-black via-black to-${color}-950`,

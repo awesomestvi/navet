@@ -1,8 +1,8 @@
 import { Home, MapPin, User } from 'lucide-react';
 import { memo } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { EntityCardHeader } from '@/app/components/shared/entity-card-header';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';

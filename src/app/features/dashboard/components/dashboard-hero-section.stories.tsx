@@ -11,7 +11,7 @@ function DefaultHeroStory() {
   const asideItemClassName =
     theme === 'light'
       ? 'bg-black/5 text-gray-700'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'bg-white/8 text-white'
         : 'bg-white/6 text-white/80';
 
@@ -60,11 +60,11 @@ function ThemeAwareDashboardHeroSection({
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const eyebrowClassName =
-    theme === 'light' ? 'text-gray-500' : theme === 'contrast' ? 'text-white/70' : 'text-white/60';
+    theme === 'light' ? 'text-gray-500' : theme === 'black' ? 'text-white/70' : 'text-white/60';
   const asideSurfaceClassName =
     theme === 'light'
       ? 'border-gray-200/80 bg-white/90 text-gray-900'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/14 bg-black text-white'
         : 'border-white/10 bg-white/6 text-white';
   const asideTextClassName = theme === 'light' ? 'text-gray-600' : 'text-white/65';
@@ -101,7 +101,7 @@ function ThemeAwareDashboardHeroSection({
 }
 
 const meta = {
-  title: 'Foundation/Patterns/Dashboard Hero Section',
+  title: 'Components/Patterns/Dashboard Hero Section',
   component: ThemeAwareDashboardHeroSection,
   tags: ['autodocs'],
   parameters: {

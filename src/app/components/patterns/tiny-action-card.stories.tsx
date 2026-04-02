@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Bolt, Sparkles } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { TinyActionCard } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { TinyActionCard } from './tiny-action-card';
 
 function ThemeAwareTinyActionCard(props: Omit<ComponentProps<typeof TinyActionCard>, 'watermark'>) {
   const { theme, accentColor } = useTheme();
   const cardSurfaceClassName =
     theme === 'light'
       ? 'border-black/10 bg-white/95 text-slate-900'
-      : theme === 'contrast'
+      : theme === 'black'
         ? 'border-white/18 bg-black text-white'
         : 'border-white/12 bg-white/6 text-white';
   const watermarkClassName = theme === 'light' ? 'text-slate-900/10' : 'text-white/10';
@@ -34,14 +34,14 @@ function ThemeAwareTinyActionCard(props: Omit<ComponentProps<typeof TinyActionCa
 }
 
 const meta = {
-  title: 'Foundation/Primitives/Tiny Action Card',
+  title: 'Components/Patterns/Tiny Action Card',
   component: ThemeAwareTinyActionCard,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Tiny card composition primitive for compact quick actions. Exposes slots for watermark, metadata/title stack, and optional click-overlay behavior.',
+          'Tiny card composition pattern for compact quick actions. Exposes slots for watermark, metadata/title stack, and optional click-overlay behavior.',
       },
     },
   },

@@ -35,7 +35,7 @@ const NEUTRAL_BACKGROUNDS: Record<ThemeType, string> = {
   light: '#f3f4f6',
   dark: '#18181b',
   glass: '#334155',
-  contrast: '#000000',
+  black: '#000000',
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -149,7 +149,7 @@ function resolveBackgroundColor(
     return mixColors(baseColor, '#334155', 0.78);
   }
 
-  if (theme === 'contrast') {
+  if (theme === 'black') {
     return mixColors(baseColor, '#000000', 0.9);
   }
 

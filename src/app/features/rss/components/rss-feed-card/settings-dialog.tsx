@@ -1,16 +1,17 @@
 import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
-import {
-  CompactRoomSelector,
-  CustomCardTintPicker,
-  DialogHeader,
-} from '@/app/components/shared/device-editor';
+import { TextField } from '@/app/components/primitives';
 import {
   CustomDialogDoneButton,
   customCardDialogShellProps,
   DialogFooter,
   DialogShell,
-} from '@/app/components/shared/dialog-shell';
+} from '@/app/components/primitives/dialog-shell';
+import {
+  CompactRoomSelector,
+  CustomCardTintPicker,
+  DialogHeader,
+} from '@/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
@@ -219,18 +220,20 @@ export function RSSFeedSettingsDialog({
                   : undefined
               }
             >
-              <input
+              <TextField
+                type="text"
                 value={providerName}
                 onChange={(event) => setProviderName(event.target.value)}
                 placeholder={t('rss.settings.providerName')}
-                className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none ${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder}`}
+                inputClassName={`${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder} rounded-2xl`}
                 style={sectionStyle}
               />
-              <input
+              <TextField
+                type="url"
                 value={providerUrl}
                 onChange={(event) => setProviderUrl(event.target.value)}
                 placeholder={t('rss.settings.providerUrl')}
-                className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none ${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder}`}
+                inputClassName={`${surface.inputBg} ${surface.border} ${surface.textPrimary} ${surface.placeholder} rounded-2xl`}
                 style={sectionStyle}
               />
               <div className="flex items-center gap-2">

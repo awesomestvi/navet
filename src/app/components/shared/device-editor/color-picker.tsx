@@ -1,6 +1,6 @@
 import { memo } from 'react';
+import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { ColorInputSwatch } from '@/app/components/shared/color-input-swatch';
 import type { CardSize } from '../card-size-selector';
 
 interface ColorPickerProps {

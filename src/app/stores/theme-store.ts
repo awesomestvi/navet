@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type ThemeMode = 'light' | 'dark' | 'contrast' | 'glass';
+export type ThemeMode = 'light' | 'dark' | 'black' | 'glass';
 export type PrimaryColor =
   | 'blue'
   | 'purple'
@@ -63,6 +63,14 @@ function normalizeWallpaperPath(wallpaper: string | null | undefined) {
   return trimmed;
 }
 
+function normalizeThemeMode(theme: ThemeMode | 'contrast' | null | undefined): ThemeMode {
+  if (theme === 'contrast') {
+    return 'black';
+  }
+
+  return theme ?? 'dark';
+}
+
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
@@ -73,7 +81,7 @@ export const useThemeStore = create<ThemeState>()(
       wallpaper: null,
       applyImportedTheme: (nextTheme) =>
         set({
-          theme: nextTheme.theme,
+          theme: normalizeThemeMode(nextTheme.theme),
           primaryColor: nextTheme.primaryColor,
           customPrimaryColor: nextTheme.customPrimaryColor,
           wallpaper: normalizeWallpaperPath(nextTheme.wallpaper),
@@ -93,6 +101,7 @@ export const useThemeStore = create<ThemeState>()(
         return {
           ...current,
           ...next,
+          theme: normalizeThemeMode(next.theme ?? current.theme),
           wallpaper: normalizeWallpaperPath(next.wallpaper ?? current.wallpaper),
         };
       },
