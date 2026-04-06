@@ -11,6 +11,8 @@ export interface RotaryKnobProps {
   isOn?: boolean;
   className?: string;
   glowClassName?: string;
+  bandStrokeWidth?: number;
+  tickOffsetRem?: number;
   bandPrimaryColor: string;
   bandSecondaryColor: string;
   bandGlowColor: string;
@@ -63,6 +65,8 @@ export const RotaryKnob = memo(function RotaryKnob({
   isOn = true,
   className,
   glowClassName,
+  bandStrokeWidth = 22,
+  tickOffsetRem = 9.25,
   bandPrimaryColor,
   bandSecondaryColor,
   bandGlowColor,
@@ -245,7 +249,7 @@ export const RotaryKnob = memo(function RotaryKnob({
           r="163"
           fill="none"
           stroke={theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.06)'}
-          strokeWidth="22"
+          strokeWidth={bandStrokeWidth}
           opacity={isOn ? 1 : 0.35}
         />
         <circle
@@ -254,7 +258,7 @@ export const RotaryKnob = memo(function RotaryKnob({
           r="163"
           fill="none"
           stroke={`url(#rotary-knob-band-${id})`}
-          strokeWidth="22"
+          strokeWidth={bandStrokeWidth}
           opacity={isOn ? 1 : 0.35}
           filter={isOn ? `url(#rotary-knob-band-glow-${id})` : 'none'}
           style={{
@@ -309,7 +313,7 @@ export const RotaryKnob = memo(function RotaryKnob({
               <div
                 className={cn('rounded-full', isMajor ? 'h-5 w-[2px]' : 'h-3.5 w-px')}
                 style={{
-                  transform: 'translateY(-9.25rem)',
+                  transform: `translateY(-${tickOffsetRem}rem)`,
                   backgroundColor: isOn
                     ? isMajor
                       ? 'rgba(255,255,255,0.34)'

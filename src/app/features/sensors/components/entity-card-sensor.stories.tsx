@@ -8,7 +8,7 @@ import {
 
 function SensorCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <SensorCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Sensor',
   component: SensorCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'sensor.air_quality',
     name: 'Air Quality',
@@ -35,24 +41,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Medium: Story = {};
-
-export const SmallGauge: Story = {
-  args: {
-    size: 'small',
-    icon: 'gauge',
-    value: '23.1',
-    unit: 'C',
-    subtitle: 'Temperature',
-  },
-};
-
-export const LargeRising: Story = {
-  args: {
-    size: 'large',
-    icon: 'trend-up',
-    value: '89',
-    unit: '%',
-    subtitle: 'Humidity',
-  },
-};
+export const Playground: Story = {};

@@ -1,8 +1,10 @@
 import { ChevronDown, Home, Loader2 } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@/app/components/ui/utils';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -12,6 +14,10 @@ interface EntityRoomSelectorProps {
   label?: string;
   compact?: boolean;
   className?: string;
+  accentColorOverride?: string;
+  selectStyle?: CSSProperties;
+  compactContentClassName?: string;
+  compactContentStyle?: CSSProperties;
 }
 
 export const EntityRoomSelector = memo(function EntityRoomSelector({
@@ -19,6 +25,10 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   label,
   compact = false,
   className = '',
+  accentColorOverride,
+  selectStyle,
+  compactContentClassName,
+  compactContentStyle,
 }: EntityRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -99,7 +109,15 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               ))}
             </select>
             <div
-              className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary}`}
+              className={cn(
+                'inline-flex min-w-0 items-center gap-2 text-sm',
+                surface.textPrimary,
+                compactContentStyle || compactContentClassName
+                  ? 'rounded-xl border px-3 py-2'
+                  : null,
+                compactContentClassName
+              )}
+              style={compactContentStyle}
             >
               <Home className={`h-4 w-4 ${surface.textSecondary}`} />
               <span className="max-w-[12rem] truncate font-medium">{selectedAreaLabel}</span>
@@ -118,7 +136,9 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               disabled={isSaving}
               onChange={(event) => void handleChange(event.target.value)}
               containerClassName="w-full"
+              accentColorOverride={accentColorOverride}
               selectClassName={`${surface.border} ${surface.inputBg} ${baseSelectClassName} disabled:opacity-60`}
+              style={selectStyle}
             >
               <option value="">{t('common.noRoom')}</option>
               {sortedAreas.map((area) => (

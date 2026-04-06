@@ -8,7 +8,7 @@ import {
 
 function VacuumCardStory(args: Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <VacuumCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Vacuum',
   component: VacuumCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'vacuum.robby',
     name: 'Robby',
@@ -35,22 +41,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Cleaning: Story = {};
-
-export const DockedSmall: Story = {
-  args: {
-    status: 'docked',
-    size: 'small',
-    battery: 100,
-    cleanedArea: '0 m2',
-    cleaningTime: '0 min',
-  },
-};
-
-export const ReturningLarge: Story = {
-  args: {
-    status: 'returning',
-    size: 'large',
-    battery: 32,
-  },
-};
+export const Playground: Story = {};

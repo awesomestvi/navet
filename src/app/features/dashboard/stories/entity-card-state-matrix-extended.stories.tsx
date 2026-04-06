@@ -9,6 +9,13 @@ import { GroupedSensorCard, SensorCard } from '@/app/features/sensors';
 import { VacuumCard } from '@/app/features/vacuum';
 import { WeatherCard } from '@/app/features/weather';
 
+function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + dayOffset);
+  date.setHours(hours, minutes, 0, 0);
+  return date.toISOString();
+}
+
 const weatherForecast = [
   { day: 'Mon', condition: 'partly-cloudy', high: 7, low: 2 },
   { day: 'Tue', condition: 'rainy', high: 6, low: 1 },
@@ -20,20 +27,22 @@ const calendarEvents = [
   {
     id: '1',
     title: 'Design review',
-    startTime: '2026-04-01T10:00:00Z',
-    endTime: '2026-04-01T10:45:00Z',
+    startTime: '10:00',
+    endTime: '10:45',
     timeDisplay: '10:00',
     type: 'meeting' as const,
     color: '#60a5fa',
+    sortKey: toIsoDate(0, 10, 0),
   },
   {
     id: '2',
     title: 'Call with installer',
-    startTime: '2026-04-01T13:00:00Z',
-    endTime: '2026-04-01T13:30:00Z',
+    startTime: '13:00',
+    endTime: '13:30',
     timeDisplay: '13:00',
     type: 'call' as const,
     color: '#34d399',
+    sortKey: toIsoDate(1, 13, 0),
   },
 ];
 

@@ -6,6 +6,7 @@ interface DialogShellProps {
   onOpenChange: (open: boolean) => void;
   overlayClassName: string;
   contentClassName: string;
+  disableOpenAutoFocus?: boolean;
   contentStyle?: CSSProperties;
   contentGlowClassName?: string;
   contentGlowStyle?: CSSProperties;
@@ -18,6 +19,7 @@ export function DialogShell({
   onOpenChange,
   overlayClassName,
   contentClassName,
+  disableOpenAutoFocus = false,
   contentStyle,
   contentGlowClassName,
   contentGlowStyle,
@@ -32,7 +34,17 @@ export function DialogShell({
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className={`fixed inset-0 z-50 ${overlayClassName}`} />
-        <Dialog.Content className={contentClassName} style={contentStyle}>
+        <Dialog.Content
+          className={contentClassName}
+          style={contentStyle}
+          onOpenAutoFocus={
+            disableOpenAutoFocus
+              ? (event) => {
+                  event.preventDefault();
+                }
+              : undefined
+          }
+        >
           {contentGlowClassName || contentGlowStyle ? (
             <div
               className={`absolute inset-0 ${contentGlowClassName ?? ''}`}

@@ -8,7 +8,7 @@ import {
 
 function PersonCardStory(args: Omit<ComponentProps<typeof PersonCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <PersonCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Person',
   component: PersonCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'person.alex',
     name: 'Alex',
@@ -33,17 +39,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Home: Story = {};
-
-export const Away: Story = {
-  args: {
-    state: 'away',
-    location: 'Airport',
-  },
-};
-
-export const SmallHome: Story = {
-  args: {
-    size: 'small',
-  },
-};
+export const Playground: Story = {};

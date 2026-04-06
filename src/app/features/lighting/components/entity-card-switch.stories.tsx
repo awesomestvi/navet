@@ -5,7 +5,7 @@ import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-
 
 function SwitchCardStory(args: ComponentProps<typeof SwitchCard>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'small'}>
       <SwitchCard {...args} />
     </EntityCardStoryFrame>
   );
@@ -15,10 +15,16 @@ const meta = {
   title: 'Cards/Entity/Switch',
   component: SwitchCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['tiny', 'extra-small', 'small'],
+    },
+  },
   args: {
     id: 'switch.espresso_machine',
     name: 'Espresso Machine',
-    size: 'medium',
+    size: 'small',
     initialState: true,
     entityType: 'switch',
     serviceDomain: 'switch',
@@ -34,18 +40,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const MediumOn: Story = {};
-
-export const SmallOff: Story = {
-  args: {
-    size: 'small',
-    initialState: false,
-  },
-};
-
-export const TinyOn: Story = {
-  args: {
-    size: 'tiny',
-    initialState: true,
-  },
-};
+export const Playground: Story = {};

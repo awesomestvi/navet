@@ -1,7 +1,11 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { customCardDialogShellProps, DialogShell, Input } from '@/app/components/primitives';
-import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  CustomCardTintPicker,
+  DialogHeader,
+  DialogSectionRow,
+} from '@/app/components/shared/device-editor';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -72,49 +76,53 @@ export function PhotoFrameSettingsDialog({
         />
       ) : null}
 
-      <div className="mb-3 flex gap-2">
-        <Input
-          type="url"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('widgets.photoFrame.settings.urlPlaceholder')}
-          inputClassName={`flex-1 ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted} rounded-xl py-2`}
-        />
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border transition-opacity hover:opacity-70"
-          style={{ borderColor: surface.subtleFill }}
-        >
-          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-        </button>
-      </div>
+      <DialogSectionRow label={t('widgets.photoFrame.settings.addUrl')} className="mb-4">
+        <div className="flex gap-2">
+          <Input
+            type="url"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('widgets.photoFrame.settings.urlPlaceholder')}
+            inputClassName={`flex-1 ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:${surface.textMuted} rounded-xl py-2`}
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border transition-opacity hover:opacity-70"
+            style={{ borderColor: surface.subtleFill }}
+          >
+            <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+          </button>
+        </div>
+      </DialogSectionRow>
 
-      {photoUrls.length === 0 ? (
-        <p className={`py-4 text-center text-sm ${surface.textMuted}`}>
-          {t('widgets.photoFrame.settings.noPhotos')}
-        </p>
-      ) : (
-        <ul className="max-h-60 space-y-1.5 overflow-y-auto">
-          {photoUrls.map((url, index) => (
-            <li
-              key={`${url}-${index}`}
-              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm`}
-              style={{ background: surface.subtleFill }}
-            >
-              <span className={`flex-1 truncate ${surface.textSecondary}`}>{url}</span>
-              <button
-                type="button"
-                onClick={() => handleRemove(index)}
-                className={`shrink-0 ${surface.textMuted} hover:opacity-70`}
+      <DialogSectionRow label={t('widgets.photoFrame.settings.photos')}>
+        {photoUrls.length === 0 ? (
+          <p className={`py-4 text-center text-sm ${surface.textMuted}`}>
+            {t('widgets.photoFrame.settings.noPhotos')}
+          </p>
+        ) : (
+          <ul className="max-h-60 space-y-1.5 overflow-y-auto">
+            {photoUrls.map((url, index) => (
+              <li
+                key={`${url}-${index}`}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm`}
+                style={{ background: surface.subtleFill }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+                <span className={`flex-1 truncate ${surface.textSecondary}`}>{url}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  className={`shrink-0 ${surface.textMuted} hover:opacity-70`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DialogSectionRow>
     </DialogShell>
   );
 }

@@ -8,7 +8,7 @@ import {
 
 function CoverCardStory(args: Omit<ComponentProps<typeof CoverCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <CoverCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Cover',
   component: CoverCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'cover.living_room_blind',
     name: 'Living Room Blind',
@@ -33,19 +39,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const MediumOpen: Story = {};
-
-export const SmallClosed: Story = {
-  args: {
-    size: 'small',
-    initialPosition: 0,
-  },
-};
-
-export const LargeMostlyOpen: Story = {
-  args: {
-    size: 'large',
-    initialPosition: 92,
-    initialDeviceClass: 'curtain',
-  },
-};
+export const Playground: Story = {};

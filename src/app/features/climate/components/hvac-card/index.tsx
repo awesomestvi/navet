@@ -8,6 +8,7 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
+import { cn } from '@/app/components/ui/utils';
 import { useI18n, useTheme } from '@/app/hooks';
 import { HVACSettingsDialog } from '../hvac-settings-dialog';
 import type { HVACCardProps } from './hvac-card.types';
@@ -68,6 +69,7 @@ export const HVACCard = memo(function HVACCard({
         : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
           ? Wind
           : Thermometer;
+  const temperaturePresets = [18, 21, 24];
 
   return (
     <>
@@ -114,19 +116,32 @@ export const HVACCard = memo(function HVACCard({
 
           <div className="flex-1">
             {controller.isSmall ? (
-              <div className="flex h-full flex-col gap-2">
-                <div className="mt-auto">
-                  <div
-                    className={`text-3xl font-bold ${stateSurface.primaryTextClassName} leading-none transition-colors duration-500 mb-1`}
-                    style={{ color: readableTokens.titleColor }}
-                  >
-                    {controller.currentTemp}°C
-                  </div>
-                  <div
-                    className={`text-xs ${stateSurface.secondaryTextClassName}`}
-                    style={{ color: readableTokens.subtitleColor }}
-                  >
-                    {targetTemperatureLabel}
+              <div className="relative flex h-full flex-col gap-2">
+                <HVACGauge
+                  id={id}
+                  mode={controller.visualMode}
+                  targetTemp={controller.targetTemp}
+                  currentTemp={controller.currentTemp}
+                  isOn={controller.isOn}
+                  onTargetTempChange={controller.setTargetTemp}
+                  variant="docked-card-small"
+                  className="pointer-events-auto absolute right-[-1.9rem] top-[36%] z-[2] -translate-y-1/2"
+                />
+
+                <div className="mt-auto inline-flex w-fit flex-col self-start">
+                  <div className="min-w-0">
+                    <div
+                      className={`mb-1 text-3xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
+                      style={{ color: readableTokens.titleColor }}
+                    >
+                      {controller.currentTemp}°C
+                    </div>
+                    <div
+                      className={`text-xs ${stateSurface.secondaryTextClassName}`}
+                      style={{ color: readableTokens.subtitleColor }}
+                    >
+                      {targetTemperatureLabel}
+                    </div>
                   </div>
                 </div>
 
@@ -135,39 +150,56 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="small"
                     leftContent={
-                      <HVACTempControls
-                        targetTemp={controller.targetTemp}
-                        onTempChange={controller.setTargetTemp}
-                        isOn={controller.isOn}
-                        size="small"
-                      />
+                      <div className="relative z-[3] flex items-center gap-1">
+                        <HVACTempControls
+                          targetTemp={controller.targetTemp}
+                          onTempChange={controller.setTargetTemp}
+                          isOn={controller.isOn}
+                          size="small"
+                        />
+                      </div>
                     }
                     rightContent={
-                      <CardSettingsActionButton
-                        {...controller.cardInteraction.settingsButtonProps}
-                        theme={controller.theme}
-                        size="small"
-                        tone={controller.isOn ? 'default' : 'muted'}
-                        variant="soft"
-                      />
+                      <div className="relative z-[3]">
+                        <CardSettingsActionButton
+                          {...controller.cardInteraction.settingsButtonProps}
+                          theme={controller.theme}
+                          size="small"
+                          tone={controller.isOn ? 'default' : 'muted'}
+                          variant="soft"
+                        />
+                      </div>
                     }
                   />
                 </div>
               </div>
             ) : controller.isMedium ? (
-              <div className="flex h-full flex-col">
-                <div className="mt-auto">
-                  <div
-                    className={`text-3xl font-bold ${stateSurface.primaryTextClassName} leading-none transition-colors duration-500 mb-1`}
-                    style={{ color: readableTokens.titleColor }}
-                  >
-                    {controller.currentTemp}°C
-                  </div>
-                  <div
-                    className={`text-xs ${stateSurface.secondaryTextClassName}`}
-                    style={{ color: readableTokens.subtitleColor }}
-                  >
-                    {targetTemperatureLabel}
+              <div className="relative flex h-full flex-col">
+                <HVACGauge
+                  id={id}
+                  mode={controller.visualMode}
+                  targetTemp={controller.targetTemp}
+                  currentTemp={controller.currentTemp}
+                  isOn={controller.isOn}
+                  onTargetTempChange={controller.setTargetTemp}
+                  variant="docked-card-small"
+                  className="pointer-events-auto absolute right-[-2rem] top-[36%] z-[2] -translate-y-1/2"
+                />
+
+                <div className="mt-auto inline-flex w-fit flex-col self-start">
+                  <div className="min-w-0">
+                    <div
+                      className={`mb-1 text-3xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
+                      style={{ color: readableTokens.titleColor }}
+                    >
+                      {controller.currentTemp}°C
+                    </div>
+                    <div
+                      className={`text-xs ${stateSurface.secondaryTextClassName}`}
+                      style={{ color: readableTokens.subtitleColor }}
+                    >
+                      {targetTemperatureLabel}
+                    </div>
                   </div>
                 </div>
 
@@ -176,7 +208,7 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="medium"
                     leftContent={
-                      <>
+                      <div className="relative z-[3] flex items-center gap-2">
                         <HVACTempControls
                           targetTemp={controller.targetTemp}
                           onTempChange={controller.setTargetTemp}
@@ -189,42 +221,81 @@ export const HVACCard = memo(function HVACCard({
                           onModeChange={controller.setMode}
                           size="medium"
                         />
-                      </>
+                      </div>
                     }
                     rightContent={
-                      <CardSettingsActionButton
-                        {...controller.cardInteraction.settingsButtonProps}
-                        theme={controller.theme}
-                        size="medium"
-                        tone={controller.isOn ? 'default' : 'muted'}
-                        variant="soft"
-                      />
+                      <div className="relative z-[3]">
+                        <CardSettingsActionButton
+                          {...controller.cardInteraction.settingsButtonProps}
+                          theme={controller.theme}
+                          size="medium"
+                          tone={controller.isOn ? 'default' : 'muted'}
+                          variant="soft"
+                        />
+                      </div>
                     }
                   />
                 </div>
               </div>
             ) : (
-              <div className="flex h-full flex-col">
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="relative flex items-end gap-4">
-                    <div className="mb-8">
-                      <HVACTempControls
-                        targetTemp={controller.targetTemp}
-                        onTempChange={controller.setTargetTemp}
-                        isOn={controller.isOn}
-                        size="large"
-                      />
+              <div className="relative flex h-full flex-col">
+                <HVACGauge
+                  id={id}
+                  mode={controller.visualMode}
+                  targetTemp={controller.targetTemp}
+                  currentTemp={controller.currentTemp}
+                  isOn={controller.isOn}
+                  onTargetTempChange={controller.setTargetTemp}
+                  variant="docked-card"
+                  className="pointer-events-auto absolute right-[-3.4rem] top-[38%] z-[2] -translate-y-1/2"
+                />
+
+                <div className="flex flex-1 flex-col">
+                  <div className="mt-4 inline-flex w-fit max-w-[58%] flex-col">
+                    <div
+                      className={`mb-1 text-4xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
+                      style={{ color: readableTokens.titleColor }}
+                    >
+                      {controller.currentTemp}°C
                     </div>
+                    <div
+                      className={`text-sm ${stateSurface.secondaryTextClassName}`}
+                      style={{ color: readableTokens.subtitleColor }}
+                    >
+                      {targetTemperatureLabel}
+                    </div>
+                  </div>
 
-                    <HVACGauge
-                      id={id}
-                      mode={controller.visualMode}
-                      targetTemp={controller.targetTemp}
-                      currentTemp={controller.currentTemp}
-                      isOn={controller.isOn}
-                    />
+                  <div className="mt-auto">
+                    <div className="mb-4 flex max-w-[72%] items-center gap-2">
+                      {temperaturePresets.map((preset) => {
+                        const isSelected = Math.abs(controller.targetTemp - preset) < 0.05;
 
-                    <div className="w-12 h-12 mb-8" />
+                        return (
+                          <button
+                            type="button"
+                            key={preset}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              controller.setTargetTemp(preset);
+                            }}
+                            className={cn(
+                              'relative z-[3] min-w-[4.5rem] rounded-2xl border px-3 py-2 text-sm font-semibold transition-all',
+                              isSelected
+                                ? 'border-white/20 bg-white/16'
+                                : 'border-white/10 bg-white/6 hover:bg-white/10'
+                            )}
+                            style={{
+                              color: isSelected
+                                ? readableTokens.titleColor
+                                : readableTokens.subtitleColor,
+                            }}
+                          >
+                            {preset}°
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -233,13 +304,13 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="large"
                     leftContent={
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`text-xs ${stateSurface.secondaryTextClassName}`}
-                          style={{ color: readableTokens.subtitleColor }}
-                        >
-                          {t('climate.mode')}
-                        </div>
+                      <div className="relative z-[3] flex items-center gap-2">
+                        <HVACTempControls
+                          targetTemp={controller.targetTemp}
+                          onTempChange={controller.setTargetTemp}
+                          isOn={controller.isOn}
+                          size="large"
+                        />
                         <HVACModeControls
                           mode={controller.visualMode}
                           isOn={controller.isOn}
@@ -249,13 +320,15 @@ export const HVACCard = memo(function HVACCard({
                       </div>
                     }
                     rightContent={
-                      <CardSettingsActionButton
-                        {...controller.cardInteraction.settingsButtonProps}
-                        theme={controller.theme}
-                        size="large"
-                        tone={controller.isOn ? 'default' : 'muted'}
-                        variant="soft"
-                      />
+                      <div className="relative z-[3]">
+                        <CardSettingsActionButton
+                          {...controller.cardInteraction.settingsButtonProps}
+                          theme={controller.theme}
+                          size="large"
+                          tone={controller.isOn ? 'default' : 'muted'}
+                          variant="soft"
+                        />
+                      </div>
                     }
                   />
                 </div>

@@ -8,7 +8,7 @@ import {
 
 function HVACCardStory(args: Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <HVACCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/HVAC',
   component: HVACCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'climate.main_floor',
     name: 'Main Floor HVAC',
@@ -36,22 +42,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Cooling: Story = {};
-
-export const Heating: Story = {
-  args: {
-    initialMode: 'heat',
-    initialAction: 'heating',
-    initialCurrentTemp: 19,
-    initialTemp: 22,
-  },
-};
-
-export const OffSmall: Story = {
-  args: {
-    initialState: false,
-    initialMode: 'off',
-    initialAction: undefined,
-    size: 'small',
-  },
-};
+export const Playground: Story = {};

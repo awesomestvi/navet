@@ -4,7 +4,11 @@ import {
   DialogFooter,
   DialogShell,
 } from '@/app/components/primitives/dialog-shell';
-import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  CustomCardTintPicker,
+  DialogHeader,
+  DialogSectionRow,
+} from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import {
@@ -87,10 +91,7 @@ export function WeatherSettingsDialog({
         />
       ) : null}
 
-      <div className="mb-4">
-        <div className={`mb-2 text-xs font-medium ${surface.textSecondary}`}>
-          {t('weather.settings.forecast')}
-        </div>
+      <DialogSectionRow label={t('weather.settings.forecast')} className="mb-4">
         <div className="grid grid-cols-2 gap-2">
           {(['hourly', 'weekly'] as const).map((option) => {
             const isSelected = forecastMode === option;
@@ -119,7 +120,7 @@ export function WeatherSettingsDialog({
             );
           })}
         </div>
-      </div>
+      </DialogSectionRow>
 
       <DialogFooter>
         <CustomDialogDoneButton

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { memo } from 'react';
 import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -9,6 +10,8 @@ interface CustomCardTintPickerProps {
   onChange: (color: string) => void;
   defaultColor?: string;
   className?: string;
+  pickerRingColor?: string;
+  resetButtonStyle?: CSSProperties;
 }
 
 export const CustomCardTintPicker = memo(function CustomCardTintPicker({
@@ -16,6 +19,8 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
   onChange,
   defaultColor = '#f97316',
   className = '',
+  pickerRingColor,
+  resetButtonStyle,
 }: CustomCardTintPickerProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -30,6 +35,7 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
           ariaLabel={t('widgets.customCard.colorPicker')}
           selected={Boolean(value)}
           size="small"
+          ringColor={pickerRingColor}
           onChange={onChange}
         />
         {value ? (
@@ -37,6 +43,7 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
             type="button"
             onClick={() => onChange('')}
             className={`ml-1 rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] transition-opacity hover:opacity-80 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+            style={resetButtonStyle}
           >
             {t('common.reset')}
           </button>

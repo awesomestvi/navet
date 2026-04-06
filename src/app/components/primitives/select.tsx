@@ -15,6 +15,7 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   containerClassName?: string;
   selectClassName?: string;
   indicatorClassName?: string;
+  accentColorOverride?: string;
   children: ReactNode;
 }
 
@@ -25,6 +26,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     containerClassName,
     selectClassName,
     indicatorClassName,
+    accentColorOverride,
     onBlur,
     onFocus,
     disabled,
@@ -36,6 +38,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
 ) {
   const { theme, accentColor } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
+  const resolvedAccentColor = accentColorOverride ?? accentColor;
 
   const baseBorderColor = invalid ? (theme === 'light' ? '#dc2626' : '#f87171') : undefined;
 
@@ -71,7 +74,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         style={{
           ...getControlFocusStyles({
             isFocused,
-            accentColor,
+            accentColor: resolvedAccentColor,
             invalidBorderColor: baseBorderColor,
             includeCaret: false,
           }),

@@ -11,6 +11,7 @@ import {
   CompactRoomSelector,
   CustomCardTintPicker,
   DialogHeader,
+  DialogSectionRow,
 } from '@/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
@@ -261,10 +262,7 @@ export function RSSFeedSettingsDialog({
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className={`mb-2 text-xs font-medium ${surface.textSecondary}`}>
-          {t('rss.settings.articleCount')}
-        </div>
+      <DialogSectionRow label={t('rss.settings.articleCount')}>
         <div className="flex gap-2">
           {[5, 10, 20, 30].map((count) => (
             <button
@@ -290,7 +288,7 @@ export function RSSFeedSettingsDialog({
             </button>
           ))}
         </div>
-      </div>
+      </DialogSectionRow>
 
       <DialogFooter>
         <CustomDialogDoneButton
@@ -327,8 +325,7 @@ function RSSProviderGroup({
   t: TranslateFn;
 }) {
   return (
-    <div className="space-y-2">
-      <div className={`text-xs font-medium ${surface.textSecondary}`}>{title}</div>
+    <DialogSectionRow label={title}>
       {providers.map((provider) => {
         const isSelected = selectedProviderIds.includes(provider.id);
         const secondaryLabel =
@@ -391,6 +388,6 @@ function RSSProviderGroup({
           </div>
         );
       })}
-    </div>
+    </DialogSectionRow>
   );
 }

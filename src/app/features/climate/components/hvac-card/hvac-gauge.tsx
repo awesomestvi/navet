@@ -21,7 +21,7 @@ interface HVACGaugeProps {
   maxTemp?: number;
   step?: number;
   onTargetTempChange?: (temp: number) => void;
-  variant?: 'card' | 'immersive';
+  variant?: 'card' | 'immersive' | 'docked-card' | 'docked-card-small';
   className?: string;
 }
 
@@ -33,13 +33,33 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function withAlpha(color: string, alphaHex: string) {
+  if (/^#[0-9a-f]{6}$/i.test(color)) {
+    return `${color}${alphaHex}`;
+  }
+
+  if (/^#[0-9a-f]{8}$/i.test(color)) {
+    return `${color.slice(0, 7)}${alphaHex}`;
+  }
+
+  return color;
+}
+
 function getTemperatureBandColors(progress: number) {
-  const bandHue = 205 - progress * 175;
+  // Avoid the lime band entirely: keep neutral temps in cyan/aqua and only
+  // shift into amber near the hot end.
+  const coolHue = 192;
+  const warmHue = 34;
+  const warmStart = 0.72;
+  const warmProgress = progress <= warmStart ? 0 : (progress - warmStart) / (1 - warmStart);
+  const bandHue = coolHue - (coolHue - warmHue) * warmProgress;
+  const primarySaturation = progress <= warmStart ? 82 : 82 - warmProgress * 8;
+  const secondaryHue = progress <= warmStart ? 186 : Math.max(bandHue - 10, 28);
 
   return {
-    primary: `hsl(${bandHue}, 92%, 60%)`,
-    secondary: `hsl(${Math.max(bandHue - 18, 8)}, 94%, 70%)`,
-    glow: `hsla(${bandHue}, 92%, 60%, 0.45)`,
+    primary: `hsl(${bandHue}, ${primarySaturation}%, 62%)`,
+    secondary: `hsl(${secondaryHue}, 78%, 72%)`,
+    glow: `hsla(${bandHue}, 84%, 62%, 0.34)`,
   };
 }
 
@@ -76,10 +96,10 @@ export const HVACGauge = memo(function HVACGauge({
   const gaugeLabel = t('climate.gaugeLabel', { mode, temp: targetTemp });
   const progress = clamp((targetTemp - minTemp) / Math.max(maxTemp - minTemp, step || 0.5), 0, 1);
 
-  if (variant === 'immersive') {
+  if (variant === 'immersive' || variant === 'docked-card' || variant === 'docked-card-small') {
     const stepSize = step || 0.5;
     const bandColors = getTemperatureBandColors(progress);
-    const targetTemperatureColor = isOn ? bandColors.primary : textTokens.titleColor;
+    const targetTemperatureColor = textTokens.titleColor;
 
     const updateTemperature = (nextValue: number) => {
       if (!onTargetTempChange) {
@@ -95,20 +115,58 @@ export const HVACGauge = memo(function HVACGauge({
       updateTemperature(targetTemp + direction * stepSize);
     };
 
+    if (variant === 'docked-card' || variant === 'docked-card-small') {
+      const isCompact = variant === 'docked-card-small';
+      const primaryBandColor = textTokens.titleColor;
+      const secondaryBandColor = textTokens.subtitleColor;
+      const glowBandColor = withAlpha(primaryBandColor, theme === 'light' ? '44' : '66');
+
+      return (
+        <div
+          className={cn(
+            'relative overflow-visible',
+            isCompact ? 'h-[7.25rem] w-[2.5rem]' : 'h-[14.75rem] w-[4.75rem]',
+            className
+          )}
+        >
+          <RotaryKnob
+            id={id}
+            value={targetTemp}
+            min={minTemp}
+            max={maxTemp}
+            step={stepSize}
+            isOn={isOn}
+            glowClassName={bgGlowColor}
+            bandStrokeWidth={isCompact ? 30 : 28}
+            tickOffsetRem={isCompact ? 7.9 : undefined}
+            bandPrimaryColor={primaryBandColor}
+            bandSecondaryColor={secondaryBandColor}
+            bandGlowColor={glowBandColor}
+            onValueChange={updateTemperature}
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2',
+              isCompact
+                ? 'right-[-5.6rem] h-[11.5rem] w-[11.5rem]'
+                : 'right-[-11rem] h-[23rem] w-[23rem]'
+            )}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={cn('relative h-[22rem] w-full overflow-visible', className)}>
         <div className="relative z-[2] flex h-full max-w-[54%] flex-col justify-center px-6 pb-2">
-          <div
-            className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-          >
-            {t('climate.target')}
-          </div>
+          <div className={`text-sm font-medium ${surface.textPrimary}`}>{t('climate.target')}</div>
 
           <div
             className="mt-2 text-[5.5rem] font-semibold leading-none tracking-[-0.06em]"
             style={{
               color: targetTemperatureColor,
-              textShadow: isOn && theme !== 'light' ? `0 0 22px ${bandColors.glow}` : 'none',
+              textShadow:
+                isOn && theme !== 'light'
+                  ? `0 0 22px ${withAlpha(targetTemperatureColor, '55')}`
+                  : 'none',
             }}
           >
             {formatDisplayTemperature(targetTemp)}°
@@ -153,6 +211,7 @@ export const HVACGauge = memo(function HVACGauge({
           step={stepSize}
           isOn={isOn}
           glowClassName={bgGlowColor}
+          tickOffsetRem={11.1}
           bandPrimaryColor={bandColors.primary}
           bandSecondaryColor={bandColors.secondary}
           bandGlowColor={bandColors.glow}

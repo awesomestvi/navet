@@ -6,7 +6,7 @@ export const getHVACBackgroundColor = (mode: HVACMode | string, isOn: boolean): 
     case 'cool':
       return 'from-blue-900/40 to-blue-950/40';
     case 'heat':
-      return 'from-red-900/40 to-red-950/40';
+      return 'from-orange-900/40 to-orange-950/40';
     case 'fan':
       return 'from-green-900/40 to-green-950/40';
     default:
@@ -20,7 +20,7 @@ export const getHVACBorderColor = (mode: HVACMode | string, isOn: boolean): stri
     case 'cool':
       return 'border-blue-700/20';
     case 'heat':
-      return 'border-red-700/20';
+      return 'border-orange-700/20';
     case 'fan':
       return 'border-green-700/20';
     default:
@@ -34,7 +34,7 @@ export const getHVACIconColor = (mode: HVACMode | string, isOn: boolean): string
     case 'cool':
       return 'text-blue-400';
     case 'heat':
-      return 'text-red-400';
+      return 'text-orange-400';
     case 'fan':
       return 'text-green-400';
     default:
@@ -48,7 +48,7 @@ export const getHVACIconBgColor = (mode: HVACMode | string, isOn: boolean): stri
     case 'cool':
       return 'bg-blue-500/20';
     case 'heat':
-      return 'bg-red-500/20';
+      return 'bg-orange-500/20';
     case 'fan':
       return 'bg-green-500/20';
     default:
@@ -67,7 +67,7 @@ export const getHVACModeButtonColor = (
       case 'cool':
         return '!border-0 shadow-none bg-gradient-to-br from-blue-400 to-blue-600 text-white';
       case 'heat':
-        return '!border-0 shadow-none bg-gradient-to-br from-red-400 to-red-600 text-white';
+        return '!border-0 shadow-none bg-gradient-to-br from-orange-400 to-orange-600 text-white';
       case 'fan':
         return '!border-0 shadow-none bg-gradient-to-br from-green-400 to-green-600 text-white';
       default:
@@ -86,7 +86,7 @@ export const getHVACGaugeColor = (
     case 'cool':
       return { primary: '#3b82f6', secondary: '#60a5fa' };
     case 'heat':
-      return { primary: '#ef4444', secondary: '#f87171' };
+      return { primary: '#f97316', secondary: '#fb923c' };
     case 'fan':
       return { primary: '#22c55e', secondary: '#4ade80' };
     default:
@@ -99,7 +99,7 @@ export const getHVACGlowColor = (mode: HVACMode | string): string => {
     case 'cool':
       return '#60a5fa';
     case 'heat':
-      return '#f87171';
+      return '#fb923c';
     case 'fan':
       return '#4ade80';
     default:
@@ -112,7 +112,7 @@ export const getHVACTextShadow = (mode: HVACMode | string): string => {
     case 'cool':
       return 'rgba(96, 165, 250, 0.5)';
     case 'heat':
-      return 'rgba(248, 113, 113, 0.5)';
+      return 'rgba(251, 146, 60, 0.5)';
     case 'fan':
       return 'rgba(74, 222, 128, 0.5)';
     default:
@@ -125,7 +125,7 @@ export const getHVACBackgroundGlowColor = (mode: HVACMode | string): string => {
     case 'cool':
       return 'bg-blue-400';
     case 'heat':
-      return 'bg-red-400';
+      return 'bg-orange-400';
     case 'fan':
       return 'bg-green-400';
     default:

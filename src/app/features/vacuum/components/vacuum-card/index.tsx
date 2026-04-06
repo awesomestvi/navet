@@ -40,6 +40,10 @@ export const VacuumCard = memo(function VacuumCard({
   onSizeChange: _onSizeChange,
   isEditMode: _isEditMode,
 }: VacuumCardProps) {
+  const readStringList = (value: unknown) =>
+    Array.isArray(value)
+      ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
+      : undefined;
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const liveState = liveEntity?.state;
   const liveStatus: typeof status =
@@ -61,6 +65,25 @@ export const VacuumCard = memo(function VacuumCard({
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const liveBattery =
     typeof liveAttrs?.battery_level === 'number' ? liveAttrs.battery_level : battery;
+  const liveFanSpeed = typeof liveAttrs?.fan_speed === 'string' ? liveAttrs.fan_speed : undefined;
+  const liveFanSpeeds =
+    readStringList(liveAttrs?.fan_speed_list) ??
+    readStringList(liveAttrs?.fan_speeds) ??
+    readStringList(liveAttrs?.preset_modes);
+  const liveCleaningMode =
+    typeof liveAttrs?.cleaning_mode === 'string'
+      ? liveAttrs.cleaning_mode
+      : typeof liveAttrs?.clean_mode === 'string'
+        ? liveAttrs.clean_mode
+        : undefined;
+  const availableRooms =
+    readStringList(liveAttrs?.rooms) ??
+    readStringList(liveAttrs?.room_names) ??
+    readStringList(liveAttrs?.segments);
+  const availableZones =
+    readStringList(liveAttrs?.zones) ??
+    readStringList(liveAttrs?.zone_names) ??
+    readStringList(liveAttrs?.available_zones);
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const { t } = useI18n();
@@ -177,11 +200,34 @@ export const VacuumCard = memo(function VacuumCard({
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           onStartCleaning={handleStartCleaning}
+          onPauseCleaning={handlePause}
           onReturnHome={handleReturnHome}
           name={name}
           room={room}
           theme={theme}
           accentColorValue={cardColors.accent}
+          currentStatus={currentStatus}
+          battery={liveBattery}
+          cleanedArea={cleanedArea}
+          cleaningTime={cleaningTime}
+          cleaningMode={
+            liveCleaningMode === 'spot' ||
+            liveCleaningMode === 'edge' ||
+            liveCleaningMode === 'room' ||
+            liveCleaningMode === 'auto'
+              ? liveCleaningMode
+              : 'auto'
+          }
+          fanSpeed={liveFanSpeed}
+          fanSpeeds={liveFanSpeeds}
+          availableRooms={availableRooms}
+          availableZones={availableZones}
+          surfaceGradientClassName={cardColors.gradient}
+          surfaceBorderClassName={theme !== 'dark' ? cardColors.border : undefined}
+          surfaceBackdropClassName={cardShell.backdropClassName}
+          surfaceStateClassName={stateSurface.containerClassName}
+          surfaceGlowClassName={isActive ? cardColors.glow : undefined}
+          surfaceOverlayClassName={stateSurface.overlayClassName ?? undefined}
         />
       ) : null}
     </div>

@@ -8,7 +8,7 @@ import {
 
 function MediaCardStory(args: Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <MediaCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Media',
   component: MediaCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium', 'medium-vertical', 'large'],
+    },
+  },
   args: {
     id: 'media_player.living_room_tv',
     name: 'Living Room TV',
@@ -42,17 +48,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playing: Story = {};
-
-export const Paused: Story = {
-  args: {
-    state: 'paused',
-  },
-};
-
-export const OffSmall: Story = {
-  args: {
-    state: 'off',
-    size: 'small',
-  },
-};
+export const Playground: Story = {};

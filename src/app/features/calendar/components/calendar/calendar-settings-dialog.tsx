@@ -5,7 +5,11 @@ import {
   DialogFooter,
   DialogShell,
 } from '@/app/components/primitives/dialog-shell';
-import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  CustomCardTintPicker,
+  DialogHeader,
+  DialogSectionRow,
+} from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
@@ -90,7 +94,13 @@ export function CalendarSettingsDialog({
         isOn={isOn}
         supportingContent={
           entityId ? (
-            <EntityRoomSelector entityId={entityId} label={t('calendar.settings.room')} compact />
+            <EntityRoomSelector
+              entityId={entityId}
+              label={t('calendar.settings.room')}
+              compact
+              accentColorOverride={activeAccentColor}
+              compactContentStyle={sectionStyle}
+            />
           ) : null
         }
       />
@@ -101,13 +111,12 @@ export function CalendarSettingsDialog({
           onChange={onTintColorChange}
           defaultColor="#6366f1"
           className={surface.textMuted}
+          pickerRingColor={activeAccentColor}
+          resetButtonStyle={sectionStyle}
         />
       ) : null}
 
-      <div className="mb-4">
-        <div className={`mb-2 text-xs font-medium ${surface.textSecondary}`}>
-          {t('calendar.settings.view')}
-        </div>
+      <DialogSectionRow label={t('calendar.settings.view')} className="mb-4">
         <div className="grid grid-cols-2 gap-2">
           {(['week', 'month'] as const).map((option) => {
             const isSelected = viewMode === option;
@@ -139,69 +148,71 @@ export function CalendarSettingsDialog({
             );
           })}
         </div>
-      </div>
+      </DialogSectionRow>
 
-      <div className="space-y-2">
-        {calendars.map((calendar) => {
-          const isSelected = selectedCalendarIds.includes(calendar.id);
+      <DialogSectionRow label={t('calendar.settings.calendars')}>
+        <div className="space-y-2">
+          {calendars.map((calendar) => {
+            const isSelected = selectedCalendarIds.includes(calendar.id);
 
-          return (
-            <button
-              type="button"
-              key={calendar.id}
-              onClick={() => {
-                onSelectedCalendarIdsChange(
-                  isSelected
-                    ? selectedCalendarIds.filter((id) => id !== calendar.id)
-                    : [...selectedCalendarIds, calendar.id]
-                );
-              }}
-              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
-              style={
-                isSelected
-                  ? {
-                      backgroundColor:
-                        theme === 'light' ? `${activeAccentColor}0d` : `${activeAccentColor}16`,
-                      borderColor: `${activeAccentColor}4d`,
-                    }
-                  : sectionStyle
-              }
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div className={`h-10 w-1.5 flex-shrink-0 rounded-full ${calendar.color}`} />
-                <div className="min-w-0">
-                  <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>
-                    {calendar.name}
-                  </div>
-                  <div className={`mt-0.5 truncate text-xs ${surface.textSecondary}`}>
-                    {calendar.room}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`ml-4 flex h-5 w-5 items-center justify-center rounded border transition-colors ${surface.textPrimary}`}
+            return (
+              <button
+                type="button"
+                key={calendar.id}
+                onClick={() => {
+                  onSelectedCalendarIdsChange(
+                    isSelected
+                      ? selectedCalendarIds.filter((id) => id !== calendar.id)
+                      : [...selectedCalendarIds, calendar.id]
+                  );
+                }}
+                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
                 style={
                   isSelected
                     ? {
-                        backgroundColor: activeAccentColor,
-                        borderColor: activeAccentColor,
+                        backgroundColor:
+                          theme === 'light' ? `${activeAccentColor}0d` : `${activeAccentColor}16`,
+                        borderColor: `${activeAccentColor}4d`,
                       }
-                    : {
-                        borderColor:
-                          theme === 'light'
-                            ? 'rgba(15, 23, 42, 0.16)'
-                            : 'rgba(255, 255, 255, 0.18)',
-                        backgroundColor: 'transparent',
-                      }
+                    : sectionStyle
                 }
               >
-                {isSelected && <Check className="h-3.5 w-3.5" />}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className={`h-10 w-1.5 flex-shrink-0 rounded-full ${calendar.color}`} />
+                  <div className="min-w-0">
+                    <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>
+                      {calendar.name}
+                    </div>
+                    <div className={`mt-0.5 truncate text-xs ${surface.textSecondary}`}>
+                      {calendar.room}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`ml-4 flex h-5 w-5 items-center justify-center rounded border transition-colors ${surface.textPrimary}`}
+                  style={
+                    isSelected
+                      ? {
+                          backgroundColor: activeAccentColor,
+                          borderColor: activeAccentColor,
+                        }
+                      : {
+                          borderColor:
+                            theme === 'light'
+                              ? 'rgba(15, 23, 42, 0.16)'
+                              : 'rgba(255, 255, 255, 0.18)',
+                          backgroundColor: 'transparent',
+                        }
+                  }
+                >
+                  {isSelected && <Check className="h-3.5 w-3.5" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </DialogSectionRow>
 
       <DialogFooter>
         <CustomDialogDoneButton

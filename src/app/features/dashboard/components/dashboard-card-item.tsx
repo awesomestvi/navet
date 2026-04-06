@@ -169,9 +169,7 @@ function getAllowedSizes(
     case 'grouped-sensors':
       return ['small', 'medium'];
     case 'calendars':
-      return extraLargeAllowed
-        ? ['small', 'medium', 'large', 'extra-large']
-        : ['small', 'medium', 'large'];
+      return ['small', 'medium', 'large'];
     case 'weather':
       return extraLargeAllowed
         ? ['small', 'medium', 'large', 'extra-large']

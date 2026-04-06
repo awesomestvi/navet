@@ -233,6 +233,31 @@ Navet now uses a single HVAC-based card path for Home Assistant climate entities
 - Climate entities are registered through the dashboard card registry and rendered via the HVAC feature module
 - Shared HVAC card structure is reused across dashboard sizes instead of maintaining a second climate-specific card implementation
 - HVAC headers now also participate in the shared eyebrow-first header layout used across many compact and mid-sized cards
+- HVAC settings now use the richer immersive temperature surface, shared section rows, and mode-aware readable text tokens so the compact card and settings dialog stay visually aligned
+
+---
+
+## Entity Settings Dialog Surfaces
+
+Recent settings work pushes more entity dialogs onto the same shared surface language instead of leaving each feature on one-off form layouts.
+
+#### Current Behavior
+- **Shared section framing** - camera, weather, HVAC, vacuum, calendar, and photo-frame dialogs now group related controls with the shared `DialogSectionRow` pattern
+- **Theme-aware immersive controls** - HVAC and vacuum dialogs use stronger accent surfaces, richer status summaries, and larger control affordances while still staying inside the shared dialog shell
+- **Focused preview treatment** - preview-oriented settings surfaces reuse the same shared panel, tint, and shell primitives instead of custom wrappers per feature
+- **Safer dialog focus behavior** - `DialogShell` can opt out of Radix open auto-focus when the immersive surface should preserve the current visual focus state
+
+#### Why
+- keeps user-facing settings consistent across device types
+- reduces one-off dialog styling and repeated section-label markup
+- makes richer controls easier to extend without reworking every feature independently
+
+#### Shared Primitives Involved
+- `DialogShell`
+- `DialogSectionRow`
+- `Panel`
+- `Select`
+- `RotaryKnob`
 
 ---
 

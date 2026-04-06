@@ -1,7 +1,11 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { memo, useCallback } from 'react';
 import { DialogShell } from '@/app/components/primitives/dialog-shell';
-import { CustomScrollbar, DialogHeader } from '@/app/components/shared/device-editor';
+import {
+  CustomScrollbar,
+  DialogHeader,
+  DialogSectionRow,
+} from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -194,57 +198,61 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
             <div className="space-y-6">
               {/* Switches */}
               {switches.length > 0 && (
-                <div className="space-y-2">
-                  {switches.map(({ id, entity }) => (
-                    <SwitchRow
-                      key={id}
-                      entityId={id}
-                      label={getDisplayName(id, entity)}
-                      isOn={entity.state === 'on'}
-                    />
-                  ))}
-                </div>
+                <DialogSectionRow label={t('camera.settings.switches')}>
+                  <div className="space-y-2">
+                    {switches.map(({ id, entity }) => (
+                      <SwitchRow
+                        key={id}
+                        entityId={id}
+                        label={getDisplayName(id, entity)}
+                        isOn={entity.state === 'on'}
+                      />
+                    ))}
+                  </div>
+                </DialogSectionRow>
               )}
 
-              {/* Selects */}
               {selects.length > 0 && (
-                <div className="space-y-4">
-                  {selects.map(({ id, entity }) => {
-                    const attrs = entity.attributes as Record<string, unknown>;
-                    const options = Array.isArray(attrs?.options)
-                      ? (attrs.options as string[])
-                      : [];
-                    return (
-                      <SelectRow
-                        key={id}
-                        entityId={id}
-                        label={getDisplayName(id, entity)}
-                        current={entity.state}
-                        options={options}
-                      />
-                    );
-                  })}
-                </div>
+                <DialogSectionRow label={t('camera.settings.modes')}>
+                  <div className="space-y-4">
+                    {selects.map(({ id, entity }) => {
+                      const attrs = entity.attributes as Record<string, unknown>;
+                      const options = Array.isArray(attrs?.options)
+                        ? (attrs.options as string[])
+                        : [];
+                      return (
+                        <SelectRow
+                          key={id}
+                          entityId={id}
+                          label={getDisplayName(id, entity)}
+                          current={entity.state}
+                          options={options}
+                        />
+                      );
+                    })}
+                  </div>
+                </DialogSectionRow>
               )}
 
-              {/* Numbers */}
               {numbers.length > 0 && (
-                <div className="space-y-4">
-                  {numbers.map(({ id, entity }) => {
-                    const attrs = entity.attributes as Record<string, unknown>;
-                    return (
-                      <NumberRow
-                        key={id}
-                        entityId={id}
-                        label={getDisplayName(id, entity)}
-                        value={Number(entity.state)}
-                        min={Number(attrs?.min ?? 0)}
-                        max={Number(attrs?.max ?? 100)}
-                        step={Number(attrs?.step ?? 1)}
-                      />
-                    );
-                  })}
-                </div>
+                <DialogSectionRow label={t('camera.settings.adjustments')}>
+                  <div className="space-y-4">
+                    {numbers.map(({ id, entity }) => {
+                      const attrs = entity.attributes as Record<string, unknown>;
+                      return (
+                        <NumberRow
+                          key={id}
+                          entityId={id}
+                          label={getDisplayName(id, entity)}
+                          value={Number(entity.state)}
+                          min={Number(attrs?.min ?? 0)}
+                          max={Number(attrs?.max ?? 100)}
+                          step={Number(attrs?.step ?? 1)}
+                        />
+                      );
+                    })}
+                  </div>
+                </DialogSectionRow>
               )}
             </div>
           ) : (

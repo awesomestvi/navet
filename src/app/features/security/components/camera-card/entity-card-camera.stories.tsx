@@ -8,7 +8,7 @@ import {
 
 function CameraCardStory(args: Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <CameraCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Camera',
   component: CameraCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['medium', 'large', 'extra-large'],
+    },
+  },
   args: {
     id: 'camera.front_door',
     name: 'Front Door Cam',
@@ -33,16 +39,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Medium: Story = {};
-
-export const Small: Story = {
-  args: {
-    size: 'small',
-  },
-};
-
-export const Large: Story = {
-  args: {
-    size: 'large',
-  },
-};
+export const Playground: Story = {};

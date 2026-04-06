@@ -8,7 +8,7 @@ import {
 
 function PowerCardStory(args: Omit<ComponentProps<typeof PowerCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <PowerCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Power',
   component: PowerCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     percentage: 68,
     usage: '2.1 kW',
@@ -31,19 +37,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Medium: Story = {};
-
-export const Small: Story = {
-  args: {
-    size: 'small',
-  },
-};
-
-export const LargeHighUsage: Story = {
-  args: {
-    size: 'large',
-    percentage: 87,
-    usage: '4.9 kW',
-    cost: '5.92',
-  },
-};
+export const Playground: Story = {};

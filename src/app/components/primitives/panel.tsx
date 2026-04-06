@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { navetRadiusTokens, navetSpacingTokens } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
@@ -9,6 +9,7 @@ export interface PanelProps {
   muted?: boolean;
   padded?: boolean;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -19,6 +20,7 @@ export function Panel({
   muted = false,
   padded = true,
   className,
+  style,
   children,
 }: PanelProps) {
   const { theme } = useTheme();
@@ -26,6 +28,7 @@ export function Panel({
 
   return (
     <Component
+      style={style}
       className={cn(
         'border backdrop-blur-xl',
         navetRadiusTokens.panel,

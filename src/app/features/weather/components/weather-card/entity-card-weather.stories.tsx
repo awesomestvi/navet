@@ -8,7 +8,7 @@ import {
 
 function WeatherCardStory(args: Omit<ComponentProps<typeof WeatherCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <WeatherCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -25,6 +25,12 @@ const meta = {
   title: 'Cards/Entity/Weather',
   component: WeatherCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium', 'large', 'extra-large'],
+    },
+  },
   args: {
     id: 'weather.home',
     location: 'Stockholm, Sweden',
@@ -51,16 +57,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Weekly: Story = {};
-
-export const Hourly: Story = {
-  args: {
-    forecastMode: 'hourly',
-  },
-};
-
-export const Large: Story = {
-  args: {
-    size: 'large',
-  },
-};
+export const Playground: Story = {};

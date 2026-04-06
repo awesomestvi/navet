@@ -5,7 +5,7 @@ import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-
 
 function LockCardStory(args: ComponentProps<typeof LockCard>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'small'}>
       <LockCard {...args} />
     </EntityCardStoryFrame>
   );
@@ -15,11 +15,17 @@ const meta = {
   title: 'Cards/Entity/Lock',
   component: LockCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['tiny', 'extra-small', 'small'],
+    },
+  },
   args: {
     id: 'lock.front_door',
     name: 'Front Door',
     initialState: true,
-    size: 'medium',
+    size: 'small',
     isEditMode: false,
   },
 } satisfies Meta<typeof LockCardStory>;
@@ -28,17 +34,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Locked: Story = {};
-
-export const Unlocked: Story = {
-  args: {
-    initialState: false,
-  },
-};
-
-export const TinyLocked: Story = {
-  args: {
-    size: 'tiny',
-    initialState: true,
-  },
-};
+export const Playground: Story = {};

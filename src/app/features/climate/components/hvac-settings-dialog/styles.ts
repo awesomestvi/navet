@@ -6,7 +6,6 @@ export function getHVACSettingsDialogStyles(mode: string, isOn: boolean) {
 
   return {
     contentClassName: `bg-gradient-to-br from-${modeSurface.from}/95 to-${modeSurface.to}/95 border-${modeSurface.border}`,
-    sectionLabelClassName: 'text-gray-300',
     currentValueClassName: 'text-gray-300',
     modeButtonClassName: (buttonMode: string) => {
       const shadowClass = getModeButtonShadow(buttonMode, mode, isOn);
@@ -29,7 +28,7 @@ function getActivePresetClassName(mode: string, isOn: boolean) {
     case 'cool':
       return 'border-blue-400/40 bg-blue-500/18 text-white';
     case 'heat':
-      return 'border-red-400/40 bg-red-500/18 text-white';
+      return 'border-orange-400/40 bg-orange-500/18 text-white';
     case 'fan':
       return 'border-green-400/40 bg-green-500/18 text-white';
     default:
@@ -46,7 +45,7 @@ function getModeSurface(mode: string, isOn: boolean) {
     case 'cool':
       return { from: 'blue-900', to: 'blue-950', border: 'blue-500/20' };
     case 'heat':
-      return { from: 'red-900', to: 'red-950', border: 'red-500/20' };
+      return { from: 'orange-900', to: 'orange-950', border: 'orange-500/20' };
     case 'fan':
       return { from: 'green-900', to: 'green-950', border: 'green-500/20' };
     default:
@@ -63,7 +62,7 @@ function getModeButtonShadow(buttonMode: string, currentMode: string, isOn: bool
     case 'cool':
       return 'shadow-lg shadow-blue-500/30';
     case 'heat':
-      return 'shadow-lg shadow-red-500/30';
+      return 'shadow-lg shadow-orange-500/30';
     case 'fan':
       return 'shadow-lg shadow-green-500/30';
     default:

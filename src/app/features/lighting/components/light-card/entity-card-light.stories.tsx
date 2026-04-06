@@ -8,7 +8,7 @@ import {
 
 function LightCardStory(args: Omit<ComponentProps<typeof LightCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <LightCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -18,6 +18,12 @@ const meta = {
   title: 'Cards/Entity/Light',
   component: LightCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['extra-small', 'small', 'medium', 'large'],
+    },
+  },
   args: {
     id: 'light.living_room',
     name: 'Living Room',
@@ -34,21 +40,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const MediumOn: Story = {};
-
-export const SmallOff: Story = {
-  args: {
-    size: 'small',
-    initialState: false,
-    initialBrightness: 0,
-  },
-};
-
-export const LargeWarm: Story = {
-  args: {
-    size: 'large',
-    initialState: true,
-    initialBrightness: 90,
-    initialTemp: 2700,
-  },
-};
+export const Playground: Story = {};

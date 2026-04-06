@@ -10,7 +10,7 @@ function GroupedSensorCardStory(
   args: Omit<ComponentProps<typeof GroupedSensorCard>, 'onSizeChange'>
 ) {
   return (
-    <EntityCardStoryFrame>
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <GroupedSensorCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -27,6 +27,12 @@ const meta = {
   title: 'Cards/Entity/Grouped Sensor',
   component: GroupedSensorCardStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium'],
+    },
+  },
   args: {
     id: 'grouped_sensors.living_room',
     name: 'Living Room Air',
@@ -42,18 +48,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const MediumTeal: Story = {};
-
-export const SmallBlue: Story = {
-  args: {
-    size: 'small',
-    accentColor: 'blue',
-  },
-};
-
-export const LargePurple: Story = {
-  args: {
-    size: 'large',
-    accentColor: 'purple',
-  },
-};
+export const Playground: Story = {};
