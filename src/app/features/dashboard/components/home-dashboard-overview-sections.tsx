@@ -1,11 +1,11 @@
 import { Wand2 } from 'lucide-react';
 import { type CSSProperties, useMemo } from 'react';
+import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { HomeEditorSection } from '../hooks/use-home-dashboard-editor';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { getRenderedRowLayouts, getSectionMinBaseWidth } from '../utils/layout-engine';
-import { DashboardEmptyState } from './dashboard-empty-state';
 import {
   buildPortraitStackRows,
   buildSectionStacks,

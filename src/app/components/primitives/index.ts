@@ -19,13 +19,16 @@ export { IconButton, type IconButtonProps } from './icon-button';
 export { Input, type InputProps } from './input';
 export { InteractivePill } from './interactive-pill';
 export { LoadingSpinner, type LoadingSpinnerProps } from './loading-spinner';
+export { MessageBar, type MessageBarProps } from './message-bar';
 export { Panel, type PanelProps } from './panel';
 export { Radio, type RadioProps } from './radio';
+export { RotaryKnob, type RotaryKnobProps } from './rotary-knob';
 export { RoundControlButton } from './round-control-button';
 export { Select, type SelectProps } from './select';
 export { Switch, type SwitchProps } from './switch';
+export { TabList, TabPanel, Tabs, type TabsProps, TabTrigger } from './tabs';
 export { Tag, type TagProps } from './tag';
 export { Text, type TextProps } from './text';
 export { Textarea, type TextareaProps } from './textarea';
-export { ThemeDropdownContent, type ThemeDropdownContentProps } from './theme-dropdown-content';
+
 export { Tooltip, type TooltipProps } from './tooltip';

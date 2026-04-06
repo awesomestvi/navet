@@ -12,19 +12,25 @@ import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'subtle';
+  size?: 'small' | 'medium';
   loading?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
+  iconOnly?: boolean;
+  label?: string;
 }
 
 // Status: in-progress. Canonical action button for form and dialog actions.
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
     variant = 'primary',
+    size = 'medium',
     loading = false,
     leading,
     trailing,
+    iconOnly = false,
+    label,
     className,
     children,
     disabled,
@@ -35,11 +41,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 ) {
   const { theme, accentColor } = useTheme();
   const isDisabled = disabled || loading;
+  const iconContent = leading ?? children;
 
   const variantClassName =
     variant === 'primary'
       ? 'border-transparent text-white'
-      : variant === 'secondary'
+      : variant === 'secondary' || variant === 'subtle'
         ? theme === 'light'
           ? 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
           : theme === 'black'
@@ -61,12 +68,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={props.type ?? 'button'}
       disabled={isDisabled}
+      aria-label={iconOnly ? label : props['aria-label']}
+      title={iconOnly ? label : props.title}
       className={cn(
         'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:opacity-50',
-        navetSizeTokens.controlHeight.md,
-        navetSizeTokens.buttonInset,
-        navetSpacingTokens.inline.sm,
-        navetRadiusTokens.action,
+        iconOnly
+          ? size === 'small'
+            ? navetSizeTokens.iconButton.sm
+            : navetSizeTokens.iconButton.md
+          : size === 'small'
+            ? navetSizeTokens.controlHeight.sm
+            : navetSizeTokens.controlHeight.md,
+        iconOnly ? '' : size === 'small' ? 'px-3.5 py-2' : navetSizeTokens.buttonInset,
+        iconOnly ? '' : navetSpacingTokens.inline.sm,
+        iconOnly ? navetRadiusTokens.pill : navetRadiusTokens.action,
         navetTypographyTokens.control,
         variantClassName,
         getThemeFocusRingClassName(theme),
@@ -74,16 +89,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       style={{
         ...(variant === 'primary' ? { backgroundColor: accentColor } : {}),
+        ...(iconOnly && loading ? { borderColor: accentColor } : {}),
         ...style,
       }}
     >
       {loading ? (
         <Loader2 className={`${navetIconSizeTokens.sm} animate-spin`} aria-hidden="true" />
+      ) : iconOnly ? (
+        iconContent
       ) : (
         leading
       )}
-      <span>{children}</span>
-      {!loading ? trailing : null}
+      {iconOnly ? null : <span>{children}</span>}
+      {!loading && !iconOnly ? trailing : null}
     </button>
   );
 });

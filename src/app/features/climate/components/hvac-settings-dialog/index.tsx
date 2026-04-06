@@ -1,12 +1,20 @@
 import { Flame, Power, Snowflake, Wind } from 'lucide-react';
 import { memo } from 'react';
-import { DialogShell } from '@/app/components/primitives/dialog-shell';
+import { DialogFooter, DialogShell, SettingsDialogDoneButton } from '@/app/components/primitives';
 import { CustomScrollbar, DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@/app/components/ui/utils';
 import { useI18n, useTheme } from '@/app/hooks';
+import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { getHVACSettingsDialogStyles } from './styles';
 import type { HVACSettingsDialogProps } from './types';
+
+const MODE_OPTIONS = [
+  { value: 'cool', icon: Snowflake },
+  { value: 'heat', icon: Flame },
+  { value: 'fan', icon: Wind },
+] as const;
 
 export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   entityId,
@@ -18,141 +26,141 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   mode,
   targetTemp,
   currentTemp,
+  minTemp = 16,
+  maxTemp = 30,
+  step = 0.5,
+  temperaturePresets = [{ value: 18 }, { value: 21 }, { value: 24 }],
   onModeChange,
+  onTargetTempChange,
   onTogglePower,
 }: HVACSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const styles = getHVACSettingsDialogStyles(mode, isOn);
+  const helperText =
+    targetTemp < currentTemp
+      ? t('climate.coolingDownTo', { temp: targetTemp })
+      : t('climate.heatingTo', { temp: targetTemp });
+  const contentInsetClassName = 'px-6';
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
+      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
     >
       <CustomScrollbar isOn={isOn}>
-        <div className="p-8">
-          <DialogHeader
-            title={t('climate.settings.title')}
-            description={`${name} - ${room}`}
-            isOn={isOn}
-            supportingContent={
-              <EntityRoomSelector entityId={entityId} label={t('climate.settings.room')} compact />
-            }
-          />
+        <div className="pt-6 pb-6">
+          <div className={contentInsetClassName}>
+            <DialogHeader
+              title={t('climate.settings.title')}
+              description={`${name} - ${room}`}
+              isOn={isOn}
+              supportingContent={
+                <EntityRoomSelector
+                  entityId={entityId}
+                  label={t('climate.settings.room')}
+                  compact
+                />
+              }
+            />
+          </div>
 
-          <div className="space-y-8">
-            {/* Temperature Display */}
-            <div>
-              <div className={`mb-3 text-xs ${styles.sectionLabelClassName}`}>
-                {t('climate.temperature')}
+          <section className="mt-6">
+            <div className={contentInsetClassName}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p
+                    className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${styles.sectionLabelClassName}`}
+                  >
+                    {t('climate.temperature')}
+                  </p>
+                  <p className={`mt-1 text-sm ${styles.currentValueClassName}`}>{helperText}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onTogglePower}
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+                    isOn
+                      ? 'border-white/18 bg-white/10 text-white'
+                      : 'border-white/10 bg-white/5 text-white/70'
+                  )}
+                >
+                  <Power className="h-3.5 w-3.5" />
+                  <span>{isOn ? t('common.on') : t('common.off')}</span>
+                </button>
               </div>
-              <div className={styles.infoPanelClassName}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className={`text-xs ${styles.sectionLabelClassName}`}>
-                      {t('climate.target')}
-                    </div>
+            </div>
+
+            <div className="mt-4">
+              <HVACGauge
+                id={entityId}
+                mode={mode}
+                targetTemp={targetTemp}
+                currentTemp={currentTemp}
+                isOn={isOn}
+                minTemp={minTemp}
+                maxTemp={maxTemp}
+                step={step}
+                onTargetTempChange={onTargetTempChange}
+                variant="immersive"
+              />
+            </div>
+            <div className={`mt-5 space-y-3 ${contentInsetClassName}`}>
+              <div className="grid grid-cols-3 gap-2">
+                {MODE_OPTIONS.map(({ value, icon: Icon }) => (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => onModeChange(value)}
+                    disabled={!isOn}
+                    className={`flex flex-col items-center gap-2 rounded-2xl p-3 transition-all disabled:opacity-50 ${styles.modeButtonClassName(value)}`}
+                  >
                     <div
-                      className={`mt-1 text-4xl font-bold leading-none ${styles.targetValueClassName}`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full ${styles.modeIconWrapClassName(value)}`}
                     >
-                      {targetTemp}°C
+                      <Icon className="h-5 w-5" />
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-xs ${styles.sectionLabelClassName}`}>
-                      {t('climate.current')}
-                    </div>
-                    <div
-                      className={`mt-1 text-2xl font-bold leading-none ${styles.currentValueClassName}`}
+                    <span className="text-sm font-medium">{t(`climate.mode.${value}`)}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {temperaturePresets.map((preset) => {
+                  const isSelected = Math.abs(targetTemp - preset.value) < 0.05;
+
+                  return (
+                    <button
+                      type="button"
+                      key={`${preset.label ?? preset.value}`}
+                      onClick={() => onTargetTempChange(preset.value)}
+                      disabled={!isOn}
+                      className={`rounded-2xl border px-3 py-3 text-left transition-all disabled:opacity-50 ${
+                        isSelected
+                          ? styles.presetButtonActiveClassName
+                          : styles.presetButtonClassName
+                      }`}
                     >
-                      {currentTemp}°C
-                    </div>
-                  </div>
-                </div>
+                      <div className="text-lg font-semibold leading-none">{preset.value}°</div>
+                      <div className="mt-1 text-xs opacity-80">
+                        {preset.label ?? `${preset.value}°`}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          </section>
 
-            {/* Mode Selection */}
-            <div>
-              <div className={`mb-3 text-xs ${styles.sectionLabelClassName}`}>
-                {t('climate.mode')}
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => onModeChange('cool')}
-                  disabled={!isOn}
-                  className={`flex flex-col items-center gap-3 rounded-2xl p-4 transition-all disabled:opacity-50 ${styles.modeButtonClassName('cool')}`}
-                >
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full ${styles.modeIconWrapClassName('cool')}`}
-                  >
-                    <Snowflake className="w-6 h-6" />
-                  </div>
-                  <span className="text-sm font-medium">{t('climate.mode.cool')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onModeChange('heat')}
-                  disabled={!isOn}
-                  className={`flex flex-col items-center gap-3 rounded-2xl p-4 transition-all disabled:opacity-50 ${styles.modeButtonClassName('heat')}`}
-                >
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full ${styles.modeIconWrapClassName('heat')}`}
-                  >
-                    <Flame className="w-6 h-6" />
-                  </div>
-                  <span className="text-sm font-medium">{t('climate.mode.heat')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onModeChange('fan')}
-                  disabled={!isOn}
-                  className={`flex flex-col items-center gap-3 rounded-2xl p-4 transition-all disabled:opacity-50 ${styles.modeButtonClassName('fan')}`}
-                >
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full ${styles.modeIconWrapClassName('fan')}`}
-                  >
-                    <Wind className="w-6 h-6" />
-                  </div>
-                  <span className="text-sm font-medium">{t('climate.mode.fan')}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Power Control */}
-            <div>
-              <div className={`mb-3 text-xs ${styles.sectionLabelClassName}`}>
-                {t('climate.power')}
-              </div>
-              <button
-                type="button"
-                onClick={onTogglePower}
-                className={`flex w-full items-center justify-between rounded-2xl p-4 transition-all ${styles.powerButtonClassName}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full ${styles.powerIconWrapClassName}`}
-                  >
-                    <Power className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-white">
-                    {isOn ? t('climate.turnOff') : t('climate.turnOn')}
-                  </span>
-                </div>
-                <div
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${styles.powerStatusClassName}`}
-                >
-                  {isOn ? t('common.on') : t('common.off')}
-                </div>
-              </button>
-            </div>
+          <div className={contentInsetClassName}>
+            <DialogFooter>
+              <SettingsDialogDoneButton label={t('common.done')} surface={surface} />
+            </DialogFooter>
           </div>
         </div>
       </CustomScrollbar>

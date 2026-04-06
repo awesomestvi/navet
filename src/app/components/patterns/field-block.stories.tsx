@@ -43,7 +43,7 @@ function FieldBlockStory({
 }
 
 const meta = {
-  title: 'Components/Patterns/Field',
+  title: 'Components/Patterns/Form Field',
   component: FieldBlockStory,
   tags: ['autodocs'],
   parameters: {

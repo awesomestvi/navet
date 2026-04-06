@@ -84,7 +84,7 @@ Storybook sorting is controlled centrally in `.storybook/preview.tsx`. Avoid inv
 ### Accent Card Shell
 
 - Story file: `src/app/components/shared/theme/accent-card-shell-tokens.stories.tsx`
-- Story title: `Theme/Accent Card Shell`
+- Story title: `Theme/Cards/Accent Card Shell`
 - Covers all four themes: glass, dark, light, and black
 - Demonstrates the output of `getAccentCardShellTokens(theme, accent)`
 - Uses `getCardReadableTextTokens(...)` for tinted dark, glass, and black rows so text contrast follows the same readable-text system used by production cards

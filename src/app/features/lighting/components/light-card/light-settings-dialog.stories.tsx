@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
+import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import type { LightBrightnessPreset } from './light-card-types';
 import { LightSettingsDialog } from './light-settings-dialog';
 
@@ -19,35 +20,37 @@ function LightSettingsDialogStory() {
   ];
 
   return (
-    <LightSettingsDialog
-      entityId="light.living_room_main"
-      isOpen
-      onOpenChange={() => {}}
-      name="Living Room Main"
-      room="Living Room"
-      isOn
-      supportsColorTemperature
-      supportsColorControl
-      minColorTemp={2200}
-      maxColorTemp={6400}
-      tempOptions={TEMP_OPTIONS}
-      brightnessPresets={presets}
-      colorTemp={colorTemp}
-      selectedColor={selectedColor}
-      customColor={customColor}
-      brightness={brightness}
-      selectedIcon={selectedIcon}
-      onTempChange={setColorTemp}
-      onTempCommit={setColorTemp}
-      onColorChange={setSelectedColor}
-      onCustomColorChange={setCustomColor}
-      onBrightnessChange={setBrightness}
-      applyBrightnessPresetsToAll
-      onApplyBrightnessPresetsToAllChange={() => {}}
-      onBrightnessPresetValueChange={() => {}}
-      onBrightnessPresetOrderChange={() => {}}
-      onIconChange={setSelectedIcon}
-    />
+    <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(249,115,22,0.28),rgba(124,45,18,0.26))]">
+      <LightSettingsDialog
+        entityId="light.living_room_main"
+        isOpen
+        onOpenChange={() => {}}
+        name="Living Room Main"
+        room="Living Room"
+        isOn
+        supportsColorTemperature
+        supportsColorControl
+        minColorTemp={2200}
+        maxColorTemp={6400}
+        tempOptions={TEMP_OPTIONS}
+        brightnessPresets={presets}
+        colorTemp={colorTemp}
+        selectedColor={selectedColor}
+        customColor={customColor}
+        brightness={brightness}
+        selectedIcon={selectedIcon}
+        onTempChange={setColorTemp}
+        onTempCommit={setColorTemp}
+        onColorChange={setSelectedColor}
+        onCustomColorChange={setCustomColor}
+        onBrightnessChange={setBrightness}
+        applyBrightnessPresetsToAll
+        onApplyBrightnessPresetsToAllChange={() => {}}
+        onBrightnessPresetValueChange={() => {}}
+        onBrightnessPresetOrderChange={() => {}}
+        onIconChange={setSelectedIcon}
+      />
+    </SettingsDialogStoryFrame>
   );
 }
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { HassEntity } from 'home-assistant-js-websocket';
+import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';
 
 const siblingEntities: SiblingEntity[] = [
@@ -45,4 +46,10 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  render: (args) => (
+    <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(59,130,246,0.2),rgba(15,23,42,0.28))]">
+      <CameraSettingsDialog {...args} />
+    </SettingsDialogStoryFrame>
+  ),
+};

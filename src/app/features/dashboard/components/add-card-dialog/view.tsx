@@ -1,6 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Layers2, Search, Sparkles, X } from 'lucide-react';
-import { DialogShell, Input } from '@/app/components/primitives';
+import {
+  DialogShell,
+  Input,
+  TabList,
+  TabPanel,
+  Tabs,
+  TabTrigger,
+} from '@/app/components/primitives';
 import { type CardSize, getCardSizeRatio } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type ThemeType, useI18n } from '@/app/hooks';
@@ -73,7 +80,6 @@ export function AddCardDialogView({
   const sizePreviewTileBg = theme === 'light' ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.03)';
   const inactiveSizeSwatchBg = theme === 'light' ? '#d1d5db' : 'rgba(255, 255, 255, 0.2)';
   const cardsTabActive = activeTab === 'cards';
-  const widgetsTabActive = activeTab === 'widgets';
   const cardsSummary = hasLibraryQuery
     ? t('dashboard.addCard.librarySummary.matching', { count: libraryCount })
     : t('dashboard.addCard.librarySummary.available', { count: libraryCount });
@@ -92,90 +98,80 @@ export function AddCardDialogView({
       contentClassName={`${surface.panel} fixed left-1/2 top-1/2 z-50 flex w-[min(calc(100vw-2rem),38rem)] max-h-[min(84vh,46rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border ${borderColor}`}
       contentStyle={{ boxShadow: '0 24px 80px rgba(0, 0, 0, 0.36)' }}
     >
-      <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-5 pb-4 pt-5 backdrop-blur-xl">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className={`mb-2 text-[11px] font-medium tracking-[0.16em] ${surface.textMuted}`}>
-              {cardsTabActive
-                ? t('dashboard.addCard.header.library')
-                : t('dashboard.addCard.header.widgets')}
+      <Tabs
+        value={activeTab}
+        defaultValue={showCardsTab ? 'cards' : 'widgets'}
+        onValueChange={(value) => setActiveTab(value as 'cards' | 'widgets')}
+      >
+        <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-5 pb-4 pt-5 backdrop-blur-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div
+                className={`mb-2 text-[11px] font-medium tracking-[0.16em] ${surface.textMuted}`}
+              >
+                {cardsTabActive
+                  ? t('dashboard.addCard.header.library')
+                  : t('dashboard.addCard.header.widgets')}
+              </div>
+              <Dialog.Title className={`text-[1.625rem] font-semibold leading-none ${textColor}`}>
+                {t('dashboard.addCard.title')}
+              </Dialog.Title>
+              <Dialog.Description className={`mt-2 max-w-[32rem] text-sm leading-6 ${mutedColor}`}>
+                {cardsTabActive
+                  ? t('dashboard.addCard.libraryDescription')
+                  : t('dashboard.addCard.description', {
+                      room: currentRoom === 'All' ? t('dashboard.addCard.allRooms') : currentRoom,
+                    })}
+              </Dialog.Description>
             </div>
-            <Dialog.Title className={`text-[1.625rem] font-semibold leading-none ${textColor}`}>
-              {t('dashboard.addCard.title')}
-            </Dialog.Title>
-            <Dialog.Description className={`mt-2 max-w-[32rem] text-sm leading-6 ${mutedColor}`}>
-              {cardsTabActive
-                ? t('dashboard.addCard.libraryDescription')
-                : t('dashboard.addCard.description', {
-                    room: currentRoom === 'All' ? t('dashboard.addCard.allRooms') : currentRoom,
-                  })}
-            </Dialog.Description>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`mt-1 flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${hoverBg}`}
+              style={{
+                borderColor: 'rgba(255,255,255,0.08)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+              }}
+            >
+              <X className={`h-4 w-4 ${mutedColor}`} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`mt-1 flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${hoverBg}`}
-            style={{
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(255,255,255,0.04)',
-            }}
-          >
-            <X className={`h-4 w-4 ${mutedColor}`} />
-          </button>
+
+          {showCardsTab ? (
+            <TabList variant="segmented" className="mt-5 grid-cols-2">
+              <TabTrigger
+                value="cards"
+                className="h-auto gap-0 flex-col items-start justify-start rounded-[18px] px-4 py-2.5 text-left"
+              >
+                <span className="flex items-center gap-2">
+                  <Layers2 className="h-4 w-4" />
+                  <span className="text-sm font-semibold">{t('dashboard.addCard.tab.cards')}</span>
+                </span>
+                <span className="mt-0.5 text-xs opacity-80">
+                  {t('dashboard.addCard.tab.cardsHint')}
+                </span>
+              </TabTrigger>
+
+              <TabTrigger
+                value="widgets"
+                className="h-auto gap-0 flex-col items-start justify-start rounded-[18px] px-4 py-2.5 text-left"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-sm font-semibold">
+                    {t('dashboard.addCard.tab.widgets')}
+                  </span>
+                </span>
+                <span className="mt-0.5 text-xs opacity-80">
+                  {t('dashboard.addCard.tab.widgetsHint')}
+                </span>
+              </TabTrigger>
+            </TabList>
+          ) : null}
         </div>
 
-        {showCardsTab ? (
-          <div
-            className="mt-5 grid grid-cols-2 gap-2 rounded-[22px] border p-1.5"
-            style={{
-              borderColor: 'rgba(255,255,255,0.08)',
-              backgroundColor: 'rgba(255,255,255,0.03)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setActiveTab('cards')}
-              className={`rounded-[18px] px-4 py-3 text-left transition-colors ${
-                cardsTabActive ? textColor : mutedColor
-              }`}
-              style={{
-                backgroundColor: cardsTabActive ? `${accent}24` : 'transparent',
-                boxShadow: cardsTabActive ? `inset 0 0 0 1px ${accent}22` : 'none',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Layers2 className="h-4 w-4" />
-                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.cards')}</span>
-              </div>
-              <div className="mt-1 text-xs opacity-80">{t('dashboard.addCard.tab.cardsHint')}</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('widgets')}
-              className={`rounded-[18px] px-4 py-3 text-left transition-colors ${
-                widgetsTabActive ? textColor : mutedColor
-              }`}
-              style={{
-                backgroundColor: widgetsTabActive ? `${accent}24` : 'transparent',
-                boxShadow: widgetsTabActive ? `inset 0 0 0 1px ${accent}22` : 'none',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.widgets')}</span>
-              </div>
-              <div className="mt-1 text-xs opacity-80">
-                {t('dashboard.addCard.tab.widgetsHint')}
-              </div>
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-        {activeTab === 'cards' ? (
-          <div className="space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <TabPanel value="cards" className="space-y-4">
             <div
               className={`rounded-[24px] border p-3 ${borderColor}`}
               style={{ backgroundColor: 'rgba(255,255,255,0.025)' }}
@@ -203,9 +199,9 @@ export function AddCardDialogView({
               onAdd={handleAddFromLibrary}
               height={360}
             />
-          </div>
-        ) : (
-          <div className="space-y-6">
+          </TabPanel>
+
+          <TabPanel value="widgets" className="space-y-6">
             <div>
               <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
                 {t('dashboard.addCard.chooseType')}
@@ -299,29 +295,29 @@ export function AddCardDialogView({
                 </div>
               </div>
             ) : null}
-          </div>
-        )}
-      </div>
-
-      {activeTab === 'widgets' ? (
-        <div className="border-t border-white/10 px-5 py-4">
-          <div className="flex items-center justify-end">
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!selectedType}
-              className="rounded-full px-4 py-2.5 text-sm font-medium text-white transition-all"
-              style={{
-                backgroundColor: selectedType ? accent : '#6b7280',
-                opacity: selectedType ? 1 : 0.5,
-                cursor: selectedType ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {t('dashboard.addCard.action')}
-            </button>
-          </div>
+          </TabPanel>
         </div>
-      ) : null}
+
+        <TabPanel value="widgets">
+          <div className="border-t border-white/10 px-5 py-4">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={!selectedType}
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-white transition-all"
+                style={{
+                  backgroundColor: selectedType ? accent : '#6b7280',
+                  opacity: selectedType ? 1 : 0.5,
+                  cursor: selectedType ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {t('dashboard.addCard.action')}
+              </button>
+            </div>
+          </div>
+        </TabPanel>
+      </Tabs>
     </DialogShell>
   );
 }

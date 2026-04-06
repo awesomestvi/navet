@@ -3,7 +3,7 @@ import { Lightbulb, Sun } from 'lucide-react';
 import { DialogSectionRow } from './dialog-section-row';
 
 const meta = {
-  title: 'Components/Shared/Dialog Section Row',
+  title: 'Components/Shared/Device Editor/Dialog Section Row',
   component: DialogSectionRow,
   tags: ['autodocs'],
   parameters: {

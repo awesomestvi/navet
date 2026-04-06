@@ -4,7 +4,6 @@ import type { ComponentProps } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { DashboardEmptyState } from './dashboard-empty-state';
-import { InlineEmptyState } from './inline-empty-state';
 
 function ThemeAwareDashboardEmptyState(
   props: Omit<ComponentProps<typeof DashboardEmptyState>, 'surface' | 'accentColor'>
@@ -16,12 +15,14 @@ function ThemeAwareDashboardEmptyState(
 }
 
 function ThemeAwareInlineEmptyState(
-  props: Omit<ComponentProps<typeof InlineEmptyState>, 'surface' | 'accentColor'>
+  props: Omit<ComponentProps<typeof DashboardEmptyState>, 'surface' | 'accentColor'>
 ) {
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
-  return <InlineEmptyState {...props} surface={surface} accentColor={accentColor} />;
+  return (
+    <DashboardEmptyState {...props} surface={surface} accentColor={accentColor} variant="inline" />
+  );
 }
 
 const meta = {

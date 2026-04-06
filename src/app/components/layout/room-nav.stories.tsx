@@ -25,7 +25,7 @@ function RoomNavStory({ isEditMode = false }: { isEditMode?: boolean }) {
 }
 
 const meta = {
-  title: 'App Shell/Room Nav',
+  title: 'App Shell/Navigation/Room Nav',
   component: RoomNavStory,
   tags: ['autodocs'],
   args: {

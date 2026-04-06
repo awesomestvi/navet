@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Header } from '@/app/components/layout/header';
 
 const meta = {
-  title: 'App Shell/Topbar',
+  title: 'App Shell/Header/Topbar',
   component: Header,
   tags: ['autodocs'],
   parameters: {

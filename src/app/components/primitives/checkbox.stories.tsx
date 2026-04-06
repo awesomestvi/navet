@@ -24,12 +24,15 @@ const meta = {
   title: 'Components/Primitives/Checkbox',
   component: CheckboxStory,
   tags: ['autodocs'],
+  args: {
+    defaultChecked: false,
+    disabled: false,
+  },
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component:
-          'Status: ready. Canonical checkbox primitive promoted from the base Radix wrapper for shared form work.',
+        component: 'Canonical checkbox primitive for compact form rows and list selection.',
       },
     },
   },

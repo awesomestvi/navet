@@ -4,12 +4,12 @@ This folder has three distinct roles:
 
 - `primitives/`
   Low-level reusable UI building blocks with one clear responsibility.
-  Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`, `ThemeDropdownContent`.
+  Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`.
   New shared UI should start here when it is generic, behavior-light, and reusable across features.
 
 - `patterns/`
   Small composed UI structures built from primitives.
-  Examples: `FieldBlock`, `DashboardEmptyState`, `InlineEmptyState`.
+  Examples: `FieldBlock`, `DashboardEmptyState`.
   Put shared structure here when reuse comes from intent, not just matching visuals.
 
 - `system/`

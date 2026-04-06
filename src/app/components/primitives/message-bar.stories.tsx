@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { AlertTriangle, CheckCircle2, Info as InfoIcon, WifiOff } from 'lucide-react';
-import { InlineMessage } from './inline-message';
+import { MessageBar } from './message-bar';
 
 const meta = {
-  title: 'Components/Patterns/Messagebar',
-  component: InlineMessage,
+  title: 'Components/Primitives/MessageBar',
+  component: MessageBar,
   tags: ['autodocs'],
   args: {
     tone: 'info',
@@ -25,7 +25,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof InlineMessage>;
+} satisfies Meta<typeof MessageBar>;
 
 export default meta;
 

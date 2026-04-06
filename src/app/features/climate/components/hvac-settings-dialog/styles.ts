@@ -2,12 +2,11 @@ import { getHVACModeButtonColor } from '../../utils/hvac-styles';
 
 export function getHVACSettingsDialogStyles(mode: string, isOn: boolean) {
   const modeSurface = getModeSurface(mode, isOn);
+  const activePresetClassName = getActivePresetClassName(mode, isOn);
 
   return {
     contentClassName: `bg-gradient-to-br from-${modeSurface.from}/95 to-${modeSurface.to}/95 border-${modeSurface.border}`,
     sectionLabelClassName: 'text-gray-300',
-    infoPanelClassName: 'rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm',
-    targetValueClassName: isOn ? 'text-white' : 'text-gray-500',
     currentValueClassName: 'text-gray-300',
     modeButtonClassName: (buttonMode: string) => {
       const shadowClass = getModeButtonShadow(buttonMode, mode, isOn);
@@ -15,12 +14,27 @@ export function getHVACSettingsDialogStyles(mode: string, isOn: boolean) {
     },
     modeIconWrapClassName: (buttonMode: string) =>
       mode === buttonMode && isOn ? 'bg-white/20' : 'bg-white/10',
-    powerButtonClassName: isOn
-      ? 'bg-white/10 hover:bg-white/15'
-      : 'bg-red-500/20 hover:bg-red-500/30',
-    powerIconWrapClassName: isOn ? 'bg-white/10' : 'bg-red-500/30',
-    powerStatusClassName: isOn ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-300',
+    presetButtonClassName:
+      'border-white/10 bg-white/6 text-white hover:bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+    presetButtonActiveClassName: activePresetClassName,
   };
+}
+
+function getActivePresetClassName(mode: string, isOn: boolean) {
+  if (!isOn) {
+    return 'border-white/10 bg-white/10 text-white';
+  }
+
+  switch (mode) {
+    case 'cool':
+      return 'border-blue-400/40 bg-blue-500/18 text-white';
+    case 'heat':
+      return 'border-red-400/40 bg-red-500/18 text-white';
+    case 'fan':
+      return 'border-green-400/40 bg-green-500/18 text-white';
+    default:
+      return 'border-white/10 bg-white/10 text-white';
+  }
 }
 
 function getModeSurface(mode: string, isOn: boolean) {

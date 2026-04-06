@@ -1,5 +1,5 @@
 import { Lightbulb } from 'lucide-react';
-import { SettingsLivePreviewFrame } from '@/app/components/patterns/settings-live-preview-frame';
+import { SettingsLivePreviewFrame } from '@/app/components/patterns/interaction-preview-card';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';

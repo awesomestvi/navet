@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { NetworkStatusBanner } from './network-status-banner';
 
 const meta = {
-  title: 'Components/Shared/Banner',
+  title: 'Components/Shared/Network Status Banner',
   component: NetworkStatusBanner,
   tags: ['autodocs'],
   parameters: {

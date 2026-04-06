@@ -1,6 +1,5 @@
 export type { AllViewGrouping } from './all-view-grid';
 export { DashboardCardItem } from './components/dashboard-card-item';
-export { DashboardEmptyState } from './components/dashboard-empty-state';
 export { DashboardHeroSection } from './components/dashboard-hero-section';
 export { getDashboardWidgetSurfaceTokens } from './components/widgets/widget-surface-tokens';
 export { DashboardPage } from './page';

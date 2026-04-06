@@ -31,7 +31,7 @@ function SidebarStory() {
 }
 
 const meta = {
-  title: 'App Shell/Sidebar',
+  title: 'App Shell/Navigation/Sidebar',
   component: SidebarStory,
   tags: ['autodocs'],
   parameters: {

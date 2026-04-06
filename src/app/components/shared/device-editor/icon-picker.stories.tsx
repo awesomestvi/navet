@@ -18,7 +18,7 @@ function IconPickerStory({ isLightOn }: { isLightOn: boolean }) {
 }
 
 const meta = {
-  title: 'Components/Shared/Icon Picker',
+  title: 'Components/Shared/Device Editor/Icon Picker',
   component: IconPickerStory,
   tags: ['autodocs'],
   parameters: {

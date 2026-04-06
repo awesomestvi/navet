@@ -6,7 +6,7 @@ import {
 } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 
-export interface InlineMessageProps {
+export interface MessageBarProps {
   tone?: 'info' | 'success' | 'warning' | 'error';
   title?: ReactNode;
   children: ReactNode;
@@ -14,7 +14,7 @@ export interface InlineMessageProps {
 }
 
 // Status: in-progress. Shared inline status/message pattern for form and panel feedback.
-export function InlineMessage({ tone = 'info', title, children, className }: InlineMessageProps) {
+export function MessageBar({ tone = 'info', title, children, className }: MessageBarProps) {
   const toneClassName =
     tone === 'success'
       ? navetSemanticColorTokens.success

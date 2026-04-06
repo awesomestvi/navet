@@ -239,11 +239,11 @@ When creating a new card component:
 - `Components/Primitives/` — low-level reusable UI pieces, including dialog/menu/avatar/label/toast wrappers and grouped card/header primitives under `Components/Primitives/Cards/`
 - `Components/Patterns/` — composed shared UI sections and layouts
 - `Components/Shared/` — app-specific shared controls that are reused across features
-- `App Shell/` — sidebar, topbar, notifications, search, user dropdown, section customization
+- `App Shell/Header/`, `App Shell/Navigation/`, `App Shell/Notifications/`, `App Shell/Sections/` — topbar, search, sidebar, room navigation, notifications, and section customization
 - `Cards/Overview/`, `Cards/Entity/`, `Cards/Widget/` — dashboard catalog/matrices, HA entity cards, and custom/widget cards
 - `Dashboard/` — add-card, edit-mode, and onboarding flows
 - `Energy/Charts/`, `Energy/Primitives/`, `Energy/Widgets/` — energy feature visuals and shells
-- `Settings/Sections/`, `Settings/Dialogs/` — settings surface docs and per-entity settings dialogs
+- `Settings/Patterns/`, `Settings/Preview/`, `Settings/Sections/`, `Settings/Dialogs/` — reusable settings shells, preview surfaces, real settings sections, and per-entity settings dialogs
 
 ## 🎨 For Designers
 

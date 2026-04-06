@@ -10,7 +10,7 @@ function NotificationPanelStory({ isOpen = true }: { isOpen?: boolean }) {
 }
 
 const meta = {
-  title: 'App Shell/Notifications',
+  title: 'App Shell/Notifications/Panel',
   component: NotificationPanelStory,
   tags: ['autodocs'],
   args: {

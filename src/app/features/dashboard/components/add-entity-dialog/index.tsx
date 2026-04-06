@@ -1,6 +1,6 @@
 import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { InlineEmptyState } from '@/app/components/patterns/inline-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
 import { Input } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -271,7 +271,7 @@ export function AddEntityDialog({
               </div>
             </div>
           ) : (
-            <InlineEmptyState
+            <DashboardEmptyState
               title={t('dashboard.addEntity.emptyTitle')}
               description={
                 visibleEntityIds
@@ -280,6 +280,7 @@ export function AddEntityDialog({
               }
               surface={surface}
               accentColor={accentColor}
+              variant="inline"
             />
           )}
         </div>

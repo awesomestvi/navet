@@ -26,7 +26,7 @@ function SystemOverviewPage() {
         'Theme/Spacing',
         'Theme/Stroke Widths',
         'Theme/Typography',
-        'Theme/Accent Card Shell',
+        'Theme/Cards/Accent Card Shell',
         'Theme/Surface Tokens',
         'Theme/Style Calculators',
       ],
@@ -49,7 +49,7 @@ function SystemOverviewPage() {
         'Components/Primitives/Tooltip',
         'Components/Primitives/Tag',
         'Components/Primitives/Panel',
-        'Components/Primitives/Color Picker',
+        'Components/Primitives/Color Input Swatch',
         'Components/Primitives/Loading Spinner',
         'Components/Primitives/Interactive Pill',
         'Components/Primitives/Cards/Entity Card Header',
@@ -61,8 +61,8 @@ function SystemOverviewPage() {
       description:
         'Composed sections for dashboard and settings surfaces, including field wrappers, empty states, feedback blocks, and compact action compositions.',
       stories: [
-        'Components/Patterns/Field',
-        'Components/Patterns/Messagebar',
+        'Components/Patterns/Form Field',
+        'Components/Primitives/MessageBar',
         'Components/Patterns/Table Cell Content',
         'Components/Patterns/Card Action Row',
         'Components/Patterns/Empty State',

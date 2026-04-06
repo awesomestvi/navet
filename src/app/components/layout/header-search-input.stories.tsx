@@ -30,7 +30,7 @@ function HeaderSearchInputStory() {
 }
 
 const meta = {
-  title: 'App Shell/Header Search Input',
+  title: 'App Shell/Header/Search Input',
   component: HeaderSearchInputStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

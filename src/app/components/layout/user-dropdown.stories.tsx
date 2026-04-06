@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { UserDropdown } from './user-dropdown';
 
 const meta = {
-  title: 'App Shell/User Dropdown',
+  title: 'App Shell/Header/User Dropdown',
   component: UserDropdown,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

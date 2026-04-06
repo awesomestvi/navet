@@ -53,7 +53,7 @@ function HeaderMobileActionsStory() {
 }
 
 const meta = {
-  title: 'App Shell/Header Actions',
+  title: 'App Shell/Header/Header Actions',
   component: HeaderDesktopActionsStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

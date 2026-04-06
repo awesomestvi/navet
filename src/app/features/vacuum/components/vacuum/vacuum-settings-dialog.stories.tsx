@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 const meta = {
@@ -23,4 +24,10 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  render: (args) => (
+    <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(34,211,238,0.2),rgba(15,23,42,0.28))]">
+      <VacuumSettingsDialog {...args} />
+    </SettingsDialogStoryFrame>
+  ),
+};

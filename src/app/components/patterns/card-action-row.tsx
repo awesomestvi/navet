@@ -1,12 +1,14 @@
 import { type LucideIcon, MoreHorizontal } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
-import { ThemeDropdownContent } from '@/app/components/primitives/theme-dropdown-content';
+import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import {
   DropdownMenu,
+  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
+import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
@@ -97,10 +99,10 @@ function CardActionOverflowMenu({
           <MoreHorizontal className={actionSize.icon} />
         </RoundControlButton>
       </DropdownMenuTrigger>
-      <ThemeDropdownContent
-        theme={theme}
+      <DropdownMenuContent
         align="end"
         sideOffset={10}
+        className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
         onClick={(event) => event.stopPropagation()}
       >
         {items.map((item) => {
@@ -121,7 +123,7 @@ function CardActionOverflowMenu({
             </DropdownMenuItem>
           );
         })}
-      </ThemeDropdownContent>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

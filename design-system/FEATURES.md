@@ -178,7 +178,7 @@ Recent UI cleanup moved repeated theme logic into shared primitives so cross-the
 
 #### Accent Card Shell Story
 
-**Storybook**: `Theme/Accent Card Shell`
+**Storybook**: `Theme/Cards/Accent Card Shell`
 
 This token story exists to validate the accent-shell surface treatment across all accent families and all four themes.
 

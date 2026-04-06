@@ -2,12 +2,13 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { LogOut, Moon, Palette, Settings, Sun } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
-import { ThemeDropdownContent } from '@/app/components/primitives/theme-dropdown-content';
+import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 import {
   DropdownMenu,
+  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -45,7 +46,11 @@ function DropdownMenuStory() {
             Open menu
           </InteractivePill>
         </DropdownMenuTrigger>
-        <ThemeDropdownContent theme={theme} align="center">
+        <DropdownMenuContent
+          align="center"
+          sideOffset={8}
+          className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+        >
           <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Settings className="mr-2 h-4 w-4" />
             Settings
@@ -68,14 +73,14 @@ function DropdownMenuStory() {
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </DropdownMenuItem>
-        </ThemeDropdownContent>
+        </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );
 }
 
 const meta = {
-  title: 'Components/Primitives/Dropdown',
+  title: 'Components/Primitives/Dropdown Menu',
   component: DropdownMenuStory,
   tags: ['autodocs'],
   parameters: {
@@ -87,7 +92,7 @@ const meta = {
           '',
           'What this base story covers:',
           '- Trigger, grouped items, separators, and icon+label row layout.',
-          '- Theme-aware menu chrome when composed with `ThemeDropdownContent`.',
+          '- Theme-aware menu chrome with semantic surface tokens.',
           '- Highlight/focus styling that follows accent-driven hover tokens.',
           '',
           'Usage notes:',

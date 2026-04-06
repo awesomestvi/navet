@@ -10,14 +10,16 @@ import {
   useRef,
 } from 'react';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
-import { ThemeDropdownContent } from '@/app/components/primitives/theme-dropdown-content';
+import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import {
   DropdownMenu,
+  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
+import { cn } from '@/app/components/ui/utils';
 import type { AllViewGrouping } from '@/app/features/dashboard';
 import { useI18n, useTheme } from '@/app/hooks';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
@@ -197,7 +199,11 @@ export const RoomNav = memo(function RoomNav({
                       className={actionPillClassName}
                     />
                   </DropdownMenuTrigger>
-                  <ThemeDropdownContent theme={theme} align="end">
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                  >
                     <DropdownMenuLabel className={`px-3 py-2 text-xs font-medium ${textSecondary}`}>
                       {t('dashboard.roomNav.groupBy')}
                     </DropdownMenuLabel>
@@ -213,7 +219,7 @@ export const RoomNav = memo(function RoomNav({
                         {allViewGrouping === option.value ? <Check className="h-4 w-4" /> : null}
                       </DropdownMenuItem>
                     ))}
-                  </ThemeDropdownContent>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               ) : null}
 
@@ -227,12 +233,16 @@ export const RoomNav = memo(function RoomNav({
                       className={actionPillClassName}
                     />
                   </DropdownMenuTrigger>
-                  <ThemeDropdownContent theme={theme} align="end">
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                  >
                     <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
                       <Lightbulb className="h-4 w-4" />
                       {addEntityLabel}
                     </DropdownMenuItem>
-                  </ThemeDropdownContent>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               ) : null}
 

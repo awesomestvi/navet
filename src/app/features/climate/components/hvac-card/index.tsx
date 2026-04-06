@@ -276,6 +276,7 @@ export const HVACCard = memo(function HVACCard({
           mode={controller.mode}
           targetTemp={controller.targetTemp}
           currentTemp={controller.currentTemp}
+          onTargetTempChange={controller.setTargetTemp}
           onModeChange={controller.setMode}
           onTogglePower={() => controller.setIsOn(!controller.isOn)}
         />

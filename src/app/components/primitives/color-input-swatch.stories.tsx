@@ -28,7 +28,7 @@ function PickerModeStory() {
 }
 
 const meta = {
-  title: 'Components/Primitives/Color Picker',
+  title: 'Components/Primitives/Color Input Swatch',
   component: ColorInputSwatch,
   tags: ['autodocs'],
   parameters: {
@@ -56,6 +56,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const SwatchRow: Story = {
+  args: {
+    size: 'medium',
+  },
+
   render: (args) => (
     <div className="flex flex-wrap gap-3">
       <ColorInputSwatch {...args} value="#f97316" selected ariaLabel="Orange accent" />
