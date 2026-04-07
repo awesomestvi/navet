@@ -100,7 +100,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${
+      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${
         isOn
           ? `bg-gradient-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
           : 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10'

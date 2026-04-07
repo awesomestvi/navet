@@ -1,11 +1,38 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import type { CameraCardProps } from './types';
 import { CameraCardView } from './view';
+
+function isMotionEntity(
+  entityId: string,
+  entity: { attributes?: Record<string, unknown> } | undefined
+) {
+  const deviceClass =
+    typeof entity?.attributes?.device_class === 'string' ? entity.attributes.device_class : '';
+  const searchText =
+    `${entityId} ${typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : ''}`.toLowerCase();
+
+  return (
+    deviceClass === 'motion' ||
+    deviceClass === 'occupancy' ||
+    searchText.includes('motion') ||
+    searchText.includes('occupancy') ||
+    searchText.includes('presence') ||
+    searchText.includes('pir')
+  );
+}
+
+function parseTimestamp(value: unknown): number | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
 
 export const CameraCardContainer = memo(function CameraCardContainer({
   id,
@@ -13,7 +40,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   room,
   entityPicture: initialEntityPicture,
   size,
-  onSizeChange,
   isEditMode,
 }: CameraCardProps) {
   const { config } = useAuth();
@@ -22,6 +48,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const rawEntityPicture =
@@ -37,11 +64,27 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     : undefined;
 
   const isUnavailable = liveEntity?.state === 'unavailable';
-  const isOff = !liveEntity || isUnavailable;
+  const isRunning = liveEntity
+    ? liveEntity.state !== 'off' && !isUnavailable
+    : Boolean(snapshotUrl);
+  const statusChangedAt =
+    parseTimestamp(liveEntity?.last_changed) ?? parseTimestamp(liveEntity?.last_updated);
+
+  const deviceId = useMemo(
+    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
+    [entityRegistry, id]
+  );
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   // Discover sibling entities from the same HA device (switches, selects, numbers)
   const siblingEntities = useMemo(() => {
-    const deviceId = entityRegistry.find((e) => e.entity_id === id)?.device_id;
     if (!deviceId || !allEntities) return [];
 
     return entityRegistry
@@ -55,15 +98,42 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       id: string;
       entity: NonNullable<typeof allEntities>[string];
     }[];
-  }, [id, entityRegistry, allEntities]);
+  }, [allEntities, deviceId, entityRegistry, id]);
+
+  const motionEntity = useMemo(() => {
+    if (!deviceId || !allEntities) {
+      return null;
+    }
+
+    return (
+      entityRegistry
+        .filter((entry) => {
+          if (entry.device_id !== deviceId || entry.entity_id === id) {
+            return false;
+          }
+
+          if (!entry.entity_id.startsWith('binary_sensor.')) {
+            return false;
+          }
+
+          return isMotionEntity(entry.entity_id, allEntities[entry.entity_id]);
+        })
+        .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
+        .find((entry) => entry.entity !== undefined) ?? null
+    );
+  }, [allEntities, deviceId, entityRegistry, id]);
+
+  const motionDetected =
+    motionEntity?.entity?.state === 'on' ||
+    motionEntity?.entity?.state === 'home' ||
+    motionEntity?.entity?.state === 'detected';
+  const motionChangedAt =
+    parseTimestamp(motionEntity?.entity?.last_changed) ??
+    parseTimestamp(motionEntity?.entity?.last_updated);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
   }, []);
-
-  const handleTogglePower = useCallback(async () => {
-    await homeAssistantService.updateCamera(id, isOff ? 'on' : 'off');
-  }, [id, isOff]);
 
   return (
     <>
@@ -73,12 +143,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         room={room}
         snapshotUrl={snapshotUrl}
         isUnavailable={isUnavailable}
-        isOff={isOff}
+        isRunning={isRunning}
+        statusChangedAt={statusChangedAt}
+        motionDetected={motionDetected}
+        motionChangedAt={motionChangedAt}
+        now={now}
         size={size}
-        onSizeChange={onSizeChange}
         isEditMode={isEditMode}
         onRefresh={handleRefresh}
-        onTogglePower={handleTogglePower}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 

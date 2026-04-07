@@ -21,6 +21,9 @@ const weatherForecast = [
   { day: 'Tue', condition: 'rainy', high: 6, low: 1 },
   { day: 'Wed', condition: 'cloudy', high: 8, low: 3 },
   { day: 'Thu', condition: 'sunny', high: 10, low: 4 },
+  { day: 'Fri', condition: 'cloudy', high: 9, low: 5 },
+  { day: 'Sat', condition: 'rainy', high: 8, low: 4 },
+  { day: 'Sun', condition: 'sunny', high: 11, low: 6 },
 ];
 
 const calendarEvents = [

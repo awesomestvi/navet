@@ -60,6 +60,10 @@ export const navetTypographyTokens = {
   sectionHeading: 'text-lg font-semibold',
   featureHeading: 'text-xl font-semibold tracking-tight',
   pageHeading: 'text-2xl font-semibold tracking-tight',
+  // Primary metric displayed on a card (temperature, percentage, count, etc.)
+  cardMetricSm: 'text-3xl font-bold leading-none', // small + medium cards
+  cardMetricLg: 'text-4xl font-bold leading-none', // large cards
+  cardMetricXl: 'text-5xl font-semibold leading-none', // hero panels inside large cards
 } as const;
 
 export const navetRadiusTokens = {

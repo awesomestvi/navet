@@ -21,7 +21,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['extra-small', 'small', 'medium', 'large'],
+      options: ['small', 'medium', 'large'],
     },
   },
   args: {

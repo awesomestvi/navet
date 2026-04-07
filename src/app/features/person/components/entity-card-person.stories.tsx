@@ -8,7 +8,7 @@ import {
 
 function PersonCardStory(args: Omit<ComponentProps<typeof PersonCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame size={args.size ?? 'medium'}>
+    <EntityCardStoryFrame size={args.size ?? 'small'}>
       <PersonCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
@@ -21,7 +21,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['extra-small', 'small', 'medium', 'large'],
+      options: ['tiny', 'extra-small', 'small'],
     },
   },
   args: {
@@ -30,7 +30,7 @@ const meta = {
     room: 'Home',
     location: 'Office',
     state: 'home',
-    size: 'medium',
+    size: 'small',
     isEditMode: false,
   },
 } satisfies Meta<typeof PersonCardStory>;

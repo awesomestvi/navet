@@ -1,10 +1,6 @@
-import { Camera, Power, RefreshCw, Settings2 } from 'lucide-react';
+import { Camera, RefreshCw, Settings2 } from 'lucide-react';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
-import {
-  type CardSize,
-  CardSizeSelector,
-  isCompactCardSize,
-} from '@/app/components/shared/card-size-selector';
+import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
 
 interface CameraCardViewProps {
@@ -13,13 +9,38 @@ interface CameraCardViewProps {
   room: string;
   snapshotUrl: string | undefined;
   isUnavailable: boolean;
-  isOff: boolean;
+  isRunning: boolean;
+  statusChangedAt: number | null;
+  motionDetected: boolean;
+  motionChangedAt: number | null;
+  now: number;
   size: CardSize;
-  onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   onRefresh: () => void;
-  onTogglePower: () => void;
   onOpenSettings: () => void;
+}
+
+function formatElapsedCompact(now: number, since: number | null) {
+  if (!since) {
+    return null;
+  }
+
+  const diffSeconds = Math.max(0, Math.floor((now - since) / 1000));
+  if (diffSeconds < 60) {
+    return `${diffSeconds}s`;
+  }
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h`;
+  }
+
+  return `${Math.floor(diffHours / 24)}d`;
 }
 
 export function CameraCardView({
@@ -28,16 +49,26 @@ export function CameraCardView({
   room,
   snapshotUrl,
   isUnavailable,
-  isOff,
+  isRunning,
+  statusChangedAt,
+  motionDetected,
+  motionChangedAt,
+  now,
   size,
-  onSizeChange,
   isEditMode,
   onRefresh,
-  onTogglePower,
   onOpenSettings,
 }: CameraCardViewProps) {
   const { t } = useI18n();
   const isCompact = isCompactCardSize(size);
+  const statusLabel = isUnavailable
+    ? t('camera.status.unavailable')
+    : isRunning
+      ? t('camera.status.live')
+      : t('common.off');
+  const motionLabel = motionDetected ? t('camera.motion.detected') : t('camera.motion.clear');
+  const statusElapsed = formatElapsedCompact(now, statusChangedAt);
+  const motionElapsed = formatElapsedCompact(now, motionChangedAt);
 
   return (
     <div className="relative h-full overflow-hidden rounded-3xl bg-zinc-900" data-entity-id={id}>
@@ -59,17 +90,8 @@ export function CameraCardView({
         </div>
       )}
 
-      {/* Size selector (top-right, always visible so cameras can be resized from any view) */}
-      <div className="absolute right-2 top-2 z-20">
-        <CardSizeSelector
-          currentSize={size}
-          onSizeChange={(newSize) => onSizeChange(id, newSize)}
-          triggerSize={size}
-        />
-      </div>
-
       {/* Refresh button (top-left, only when live and not in edit mode) */}
-      {!isOff && !isEditMode && (
+      {isRunning && !isEditMode && (
         <button
           type="button"
           onClick={onRefresh}
@@ -80,37 +102,54 @@ export function CameraCardView({
         </button>
       )}
 
-      {/* Bottom gradient overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-8">
-        <div className="flex items-end justify-between gap-2">
-          <EntityCardHeader
-            title={name}
-            subtitle={isCompact ? '' : room}
-            layout="eyebrow-first"
-            size={size}
-            titleClassName="text-white leading-tight"
-            subtitleClassName="text-zinc-300"
-            className="mb-0 min-w-0 flex-1"
-            contentClassName="text-left"
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+          <span
+            className={`h-2 w-2 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]' : 'bg-white/45'}`}
           />
+          <span>{statusLabel}</span>
+          {statusElapsed ? <span className="text-white/65">{statusElapsed}</span> : null}
+        </div>
+      </div>
+
+      {/* Bottom gradient overlay */}
+      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/95 via-black/72 to-transparent px-3 pb-3 pt-10">
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <EntityCardHeader
+              title={name}
+              subtitle={isCompact ? '' : room}
+              layout="eyebrow-first"
+              size={size}
+              titleClassName="leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+              subtitleClassName="text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+              className="mb-0 min-w-0"
+              contentClassName="text-left"
+            />
+            <div
+              className={`mt-2 flex flex-wrap items-center gap-2 ${isCompact ? 'text-[11px]' : 'text-xs'}`}
+            >
+              <div
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium backdrop-blur-sm ${
+                  motionDetected
+                    ? 'border-emerald-400/35 bg-emerald-400/16 text-emerald-50'
+                    : 'border-white/12 bg-black/35 text-white/78'
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    motionDetected ? 'bg-emerald-300' : 'bg-white/40'
+                  }`}
+                />
+                <span>{motionLabel}</span>
+                {motionElapsed ? <span className="text-current/70">{motionElapsed}</span> : null}
+              </div>
+            </div>
+          </div>
 
           {/* Action buttons */}
           {!isEditMode && (
             <div className="flex shrink-0 items-center gap-1.5">
-              {/* Power toggle */}
-              <button
-                type="button"
-                onClick={onTogglePower}
-                aria-label={isOff ? t('camera.actions.turnOn') : t('camera.actions.turnOff')}
-                className={`flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
-                  isOff
-                    ? 'bg-white/20 text-white/60 hover:bg-white/30'
-                    : 'bg-blue-500/80 text-white hover:bg-blue-500'
-                }`}
-              >
-                <Power className="h-3.5 w-3.5" />
-              </button>
-
               {/* Settings */}
               <button
                 type="button"

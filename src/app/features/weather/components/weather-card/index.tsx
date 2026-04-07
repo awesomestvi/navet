@@ -59,34 +59,71 @@ function normalizeWeatherCondition(condition: WeatherCondition | string) {
   return condition.trim().toLowerCase().replace(/_/g, '-');
 }
 
-function getWeatherBackgroundTheme(condition: WeatherCondition | string) {
+type WeatherBackgroundVariant =
+  | 'sunny'
+  | 'clear-night'
+  | 'cloudy'
+  | 'rain'
+  | 'snow-day'
+  | 'snow-night'
+  | 'windy'
+  | 'storm'
+  | 'fog';
+
+function getWeatherBackgroundVariant(
+  condition: WeatherCondition | string
+): WeatherBackgroundVariant {
   const normalized = normalizeWeatherCondition(condition);
 
   switch (normalized) {
     case 'clear':
     case 'sunny':
+    case 'fair':
       return 'sunny';
     case 'clear-night':
+    case 'night':
+    case 'night-clear':
+    case 'moon':
+    case 'moony':
       return 'clear-night';
     case 'cloudy':
     case 'overcast':
     case 'partly-cloudy':
     case 'partly cloudy':
     case 'partlycloudy':
+    case 'partlycloudy-day':
       return 'cloudy';
+    case 'partlycloudy-night':
+    case 'partly-cloudy-night':
+      return 'clear-night';
     case 'rainy':
     case 'rain':
     case 'pouring':
     case 'drizzle':
     case 'lightning-rainy':
+    case 'showers':
+      return 'rain';
     case 'thunderstorm':
     case 'storm':
     case 'lightning':
-      return 'rain';
+    case 'hail':
+    case 'exceptional':
+      return 'storm';
+    case 'windy':
+    case 'windy-variant':
+    case 'breezy':
+      return 'windy';
+    case 'fog':
+    case 'mist':
+    case 'hazy':
+      return 'fog';
     case 'snowy':
     case 'snow':
     case 'snowy-rainy':
-      return 'snow';
+    case 'blizzard':
+      return 'snow-day';
+    case 'snow-night':
+      return 'snow-night';
     default:
       return 'cloudy';
   }
@@ -105,24 +142,28 @@ function getWeatherTextTreatment(
     };
   }
 
-  const variant = getWeatherBackgroundTheme(condition);
+  const variant = getWeatherBackgroundVariant(condition);
 
   switch (variant) {
     case 'sunny':
-    case 'snow':
+    case 'snow-day':
       return {
         primary: 'rgba(255,255,255,0.98)',
         secondary: 'rgba(255,255,255,0.84)',
         textShadow: '0 1px 10px rgba(83, 38, 12, 0.18)',
       };
     case 'cloudy':
+    case 'windy':
+    case 'fog':
       return {
         primary: 'rgba(255,255,255,0.98)',
         secondary: 'rgba(255,255,255,0.82)',
         textShadow: '0 1px 10px rgba(17, 41, 78, 0.18)',
       };
     case 'rain':
+    case 'storm':
     case 'clear-night':
+    case 'snow-night':
       return {
         primary: 'rgba(255,255,255,0.99)',
         secondary: 'rgba(255,255,255,0.78)',
@@ -137,14 +178,161 @@ function getWeatherTextTreatment(
   }
 }
 
+function CloudOverlaySvg() {
+  return (
+    <svg
+      className="absolute inset-0 h-full w-full text-white"
+      viewBox="0 0 100 40"
+      aria-hidden="true"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M-4 11.8c0-5 4.1-9.1 9.1-9.1 2.1 0 4.1.8 5.6 2 2.2-2.9 5.7-4.7 9.7-4.7 6.5 0 11.9 5.1 12.2 11.5h1c4.6 0 8.3 3.7 8.3 8.3S38.2 28 33.6 28H6.2C0.6 28-4 23.4-4 17.8c0-2.2.7-4.3 2-6Z"
+        fill="currentColor"
+        opacity="0.2"
+      />
+      <path
+        d="M56 9.6c0-4.4 3.6-8 8-8 1.8 0 3.4.5 4.8 1.5 2-2.4 5-3.9 8.3-3.9 5.9 0 10.8 4.8 10.8 10.6h.9c4.4 0 8 3.6 8 8S93.2 26 88.8 26H64c-4.4 0-8-3.5-8-7.9 0-2 .7-3.8 1.8-5.4Z"
+        fill="currentColor"
+        opacity="0.14"
+      />
+      <path
+        d="M-3 26.8c0-3.9 3.2-7.1 7.1-7.1 1.4 0 2.8.4 3.9 1.1 1.6-2.4 4.4-3.9 7.4-3.9 4.8 0 8.7 3.8 8.7 8.6h.7c3.5 0 6.3 2.8 6.3 6.3s-2.8 6.3-6.3 6.3H6.6c-5.3 0-9.6-4.3-9.6-9.6 0-.6.1-1.2.2-1.7Z"
+        fill="currentColor"
+        opacity="0.1"
+      />
+      <path
+        d="M74 24.9c0-3.5 2.9-6.4 6.4-6.4 1.4 0 2.7.4 3.8 1.2 1.5-2.1 3.9-3.5 6.6-3.5 4.3 0 7.9 3.4 8.1 7.7h.7c3.2 0 5.8 2.6 5.8 5.8s-2.6 5.8-5.8 5.8H80.3c-3.5 0-6.3-2.8-6.3-6.3 0-1.6.6-3.1 1.6-4.3Z"
+        fill="currentColor"
+        opacity="0.08"
+      />
+    </svg>
+  );
+}
+
+function FogOverlaySvg() {
+  return (
+    <svg
+      className="absolute inset-0 h-full w-full text-white"
+      viewBox="0 0 100 40"
+      aria-hidden="true"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M0 7.8c9 .6 18 .6 27 0 9-.6 18-.6 27 0 9 .6 18 .6 27 0 6-.4 12-.8 19-1.2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.12"
+      />
+      <path
+        d="M-2 12.8c10 .5 20 .4 30-.2 10-.7 20-.8 30-.2 10 .6 20 .7 30 .2 4-.2 8-.4 12-.7"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.1"
+      />
+      <path
+        d="M4 18.4c8 .4 16 .3 24-.1 8-.6 16-.7 24-.1 8 .6 16 .7 24 .1 8-.5 16-.6 24-.2"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.08"
+      />
+      <path
+        d="M0 28.6c9 .6 18 .5 27-.1 9-.6 18-.7 27-.1 9 .6 18 .7 27 .1 6-.4 12-.8 19-1.1"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.09"
+      />
+      <path
+        d="M2 33.3c10 .5 20 .4 30-.2 10-.7 20-.8 30-.2 10 .6 20 .7 30 .2 3-.1 6-.3 9-.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.06"
+      />
+    </svg>
+  );
+}
+
+function WindOverlaySvg() {
+  return (
+    <svg
+      className="absolute inset-0 h-full w-full text-white"
+      viewBox="0 0 100 40"
+      aria-hidden="true"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M-6 8.5C8 3 18 2 32 6.8c10 3.4 20 3.9 31 .9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.2"
+      />
+      <path
+        d="M6 12.6c12-4.2 24-4.6 36-1.1 9.8 2.8 19.5 2.6 28.6-.7"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.16"
+      />
+      <path
+        d="M48 9.4c9-3.1 18.4-2.8 27.4.9 6.2 2.5 12.3 2.8 18.6.9"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.13"
+      />
+      <path
+        d="M-8 27.4c12-3.5 24.2-3.3 36.2.6 11 3.5 21.4 4.1 32.6 1.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.19"
+      />
+      <path
+        d="M18 31.2c9.8-2.8 19.8-2.5 29.6 1 8.2 2.9 16.1 3.2 24.2 1"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.14"
+      />
+      <path
+        d="M56 34.7c7-2 14.1-1.8 21 0.7 4.7 1.7 9.2 2 13.9.7"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.1"
+      />
+    </svg>
+  );
+}
+
 function WeatherBackground({
   condition,
   hasCustomTint,
+  size,
 }: {
   condition: WeatherCondition | string;
   hasCustomTint: boolean;
+  size: CardSize;
 }) {
-  const variant = getWeatherBackgroundTheme(condition);
+  const variant = getWeatherBackgroundVariant(condition);
+  const isLarge = size === 'large';
 
   if (hasCustomTint) {
     return null;
@@ -153,10 +341,27 @@ function WeatherBackground({
   if (variant === 'sunny') {
     return (
       <>
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,#ef6d63_0%,#f38b57_48%,#f7b046_100%)]" />
-        <div className="absolute right-[-8%] top-[-42%] h-[130%] w-[56%] rounded-full bg-white/10" />
-        <div className="absolute right-[8%] top-[-34%] h-[115%] w-[46%] rounded-full bg-amber-200/18" />
-        <div className="absolute right-[20%] top-[-28%] h-[98%] w-[36%] rounded-full bg-orange-300/18" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#ea6d61_0%,#ef8758_48%,#f4a54d_100%)]" />
+        <div
+          className={`absolute rounded-full bg-[#ffd364]/90 ${
+            isLarge ? 'right-[-8%] top-[-10%] h-56 w-56' : 'right-[-18%] top-[-28%] h-40 w-40'
+          }`}
+        />
+        <div
+          className={`absolute rounded-full border border-[#ffd975]/38 ${
+            isLarge ? 'right-[-2%] top-[-4%] h-44 w-44' : 'right-[-10%] top-[-18%] h-32 w-32'
+          }`}
+        />
+        <div
+          className={`absolute rounded-full border border-[#ffd975]/22 ${
+            isLarge ? 'right-[-12%] top-[-14%] h-64 w-64' : 'right-[-22%] top-[-34%] h-48 w-48'
+          }`}
+        />
+        <div
+          className={`absolute bg-[linear-gradient(180deg,rgba(255,208,97,0.14),transparent)] ${
+            isLarge ? 'right-[18%] top-0 h-full w-[18%]' : 'right-[24%] top-0 h-full w-[12%]'
+          }`}
+        />
       </>
     );
   }
@@ -164,10 +369,31 @@ function WeatherBackground({
   if (variant === 'clear-night') {
     return (
       <>
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,#203f86_0%,#27488f_45%,#284382_100%)]" />
-        <div className="absolute right-[10%] top-[-30%] h-28 w-28 rounded-full bg-amber-100/85" />
-        <div className="absolute right-[1%] top-[-62%] h-44 w-44 rounded-full bg-amber-100/10" />
-        <div className="absolute right-[-10%] top-[-74%] h-56 w-56 rounded-full bg-blue-100/8" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#223f83_0%,#284786_46%,#263e73_100%)]" />
+        <div
+          className={`absolute rounded-full bg-[#f6e39b]/92 ${
+            isLarge ? 'right-[10%] top-[6%] h-20 w-20' : 'right-[10%] top-[0%] h-14 w-14'
+          }`}
+        />
+        <div
+          className={`absolute rounded-full border border-[#f2dda1]/18 ${
+            isLarge ? 'right-[4%] top-[-2%] h-32 w-32' : 'right-[2%] top-[-12%] h-24 w-24'
+          }`}
+        />
+        <div
+          className={`absolute rounded-full border border-[#7386cc]/14 ${
+            isLarge ? 'right-[-2%] top-[-8%] h-44 w-44' : 'right-[-8%] top-[-20%] h-32 w-32'
+          }`}
+        />
+      </>
+    );
+  }
+
+  if (variant === 'cloudy') {
+    return (
+      <>
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#4b95e4_0%,#4288d4_52%,#3474bc_100%)]" />
+        <CloudOverlaySvg />
       </>
     );
   }
@@ -175,31 +401,176 @@ function WeatherBackground({
   if (variant === 'rain') {
     return (
       <>
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,#2e3567_0%,#30345d_48%,#293157_100%)]" />
-        <div className="absolute inset-y-0 right-[8%] w-[42%] bg-[linear-gradient(160deg,transparent_6%,rgba(255,255,255,0.12)_7%,transparent_8%,transparent_15%,rgba(255,255,255,0.12)_16%,transparent_17%,transparent_24%,rgba(255,255,255,0.10)_25%,transparent_26%,transparent_33%,rgba(255,255,255,0.10)_34%,transparent_35%,transparent_42%,rgba(255,255,255,0.12)_43%,transparent_44%,transparent_51%,rgba(255,255,255,0.08)_52%,transparent_53%,transparent_60%,rgba(255,255,255,0.12)_61%,transparent_62%)] opacity-70" />
-        <div className="absolute left-[45%] top-0 h-full w-px rotate-[18deg] bg-white/8" />
-        <div className="absolute left-[61%] top-[-6%] h-[112%] w-px rotate-[18deg] bg-white/10" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#34396d_0%,#2f3463_46%,#262d56_100%)]" />
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 100 40"
+          aria-hidden="true"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M9 19.8c0-3.8 3.1-6.9 6.9-6.9 1.4 0 2.8.4 3.9 1.2 1.7-3 5-5 8.6-5 5.4 0 9.8 4.3 10.1 9.7h.8c3.8 0 6.8 3 6.8 6.8s-3 6.8-6.8 6.8H17.2c-4.6 0-8.4-3.8-8.4-8.4 0-1.5.4-2.9 1.2-4.2Z"
+            fill="rgba(255,255,255,0.21)"
+          />
+          <path
+            d="M30 16.2c0-3.3 2.7-6 6-6 1.3 0 2.5.4 3.5 1 1.6-2.9 4.7-4.8 8.2-4.8 5.2 0 9.5 4.2 9.5 9.4h.8c3.8 0 6.8 3 6.8 6.8s-3 6.8-6.8 6.8H37.1c-4 0-7.2-3.2-7.2-7.2 0-2.2 1-4.3 2.5-5.8Z"
+            fill="rgba(255,255,255,0.3)"
+          />
+          <path
+            d="M65 14.3c0-2.6 2.1-4.7 4.7-4.7.9 0 1.8.2 2.6.7 1.2-2.1 3.5-3.5 6.1-3.5 4 0 7.2 3.2 7.2 7.1h.7c2.8 0 5.2 2.3 5.2 5.1 0 2.8-2.4 5.2-5.2 5.2H70.8c-3.2 0-5.8-2.6-5.8-5.8 0-1.5.6-2.9 1.6-4.1Z"
+            fill="rgba(255,255,255,0.16)"
+          />
+          <path
+            d="M60 22.4l-2.3 7.7M68 23l-2.2 7.8M76 22.2l-2.2 7.8M84 23l-2.2 7.8M92 22.4l-2.2 7.7"
+            stroke="rgba(206,223,255,0.7)"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
       </>
     );
   }
 
-  if (variant === 'snow') {
+  if (variant === 'storm') {
     return (
       <>
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,#f8a650_0%,#f6b46b_46%,#f8cf98_100%)]" />
-        <div className="absolute left-[-8%] bottom-[-20%] h-20 w-[68%] rounded-[100%] bg-white/12" />
-        <div className="absolute left-[24%] bottom-[-14%] h-16 w-[52%] rounded-[100%] bg-white/14" />
-        <div className="absolute right-[-4%] bottom-[-24%] h-20 w-[48%] rounded-[100%] bg-white/10" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#2d315d_0%,#282d53_52%,#1f2648_100%)]" />
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 100 40"
+          aria-hidden="true"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M12 21.8c0-4.5 3.6-8.2 8.2-8.2 1.6 0 3.2.5 4.6 1.4 2-3.5 5.8-5.8 10.1-5.8 6.4 0 11.7 5.2 11.9 11.6 1.1-.4 2.3-.7 3.6-.7 5.2 0 9.5 4.2 9.5 9.5S55.6 39 50.4 39H22.2c-5.7 0-10.2-4.6-10.2-10.2 0-2.5.9-4.9 2.4-6.9Z"
+            fill="rgba(255,255,255,0.2)"
+          />
+          <path
+            d="M26 18.8c0-3.5 2.8-6.4 6.4-6.4 1.3 0 2.5.4 3.5 1 1.5-2.8 4.5-4.7 7.8-4.7 5 0 9 4 9 9h.8c3.7 0 6.8 3 6.8 6.8 0 3.7-3.1 6.8-6.8 6.8H33.6c-4.2 0-7.6-3.4-7.6-7.6 0-1.8.6-3.5 1.8-4.9Z"
+            fill="rgba(255,255,255,0.28)"
+          />
+          <path d="M58 13l-6 11h5l-3 9 12-15h-6l4-5Z" fill="rgba(255,208,108,0.95)" />
+          <path
+            d="M72 22l-2.6 8M79 22.6l-2.5 8M86 21.6l-2.5 8M93 22.2l-2.4 8"
+            stroke="rgba(206,223,255,0.68)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </>
+    );
+  }
+
+  if (variant === 'windy') {
+    return (
+      <>
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#4ca0e8_0%,#3f8fd7_50%,#2f79be_100%)]" />
+        <WindOverlaySvg />
+      </>
+    );
+  }
+
+  if (variant === 'fog') {
+    return (
+      <>
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#7ea2be_0%,#6f96b4_52%,#628aa8_100%)]" />
+        <FogOverlaySvg />
+      </>
+    );
+  }
+
+  if (variant === 'snow-night') {
+    return (
+      <>
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#1f2d57_0%,#223764_48%,#1c2f58_100%)]" />
+        <div
+          className={`absolute rounded-full bg-[#f7e8ae]/86 ${
+            isLarge ? 'right-[10%] top-[4%] h-16 w-16' : 'right-[10%] top-[-2%] h-12 w-12'
+          }`}
+        />
+        <div
+          className={`absolute rounded-[100%] bg-white/16 ${
+            isLarge
+              ? 'left-[-8%] bottom-[-4%] h-24 w-[70%]'
+              : 'left-[-10%] bottom-[-10%] h-14 w-[72%]'
+          }`}
+        />
+        <div
+          className={`absolute rounded-[100%] bg-white/12 ${
+            isLarge ? 'left-[22%] bottom-[8%] h-18 w-[50%]' : 'left-[20%] bottom-[2%] h-12 w-[54%]'
+          }`}
+        />
+        <div className="absolute left-[12%] top-[22%] h-2 w-2 rounded-full bg-white/80" />
+        <div className="absolute left-[24%] top-[34%] h-1.5 w-1.5 rounded-full bg-white/72" />
+        <div className="absolute left-[38%] top-[24%] h-2 w-2 rounded-[35%] bg-white/76" />
+        <div className="absolute left-[56%] top-[30%] h-2.5 w-2.5 rounded-full bg-white/78" />
+        <div className="absolute left-[70%] top-[18%] h-1.5 w-1.5 rounded-full bg-white/70" />
+        <div className="absolute left-[80%] top-[34%] h-3 w-3 rounded-[35%] bg-white/78" />
+      </>
+    );
+  }
+
+  if (variant === 'snow-day') {
+    return (
+      <>
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,#f6a24d_0%,#f7b160_50%,#f8ca90_100%)]" />
+        <div
+          className={`absolute rounded-[100%] bg-white/20 ${
+            isLarge
+              ? 'left-[-8%] bottom-[-4%] h-28 w-[72%]'
+              : 'left-[-10%] bottom-[-10%] h-16 w-[72%]'
+          }`}
+        />
+        <div
+          className={`absolute rounded-[100%] bg-white/15 ${
+            isLarge ? 'left-[26%] bottom-[7%] h-20 w-[54%]' : 'left-[22%] bottom-[2%] h-14 w-[56%]'
+          }`}
+        />
+        <div
+          className={`absolute rounded-[100%] bg-white/10 ${
+            isLarge ? 'left-[4%] bottom-[18%] h-14 w-[48%]' : 'left-[0%] bottom-[14%] h-10 w-[52%]'
+          }`}
+        />
+        <div className="absolute left-[12%] top-[18%] h-2.5 w-2.5 rounded-full bg-white/78" />
+        <div className="absolute left-[22%] top-[30%] h-1.5 w-1.5 rounded-full bg-white/70" />
+        <div className="absolute left-[36%] top-[20%] h-2 w-2 rounded-[35%] bg-white/72" />
+        <div className="absolute left-[54%] top-[28%] h-2.5 w-2.5 rounded-full bg-white/74" />
+        <div className="absolute left-[68%] top-[16%] h-1.5 w-1.5 rounded-full bg-white/70" />
+        <div className="absolute left-[78%] top-[32%] h-3 w-3 rounded-[35%] bg-white/76" />
+        <div className="absolute left-[84%] top-[22%] h-2 w-2 rounded-full bg-white/68" />
+        <div className="absolute left-[62%] top-[40%] h-1.5 w-1.5 rounded-full bg-white/64" />
       </>
     );
   }
 
   return (
     <>
-      <div className="absolute inset-0 bg-[linear-gradient(115deg,#3d90df_0%,#428cdf_50%,#4b97e8_100%)]" />
-      <div className="absolute left-[14%] top-[-30%] h-20 w-32 rounded-[100%] bg-white/12" />
-      <div className="absolute left-[34%] top-[-24%] h-16 w-28 rounded-[100%] bg-white/10" />
-      <div className="absolute left-[8%] top-[-10%] h-12 w-24 rounded-[100%] bg-white/9" />
+      <div className="absolute inset-0 bg-[linear-gradient(120deg,#438ddf_0%,#4289dc_52%,#3d85d9_100%)]" />
+      <div
+        className={`absolute rounded-full bg-sky-100/18 ${
+          isLarge ? 'left-[4%] top-[-2%] h-28 w-40' : 'left-[2%] top-[-16%] h-20 w-28'
+        }`}
+      />
+      <div
+        className={`absolute rounded-[999px] bg-sky-100/18 ${
+          isLarge ? 'left-[-2%] top-[12%] h-20 w-[58%]' : 'left-[-4%] top-[10%] h-14 w-[60%]'
+        }`}
+      />
+      <div
+        className={`absolute rounded-[999px] bg-sky-100/14 ${
+          isLarge ? 'left-[24%] top-[18%] h-16 w-[54%]' : 'left-[22%] top-[16%] h-12 w-[56%]'
+        }`}
+      />
+      <div
+        className={`absolute rounded-[999px] bg-sky-50/12 ${
+          isLarge ? 'right-[-6%] top-[22%] h-16 w-[48%]' : 'right-[-8%] top-[18%] h-12 w-[52%]'
+        }`}
+      />
+      <div
+        className={`absolute bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)] ${
+          isLarge ? 'inset-x-0 top-[18%] h-[18%]' : 'inset-x-0 top-[14%] h-[16%]'
+        }`}
+      />
     </>
   );
 }
@@ -242,6 +613,12 @@ export const WeatherCard = memo(function WeatherCard({
   const tintColor = weatherTintColors[_id];
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
+  const weatherTintStyle = hasCustomTint
+    ? {
+        borderColor: tintSurface.panelStyle?.borderColor,
+        boxShadow: tintSurface.panelStyle?.boxShadow,
+      }
+    : undefined;
   const textTokens = getCardReadableTextTokens({
     theme,
     tone: 'blue',
@@ -250,17 +627,20 @@ export const WeatherCard = memo(function WeatherCard({
   });
   const isGlass = theme === 'glass';
   const shell = getAccentCardShellTokens(theme, 'blue');
+  const weatherShellClassName = hasCustomTint
+    ? 'border'
+    : theme === 'light'
+      ? 'border-gray-200'
+      : theme === 'glass'
+        ? 'border-white/10'
+        : theme === 'black'
+          ? 'border-white/16'
+          : 'border-sky-700/70';
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
-  const isLarge = size === 'large' || size === 'extra-large';
+  const isLarge = size === 'large';
   const usesDetailedLayout = isMedium || isLarge;
-  const visibleForecast = isMedium
-    ? forecast.slice(0, 7)
-    : isLarge
-      ? forecast.slice(0, 8)
-      : isSmall
-        ? forecast.slice(0, 4)
-        : forecast.slice(0, 4);
+  const visibleForecast = isSmall ? forecast.slice(0, 4) : forecast.slice(0, 7);
   const precipitationValue = `${precipitation}${precipitationUnit ? ` ${precipitationUnit}` : ''}`;
   const summaryLabel = formatWeatherConditionLabel(condition);
   const cityName = getWeatherCityName(location);
@@ -296,10 +676,10 @@ export const WeatherCard = memo(function WeatherCard({
   return (
     <>
       <CardWrapper
-        className={`${cardShell.backdropClassName} ${hasCustomTint ? 'border' : shell.containerClassName} ${
+        className={`${cardShell.backdropClassName} ${weatherShellClassName} ${
           isSmall || usesDetailedLayout ? 'p-5' : 'p-4.5'
         } ${!_isEditMode ? 'cursor-pointer' : ''}`}
-        style={tintSurface.panelStyle}
+        style={weatherTintStyle}
         lightOverlayClassName={
           hasCustomTint
             ? (tintSurface.overlayClassName ?? 'bg-transparent')
@@ -307,7 +687,7 @@ export const WeatherCard = memo(function WeatherCard({
         }
         interactionProps={interaction.cardProps}
       >
-        <WeatherBackground condition={condition} hasCustomTint={hasCustomTint} />
+        <WeatherBackground condition={condition} hasCustomTint={hasCustomTint} size={size} />
 
         {hasCustomTint ? (
           tintSurface.glowStyle ? (
@@ -317,7 +697,7 @@ export const WeatherCard = memo(function WeatherCard({
           <div className={`absolute inset-0 ${shell.glowClassName} opacity-55`} />
         )}
 
-        <div className="relative z-[2] h-full flex flex-col">
+        <div className="relative z-2 flex h-full flex-col">
           <div
             className={`flex items-start justify-between gap-3 ${isMedium || isSmall ? 'mb-2' : 'mb-3'}`}
           >
@@ -424,7 +804,7 @@ export const WeatherCard = memo(function WeatherCard({
               {/* Main Section: Temperature + Details */}
               <div className="mb-3 flex items-end justify-between">
                 {/* Temperature with rain forecast below */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div
                     className="mb-1 text-3xl font-bold leading-none"
                     style={{ color: textPrimary, textShadow: weatherTextTreatment.textShadow }}
@@ -447,7 +827,7 @@ export const WeatherCard = memo(function WeatherCard({
                   ) : null}
                 </div>
 
-                <div className="space-y-0.5 flex-shrink-0">
+                <div className="shrink-0 space-y-0.5">
                   <CaptionValue
                     caption={t('weather.precipitation')}
                     value={precipitationValue}

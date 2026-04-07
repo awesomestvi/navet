@@ -55,6 +55,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Home Room Grouping** - Switch the Home room between custom, room, type, or no-grouping layouts
 - **Page Zoom Setting** - Appearance settings include page zoom presets so the whole dashboard can be scaled without relying on browser zoom
 - **Live Weather Entity Card** - Home Assistant weather entities now render as the dashboard weather card with forecast and solar data from Home Assistant
+- **Weather Atmosphere Overlays** - Cloudy weather cards now support texture-driven atmospheric overlays for softer, more realistic cloud depth
 - **Calendar Entities** - Home Assistant calendar entities now render through the live calendar card with per-card source selection, week/month views, and event details
 - **Person Entities** - Home Assistant `person.*` entities render as live person cards with profile images and normalized presence/location text
 - **Helpers and Scripts** - Home Assistant helper domains and scripts can be added through the existing sensor and switch-style card paths

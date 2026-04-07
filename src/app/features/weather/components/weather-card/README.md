@@ -63,6 +63,8 @@ interface WeatherCardProps {
 - Opens a settings dialog on card tap outside edit mode
 - Keeps `large` / `extra-large` on the detailed layout path
 - Uses the same compact header + forecast strip layout for both `small` and `medium`
+- Includes handcrafted dynamic weather illustration variants for:
+  sunny day, moony/clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
 
 ## Maintenance Notes
 

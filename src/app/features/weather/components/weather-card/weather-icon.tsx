@@ -39,15 +39,23 @@ export function formatWeatherConditionLabel(condition: WeatherCondition | string
 
   switch (normalized) {
     case 'clear-night':
+    case 'night-clear':
+    case 'night':
+    case 'moony':
       return 'Clear night';
     case 'partlycloudy':
     case 'partly-cloudy':
     case 'partly cloudy':
       return 'Partly cloudy';
+    case 'partlycloudy-night':
+    case 'partly-cloudy-night':
+      return 'Partly cloudy night';
     case 'lightning-rainy':
       return 'Thunderstorms';
     case 'snowy-rainy':
       return 'Sleet';
+    case 'snow-night':
+      return 'Snowy night';
     case 'windy-variant':
       return 'Windy';
     default:
@@ -59,36 +67,51 @@ export function getWeatherIconComponent(condition: WeatherCondition | string): L
   switch (normalizeWeatherCondition(condition)) {
     case 'clear':
     case 'sunny':
+    case 'fair':
       return Sun;
     case 'clear-night':
+    case 'night-clear':
+    case 'night':
+    case 'moony':
       return Moon;
     case 'cloudy':
     case 'overcast':
       return Cloud;
+    case 'fog':
+    case 'mist':
+    case 'hazy':
+      return CloudFog;
     case 'partly cloudy':
     case 'partlycloudy':
     case 'partly-cloudy':
+    case 'partlycloudy-day':
       return CloudSun;
+    case 'partlycloudy-night':
+    case 'partly-cloudy-night':
+      return Moon;
     case 'rainy':
     case 'rain':
     case 'pouring':
+    case 'showers':
       return CloudRain;
     case 'snowy':
     case 'snow':
     case 'snowy-rainy':
+    case 'snow-night':
+    case 'blizzard':
       return CloudSnow;
     case 'drizzle':
       return CloudDrizzle;
-    case 'fog':
-    case 'mist':
-      return CloudFog;
     case 'thunderstorm':
     case 'storm':
     case 'lightning':
     case 'lightning-rainy':
+    case 'hail':
+    case 'exceptional':
       return CloudLightning;
     case 'windy':
     case 'windy-variant':
+    case 'breezy':
       return Wind;
     default:
       return Cloud;

@@ -8,7 +8,7 @@ import { getThemeColorValue } from './theme/theme-colors';
 import { getThemeSurfaceTokens } from './theme/theme-surface-tokens';
 
 export type { CardSize } from './card-size';
-export { CARD_GRID_ROW_CLASS } from './card-size';
+export { CARD_GRID_ROW_CLASS, getStandardCardPadding } from './card-size';
 
 interface CardSizeSelectorProps {
   currentSize: CardSize;

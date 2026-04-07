@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
@@ -23,16 +23,17 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     initialPosition === 100 ? 'open' : initialPosition === 0 ? 'closed' : 'open'
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const coverTimerRef = useRef<number | null>(null);
+  const movementRef = useRef<number | null>(null);
   const { t } = useI18n();
 
-  useEffect(() => {
-    return () => {
-      if (coverTimerRef.current !== null) {
-        clearTimeout(coverTimerRef.current);
-      }
-    };
+  const stopMovement = useCallback(() => {
+    if (movementRef.current !== null) {
+      clearInterval(movementRef.current);
+      movementRef.current = null;
+    }
   }, []);
+
+  useEffect(() => stopMovement, [stopMovement]);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
 
   useEffect(() => {
@@ -50,54 +51,70 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
-  // Handle position changes with state tracking
+  // Used by the large-card slider for direct position setting.
   const handlePositionChange = (newPosition: number) => {
-    const oldPosition = position;
+    stopMovement();
     setPosition(newPosition);
-
-    // Set state based on movement
-    if (newPosition > oldPosition) {
-      setCoverState('opening');
-      coverTimerRef.current = window.setTimeout(() => {
-        setCoverState(newPosition === 100 ? 'open' : 'opening');
-      }, 500);
-    } else if (newPosition < oldPosition) {
-      setCoverState('closing');
-      coverTimerRef.current = window.setTimeout(() => {
-        setCoverState(newPosition === 0 ? 'closed' : 'closing');
-      }, 500);
-    }
+    setCoverState(newPosition === 100 ? 'open' : newPosition === 0 ? 'closed' : 'open');
   };
 
+  // Step ~2% every 50 ms → ~2.5 s full travel, matching a real blind.
+  const STEP = 2;
+  const INTERVAL_MS = 50;
+
   const handleOpen = () => {
-    handlePositionChange(100);
+    stopMovement();
+    setCoverState('opening');
+    movementRef.current = window.setInterval(() => {
+      setPosition((prev) => {
+        const next = Math.min(100, prev + STEP);
+        if (next >= 100) {
+          stopMovement();
+          setCoverState('open');
+        }
+        return next;
+      });
+    }, INTERVAL_MS);
   };
 
   const handleClose = () => {
-    handlePositionChange(0);
+    stopMovement();
+    setCoverState('closing');
+    movementRef.current = window.setInterval(() => {
+      setPosition((prev) => {
+        const next = Math.max(0, prev - STEP);
+        if (next <= 0) {
+          stopMovement();
+          setCoverState('closed');
+        }
+        return next;
+      });
+    }, INTERVAL_MS);
   };
 
   const handleStop = () => {
-    // Stop the cover at current position
-    setCoverState(position === 100 ? 'open' : position === 0 ? 'closed' : 'open');
+    stopMovement();
+    setPosition((prev) => {
+      setCoverState(prev >= 100 ? 'open' : prev <= 0 ? 'closed' : 'open');
+      return prev;
+    });
   };
 
-  // Get state text and color
+  // Get state text and color — active states use the accent color, inactive use muted
   const getStateDisplay = () => {
     switch (coverState) {
       case 'open':
-        return { text: t('cover.state.open'), color: surface.textSecondary };
+        return { text: t('cover.state.open'), color: colors.cover.open.accent };
+      case 'opening':
+        return { text: t('cover.state.opening'), color: colors.cover.open.accent };
       case 'closed':
         return { text: t('cover.state.closed'), color: surface.textSecondary };
-      case 'opening':
-        return { text: t('cover.state.opening'), color: surface.textSecondary };
       case 'closing':
         return { text: t('cover.state.closing'), color: surface.textSecondary };
     }
   };
 
   const stateDisplay = getStateDisplay();
-  const cardColors = position > 50 ? colors.cover.open : colors.cover.closed;
   const cardId = `cover-${name.toLowerCase().replace(/ /g, '-')}`;
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: t('cover.ariaLabel', { name }),
@@ -125,7 +142,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       size={size}
       isEditMode={isEditMode}
       cardId={cardId}
-      cardColors={cardColors}
+      openColors={colors.cover.open}
+      closedColors={colors.cover.closed}
       cardProps={cardInteraction.cardProps}
       iconButtonProps={cardInteraction.iconButtonProps}
       settingsButtonProps={cardInteraction.settingsButtonProps}
