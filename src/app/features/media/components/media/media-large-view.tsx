@@ -7,7 +7,6 @@ import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import { isMediaPlayerProxyUrl } from '@/app/utils/home-assistant-url';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
-import { MediaMarqueeText } from './media-marquee-text';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
@@ -226,17 +225,18 @@ export function MediaLargeView({
           </div>
 
           <div className="mt-3 min-w-0">
-            <MediaMarqueeText
-              text={title}
-              className={`text-sm font-semibold ${iconTone}`}
+            <div
+              className={`truncate text-sm font-semibold ${iconTone}`}
               style={{ color: textTokens.titleColor }}
-            />
-            <MediaMarqueeText
-              text={artist}
-              className={`text-xs ${subtitleTone}`}
-              threshold={28}
+            >
+              {title}
+            </div>
+            <div
+              className={`truncate text-xs ${subtitleTone}`}
               style={{ color: textTokens.subtitleColor }}
-            />
+            >
+              {artist}
+            </div>
           </div>
 
           <div className="mt-3">

@@ -34,6 +34,26 @@ function parseTimestamp(value: unknown): number | null {
   return Number.isNaN(timestamp) ? null : timestamp;
 }
 
+function readImageUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function resolveHomeAssistantImageUrl(
+  imageUrl: string | undefined,
+  homeAssistantUrl: string | undefined
+) {
+  if (!imageUrl) {
+    return undefined;
+  }
+
+  return imageUrl.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${imageUrl}` : imageUrl;
+}
+
 export const CameraCardContainer = memo(function CameraCardContainer({
   id,
   name,
@@ -51,12 +71,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [now, setNow] = useState(() => Date.now());
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const rawEntityPicture =
-    typeof liveAttrs?.entity_picture === 'string' ? liveAttrs.entity_picture : initialEntityPicture;
-
-  const baseSnapshotUrl = rawEntityPicture?.startsWith('/')
-    ? `${config?.url ?? ''}${rawEntityPicture}`
-    : rawEntityPicture;
+  const liveEntityPicture =
+    readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
+  const initialSnapshotUrl = readImageUrl(initialEntityPicture);
+  const baseSnapshotUrl = liveEntityPicture
+    ? resolveHomeAssistantImageUrl(liveEntityPicture, config?.url)
+    : initialSnapshotUrl;
 
   // Append cache-busting param so refresh forces a new frame from HA
   const snapshotUrl = baseSnapshotUrl

@@ -66,7 +66,7 @@ export function Tabs({ value, defaultValue, onValueChange, children }: TabsProps
 export interface TabListProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   variant?: 'default' | 'compact' | 'segmented';
-  size?: 'default' | 'compact';
+  size?: 'default' | 'small' | 'compact';
 }
 
 export type TabListVariant = NonNullable<TabListProps['variant']>;
@@ -78,14 +78,20 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
 ) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const isSmall = size === 'small';
+  const isCompact = size === 'compact';
   const compactShellClassName =
     variant === 'segmented'
-      ? size === 'compact'
+      ? isSmall
         ? 'grid min-w-0 items-stretch gap-2 rounded-[22px] border p-1.5'
-        : 'grid min-w-0 items-stretch gap-2 rounded-[24px] border p-2.5'
-      : size === 'compact'
+        : isCompact
+          ? 'grid min-w-0 items-stretch gap-0.75 rounded-[18px] border p-0.75'
+          : 'grid min-w-0 items-stretch gap-2 rounded-[24px] border p-2.5'
+      : isSmall
         ? 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[22px] p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible'
-        : 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[24px] p-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible';
+        : isCompact
+          ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border rounded-[18px] p-0.75 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible'
+          : 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[24px] p-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible';
 
   return (
     <div
@@ -94,7 +100,11 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
       role="tablist"
       className={cn(
         variant === 'default'
-          ? 'flex min-w-0 items-center gap-2 overflow-x-auto border px-3 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-4 md:py-3 rounded-[24px] md:rounded-[28px]'
+          ? isCompact
+            ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border px-1 py-0.75 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-1.5 md:py-1 rounded-[18px] md:rounded-[20px]'
+            : isSmall
+              ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-2.5 md:py-2 rounded-[22px] md:rounded-[24px]'
+              : 'flex min-w-0 items-center gap-2 overflow-x-auto border px-3 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-4 md:py-3 rounded-[24px] md:rounded-[28px]'
           : compactShellClassName,
         surface.borderStrong,
         surface.panel,
@@ -109,7 +119,7 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
 export interface TabTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'value'> {
   value: string;
   children: ReactNode;
-  size?: 'default' | 'compact';
+  size?: 'default' | 'small' | 'compact';
 }
 
 export type TabTriggerSize = NonNullable<TabTriggerProps['size']>;
@@ -134,6 +144,12 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
         : theme === 'glass'
           ? 'border-transparent text-white/82 hover:bg-white/16'
           : `${surface.textSecondary} border-transparent hover:bg-white/10`;
+  const triggerSizeClassName =
+    size === 'small'
+      ? 'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-3.5'
+      : size === 'compact'
+        ? 'inline-flex min-h-7 shrink-0 items-center justify-center gap-1 rounded-full border px-2 text-[12px] font-medium transition-[background-color,border-color,box-shadow,color] md:min-h-7 md:px-2.5'
+        : 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-4';
 
   return (
     <button
@@ -151,9 +167,7 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
         onClick?.(event);
       }}
       className={cn(
-        size === 'compact'
-          ? 'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-3.5'
-          : 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-4',
+        triggerSizeClassName,
         navetTypographyTokens.control,
         getThemeFocusRingClassName(theme),
         isActive ? surface.textPrimary : inactiveClassName,

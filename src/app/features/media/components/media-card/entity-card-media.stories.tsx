@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { MediaCard } from '@/app/features/media';
+import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
 import {
   EntityCardStoryFrame,
   noopCardSizeChange,
@@ -25,12 +26,13 @@ const meta = {
     },
   },
   args: {
-    id: 'media_player.living_room_tv',
-    name: 'Living Room TV',
+    id: 'media_player.living_room_speaker',
+    name: 'Living Room Speaker',
     room: 'Living Room',
-    title: 'Aerial',
-    artist: 'Navet Studio',
-    entityType: 'TV',
+    title: 'Smells Like Teen Spirit',
+    artist: 'Nirvana',
+    entityType: 'Speaker',
+    entityPicture: nevermindAlbumArt,
     state: 'playing',
     volume: 42,
     isMuted: false,

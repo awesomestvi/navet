@@ -1,4 +1,4 @@
-import { Check, Edit2 } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   Button,
@@ -8,7 +8,11 @@ import {
 } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
-import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import {
+  getCustomCardTintSurface,
+  normalizeCustomCardTint,
+  withTintAlpha,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -31,6 +35,7 @@ export function NoteWidget({
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const accentColor = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
   const dialogShell = customCardDialogShellProps(
     { panel: surface.panelClassName, border: surface.borderClassName },
     tintSurface,
@@ -61,40 +66,75 @@ export function NoteWidget({
     setIsEditing(false);
   };
 
-  return (
-    <div
-      className={`${surface.panelClassName} relative flex h-full flex-col`}
-      style={surface.panelStyle}
-    >
-      {surface.glowStyle ? <div className="absolute inset-0" style={surface.glowStyle} /> : null}
-      {surface.overlayClassName ? (
-        <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
-      ) : null}
+  const paperShellClassName =
+    theme === 'light'
+      ? 'border-black/5 bg-[linear-gradient(180deg,rgba(255,252,244,0.98)_0%,rgba(255,248,232,0.98)_100%)]'
+      : 'border-white/10 bg-[linear-gradient(180deg,rgba(255,247,224,0.96)_0%,rgba(248,236,205,0.96)_100%)]';
+  const ruledLineClassName =
+    theme === 'light'
+      ? 'bg-[repeating-linear-gradient(180deg,transparent_0,transparent_27px,rgba(148,163,184,0.22)_27px,rgba(148,163,184,0.22)_28px)]'
+      : 'bg-[repeating-linear-gradient(180deg,transparent_0,transparent_27px,rgba(120,113,108,0.22)_27px,rgba(120,113,108,0.22)_28px)]';
+  const editorPaperStyle = {
+    background:
+      theme === 'light'
+        ? 'linear-gradient(180deg, rgba(255,252,244,0.99) 0%, rgba(255,248,232,0.98) 100%)'
+        : 'linear-gradient(180deg, rgba(255,250,236,0.96) 0%, rgba(248,236,205,0.94) 100%)',
+    borderColor: theme === 'light' ? 'rgba(120, 113, 108, 0.18)' : 'rgba(255, 255, 255, 0.18)',
+    boxShadow:
+      theme === 'light'
+        ? '0 18px 38px -30px rgba(120, 113, 108, 0.18)'
+        : '0 18px 38px -30px rgba(15, 23, 42, 0.34)',
+  };
+  const editorTopSheenStyle = {
+    background:
+      theme === 'light'
+        ? 'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.06) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 100%)',
+  };
+  const editorRuledLineStyle = {
+    backgroundImage:
+      theme === 'light'
+        ? 'repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(148,163,184,0.16) 27px, rgba(148,163,184,0.16) 28px)'
+        : 'repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(120,113,108,0.16) 27px, rgba(120,113,108,0.16) 28px)',
+  };
+  const binderHolesStyle = {
+    backgroundImage:
+      'radial-gradient(circle 6.5px at center 7px, rgba(255,255,255,0.68) 0 74%, rgba(0,0,0,0.14) 75% 88%, transparent 89%)',
+    backgroundRepeat: 'repeat-y',
+    backgroundSize: '14px 30px',
+    backgroundPosition: 'center top',
+  };
 
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden rounded-[28px]">
       <div className="relative z-[2] flex h-full flex-col">
         {!isEditing ? (
           <button
             type="button"
             onClick={handleStartEdit}
-            className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
-            style={{ backgroundColor: surface.subtleFill }}
+            className="absolute bottom-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/70 text-amber-950/70 shadow-[0_6px_24px_rgba(15,23,42,0.12)] backdrop-blur-sm transition-opacity hover:opacity-90"
           >
-            <Edit2 className={`h-4 w-4 ${surface.textSecondary}`} />
+            <Edit2 className="h-4 w-4" />
           </button>
         ) : null}
 
-        <div className="flex flex-1 flex-col">
+        <div className={`relative flex flex-1 flex-col border ${paperShellClassName}`}>
+          <div className="absolute inset-x-0 top-0 h-8 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),rgba(255,255,255,0.04))]" />
+          <div
+            className="absolute inset-y-0 left-3 w-3"
+            style={binderHolesStyle}
+            aria-hidden="true"
+          />
+          <div className={`absolute inset-0 ${ruledLineClassName}`} />
+
           {isEditing ? null : (
-            <button
-              type="button"
-              onClick={handleStartEdit}
-              className={`flex-1 cursor-pointer rounded-xl p-3 text-left text-sm transition-colors ${
-                note === emptyNote ? surface.textSecondary : surface.textPrimary
+            <p
+              className={`relative z-10 flex-1 whitespace-pre-wrap pb-[15px] pl-[35px] pr-[15px] pt-[30px] text-left text-[15px] leading-7 [text-wrap:pretty] ${
+                note === emptyNote ? 'text-amber-950/45' : 'text-amber-950/85'
               }`}
-              style={{ backgroundColor: surface.subtleFill }}
             >
-              <p className="whitespace-pre-wrap">{note}</p>
-            </button>
+              {note}
+            </p>
           )}
         </div>
 
@@ -122,35 +162,52 @@ export function NoteWidget({
             />
           ) : null}
 
-          <Textarea
-            value={tempNote}
-            onChange={(e) => setTempNote(e.target.value)}
-            containerClassName="w-full"
-            textareaClassName={`min-h-40 w-full resize-none rounded-xl p-3 text-sm ${surface.textPrimary}`}
-            style={{
-              backgroundColor: surface.subtleFill,
-              border: `2px solid ${getThemeColorValue(primaryColor)}`,
-            }}
-            placeholder={t('widgets.note.placeholder')}
-          />
+          <div className="relative overflow-hidden rounded-[24px] border" style={editorPaperStyle}>
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-10"
+              style={editorTopSheenStyle}
+            />
+            <div
+              className="pointer-events-none absolute inset-y-0 left-3 w-3"
+              style={binderHolesStyle}
+              aria-hidden="true"
+            />
+            <div className="pointer-events-none absolute inset-0" style={editorRuledLineStyle} />
+            <Textarea
+              value={tempNote}
+              onChange={(e) => setTempNote(e.target.value)}
+              containerClassName="w-full"
+              textareaClassName="h-40 min-h-40 w-full resize-none border-0 bg-transparent pb-[15px] pl-[35px] pr-[15px] pt-[30px] align-top text-[15px] leading-7 text-amber-950/85 placeholder:text-amber-950/35 shadow-none"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+              }}
+              placeholder={t('widgets.note.placeholder')}
+            />
+          </div>
           <div className="mt-3 flex gap-2">
             <Button
               onClick={handleCancel}
               variant="secondary"
-              className={`flex-1 rounded-lg py-2 text-xs ${surface.textSecondary}`}
-              style={{ backgroundColor: surface.subtleFill }}
+              className="flex-1 rounded-full border py-2 text-xs shadow-[0_6px_18px_rgba(15,23,42,0.06)]"
+              style={{
+                backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.08 : 0.14),
+                borderColor: withTintAlpha(accentColor, theme === 'light' ? 0.18 : 0.24),
+                color: theme === 'light' ? '#6b4a2d' : 'rgba(255,255,255,0.78)',
+              }}
             >
               {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSave}
-              className="flex-1 rounded-lg py-2 text-xs text-white"
-              style={{ backgroundColor: getThemeColorValue(primaryColor) }}
+              className="flex-1 rounded-full py-2 text-xs text-white shadow-[0_10px_24px_rgba(249,115,22,0.28)]"
+              style={{
+                backgroundColor: accentColor,
+                boxShadow: `0 10px 24px -12px ${withTintAlpha(accentColor, 0.55)}`,
+              }}
             >
-              <div className="flex items-center justify-center gap-1">
-                <Check className="h-3 w-3" />
-                <span>{t('widgets.note.save')}</span>
-              </div>
+              {t('widgets.note.save')}
             </Button>
           </div>
         </DialogShell>

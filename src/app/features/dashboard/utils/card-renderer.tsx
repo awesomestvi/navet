@@ -6,7 +6,6 @@ import { HVACCard } from '@/app/features/climate';
 import { LightCard, SwitchCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
 import { PersonCard } from '@/app/features/person';
-import { PowerCard } from '@/app/features/power';
 import { SceneCard } from '@/app/features/scenes';
 import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
 import { GroupedSensorCard, SensorCard, type SensorReading } from '@/app/features/sensors';
@@ -67,17 +66,6 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       initialMode={device.mode as string | undefined}
       initialAction={device.action as string | undefined}
       initialState={(device.mode as string | undefined) !== 'off'}
-      size={size}
-      onSizeChange={handleSizeChange}
-      isEditMode={isEditMode}
-    />
-  ),
-
-  power: ({ device, size, handleSizeChange, isEditMode }) => (
-    <PowerCard
-      percentage={device.percentage as number}
-      usage={String(device.usage ?? '')}
-      cost={String(device.cost ?? '')}
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}

@@ -18,7 +18,6 @@ import {
   Thermometer,
   Tv,
   User,
-  Zap,
 } from 'lucide-react';
 import type { DeviceCollection } from '../types/device.types';
 
@@ -26,7 +25,6 @@ export const DEVICE_TYPE_ICONS: Record<string, LucideIcon> = {
   lights: Lightbulb,
   hvac: Snowflake,
   climate: Thermometer,
-  power: Zap,
   media: Tv,
   weather: CloudSun,
   switches: Power,

@@ -13,8 +13,10 @@ type TabsStoryProps = {
 function TabsPlayground({ variant, size }: TabsStoryProps) {
   const isHintVariant = variant === 'with icon and hints';
   const isIconVariant = variant === 'with icons';
-  const triggerSize: TabTriggerSize = size === 'compact' ? 'compact' : 'default';
-  const hintTriggerPaddingClassName = size === 'compact' ? 'px-3 py-2.5' : 'px-4 py-3';
+  const triggerSize: TabTriggerSize =
+    size === 'compact' ? 'compact' : size === 'small' ? 'small' : 'default';
+  const hintTriggerPaddingClassName =
+    size === 'compact' ? 'px-2 py-1.5' : size === 'small' ? 'px-3 py-2.5' : 'px-4 py-3';
 
   if (isHintVariant) {
     return (
@@ -148,14 +150,14 @@ const meta = {
     },
     size: {
       control: 'select',
-      options: ['default', 'compact'],
+      options: ['default', 'small', 'compact'],
     },
   },
   parameters: {
     docs: {
       description: {
         component:
-          'Shared tabs primitive styled to match Navet settings tabs and the add-card segmented control. Use the controls to switch shell variant and trigger size.',
+          'Shared tabs primitive styled to match Navet settings tabs and the add-card segmented control. `Small` is the tighter option, while `compact` is the most minimal footprint.',
       },
     },
   },

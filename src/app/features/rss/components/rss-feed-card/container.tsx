@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
@@ -12,6 +12,8 @@ import { useRSSFeedItems } from './use-rss-feed-items';
 import { useRSSFeedSources } from './use-rss-feed-sources';
 import { RSSFeedCardView } from './view';
 
+const RSS_REFRESH_INTERVAL_SECONDS = 120;
+
 export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   cardId,
   inEditMode = false,
@@ -24,13 +26,17 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 }: RSSFeedCardProps) {
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const { theme, colors, primaryColor } = useTheme();
-  const { t } = useI18n();
+  const { t, formatRelativeTime } = useI18n();
   const allDevices = useDevices();
   const rooms = useRooms(allDevices);
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
   const primaryColorValue = getThemeColorValue(primaryColor);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeProviderId, setActiveProviderId] = useState<'all' | string>('all');
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [, setSecondsUntilRefresh] = useState(RSS_REFRESH_INTERVAL_SECONDS);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const {
     providers,
     selectedProviders,
@@ -42,11 +48,85 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
     articleCount,
     setArticleCount,
   } = useRSSFeedSources(cardId);
-  const { latestArticle, items, isLoading, error } = useRSSFeedItems(
+  const { items, isLoading, error } = useRSSFeedItems(
     selectedProviders,
     entities,
-    articleCount
+    articleCount,
+    refreshNonce
   );
+  const providerSelectionKey = selectedProviderIds.join('|');
+
+  useEffect(() => {
+    void providerSelectionKey;
+    setActiveProviderId('all');
+  }, [providerSelectionKey]);
+
+  useEffect(() => {
+    if (!isLoading && !error) {
+      setLastUpdatedAt(new Date());
+    }
+  }, [error, isLoading]);
+
+  useEffect(() => {
+    void providerSelectionKey;
+    setSecondsUntilRefresh(RSS_REFRESH_INTERVAL_SECONDS);
+
+    const intervalId = window.setInterval(() => {
+      setSecondsUntilRefresh((current) => {
+        if (current <= 1) {
+          setRefreshNonce((value) => value + 1);
+          return RSS_REFRESH_INTERVAL_SECONDS;
+        }
+
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [providerSelectionKey]);
+
+  const filteredItems = useMemo(() => {
+    if (activeProviderId === 'all') {
+      return items;
+    }
+
+    const activeProvider = selectedProviders.find((provider) => provider.id === activeProviderId);
+    if (!activeProvider) {
+      return items;
+    }
+
+    return items.filter((item) => item.source === activeProvider.name);
+  }, [activeProviderId, items, selectedProviders]);
+
+  const filteredLatestArticle = filteredItems[0] ?? null;
+  const lastUpdatedLabel = useMemo(() => {
+    if (!lastUpdatedAt) {
+      return t('rss.recently');
+    }
+
+    const diffMinutes = Math.max(0, Math.round((Date.now() - lastUpdatedAt.getTime()) / 60000));
+
+    if (diffMinutes < 1) {
+      return t('rss.recently');
+    }
+
+    if (diffMinutes < 60) {
+      return formatRelativeTime(-diffMinutes, 'minute');
+    }
+
+    const diffHours = Math.round(diffMinutes / 60);
+    if (diffHours < 24) {
+      return formatRelativeTime(-diffHours, 'hour');
+    }
+
+    const diffDays = Math.round(diffHours / 24);
+    return formatRelativeTime(-diffDays, 'day');
+  }, [formatRelativeTime, lastUpdatedAt, t]);
+
+  const handleRefetch = () => {
+    setRefreshNonce((value) => value + 1);
+    setSecondsUntilRefresh(RSS_REFRESH_INTERVAL_SECONDS);
+  };
 
   const handleArticleClick = (url: string) => {
     if (!inEditMode) {
@@ -73,14 +153,19 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         tintColor={tintColor}
         isSmall={isSmall}
         isMedium={isMedium}
-        latestArticle={latestArticle}
-        items={items}
+        latestArticle={filteredLatestArticle}
+        items={filteredItems}
+        selectedProviders={selectedProviders}
+        activeProviderId={activeProviderId}
+        onActiveProviderChange={setActiveProviderId}
         handleArticleClick={handleArticleClick}
         isLoading={isLoading}
         error={error}
         hasConfiguredProviders={providers.length > 0}
         hasSelectedProviders={selectedProviderIds.length > 0}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onRefetch={handleRefetch}
+        lastUpdatedLabel={lastUpdatedLabel}
       />
       {isSettingsOpen ? (
         <RSSFeedSettingsDialog

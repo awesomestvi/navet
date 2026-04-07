@@ -240,7 +240,7 @@ When creating a new card component:
 - `Components/Patterns/` — composed shared UI sections and layouts
 - `Components/Shared/` — app-specific shared controls that are reused across features
 - `App Shell/Header/`, `App Shell/Navigation/`, `App Shell/Notifications/`, `App Shell/Sections/` — topbar, search, sidebar, room navigation, notifications, and section customization
-- `Cards/Overview/`, `Cards/Entity/`, `Cards/Widget/` — dashboard catalog/matrices, HA entity cards, and custom/widget cards
+- `Cards/Overview/`, `Cards/Entity/`, `Cards/Custom/` — dashboard catalog/matrices, HA entity cards, and custom/widget cards
 - `Dashboard/` — add-card, edit-mode, and onboarding flows
 - `Energy/Charts/`, `Energy/Primitives/`, `Energy/Widgets/` — energy feature visuals and shells
 - `Settings/Patterns/`, `Settings/Preview/`, `Settings/Sections/`, `Settings/Dialogs/` — reusable settings shells, preview surfaces, real settings sections, and per-entity settings dialogs
@@ -274,4 +274,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** April 3, 2026
+**Last Updated:** April 8, 2026

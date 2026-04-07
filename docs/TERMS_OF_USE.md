@@ -1,6 +1,6 @@
 # Terms of Use
 
-**Last Updated:** March 13, 2026
+**Last Updated:** April 8, 2026
 
 ## Code License
 

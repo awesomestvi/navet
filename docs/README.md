@@ -24,7 +24,7 @@ Complete documentation for the Navet smart home dashboard.
 - **[Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)** - Internal system entrypoints and the recommended in-repo Storybook path
 - **[UI Guidelines](../design-system/UI-GUIDELINES.md)** - Color system, typography, glass effects, component patterns
 - **[Layout Structure](../design-system/LAYOUT-STRUCTURE.md)** - Sidebar, header, grid, responsive layout
-- **[Features](../design-system/FEATURES.md)** - Auth, theme system, navigation, camera card, dashboard builder
+- **[Features](../design-system/FEATURES.md)** - Auth, theme system, navigation, media/security/entity cards, dashboard builder
 - **[Moodboard](../design-system/MOODBOARD.md)** - Design inspiration and visual direction
 - **[React + Zustand Guide](technical/REACT_ZUSTAND.md)** - Shared state rules, persistence contracts, and controller/store integration patterns
 
@@ -42,7 +42,7 @@ Complete documentation for the Navet smart home dashboard.
 
 ## 🎯 Common Tasks
 
-**Add a new widget** → [Widget System → Creating Custom Widgets](WIDGETS.md#creating-custom-widgets)
+**Add a new widget** → [Widget System](WIDGETS.md)
 
 **Contribute to the project** → [Contributing Guide](../CONTRIBUTING.md)
 
@@ -51,7 +51,7 @@ Complete documentation for the Navet smart home dashboard.
 **Understand the design system** → [Design System](../design-system/README.md)
 
 **Run the UI workshop** → [Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)
-Current workshop coverage includes theme docs, primitives/patterns/shared component layers, app shell, cards, dashboard flows, energy, and settings dialogs.
+Current workshop coverage includes theme docs, primitives/patterns/shared component layers, app shell, cards (entity + custom), dashboard flows, energy, and settings dialogs.
 
 **Run Navet in Docker or as a Home Assistant add-on** → [Docker and Home Assistant Add-on](DOCKER_HOME_ASSISTANT_ADDON.md)
 
@@ -65,4 +65,4 @@ Current workshop coverage includes theme docs, primitives/patterns/shared compon
 
 ---
 
-**Last Updated:** April 3, 2026
+**Last Updated:** April 8, 2026

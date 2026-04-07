@@ -13,7 +13,6 @@ const DEVICE_GROUPS = [
   { domain: 'vacuum', type: 'vacuums', deviceKey: 'vacuums' },
   { domain: 'climate', type: 'climate', deviceKey: 'climate' },
   { domain: 'weather', type: 'weather', deviceKey: 'weather' },
-  { domain: 'sensor', type: 'power', deviceKey: 'power' },
 ] as const;
 
 export function useHeaderSearch() {

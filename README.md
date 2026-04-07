@@ -35,7 +35,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Multi-Language UI** - English, Swedish, German, French, and Spanish interface support with locale-aware date, time, and number formatting
 - **Dynamic Greeting** - Header greeting rotates on each session: time-of-day greetings (Good morning/afternoon/evening/night) with occasional casual variants (Hi, Hey, Welcome back), fully localized across all five languages
 - **Responsive Grid** - 2 columns (mobile) → 4 (`md`) → 6 (`xl`) → 8 (`2xl`) → 12 (`4xl`)
-- **Adaptive Cards** - Tiny, Extra-Small, Small, Medium, and Large card sizes, with compact action-card layouts for the smallest tiles
+- **Adaptive Cards** - Tiny, Extra-Small, Small, Medium, Large, and Extra-Large card sizes, with compact action-card layouts for the smallest tiles
 
 ### 🏠 Smart Home Control
 - **Multi-Entity Support** - Lights, HVAC, switches, covers, locks, sensors, helpers, scripts, people, media players, vacuums, and more
@@ -49,7 +49,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 
 ### 🛠️ Functionality
 - **Edit Mode** - Card resizing, entered from **Customize**
-- **Custom Widgets** - Add RSS Feed, Photo Frame, Quick Note, Battery Overview, Button, and Energy Sparkline widgets
+- **Custom Widgets** - Add RSS Feed, Photo Frame, Quick Note, Battery Overview, and Button widgets
 - **Entity Visibility Control** - Start with all entities, a blank board, or import a saved config, then add/remove entities as needed
 - **Search & Filter** - Real-time search filters dashboard view, including Home Assistant-style entity id queries such as `light.`, `sensor.`, and full ids, with compact mobile search access from the header
 - **Home Room Grouping** - Switch the Home room between custom, room, type, or no-grouping layouts

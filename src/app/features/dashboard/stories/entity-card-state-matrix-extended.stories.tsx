@@ -2,12 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CalendarCard } from '@/app/features/calendar';
 import { SwitchCard } from '@/app/features/lighting';
 import { PersonCard } from '@/app/features/person';
-import { PowerCard } from '@/app/features/power';
 import { SceneCard } from '@/app/features/scenes';
 import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
-import { GroupedSensorCard, SensorCard } from '@/app/features/sensors';
+import { GroupedSensorCard } from '@/app/features/sensors';
 import { VacuumCard } from '@/app/features/vacuum';
 import { WeatherCard } from '@/app/features/weather';
+import cameraSampleImage from '@/assets/camera-sample.webp';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
   const date = new Date();
@@ -104,33 +104,6 @@ function StateMatrixExtendedPage() {
           serviceDomain="input_boolean"
           serviceAction="toggle"
           isEditMode={false}
-        />
-      </CardSection>
-
-      <CardSection title="Power states">
-        <PowerCard
-          percentage={68}
-          usage="2.1 kW"
-          cost="2.47"
-          size="medium"
-          onSizeChange={() => {}}
-          isEditMode={false}
-        />
-        <PowerCard
-          percentage={87}
-          usage="4.9 kW"
-          cost="5.92"
-          size="large"
-          onSizeChange={() => {}}
-          isEditMode={false}
-        />
-        <PowerCard
-          percentage={14}
-          usage="0.4 kW"
-          cost="0.31"
-          size="small"
-          onSizeChange={() => {}}
-          isEditMode
         />
       </CardSection>
 
@@ -361,7 +334,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture="https://images.unsplash.com/photo-1558002038-1055907df827?w=1280&q=80&auto=format&fit=crop"
+          entityPicture={cameraSampleImage}
           size="medium"
           onSizeChange={() => {}}
           isEditMode={false}
@@ -370,7 +343,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture="https://images.unsplash.com/photo-1558002038-1055907df827?w=1280&q=80&auto=format&fit=crop"
+          entityPicture={cameraSampleImage}
           size="small"
           onSizeChange={() => {}}
           isEditMode={false}
@@ -379,7 +352,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture="https://images.unsplash.com/photo-1558002038-1055907df827?w=1280&q=80&auto=format&fit=crop"
+          entityPicture={cameraSampleImage}
           size="large"
           onSizeChange={() => {}}
           isEditMode
@@ -413,45 +386,6 @@ function StateMatrixExtendedPage() {
           inEditMode
           size="large"
           onSizeChange={() => undefined}
-        />
-      </CardSection>
-
-      <CardSection title="Sensor states">
-        <SensorCard
-          id="sensor.air_quality"
-          name="Air Quality"
-          room="Bedroom"
-          value="412"
-          unit="ppm"
-          icon="trend-down"
-          subtitle="CO2"
-          size="medium"
-          onSizeChange={() => {}}
-          isEditMode={false}
-        />
-        <SensorCard
-          id="sensor.temperature"
-          name="Temperature"
-          room="Bedroom"
-          value="23.1"
-          unit="C"
-          icon="gauge"
-          subtitle="Temperature"
-          size="small"
-          onSizeChange={() => {}}
-          isEditMode={false}
-        />
-        <SensorCard
-          id="sensor.humidity"
-          name="Humidity"
-          room="Bedroom"
-          value="89"
-          unit="%"
-          icon="trend-up"
-          subtitle="Humidity"
-          size="large"
-          onSizeChange={() => {}}
-          isEditMode
         />
       </CardSection>
 

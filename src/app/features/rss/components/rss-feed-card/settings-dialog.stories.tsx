@@ -5,22 +5,16 @@ import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSProvider } from './types';
 
 function RSSFeedSettingsDialogStory() {
-  const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>(['ha-news']);
+  const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>(['bbc-world']);
   const [articleCount, setArticleCount] = useState(6);
   const [tintColor, setTintColor] = useState<string | undefined>('#06b6d4');
 
   const providers: RSSProvider[] = [
     {
-      id: 'ha-news',
-      name: 'Home Assistant Blog',
-      type: 'home-assistant-feedreader',
-      entityId: 'feedreader.home_assistant_blog',
-    },
-    {
-      id: 'tech-feed',
-      name: 'Tech Feed',
+      id: 'bbc-world',
+      name: 'BBC World',
       type: 'url',
-      feedUrl: 'https://example.com/rss.xml',
+      feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml',
     },
   ];
 

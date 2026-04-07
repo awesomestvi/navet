@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CameraCard } from '@/app/features/security';
+import cameraSampleImage from '@/assets/camera-sample.webp';
 import {
   EntityCardStoryFrame,
   noopCardSizeChange,
@@ -28,8 +29,7 @@ const meta = {
     id: 'camera.front_door',
     name: 'Front Door Cam',
     room: 'Entrance',
-    entityPicture:
-      'https://images.unsplash.com/photo-1558002038-1055907df827?w=1280&q=80&auto=format&fit=crop',
+    entityPicture: cameraSampleImage,
     size: 'medium',
     isEditMode: false,
   },

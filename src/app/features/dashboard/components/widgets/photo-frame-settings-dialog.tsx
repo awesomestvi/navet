@@ -1,6 +1,11 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { customCardDialogShellProps, DialogShell, Input } from '@/app/components/primitives';
+import {
+  customCardDialogShellProps,
+  DialogShell,
+  Input,
+  Switch,
+} from '@/app/components/primitives';
 import {
   CustomCardTintPicker,
   DialogHeader,
@@ -15,6 +20,8 @@ interface PhotoFrameSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   photoUrls: string[];
   onUpdateUrls: (urls: string[]) => void;
+  shuffleEnabled?: boolean;
+  onShuffleEnabledChange?: (enabled: boolean) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
 }
@@ -24,6 +31,8 @@ export function PhotoFrameSettingsDialog({
   onOpenChange,
   photoUrls,
   onUpdateUrls,
+  shuffleEnabled = true,
+  onShuffleEnabledChange,
   tintColor,
   onTintColorChange,
 }: PhotoFrameSettingsDialogProps) {
@@ -74,6 +83,20 @@ export function PhotoFrameSettingsDialog({
           defaultColor="#f97316"
           className={surface.textMuted}
         />
+      ) : null}
+
+      {onShuffleEnabledChange ? (
+        <DialogSectionRow label={t('widgets.photoFrame.settings.shuffle')}>
+          <div className="flex items-center justify-between gap-4 rounded-2xl border px-3 py-3 text-sm">
+            <div className="min-w-0">
+              <p className={surface.textPrimary}>{t('widgets.photoFrame.settings.shuffle')}</p>
+              <p className={`mt-1 text-xs ${surface.textMuted}`}>
+                {t('widgets.photoFrame.settings.shuffleDescription')}
+              </p>
+            </div>
+            <Switch checked={shuffleEnabled} onCheckedChange={onShuffleEnabledChange} />
+          </div>
+        </DialogSectionRow>
       ) : null}
 
       <DialogSectionRow label={t('widgets.photoFrame.settings.addUrl')} className="mb-4">

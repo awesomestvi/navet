@@ -45,16 +45,6 @@ const ButtonWidget = lazy(async () => {
   return { default: module.ButtonWidget };
 });
 
-const PresenceOverviewWidget = lazy(async () => {
-  const module = await import('./widgets/presence-overview-widget');
-  return { default: module.PresenceOverviewWidget };
-});
-
-const EnergySparklineWidget = lazy(async () => {
-  const module = await import('@/app/features/energy');
-  return { default: module.EnergySparklineCardWidget };
-});
-
 interface WidgetCardProps {
   card: CustomCard;
   isEditMode: boolean;
@@ -96,9 +86,15 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
         <PhotoFrameWidget
           size={card.size}
           photoUrls={card.data?.photoUrls as string[] | undefined}
+          shuffleEnabled={(card.data?.shuffleEnabled as boolean | undefined) ?? true}
           onUpdateUrls={
             onUpdate
               ? (urls) => onUpdate(card.id, { data: { ...card.data, photoUrls: urls } })
+              : undefined
+          }
+          onShuffleEnabledChange={
+            onUpdate
+              ? (shuffleEnabled) => onUpdate(card.id, { data: { ...card.data, shuffleEnabled } })
               : undefined
           }
           tintColor={card.data?.tintColor as string | undefined}
@@ -148,12 +144,6 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           isEditMode={isEditMode}
         />
       );
-      break;
-    case 'presence':
-      widgetContent = <PresenceOverviewWidget size={card.size} />;
-      break;
-    case 'sparkline':
-      widgetContent = <EnergySparklineWidget size={card.size} />;
       break;
     default:
       widgetContent = null;

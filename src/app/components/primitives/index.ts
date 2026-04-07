@@ -27,6 +27,7 @@ export { Radio, type RadioProps } from './radio';
 export { RotaryKnob, type RotaryKnobProps } from './rotary-knob';
 export { RoundControlButton } from './round-control-button';
 export { Select, type SelectProps } from './select';
+export { SlideAction, type SlideActionProps } from './slide-action';
 export { Switch, type SwitchProps } from './switch';
 export { TabList, TabPanel, Tabs, type TabsProps, TabTrigger } from './tabs';
 export { Tag, type TagProps } from './tag';

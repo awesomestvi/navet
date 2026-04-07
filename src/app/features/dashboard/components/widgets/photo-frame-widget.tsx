@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Settings2, Shuffle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -31,10 +31,14 @@ const mockPhotos = [
   backgroundClassName: string;
 }>;
 
+const PHOTO_SHUFFLE_INTERVAL_MS = 8000;
+
 interface PhotoFrameWidgetProps {
   size?: CardSize;
   photoUrls?: string[];
+  shuffleEnabled?: boolean;
   onUpdateUrls?: (urls: string[]) => void;
+  onShuffleEnabledChange?: (enabled: boolean) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
   isEditMode?: boolean;
@@ -43,7 +47,9 @@ interface PhotoFrameWidgetProps {
 export function PhotoFrameWidget({
   size = 'large',
   photoUrls,
+  shuffleEnabled = true,
   onUpdateUrls,
+  onShuffleEnabledChange,
   tintColor,
   onTintColorChange,
   isEditMode = false,
@@ -57,6 +63,15 @@ export function PhotoFrameWidget({
   const hasCustomPhotos = photoUrls && photoUrls.length > 0;
 
   const photoCount = hasCustomPhotos ? photoUrls.length : mockPhotos.length;
+  const activePhotoUrls = hasCustomPhotos ? photoUrls : [];
+  const safeIndex = Math.min(currentIndex, Math.max(0, photoCount - 1));
+  const currentPhoto = hasCustomPhotos ? null : mockPhotos[safeIndex];
+  const currentPhotoUrl = activePhotoUrls[safeIndex];
+  const showShuffleControl = photoCount > 1 && !isCompact;
+  const imageMotionClassName = useMemo(
+    () => (hasCustomPhotos ? 'scale-[1.02] transition-transform duration-[1800ms] ease-out' : ''),
+    [hasCustomPhotos]
+  );
 
   const nextPhoto = () => {
     setCurrentIndex((prev) => (prev + 1) % photoCount);
@@ -66,49 +81,88 @@ export function PhotoFrameWidget({
     setCurrentIndex((prev) => (prev - 1 + photoCount) % photoCount);
   };
 
-  const safeIndex = Math.min(currentIndex, photoCount - 1);
-  const currentPhoto = hasCustomPhotos ? null : mockPhotos[safeIndex];
+  const jumpToRandomPhoto = useCallback(() => {
+    if (photoCount <= 1) {
+      return;
+    }
+
+    setCurrentIndex((prev) => {
+      const nextIndex = Math.floor(Math.random() * (photoCount - 1));
+      return nextIndex >= prev ? nextIndex + 1 : nextIndex;
+    });
+  }, [photoCount]);
+
+  useEffect(() => {
+    if (!shuffleEnabled || photoCount <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      jumpToRandomPhoto();
+    }, PHOTO_SHUFFLE_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [jumpToRandomPhoto, photoCount, shuffleEnabled]);
+
+  useEffect(() => {
+    if (currentIndex > photoCount - 1) {
+      setCurrentIndex(0);
+    }
+  }, [currentIndex, photoCount]);
 
   return (
     <div
-      className={`${surface.panelClassName} relative flex h-full flex-col`}
-      style={surface.panelStyle}
+      className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10"
+      style={{
+        ...surface.panelStyle,
+        background: 'transparent',
+        borderColor: 'transparent',
+        boxShadow: 'none',
+      }}
     >
-      {surface.glowStyle ? <div className="absolute inset-0" style={surface.glowStyle} /> : null}
-      {surface.overlayClassName ? (
-        <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
-      ) : null}
-
       <div className="relative z-[2] flex h-full flex-col">
         {onUpdateUrls && (isEditMode || !hasCustomPhotos) && (
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className={`absolute right-4 top-4 z-10 shrink-0 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
+            className={`absolute right-4 top-4 z-20 shrink-0 rounded-full border border-white/14 bg-black/28 p-2 text-white/80 backdrop-blur-md transition-opacity hover:opacity-90 ${surface.textMuted}`}
             aria-label={t('widgets.photoFrame.settings.title')}
           >
             <Settings2 className="h-4 w-4" />
           </button>
         )}
 
-        <div className="relative flex-1 overflow-hidden rounded-xl group">
+        <div className="relative flex-1 overflow-hidden rounded-[28px] group">
           {hasCustomPhotos ? (
             <img
-              src={photoUrls[safeIndex]}
+              src={currentPhotoUrl}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover ${imageMotionClassName}`}
             />
           ) : (
             <div className={`absolute inset-0 ${currentPhoto?.backgroundClassName ?? ''}`} />
           )}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_38%,rgba(15,23,42,0.28)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_22%,rgba(0,0,0,0.12)_66%,rgba(2,6,23,0.44)_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+
+          {showShuffleControl ? (
+            <button
+              type="button"
+              onClick={jumpToRandomPhoto}
+              className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-black/26 px-3 py-1.5 text-[11px] font-medium text-white/88 backdrop-blur-md transition-opacity hover:opacity-95"
+            >
+              <Shuffle className="h-3.5 w-3.5" />
+              {t('widgets.photoFrame.shuffle')}
+            </button>
+          ) : null}
+
           {/* Navigation Buttons */}
           {!isCompact && (
             <>
               <button
                 type="button"
                 onClick={prevPhoto}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute left-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-black/28 text-white/90 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100"
                 aria-label={t('carousel.previousSlide')}
               >
                 <ChevronLeft className="w-5 h-5 text-white" />
@@ -116,7 +170,7 @@ export function PhotoFrameWidget({
               <button
                 type="button"
                 onClick={nextPhoto}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute right-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/12 bg-black/28 text-white/90 opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100"
                 aria-label={t('carousel.nextSlide')}
               >
                 <ChevronRight className="w-5 h-5 text-white" />
@@ -127,20 +181,18 @@ export function PhotoFrameWidget({
 
         {/* Thumbnail Dots */}
         {!isCompact && photoCount > 1 && (
-          <div className="mt-4 flex justify-center gap-2">
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center gap-2">
             {Array.from({ length: photoCount }).map((_, index) => (
               <button
                 type="button"
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className="w-2 h-2 rounded-full transition-all"
+                className="pointer-events-auto h-2 w-2 rounded-full transition-all"
                 style={{
                   backgroundColor:
                     index === safeIndex
                       ? getThemeColorValue(primaryColor)
-                      : theme === 'light'
-                        ? '#d1d5db'
-                        : 'rgba(255, 255, 255, 0.3)',
+                      : 'rgba(255, 255, 255, 0.45)',
                 }}
               />
             ))}
@@ -153,6 +205,8 @@ export function PhotoFrameWidget({
             onOpenChange={setIsSettingsOpen}
             photoUrls={photoUrls ?? []}
             onUpdateUrls={onUpdateUrls}
+            shuffleEnabled={shuffleEnabled}
+            onShuffleEnabledChange={onShuffleEnabledChange}
             tintColor={tintColor}
             onTintColorChange={onTintColorChange}
           />

@@ -1,11 +1,20 @@
-import { ChevronRight, Settings2 } from 'lucide-react';
-import { useState } from 'react';
-import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { InteractivePill } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import { withTintAlpha } from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu';
+import { cn } from '@/app/components/ui/utils';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
 import { getRSSFeedCardSurfaceTokens } from './surface-tokens';
-import type { RSSItem } from './types';
+import type { RSSItem, RSSProvider } from './types';
 
 interface RSSFeedCardViewProps {
   inEditMode?: boolean;
@@ -25,16 +34,22 @@ interface RSSFeedCardViewProps {
   isMedium: boolean;
   latestArticle: RSSItem | null;
   items: RSSItem[];
+  selectedProviders: RSSProvider[];
+  activeProviderId: 'all' | string;
+  onActiveProviderChange: (providerId: 'all' | string) => void;
   handleArticleClick: (url: string) => void;
   isLoading: boolean;
   error: string | null;
   hasConfiguredProviders: boolean;
   hasSelectedProviders: boolean;
   onOpenSettings: () => void;
+  onRefetch: () => void;
+  lastUpdatedLabel: string;
 }
 
 export function RSSFeedCardView({
   inEditMode = false,
+  size: _size,
   onSizeChange: _onSizeChange,
   theme,
   primaryColor,
@@ -44,18 +59,42 @@ export function RSSFeedCardView({
   isMedium,
   latestArticle,
   items,
+  selectedProviders,
+  activeProviderId,
+  onActiveProviderChange,
   handleArticleClick,
   isLoading,
   error,
   hasConfiguredProviders,
   hasSelectedProviders,
   onOpenSettings,
+  onRefetch,
+  lastUpdatedLabel,
 }: RSSFeedCardViewProps) {
   const { t } = useI18n();
-  const [expandedArticleIds, setExpandedArticleIds] = useState<Set<string>>(() => new Set());
   const cardShell = getCardShellSurfaceTokens(theme);
   const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
+  const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
+  const dropdownItemClassName = cn(
+    'rounded-xl border border-transparent px-3 py-2 text-sm outline-none transition-colors',
+    'data-[highlighted]:bg-[var(--menu-hover-bg)] data-[highlighted]:border-[var(--menu-hover-border)]',
+    'focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)]'
+  );
+  const dropdownItemHoverStyle = {
+    '--menu-hover-bg':
+      theme === 'light'
+        ? withTintAlpha(controlAccentColor, 0.12)
+        : theme === 'glass'
+          ? withTintAlpha(controlAccentColor, 0.16)
+          : withTintAlpha(controlAccentColor, 0.2),
+    '--menu-hover-border':
+      theme === 'light'
+        ? withTintAlpha(controlAccentColor, 0.24)
+        : theme === 'glass'
+          ? withTintAlpha(controlAccentColor, 0.32)
+          : withTintAlpha(controlAccentColor, 0.38),
+  } as CSSProperties;
   const isEmpty = !latestArticle && !isLoading;
   const emptyMessage = !hasConfiguredProviders
     ? t('rss.empty.noProviders')
@@ -88,23 +127,7 @@ export function RSSFeedCardView({
       ) : null}
 
       {/* Content */}
-      <div className="relative h-full flex flex-col p-4">
-        <div className="absolute bottom-4 right-4 z-10">
-          <EntityCardHeaderIcon
-            IconComponent={Settings2}
-            isActive={true}
-            size={isSmall ? 'small' : isMedium ? 'medium' : 'large'}
-            tone="orange"
-            baseColor={rssSurface.resolvedTintColor ?? undefined}
-            ariaLabel={t('rss.configureProviders')}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenSettings();
-            }}
-          />
-        </div>
-
+      <div className="relative flex h-full flex-col p-3">
         {isEmpty ? (
           <div className="flex flex-1 flex-col justify-center text-left">
             <p
@@ -146,200 +169,315 @@ export function RSSFeedCardView({
               {t('rss.loading.description')}
             </p>
           </div>
-        ) : isSmall && latestArticle ? (
-          // Small: Single latest article
-          <div className="flex-1 flex flex-col justify-between items-start text-left">
-            <div className="w-full">
-              <h3
-                className="mb-2 text-left text-lg font-semibold leading-tight line-clamp-2"
-                style={{ color: rssSurface.textPrimaryColor }}
+        ) : (
+          <>
+            <div className="mb-2 flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex gap-1 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  <InteractivePill
+                    active={activeProviderId === 'all'}
+                    size="compact"
+                    className="shrink-0 border-white/8 text-[11px]"
+                    style={getRSSControlPillStyle({
+                      accentColor: controlAccentColor,
+                      isActive: activeProviderId === 'all',
+                      theme,
+                      textPrimaryColor: rssSurface.textPrimaryColor,
+                      textSecondaryColor: rssSurface.textSecondaryColor,
+                    })}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onActiveProviderChange('all');
+                    }}
+                  >
+                    {t('rss.filter.all')}
+                  </InteractivePill>
+                  {selectedProviders.map((provider) => (
+                    <InteractivePill
+                      key={provider.id}
+                      active={activeProviderId === provider.id}
+                      size="compact"
+                      className="shrink-0 border-white/8 text-[11px]"
+                      style={getRSSControlPillStyle({
+                        accentColor: controlAccentColor,
+                        isActive: activeProviderId === provider.id,
+                        theme,
+                        textPrimaryColor: rssSurface.textPrimaryColor,
+                        textSecondaryColor: rssSurface.textSecondaryColor,
+                      })}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onActiveProviderChange(provider.id);
+                      }}
+                    >
+                      {getCompactProviderLabel(provider.name)}
+                    </InteractivePill>
+                  ))}
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <InteractivePill
+                    active
+                    intent="action"
+                    size="compact"
+                    aria-label={t('rss.menu.label')}
+                    className="shrink-0 px-1.5"
+                    style={getRSSOverflowTriggerStyle({
+                      accentColor: controlAccentColor,
+                      textPrimaryColor: rssSurface.textPrimaryColor,
+                      theme,
+                    })}
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </InteractivePill>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className={cn(getThemeDropdownSurfaceClasses(theme), 'min-w-40 rounded-2xl p-2')}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <DropdownMenuItem
+                    className={dropdownItemClassName}
+                    style={dropdownItemHoverStyle}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onRefetch();
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    {t('rss.refreshNow')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className={dropdownItemClassName}
+                    style={dropdownItemHoverStyle}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenSettings();
+                    }}
+                  >
+                    <Settings2 className="h-4 w-4" />
+                    {t('rss.configureProviders')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {isSmall && latestArticle ? (
+              // Small: Single latest article
+              <div className="flex flex-1 flex-col items-start text-left">
+                <div className="w-full">
+                  <h3
+                    className="mb-1.5 text-left text-[15px] font-semibold leading-[1.2] line-clamp-2"
+                    style={{ color: rssSurface.textPrimaryColor }}
+                  >
+                    {latestArticle.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    <span style={{ color: rssSurface.sourceColor }}>{latestArticle.source}</span>
+                    <span className={rssSurface.dotClassName}>•</span>
+                    <span style={{ color: rssSurface.textSecondaryColor }}>
+                      {latestArticle.timeAgo}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : isMedium ? (
+              // Medium: compact list, scrollable
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="space-y-2 pr-1">
+                  {items.map((item, index) => (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`group/item -m-1 block min-w-0 rounded-lg px-1 py-1.5 text-left no-underline transition-colors ${
+                        inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
+                      }`}
+                      onClick={(e) => {
+                        if (inEditMode) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleArticleClick(item.url);
+                      }}
+                    >
+                      <h3
+                        className="mb-0.5 text-left text-[10px] font-semibold leading-[1.3] line-clamp-2 transition-colors"
+                        style={{ color: rssSurface.textPrimaryColor }}
+                      >
+                        {item.title}
+                      </h3>
+                      <div className="flex items-center gap-1 text-[10px] leading-none">
+                        <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
+                        <span className={rssSurface.dotClassName}>•</span>
+                        <span style={{ color: rssSurface.textSecondaryColor }}>{item.timeAgo}</span>
+                      </div>
+                      {index < items.length - 1 && (
+                        <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
+                      )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Large: articles with images, scrollable
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="space-y-2 pr-1">
+                  {items.map((item, index) => {
+                    return (
+                      <a
+                        key={item.id}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group/item -m-2 block min-w-0 rounded-xl p-2 text-left no-underline transition-colors ${
+                          inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
+                        }`}
+                        onClick={(e) => {
+                          if (inEditMode) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleArticleClick(item.url);
+                        }}
+                      >
+                        <div className="flex gap-3">
+                          {item.imageUrl && (
+                            <div
+                              className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg ${rssSurface.thumbnailClassName}`}
+                            >
+                              <img
+                                src={item.imageUrl}
+                                alt={item.title}
+                                className="h-full w-full object-cover opacity-80 transition-opacity group-hover/item:opacity-100"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 text-left">
+                            <h3
+                              className="mb-1 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
+                              style={{ color: rssSurface.textPrimaryColor }}
+                            >
+                              {item.title}
+                            </h3>
+                            <div className="mb-1 flex items-center gap-1.5 text-[11px]">
+                              <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
+                              <span className={rssSurface.dotClassName}>•</span>
+                              <span style={{ color: rssSurface.textSecondaryColor }}>
+                                {item.timeAgo}
+                              </span>
+                            </div>
+                            {item.excerpt ? (
+                              <p
+                                className={`text-left text-[11px] whitespace-normal wrap-break-word leading-[1.4] ${rssSurface.excerptClassName}`}
+                                style={{ color: rssSurface.excerptColor }}
+                              >
+                                {truncateExcerpt(item.excerpt)}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        {index < items.length - 1 && (
+                          <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
+              <div
+                className="min-w-0 truncate text-[10px]"
+                style={{ color: rssSurface.textSecondaryColor }}
               >
-                {latestArticle.title}
-              </h3>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span style={{ color: rssSurface.sourceColor }}>{latestArticle.source}</span>
-                <span className={rssSurface.dotClassName}>•</span>
-                <span style={{ color: rssSurface.textSecondaryColor }}>
-                  {latestArticle.timeAgo}
+                {t('rss.lastUpdated')}
+                <span
+                  className="ml-1.5 text-[11px] font-medium"
+                  style={{ color: rssSurface.textPrimaryColor }}
+                >
+                  {lastUpdatedLabel}
                 </span>
               </div>
             </div>
-
-            <div
-              className="flex items-center gap-1 text-xs"
-              style={{ color: rssSurface.readMoreColor }}
-            >
-              <span>{t('rss.readMore')}</span>
-              <ChevronRight className="w-3 h-3" />
-            </div>
-          </div>
-        ) : isMedium ? (
-          // Medium: compact list, scrollable
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="space-y-2 pr-1">
-              {items.map((item, index) => (
-                <a
-                  key={item.id}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`group/item -m-1 block min-w-0 rounded-lg px-1 py-1.5 text-left no-underline transition-colors ${
-                    inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
-                  }`}
-                  onClick={(e) => {
-                    if (inEditMode) {
-                      e.preventDefault();
-                      return;
-                    }
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleArticleClick(item.url);
-                  }}
-                >
-                  <h3
-                    className="mb-0.5 text-left text-[11px] font-semibold leading-3.5 line-clamp-2 transition-colors"
-                    style={{ color: rssSurface.textPrimaryColor }}
-                  >
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-1 text-[11px] leading-none">
-                    <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
-                    <span className={rssSurface.dotClassName}>•</span>
-                    <span style={{ color: rssSurface.textSecondaryColor }}>{item.timeAgo}</span>
-                  </div>
-                  {index < items.length - 1 && (
-                    <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
-                  )}
-                </a>
-              ))}
-            </div>
-          </div>
-        ) : (
-          // Large: articles with images, scrollable
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="space-y-2 pr-1">
-              {items.map((item, index) => {
-                const isExpanded = expandedArticleIds.has(item.id);
-                const collapsedExcerpt =
-                  item.excerpt && item.excerpt.length > 110
-                    ? `${item.excerpt.slice(0, 107).trimEnd()}...`
-                    : item.excerpt;
-
-                return (
-                  <a
-                    key={item.id}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`group/item -m-2 block min-w-0 rounded-xl p-2 text-left no-underline transition-colors ${
-                      inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
-                    }`}
-                    onClick={(e) => {
-                      if (inEditMode) {
-                        e.preventDefault();
-                        return;
-                      }
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleArticleClick(item.url);
-                    }}
-                  >
-                    <div className="flex gap-3">
-                      {item.imageUrl && (
-                        <div
-                          className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg ${rssSurface.thumbnailClassName}`}
-                        >
-                          <img
-                            src={item.imageUrl}
-                            alt={item.title}
-                            className="h-full w-full object-cover opacity-80 transition-opacity group-hover/item:opacity-100"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1 text-left">
-                        <h3
-                          className="mb-1 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
-                          style={{ color: rssSurface.textPrimaryColor }}
-                        >
-                          {item.title}
-                        </h3>
-                        <div className="mb-1 flex items-center gap-1.5 text-xs">
-                          <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
-                          <span className={rssSurface.dotClassName}>•</span>
-                          <span style={{ color: rssSurface.textSecondaryColor }}>
-                            {item.timeAgo}
-                          </span>
-                        </div>
-                        {item.excerpt &&
-                          (isExpanded ? (
-                            <>
-                              <p
-                                className={`text-left text-xs whitespace-normal wrap-break-word leading-relaxed ${rssSurface.excerptClassName}`}
-                                style={{ color: rssSurface.excerptColor }}
-                              >
-                                {item.excerpt}
-                              </p>
-                              {inEditMode ? null : (
-                                <button
-                                  type="button"
-                                  onPointerDown={(event) => event.stopPropagation()}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setExpandedArticleIds((current) => {
-                                      const next = new Set(current);
-                                      next.delete(item.id);
-                                      return next;
-                                    });
-                                  }}
-                                  className={`mt-1 inline-flex text-xs font-medium ${rssSurface.readMoreClassName}`}
-                                  style={{ color: rssSurface.readMoreColor }}
-                                >
-                                  {t('rss.showLess')}
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <div className="relative">
-                              <p
-                                className={`line-clamp-2 pr-20 text-left text-xs whitespace-normal wrap-break-word leading-relaxed ${rssSurface.excerptClassName}`}
-                                style={{ color: rssSurface.excerptColor }}
-                              >
-                                {collapsedExcerpt}
-                              </p>
-                              {item.excerpt.length > 110 && !inEditMode ? (
-                                <button
-                                  type="button"
-                                  onPointerDown={(event) => event.stopPropagation()}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setExpandedArticleIds((current) => {
-                                      const next = new Set(current);
-                                      next.add(item.id);
-                                      return next;
-                                    });
-                                  }}
-                                  className={`absolute bottom-0 right-0 inline cursor-pointer bg-linear-to-r from-transparent via-[rgba(0,0,0,0.0)] to-[rgba(0,0,0,0.0)] pl-4 text-xs font-medium ${rssSurface.readMoreClassName}`}
-                                  style={{ color: rssSurface.readMoreColor }}
-                                >
-                                  {t('rss.readMore')}
-                                </button>
-                              ) : null}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                    {index < items.length - 1 && (
-                      <div className={`mt-2 h-px ${rssSurface.dividerClassName}`} />
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
   );
+}
+
+function getCompactProviderLabel(label: string) {
+  const normalized = label.trim();
+
+  if (/^bbc\b/i.test(normalized)) {
+    return 'BBC';
+  }
+
+  if (normalized.length <= 12) {
+    return normalized;
+  }
+
+  return normalized.split(/\s+/)[0] ?? normalized;
+}
+
+function truncateExcerpt(value: string, maxLength = 300) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength).trimEnd()}...`;
+}
+
+function getRSSControlPillStyle({
+  accentColor,
+  isActive,
+  theme,
+  textPrimaryColor,
+  textSecondaryColor,
+}: {
+  accentColor: string;
+  isActive: boolean;
+  theme: ThemeType;
+  textPrimaryColor: string;
+  textSecondaryColor: string;
+}): CSSProperties {
+  return {
+    color: isActive ? textPrimaryColor : textSecondaryColor,
+    borderColor: isActive
+      ? withTintAlpha(accentColor, theme === 'light' ? 0.28 : 0.24)
+      : withTintAlpha(accentColor, theme === 'light' ? 0.18 : 0.14),
+    background: isActive
+      ? `linear-gradient(180deg, ${withTintAlpha(accentColor, theme === 'light' ? 0.14 : 0.26)} 0%, ${withTintAlpha(accentColor, theme === 'light' ? 0.08 : 0.14)} 100%)`
+      : withTintAlpha(accentColor, theme === 'light' ? 0.05 : 0.08),
+    boxShadow: isActive
+      ? `inset 0 1px 0 ${withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.22)}, 0 8px 20px -16px ${withTintAlpha(accentColor, theme === 'light' ? 0.2 : 0.34)}`
+      : 'none',
+  };
+}
+
+function getRSSOverflowTriggerStyle({
+  accentColor,
+  textPrimaryColor,
+  theme,
+}: {
+  accentColor: string;
+  textPrimaryColor: string;
+  theme: ThemeType;
+}): CSSProperties {
+  return {
+    color: textPrimaryColor,
+    borderColor: withTintAlpha(accentColor, theme === 'light' ? 0.24 : 0.18),
+    background: `linear-gradient(180deg, ${withTintAlpha(accentColor, theme === 'light' ? 0.1 : 0.22)} 0%, ${withTintAlpha(accentColor, theme === 'light' ? 0.06 : 0.12)} 100%)`,
+    boxShadow: `inset 0 1px 0 ${withTintAlpha(accentColor, theme === 'light' ? 0.14 : 0.18)}, 0 12px 28px -22px ${withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.34)}`,
+  };
 }

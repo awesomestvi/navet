@@ -67,7 +67,7 @@ Stories are organised into a stable top-level hierarchy that keeps the sidebar p
 - `Cards/`
   - `Cards/Overview/` — catalog, all-sizes matrix, and state matrices
   - `Cards/Entity/` — one story per HA entity domain
-  - `Cards/Widget/` — custom/widget cards such as action, photo frame, RSS, note, presence, and sparkline
+  - `Cards/Custom/` — custom/widget cards such as action, photo frame, RSS feed, quick note, and battery overview
 - `Dashboard/` — add-card dialog, edit actions, onboarding dialog
 - `Energy/`
   - `Energy/Charts/` — charts and gauges

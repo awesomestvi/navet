@@ -81,10 +81,15 @@ const meta = {
     children: 'English',
     active: false,
     intent: 'navigation',
+    size: 'default',
     variant: 'default',
   },
   argTypes: {
     onClick: { action: 'clicked' },
+    size: {
+      control: 'select',
+      options: ['default', 'small', 'compact'],
+    },
   },
 } satisfies Meta<typeof InteractivePill>;
 

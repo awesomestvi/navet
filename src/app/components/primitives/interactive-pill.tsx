@@ -17,6 +17,7 @@ interface InteractivePillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   className?: string;
   intent?: InteractivePillIntent;
+  size?: 'default' | 'small' | 'compact';
   variant?: InteractivePillVariant;
 }
 
@@ -27,6 +28,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
       children,
       className = '',
       intent = 'navigation',
+      size = 'default',
       variant = 'default',
       style,
       ...props
@@ -47,7 +49,11 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
         ref={ref}
         type="button"
         className={cn(
-          'inline-flex items-center justify-center px-4 py-2 transition-all disabled:cursor-not-allowed disabled:opacity-50',
+          size === 'compact'
+            ? 'inline-flex min-h-7 items-center justify-center px-2 py-1 text-[12px] transition-all disabled:cursor-not-allowed disabled:opacity-50'
+            : size === 'small'
+              ? 'inline-flex h-9 items-center justify-center px-3 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50'
+              : 'inline-flex h-10 items-center justify-center px-4 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.pill,
           navetTypographyTokens.control,
           getThemeFocusRingClassName(theme),

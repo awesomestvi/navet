@@ -1,12 +1,12 @@
 import type { Preview } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { themes } from 'storybook/theming';
 import { Toaster } from '../src/app/components/ui/sonner';
 import { I18nProvider } from '../src/app/i18n';
 import { defaultSettings, useSettingsStore } from '../src/app/stores/settings-store';
 import type { PrimaryColor, ThemeMode } from '../src/app/stores/theme-store';
 import { useThemeStore } from '../src/app/stores/theme-store';
+import { navetStorybookTheme } from './navet-theme';
 // @ts-ignore - side-effect stylesheet import for Storybook runtime.
 import '../src/styles/index.css';
 
@@ -40,6 +40,7 @@ const TOOLBAR_CANVAS_BACKGROUNDS = {
 interface StorybookEnvironmentProps {
   children: ReactNode;
   canvasBackgroundName?: keyof typeof TOOLBAR_CANVAS_BACKGROUNDS;
+  isDocs?: boolean;
   theme: ThemeMode;
   primaryColor: Exclude<PrimaryColor, 'custom'>;
 }
@@ -47,6 +48,7 @@ interface StorybookEnvironmentProps {
 function StorybookEnvironment({
   children,
   canvasBackgroundName,
+  isDocs = false,
   theme,
   primaryColor,
 }: StorybookEnvironmentProps) {
@@ -124,7 +126,7 @@ function StorybookEnvironment({
   return (
     <I18nProvider>
       <div
-        className="min-h-screen p-6 md:p-10"
+        className={isDocs ? 'w-full p-4 md:p-6' : 'min-h-screen p-6 md:p-10'}
         style={{
           background:
             (canvasBackgroundName ? TOOLBAR_CANVAS_BACKGROUNDS[canvasBackgroundName] : null) ??
@@ -160,7 +162,7 @@ const preview: Preview = {
       expanded: true,
     },
     docs: {
-      theme: themes.dark,
+      theme: navetStorybookTheme,
     },
     backgrounds: {
       default: 'canvas-dark',
@@ -181,7 +183,9 @@ const preview: Preview = {
       description: 'Global Navet theme',
       defaultValue: 'dark',
       toolbar: {
+        title: 'Theme options',
         icon: 'mirror',
+        dynamicTitle: true,
         items: [
           { value: 'glass', title: 'Glass' },
           { value: 'dark', title: 'Dark' },
@@ -195,7 +199,9 @@ const preview: Preview = {
       description: 'Global Navet accent color',
       defaultValue: 'orange',
       toolbar: {
+        title: 'Accent options',
         icon: 'paintbrush',
+        dynamicTitle: true,
         items: [
           { value: 'orange', title: 'Orange' },
           { value: 'blue', title: 'Blue' },
@@ -213,6 +219,7 @@ const preview: Preview = {
     (Story, context) => (
       <StorybookEnvironment
         canvasBackgroundName={context.globals.backgrounds?.name}
+        isDocs={context.viewMode === 'docs'}
         theme={context.globals.theme as ThemeMode}
         primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
       >

@@ -1,0 +1,27 @@
+import { create } from 'storybook/theming';
+
+export const navetStorybookTheme = create({
+  base: 'dark',
+  brandTitle: 'Navet UI',
+  brandUrl: '/',
+  brandTarget: '_self',
+  brandImage: '/logo-horizontal-light.svg',
+  colorPrimary: '#f97316',
+  colorSecondary: '#fb923c',
+  appBg: '#050816',
+  appContentBg: '#0b1120',
+  appPreviewBg: '#09090b',
+  appBorderColor: 'rgba(255, 255, 255, 0.08)',
+  appBorderRadius: 18,
+  barBg: 'rgba(9, 9, 11, 0.86)',
+  barTextColor: '#e4e4e7',
+  barSelectedColor: '#ffffff',
+  barHoverColor: '#f97316',
+  inputBg: 'rgba(255, 255, 255, 0.06)',
+  inputBorder: 'rgba(255, 255, 255, 0.1)',
+  inputTextColor: '#f4f4f5',
+  inputBorderRadius: 12,
+  textColor: '#f4f4f5',
+  textInverseColor: '#09090b',
+  textMutedColor: '#a1a1aa',
+});

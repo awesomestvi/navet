@@ -67,13 +67,6 @@ export interface WeatherDevice extends BaseDevice {
   }>;
 }
 
-// Power device
-export interface PowerDevice extends BaseDevice {
-  percentage: number;
-  usage: number;
-  cost: number;
-}
-
 // Media device
 export interface MediaDevice extends BaseDevice {
   room: string;
@@ -198,7 +191,6 @@ export type Device =
   | HVACDevice
   | ClimateDevice
   | WeatherDevice
-  | PowerDevice
   | MediaDevice
   | SwitchDevice
   | HelperDevice
@@ -217,7 +209,6 @@ export interface DeviceCollection {
   lights: LightDevice[];
   hvac: HVACDevice[];
   climate: ClimateDevice[];
-  power: PowerDevice[];
   media: MediaDevice[];
   weather: WeatherDevice[];
   switches: SwitchDevice[];

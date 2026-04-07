@@ -1,9 +1,7 @@
-import { Lock, Unlock } from 'lucide-react';
+import { CarFront, Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
-import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
-import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
-import { RoundControlButton } from '@/app/components/primitives/round-control-button';
+import { SlideAction } from '@/app/components/primitives';
 import {
   type CardSize,
   isExtraSmallCardSize,
@@ -26,6 +24,37 @@ interface LockCardProps {
   isEditMode?: boolean;
 }
 
+const LOCK_CARD_ALLOWED_SIZES: CardSize[] = ['tiny', 'extra-small', 'small'];
+
+function resolveLockCardSize(size: CardSize): Extract<CardSize, 'tiny' | 'extra-small' | 'small'> {
+  if (LOCK_CARD_ALLOWED_SIZES.includes(size)) {
+    return size as Extract<CardSize, 'tiny' | 'extra-small' | 'small'>;
+  }
+
+  return 'small';
+}
+
+function isVehicleLockEntity(
+  entityId: string,
+  name: string,
+  attributes: Record<string, unknown> | undefined
+) {
+  const haystack = `${entityId} ${name} ${String(attributes?.device_class ?? '')}`.toLowerCase();
+
+  return [
+    'car',
+    'vehicle',
+    'tesla',
+    'volvo',
+    'bmw',
+    'audi',
+    'mercedes',
+    'trunk',
+    'boot',
+    'frunk',
+  ].some((token) => haystack.includes(token));
+}
+
 export const LockCard = memo(function LockCard({
   id,
   name,
@@ -34,6 +63,7 @@ export const LockCard = memo(function LockCard({
   isEditMode = false,
 }: Omit<LockCardProps, 'room'>) {
   const [isLocked, setIsLocked] = useState(initialState);
+  const [isPendingAction, setIsPendingAction] = useState(false);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
@@ -43,16 +73,25 @@ export const LockCard = memo(function LockCard({
       setIsLocked(liveEntity.state === 'locked');
       return;
     }
+
     setIsLocked(initialState);
   }, [liveEntity, initialState]);
+
   const { theme, colors, accentColor } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
-  const isTiny = isTinyCardSize(size);
-  const isExtraSmall = isExtraSmallCardSize(size);
-
+  const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const resolvedSize = resolveLockCardSize(size);
+  const isTiny = isTinyCardSize(resolvedSize);
+  const isExtraSmall = isExtraSmallCardSize(resolvedSize);
+  const isVehicleLock = isVehicleLockEntity(id, name, liveAttributes);
+  const IconComponent = isVehicleLock ? CarFront : isLocked ? Lock : Unlock;
+  const completionIcon = isVehicleLock ? CarFront : isLocked ? Unlock : Lock;
+  const statusLabel = isLocked ? t('security.locked') : t('security.unlocked');
+  const nextActionLabel = isLocked ? t('security.action.unlock') : t('security.action.lock');
+  const swipeLabel = isLocked ? t('security.slideToUnlock') : t('security.slideToLock');
   const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
-  const statusTextClassName =
+  const stateIconClassName =
     theme === 'light'
       ? isLocked
         ? 'text-green-700'
@@ -69,40 +108,37 @@ export const LockCard = memo(function LockCard({
     tone: isLocked ? 'primary' : 'red',
     accentColor,
   });
+
   const handleToggleLock = () => {
+    if (isPendingAction) {
+      return;
+    }
+
     const nextState: 'locked' | 'unlocked' = isLocked ? 'unlocked' : 'locked';
-    void runAction(
-      () => homeAssistantService.updateLock(id, nextState),
-      t('security.feedback.updateLockFailed')
-    );
+    setIsPendingAction(true);
+
+    void runAction(async () => {
+      await homeAssistantService.updateLock(id, nextState);
+    }, t('security.feedback.updateLockFailed')).finally(() => {
+      setIsPendingAction(false);
+    });
   };
 
   if (isTiny) {
     return (
       <TinyActionCard
-        rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-        metadata={t('security.lock')}
+        rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
+        metadata={statusLabel}
         title={name}
-        detail={isLocked ? t('security.locked') : t('security.unlocked')}
-        metadataClassName="text-white/70"
+        metadataClassName={`font-medium ${stateIconClassName}`}
         titleClassName="text-white"
-        detailClassName={statusTextClassName}
-        metadataStyle={{ color: tinyTextTokens.subtitleColor }}
         titleStyle={{ color: tinyTextTokens.titleColor }}
         watermark={
-          isLocked ? (
-            <TinyCardWatermark
-              IconComponent={Lock}
-              color={tinyTextTokens.titleColor}
-              className="opacity-15"
-            />
-          ) : (
-            <TinyCardWatermark
-              IconComponent={Unlock}
-              color={tinyTextTokens.titleColor}
-              className="opacity-15"
-            />
-          )
+          <TinyCardWatermark
+            IconComponent={IconComponent}
+            color={tinyTextTokens.titleColor}
+            className={isPendingAction ? 'opacity-22' : 'opacity-14'}
+          />
         }
         overlays={
           <>
@@ -115,166 +151,93 @@ export const LockCard = memo(function LockCard({
           </>
         }
         actionButtonProps={
-          isEditMode
+          isEditMode || isPendingAction
             ? undefined
             : {
                 onClick: handleToggleLock,
-                'aria-label': isLocked ? t('security.unlocked') : t('security.locked'),
+                'aria-label': nextActionLabel,
               }
         }
       />
     );
   }
 
+  const compactRootClassName = `relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`;
+  const topNameClassName = `${securitySurface.primaryTextClassName} truncate font-semibold tracking-[-0.02em]`;
+  const overlayTintClassName =
+    theme === 'light' ? 'bg-white/22' : theme === 'glass' ? 'bg-white/[0.03]' : 'bg-black/10';
+  const heroPlateClassName =
+    theme === 'light'
+      ? 'border-black/8 bg-white/56 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.36)]'
+      : 'border-white/10 bg-black/18 shadow-[0_18px_36px_-24px_rgba(0,0,0,0.66)]';
+
   if (isExtraSmall) {
     return (
-      <div
-        className={`relative h-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-      >
+      <div className={`${compactRootClassName} px-3 py-3`}>
         <div
-          className={`absolute inset-0 bg-linear-to-r ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+          className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
         />
+        <div className={`absolute inset-0 ${overlayTintClassName}`} />
 
-        {securitySurface.overlayClassName ? (
-          <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-        ) : null}
+        <div className="relative flex h-full flex-col justify-between gap-3">
+          <p className={`${topNameClassName} text-[12px]`}>{name}</p>
 
-        <EntityCardHeader
-          title={name}
-          subtitle={t('security.lock')}
-          layout="eyebrow-first"
-          size="extra-small"
-          align="center"
-          tone={isLocked ? 'primary' : 'red'}
-          titleClassName="text-white"
-          subtitleClassName="text-white/70"
-          className="h-full"
-          contentClassName="justify-center"
-          marginBottomClassName="mb-0"
-          leading={
-            <EntityCardHeaderIcon
-              IconComponent={isLocked ? Lock : Unlock}
-              isActive={isLocked}
-              size="small"
-              tone={isLocked ? 'primary' : 'red'}
-            />
-          }
-          trailing={
-            isEditMode ? (
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                  isLocked
-                    ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
-                    : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
-                }`}
-              >
-                {isLocked ? (
-                  <Lock className="h-4.5 w-4.5 text-white" />
-                ) : (
-                  <Unlock className="h-4.5 w-4.5 text-white" />
-                )}
-              </div>
-            ) : (
-              <RoundControlButton
-                theme={theme}
-                size="extra-small"
-                variant="emphasis"
-                aria-label={isLocked ? t('security.unlocked') : t('security.lock')}
-                onClick={handleToggleLock}
-                className={`h-9 w-9 ${
-                  isLocked
-                    ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/35'
-                    : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/35'
-                }`}
-              >
-                {isLocked ? (
-                  <Lock className="h-4.5 w-4.5 text-white" />
-                ) : (
-                  <Unlock className="h-4.5 w-4.5 text-white" />
-                )}
-              </RoundControlButton>
-            )
-          }
-        />
+          <SlideAction
+            actionLabel={swipeLabel}
+            ariaLabel={swipeLabel}
+            completionIcon={completionIcon}
+            disabled={isEditMode || isPendingAction}
+            onComplete={handleToggleLock}
+            size="extra-small"
+            theme={theme}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${isExtraSmall ? 'p-3' : 'p-4'} ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-    >
+    <div className={`${compactRootClassName} p-2.5`}>
       <div
-        className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
-      ></div>
+        className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+      />
+      <div className={`absolute inset-0 ${overlayTintClassName}`} />
 
-      {/* Light theme frosted overlay */}
-      {securitySurface.overlayClassName && (
-        <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-      )}
+      <div className="relative flex h-full flex-col">
+        <div className="flex flex-col items-center gap-0.5 text-center">
+          <p className={`${topNameClassName} max-w-full text-[15px] leading-tight`}>{name}</p>
+          <p className={`text-[9px] font-medium uppercase tracking-[0.22em] ${stateIconClassName}`}>
+            {statusLabel}
+          </p>
+        </div>
 
-      <div className="relative h-full flex flex-col">
-        <EntityCardHeader
-          title={name}
-          subtitle={t('security.lock')}
-          layout="eyebrow-first"
-          size={size}
-          tone={isLocked ? 'primary' : 'red'}
-          leading={
-            <EntityCardHeaderIcon
-              IconComponent={isLocked ? Lock : Unlock}
-              isActive={isLocked}
-              size={size}
-              tone={isLocked ? 'primary' : 'red'}
+        <div className="flex flex-1 items-center justify-center py-1.5">
+          <div
+            className={`relative flex h-16 w-16 items-center justify-center rounded-full border ${heroPlateClassName}`}
+          >
+            <div
+              className={`absolute inset-0 rounded-full bg-linear-to-br ${cardColors.glow} to-transparent`}
             />
-          }
-        />
-
-        <div className="flex-1 flex flex-col items-center justify-center">
-          {isEditMode ? (
+            <div className="absolute inset-[8px] rounded-full border border-white/10" />
             <div
-              className={`flex shrink-0 items-center justify-center rounded-full ${
-                isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'
-              } ${
-                isLocked
-                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
-                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
+              className={`absolute inset-[14px] rounded-full ${
+                theme === 'light' ? 'bg-white/65' : 'bg-white/6'
               }`}
-            >
-              {isLocked ? (
-                <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-              ) : (
-                <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-              )}
-            </div>
-          ) : (
-            <RoundControlButton
-              theme={theme}
-              size={isExtraSmall ? 'extra-small' : 'large'}
-              variant="emphasis"
-              aria-label={isLocked ? t('security.unlocked') : t('security.lock')}
-              onClick={handleToggleLock}
-              className={`${isExtraSmall ? 'h-10 w-10' : 'h-12 w-12'} transition-all duration-500 hover:scale-105 ${
-                isLocked
-                  ? 'bg-linear-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/50'
-                  : 'bg-linear-to-br from-red-400 to-red-600 shadow-lg shadow-red-500/50'
-              }`}
-            >
-              {isLocked ? (
-                <Lock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-              ) : (
-                <Unlock className={`${isExtraSmall ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-              )}
-            </RoundControlButton>
-          )}
-
-          <div className={`text-center ${isExtraSmall ? 'mt-2' : 'mt-3'}`}>
-            <div
-              className={`${isExtraSmall ? 'text-[11px]' : 'text-xs'} ${statusTextClassName} transition-colors duration-500`}
-            >
-              {isLocked ? t('security.locked') : t('security.unlocked')}
-            </div>
+            />
+            <IconComponent className={`relative h-6.5 w-6.5 ${stateIconClassName}`} />
           </div>
+        </div>
+
+        <div className="mt-auto pt-1">
+          <SlideAction
+            actionLabel={swipeLabel}
+            ariaLabel={swipeLabel}
+            completionIcon={completionIcon}
+            disabled={isEditMode || isPendingAction}
+            onComplete={handleToggleLock}
+            size="small"
+            theme={theme}
+          />
         </div>
       </div>
     </div>

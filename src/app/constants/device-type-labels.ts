@@ -5,7 +5,6 @@ export const DEVICE_TYPE_LABEL_KEYS: Record<keyof DeviceCollection, TranslationK
   lights: 'deviceType.light',
   hvac: 'deviceType.hvac',
   climate: 'deviceType.climate',
-  power: 'deviceType.power',
   media: 'deviceType.media',
   weather: 'deviceType.weather',
   switches: 'deviceType.switch',

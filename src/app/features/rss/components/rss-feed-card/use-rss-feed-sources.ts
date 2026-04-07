@@ -1,10 +1,12 @@
-import { useDeferredValue, useMemo } from 'react';
+import { useDeferredValue, useEffect, useMemo } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useHomeAssistant } from '@/app/hooks';
 import { usePersistedState } from '@/app/hooks/use-persisted-state';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEFAULT_RSS_PROVIDERS } from './providers';
 import type { RSSProvider } from './types';
+
+const DEFAULT_PROVIDER_ID = 'bbc-world';
 
 const toProviderId = (value: string): string =>
   value
@@ -27,6 +29,12 @@ export function useRSSFeedSources(cardId: string) {
     STORAGE_KEYS.rssCardArticleCount,
     {}
   );
+  useEffect(() => {
+    if (customProviders.length === 0) {
+      setCustomProviders(DEFAULT_RSS_PROVIDERS);
+    }
+  }, [customProviders.length, setCustomProviders]);
+
   const articleCount = articleCountByCardId[cardId] ?? 10;
   const setArticleCount = (count: number) => {
     setArticleCountByCardId((current) => ({ ...current, [cardId]: count }));
@@ -72,16 +80,26 @@ export function useRSSFeedSources(cardId: string) {
     [customProviders, homeAssistantProviders]
   );
 
+  const fallbackProviderIds = useMemo(
+    () =>
+      providers.some((provider) => provider.id === DEFAULT_PROVIDER_ID)
+        ? [DEFAULT_PROVIDER_ID]
+        : [],
+    [providers]
+  );
+
   const selectedProviderIds = useMemo(() => {
     const savedSelection = providerSelectionByCardId[cardId];
     if (savedSelection) {
-      return savedSelection.filter((providerId) =>
+      const validSelection = savedSelection.filter((providerId) =>
         providers.some((provider) => provider.id === providerId)
       );
+
+      return validSelection.length > 0 ? validSelection : fallbackProviderIds;
     }
 
-    return [];
-  }, [cardId, providerSelectionByCardId, providers]);
+    return fallbackProviderIds;
+  }, [cardId, fallbackProviderIds, providerSelectionByCardId, providers]);
 
   const selectedProviders = useMemo(
     () => providers.filter((provider) => selectedProviderIds.includes(provider.id)),

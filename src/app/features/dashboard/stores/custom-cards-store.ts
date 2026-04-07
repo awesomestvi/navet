@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { ZoneName } from '../zones/zone-types';
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'presence' | 'sparkline';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
 export const HOME_WIDGET_ROOM = '__home__';
 export const ENERGY_WIDGET_ROOM = '__energy__';
 
@@ -19,7 +19,23 @@ export interface CustomCard {
 }
 
 function normalizeCustomCard(card: CustomCard): CustomCard {
-  if (card.type === 'sparkline' && card.size !== 'small' && card.size !== 'medium') {
+  if (
+    card.type === 'photo' &&
+    card.size !== 'small' &&
+    card.size !== 'medium' &&
+    card.size !== 'large' &&
+    card.size !== 'extra-large'
+  ) {
+    return { ...card, size: 'large' };
+  }
+
+  if (
+    card.type === 'note' &&
+    card.size !== 'small' &&
+    card.size !== 'medium' &&
+    card.size !== 'large' &&
+    card.size !== 'extra-large'
+  ) {
     return { ...card, size: 'medium' };
   }
 
@@ -90,7 +106,13 @@ export const useCustomCardsStore = create<CustomCardsState>()(
         return {
           ...state,
           cards: (state.cards as Array<Omit<CustomCard, 'type'> & { type: string }>)
-            .filter((card) => card.type !== 'weather' && card.type !== 'calendar')
+            .filter(
+              (card) =>
+                card.type !== 'weather' &&
+                card.type !== 'calendar' &&
+                card.type !== 'presence' &&
+                card.type !== 'sparkline'
+            )
             .map((card) => ({
               ...card,
               type: card.type === 'news' ? 'rss' : card.type,

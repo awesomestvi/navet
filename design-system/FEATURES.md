@@ -553,7 +553,7 @@ A full-screen animated overlay shown on first load. Follows the hook/view split 
 
 **Location**: `src/app/features/dashboard/components/home-dashboard-overview.tsx`
 
-The Dashboard Builder (`/mock` section) lets users compose their Home screen from the full device and widget library. It supports two layout modes and full drag-and-drop card ordering.
+The Dashboard Builder (Home dashboard section) lets users compose their Home screen from the full device and widget library. It supports two layout modes and full drag-and-drop card ordering.
 
 ### Layout Modes
 
@@ -1040,7 +1040,7 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 
 ---
 
-**Last Updated**: March 24, 2026
+**Last Updated**: April 8, 2026
 **Version**: 1.8
 **Status**: Living Document
 

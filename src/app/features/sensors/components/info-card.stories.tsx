@@ -6,7 +6,7 @@ import {
   noopCardSizeChange,
 } from '../../dashboard/stories/entity-card-story-frame';
 
-function SensorCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChange'>) {
+function InfoCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChange'>) {
   return (
     <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <SensorCard {...args} onSizeChange={noopCardSizeChange} />
@@ -15,13 +15,17 @@ function SensorCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeCh
 }
 
 const meta = {
-  title: 'Cards/Entity/Sensor',
-  component: SensorCardStory,
+  title: 'Components/Patterns/Info Card',
+  component: InfoCardStory,
   tags: ['autodocs'],
   argTypes: {
     size: {
       control: 'inline-radio',
       options: ['extra-small', 'small', 'medium', 'large'],
+    },
+    icon: {
+      control: 'inline-radio',
+      options: ['gauge', 'trend-up', 'trend-down'],
     },
   },
   args: {
@@ -35,7 +39,15 @@ const meta = {
     size: 'medium',
     isEditMode: false,
   },
-} satisfies Meta<typeof SensorCardStory>;
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Read-only numeric info card for showing a single sensor-like metric, status, or compact diagnostic value. Use this for display-only entities and informational surfaces rather than interactive controls.',
+      },
+    },
+  },
+} satisfies Meta<typeof InfoCardStory>;
 
 export default meta;
 

@@ -204,10 +204,11 @@ gap: 8px
 ```tsx
 <div className="grid w-full grid-flow-row-dense grid-cols-2 gap-2 auto-rows-[87px] md:grid-cols-4 md:gap-3 xl:grid-cols-6 lg:gap-4 2xl:grid-cols-8">
   {/* Cards with dynamic col-span */}
-  <div className="col-span-1 row-span-1"> {/* Extra-small card */}
-  <div className="col-span-1 row-span-2"> {/* Small card */}
-  <div className="col-span-2 row-span-2"> {/* Medium card */}
-  <div className="col-span-2 row-span-4"> {/* Large card */}
+  <div className="col-span-1 row-span-1"> {/* Tiny card */}
+  <div className="col-span-2 row-span-1"> {/* Extra-small card */}
+  <div className="col-span-2 row-span-2"> {/* Small card */}
+  <div className="col-span-4 row-span-2"> {/* Medium card */}
+  <div className="col-span-4 row-span-4"> {/* Large card */}
 </div>
 ```
 
@@ -221,16 +222,22 @@ gap: 8px
 // From card-size-selector.tsx
 export function getCardSpanClass(size: CardSize): string {
   switch (size) {
+    case 'tiny':
+      return 'col-span-1 row-span-1';
     case 'extra-small':
-      return 'col-span-1 row-span-1'; // 1 column × 0.5 row
+      return 'col-span-2 row-span-1'; // 1 logical column × 0.5 row
     case 'small':
-      return 'col-span-1 row-span-2'; // 1 column × 1 row
+      return 'col-span-2 row-span-2'; // 1 logical column × 1 row
     case 'medium':
-      return 'col-span-2 row-span-2'; // 2 columns × 1 row
+      return 'col-span-4 row-span-2'; // 2 logical columns × 1 row
+    case 'medium-vertical':
+      return 'col-span-2 row-span-4'; // 1 logical column × 2 rows
     case 'large':
-      return 'col-span-2 row-span-4'; // 2 columns × 2 rows
+      return 'col-span-4 row-span-4'; // 2 logical columns × 2 rows
+    case 'extra-large':
+      return 'col-span-6 row-span-4'; // 3 logical columns × 2 rows
     default:
-      return 'col-span-1 row-span-2';
+      return 'col-span-2 row-span-2';
   }
 }
 ```

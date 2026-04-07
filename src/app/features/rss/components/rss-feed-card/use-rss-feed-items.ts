@@ -248,7 +248,8 @@ const dedupeItems = (items: RSSItem[]): RSSItem[] =>
 export function useRSSFeedItems(
   providers: RSSProvider[],
   entities: HassEntities | null,
-  limit = 10
+  limit = 10,
+  refreshNonce = 0
 ) {
   const { formatRelativeTime, t } = useI18n();
   const cacheKey = `${providers.map((provider) => provider.id).join('|')}::${limit}`;
@@ -266,6 +267,10 @@ export function useRSSFeedItems(
     }
 
     let cancelled = false;
+
+    if (refreshNonce > 0) {
+      rssFeedItemsCache.delete(cacheKey);
+    }
 
     const loadItems = async () => {
       setIsLoading(true);
@@ -318,7 +323,7 @@ export function useRSSFeedItems(
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, entities, formatRelativeTime, limit, providers, t]);
+  }, [cacheKey, entities, formatRelativeTime, limit, providers, refreshNonce, t]);
 
   const latestArticle = items[0] ?? null;
 

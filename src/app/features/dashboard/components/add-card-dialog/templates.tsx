@@ -56,28 +56,6 @@ function StickyNote(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function Users(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Presence</title>
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function Sparkline(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Sparkline</title>
-      <path d="M3 18h18" />
-      <path d="M4 15c2.5 0 2.5-7 5-7s2.5 10 5 10 2.5-6 6-6" />
-    </svg>
-  );
-}
-
 export const cardTemplates: CardTemplate[] = [
   {
     id: 'rss',
@@ -93,15 +71,15 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.photo.description',
     icon: <Image className="w-5 h-5" />,
     defaultSize: 'large',
-    supportedSizes: ['small', 'medium', 'large'],
+    supportedSizes: ['small', 'medium', 'large', 'extra-large'],
   },
   {
     id: 'note',
     nameKey: 'dashboard.addCard.templates.note.name',
     descriptionKey: 'dashboard.addCard.templates.note.description',
     icon: <StickyNote className="w-5 h-5" />,
-    defaultSize: 'small',
-    supportedSizes: ['small', 'medium', 'large'],
+    defaultSize: 'medium',
+    supportedSizes: ['small', 'medium', 'large', 'extra-large'],
   },
   {
     id: 'battery',
@@ -118,21 +96,5 @@ export const cardTemplates: CardTemplate[] = [
     icon: <Zap className="w-5 h-5" />,
     defaultSize: 'small',
     supportedSizes: ['tiny', 'extra-small', 'small'],
-  },
-  {
-    id: 'presence',
-    nameKey: 'dashboard.addCard.templates.presence.name',
-    descriptionKey: 'dashboard.addCard.templates.presence.description',
-    icon: <Users className="w-5 h-5" />,
-    defaultSize: 'small',
-    supportedSizes: ['tiny', 'extra-small', 'small'],
-  },
-  {
-    id: 'sparkline',
-    nameKey: 'dashboard.addCard.templates.sparkline.name',
-    descriptionKey: 'dashboard.addCard.templates.sparkline.description',
-    icon: <Sparkline className="w-5 h-5" />,
-    defaultSize: 'medium',
-    supportedSizes: ['small', 'medium'],
   },
 ];

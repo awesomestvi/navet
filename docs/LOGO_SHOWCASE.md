@@ -232,4 +232,4 @@ For complete brand guidelines, see:
 - [public/README.md](../public/README.md) - Logo asset documentation
 
 ---
-**Last Updated:** March 5, 2026
+**Last Updated:** April 8, 2026

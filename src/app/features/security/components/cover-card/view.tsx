@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Slider from '@radix-ui/react-slider';
-import { ChevronDown, ChevronUp, Square } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { CardActionRow } from '@/app/components/patterns/card-action-row';
 import { CardMetric } from '@/app/components/primitives/card-metric';
@@ -30,6 +30,15 @@ type CoverColorSet = {
   accent: string;
   glow: string;
 };
+
+function CoverPauseIcon() {
+  return (
+    <span className="inline-flex h-3.5 items-center justify-center gap-[3px]" aria-hidden="true">
+      <span className="h-3 w-[2px] rounded-full bg-current" />
+      <span className="h-3 w-[2px] rounded-full bg-current" />
+    </span>
+  );
+}
 
 interface CoverCardViewProps {
   entityId: string;
@@ -509,7 +518,7 @@ function CoverActionRow({
             <ChevronUp className="h-3.5 w-3.5" />
           </CoverControlButton>
           <CoverControlButton theme={theme} size={size} label={t('cover.stop')} onClick={onStop}>
-            <Square className="h-3 w-3" />
+            <CoverPauseIcon />
           </CoverControlButton>
           <CoverControlButton theme={theme} size={size} label={t('cover.close')} onClick={onClose}>
             <ChevronDown className="h-3.5 w-3.5" />

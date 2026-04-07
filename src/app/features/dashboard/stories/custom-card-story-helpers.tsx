@@ -1,4 +1,4 @@
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
 import { WidgetCard } from '@/app/features/dashboard/components/widget-card';
 import type { CustomCard } from '@/app/features/dashboard/stores/custom-cards-store';
 
@@ -25,7 +25,7 @@ export function CustomWidgetStoryFrame({
   isEditMode?: boolean;
 }) {
   return (
-    <div className="h-70 w-95">
+    <div className={cardSizeOverlayClass[card.size]}>
       <WidgetCard card={card} isEditMode={isEditMode} />
     </div>
   );

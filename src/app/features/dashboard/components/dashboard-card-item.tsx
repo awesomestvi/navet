@@ -152,9 +152,6 @@ function getAllowedSizes(
   extraLargeAllowed = true
 ): CardSize[] {
   if (card) {
-    if (card.type === 'sparkline') {
-      return ['small', 'medium'];
-    }
     if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
       return ['small', 'medium', 'large', 'extra-large'];
     }

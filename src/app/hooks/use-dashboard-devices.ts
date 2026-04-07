@@ -12,7 +12,6 @@ export const useDashboardDevices = (
       lights: devices.lights.filter((device) => !hiddenIds.has(device.id)),
       hvac: devices.hvac.filter((device) => !hiddenIds.has(device.id)),
       climate: devices.climate.filter((device) => !hiddenIds.has(device.id)),
-      power: devices.power.filter((device) => !hiddenIds.has(device.id)),
       media: devices.media.filter((device) => !hiddenIds.has(device.id)),
       weather: devices.weather.filter((device) => !hiddenIds.has(device.id)),
       switches: devices.switches.filter((device) => !hiddenIds.has(device.id)),

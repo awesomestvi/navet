@@ -19,22 +19,18 @@ export function useMediaDisplayFields({
 }: UseMediaDisplayFieldsParams) {
   const liveEntityPicture =
     typeof liveAttrs?.entity_picture === 'string' ? liveAttrs.entity_picture : entityPicture;
-  const hasLiveMediaMetadata =
-    typeof liveAttrs?.media_title === 'string' ||
-    typeof liveAttrs?.app_name === 'string' ||
-    typeof liveAttrs?.media_artist === 'string' ||
-    typeof liveAttrs?.media_album_name === 'string' ||
-    typeof liveAttrs?.source === 'string';
-
+  const fallbackTitle = initialTitle.trim().length > 0 ? initialTitle : nothingPlayingLabel;
+  const fallbackArtist =
+    initialArtist.trim().length > 0 ? initialArtist : nothingPlayingDescription;
   const displayTitle =
     (typeof liveAttrs?.media_title === 'string' && liveAttrs.media_title) ||
     (typeof liveAttrs?.app_name === 'string' && liveAttrs.app_name) ||
-    (hasLiveMediaMetadata ? initialTitle : nothingPlayingLabel);
+    fallbackTitle;
   const displayArtist =
     (typeof liveAttrs?.media_artist === 'string' && liveAttrs.media_artist) ||
     (typeof liveAttrs?.media_album_name === 'string' && liveAttrs.media_album_name) ||
     (typeof liveAttrs?.source === 'string' && liveAttrs.source) ||
-    (hasLiveMediaMetadata ? initialArtist : nothingPlayingDescription);
+    fallbackArtist;
   const liveArtworkKey =
     typeof liveAttrs?.media_content_id === 'string' ? liveAttrs.media_content_id : artworkKey;
 

@@ -43,7 +43,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [ ] **Per-section customization** — background, column count, or grouping mode per section
 - [ ] **Gesture navigation** — swipe between rooms on mobile
 - [ ] **Advanced accessibility settings** — font size, reduced motion, high contrast overrides
-- [ ] **Widget marketplace** — community-contributed widget types beyond RSS/Photo/Note
+- [ ] **Widget marketplace** — community-contributed widget types beyond RSS/Photo/Note/Battery/Button
 
 ### Integrations
 
@@ -75,7 +75,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **PWA install** — manifest, service worker, offline shell, install prompt
 - [x] **Page zoom setting** — scale the whole dashboard without browser zoom
 - [x] **Entity visibility control** — add/remove entities from the dashboard per room
-- [x] **Card resizing** — `extra-small` / `small` / `medium` / `large` per card type
+- [x] **Card resizing** — per-card supported sizes, including compact (`tiny`, `extra-small`) and extended (`extra-large`) options where supported
 - [x] **All view grouping modes** — custom, room, type, or flat grouping in the All view
 - [x] **Search with entity id queries** — filter by domain (`light.`) or full id
 - [x] **Calendar card** — calendar entities with week/month view and event details
@@ -95,7 +95,6 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Photo Frame widget** — cycling image display widget
 - [x] **Quick Note widget** — freeform text note card
 - [x] **Battery overview** — dashboard widget listing all low-battery devices sorted by charge level
-- [x] **Presence overview** — dashboard widget showing who is home across all `person.*` entities
 - [x] **Low-power mode** — reduced-effects mode for RPi-class hardware
 - [x] **Deferred / batched room rendering** — offscreen rooms defer and visible rooms hydrate in batches
 - [x] **OS appearance auto-follow** — optional "Follow system appearance" mode switches between light and dark using `prefers-color-scheme`

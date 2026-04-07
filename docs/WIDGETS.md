@@ -1,385 +1,133 @@
 # Widget System Documentation
 
-This document explains how the custom widget system works in Navet.
+This document explains how custom dashboard widgets work in Navet.
 
-Calendar is no longer a custom dashboard widget. Calendar functionality now comes from live Home Assistant `calendar.*` entity cards.
+Calendar and weather are not custom widgets. They are Home Assistant entity cards (`calendar.*` and weather entities) and should be added through the entity flow.
 
-## 📋 Table of Contents
+## Overview
 
-- [Overview](#overview)
-- [Available Widgets](#available-widgets)
-- [Adding Widgets](#adding-widgets)
-- [Managing Widgets](#managing-widgets)
-- [Creating Custom Widgets](#creating-custom-widgets)
-- [Widget Storage](#widget-storage)
-- [API Reference](#api-reference)
+Custom widgets let users place non-entity cards on the dashboard and keep their state locally.
 
-## 🎯 Overview
+### Current Built-in Widgets
 
-The widget system allows users to add customizable cards to their dashboard beyond the standard device cards. Widgets are stored locally in the browser's localStorage and persist across sessions.
-
-### Key Features
-
-- **5 Built-in Widget Types** - RSS Feed, Photo Frame, Quick Note, Battery Overview, Button
-- **3 Size Options** - Small, Medium, Large (adapts to grid)
-- **Room Assignment** - Widgets can be assigned to specific rooms or "All"
-- **Persistent Storage** - Saves to localStorage automatically
-- **Edit Mode Integration** - Full drag-and-drop and delete support
-- **Responsive Design** - Adapts to all screen sizes
-
-## 📱 Available Widgets
-
-### 1. RSS Feed Widget
-
-Shows live articles from your selected RSS providers.
-
-**Features:**
-- Article titles and sources
-- Timestamps
-- External link support
-- Per-card provider selection
-- Custom RSS provider URLs
-- Home Assistant Feedreader provider support
-- Per-card provider deletion and source management
-
-**Best Sizes:** Medium, Large
-
-**Use Cases:**
-- RSS aggregation
-- Stay informed
-- Quick headlines
-
----
-
-### 2. Photo Frame Widget
-
-Decorative ambient frame with built-in rotating artwork panels.
-
-**Features:**
-- Multiple built-in artwork panels
-- Next/previous navigation
-- Dot indicators
-- Smooth transitions
-
-**Best Sizes:** Medium, Large
-
-**Use Cases:**
-- Family photos
-- Vacation memories
-- Art display
-
----
-
-### 3. Quick Note Widget
-
-Editable sticky note for quick reminders.
-
-**Features:**
-- Click-to-edit interface
-- Text persistence
-- Save/cancel buttons
-- Markdown-style formatting
-
-**Best Sizes:** Small, Medium
-
-**Use Cases:**
-- Todo lists
-- Quick reminders
-- Shopping lists
-- Notes and ideas
-
----
-
-### 4. Battery Overview Widget
-
-Shows a live summary of battery-powered Home Assistant devices.
-
-**Features:**
-- Live battery levels from HA entities
-- Color-coded status indicators
-- Compact list view
-
-**Best Sizes:** Small, Medium, Large
-
-**Use Cases:**
-- Monitoring remote controls and sensors
-- Tracking smart locks and doorbells
-- Household battery maintenance
-
----
-
-### 5. Button Widget
-
-A one-tap action button that calls any Home Assistant service.
-
-**Features:**
-- Configurable HA service and entity target
-- Custom label
-- Visual press feedback
-
-**Best Sizes:** Small
-
-**Use Cases:**
-- Scene activation
-- Script execution
-- Quick device actions
-
-## ➕ Adding Widgets
-
-### Step 1: Enter Edit Mode
-
-Click **Customize** in the dashboard action row to enter edit mode.
-
-### Step 2: Open Add Dialog
-
-Open the **Add** dropdown that appears in edit mode.
-
-### Step 3: Choose Widget Type
-
-Select from 5 available widget types:
 - RSS Feed
 - Photo Frame
 - Quick Note
 - Battery Overview
 - Button
 
-### Step 4: Select Size
+### Core Behavior
 
-Choose the card size:
-- **Small** - 1 column x 1 row
-- **Medium** - 2 columns x 1 row
-- **Large** - 2 columns x 2 rows
+- Widgets are stored locally in browser storage (`ha-dashboard-custom-cards`)
+- Widgets support edit-mode move/resize/delete flows
+- Widget sizing is template-specific (not one global size list)
+- Widgets can be assigned to rooms and participate in home layout sections
 
-### Step 5: Add Widget
+## Supported Sizes by Widget
 
-Click **Add Widget** to add it to your current room.
+The Add Card dialog defines widget size support in `src/app/features/dashboard/components/add-card-dialog/templates.tsx`.
 
-## 🛠️ Managing Widgets
+- `rss`: `medium`, `large`
+- `photo`: `small`, `medium`, `large`, `extra-large`
+- `note`: `small`, `medium`, `large`, `extra-large`
+- `battery`: `small`, `medium`, `large`
+- `button`: `tiny`, `extra-small`, `small`
 
-### Resizing Widgets
+## Add and Manage Widgets
 
-1. Enter **Edit Mode**
-2. Use the top-right resize action on the widget card
-3. Exit edit mode to save
+### Add
 
-### Moving Widgets
+1. Enter `Customize` to open edit mode.
+2. Open the `Add` menu.
+3. Select a widget template.
+4. Choose one of the template's supported sizes.
+5. Confirm add.
 
-1. Enter **Edit Mode**
-2. Drag widgets to reorder them
-3. Drop in desired position
-4. Exit edit mode to save
+### Resize
 
-### Deleting Widgets
+1. Enter edit mode.
+2. Use the card resize action.
+3. Pick a supported size for that widget type.
 
-1. Enter **Edit Mode**
-2. Click the **X** button on the widget
-3. Confirm deletion
-4. Widget is permanently removed
+### Move
 
-### Editing Widget Content
+1. Enter edit mode.
+2. Drag and drop the widget card.
 
-**Quick Note Widget:**
-1. Click the **Edit** button on the note
-2. Type your content
-3. Click **Save** to persist changes
+### Delete
 
-**Other Widgets:**
-RSS and photo remain custom dashboard widgets. Weather and calendar are now provided by Home Assistant entity cards rather than custom widgets.
+1. Enter edit mode.
+2. Use the remove action on the card.
+3. Confirm deletion.
 
-## 🔧 Creating Custom Widgets
+### Edit Data
 
-### Widget Component Structure
+- Quick Note: inline note editing with persisted content.
+- RSS Feed: source/provider and tint configuration.
+- Photo Frame: image URLs, shuffle mode, and tint configuration.
+- Button: action label/icon/service/entity/service-data configuration.
+- Battery Overview: read-only overview of battery entities.
 
-```tsx
-import { Icon } from 'lucide-react';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+## Architecture and File Map
 
-interface MyWidgetProps {
-  size?: 'small' | 'medium' | 'large';
-}
+### Add Dialog Templates
 
-export function MyWidget({ size = 'medium' }: MyWidgetProps) {
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
+- `src/app/features/dashboard/components/add-card-dialog/types.ts`
+- `src/app/features/dashboard/components/add-card-dialog/templates.tsx`
 
-  return (
-    <div className={`rounded-[28px] p-4 border h-full flex flex-col ${surface.panel} ${surface.border}`}>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-        >
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>Widget Title</h3>
-          <p className={`text-xs ${surface.textSecondary}`}>Subtitle</p>
-        </div>
-      </div>
+These files define widget type ids, labels, defaults, and supported sizes.
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Your widget content here */}
-      </div>
-    </div>
-  );
-}
-```
+### Widget Host Renderer
 
-### Adding to Widget System
+- `src/app/features/dashboard/components/widget-card.tsx`
 
-1. **Create widget component** in `/src/app/components/widgets/`
-2. **Export** from `/src/app/components/widgets/index.ts`
-3. **Add to the Add dialog** templates array
-4. **Add to WidgetCard** switch statement
-5. **Update types** in `add-card-dialog.tsx`
+`WidgetCard` maps `CustomCard.type` to the actual widget component and manages per-widget update callbacks.
 
-### Design Guidelines
+### Widget Components
 
-- Use frosted glass background (`backdrop-blur-xl`)
-- Include rounded corners (`rounded-2xl`)
-- Add theme-aware colors
-- Support all four theme modes
-- Keep `extra-small` as an optional dense layout path only when the widget genuinely benefits from it
-- Respect size constraints
-- Include proper spacing (4px grid system)
-- Add loading states if needed
-- Handle empty states gracefully
+- `src/app/features/dashboard/components/widgets/button-widget.tsx`
+- `src/app/features/dashboard/components/widgets/note-widget.tsx`
+- `src/app/features/dashboard/components/widgets/photo-frame-widget.tsx`
+- `src/app/features/dashboard/components/widgets/battery-overview-widget.tsx`
+- RSS widget component lives in `src/app/features/rss/components/rss-feed-card/`
 
-## 💾 Widget Storage
+### Widget Store
 
-### Storage Structure
+- `src/app/features/dashboard/stores/custom-cards-store.ts`
 
-Widgets are stored in localStorage under the key `ha-dashboard-custom-cards`:
+Store responsibilities:
+- persist cards
+- add/remove/update cards
+- normalize invalid migrated sizes
+- migrate legacy widget types (`news` -> `rss`)
+- drop removed legacy custom-card types (`weather`, `calendar`, `presence`, `sparkline`) during migration
 
-```json
-[
-  {
-    "id": "custom-1234567890-abc123",
-    "type": "rss",
-    "size": "medium",
-    "room": "Living Room",
-    "data": {},
-    "createdAt": 1234567890000
-  }
-]
-```
+## Type Reference
 
-RSS provider definitions and per-card RSS source selections are also stored locally so each RSS card can keep its own provider mix.
-
-### Storage API
-
-The `useCustomCards` hook provides methods for managing widgets:
-
-```typescript
-const {
-  customCards,      // Array of all custom cards
-  addCard,          // Add a new card
-  removeCard,       // Remove a card by ID
-  updateCard,       // Update card properties
-  getCardsForRoom,  // Get cards for specific room
-} = useCustomCards();
-```
-
-### Data Persistence
-
-- Automatically saves to localStorage on any change
-- Loads from localStorage on app initialization
-- Survives browser refreshes and closures
-- Clears on localStorage.clear() or manual deletion
-
-## 📚 API Reference
-
-### `useCustomCards()`
-
-Custom hook for managing widget cards.
-
-**Returns:**
-```typescript
-{
-  customCards: CustomCard[];
-  addCard: (type: CardType, size: Size, room: string, data?: Record<string, unknown>) => CustomCard;
-  removeCard: (cardId: string) => void;
-  updateCard: (cardId: string, updates: Partial<CustomCard>) => void;
-  getCardsForRoom: (room: string) => CustomCard[];
-}
-```
-
-### Types
-
-```typescript
+```ts
 type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
-type Size = 'extra-small' | 'small' | 'medium' | 'large';
+
+type CardSize =
+  | 'tiny'
+  | 'extra-small'
+  | 'small'
+  | 'medium'
+  | 'medium-vertical'
+  | 'large'
+  | 'extra-large';
 
 interface CustomCard {
   id: string;
   type: CardType;
-  size: Size;
+  size: CardSize;
   room: string;
+  zone?: string;
   data?: Record<string, unknown>;
   createdAt: number;
 }
 ```
 
-### Component Props
+## Legacy Notes
 
-**WidgetCard**
-```typescript
-interface WidgetCardProps {
-  card: CustomCard;
-  onDelete?: (cardId: string) => void;
-  onUpdate?: (cardId: string, data: Record<string, unknown>) => void;
-}
-```
-
-**RSSFeedCard**
-```typescript
-interface RSSFeedCardProps {
-  cardId: string;
-  size?: 'small' | 'medium' | 'large';
-}
-```
-
-**PhotoFrameWidget**
-```typescript
-interface PhotoFrameWidgetProps {
-  size?: 'small' | 'medium' | 'large';
-}
-```
-
-**NoteWidget**
-```typescript
-interface NoteWidgetProps {
-  size?: 'small' | 'medium' | 'large';
-  initialNote?: string;
-  onNoteChange?: (note: string) => void;
-}
-```
-
-## 🆘 Troubleshooting
-
-### Widgets not saving
-- Check browser localStorage is enabled
-- Verify localStorage quota not exceeded
-- Try clearing browser cache
-
-### Widgets not displaying
-- Check browser console for errors
-- Verify widget type is supported
-- Ensure component is properly imported
-
-### Themes not applying
-- Check theme context is properly wrapped
-- Verify CSS variables are loaded
-- Clear browser cache and reload
-
-### Performance issues
-- Limit number of widgets per room
-- Use smaller sizes when possible
-- Check for memory leaks in custom widgets
-
----
-
-For more information, see the [README](../README.md) or open an issue on GitHub.
+- Legacy custom weather/calendar cards are no longer part of the widget system.
+- Legacy presence/sparkline custom cards are removed and filtered out during persisted data migration.

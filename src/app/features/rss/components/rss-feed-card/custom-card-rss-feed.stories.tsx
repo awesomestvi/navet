@@ -1,13 +1,37 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { CardSize } from '@/app/components/shared/card-size-selector';
 import {
   buildCustomCard,
   CustomWidgetStoryFrame,
 } from '../../../dashboard/stories/custom-card-story-helpers';
 
+function RSSFeedStory({
+  size = 'large',
+  tintColor = '#3b82f6',
+}: {
+  size?: CardSize;
+  tintColor?: string;
+}) {
+  return <CustomWidgetStoryFrame card={buildCustomCard('rss', size, { tintColor })} />;
+}
+
 const meta = {
-  title: 'Cards/Widget/RSS Feed',
-  component: CustomWidgetStoryFrame,
+  title: 'Cards/Custom/RSS Feed',
+  component: RSSFeedStory,
   tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium', 'large'],
+    },
+    tintColor: {
+      control: 'color',
+    },
+  },
+  args: {
+    size: 'large',
+    tintColor: '#3b82f6',
+  },
   parameters: {
     docs: {
       description: {
@@ -15,14 +39,10 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof CustomWidgetStoryFrame>;
+} satisfies Meta<typeof RSSFeedStory>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    card: buildCustomCard('rss', 'large', { tintColor: '#3b82f6' }),
-  },
-};
+export const Playground: Story = {};

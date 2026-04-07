@@ -29,6 +29,25 @@ const meta = {
   component: WeatherCardStory,
   tags: ['autodocs'],
   argTypes: {
+    condition: {
+      control: 'select',
+      options: [
+        'sunny',
+        'moony',
+        'partly-cloudy',
+        'cloudy',
+        'rainy',
+        'snow',
+        'snow-night',
+        'windy',
+        'thunderstorm',
+        'fog',
+      ],
+    },
+    forecastMode: {
+      control: 'inline-radio',
+      options: ['hourly', 'weekly'],
+    },
     size: {
       control: 'inline-radio',
       options: ['small', 'medium', 'large'],
@@ -37,20 +56,20 @@ const meta = {
   args: {
     id: 'weather.home',
     location: 'Stockholm, Sweden',
-    temperature: 6,
-    condition: 'partly-cloudy',
-    humidity: 72,
-    windSpeed: 14,
-    precipitation: 0.4,
+    temperature: 4,
+    condition: 'rainy',
+    humidity: 88,
+    windSpeed: 22,
+    precipitation: 2.9,
     precipitationUnit: 'mm',
     sunrise: '06:22',
     sunset: '19:18',
     daylight: '12h 56m',
-    rainForecast: 'Light rain expected after 18:00',
+    rainForecast: 'Steady rain for next 4h',
     forecast,
-    forecastMode: 'weekly',
-    highTemp: 7,
-    lowTemp: 2,
+    forecastMode: 'hourly',
+    highTemp: 5,
+    lowTemp: 1,
     size: 'medium',
     isEditMode: false,
   },
@@ -61,94 +80,3 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
-
-export const SunnyDay: Story = {
-  args: {
-    condition: 'sunny',
-    temperature: 31,
-    highTemp: 34,
-    lowTemp: 22,
-    rainForecast: '',
-  },
-};
-
-export const MoonyNight: Story = {
-  args: {
-    condition: 'moony',
-    temperature: 18,
-    highTemp: 20,
-    lowTemp: 14,
-    rainForecast: '',
-  },
-};
-
-export const CloudyDay: Story = {
-  args: {
-    condition: 'cloudy',
-    temperature: 23,
-    highTemp: 25,
-    lowTemp: 19,
-    rainForecast: '',
-  },
-};
-
-export const Raining: Story = {
-  args: {
-    condition: 'rainy',
-    temperature: 17,
-    highTemp: 19,
-    lowTemp: 15,
-    rainForecast: 'Rain likely through evening',
-  },
-};
-
-export const SnowDay: Story = {
-  args: {
-    condition: 'snow',
-    temperature: -2,
-    highTemp: 0,
-    lowTemp: -5,
-    rainForecast: 'Light snow around noon',
-  },
-};
-
-export const SnowNight: Story = {
-  args: {
-    condition: 'snow-night',
-    temperature: -6,
-    highTemp: -4,
-    lowTemp: -9,
-    rainForecast: 'Flurries overnight',
-  },
-};
-
-export const Windy: Story = {
-  args: {
-    condition: 'windy',
-    windSpeed: 38,
-    temperature: 16,
-    highTemp: 18,
-    lowTemp: 11,
-    rainForecast: '',
-  },
-};
-
-export const Thunderstorm: Story = {
-  args: {
-    condition: 'thunderstorm',
-    temperature: 20,
-    highTemp: 23,
-    lowTemp: 17,
-    rainForecast: 'Thunderstorm warning tonight',
-  },
-};
-
-export const Foggy: Story = {
-  args: {
-    condition: 'fog',
-    temperature: 12,
-    highTemp: 14,
-    lowTemp: 9,
-    rainForecast: '',
-  },
-};
