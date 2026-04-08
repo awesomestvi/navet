@@ -2,8 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { expect } from 'storybook/test';
 import { LockCard } from '@/app/features/security';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
 
 function LockCardStory(args: ComponentProps<typeof LockCard>) {
@@ -62,10 +64,49 @@ const meta = {
     size: 'small',
     isEditMode: false,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof LockCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  args: {
+    size: 'tiny',
+    initialState: true,
+    id: 'lock.front_door',
+    name: 'Front Door',
+  },
+  play: async ({ canvas, userEvent, step }) => {
+    const actionButton = canvas.getByRole('button', { name: /unlock/i });
+
+    await step('shows the lock as locked initially', async () => {
+      await expect(canvas.getByText(/locked/i)).toBeInTheDocument();
+    });
+
+    await step('toggles to unlocked when pressed', async () => {
+      await userEvent.click(actionButton);
+      await expect(canvas.getByText(/unlocked/i)).toBeInTheDocument();
+      await expect(canvas.getByRole('button', { name: /lock/i })).toBeInTheDocument();
+    });
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Info } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Tooltip } from './tooltip';
 
 const meta = {
@@ -28,8 +29,26 @@ const meta = {
   },
 } satisfies Meta<typeof Tooltip>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 export const Top: Story = {};
 export const Bottom: Story = { args: { side: 'bottom' } };
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

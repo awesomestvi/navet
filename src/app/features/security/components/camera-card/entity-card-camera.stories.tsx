@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CameraCard } from '@/app/features/security';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import cameraSampleImage from '@/assets/camera-sample.webp';
 import {
   EntityCardStoryFrame,
@@ -33,10 +34,29 @@ const meta = {
     size: 'medium',
     isEditMode: false,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof CameraCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

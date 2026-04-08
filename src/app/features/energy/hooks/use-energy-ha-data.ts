@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useCallback, useDeferredValue, useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
@@ -293,17 +295,63 @@ export function useEnergyHaData(range: EnergyRange): {
   currentLoadStatisticId?: string;
 } {
   const sourceConfig = useEnergyDashboardStore((s) => s.sourceConfig);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+
+  // Build the list of entity IDs that are directly named in the config. This
+  // drives a narrow subscription so we only re-render when a relevant entity
+  // changes instead of on every HA entity update.
+  const configEntityIds = useMemo(() => {
+    if (!sourceConfig) return [] as string[];
+    return [
+      sourceConfig.solarPowerEntityId,
+      sourceConfig.batterySocEntityId,
+      sourceConfig.batteryPowerEntityId,
+      sourceConfig.gridImportPowerEntityId,
+      sourceConfig.gridExportPowerEntityId,
+      sourceConfig.homeLoadPowerEntityId,
+      sourceConfig.gridImportEnergyEntityId,
+      sourceConfig.solarEnergyEntityId,
+      ...sourceConfig.devices.flatMap((d) => [d.entityId, d.powerEntityId].filter(Boolean)),
+    ].filter((id): id is string => Boolean(id));
+  }, [sourceConfig]);
+
+  const configEntitySelector = useCallback(
+    (state: HomeAssistantStore) => {
+      const entities = state.entities;
+      if (!entities || !configEntityIds.length) return null as EntityMap | null;
+      const result: EntityMap = {};
+      for (const id of configEntityIds) {
+        const entity = entities[id];
+        if (entity) result[id] = entity;
+      }
+      return result;
+    },
+    [configEntityIds]
+  );
+
+  // Subscribe only to the configured entity IDs. shallow equality prevents
+  // re-renders when the same entity references are returned.
+  const configEntities = useHomeAssistant(configEntitySelector, shallow);
+
+  // Full entity scan needed only to infer a home-load sensor when none is
+  // explicitly configured. Deferred so it does not block urgent renders.
+  const allEntitiesDeferred = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
+  const needsInference = sourceConfig !== null && !sourceConfig.homeLoadPowerEntityId;
+  const inferredHomeLoad = useMemo(
+    () =>
+      needsInference
+        ? getInferredHomeLoadPowerSensor(allEntitiesDeferred)
+        : { entityId: undefined as string | undefined, watts: 0 },
+    [needsInference, allEntitiesDeferred]
+  );
+
   const todayKWh = useEnergyStatisticsToday(sourceConfig);
 
   const { overview, currentLoadStatisticId } = useMemo(() => {
     if (!sourceConfig) {
-      return {
-        overview: createEmptyOverview(),
-        currentLoadStatisticId: undefined,
-      };
+      return { overview: createEmptyOverview(), currentLoadStatisticId: undefined };
     }
 
+    const entities = configEntities;
     const solarW = parseW(entities?.[sourceConfig.solarPowerEntityId ?? '']?.state);
     const batterySoc = parsePct(entities?.[sourceConfig.batterySocEntityId ?? '']?.state);
     const batteryPowerRaw = parseW(entities?.[sourceConfig.batteryPowerEntityId ?? '']?.state);
@@ -313,7 +361,6 @@ export function useEnergyHaData(range: EnergyRange): {
     const batteryDischargeW = batteryPowerRaw < 0 ? Math.abs(batteryPowerRaw) : 0;
     const batteryChargeW = batteryPowerRaw > 0 ? batteryPowerRaw : 0;
     const monitoredDevicePowerW = getConfiguredDevicePowerW(sourceConfig.devices, entities);
-    const inferredHomeLoad = getInferredHomeLoadPowerSensor(entities);
     const derivedHomeLoadW = Math.max(
       0,
       solarW + gridImportW + batteryDischargeW - gridExportW - batteryChargeW
@@ -385,7 +432,7 @@ export function useEnergyHaData(range: EnergyRange): {
       },
       currentLoadStatisticId,
     };
-  }, [sourceConfig, entities, range, todayKWh]);
+  }, [sourceConfig, configEntities, inferredHomeLoad, range, todayKWh]);
 
   return {
     overview,

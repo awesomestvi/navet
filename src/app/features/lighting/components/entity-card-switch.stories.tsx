@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { SwitchCard } from '@/app/features/lighting';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
 
 function SwitchCardStory(args: ComponentProps<typeof SwitchCard>) {
@@ -34,10 +35,29 @@ const meta = {
     voltage: 230,
     energy: 2.6,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof SwitchCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

@@ -1,22 +1,38 @@
-import path from 'path';
-import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
+
+const dirname =
+  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const storybookConfigDir = path.join(dirname, '.storybook');
 
 export default defineConfig({
-  plugins: [react()],
   test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./src/setupTests.ts'],
-    coverage: {
-      provider: 'v8',
-      include: ['src/app/**/*.{ts,tsx}'],
-      exclude: ['src/app/**/*.d.ts', 'src/app/**/index.ts'],
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    projects: [
+      './vitest.unit.config.ts',
+      {
+        extends: './vitest.unit.config.ts',
+        plugins: [
+          storybookTest({
+            configDir: storybookConfigDir,
+            storybookScript: 'pnpm storybook',
+          }),
+        ],
+        test: {
+          name: `storybook:${storybookConfigDir}`,
+          coverage: {
+            exclude: ['**/*.json', '**/package.json'],
+          },
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+    ],
   },
 });

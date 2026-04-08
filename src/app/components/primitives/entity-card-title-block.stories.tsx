@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardTitleBlock } from './entity-card-title-block';
 
 function FramedEntityCardTitleBlock({
@@ -53,6 +54,18 @@ const meta = {
   },
 } satisfies Meta<typeof FramedEntityCardTitleBlock>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -62,5 +75,11 @@ export const TitleFirst: Story = {};
 export const EyebrowFirst: Story = {
   args: {
     layout: 'eyebrow-first',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

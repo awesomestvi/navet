@@ -49,8 +49,24 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Pattern wrapper for labels, hints, and field-level errors around a control primitive. Status: ready.',
+        component: [
+          'Form-field pattern wrapper that standardizes label, hint, required, and error presentation around control primitives.',
+          '',
+          'Status: ready.',
+          '',
+          'What this page covers:',
+          '- Baseline hint and label pairing for text input controls.',
+          '- Required and error states with predictable messaging placement.',
+          '- Disabled-state behavior that preserves contextual copy.',
+          '',
+          'Usage notes:',
+          '- Use this wrapper instead of hand-assembling label/hint/error stacks in feature forms.',
+          '- Keep validation copy concise and specific to the expected user correction.',
+          '',
+          'Review expectations:',
+          '- Verify error and hint copy remain readable in all themes.',
+          '- Verify disabled and invalid states stay visually distinct.',
+        ].join('\n'),
       },
     },
   },
@@ -64,6 +80,13 @@ export const Default: Story = {
   args: {
     hint: 'Search by name, room, or type.',
   },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Baseline field block with label and helper text wrapping a text input control.',
+      },
+    },
+  },
 };
 
 export const Required: Story = {
@@ -71,11 +94,25 @@ export const Required: Story = {
     required: true,
     hint: 'This value is needed before continuing.',
   },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Required-field presentation with mandatory indicator and supporting hint copy.',
+      },
+    },
+  },
 };
 
 export const ErrorState: Story = {
   args: {
     error: 'Enter a valid Home Assistant URL.',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Validation-error state with inline error message and invalid input styling.',
+      },
+    },
   },
 };
 
@@ -83,5 +120,18 @@ export const Disabled: Story = {
   args: {
     hint: 'Disabled fields keep their label and hint text.',
     disabled: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Disabled control state while preserving contextual label and hint messaging.',
+      },
+    },
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

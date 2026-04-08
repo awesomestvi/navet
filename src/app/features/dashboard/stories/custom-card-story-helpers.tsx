@@ -21,12 +21,14 @@ export function CustomWidgetStoryFrame({
   card,
   isEditMode = false,
 }: {
-  card: CustomCard;
+  card?: CustomCard;
   isEditMode?: boolean;
 }) {
+  const safeCard = card ?? buildCustomCard('button', 'medium');
+
   return (
-    <div className={cardSizeOverlayClass[card.size]}>
-      <WidgetCard card={card} isEditMode={isEditMode} />
+    <div className={cardSizeOverlayClass[safeCard.size]}>
+      <WidgetCard card={safeCard} isEditMode={isEditMode} />
     </div>
   );
 }

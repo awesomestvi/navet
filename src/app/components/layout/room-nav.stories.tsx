@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { RoomNav } from '@/app/components/layout/room-nav';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
 function RoomNavStory({ isEditMode = false }: { isEditMode?: boolean }) {
   const [activeRoom, setActiveRoom] = useState('All');
@@ -31,8 +32,21 @@ const meta = {
   args: {
     isEditMode: false,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof RoomNavStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -42,5 +56,11 @@ export const Default: Story = {};
 export const EditMode: Story = {
   args: {
     isEditMode: true,
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

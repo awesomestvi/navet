@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   DialogDoneButton,
   DialogFooter,
@@ -102,6 +103,18 @@ const meta = {
   },
 } satisfies Meta<typeof DialogShell>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -113,3 +126,16 @@ export const Basic = {
 export const Decorated = {
   render: () => <DecoratedDialogStory />,
 } as unknown as Story;
+
+export const Docs: Story = {
+  args: {
+    isOpen: false,
+    onOpenChange: () => {},
+    overlayClassName: '',
+    contentClassName: '',
+    children: null,
+  },
+  parameters: {
+    docsOnly: true,
+  },
+};

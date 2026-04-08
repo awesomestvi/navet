@@ -722,6 +722,10 @@ export const frMessages = {
   'notifications.section.notifications': 'Notifications',
   'notifications.header.markAllRead': 'Tout marquer comme lu',
   'notifications.header.clearAll': 'Tout effacer',
+  'notifications.confirmClearAll.title': 'Effacer toutes les notifications ?',
+  'notifications.confirmClearAll.description':
+    'Cela supprimera toutes les notifications et ne pourra pas être annulé.',
+  'notifications.confirmClearAll.action': 'Tout effacer',
   'notifications.time.justNow': 'A l instant',
   'notifications.time.minutesAgo': 'il y a {count} min',
   'notifications.time.hoursAgo': 'il y a {count} h',

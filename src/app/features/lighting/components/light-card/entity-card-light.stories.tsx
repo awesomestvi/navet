@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
+import { expect } from 'storybook/test';
 import { LightCard } from '@/app/features/lighting';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   EntityCardStoryFrame,
   noopCardSizeChange,
@@ -34,10 +36,47 @@ const meta = {
     size: 'medium',
     isEditMode: false,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof LightCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  play: async ({ canvas, userEvent, step }) => {
+    const lightCard = canvas.getByRole('button', { name: /^living room$/i });
+
+    await step('shows the light as on initially', async () => {
+      await expect(lightCard).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    await step('toggles the light off when the card is clicked', async () => {
+      await userEvent.click(lightCard);
+      await expect(lightCard).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    await step('toggles the light back on when clicked again', async () => {
+      await userEvent.click(lightCard);
+      await expect(lightCard).toHaveAttribute('aria-pressed', 'true');
+    });
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

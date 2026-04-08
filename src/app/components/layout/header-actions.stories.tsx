@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useRef, useState } from 'react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HeaderDesktopActions, HeaderMobileActions } from './header-actions';
 
 function HeaderDesktopActionsStory() {
@@ -56,9 +57,21 @@ const meta = {
   title: 'App Shell/Header/Header Actions',
   component: HeaderDesktopActionsStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
 } satisfies Meta<typeof HeaderDesktopActionsStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -67,4 +80,10 @@ export const Desktop: Story = {};
 
 export const Mobile: Story = {
   render: () => <HeaderMobileActionsStory />,
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

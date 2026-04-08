@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { CardMetric } from './card-metric';
 import { CardMetricActionLayout } from './card-metric-action-layout';
 
@@ -29,8 +30,21 @@ const meta = {
       </div>
     ),
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof CardMetricActionLayout>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -52,4 +66,10 @@ export const LargeSpacing: Story = {
       <CardMetricActionLayout {...args} />
     </div>
   ),
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

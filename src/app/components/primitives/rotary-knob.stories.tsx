@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { RotaryKnob, type RotaryKnobProps } from './rotary-knob';
 
 type RotaryKnobStoryProps = Omit<
@@ -76,6 +77,18 @@ const meta = {
   },
 } satisfies Meta<typeof RotaryKnobPlayground>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -85,5 +98,11 @@ export const Playground: Story = {};
 export const Off: Story = {
   args: {
     isOn: false,
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

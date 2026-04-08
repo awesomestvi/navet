@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';
 
 const siblingEntities: SiblingEntity[] = [
@@ -31,7 +32,7 @@ const meta = {
   title: 'Cards/Dialogs/Camera',
   component: CameraSettingsDialog,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
   args: {
     entityId: 'camera.front_door',
     name: 'Front Door Camera',
@@ -42,6 +43,18 @@ const meta = {
   },
 } satisfies Meta<typeof CameraSettingsDialog>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -52,4 +65,10 @@ export const Default: Story = {
       <CameraSettingsDialog {...args} />
     </SettingsDialogStoryFrame>
   ),
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

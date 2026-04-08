@@ -5,7 +5,7 @@ import { type CardSize, getStandardCardPadding } from '@/app/components/shared/c
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { getPersonCardSurfaceTokens } from './person-card-surface-tokens';
 
 interface PersonCardProps {
@@ -60,7 +60,7 @@ export const PersonCard = memo(function PersonCard({
   const { t } = useI18n();
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
-  const { config } = useAuth();
+  const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
 
   const liveState: 'home' | 'away' =

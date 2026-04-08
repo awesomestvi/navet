@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MoreHorizontal, SunMedium } from 'lucide-react';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { RoundControlButton } from './round-control-button';
 
 function ThemeAwareRoundControlButton(
@@ -20,8 +21,21 @@ const meta = {
     children: <SunMedium className="h-4 w-4" />,
     'aria-label': 'Brightness control',
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof ThemeAwareRoundControlButton>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -39,5 +53,11 @@ export const Neutral: Story = {
 export const Emphasis: Story = {
   args: {
     variant: 'emphasis',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

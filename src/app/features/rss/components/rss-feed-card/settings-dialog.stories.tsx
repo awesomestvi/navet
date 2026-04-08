@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSProvider } from './types';
 
@@ -54,11 +55,29 @@ const meta = {
   title: 'Cards/Dialogs/RSS Feed',
   component: RSSFeedSettingsDialogStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
 } satisfies Meta<typeof RSSFeedSettingsDialogStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

@@ -6,6 +6,7 @@ import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dr
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,8 +109,26 @@ const meta = {
   },
 } satisfies Meta<typeof DropdownMenuStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

@@ -7,7 +7,12 @@ const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(ts|tsx)'],
-  addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
+  addons: [
+    '@storybook/addon-docs',
+    '@storybook/addon-a11y',
+    '@storybook/addon-vitest',
+    '@chromatic-com/storybook',
+  ],
   framework: {
     name: '@storybook/react-vite',
     options: {

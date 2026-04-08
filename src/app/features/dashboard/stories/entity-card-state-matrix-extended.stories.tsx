@@ -7,6 +7,7 @@ import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
 import { GroupedSensorCard } from '@/app/features/sensors';
 import { VacuumCard } from '@/app/features/vacuum';
 import { WeatherCard } from '@/app/features/weather';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import cameraSampleImage from '@/assets/camera-sample.webp';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
@@ -439,8 +440,26 @@ const meta = {
   },
 } satisfies Meta<typeof StateMatrixExtendedPage>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Matrix: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

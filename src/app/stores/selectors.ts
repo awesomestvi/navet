@@ -3,6 +3,8 @@
  * Use these to prevent unnecessary re-renders
  */
 
+import type { AuthState } from './auth-store';
+import type { ConfigState } from './config-store';
 import type { HomeAssistantStore } from './home-assistant-store';
 import type {
   CustomCardsState,
@@ -12,6 +14,28 @@ import type {
   SettingsState,
   ThemeState,
 } from './types';
+
+/**
+ * Auth Store Selectors
+ */
+export const authSelectors = {
+  isAuthenticated: (state: AuthState) => state.isAuthenticated,
+  config: (state: AuthState) => state.config,
+  login: (state: AuthState) => state.login,
+  logout: (state: AuthState) => state.logout,
+  session: (state: AuthState) => ({ isAuthenticated: state.isAuthenticated, config: state.config }),
+};
+
+/**
+ * Config Store Selectors
+ */
+export const configSelectors = {
+  config: (state: ConfigState) => state.config,
+  isConfigured: (state: ConfigState) => state.isConfigured,
+  saveConfig: (state: ConfigState) => state.saveConfig,
+  testConnection: (state: ConfigState) => state.testConnection,
+  clearConfig: (state: ConfigState) => state.clearConfig,
+};
 
 /**
  * Theme Store Selectors

@@ -4,14 +4,14 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useAuth } from '@/app/contexts/auth-context';
 import { useNotifications } from '@/app/features/notifications';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const { config: authConfig } = useAuth();
+  const authConfig = useAuth(authSelectors.config);
   const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const user = useHomeAssistant(homeAssistantSelectors.user);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);

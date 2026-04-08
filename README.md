@@ -188,6 +188,11 @@ pnpm check:stories
 
 Storybook uses the existing Navet theme/settings stores so stories render in real app context. The manager UI, docs pages, and canvas default to dark mode, and the global toolbar exposes all built-in themes and accent colors.
 
+Recent workshop updates:
+
+- Story docs now use story-specific descriptions across layout, primitive, shared, entity-card, dialog, and overview stories so each docs page explains what the story represents and how to review it.
+- Storybook coverage now aligns with the current dashboard/card polish work, including updated app-shell stories, card stories, and custom-card review surfaces.
+
 The current sidebar taxonomy is organized under these top-level groups:
 
 - `Concepts`

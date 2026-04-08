@@ -22,8 +22,23 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Canonical action button primitive. Use the same component for standard buttons and icon-only buttons.',
+        component: [
+          'Canonical action-button primitive used across dashboard controls, settings forms, dialogs, and compact icon actions.',
+          '',
+          'What this page covers:',
+          '- Primary and secondary emphasis levels for common action hierarchy.',
+          '- Disabled behavior for non-interactive and pending states.',
+          '- Icon-only composition with explicit accessibility labels.',
+          '',
+          'Usage notes:',
+          '- Prefer this primitive over feature-local button wrappers when behavior and semantics are standard.',
+          '- Always provide `label` for `iconOnly` buttons so assistive technologies expose meaningful names.',
+          '- Keep variant choice tied to action priority, not visual preference.',
+          '',
+          'Review expectations:',
+          '- Verify readable contrast and affordance across active and disabled states.',
+          '- Verify icon-only controls remain hit-target compliant for small and medium sizes.',
+        ].join('\n'),
       },
     },
   },
@@ -33,17 +48,39 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Default primary action button for the most prominent action in a local flow.',
+      },
+    },
+  },
+};
 
 export const Secondary: Story = {
   args: {
     variant: 'secondary',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Secondary-emphasis action for supporting or lower-priority operations.',
+      },
+    },
   },
 };
 
 export const Disabled: Story = {
   args: {
     disabled: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Disabled state showing non-interactive styling while preserving visual context.',
+      },
+    },
   },
 };
 
@@ -58,4 +95,18 @@ export const IconButtons: Story = {
       </Button>
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Icon-only button usage across supported sizes, including required accessible labeling via the `label` prop.',
+      },
+    },
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

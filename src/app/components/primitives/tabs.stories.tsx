@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Hand, Languages, Layers2, Palette, Sparkles } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Heading } from './heading';
 import { Panel } from './panel';
 import { TabList, type TabListSize, TabPanel, Tabs, TabTrigger, type TabTriggerSize } from './tabs';
@@ -163,6 +164,18 @@ const meta = {
   },
 } satisfies Meta<typeof TabsPlayground>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -187,5 +200,11 @@ export const WithIconAndHints: Story = {
   args: {
     variant: 'with icon and hints',
     size: 'default',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

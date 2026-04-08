@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
@@ -26,7 +26,7 @@ export function useMediaCardController({
   initialSupportsGrouping = false,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
-  const { config: authConfig } = useAuth();
+  const authConfig = useAuth(authSelectors.config);
   const { t } = useI18n();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
   const entities = useHomeAssistant(homeAssistantSelectors.entities);

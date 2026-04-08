@@ -10,7 +10,7 @@ import {
 
 export type HAConfig = SessionConfig;
 
-interface ConfigState {
+export interface ConfigState {
   config: HAConfig | null;
   isConfigured: boolean;
   saveConfig: (config: HAConfig) => Promise<boolean>;
@@ -69,6 +69,6 @@ export const useConfigStore = create<ConfigState>()((set) => ({
   },
 }));
 
-export function useConfig() {
-  return useConfigStore();
+export function useConfig<T>(selector: (state: ConfigState) => T): T {
+  return useConfigStore(selector);
 }

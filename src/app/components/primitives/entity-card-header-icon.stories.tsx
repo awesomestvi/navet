@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Lightbulb, Settings2 } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
 const meta = {
@@ -25,6 +26,18 @@ const meta = {
   },
 } satisfies Meta<typeof EntityCardHeaderIcon>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -52,5 +65,11 @@ export const LargeSoftTone: Story = {
     size: 'large',
     tone: 'primary',
     isActive: false,
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

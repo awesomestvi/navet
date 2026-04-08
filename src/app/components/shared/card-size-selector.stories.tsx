@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import type { CardSize } from './card-size-selector';
 import { CardSizeSelector } from './card-size-selector';
 
@@ -52,6 +53,18 @@ const meta = {
   },
 } satisfies Meta<typeof CardSizeSelectorStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -64,4 +77,10 @@ export const StartingLarge: Story = {
 
 export const RestrictedSizes: Story = {
   render: () => <RestrictedSizesStory />,
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

@@ -8,6 +8,5 @@ export {
   SettingsLivePreviewFrame,
   TableCellContent,
 } from '@/app/components/patterns';
-// MessageBar moved to primitives
 export { MessageBar, type MessageBarProps } from '@/app/components/primitives/message-bar';
-export { DashboardHeroSection } from '@/app/features/dashboard/components/dashboard-hero-section';
+export { DashboardHeroSection } from '@/app/features/dashboard';

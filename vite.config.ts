@@ -1,8 +1,13 @@
-import { defineConfig, loadEnv } from 'vite'
-import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'node:fs'
+import path from 'path'
+import { defineConfig, loadEnv, type PluginOption, type PreviewServer, type ViteDevServer } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version?: string
+}
 
 function getPackageName(id: string) {
   const parts = id.split('node_modules/')
@@ -23,7 +28,7 @@ function getPackageName(id: string) {
 function rssProxyPlugin() {
   return {
     name: 'navet-rss-proxy',
-    configureServer(server) {
+    configureServer(server: ViteDevServer) {
       server.middlewares.use('/__navet_rss_proxy__', async (req, res) => {
         const requestUrl = req.url ? new URL(req.url, 'http://localhost') : null
         const targetUrl = requestUrl?.searchParams.get('url')?.trim()
@@ -80,7 +85,7 @@ function rssProxyPlugin() {
 function homeAssistantPreviewProxyPlugin(hassUrl?: string, hassToken?: string) {
   return {
     name: 'navet-ha-preview-proxy',
-    configurePreviewServer(server) {
+    configurePreviewServer(server: PreviewServer) {
       if (!hassUrl) {
         return
       }
@@ -97,8 +102,8 @@ function homeAssistantPreviewProxyPlugin(hassUrl?: string, hassToken?: string) {
           const upstreamResponse = await fetch(targetUrl, {
             headers: hassToken
               ? {
-                  Authorization: `Bearer ${hassToken}`,
-                }
+                Authorization: `Bearer ${hassToken}`,
+              }
               : undefined,
           })
 
@@ -130,134 +135,160 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
   const hassToken = env.NAVET_HASS_TOKEN?.trim()
+  const lifecycleEvent = process.env.npm_lifecycle_event ?? ''
+  const commandLine = process.argv.join(' ')
+  const isStorybook =
+    env.STORYBOOK === '1' ||
+    process.env.STORYBOOK === '1' ||
+    lifecycleEvent.includes('storybook') ||
+    commandLine.includes('storybook') ||
+    commandLine.includes('chromatic')
 
-  return {
-  base: './',
-  envPrefix: ['VITE_', 'NAVET_'],
-  plugins: [
+  const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
     rssProxyPlugin(),
     homeAssistantPreviewProxyPlugin(hassUrl, hassToken),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: false,
-      manifestFilename: 'site.webmanifest',
-      includeAssets: [
-        'favicon.svg',
-        'favicon-32x32.svg',
-        'apple-touch-icon.png',
-        'logo.svg',
-        'logo-horizontal.svg',
-        'logo-horizontal-light.svg',
-        'pwa-192.png',
-        'pwa-512.png',
-      ],
-      manifest: {
-        name: 'Navet',
-        short_name: 'Navet',
-        description: 'A smart home dashboard built for calm, app-like control surfaces.',
-        start_url: '/',
-        scope: '/',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        background_color: '#0a0a0a',
-        theme_color: '#0a0a0a',
-        categories: ['productivity', 'utilities', 'lifestyle'],
-        icons: [
-          {
-            src: '/pwa-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/pwa-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
-          {
-            src: '/favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any',
-          },
+  ]
+
+  if (!isStorybook) {
+    plugins.push(
+      VitePWA({
+        registerType: 'autoUpdate',
+        injectRegister: false,
+        manifestFilename: 'site.webmanifest',
+        includeAssets: [
+          'favicon.svg',
+          'favicon-32x32.svg',
+          'apple-touch-icon.png',
+          'logo.svg',
+          'logo-horizontal.svg',
+          'logo-horizontal-light.svg',
+          'pwa-192.png',
+          'pwa-512.png',
         ],
-      },
-      workbox: {
-        navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-      },
-    }),
-  ],
-  resolve: {
-    alias: {
-      // Alias @ to the src directory
-      '@': path.resolve(__dirname, './src'),
+        manifest: {
+          name: 'Navet',
+          short_name: 'Navet',
+          description: 'A smart home dashboard built for calm, app-like control surfaces.',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
+          orientation: 'portrait-primary',
+          background_color: '#0a0a0a',
+          theme_color: '#0a0a0a',
+          categories: ['productivity', 'utilities', 'lifestyle'],
+          icons: [
+            {
+              src: '/pwa-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+            {
+              src: '/pwa-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+            {
+              src: '/favicon.svg',
+              sizes: 'any',
+              type: 'image/svg+xml',
+              purpose: 'any',
+            },
+          ],
+        },
+        workbox: {
+          navigateFallback: '/index.html',
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        },
+      })
+    )
+  }
+
+  return {
+    base: './',
+    cacheDir: '.cache/vite',
+    envPrefix: ['VITE_', 'NAVET_'],
+    define: {
+      __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
     },
-  },
-
-  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
-  assetsInclude: ['**/*.svg'],
-
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return undefined
+    plugins,
+    resolve: {
+      alias: {
+        // Alias @ to the src directory
+        '@': path.resolve(__dirname, './src'),
+        ...(isStorybook
+          ? {
+            'virtual:pwa-register': path.resolve(
+              __dirname,
+              './src/test/mocks/virtual-pwa-register.ts'
+            ),
           }
+          : {}),
+      },
+    },
 
-          const packageName = getPackageName(id)
-          if (!packageName) {
-            return undefined
-          }
+    // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
+    assetsInclude: ['**/*.svg'],
 
-          if (packageName === 'react' || packageName === 'react-dom' || packageName === 'scheduler') {
-            return 'react-vendor'
-          }
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined
+            }
 
-          if (packageName.startsWith('@radix-ui/')) {
-            return 'radix-vendor'
-          }
+            const packageName = getPackageName(id)
+            if (!packageName) {
+              return undefined
+            }
 
-          if (
-            packageName === '@dnd-kit/core' ||
-            packageName === '@dnd-kit/sortable' ||
-            packageName === '@dnd-kit/utilities'
-          ) {
-            return 'dnd-vendor'
-          }
+            if (packageName === 'react' || packageName === 'react-dom' || packageName === 'scheduler') {
+              return 'react-vendor'
+            }
 
-          if (packageName === 'home-assistant-js-websocket') {
-            return 'ha-vendor'
-          }
+            if (packageName.startsWith('@radix-ui/')) {
+              return 'radix-vendor'
+            }
 
-          if (packageName === 'lucide-react') {
-            return 'icons-vendor'
-          }
+            if (
+              packageName === '@dnd-kit/core' ||
+              packageName === '@dnd-kit/sortable' ||
+              packageName === '@dnd-kit/utilities'
+            ) {
+              return 'dnd-vendor'
+            }
 
-          return 'vendor'
+            if (packageName === 'home-assistant-js-websocket') {
+              return 'ha-vendor'
+            }
+
+            if (packageName === 'lucide-react') {
+              return 'icons-vendor'
+            }
+
+            return 'vendor'
+          },
         },
       },
     },
-  },
-
-  server: {
-    host: 'navet.local',
-    port: 5200,
-    strictPort: true,
-    proxy: hassUrl
-      ? {
+    server: {
+      host: 'navet.local',
+      port: 5200,
+      strictPort: true,
+      proxy: hassUrl
+        ? {
           '/api': {
             target: hassUrl,
             changeOrigin: true,
             secure: false,
             headers: hassToken
               ? {
-                  Authorization: `Bearer ${hassToken}`,
-                }
+                Authorization: `Bearer ${hassToken}`,
+              }
               : undefined,
           },
           '/__navet_ha_proxy__': {
@@ -266,13 +297,13 @@ export default defineConfig(({ mode }) => {
             secure: false,
             headers: hassToken
               ? {
-                  Authorization: `Bearer ${hassToken}`,
-                }
+                Authorization: `Bearer ${hassToken}`,
+              }
               : undefined,
             rewrite: (path) => path.replace(/^\/__navet_ha_proxy__/, ''),
           },
         }
-      : undefined,
-  },
-}
+        : undefined,
+    },
+  }
 })

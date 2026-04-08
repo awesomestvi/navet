@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CarFront, Lock, Unlock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { SlideAction, type SlideActionProps } from './slide-action';
 
 type SlideActionStoryProps = Omit<
@@ -78,6 +79,18 @@ const meta = {
   },
 } satisfies Meta<typeof SlideActionStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -89,5 +102,11 @@ export const Playground: Story = {
     disabled: false,
     initialLocked: true,
     vehicle: false,
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

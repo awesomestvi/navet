@@ -33,8 +33,8 @@ interface CardActionRowProps {
 function getActionButtonSize(size: CardActionRowSize) {
   if (size === 'small') {
     return {
-      button: 'h-8 w-8',
-      icon: 'h-3.5 w-3.5',
+      button: 'h-7 w-7',
+      icon: 'h-3 w-3',
     };
   }
 
@@ -58,7 +58,7 @@ export function CardActionRow({
   rightContent,
   overflowItems = [],
 }: CardActionRowProps) {
-  const gapClass = size === 'small' ? 'gap-1' : 'gap-2';
+  const gapClass = size === 'small' ? 'gap-1' : size === 'large' ? 'gap-2.5' : 'gap-2';
 
   return (
     <div className={`flex items-center ${gapClass}`}>

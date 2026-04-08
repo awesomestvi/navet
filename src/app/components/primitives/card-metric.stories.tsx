@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { CardMetric } from './card-metric';
 
 const meta = {
@@ -13,8 +14,21 @@ const meta = {
     accentClassName: 'text-white',
     theme: 'glass',
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof CardMetric>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -38,4 +52,10 @@ export const Inactive: Story = {
       <CardMetric {...args} />
     </div>
   ),
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

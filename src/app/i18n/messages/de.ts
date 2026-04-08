@@ -720,6 +720,10 @@ export const deMessages = {
   'notifications.section.notifications': 'Benachrichtigungen',
   'notifications.header.markAllRead': 'Alle als gelesen markieren',
   'notifications.header.clearAll': 'Alle entfernen',
+  'notifications.confirmClearAll.title': 'Alle Benachrichtigungen löschen?',
+  'notifications.confirmClearAll.description':
+    'Dadurch werden alle Benachrichtigungen entfernt. Dies kann nicht rückgängig gemacht werden.',
+  'notifications.confirmClearAll.action': 'Alle entfernen',
   'notifications.time.justNow': 'Gerade eben',
   'notifications.time.minutesAgo': 'vor {count} Min.',
   'notifications.time.hoursAgo': 'vor {count} Std.',

@@ -2,6 +2,7 @@ import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useAuth } from '@/app/contexts/auth-context';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
+import { authSelectors } from '@/app/stores/selectors';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import {
   getNotificationColor,
@@ -28,7 +29,7 @@ export function NotificationItem({
   formatTimestamp,
 }: NotificationItemProps) {
   const { t } = useI18n();
-  const { config } = useAuth();
+  const config = useAuth(authSelectors.config);
   const surface = getNotificationSurfaceTokens(theme);
   const NotificationIcon = getNotificationIcon(notification.type);
   const primaryActionLabel =

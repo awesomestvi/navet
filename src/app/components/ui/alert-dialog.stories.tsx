@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Trash2 } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,8 +73,26 @@ const meta = {
   },
 } satisfies Meta<typeof AlertDialogStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

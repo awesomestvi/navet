@@ -707,6 +707,10 @@ export const enMessages = {
   'notifications.section.notifications': 'Notifications',
   'notifications.header.markAllRead': 'Mark all read',
   'notifications.header.clearAll': 'Clear all',
+  'notifications.confirmClearAll.title': 'Clear all notifications?',
+  'notifications.confirmClearAll.description':
+    'This will remove all notifications and cannot be undone.',
+  'notifications.confirmClearAll.action': 'Clear all',
   'notifications.time.justNow': 'Just now',
   'notifications.time.minutesAgo': '{count}m ago',
   'notifications.time.hoursAgo': '{count}h ago',

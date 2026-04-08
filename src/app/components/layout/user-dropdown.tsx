@@ -2,9 +2,18 @@ import { Activity, LogOut, RefreshCw } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
-import { useAuth } from '@/app/contexts/auth-context';
-import { useClickOutside, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useClickOutside, useHomeAssistant, useI18n, useLogout, useTheme } from '@/app/hooks';
 import { refreshPwaApp } from '@/app/pwa/pwa-update-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
@@ -14,19 +23,18 @@ interface UserDropdownProps {
 
 export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dropdownRef = useClickOutside<HTMLDivElement>(() => setIsOpen(false), isOpen);
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const user = useHomeAssistant(homeAssistantSelectors.user);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const { logout } = useAuth();
+  const performLogout = useLogout();
 
   const handleLogout = () => {
-    if (confirm(t('settings.feedback.logoutConfirm'))) {
-      setIsOpen(false);
-      logout();
-    }
+    setIsOpen(false);
+    setShowLogoutConfirm(true);
   };
 
   const handleRefreshApp = () => {
@@ -160,6 +168,21 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
           </div>
         </div>
       )}
+
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('settings.feedback.logoutConfirm')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.system.logout.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={performLogout}>{t('common.logout')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Select } from './select';
 
 const meta = {
@@ -34,6 +35,18 @@ const meta = {
   },
 } satisfies Meta<typeof Select>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -41,3 +54,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const ErrorState: Story = { args: { invalid: true } };
 export const Disabled: Story = { args: { disabled: true } };
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

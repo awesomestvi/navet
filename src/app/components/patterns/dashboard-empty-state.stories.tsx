@@ -59,8 +59,23 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component:
-          'Empty-state patterns for dashboard and panel surfaces. The default variant is full-size for page-level callouts; the Inline variant is compact for dense panels and card internals.',
+        component: [
+          'Shared empty-state pattern family for dashboard and panel surfaces, spanning page-level callouts and compact inline states.',
+          '',
+          'What this page covers:',
+          '- Full-size default and compact variants for section-level fallback states.',
+          '- Inline variants for dense card internals and utility panel contexts.',
+          '- Supporting-content slot usage for contextual hints and freshness/status cues.',
+          '- Section-level app examples that consume shared translations.',
+          '',
+          'Usage notes:',
+          '- Prefer this pattern over feature-specific empty-state markup to keep hierarchy and action language consistent.',
+          '- Reserve custom children for concise, high-signal helper content.',
+          '',
+          'Review expectations:',
+          '- Verify icon/title/description balance remains readable at all sizes.',
+          '- Verify inline variants remain informative without overwhelming compact layouts.',
+        ].join('\n'),
       },
     },
   },
@@ -81,7 +96,15 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Primary page-level empty state with icon, explanatory copy, and optional action.',
+      },
+    },
+  },
+};
 
 export const Compact: Story = {
   args: {
@@ -90,6 +113,13 @@ export const Compact: Story = {
     title: 'Nothing pinned here yet',
     description: 'Pin a few high-signal cards to turn this into a quick control surface.',
     actionLabel: 'Pin cards',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Compact variant for tighter sections that still need a clear action prompt.',
+      },
+    },
   },
 };
 
@@ -100,6 +130,14 @@ export const WithSupportingContent: Story = {
         Suggestions use your current room and entity setup
       </div>
     ),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Default empty state with additional inline supporting content below the primary message.',
+      },
+    },
   },
 };
 
@@ -113,6 +151,14 @@ export const Inline: Story = {
       actionIcon={Plus}
     />
   ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Inline variant for card internals and dense panel areas where vertical space is limited.',
+      },
+    },
+  },
 };
 
 export const InlineWithCustomContent: Story = {
@@ -129,6 +175,13 @@ export const InlineWithCustomContent: Story = {
       </div>
     </ThemeAwareInlineEmptyState>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Inline variant extended with custom status content in the supporting slot.',
+      },
+    },
+  },
 };
 
 export const AppSectionExamples: Story = {
@@ -141,5 +194,11 @@ export const AppSectionExamples: Story = {
           'Examples of how the shared empty-state pattern is used inside the app-shell sections, so section-level empty states live alongside the base pattern documentation.',
       },
     },
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

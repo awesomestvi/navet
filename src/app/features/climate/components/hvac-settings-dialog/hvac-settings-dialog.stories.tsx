@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HVACSettingsDialog } from './index';
 
 function HVACSettingsDialogStory() {
@@ -37,11 +38,29 @@ const meta = {
   title: 'Cards/Dialogs/HVAC',
   component: HVACSettingsDialogStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
 } satisfies Meta<typeof HVACSettingsDialogStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

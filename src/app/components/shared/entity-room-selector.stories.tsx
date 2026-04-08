@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityRoomSelector } from './entity-room-selector';
 
 const meta = {
@@ -21,6 +22,18 @@ const meta = {
   },
 } satisfies Meta<typeof EntityRoomSelector>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -43,5 +56,14 @@ export const CustomLabel: Story = {
   args: {
     entityId: 'switch.bedroom_fan',
     label: 'Assign to room',
+  },
+};
+
+export const Docs: Story = {
+  args: {
+    entityId: 'light.living_room_main',
+  },
+  parameters: {
+    docsOnly: true,
   },
 };

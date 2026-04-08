@@ -1,25 +1,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
 import { useAuth } from './contexts/auth-context';
 import { useConfig } from './contexts/config-context';
 import { ErrorProvider } from './contexts/error-context';
-import { LoadingProvider } from './contexts/loading-context';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
 import { useHomeAssistant, useTheme } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { useSettingsStore } from './stores';
-import { homeAssistantSelectors, settingsSelectors } from './stores/selectors';
+import {
+  authSelectors,
+  configSelectors,
+  homeAssistantSelectors,
+  settingsSelectors,
+} from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function AppContent() {
-  const { isAuthenticated, config: authConfig } = useAuth();
-  const { config: haConfig } = useConfig();
+  const { isAuthenticated, config: authConfig } = useAuth(useShallow(authSelectors.session));
+  const haConfig = useConfig(configSelectors.config);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
@@ -105,6 +110,7 @@ function AppContent() {
 
   return (
     <>
+      <ErrorDisplay />
       <PwaUpdatePrompt />
       <NetworkStatusBanner
         connected={connected}
@@ -121,11 +127,9 @@ function AppContent() {
 export default function App() {
   return (
     <I18nProvider>
-      <LoadingProvider>
-        <ErrorProvider>
-          <AppContent />
-        </ErrorProvider>
-      </LoadingProvider>
+      <ErrorProvider>
+        <AppContent />
+      </ErrorProvider>
     </I18nProvider>
   );
 }

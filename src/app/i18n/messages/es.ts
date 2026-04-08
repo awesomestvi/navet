@@ -719,6 +719,10 @@ export const esMessages = {
   'notifications.section.notifications': 'Notificaciones',
   'notifications.header.markAllRead': 'Marcar todo como leído',
   'notifications.header.clearAll': 'Borrar todo',
+  'notifications.confirmClearAll.title': '¿Borrar todas las notificaciones?',
+  'notifications.confirmClearAll.description':
+    'Esto eliminará todas las notificaciones y no se puede deshacer.',
+  'notifications.confirmClearAll.action': 'Borrar todo',
   'notifications.time.justNow': 'Ahora mismo',
   'notifications.time.minutesAgo': 'hace {count} min',
   'notifications.time.hoursAgo': 'hace {count} h',

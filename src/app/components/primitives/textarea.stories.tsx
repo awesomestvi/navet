@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Textarea } from './textarea';
 
 const meta = {
@@ -20,6 +21,18 @@ const meta = {
   },
 } satisfies Meta<typeof Textarea>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -34,4 +47,10 @@ export const LongContent: Story = {
 export const ErrorState: Story = { args: { invalid: true, defaultValue: 'ftp://broken-feed' } };
 export const Disabled: Story = {
   args: { disabled: true, defaultValue: 'This field is disabled.' },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

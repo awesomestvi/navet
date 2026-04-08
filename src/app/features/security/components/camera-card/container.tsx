@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import type { CameraCardProps } from './types';
 import { CameraCardView } from './view';
@@ -62,7 +62,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   size,
   isEditMode,
 }: CameraCardProps) {
-  const { config } = useAuth();
+  const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const allEntities = useHomeAssistant(homeAssistantSelectors.entities);

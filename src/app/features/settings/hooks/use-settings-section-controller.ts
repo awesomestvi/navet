@@ -6,6 +6,7 @@ import { useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { useI18n, useTheme } from '@/app/hooks';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
 import { useNavigationStore } from '@/app/stores/navigation-store';
+import { authSelectors, configSelectors } from '@/app/stores/selectors';
 import { useThemeStore } from '@/app/stores/theme-store';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
@@ -31,8 +32,8 @@ export function useSettingsSectionController() {
   } = useTheme();
   const manualTheme = useThemeStore((state) => state.theme);
   const { languageOptions, t } = useI18n();
-  const { logout, config } = useAuth();
-  const { clearConfig } = useConfig();
+  const config = useAuth(authSelectors.config);
+  const clearConfig = useConfig(configSelectors.clearConfig);
   const {
     disableAnimations,
     effectsQuality,
@@ -77,12 +78,15 @@ export function useSettingsSectionController() {
     setShowLicense,
     showTerms,
     setShowTerms,
+    showLogoutConfirm,
+    setShowLogoutConfirm,
     showRevealAllConfirm,
     setShowRevealAllConfirm,
     showRestartOnboardingConfirm,
     setShowRestartOnboardingConfirm,
     importInputRef,
     handleLogout,
+    confirmLogout,
     handleResetConnection,
     handleWallpaperUpload,
     handleRemoveWallpaper,
@@ -92,7 +96,6 @@ export function useSettingsSectionController() {
     handleRestartOnboarding,
   } = useSettingsSectionActions({
     t,
-    logout,
     clearConfig,
     setWallpaper,
     setActiveSection,
@@ -114,6 +117,7 @@ export function useSettingsSectionController() {
     handleExportDashboardConfig,
     handleImportDashboardConfig,
     handleLogout,
+    confirmLogout,
     handleRemoveWallpaper,
     handleResetConnection,
     handleRestartOnboarding,
@@ -131,12 +135,14 @@ export function useSettingsSectionController() {
     setPrimaryColor,
     setCustomPrimaryColor,
     setShowLicense,
+    setShowLogoutConfirm,
     setShowRestartOnboardingConfirm,
     setShowRevealAllConfirm,
     setShowTerms,
     setTheme,
     showAllEntities,
     showLicense,
+    showLogoutConfirm,
     showRestartOnboardingConfirm,
     showRevealAllConfirm,
     showTerms,

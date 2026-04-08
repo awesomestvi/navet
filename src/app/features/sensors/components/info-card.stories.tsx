@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { SensorCard } from '@/app/features/sensors';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   EntityCardStoryFrame,
   noopCardSizeChange,
@@ -49,8 +50,26 @@ const meta = {
   },
 } satisfies Meta<typeof InfoCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

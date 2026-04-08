@@ -16,6 +16,7 @@ export { useDevices, useRooms } from './use-devices';
 export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
 export { useHomeAssistant } from './use-home-assistant';
+export { useLogout } from './use-logout';
 export { useMediaQuery } from './use-media-query';
 export { useNavigation } from './use-navigation';
 // New reusable hooks

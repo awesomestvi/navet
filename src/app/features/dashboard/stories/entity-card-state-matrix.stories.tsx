@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { HVACCard } from '@/app/features/climate';
 import { LightCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
 function StateMatrixPage() {
   return (
@@ -170,8 +171,26 @@ const meta = {
   },
 } satisfies Meta<typeof StateMatrixPage>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Matrix: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

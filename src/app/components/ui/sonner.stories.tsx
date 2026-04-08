@@ -4,6 +4,7 @@ import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { Panel } from '@/app/components/primitives/panel';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Toaster } from './sonner';
 
 function SonnerStory() {
@@ -117,8 +118,26 @@ const meta = {
   },
 } satisfies Meta<typeof SonnerStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

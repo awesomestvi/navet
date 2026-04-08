@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
+import { expect } from 'storybook/test';
 import { MediaCard } from '@/app/features/media';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
 import {
   EntityCardStoryFrame,
@@ -44,10 +46,41 @@ const meta = {
     size: 'medium',
     isEditMode: false,
   },
+  parameters: { docs: { description: {} } },
 } satisfies Meta<typeof MediaCardStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  args: {
+    size: 'small',
+  },
+  play: async ({ canvas, userEvent, step }) => {
+    await step('opens the media details dialog', async () => {
+      await userEvent.click(canvas.getByRole('button', { name: /open details/i }));
+      await expect(canvas.getByRole('dialog')).toBeInTheDocument();
+      await expect(canvas.getByText(/smells like teen spirit/i)).toBeInTheDocument();
+      await expect(canvas.getByText(/nirvana/i)).toBeInTheDocument();
+    });
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

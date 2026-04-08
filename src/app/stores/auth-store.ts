@@ -12,7 +12,7 @@ import { homeAssistantStore } from './home-assistant-store';
 
 type AuthConfig = SessionConfig;
 
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   config: AuthConfig | null;
   login: (url: string, token: string) => Promise<boolean>;
@@ -43,6 +43,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 }));
 
-export function useAuth() {
-  return useAuthStore();
+export function useAuth<T>(selector: (state: AuthState) => T): T {
+  return useAuthStore(selector);
 }

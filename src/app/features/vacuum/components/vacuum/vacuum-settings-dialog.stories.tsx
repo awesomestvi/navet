@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 const meta = {
   title: 'Cards/Dialogs/Vacuum',
   component: VacuumSettingsDialog,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
   args: {
     entityId: 'vacuum.roborock_s7',
     isOpen: true,
@@ -33,6 +34,18 @@ const meta = {
   },
 } satisfies Meta<typeof VacuumSettingsDialog>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -54,5 +67,11 @@ export const Default: Story = {
         />
       </SettingsDialogStoryFrame>
     );
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

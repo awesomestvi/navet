@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { LoadingSpinner } from './loading-spinner';
 
 const meta = {
@@ -19,6 +20,18 @@ const meta = {
   },
 } satisfies Meta<typeof LoadingSpinner>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -29,5 +42,11 @@ export const FullScreen: Story = {
   args: {
     fullScreen: true,
     message: 'Connecting to Home Assistant',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

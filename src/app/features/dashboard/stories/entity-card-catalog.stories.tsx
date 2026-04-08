@@ -3,6 +3,7 @@ import { ArrowRight, Layers3 } from 'lucide-react';
 import { getThemeSurfaceTokens } from '@/app/components/system/tokens';
 import { DASHBOARD_CARD_TYPES } from '@/app/features/dashboard/utils/card-renderer';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
 const CUSTOM_CARD_TYPES = new Set(['helpers', 'grouped-sensors', 'weather', 'calendars']);
 const CUSTOM_WIDGET_TYPES = [
@@ -151,8 +152,26 @@ const meta = {
   },
 } satisfies Meta<typeof EntityCardCatalogPage>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Catalog: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

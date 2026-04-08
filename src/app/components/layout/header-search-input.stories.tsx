@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useRef, useState } from 'react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HeaderSearchInput } from './header-search-input';
 
 function HeaderSearchInputStory() {
@@ -33,11 +34,29 @@ const meta = {
   title: 'App Shell/Header/Search Input',
   component: HeaderSearchInputStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
 } satisfies Meta<typeof HeaderSearchInputStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

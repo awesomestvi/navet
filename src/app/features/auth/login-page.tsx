@@ -6,6 +6,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useAuth } from '@/app/contexts/auth-context';
 import { useConfig } from '@/app/contexts/config-context';
 import { useI18n, useTheme } from '@/app/hooks';
+import { authSelectors, configSelectors } from '@/app/stores/selectors';
 
 export function LoginPage() {
   const [url, setUrl] = useState('');
@@ -14,8 +15,8 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
-  const { testConnection } = useConfig();
+  const login = useAuth(authSelectors.login);
+  const testConnection = useConfig(configSelectors.testConnection);
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);

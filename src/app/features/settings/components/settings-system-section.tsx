@@ -1,4 +1,14 @@
 import { ExternalLink, LogOut, Server, Settings2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import { useI18n } from '@/app/hooks';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
@@ -9,7 +19,15 @@ interface SettingsSystemSectionProps {
 
 export function SettingsSystemSection({ controller }: SettingsSystemSectionProps) {
   const { t } = useI18n();
-  const { config, handleLogout, handleResetConnection, styles } = controller;
+  const {
+    config,
+    confirmLogout,
+    handleLogout,
+    handleResetConnection,
+    showLogoutConfirm,
+    setShowLogoutConfirm,
+    styles,
+  } = controller;
 
   return (
     <SettingsSectionShell
@@ -72,6 +90,23 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           <LogOut className="h-4 w-4" />
           <span>{t('settings.project.logout')}</span>
         </button>
+
+        <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('settings.feedback.logoutConfirm')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('settings.system.logout.description')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmLogout}>
+                {t('settings.project.logout')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SettingsItem>
     </SettingsSectionShell>
   );

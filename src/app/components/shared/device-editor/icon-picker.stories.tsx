@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { IconPicker } from './icon-picker';
 
 function IconPickerStory({ isLightOn }: { isLightOn: boolean }) {
@@ -35,6 +36,18 @@ const meta = {
   },
 } satisfies Meta<typeof IconPickerStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -45,4 +58,13 @@ export const LightOn: Story = {
 
 export const LightOff: Story = {
   args: { isLightOn: false },
+};
+
+export const Docs: Story = {
+  args: {
+    isLightOn: true,
+  },
+  parameters: {
+    docsOnly: true,
+  },
 };

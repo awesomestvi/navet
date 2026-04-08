@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { AlertTriangle, CheckCircle2, Info as InfoIcon, WifiOff } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { MessageBar } from './message-bar';
 
 const meta = {
@@ -27,6 +28,18 @@ const meta = {
   },
 } satisfies Meta<typeof MessageBar>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -65,5 +78,11 @@ export const ErrorState: Story = {
       </span>
     ),
     children: 'The dashboard could not reach Home Assistant with the current URL.',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

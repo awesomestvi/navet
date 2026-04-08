@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
+import { expect } from 'storybook/test';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import type { LightBrightnessPreset } from './light-card-types';
 import { LightSettingsDialog } from './light-settings-dialog';
 
@@ -58,11 +60,45 @@ const meta = {
   title: 'Cards/Dialogs/Light',
   component: LightSettingsDialogStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: { layout: 'fullscreen', docs: { description: {} } },
 } satisfies Meta<typeof LightSettingsDialogStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvas, userEvent, step }) => {
+    const brightnessSlider = canvas.getByRole('slider', { name: /brightness/i });
+
+    await step('starts with the expected brightness value', async () => {
+      await expect(brightnessSlider).toHaveAttribute('aria-valuenow', '62');
+      await expect(canvas.getByText('62%')).toBeInTheDocument();
+    });
+
+    await step('updates brightness with keyboard interaction', async () => {
+      brightnessSlider.focus();
+      await userEvent.keyboard('{ArrowRight}');
+      await expect(brightnessSlider).toHaveAttribute('aria-valuenow', '63');
+      await expect(canvas.getByText('63%')).toBeInTheDocument();
+    });
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

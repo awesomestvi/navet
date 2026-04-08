@@ -64,8 +64,22 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component:
-          'Composed card action row pattern for left-aligned controls, optional right-side actions, and overflow menus. Used by HVAC, vacuum, cover, and lighting card layouts.',
+        component: [
+          'Composed action-row pattern for card footers and control strips, including left control groups, optional right utility actions, and overflow menu actions.',
+          '',
+          'What this page covers:',
+          '- Density variants (`small`, `medium`, `large`) mapped to card size and interaction context.',
+          '- Mixed-content row composition (preset controls + settings action + overflow commands).',
+          '- Themed control tokens for selected and unselected round-control states.',
+          '',
+          'Usage notes:',
+          '- Reuse this row as the shared composition layer for HVAC, vacuum, cover, and lighting cards.',
+          '- Prefer token calculators for control styling instead of feature-local class combinations.',
+          '',
+          'Review expectations:',
+          '- Verify density variants keep consistent rhythm and hit-area quality.',
+          '- Verify selected-state contrast remains readable across themes.',
+        ].join('\n'),
       },
     },
   },
@@ -75,12 +89,40 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Medium: Story = {};
-
 export const Small: Story = {
   args: { size: 'small' },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Small density variant for constrained cards and compact control clusters.',
+      },
+    },
+  },
+};
+
+export const Medium: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Default action-row density tuned for most card surfaces.',
+      },
+    },
+  },
 };
 
 export const Large: Story = {
   args: { size: 'large' },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Large density variant with more relaxed spacing for touch-forward layouts.',
+      },
+    },
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
 };

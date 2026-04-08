@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChevronRight, Lightbulb } from 'lucide-react';
 import { useTheme } from '@/app/hooks';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardHeader } from './entity-card-header';
 import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
@@ -63,6 +64,18 @@ const meta = {
   },
 } satisfies Meta<typeof FramedEntityCardHeader>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -79,5 +92,11 @@ export const EyebrowLayout: Story = {
 export const CompactSize: Story = {
   args: {
     size: 'extra-small',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
   },
 };

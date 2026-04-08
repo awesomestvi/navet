@@ -73,11 +73,7 @@ Thumbs.db
 # ------------------------------
 *.pem
 .vercel
-.netlifynode_modules/
-dist/
-build/
-*.log
-.env
-.DS_Store
+.netlify
+.claude/
 biome.json.cache
 .biome/

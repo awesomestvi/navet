@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Switch } from './switch';
 
 function SwitchStory({ defaultChecked = true, disabled = false }) {
@@ -32,9 +33,27 @@ const meta = {
   },
 } satisfies Meta<typeof SwitchStory>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 export const On: Story = { args: { defaultChecked: true } };
 export const Off: Story = { args: { defaultChecked: false } };
 export const Disabled: Story = { args: { defaultChecked: true, disabled: true } };
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

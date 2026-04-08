@@ -1,6 +1,7 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { TranslateFn } from '@/app/hooks';
+import { useLogout } from '@/app/hooks/use-logout';
 import {
   downloadDashboardConfig,
   importDashboardConfigFromFile,
@@ -9,7 +10,6 @@ import { readFileAsDataUrl, validateImageFile } from '@/app/utils/image-upload';
 
 interface SettingsSectionActionDeps {
   t: TranslateFn;
-  logout: () => void;
   clearConfig: () => void;
   setWallpaper: (wallpaper: string | null) => void;
   setActiveSection: (section: 'home') => void;
@@ -19,30 +19,31 @@ interface SettingsSectionActionDeps {
 
 export function useSettingsSectionActions({
   t,
-  logout,
   clearConfig,
   setWallpaper,
   setActiveSection,
   setCurrentRoom,
   reopenOnboarding,
 }: SettingsSectionActionDeps) {
+  const performLogout = useLogout();
   const [showLicense, setShowLicense] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showRevealAllConfirm, setShowRevealAllConfirm] = useState(false);
   const [showRestartOnboardingConfirm, setShowRestartOnboardingConfirm] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleLogout = () => {
-    if (confirm(t('settings.feedback.logoutConfirm'))) {
-      logout();
-      toast.success(t('settings.feedback.logoutSuccess'));
-    }
+  const handleLogout = () => setShowLogoutConfirm(true);
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
+    performLogout();
   };
 
   const handleResetConnection = () => {
     if (confirm(t('settings.feedback.resetConnectionConfirm'))) {
       clearConfig();
-      logout();
+      performLogout();
       toast.info(t('settings.feedback.resetConnectionSuccess'));
     }
   };
@@ -118,12 +119,15 @@ export function useSettingsSectionActions({
     setShowLicense,
     showTerms,
     setShowTerms,
+    showLogoutConfirm,
+    setShowLogoutConfirm,
     showRevealAllConfirm,
     setShowRevealAllConfirm,
     showRestartOnboardingConfirm,
     setShowRestartOnboardingConfirm,
     importInputRef,
     handleLogout,
+    confirmLogout,
     handleResetConnection,
     handleWallpaperUpload,
     handleRemoveWallpaper,

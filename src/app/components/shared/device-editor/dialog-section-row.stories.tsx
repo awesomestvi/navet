@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Lightbulb, Sun } from 'lucide-react';
+import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { DialogSectionRow } from './dialog-section-row';
 
 const meta = {
@@ -17,6 +18,18 @@ const meta = {
   },
 } satisfies Meta<typeof DialogSectionRow>;
 
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
 export default meta;
 
 type Story = StoryObj<typeof meta>;
@@ -73,4 +86,13 @@ export const Stacked: Story = {
       </DialogSectionRow>
     </div>
   ),
+};
+
+export const Docs: Story = {
+  args: {
+    children: null,
+  },
+  parameters: {
+    docsOnly: true,
+  },
 };

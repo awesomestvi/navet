@@ -1,4 +1,14 @@
-import type { RefObject } from 'react';
+import { type RefObject, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/app/components/ui/alert-dialog';
 import { type PrimaryColor, type ThemeType, useClickOutside, useI18n, useTheme } from '@/app/hooks';
 import { NotificationEmptyState } from './notification-empty-state';
 import { NotificationHeader } from './notification-header';
@@ -18,6 +28,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getNotificationSurfaceTokens(theme);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const {
     notifications,
     unreadCount,
@@ -54,7 +65,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
         <NotificationHeader
           onClose={onClose}
           onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
-          onClearAll={clearAll}
+          onClearAll={() => setShowClearAllConfirm(true)}
           unreadCount={unreadCount}
           hasNotifications={notifications.length > 0}
           theme={theme}
@@ -97,6 +108,28 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           )}
         </div>
       </div>
+
+      <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('notifications.confirmClearAll.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('notifications.confirmClearAll.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearAll();
+                setShowClearAllConfirm(false);
+              }}
+            >
+              {t('notifications.confirmClearAll.action')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
