@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EnergyWidgetShell } from './energy-widget-shell';
 
 const meta = {
-  title: 'Energy/Primitives/Widget Shell',
+  title: 'Pages/Energy/Primitives/Widget Shell',
   component: EnergyWidgetShell,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

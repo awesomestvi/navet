@@ -5,7 +5,7 @@ import { EnergyNowWidget } from './energy-now-widget';
 const overview = getMockEnergyOverview('live');
 
 const meta = {
-  title: 'Energy/Widgets/Now',
+  title: 'Pages/Energy/Widgets/Now',
   component: EnergyNowWidget,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

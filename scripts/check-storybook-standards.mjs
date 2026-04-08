@@ -13,9 +13,7 @@ const ALLOWED_TOP_LEVEL_GROUPS = new Set([
   'Components',
   'App Shell',
   'Cards',
-  'Dashboard',
-  'Energy',
-  'Settings',
+  'Pages',
 ]);
 
 /**

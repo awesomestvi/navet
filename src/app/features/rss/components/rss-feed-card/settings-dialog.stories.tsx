@@ -51,7 +51,7 @@ function RSSFeedSettingsDialogStory() {
 }
 
 const meta = {
-  title: 'Settings/Dialogs/RSS Feed',
+  title: 'Cards/Dialogs/RSS Feed',
   component: RSSFeedSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

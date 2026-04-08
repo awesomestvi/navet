@@ -7,4 +7,3 @@ export {
   type SettingsLivePreviewFrameProps,
 } from './interaction-preview-card';
 export { TableCellContent, type TableCellContentProps } from './table-cell-content';
-export { TinyActionCard } from './tiny-action-card';

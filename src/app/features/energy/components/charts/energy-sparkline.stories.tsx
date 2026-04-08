@@ -4,7 +4,7 @@ import { EnergySparkline } from './energy-sparkline';
 const now = Date.now();
 
 const meta = {
-  title: 'Energy/Charts/Sparkline',
+  title: 'Pages/Energy/Charts/Sparkline',
   component: EnergySparkline,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

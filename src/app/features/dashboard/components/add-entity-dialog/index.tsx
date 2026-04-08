@@ -1,6 +1,6 @@
 import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import { Input } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';

@@ -5,7 +5,7 @@ import { EnergyConsumersWidget } from './energy-consumers-widget';
 const overview = getMockEnergyOverview('day');
 
 const meta = {
-  title: 'Energy/Widgets/Consumers',
+  title: 'Pages/Energy/Widgets/Consumers',
   component: EnergyConsumersWidget,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

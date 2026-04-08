@@ -4,7 +4,7 @@ import { SettingsDialogStoryFrame } from '@/app/features/settings/components/set
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 const meta = {
-  title: 'Settings/Dialogs/Vacuum',
+  title: 'Cards/Dialogs/Vacuum',
   component: VacuumSettingsDialog,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

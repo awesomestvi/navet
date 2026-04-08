@@ -68,14 +68,12 @@ Stories are organised into a stable top-level hierarchy that keeps the sidebar p
   - `Cards/Overview/` — catalog, all-sizes matrix, and state matrices
   - `Cards/Entity/` — one story per HA entity domain
   - `Cards/Custom/` — custom/widget cards such as action, photo frame, RSS feed, quick note, and battery overview
-- `Dashboard/` — add-card dialog, edit actions, onboarding dialog
-- `Energy/`
-  - `Energy/Charts/` — charts and gauges
-  - `Energy/Primitives/` — shells and workshop helpers
-  - `Energy/Widgets/` — feature widgets
-- `Settings/`
-  - `Settings/Sections/` — the main settings sections and section-level previews
-  - `Settings/Dialogs/` — per-entity settings dialogs such as light, HVAC, camera, weather, RSS, and vacuum
+- `Pages/`
+  - `Pages/Dashboard/` — add-card dialog, edit actions, hero, and onboarding dialog
+  - `Pages/Energy/Charts/` — charts and gauges
+  - `Pages/Energy/Primitives/` — shells and workshop helpers
+  - `Pages/Energy/Widgets/` — feature widgets
+  - `Pages/Settings/` — settings sections and section-level previews
 
 Storybook sorting is controlled centrally in `.storybook/preview.tsx`. Avoid inventing new top-level roots unless the workshop genuinely has a new product area.
 

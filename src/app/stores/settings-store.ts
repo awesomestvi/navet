@@ -118,6 +118,14 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'ha-dashboard-settings',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const next = (persisted as Partial<SettingsState> | null) ?? {};
+        return {
+          ...current,
+          ...next,
+          pageZoom: normalizePageZoom(next.pageZoom ?? current.pageZoom),
+        };
+      },
     }
   )
 );

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EnergyGauge } from './energy-gauge';
 
 const meta = {
-  title: 'Energy/Charts/Gauge',
+  title: 'Pages/Energy/Charts/Gauge',
   component: EnergyGauge,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

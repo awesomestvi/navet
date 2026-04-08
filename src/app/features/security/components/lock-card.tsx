@@ -1,7 +1,7 @@
 import { CarFront, Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
-import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
 import { SlideAction } from '@/app/components/primitives';
+import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
 import {
   type CardSize,
   isExtraSmallCardSize,
@@ -126,39 +126,45 @@ export const LockCard = memo(function LockCard({
 
   if (isTiny) {
     return (
-      <TinyActionCard
-        rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
-        metadata={statusLabel}
-        title={name}
-        metadataClassName={`font-medium ${stateIconClassName}`}
-        titleClassName="text-white"
-        titleStyle={{ color: tinyTextTokens.titleColor }}
-        watermark={
-          <TinyCardWatermark
-            IconComponent={IconComponent}
-            color={tinyTextTokens.titleColor}
-            className={isPendingAction ? 'opacity-22' : 'opacity-14'}
-          />
-        }
-        overlays={
-          <>
-            <div
-              className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
+      <div
+        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
+      >
+        <div
+          className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
+        />
+        {securitySurface.overlayClassName ? (
+          <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+        ) : null}
+        <TinyCardWatermark
+          IconComponent={IconComponent}
+          color={tinyTextTokens.titleColor}
+          className={isPendingAction ? 'opacity-22' : 'opacity-14'}
+        />
+
+        <div className="relative flex h-full w-full flex-col justify-between text-left">
+          <div className="min-w-0 w-full pt-1">
+            <EntityCardTitleBlock
+              title={name}
+              subtitle={statusLabel}
+              layout="eyebrow-first"
+              titleClassName="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight"
+              subtitleClassName={`truncate text-[10px] font-medium tracking-normal ${stateIconClassName}`}
+              titleStyle={{ color: tinyTextTokens.titleColor }}
+              subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
             />
-            {securitySurface.overlayClassName ? (
-              <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-            ) : null}
-          </>
-        }
-        actionButtonProps={
-          isEditMode || isPendingAction
-            ? undefined
-            : {
-                onClick: handleToggleLock,
-                'aria-label': nextActionLabel,
-              }
-        }
-      />
+          </div>
+          <span />
+        </div>
+
+        {!isEditMode && !isPendingAction ? (
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={handleToggleLock}
+            aria-label={nextActionLabel}
+          />
+        ) : null}
+      </div>
     );
   }
 

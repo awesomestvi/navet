@@ -59,7 +59,7 @@ function SystemOverviewPage() {
     {
       title: 'Patterns',
       description:
-        'Composed sections for dashboard and settings surfaces, including field wrappers, empty states, feedback blocks, and compact action compositions.',
+        'Composed sections for dashboard and settings surfaces, including field wrappers, empty states, feedback blocks, and preview compositions.',
       stories: [
         'Components/Patterns/Form Field',
         'Components/Primitives/MessageBar',
@@ -67,7 +67,6 @@ function SystemOverviewPage() {
         'Components/Patterns/Card Action Row',
         'Components/Patterns/Empty State',
         'Components/Patterns/Preview Cards',
-        'Components/Patterns/Tiny Action Card',
       ],
       icon: Sparkles,
     },

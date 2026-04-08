@@ -34,7 +34,7 @@ function HVACSettingsDialogStory() {
 }
 
 const meta = {
-  title: 'Settings/Dialogs/HVAC',
+  title: 'Cards/Dialogs/HVAC',
   component: HVACSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

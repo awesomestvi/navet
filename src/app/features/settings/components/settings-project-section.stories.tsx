@@ -14,7 +14,7 @@ function ProjectStory() {
 }
 
 const meta = {
-  title: 'Settings/Sections/Project',
+  title: 'Pages/Settings/Project',
   component: ProjectStory,
   tags: ['autodocs'],
   parameters: {

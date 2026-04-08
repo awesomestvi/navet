@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { DashboardOnboardingDialog } from './index';
 
 const meta = {
-  title: 'Dashboard/Onboarding Dialog',
+  title: 'Pages/Dashboard/Onboarding Dialog',
   component: DashboardOnboardingDialog,
   tags: ['autodocs'],
   parameters: {

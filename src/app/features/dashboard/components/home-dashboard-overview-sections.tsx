@@ -1,6 +1,6 @@
 import { Wand2 } from 'lucide-react';
 import { type CSSProperties, useMemo } from 'react';
-import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { HomeEditorSection } from '../hooks/use-home-dashboard-editor';

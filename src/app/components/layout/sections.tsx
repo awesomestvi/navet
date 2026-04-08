@@ -1,5 +1,6 @@
 import { Clipboard, Lightbulb, Lock, type LucideIcon, Tv, Video } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useMemo } from 'react';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import {
   CARD_GRID_ROW_CLASS,
   type CardSize,
@@ -12,7 +13,6 @@ import { DashboardCardItem } from '@/app/features/dashboard';
 import { useCardState, useDevices, useEditMode, useI18n, useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
-import { DashboardEmptyState } from '../patterns/dashboard-empty-state';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 function DeviceSectionLayout({

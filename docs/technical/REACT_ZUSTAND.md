@@ -141,6 +141,10 @@ export const useMyStore = create<MyState>()(
 );
 ```
 
+All persisted stores (`settings-store`, `theme-store`, `navigation-store`, `edit-mode-store`,
+`dashboard-entities-store`) implement a `merge` function that validates or normalizes values
+before rehydrating. Never add a persisted store without a `merge` function.
+
 Never use the manual `subscribe` + `localStorage.setItem` pattern.
 
 ---

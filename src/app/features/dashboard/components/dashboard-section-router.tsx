@@ -2,7 +2,7 @@ import { Lightbulb, Sparkles } from 'lucide-react';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { RoomNav } from '@/app/components/layout/room-nav';
 import { SectionCustomizeShell } from '@/app/components/layout/section-customize-shell';
-import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';

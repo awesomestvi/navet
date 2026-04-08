@@ -42,7 +42,7 @@ function DashboardEditActionsStory() {
 }
 
 const meta = {
-  title: 'Dashboard/Edit Actions',
+  title: 'Pages/Dashboard/Edit Actions',
   component: DashboardEditActionsStory,
   tags: ['autodocs'],
   parameters: {

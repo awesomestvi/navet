@@ -1,5 +1,5 @@
 import { Bell } from 'lucide-react';
-import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 

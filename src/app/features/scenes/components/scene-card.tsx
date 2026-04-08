@@ -1,8 +1,8 @@
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { memo, useState } from 'react';
-import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import {
   type CardSize,
@@ -65,49 +65,56 @@ export const SceneCard = memo(function SceneCard({
 
   if (isTiny) {
     return (
-      <TinyActionCard
-        rootClassName={`relative h-full w-full overflow-hidden rounded-[26px] border px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
-        metadata={t('deviceType.scene')}
-        title={name}
-        metadataClassName={surface.textMuted}
-        titleClassName={surface.textPrimary}
-        metadataStyle={{ color: tinyTextTokens.subtitleColor }}
-        titleStyle={{ color: tinyTextTokens.titleColor }}
-        watermark={
-          isActivating ? (
-            <TinyCardWatermark
-              IconComponent={Loader2}
-              color={tinyTextTokens.titleColor}
-              className="opacity-20"
-              spin
+      <div
+        className={`relative h-full w-full overflow-hidden rounded-[26px] border px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 18% 12%, ${accentColor}28, transparent 34%), linear-gradient(155deg, transparent 24%, ${accentColor}14 100%)`,
+          }}
+        />
+        {cardShell.sheenOverlayClassName ? (
+          <div className={cardShell.sheenOverlayClassName} />
+        ) : null}
+        {isActivating ? (
+          <TinyCardWatermark
+            IconComponent={Loader2}
+            color={tinyTextTokens.titleColor}
+            className="opacity-20"
+            spin
+          />
+        ) : (
+          <TinyCardWatermark
+            IconComponent={Sparkles}
+            color={tinyTextTokens.titleColor}
+            className="opacity-20"
+          />
+        )}
+
+        <div className="relative flex h-full w-full flex-col justify-between text-left">
+          <div className="min-w-0 w-full pt-1">
+            <EntityCardTitleBlock
+              title={name}
+              subtitle={t('deviceType.scene')}
+              layout="eyebrow-first"
+              titleClassName={`mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight ${surface.textPrimary}`}
+              subtitleClassName={`truncate text-[10px] tracking-normal ${surface.textMuted}`}
+              titleStyle={{ color: tinyTextTokens.titleColor }}
+              subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
             />
-          ) : (
-            <TinyCardWatermark
-              IconComponent={Sparkles}
-              color={tinyTextTokens.titleColor}
-              className="opacity-20"
-            />
-          )
-        }
-        overlays={
-          <>
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `radial-gradient(circle at 18% 12%, ${accentColor}28, transparent 34%), linear-gradient(155deg, transparent 24%, ${accentColor}14 100%)`,
-              }}
-            />
-            {cardShell.sheenOverlayClassName ? (
-              <div className={cardShell.sheenOverlayClassName} />
-            ) : null}
-          </>
-        }
-        actionButtonProps={{
-          onClick: handleActivate,
-          disabled: isEditMode || isActivating,
-          'aria-label': isActivating ? t('scene.activating') : t('scene.activate'),
-        }}
-      />
+          </div>
+          <span />
+        </div>
+
+        <button
+          type="button"
+          className="absolute inset-0"
+          onClick={handleActivate}
+          disabled={isEditMode || isActivating}
+          aria-label={isActivating ? t('scene.activating') : t('scene.activate')}
+        />
+      </div>
     );
   }
 

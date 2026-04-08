@@ -282,6 +282,11 @@
 }
 
 @layer utilities {
+  .sbdocs-content {
+    /* biome-ignore lint/complexity/noImportantStyles: overrides Storybook's own .sbdocs-content max-width */
+    max-width: 1200px !important;
+  }
+
   @media (max-width: 767px) {
     input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(
         [type="color"]

@@ -15,7 +15,7 @@ import { useMediaQuery } from './use-media-query';
 
 export type { PrimaryColor, ThemeType };
 
-interface ThemeColors {
+export interface ThemeColors {
   light: {
     gradient: string;
     border: string;
@@ -129,7 +129,7 @@ const getInactiveThemeTone = (themeType: ThemeType) => {
   };
 };
 
-const generateThemeColors = (
+export const generateThemeColors = (
   themeType: ThemeType,
   primaryColor: PrimaryColor,
   customPrimaryColor: string | null

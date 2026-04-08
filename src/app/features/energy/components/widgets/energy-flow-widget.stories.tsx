@@ -5,7 +5,7 @@ import { EnergyFlowWidget } from './energy-flow-widget';
 const overview = getMockEnergyOverview('live');
 
 const meta = {
-  title: 'Energy/Widgets/Flow',
+  title: 'Pages/Energy/Widgets/Flow',
   component: EnergyFlowWidget,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

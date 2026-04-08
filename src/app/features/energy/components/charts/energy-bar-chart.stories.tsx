@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EnergyBarChart } from './energy-bar-chart';
 
 const meta = {
-  title: 'Energy/Charts/Bar',
+  title: 'Pages/Energy/Charts/Bar',
   component: EnergyBarChart,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

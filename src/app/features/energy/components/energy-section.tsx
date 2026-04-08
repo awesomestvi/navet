@@ -1,6 +1,6 @@
 import { Settings, Zap } from 'lucide-react';
 import { memo, type ReactNode } from 'react';
-import { DashboardEmptyState } from '@/app/components/patterns/dashboard-empty-state';
+import { DashboardEmptyState } from '@/app/components/patterns';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { DashboardHeroSection } from '../../dashboard/components/dashboard-hero-section';

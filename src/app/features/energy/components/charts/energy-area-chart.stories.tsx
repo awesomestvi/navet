@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EnergyAreaChart } from './energy-area-chart';
 
 const meta = {
-  title: 'Energy/Charts/Area',
+  title: 'Pages/Energy/Charts/Area',
   component: EnergyAreaChart,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

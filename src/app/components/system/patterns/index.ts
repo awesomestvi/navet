@@ -7,7 +7,6 @@ export {
   InteractionPreviewCard,
   SettingsLivePreviewFrame,
   TableCellContent,
-  TinyActionCard,
 } from '@/app/components/patterns';
 // MessageBar moved to primitives
 export { MessageBar, type MessageBarProps } from '@/app/components/primitives/message-bar';

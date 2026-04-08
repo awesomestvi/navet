@@ -17,6 +17,13 @@ export const useEditModeStore = create<EditModeState>()(
     {
       name: 'ha-dashboard-edit-mode',
       storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const next = (persisted as Partial<EditModeState> | null) ?? {};
+        return {
+          ...current,
+          isEditMode: typeof next.isEditMode === 'boolean' ? next.isEditMode : current.isEditMode,
+        };
+      },
     }
   )
 );

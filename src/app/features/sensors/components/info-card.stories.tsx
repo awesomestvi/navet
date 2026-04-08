@@ -15,7 +15,7 @@ function InfoCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChan
 }
 
 const meta = {
-  title: 'Components/Patterns/Info Card',
+  title: 'Cards/Custom/Info Card',
   component: InfoCardStory,
   tags: ['autodocs'],
   argTypes: {
@@ -43,7 +43,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Read-only numeric info card for showing a single sensor-like metric, status, or compact diagnostic value. Use this for display-only entities and informational surfaces rather than interactive controls.',
+          'Read-only custom card for showing a single sensor-like metric, status, or compact diagnostic value. Use this for display-only entities and informational surfaces rather than interactive controls.',
       },
     },
   },

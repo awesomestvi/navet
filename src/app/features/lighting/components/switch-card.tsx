@@ -1,9 +1,9 @@
 import { Check, Play, Power, Settings2 } from 'lucide-react';
 import { memo } from 'react';
-import { TinyActionCard } from '@/app/components/patterns/tiny-action-card';
 import { DialogShell } from '@/app/components/primitives/dialog-shell';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { DialogHeader } from '@/app/components/shared/device-editor';
@@ -145,37 +145,39 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   if (isTiny) {
     return (
       <>
-        <TinyActionCard
-          rootProps={controller.cardInteraction.cardProps}
-          rootClassName={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-          metadata={controller.entityType}
-          title={props.name}
-          metadataClassName={stateSurface.mutedTextClassName}
-          titleClassName={stateSurface.primaryTextClassName}
-          detailClassName={`w-full ${stateSurface.mutedTextClassName}`}
-          metadataStyle={{ color: tinyTextTokens.subtitleColor }}
-          titleStyle={{ color: tinyTextTokens.titleColor }}
-          detailStyle={{ color: tinyTextTokens.subtitleColor }}
-          watermark={
-            <TinyCardWatermark
-              IconComponent={HeaderIcon}
-              color={tinyTextTokens.titleColor}
-              className={controller.isOn ? 'opacity-18' : 'opacity-12'}
+        <div
+          {...controller.cardInteraction.cardProps}
+          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+        >
+          {controller.isOn ? (
+            <div
+              className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
             />
-          }
-          overlays={
-            <>
-              {controller.isOn ? (
-                <div
-                  className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
-                />
-              ) : null}
-              {lightOverlay}
-              {sheenOverlay}
-              {stateOverlay}
-            </>
-          }
-        />
+          ) : null}
+          {lightOverlay}
+          {sheenOverlay}
+          {stateOverlay}
+          <TinyCardWatermark
+            IconComponent={HeaderIcon}
+            color={tinyTextTokens.titleColor}
+            className={controller.isOn ? 'opacity-18' : 'opacity-12'}
+          />
+
+          <div className="relative flex h-full w-full flex-col justify-between text-left">
+            <div className="min-w-0 w-full pt-1">
+              <EntityCardTitleBlock
+                title={props.name}
+                subtitle={controller.entityType}
+                layout="eyebrow-first"
+                titleClassName={`mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight ${stateSurface.primaryTextClassName}`}
+                subtitleClassName={`truncate text-[10px] tracking-normal ${stateSurface.mutedTextClassName}`}
+                titleStyle={{ color: tinyTextTokens.titleColor }}
+                subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
+              />
+            </div>
+            <span />
+          </div>
+        </div>
 
         {controlsDialog}
       </>

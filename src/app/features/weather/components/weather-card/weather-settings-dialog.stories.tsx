@@ -27,7 +27,7 @@ function WeatherSettingsDialogStory() {
 }
 
 const meta = {
-  title: 'Settings/Dialogs/Weather',
+  title: 'Cards/Dialogs/Weather',
   component: WeatherSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

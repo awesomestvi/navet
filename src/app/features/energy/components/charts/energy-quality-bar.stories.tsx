@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EnergyQualityBar } from './energy-quality-bar';
 
 const meta = {
-  title: 'Energy/Charts/Quality Bar',
+  title: 'Pages/Energy/Charts/Quality Bar',
   component: EnergyQualityBar,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

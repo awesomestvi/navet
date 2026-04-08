@@ -14,7 +14,7 @@ function AppearanceStory() {
 }
 
 const meta = {
-  title: 'Settings/Sections/Appearance',
+  title: 'Pages/Settings/Appearance',
   component: AppearanceStory,
   tags: ['autodocs'],
   parameters: {

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Plus, Sparkles, Wand2 } from 'lucide-react';
+import { Clipboard, Lightbulb, Plus, Sparkles, Wand2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { useI18n, useTheme } from '@/app/hooks';
 import { DashboardEmptyState } from './dashboard-empty-state';
 
 function ThemeAwareDashboardEmptyState(
@@ -22,6 +22,33 @@ function ThemeAwareInlineEmptyState(
 
   return (
     <DashboardEmptyState {...props} surface={surface} accentColor={accentColor} variant="inline" />
+  );
+}
+
+function SectionEmptyStatesPreview() {
+  const { t } = useI18n();
+
+  return (
+    <div className="space-y-8 p-8">
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-white/80">Tasks Section</h3>
+        <ThemeAwareDashboardEmptyState
+          icon={Clipboard}
+          title={t('sections.tasks.emptyTitle')}
+          description={t('sections.tasks.emptyDescription')}
+          className="w-full max-w-md"
+        />
+      </div>
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-white/80">Lights Section</h3>
+        <ThemeAwareDashboardEmptyState
+          icon={Lightbulb}
+          title={t('sections.lights.emptyTitle')}
+          description={t('sections.lights.emptyDescription')}
+          className="w-full max-w-md"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -102,4 +129,17 @@ export const InlineWithCustomContent: Story = {
       </div>
     </ThemeAwareInlineEmptyState>
   ),
+};
+
+export const AppSectionExamples: Story = {
+  render: () => <SectionEmptyStatesPreview />,
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Examples of how the shared empty-state pattern is used inside the app-shell sections, so section-level empty states live alongside the base pattern documentation.',
+      },
+    },
+  },
 };

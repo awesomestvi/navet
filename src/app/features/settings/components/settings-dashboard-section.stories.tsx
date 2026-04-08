@@ -14,7 +14,7 @@ function DashboardStory() {
 }
 
 const meta = {
-  title: 'Settings/Sections/Dashboard',
+  title: 'Pages/Settings/Dashboard',
   component: DashboardStory,
   tags: ['autodocs'],
   parameters: {

@@ -28,7 +28,7 @@ const siblingEntities: SiblingEntity[] = [
 ];
 
 const meta = {
-  title: 'Settings/Dialogs/Camera',
+  title: 'Cards/Dialogs/Camera',
   component: CameraSettingsDialog,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

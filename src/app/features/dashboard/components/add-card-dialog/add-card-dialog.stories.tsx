@@ -26,7 +26,7 @@ const demoLibraryCards = [
 ];
 
 const meta = {
-  title: 'Dashboard/Add Card Dialog',
+  title: 'Pages/Dashboard/Add Card Dialog',
   component: AddCardDialogContainer,
   tags: ['autodocs'],
   parameters: {
