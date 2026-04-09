@@ -1,10 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps } from 'react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { NetworkStatusBanner } from './network-status-banner';
 
+function NetworkStatusBannerStory(props: ComponentProps<typeof NetworkStatusBanner>) {
+  return (
+    <div className="relative min-h-32">
+      <NetworkStatusBanner {...props} />
+    </div>
+  );
+}
+
 const meta = {
   title: 'Components/Shared/Network Status Banner',
-  component: NetworkStatusBanner,
+  component: NetworkStatusBannerStory,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
@@ -21,7 +30,7 @@ const meta = {
     reconnecting: false,
     isOnline: true,
   },
-} satisfies Meta<typeof NetworkStatusBanner>;
+} satisfies Meta<typeof NetworkStatusBannerStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -53,10 +62,4 @@ export const Info: Story = {
 
 export const Reconnecting: Story = {
   args: { tone: 'warning', connecting: true, reconnecting: true },
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
 };

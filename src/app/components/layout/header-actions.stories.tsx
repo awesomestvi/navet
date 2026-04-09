@@ -1,7 +1,29 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HeaderDesktopActions, HeaderMobileActions } from './header-actions';
+
+function HeaderActionsDesktopPreview({ children }: { children: ReactNode }) {
+  return <div className="flex justify-end p-8">{children}</div>;
+}
+
+function HeaderActionsMobilePreview({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex justify-center p-8">
+      <div className="w-full max-w-[24rem] rounded-[30px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-black/20 px-3 py-2">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              Header
+            </p>
+            <p className="truncate text-sm font-semibold text-white/88">Mobile actions</p>
+          </div>
+          <div className="[&>*]:!flex [&>*]:!items-center [&>*]:!gap-2">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HeaderDesktopActionsStory() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -9,7 +31,7 @@ function HeaderDesktopActionsStory() {
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
-    <div className="flex justify-end p-8">
+    <HeaderActionsDesktopPreview>
       <div className="flex items-center gap-2">
         <HeaderDesktopActions
           activeColorValue="#22d3ee"
@@ -23,7 +45,7 @@ function HeaderDesktopActionsStory() {
           unreadCount={3}
         />
       </div>
-    </div>
+    </HeaderActionsDesktopPreview>
   );
 }
 
@@ -34,7 +56,7 @@ function HeaderMobileActionsStory() {
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
-    <div className="p-8">
+    <HeaderActionsMobilePreview>
       <HeaderMobileActions
         activeColorValue="#22d3ee"
         avatarUrl={null}
@@ -49,7 +71,7 @@ function HeaderMobileActionsStory() {
         textSecondary="text-white/70"
         unreadCount={2}
       />
-    </div>
+    </HeaderActionsMobilePreview>
   );
 }
 
@@ -57,7 +79,10 @@ const meta = {
   title: 'App Shell/Header/Header Actions',
   component: HeaderDesktopActionsStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen', docs: { description: {} } },
+  parameters: {
+    layout: 'fullscreen',
+    docs: { description: {} },
+  },
 } satisfies Meta<typeof HeaderDesktopActionsStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
@@ -80,10 +105,4 @@ export const Desktop: Story = {};
 
 export const Mobile: Story = {
   render: () => <HeaderMobileActionsStory />,
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
 };

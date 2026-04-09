@@ -1,16 +1,16 @@
-import { memo } from 'react';
-import {
-  CustomDialogDoneButton,
-  DialogFooter,
-  DialogShell,
-} from '@/app/components/primitives/dialog-shell';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Palette, Sliders, Star, X } from 'lucide-react';
+import { memo, useState } from 'react';
+import { DialogDoneFooter, DialogShell } from '@/app/components/primitives/dialog-shell';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import {
   BrightnessPresetEditor,
   BrightnessPresets,
   ColorSelectorSection,
   ColorTemperatureSection,
+  CustomCardTintPicker,
   CustomScrollbar,
-  DialogHeader,
   IconPicker,
 } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
@@ -26,7 +26,6 @@ interface LightSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
-  room: string;
   isOn: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
@@ -39,6 +38,7 @@ interface LightSettingsDialogProps {
   customColor: string;
   brightness: number;
   selectedIcon: string;
+  tintColor: string;
   onTempChange: (temp: number) => void;
   onTempCommit?: (temp: number) => void;
   onColorChange: (color: string) => void;
@@ -49,14 +49,25 @@ interface LightSettingsDialogProps {
   onBrightnessPresetValueChange: (key: BrightnessPresetKey, value: number) => void;
   onBrightnessPresetOrderChange: (keys: BrightnessPresetKey[]) => void;
   onIconChange: (icon: string) => void;
+  onTintColorChange: (color: string) => void;
 }
+
+const colorMap = {
+  orange: { from: 'from-orange-900/95', to: 'to-orange-950/95', border: 'border-orange-500/20' },
+  blue: { from: 'from-blue-900/95', to: 'to-blue-950/95', border: 'border-blue-500/20' },
+  green: { from: 'from-green-900/95', to: 'to-green-950/95', border: 'border-green-500/20' },
+  purple: { from: 'from-purple-900/95', to: 'to-purple-950/95', border: 'border-purple-500/20' },
+  pink: { from: 'from-pink-900/95', to: 'to-pink-950/95', border: 'border-pink-500/20' },
+  red: { from: 'from-red-900/95', to: 'to-red-950/95', border: 'border-red-500/20' },
+  yellow: { from: 'from-yellow-900/95', to: 'to-yellow-950/95', border: 'border-yellow-500/20' },
+  teal: { from: 'from-teal-900/95', to: 'to-teal-950/95', border: 'border-teal-500/20' },
+} as const;
 
 export const LightSettingsDialog = memo(function LightSettingsDialog({
   entityId,
   isOpen,
   onOpenChange,
   name,
-  room,
   isOn,
   supportsColorTemperature,
   supportsColorControl,
@@ -69,6 +80,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   customColor,
   brightness,
   selectedIcon,
+  tintColor,
   onTempChange,
   onTempCommit,
   onColorChange,
@@ -79,92 +91,129 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onBrightnessPresetValueChange,
   onBrightnessPresetOrderChange,
   onIconChange,
+  onTintColorChange,
 }: LightSettingsDialogProps) {
   const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const colorMap = {
-    orange: { from: 'from-orange-900/95', to: 'to-orange-950/95', border: 'border-orange-500/20' },
-    blue: { from: 'from-blue-900/95', to: 'to-blue-950/95', border: 'border-blue-500/20' },
-    green: { from: 'from-green-900/95', to: 'to-green-950/95', border: 'border-green-500/20' },
-    purple: { from: 'from-purple-900/95', to: 'to-purple-950/95', border: 'border-purple-500/20' },
-    pink: { from: 'from-pink-900/95', to: 'to-pink-950/95', border: 'border-pink-500/20' },
-    red: { from: 'from-red-900/95', to: 'to-red-950/95', border: 'border-red-500/20' },
-    yellow: { from: 'from-yellow-900/95', to: 'to-yellow-950/95', border: 'border-yellow-500/20' },
-    teal: { from: 'from-teal-900/95', to: 'to-teal-950/95', border: 'border-teal-500/20' },
-  } as const;
+  const [activeTab, setActiveTab] = useState('controls');
+
   const activeDialogColors = colorMap[resolvePrimaryColorToken(primaryColor)];
+  const gradientClassName = isOn
+    ? `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
+    : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10';
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      disableOpenAutoFocus
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${
-        isOn
-          ? `bg-gradient-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
-          : 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10'
-      }`}
+      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${gradientClassName}`}
     >
       <CustomScrollbar isOn={isOn}>
         <div className="p-8">
-          <DialogHeader
-            title={t('lighting.settings.title')}
-            description={`${name} - ${room}`}
-            isOn={isOn}
-            supportingContent={
-              <EntityRoomSelector entityId={entityId} label={t('lighting.settings.room')} compact />
-            }
-          />
-
-          <div className="space-y-8">
-            {supportsColorTemperature && (
-              <ColorTemperatureSection
-                colorTemp={colorTemp}
-                isOn={isOn}
-                minTemp={minColorTemp}
-                maxTemp={maxColorTemp}
-                tempOptions={tempOptions}
-                onTempChange={onTempChange}
-                onTempCommit={onTempCommit}
-              />
-            )}
-
-            {supportsColorControl && (
-              <ColorSelectorSection
-                colors={Array.from(PRESET_COLORS)}
-                selectedColor={selectedColor}
-                customColor={customColor}
-                isOn={isOn}
-                onColorChange={onColorChange}
-                onCustomColorChange={onCustomColorChange}
-              />
-            )}
-
-            <BrightnessPresets
-              presets={brightnessPresets}
-              currentBrightness={brightness}
-              isOn={isOn}
-              onBrightnessChange={onBrightnessChange}
-            />
-
-            <BrightnessPresetEditor
-              presets={brightnessPresets}
-              isOn={isOn}
-              onPresetValueChange={onBrightnessPresetValueChange}
-              onPresetOrderChange={onBrightnessPresetOrderChange}
-              onlyApplyToThisLight={!applyBrightnessPresetsToAll}
-              onOnlyApplyToThisLightChange={(checked) =>
-                onApplyBrightnessPresetsToAllChange(!checked)
-              }
-            />
-
-            <IconPicker selectedIcon={selectedIcon} onIconChange={onIconChange} isLightOn={isOn} />
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <EntityRoomSelector entityId={entityId} compact forceDark />
+              <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={t('common.close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </Dialog.Close>
           </div>
 
-          <DialogFooter>
-            <CustomDialogDoneButton label={t('common.done')} />
-          </DialogFooter>
+          <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
+            <div className="mt-1 inline-flex items-center gap-1">
+              <InteractivePill
+                active={activeTab === 'controls'}
+                size="compact"
+                className="min-h-8 px-3 text-[11px]"
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                Controls
+              </InteractivePill>
+              <InteractivePill
+                active={activeTab === 'card'}
+                size="compact"
+                className="min-h-8 px-3 text-[11px]"
+                icon={Palette}
+                onClick={() => setActiveTab('card')}
+              >
+                Card
+              </InteractivePill>
+              <InteractivePill
+                active={activeTab === 'presets'}
+                size="compact"
+                className="min-h-8 px-3 text-[11px]"
+                icon={Star}
+                onClick={() => setActiveTab('presets')}
+              >
+                Presets
+              </InteractivePill>
+            </div>
+
+            <TabPanel value="controls" className="mt-5 space-y-6">
+              {supportsColorTemperature && (
+                <ColorTemperatureSection
+                  colorTemp={colorTemp}
+                  isOn={isOn}
+                  minTemp={minColorTemp}
+                  maxTemp={maxColorTemp}
+                  tempOptions={tempOptions}
+                  onTempChange={onTempChange}
+                  onTempCommit={onTempCommit}
+                />
+              )}
+              {supportsColorControl && (
+                <ColorSelectorSection
+                  colors={Array.from(PRESET_COLORS)}
+                  selectedColor={selectedColor}
+                  customColor={customColor}
+                  isOn={isOn}
+                  onColorChange={onColorChange}
+                  onCustomColorChange={onCustomColorChange}
+                />
+              )}
+              <BrightnessPresets
+                presets={brightnessPresets}
+                currentBrightness={brightness}
+                isOn={isOn}
+                onBrightnessChange={onBrightnessChange}
+              />
+            </TabPanel>
+
+            <TabPanel value="card" className="mt-5 space-y-6">
+              <CustomCardTintPicker value={tintColor} onChange={onTintColorChange} isOn={isOn} />
+              <IconPicker
+                selectedIcon={selectedIcon}
+                onIconChange={onIconChange}
+                isLightOn={isOn}
+              />
+            </TabPanel>
+
+            <TabPanel value="presets" className="mt-5 space-y-6">
+              <BrightnessPresetEditor
+                presets={brightnessPresets}
+                isOn={isOn}
+                onPresetValueChange={onBrightnessPresetValueChange}
+                onPresetOrderChange={onBrightnessPresetOrderChange}
+                onlyApplyToThisLight={!applyBrightnessPresetsToAll}
+                onOnlyApplyToThisLightChange={(checked) =>
+                  onApplyBrightnessPresetsToAllChange(!checked)
+                }
+              />
+            </TabPanel>
+          </Tabs>
+
+          <DialogDoneFooter label={t('common.done')} />
         </div>
       </CustomScrollbar>
     </DialogShell>

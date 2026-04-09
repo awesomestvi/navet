@@ -1,4 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode, useState } from 'react';
+import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
+import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   getControlFocusStyles,
   navetRadiusTokens,
@@ -12,6 +14,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leading?: ReactNode;
   trailing?: ReactNode;
   invalid?: boolean;
+  variant?: 'default' | 'soft';
   containerClassName?: string;
   inputClassName?: string;
 }
@@ -22,6 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     leading,
     trailing,
     invalid = false,
+    variant = 'default',
     containerClassName,
     inputClassName,
     onBlur,
@@ -32,15 +36,43 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref
 ) {
-  const { theme, accentColor } = useTheme();
+  const { theme, accentColor, primaryColor } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
 
+  const pickerTokens =
+    variant === 'soft'
+      ? getThemeAppearancePickerTokens(theme, getThemeColorValue(primaryColor))
+      : null;
+  const softVariantClassName =
+    pickerTokens !== null
+      ? `${pickerTokens.optionBorderClassName} ${pickerTokens.optionCardClassName} ${pickerTokens.textClassName} placeholder-current/40`
+      : theme === 'light'
+        ? 'border-gray-200 bg-gray-100 text-gray-900 placeholder-gray-400'
+        : theme === 'black'
+          ? 'border-white/16 bg-black text-white placeholder-gray-400'
+          : theme === 'glass'
+            ? 'border-white/16 bg-white/8 text-white placeholder-white/40'
+            : 'border-zinc-800 bg-zinc-900 text-white placeholder-gray-500';
+
   const baseBorderColor = invalid ? (theme === 'light' ? '#dc2626' : '#f87171') : undefined;
+  const adornmentClassName =
+    theme === 'light'
+      ? 'text-gray-500'
+      : theme === 'black'
+        ? 'text-gray-400'
+        : theme === 'glass'
+          ? 'text-white/60'
+          : 'text-gray-500';
 
   return (
     <div className={cn('relative', containerClassName)}>
       {leading ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3',
+            adornmentClassName
+          )}
+        >
           {leading}
         </div>
       ) : null}
@@ -65,13 +97,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           navetTypographyTokens.control,
           leading ? 'pl-10' : 'pl-4',
           trailing ? 'pr-10' : 'pr-4',
-          theme === 'light'
-            ? 'border-gray-200 bg-gray-100 text-gray-900 placeholder-gray-400'
-            : theme === 'black'
-              ? 'border-white/16 bg-black text-white placeholder-gray-400'
-              : theme === 'glass'
-                ? 'border-white/16 bg-white/8 text-white placeholder-white/40'
-                : 'border-zinc-800 bg-zinc-900 text-white placeholder-gray-500',
+          variant === 'soft'
+            ? softVariantClassName
+            : theme === 'light'
+              ? 'border-gray-200 bg-gray-100 text-gray-900 placeholder-gray-400'
+              : theme === 'black'
+                ? 'border-white/16 bg-black text-white placeholder-gray-400'
+                : theme === 'glass'
+                  ? 'border-white/16 bg-white/8 text-white placeholder-white/40'
+                  : 'border-zinc-800 bg-zinc-900 text-white placeholder-gray-500',
           inputClassName
         )}
         style={{
@@ -85,7 +119,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       />
 
       {trailing ? (
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3">{trailing}</div>
+        <div
+          className={cn('absolute inset-y-0 right-0 flex items-center pr-3', adornmentClassName)}
+        >
+          {trailing}
+        </div>
       ) : null}
     </div>
   );

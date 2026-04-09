@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { expect } from 'storybook/test';
+import { Button } from '@/app/components/primitives/button';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
@@ -14,6 +15,8 @@ function LightSettingsDialogStory() {
   const [selectedColor, setSelectedColor] = useState<string | null>('#FFA500');
   const [customColor, setCustomColor] = useState('#f97316');
   const [selectedIcon, setSelectedIcon] = useState('Lightbulb');
+  const [tintColor, setTintColor] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
 
   const presets: LightBrightnessPreset[] = [
     { key: 'bright', brightness: 100, label: 'Bright', icon: Sun },
@@ -23,12 +26,16 @@ function LightSettingsDialogStory() {
 
   return (
     <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(249,115,22,0.28),rgba(124,45,18,0.26))]">
+      <div className="relative flex items-start justify-center p-6">
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          Open light dialog
+        </Button>
+      </div>
       <LightSettingsDialog
         entityId="light.living_room_main"
-        isOpen
-        onOpenChange={() => {}}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
         name="Living Room Main"
-        room="Living Room"
         isOn
         supportsColorTemperature
         supportsColorControl
@@ -41,6 +48,7 @@ function LightSettingsDialogStory() {
         customColor={customColor}
         brightness={brightness}
         selectedIcon={selectedIcon}
+        tintColor={tintColor}
         onTempChange={setColorTemp}
         onTempCommit={setColorTemp}
         onColorChange={setSelectedColor}
@@ -51,6 +59,7 @@ function LightSettingsDialogStory() {
         onBrightnessPresetValueChange={() => {}}
         onBrightnessPresetOrderChange={() => {}}
         onIconChange={setSelectedIcon}
+        onTintColorChange={setTintColor}
       />
     </SettingsDialogStoryFrame>
   );
@@ -81,6 +90,12 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   play: async ({ canvas, userEvent, step }) => {
+    const openButton = canvas.getByRole('button', { name: /open light dialog/i });
+
+    await step('opens the dialog from the trigger', async () => {
+      await userEvent.click(openButton);
+    });
+
     const brightnessSlider = canvas.getByRole('slider', { name: /brightness/i });
 
     await step('starts with the expected brightness value', async () => {
@@ -94,11 +109,5 @@ export const Default: Story = {
       await expect(brightnessSlider).toHaveAttribute('aria-valuenow', '63');
       await expect(canvas.getByText('63%')).toBeInTheDocument();
     });
-  },
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
   },
 };

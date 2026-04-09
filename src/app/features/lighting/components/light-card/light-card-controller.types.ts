@@ -50,4 +50,6 @@ export interface LightCardController {
   onOpenChange: (open: boolean) => void;
   onTempChange: (temp: number) => void;
   onTempCommit: (temp: number) => void;
+  tintColor: string;
+  onTintColorChange: (color: string) => void;
 }

@@ -8,6 +8,7 @@ export {
   CustomDialogDoneButton,
   customCardDialogShellProps,
   DialogDoneButton,
+  DialogDoneFooter,
   DialogFooter,
   DialogShell,
   SettingsDialogDoneButton,
@@ -24,6 +25,7 @@ export { LoadingSpinner, type LoadingSpinnerProps } from './loading-spinner';
 export { MessageBar, type MessageBarProps } from './message-bar';
 export { Panel, type PanelProps } from './panel';
 export { Radio, type RadioProps } from './radio';
+export { RoomEyebrow } from './room-eyebrow';
 export { RotaryKnob, type RotaryKnobProps } from './rotary-knob';
 export { RoundControlButton } from './round-control-button';
 export { Select, type SelectProps } from './select';

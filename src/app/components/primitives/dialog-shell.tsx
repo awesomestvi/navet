@@ -1,5 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import type { CSSProperties, ReactNode } from 'react';
+import { Button } from '@/app/components/primitives/button';
 
 interface DialogShellProps {
   isOpen: boolean;
@@ -65,6 +66,18 @@ export function DialogFooter({ children }: { children: ReactNode }) {
   return <div className="mt-6 flex justify-end">{children}</div>;
 }
 
+export function DialogDoneFooter({ label }: { label: string }) {
+  return (
+    <DialogFooter>
+      <Dialog.Close asChild>
+        <Button variant="soft" size="small">
+          {label}
+        </Button>
+      </Dialog.Close>
+    </DialogFooter>
+  );
+}
+
 interface DialogDoneButtonProps {
   label: string;
   className?: string;
@@ -125,14 +138,11 @@ interface CustomDialogDoneButtonProps {
 
 export function CustomDialogDoneButton({ label, className, style }: CustomDialogDoneButtonProps) {
   return (
-    <DialogDoneButton
-      label={label}
-      className={
-        className ??
-        'rounded-xl px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90'
-      }
-      style={style}
-    />
+    <Dialog.Close asChild>
+      <Button variant="soft" size="small" className={className} style={style}>
+        {label}
+      </Button>
+    </Dialog.Close>
   );
 }
 

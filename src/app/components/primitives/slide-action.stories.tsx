@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { CarFront, Lock, Unlock } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { SlideAction, type SlideActionProps } from './slide-action';
@@ -13,6 +13,16 @@ type SlideActionStoryProps = Omit<
   vehicle?: boolean;
 };
 
+function SlideActionPreview({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-center p-6">
+      <div className="w-full max-w-xs rounded-[28px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function SlideActionStory({
   initialLocked = true,
   vehicle = false,
@@ -23,21 +33,19 @@ function SlideActionStory({
   const actionLabel = isLocked ? 'Slide to unlock' : 'Slide to lock';
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-12">
-      <div className="w-full max-w-xs rounded-[28px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-        <SlideAction
-          {...args}
-          actionLabel={actionLabel}
-          ariaLabel={actionLabel}
-          completionIcon={completionIcon}
-          onComplete={() => {
-            const nextLocked = !isLocked;
-            setIsLocked(nextLocked);
-            toast.success(nextLocked ? 'Locked' : 'Unlocked');
-          }}
-        />
-      </div>
-    </div>
+    <SlideActionPreview>
+      <SlideAction
+        {...args}
+        actionLabel={actionLabel}
+        ariaLabel={actionLabel}
+        completionIcon={completionIcon}
+        onComplete={() => {
+          const nextLocked = !isLocked;
+          setIsLocked(nextLocked);
+          toast.success(nextLocked ? 'Locked' : 'Unlocked');
+        }}
+      />
+    </SlideActionPreview>
   );
 }
 
@@ -105,8 +113,14 @@ export const Playground: Story = {
   },
 };
 
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const ExtraSmall: Story = {
+  args: {
+    size: 'extra-small',
   },
 };

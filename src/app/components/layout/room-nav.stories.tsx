@@ -8,7 +8,7 @@ function RoomNavStory({ isEditMode = false }: { isEditMode?: boolean }) {
   const [editMode, setEditMode] = useState(isEditMode);
 
   return (
-    <div className="space-y-4">
+    <>
       <RoomNav
         rooms={['Living Room', 'Kitchen', 'Bedroom', 'Office']}
         activeRoom={activeRoom}
@@ -21,7 +21,7 @@ function RoomNavStory({ isEditMode = false }: { isEditMode?: boolean }) {
         addEntityLabel="Add card"
       />
       <p className="text-xs opacity-70">Active room: {activeRoom}</p>
-    </div>
+    </>
   );
 }
 
@@ -56,11 +56,5 @@ export const Default: Story = {};
 export const EditMode: Story = {
   args: {
     isEditMode: true,
-  },
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
   },
 };

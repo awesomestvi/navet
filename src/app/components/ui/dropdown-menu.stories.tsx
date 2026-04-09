@@ -22,7 +22,7 @@ function DropdownMenuStory() {
     'rounded-xl border border-transparent px-3 py-2 text-sm outline-none transition-colors',
     surface.textPrimary,
     'data-[highlighted]:bg-[var(--menu-hover-bg)] data-[highlighted]:border-[var(--menu-hover-border)]',
-    'focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)]'
+    'data-[highlighted]:text-current focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)] focus:text-current'
   );
   const itemHoverStyle = {
     '--menu-hover-bg':
@@ -38,6 +38,7 @@ function DropdownMenuStory() {
           ? `${accentColor}40`
           : `${accentColor}4d`,
   } as CSSProperties;
+  const separatorClassName = theme === 'light' ? 'bg-gray-200/90' : 'bg-white/12';
 
   return (
     <div className="flex items-center justify-center p-12">
@@ -60,7 +61,7 @@ function DropdownMenuStory() {
             <Palette className="mr-2 h-4 w-4" />
             Appearance
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className={separatorClassName} />
           <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <Sun className="mr-2 h-4 w-4" />
             Light mode
@@ -69,7 +70,7 @@ function DropdownMenuStory() {
             <Moon className="mr-2 h-4 w-4" />
             Dark mode
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className={separatorClassName} />
           <DropdownMenuItem className={itemClassName} style={itemHoverStyle}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout

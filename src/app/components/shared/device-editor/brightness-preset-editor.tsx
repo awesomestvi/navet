@@ -189,22 +189,28 @@ const BrightnessPresetEditorRow = memo(function BrightnessPresetEditorRow({
       <label className="sr-only" htmlFor={`brightness-preset-${preset.key}`}>
         {t('lighting.brightnessPresetField', { preset: preset.label })}
       </label>
-      <input
-        id={`brightness-preset-${preset.key}`}
-        type="number"
-        min={1}
-        max={100}
-        step={1}
-        value={preset.brightness}
-        onChange={(e) => {
-          const nextValue = Number.parseInt(e.target.value, 10);
-          if (!Number.isNaN(nextValue)) {
-            onPresetValueChange(preset.key, nextValue);
-          }
-        }}
-        className={`w-20 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${editorSurface.inputClassName}`}
-      />
-      <span className={`text-xs ${editorSurface.suffixClassName}`}>%</span>
+      <div className="relative">
+        <input
+          id={`brightness-preset-${preset.key}`}
+          type="number"
+          min={1}
+          max={100}
+          step={1}
+          value={preset.brightness}
+          onChange={(e) => {
+            const nextValue = Number.parseInt(e.target.value, 10);
+            if (!Number.isNaN(nextValue)) {
+              onPresetValueChange(preset.key, nextValue);
+            }
+          }}
+          className={`w-24 rounded-xl border py-2 pl-3 pr-7 text-sm font-semibold transition-colors ${editorSurface.inputClassName}`}
+        />
+        <span
+          className={`pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs ${editorSurface.suffixClassName}`}
+        >
+          %
+        </span>
+      </div>
     </div>
   );
 });

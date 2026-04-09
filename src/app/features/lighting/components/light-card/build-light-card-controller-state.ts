@@ -32,6 +32,7 @@ export function buildLightCardControllerState({
   onOpenChange,
   onTempChange,
   onTempCommit,
+  onTintColorChange,
   padding,
   selectedColor,
   selectedIcon,
@@ -40,6 +41,7 @@ export function buildLightCardControllerState({
   supportsColorControl,
   supportsColorTemperature,
   tempOptions,
+  tintColor,
 }: BuildLightCardControllerStateParams): LightCardController {
   return {
     applyBrightnessPresetsToAll,
@@ -67,6 +69,7 @@ export function buildLightCardControllerState({
     onOpenChange,
     onTempChange,
     onTempCommit,
+    onTintColorChange,
     padding,
     selectedColor,
     selectedIcon,
@@ -76,5 +79,6 @@ export function buildLightCardControllerState({
     supportsColorControl,
     supportsColorTemperature,
     tempOptions,
+    tintColor,
   };
 }

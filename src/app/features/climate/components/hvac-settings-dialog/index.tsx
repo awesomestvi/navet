@@ -1,11 +1,8 @@
-import { Flame, Power, Snowflake, Wind } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Flame, Power, Snowflake, Wind, X } from 'lucide-react';
 import { memo } from 'react';
-import { DialogFooter, DialogShell, SettingsDialogDoneButton } from '@/app/components/primitives';
-import {
-  CustomScrollbar,
-  DialogHeader,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
+import { DialogDoneFooter, DialogShell } from '@/app/components/primitives';
+import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -27,7 +24,6 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   isOpen,
   onOpenChange,
   name,
-  room,
   isOn,
   mode,
   targetTemp,
@@ -66,33 +62,37 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
     targetTemp < currentTemp
       ? t('climate.coolingDownTo', { temp: targetTemp })
       : t('climate.heatingTo', { temp: targetTemp });
-  const contentInsetClassName = 'px-6';
+  const contentInsetClassName = 'px-8';
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      disableOpenAutoFocus
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
     >
       <CustomScrollbar isOn={isOn}>
-        <div className="pt-6 pb-6">
+        <div className="pt-8 pb-8">
           <div className={contentInsetClassName}>
-            <DialogHeader
-              title={t('climate.settings.title')}
-              description={`${name} - ${room}`}
-              isOn={isOn}
-              supportingContent={
-                <EntityRoomSelector
-                  entityId={entityId}
-                  label={t('climate.settings.room')}
-                  compact
-                />
-              }
-            />
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <EntityRoomSelector entityId={entityId} compact forceDark />
+                <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
+              </div>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label={t('common.close')}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </Dialog.Close>
+            </div>
           </div>
 
-          <section className="mt-6">
+          <section className="mt-2">
             <div className={contentInsetClassName}>
               <div className="flex items-start justify-between gap-3">
                 <DialogSectionRow
@@ -203,9 +203,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
           </section>
 
           <div className={contentInsetClassName}>
-            <DialogFooter>
-              <SettingsDialogDoneButton label={t('common.done')} surface={surface} />
-            </DialogFooter>
+            <DialogDoneFooter label={t('common.done')} />
           </div>
         </div>
       </CustomScrollbar>

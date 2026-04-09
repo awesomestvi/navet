@@ -259,7 +259,6 @@ export const LightCard = memo(function LightCard({
           isOpen={controller.isOpen}
           onOpenChange={controller.onOpenChange}
           name={name}
-          room={room}
           isOn={controller.isOn}
           supportsColorTemperature={controller.supportsColorTemperature}
           supportsColorControl={controller.supportsColorControl}
@@ -282,6 +281,8 @@ export const LightCard = memo(function LightCard({
           onBrightnessPresetValueChange={controller.onBrightnessPresetValueChange}
           onBrightnessPresetOrderChange={controller.onBrightnessPresetOrderChange}
           onIconChange={controller.onIconChange}
+          tintColor={controller.tintColor}
+          onTintColorChange={controller.onTintColorChange}
         />
       ) : null}
     </>

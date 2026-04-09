@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { Button } from '@/app/components/primitives/button';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { RSSFeedSettingsDialog } from './settings-dialog';
@@ -9,6 +10,7 @@ function RSSFeedSettingsDialogStory() {
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>(['bbc-world']);
   const [articleCount, setArticleCount] = useState(6);
   const [tintColor, setTintColor] = useState<string | undefined>('#06b6d4');
+  const [isOpen, setIsOpen] = useState(false);
 
   const providers: RSSProvider[] = [
     {
@@ -21,9 +23,14 @@ function RSSFeedSettingsDialogStory() {
 
   return (
     <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(6,182,212,0.22),rgba(15,23,42,0.3))]">
+      <div className="relative flex items-start justify-center p-6">
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          Open RSS feed dialog
+        </Button>
+      </div>
       <RSSFeedSettingsDialog
-        isOpen
-        onOpenChange={() => {}}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
         title="Daily Feed"
         roomValue="living-room"
         roomLabel="Living Room"
@@ -75,9 +82,3 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
-};

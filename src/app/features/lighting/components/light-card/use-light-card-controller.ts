@@ -24,6 +24,7 @@ export function useLightCardController({
   const [isOn, setIsOn] = useState(initialState);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState('');
+  const [tintColor, setTintColor] = useState('');
 
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
@@ -109,7 +110,9 @@ export function useLightCardController({
     onOpenChange: setIsOpen,
     onTempChange,
     onTempCommit,
+    onTintColorChange: setTintColor,
     padding,
+    tintColor,
     selectedColor,
     selectedIcon,
     showPresetOverflow,

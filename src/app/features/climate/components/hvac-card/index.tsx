@@ -20,7 +20,7 @@ import { useHVACCardController } from './use-hvac-card-controller';
 export const HVACCard = memo(function HVACCard({
   id,
   name,
-  room,
+  room: _room,
   initialTemp = 21,
   initialCurrentTemp = 22,
   initialMode = 'cool',
@@ -344,7 +344,6 @@ export const HVACCard = memo(function HVACCard({
           isOpen={controller.isSettingsOpen}
           onOpenChange={controller.setIsSettingsOpen}
           name={name}
-          room={room}
           isOn={controller.isOn}
           mode={controller.mode}
           targetTemp={controller.targetTemp}

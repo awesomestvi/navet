@@ -1,11 +1,9 @@
+import * as Dialog from '@radix-ui/react-dialog';
 import type { HassEntity } from 'home-assistant-js-websocket';
+import { X } from 'lucide-react';
 import { memo, useCallback } from 'react';
-import { DialogShell } from '@/app/components/primitives/dialog-shell';
-import {
-  CustomScrollbar,
-  DialogHeader,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
+import { DialogDoneFooter, DialogShell } from '@/app/components/primitives/dialog-shell';
+import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -19,7 +17,6 @@ export interface SiblingEntity {
 interface CameraSettingsDialogProps {
   entityId: string;
   name: string;
-  room: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   siblingEntities: SiblingEntity[];
@@ -28,7 +25,6 @@ interface CameraSettingsDialogProps {
 function getDisplayName(entityId: string, entity: HassEntity): string {
   const friendly = entity.attributes?.friendly_name as string | undefined;
   if (friendly) return friendly;
-  // Derive from entity_id: strip domain prefix, replace underscores
   const withoutDomain = entityId.replace(/^[^.]+\./, '');
   return withoutDomain.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -161,7 +157,6 @@ function NumberRow({
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
-  room,
   isOpen,
   onOpenChange,
   siblingEntities,
@@ -179,24 +174,30 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      disableOpenAutoFocus
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName="fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200"
     >
       <CustomScrollbar isOn>
-        <div className="p-6">
-          {/* Header */}
-          <DialogHeader
-            title={t('camera.settings.title')}
-            description={`${name} · ${room}`}
-            isOn
-            supportingContent={
-              <EntityRoomSelector entityId={entityId} label={t('camera.settings.room')} compact />
-            }
-          />
+        <div className="p-8">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <EntityRoomSelector entityId={entityId} compact forceDark />
+              <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={t('common.close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </Dialog.Close>
+          </div>
 
           {hasControls ? (
             <div className="space-y-6">
-              {/* Switches */}
               {switches.length > 0 && (
                 <DialogSectionRow label={t('camera.settings.switches')}>
                   <div className="space-y-2">
@@ -258,6 +259,8 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
           ) : (
             <p className="text-center text-sm text-white/40">{t('camera.settings.noControls')}</p>
           )}
+
+          <DialogDoneFooter label={t('common.done')} />
         </div>
       </CustomScrollbar>
     </DialogShell>

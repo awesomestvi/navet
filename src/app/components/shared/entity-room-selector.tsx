@@ -1,10 +1,10 @@
-import { ChevronDown, Home, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { cn } from '@/app/components/ui/utils';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -13,6 +13,7 @@ interface EntityRoomSelectorProps {
   entityId: string;
   label?: string;
   compact?: boolean;
+  forceDark?: boolean;
   className?: string;
   accentColorOverride?: string;
   selectStyle?: CSSProperties;
@@ -24,6 +25,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   entityId,
   label,
   compact = false,
+  forceDark = false,
   className = '',
   accentColorOverride,
   selectStyle,
@@ -37,6 +39,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);
   const resolvedLabel = label ?? t('common.room');
 
   const sortedAreas = useMemo(
@@ -68,8 +71,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   }, [selectedAreaId, sortedAreas, t]);
 
   const baseSelectClassName = compact
-    ? `h-9 rounded-xl px-3 pr-8 text-xs ${surface.textPrimary}`
-    : `h-10 rounded-xl px-3 pr-8 text-sm ${surface.textPrimary}`;
+    ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`
+    : `h-10 rounded-xl px-3 py-0 pr-8 text-sm leading-none ${surface.textPrimary}`;
   const handleChange = async (nextValue: string) => {
     const nextAreaId = nextValue || null;
     const nextRoomName =
@@ -95,10 +98,13 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
         {compact ? (
           <>
             <select
+              name="room"
               aria-label={resolvedLabel}
               value={selectedAreaId}
               disabled={isSaving}
               onChange={(event) => void handleChange(event.target.value)}
+              onFocus={() => setIsEyebrowFocused(true)}
+              onBlur={() => setIsEyebrowFocused(false)}
               className="absolute inset-0 z-10 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
@@ -108,25 +114,15 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                 </option>
               ))}
             </select>
-            <div
-              className={cn(
-                'inline-flex min-w-0 items-center gap-2 text-sm',
-                surface.textPrimary,
-                compactContentStyle || compactContentClassName
-                  ? 'rounded-xl border px-3 py-2'
-                  : null,
-                compactContentClassName
-              )}
+            <RoomEyebrow
+              room={selectedAreaLabel}
+              isLoading={isSaving}
+              forceDark={forceDark}
+              visualOnly
+              focused={isEyebrowFocused}
+              className={compactContentClassName}
               style={compactContentStyle}
-            >
-              <Home className={`h-4 w-4 ${surface.textSecondary}`} />
-              <span className="max-w-[12rem] truncate font-medium">{selectedAreaLabel}</span>
-              {isSaving ? (
-                <Loader2 className={`h-4 w-4 animate-spin ${surface.textSecondary}`} />
-              ) : (
-                <ChevronDown className={`h-4 w-4 ${surface.textSecondary}`} />
-              )}
-            </div>
+            />
           </>
         ) : (
           <>
@@ -138,6 +134,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               containerClassName="w-full"
               accentColorOverride={accentColorOverride}
               selectClassName={`${surface.border} ${surface.inputBg} ${baseSelectClassName} disabled:opacity-60`}
+              indicatorClassName={surface.textSecondary}
               style={selectStyle}
             >
               <option value="">{t('common.noRoom')}</option>

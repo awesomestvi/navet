@@ -3,6 +3,9 @@ import { User } from 'lucide-react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 
+const storyAvatarDataUrl =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='128' height='128' rx='64' fill='url(%23bg)'/%3E%3Ccircle cx='64' cy='48' r='24' fill='%23f8fafc' fill-opacity='0.96'/%3E%3Cpath d='M28 110c6-18 21-28 36-28s30 10 36 28' fill='%23f8fafc' fill-opacity='0.96'/%3E%3C/svg%3E";
+
 const meta = {
   title: 'Components/Primitives/Avatar',
   component: Avatar,
@@ -68,14 +71,8 @@ export const FallbackIcon: Story = {
 export const WithImage: Story = {
   render: () => (
     <Avatar className="size-14 border border-white/10 bg-white/5">
-      <AvatarImage src="https://i.pravatar.cc/128?img=13" alt="User" />
+      <AvatarImage src={storyAvatarDataUrl} alt="User" />
       <AvatarFallback className="bg-white/10 text-sm font-semibold text-white">NV</AvatarFallback>
     </Avatar>
   ),
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
 };

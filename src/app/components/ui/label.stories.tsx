@@ -2,10 +2,26 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Label } from './label';
 
+function LabelStory() {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="demo-input" className="text-white/80">
+        Device name
+      </Label>
+      <input
+        id="demo-input"
+        className="w-64 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80"
+        defaultValue="Living room lamp"
+      />
+    </div>
+  );
+}
+
 const meta = {
   title: 'Components/Primitives/Label',
-  component: Label,
+  component: LabelStory,
   tags: ['autodocs'],
+  render: () => <LabelStory />,
   parameters: {
     layout: 'centered',
     docs: {
@@ -28,7 +44,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof Label>;
+} satisfies Meta<typeof LabelStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -47,22 +63,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  render: () => (
-    <div className="space-y-2">
-      <Label htmlFor="demo-input" className="text-white/80">
-        Device name
-      </Label>
-      <input
-        id="demo-input"
-        className="w-64 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80"
-        defaultValue="Living room lamp"
-      />
-    </div>
-  ),
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
+  render: () => <LabelStory />,
 };

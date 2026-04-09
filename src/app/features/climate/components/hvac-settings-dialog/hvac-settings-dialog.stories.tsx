@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { Button } from '@/app/components/primitives/button';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HVACSettingsDialog } from './index';
@@ -8,15 +9,20 @@ function HVACSettingsDialogStory() {
   const [isOn, setIsOn] = useState(true);
   const [mode, setMode] = useState('cool');
   const [targetTemp, setTargetTemp] = useState(22);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(59,130,246,0.22),rgba(15,23,42,0.28))]">
+      <div className="relative flex items-start justify-center p-6">
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          Open HVAC dialog
+        </Button>
+      </div>
       <HVACSettingsDialog
         entityId="climate.main_floor"
-        isOpen
-        onOpenChange={() => {}}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
         name="Main Floor HVAC"
-        room="Living Room"
         isOn={isOn}
         mode={mode}
         targetTemp={targetTemp}
@@ -58,9 +64,3 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
-};

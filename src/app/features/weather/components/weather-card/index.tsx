@@ -390,7 +390,6 @@ export const WeatherCard = memo(function WeatherCard({
           onOpenChange={setIsSettingsOpen}
           theme={theme}
           title={cityName}
-          location={location}
           forecastMode={selectedForecastMode}
           onForecastModeChange={(mode) => updateSettings({ weatherForecastMode: mode })}
           tintColor={tintColor}

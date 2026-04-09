@@ -1,12 +1,16 @@
+import * as Dialog from '@radix-ui/react-dialog';
+import { Palette, Sliders, X } from 'lucide-react';
+import { useState } from 'react';
 import {
-  CustomDialogDoneButton,
   customCardDialogShellProps,
-  DialogFooter,
+  DialogDoneFooter,
   DialogShell,
 } from '@/app/components/primitives/dialog-shell';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import {
   CustomCardTintPicker,
-  DialogHeader,
+  CustomScrollbar,
   DialogSectionRow,
 } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
@@ -27,7 +31,6 @@ interface WeatherSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   theme: ThemeType;
   title: string;
-  location: string;
   forecastMode: WeatherForecastMode;
   onForecastModeChange: (mode: WeatherForecastMode) => void;
   tintColor?: string;
@@ -40,7 +43,6 @@ export function WeatherSettingsDialog({
   onOpenChange,
   theme,
   title,
-  location,
   forecastMode,
   onForecastModeChange,
   tintColor,
@@ -58,14 +60,16 @@ export function WeatherSettingsDialog({
       glowClassName: shell.glowClassName,
       overlayClassName: shell.overlayClassName,
     },
-    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border p-6 shadow-2xl backdrop-blur-xl ${shell.containerClassName}`,
+    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl ${shell.containerClassName}`,
   });
   const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, '#3b82f6');
+  const [activeTab, setActiveTab] = useState('controls');
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      disableOpenAutoFocus
       overlayClassName={surface.dialogBackdrop}
       contentClassName={dialogShell.contentClassName}
       contentStyle={dialogShell.contentStyle}
@@ -73,61 +77,98 @@ export function WeatherSettingsDialog({
       contentGlowStyle={dialogShell.contentGlowStyle}
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
-      <DialogHeader
-        title={t('weather.settings.title', { name: title })}
-        description={location}
-        isOn={isOn}
-        supportingContent={
-          <EntityRoomSelector entityId={entityId} label={t('common.room')} compact />
-        }
-      />
-
-      {onTintColorChange ? (
-        <CustomCardTintPicker
-          value={tintColor}
-          onChange={onTintColorChange}
-          defaultColor="#3b82f6"
-          className={surface.textMuted}
-        />
-      ) : null}
-
-      <DialogSectionRow label={t('weather.settings.forecast')} className="mb-4">
-        <div className="grid grid-cols-2 gap-2">
-          {(['hourly', 'weekly'] as const).map((option) => {
-            const isSelected = forecastMode === option;
-
-            return (
+      <CustomScrollbar isOn={isOn}>
+        <div className="p-8">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <EntityRoomSelector entityId={entityId} compact forceDark />
+              <h2 className="mt-2 text-xl font-semibold text-white">{title}</h2>
+            </div>
+            <Dialog.Close asChild>
               <button
                 type="button"
-                key={option}
-                onClick={() => onForecastModeChange(option)}
-                className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'text-white'
-                    : `${surface.border} ${surface.textPrimary} ${surface.hoverBg}`
-                }`}
-                style={
-                  isSelected
-                    ? {
-                        backgroundColor: activeAccentColor,
-                        borderColor: activeAccentColor,
-                      }
-                    : sectionStyle
-                }
+                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={t('common.close')}
               >
-                {option === 'hourly' ? t('weather.settings.hourly') : t('weather.settings.weekly')}
+                <X className="h-5 w-5" />
               </button>
-            );
-          })}
-        </div>
-      </DialogSectionRow>
+            </Dialog.Close>
+          </div>
 
-      <DialogFooter>
-        <CustomDialogDoneButton
-          label={t('common.done')}
-          style={{ backgroundColor: activeAccentColor }}
-        />
-      </DialogFooter>
+          <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
+            <div className="mt-1 inline-flex items-center gap-1">
+              <InteractivePill
+                active={activeTab === 'controls'}
+                size="compact"
+                className="min-h-8 px-3 text-[11px]"
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                Controls
+              </InteractivePill>
+              {onTintColorChange ? (
+                <InteractivePill
+                  active={activeTab === 'card'}
+                  size="compact"
+                  className="min-h-8 px-3 text-[11px]"
+                  icon={Palette}
+                  onClick={() => setActiveTab('card')}
+                >
+                  Card
+                </InteractivePill>
+              ) : null}
+            </div>
+
+            <TabPanel value="controls" className="mt-5">
+              <DialogSectionRow label={t('weather.settings.forecast')} className="mb-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {(['hourly', 'weekly'] as const).map((option) => {
+                    const isSelected = forecastMode === option;
+
+                    return (
+                      <button
+                        type="button"
+                        key={option}
+                        onClick={() => onForecastModeChange(option)}
+                        className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'text-white'
+                            : `${surface.border} ${surface.textPrimary} ${surface.hoverBg}`
+                        }`}
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor: activeAccentColor,
+                                borderColor: activeAccentColor,
+                              }
+                            : sectionStyle
+                        }
+                      >
+                        {option === 'hourly'
+                          ? t('weather.settings.hourly')
+                          : t('weather.settings.weekly')}
+                      </button>
+                    );
+                  })}
+                </div>
+              </DialogSectionRow>
+            </TabPanel>
+
+            {onTintColorChange ? (
+              <TabPanel value="card" className="mt-5">
+                <CustomCardTintPicker
+                  value={tintColor}
+                  onChange={onTintColorChange}
+                  isOn={isOn}
+                  defaultColor="#3b82f6"
+                />
+              </TabPanel>
+            ) : null}
+          </Tabs>
+
+          <DialogDoneFooter label={t('common.done')} />
+        </div>
+      </CustomScrollbar>
     </DialogShell>
   );
 }

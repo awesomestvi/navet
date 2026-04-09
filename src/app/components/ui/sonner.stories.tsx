@@ -5,16 +5,14 @@ import { Panel } from '@/app/components/primitives/panel';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import { Toaster } from './sonner';
 
 function SonnerStory() {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-12">
-      <Toaster />
-      <Panel className="w-full max-w-2xl p-6">
+    <div className="flex items-center justify-center p-6">
+      <Panel className="w-full max-w-4xl p-6">
         <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}>
           Sonner toast
         </p>
@@ -135,9 +133,3 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
-};

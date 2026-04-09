@@ -320,6 +320,7 @@ const RoomNavItem = memo(function RoomNavItem({
     <InteractivePill
       active={activeRoom === room}
       onClick={() => onRoomChange(room)}
+      variant="ghost"
       className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
         activeRoom === room ? 'room-nav-item-active text-white' : `${textSecondary} ${hoverBg}`
       }`}

@@ -1,13 +1,16 @@
-import { Check } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Check, Palette, Sliders, X } from 'lucide-react';
+import { useState } from 'react';
 import {
-  CustomDialogDoneButton,
   customCardDialogShellProps,
-  DialogFooter,
+  DialogDoneFooter,
   DialogShell,
 } from '@/app/components/primitives/dialog-shell';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import {
   CustomCardTintPicker,
-  DialogHeader,
+  CustomScrollbar,
   DialogSectionRow,
 } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
@@ -73,14 +76,16 @@ export function CalendarSettingsDialog({
       overlayClassName:
         theme === 'light' ? 'bg-white/60 backdrop-blur-sm' : 'bg-black/20 backdrop-blur-sm',
     },
-    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border p-6 shadow-2xl ${cardShell.backdropClassName} bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`,
+    fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl ${cardShell.backdropClassName} bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`,
   });
   const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, '#6366f1');
+  const [activeTab, setActiveTab] = useState('controls');
 
   return (
     <DialogShell
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      disableOpenAutoFocus
       overlayClassName={surface.dialogBackdrop}
       contentClassName={dialogShell.contentClassName}
       contentStyle={dialogShell.contentStyle}
@@ -88,138 +93,148 @@ export function CalendarSettingsDialog({
       contentGlowStyle={dialogShell.contentGlowStyle}
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
-      <DialogHeader
-        title={t('calendar.settings.title')}
-        description={t('calendar.settings.description', { title })}
-        isOn={isOn}
-        supportingContent={
-          entityId ? (
-            <EntityRoomSelector
-              entityId={entityId}
-              label={t('calendar.settings.room')}
-              compact
-              accentColorOverride={activeAccentColor}
-              compactContentStyle={sectionStyle}
-            />
-          ) : null
-        }
-      />
-
-      {onTintColorChange ? (
-        <CustomCardTintPicker
-          value={tintColor}
-          onChange={onTintColorChange}
-          defaultColor="#6366f1"
-          className={surface.textMuted}
-          pickerRingColor={activeAccentColor}
-          resetButtonStyle={sectionStyle}
-        />
-      ) : null}
-
-      <DialogSectionRow label={t('calendar.settings.view')} className="mb-4">
-        <div className="grid grid-cols-2 gap-2">
-          {(['week', 'month'] as const).map((option) => {
-            const isSelected = viewMode === option;
-
-            return (
+      <CustomScrollbar isOn={isOn}>
+        <div className="p-8">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              {entityId ? <EntityRoomSelector entityId={entityId} compact forceDark /> : null}
+              <h2 className={`text-xl font-semibold text-white ${entityId ? 'mt-2' : ''}`}>
+                {title}
+              </h2>
+            </div>
+            <Dialog.Close asChild>
               <button
                 type="button"
-                key={option}
-                onClick={() => onViewModeChange(option)}
-                className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${
-                  isSelected
-                    ? `${surface.textPrimary}`
-                    : `${surface.border} ${surface.textPrimary} ${surface.hoverBg}`
-                }`}
-                style={
-                  isSelected
-                    ? {
-                        backgroundColor:
-                          theme === 'light' ? `${activeAccentColor}12` : `${activeAccentColor}1c`,
-                        borderColor: `${activeAccentColor}66`,
-                      }
-                    : sectionStyle
-                }
+                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={t('common.close')}
               >
-                {option === 'week'
-                  ? t('calendar.settings.thisWeek')
-                  : t('calendar.settings.thisMonth')}
+                <X className="h-5 w-5" />
               </button>
-            );
-          })}
-        </div>
-      </DialogSectionRow>
+            </Dialog.Close>
+          </div>
 
-      <DialogSectionRow label={t('calendar.settings.calendars')}>
-        <div className="space-y-2">
-          {calendars.map((calendar) => {
-            const isSelected = selectedCalendarIds.includes(calendar.id);
-
-            return (
-              <button
-                type="button"
-                key={calendar.id}
-                onClick={() => {
-                  onSelectedCalendarIdsChange(
-                    isSelected
-                      ? selectedCalendarIds.filter((id) => id !== calendar.id)
-                      : [...selectedCalendarIds, calendar.id]
-                  );
-                }}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
-                style={
-                  isSelected
-                    ? {
-                        backgroundColor:
-                          theme === 'light' ? `${activeAccentColor}0d` : `${activeAccentColor}16`,
-                        borderColor: `${activeAccentColor}4d`,
-                      }
-                    : sectionStyle
-                }
+          <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
+            <div className="mt-1 inline-flex items-center gap-1">
+              <InteractivePill
+                active={activeTab === 'controls'}
+                size="compact"
+                className="min-h-8 px-3 text-[11px]"
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className={`h-10 w-1.5 flex-shrink-0 rounded-full ${calendar.color}`} />
-                  <div className="min-w-0">
-                    <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>
-                      {calendar.name}
-                    </div>
-                    <div className={`mt-0.5 truncate text-xs ${surface.textSecondary}`}>
-                      {calendar.room}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`ml-4 flex h-5 w-5 items-center justify-center rounded border transition-colors ${surface.textPrimary}`}
-                  style={
-                    isSelected
-                      ? {
-                          backgroundColor: activeAccentColor,
-                          borderColor: activeAccentColor,
-                        }
-                      : {
-                          borderColor:
-                            theme === 'light'
-                              ? 'rgba(15, 23, 42, 0.16)'
-                              : 'rgba(255, 255, 255, 0.18)',
-                          backgroundColor: 'transparent',
-                        }
-                  }
+                Controls
+              </InteractivePill>
+              {onTintColorChange ? (
+                <InteractivePill
+                  active={activeTab === 'card'}
+                  size="compact"
+                  className="min-h-8 px-3 text-[11px]"
+                  icon={Palette}
+                  onClick={() => setActiveTab('card')}
                 >
-                  {isSelected && <Check className="h-3.5 w-3.5" />}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </DialogSectionRow>
+                  Card
+                </InteractivePill>
+              ) : null}
+            </div>
 
-      <DialogFooter>
-        <CustomDialogDoneButton
-          label={t('common.done')}
-          style={{ backgroundColor: activeAccentColor }}
-        />
-      </DialogFooter>
+            <TabPanel value="controls" className="mt-5 space-y-4">
+              <DialogSectionRow label={t('calendar.settings.view')} className="mb-4">
+                <div className="inline-flex items-center gap-1">
+                  {(['week', 'month'] as const).map((option) => (
+                    <InteractivePill
+                      key={option}
+                      active={viewMode === option}
+                      size="compact"
+                      className="min-h-8 px-3 text-[11px]"
+                      onClick={() => onViewModeChange(option)}
+                    >
+                      {option === 'week'
+                        ? t('calendar.settings.thisWeek')
+                        : t('calendar.settings.thisMonth')}
+                    </InteractivePill>
+                  ))}
+                </div>
+              </DialogSectionRow>
+
+              <DialogSectionRow label={t('calendar.settings.calendars')}>
+                <div className="space-y-2">
+                  {calendars.map((calendar) => {
+                    const isSelected = selectedCalendarIds.includes(calendar.id);
+
+                    return (
+                      <button
+                        type="button"
+                        key={calendar.id}
+                        onClick={() => {
+                          onSelectedCalendarIdsChange(
+                            isSelected
+                              ? selectedCalendarIds.filter((id) => id !== calendar.id)
+                              : [...selectedCalendarIds, calendar.id]
+                          );
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor:
+                                  theme === 'light'
+                                    ? `${activeAccentColor}0d`
+                                    : `${activeAccentColor}16`,
+                                borderColor: `${activeAccentColor}4d`,
+                              }
+                            : sectionStyle
+                        }
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <div className={`h-5 w-1 shrink-0 rounded-full ${calendar.color}`} />
+                          <span className={`truncate text-sm font-medium ${surface.textPrimary}`}>
+                            {calendar.name}
+                          </span>
+                        </div>
+
+                        <div
+                          className={`ml-4 flex h-5 w-5 items-center justify-center rounded border transition-colors ${surface.textPrimary}`}
+                          style={
+                            isSelected
+                              ? {
+                                  backgroundColor: activeAccentColor,
+                                  borderColor: activeAccentColor,
+                                }
+                              : {
+                                  borderColor:
+                                    theme === 'light'
+                                      ? 'rgba(15, 23, 42, 0.16)'
+                                      : 'rgba(255, 255, 255, 0.18)',
+                                  backgroundColor: 'transparent',
+                                }
+                          }
+                        >
+                          {isSelected && <Check className="h-3.5 w-3.5" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </DialogSectionRow>
+            </TabPanel>
+
+            {onTintColorChange ? (
+              <TabPanel value="card" className="mt-5">
+                <CustomCardTintPicker
+                  value={tintColor}
+                  onChange={onTintColorChange}
+                  isOn={isOn}
+                  defaultColor="#6366f1"
+                  pickerRingColor={activeAccentColor}
+                  resetButtonStyle={sectionStyle}
+                />
+              </TabPanel>
+            ) : null}
+          </Tabs>
+
+          <DialogDoneFooter label={t('common.done')} />
+        </div>
+      </CustomScrollbar>
     </DialogShell>
   );
 }

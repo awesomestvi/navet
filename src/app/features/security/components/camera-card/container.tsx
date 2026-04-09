@@ -178,7 +178,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         <CameraSettingsDialog
           entityId={id}
           name={name}
-          room={room}
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}

@@ -1,14 +1,56 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Combobox } from './combobox';
 
+function ComboboxStory(args: ComponentProps<typeof Combobox>) {
+  const [expanded, setExpanded] = useState(args.expanded);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setExpanded(args.expanded);
+  }, [args.expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setExpanded(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [expanded]);
+
+  return (
+    <div ref={rootRef} className={expanded ? 'w-full max-w-md pb-72' : 'w-full max-w-md'}>
+      <Combobox
+        {...args}
+        expanded={expanded}
+        onClick={(event) => {
+          args.onClick?.(event);
+          setExpanded(true);
+        }}
+        onFocus={(event) => {
+          args.onFocus?.(event);
+          setExpanded(true);
+        }}
+      />
+    </div>
+  );
+}
+
 const meta = {
   title: 'Components/Primitives/Combobox',
-  component: Combobox,
+  component: ComboboxStory,
   tags: ['autodocs'],
+  render: (args) => <ComboboxStory {...args} />,
   args: {
     placeholder: 'Search entities',
-    expanded: true,
+    expanded: false,
     listboxId: 'storybook-combobox-listbox',
     children: (
       <div className="space-y-1">
@@ -38,7 +80,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof Combobox>;
+} satisfies Meta<typeof ComboboxStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -56,8 +98,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Open: Story = {};
-export const Closed: Story = { args: { expanded: false } };
+export const Open: Story = { args: { expanded: true } };
+export const Closed: Story = {};
 
 export const Docs: Story = {
   parameters: {

@@ -62,13 +62,13 @@ export function SlideAction({
           knobSize: 28,
           padding: 4,
           railClassName: 'h-11 rounded-[24px]',
-          labelClassName: 'text-[9px] leading-[1.05] tracking-[0.02em]',
+          labelClassName: 'text-[10.5px] leading-[1.1] tracking-[0.01em]',
         }
       : {
           knobSize: 38,
           padding: 4,
           railClassName: 'h-12 rounded-[26px]',
-          labelClassName: 'text-[9.5px] leading-[1.05] tracking-[0.02em]',
+          labelClassName: 'text-[11.5px] leading-[1.1] tracking-[0.01em]',
         };
 
   const trackSurfaceClassName =
@@ -186,7 +186,7 @@ export function SlideAction({
       ref={trackRef}
       aria-disabled={disabled || isCompleting}
       aria-label={ariaLabel}
-      className={`relative overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
+      className={`relative block w-full overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
         disabled || isCompleting ? 'cursor-default opacity-70' : 'cursor-ew-resize'
       } select-none touch-none`}
       data-card-interactive="true"
@@ -203,7 +203,7 @@ export function SlideAction({
       onPointerUp={handlePointerEnd}
     >
       <div
-        className={`absolute rounded-full ${progressFillClassName}`}
+        className={`absolute z-0 rounded-full ${progressFillClassName}`}
         style={{
           bottom: metrics.padding,
           left: metrics.padding,
@@ -213,7 +213,7 @@ export function SlideAction({
       />
 
       <div
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center"
         style={{
           clipPath: `inset(0 0 0 ${metrics.padding + knobOffset + metrics.knobSize * 0.82}px)`,
           paddingLeft: labelPaddingLeft,
@@ -229,7 +229,7 @@ export function SlideAction({
       </div>
 
       <div
-        className={`absolute top-1/2 flex items-center justify-center rounded-full ${thumbClassName} ${
+        className={`absolute top-1/2 left-0 z-[2] flex items-center justify-center rounded-full ${thumbClassName} ${
           isDragging || isCompleting ? '' : 'transition-transform duration-200'
         }`}
         style={{

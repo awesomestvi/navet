@@ -1,5 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
+import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
+import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   getThemeFocusRingClassName,
   navetIconSizeTokens,
@@ -12,7 +14,7 @@ import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'subtle';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'subtle' | 'soft';
   size?: 'small' | 'medium';
   loading?: boolean;
   leading?: ReactNode;
@@ -39,9 +41,24 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref
 ) {
-  const { theme, accentColor } = useTheme();
+  const { theme, accentColor, primaryColor } = useTheme();
   const isDisabled = disabled || loading;
   const iconContent = leading ?? children;
+
+  const pickerTokens =
+    variant === 'soft'
+      ? getThemeAppearancePickerTokens(theme, getThemeColorValue(primaryColor))
+      : null;
+  const softVariantClassName =
+    pickerTokens !== null
+      ? `${pickerTokens.optionCardClassName} ${pickerTokens.optionBorderClassName} ${pickerTokens.textClassName}`
+      : theme === 'light'
+        ? 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
+        : theme === 'black'
+          ? 'border-white/16 bg-black text-white hover:bg-zinc-900'
+          : theme === 'glass'
+            ? 'border-white/16 bg-white/8 text-white hover:bg-white/12'
+            : 'border-zinc-800 bg-zinc-900 text-white hover:bg-zinc-800';
 
   const variantClassName =
     variant === 'primary'
@@ -54,13 +71,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
             : theme === 'glass'
               ? 'border-white/16 bg-white/8 text-white hover:bg-white/12'
               : 'border-zinc-800 bg-zinc-900 text-white hover:bg-zinc-800'
-        : theme === 'light'
-          ? 'border-transparent bg-transparent text-gray-900 hover:bg-gray-100'
-          : theme === 'black'
-            ? 'border-transparent bg-transparent text-white hover:bg-zinc-900'
-            : theme === 'glass'
-              ? 'border-transparent bg-transparent text-white hover:bg-white/10'
-              : 'border-transparent bg-transparent text-white hover:bg-zinc-800';
+        : variant === 'soft'
+          ? softVariantClassName
+          : theme === 'light'
+            ? 'border-transparent bg-transparent text-gray-900 hover:bg-gray-100'
+            : theme === 'black'
+              ? 'border-transparent bg-transparent text-white hover:bg-zinc-900'
+              : theme === 'glass'
+                ? 'border-transparent bg-transparent text-white hover:bg-white/10'
+                : 'border-transparent bg-transparent text-white hover:bg-zinc-800';
 
   return (
     <button

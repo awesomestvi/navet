@@ -1,18 +1,46 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps } from 'react';
 import { useState } from 'react';
+import { Button } from '@/app/components/primitives/button';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
+function VacuumSettingsDialogStory(
+  args: Omit<ComponentProps<typeof VacuumSettingsDialog>, 'isOpen' | 'onClose'>
+) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tintColor, setTintColor] = useState(args.tintColor);
+
+  return (
+    <SettingsDialogStoryFrame parentCardClassName="bg-[radial-gradient(circle_at_14%_12%,rgba(56,189,248,0.18),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(155deg,rgba(14,165,233,0.05),transparent_60%)]">
+      <div className="relative flex items-start justify-center p-6">
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          Open vacuum dialog
+        </Button>
+      </div>
+      <VacuumSettingsDialog
+        {...args}
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        tintColor={tintColor}
+        onTintColorChange={setTintColor}
+        surfaceGradientClassName="from-white/24 via-cyan-200/18 to-white/10"
+        surfaceBorderClassName="border-white/22"
+        surfaceBackdropClassName="backdrop-blur-2xl saturate-[1.18]"
+        surfaceGlowClassName="from-cyan-200/18"
+      />
+    </SettingsDialogStoryFrame>
+  );
+}
+
 const meta = {
   title: 'Cards/Dialogs/Vacuum',
-  component: VacuumSettingsDialog,
+  component: VacuumSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen', docs: { description: {} } },
   args: {
     entityId: 'vacuum.roborock_s7',
-    isOpen: true,
-    onClose: () => {},
     onStartCleaning: () => {},
     onPauseCleaning: () => {},
     onReturnHome: () => {},
@@ -32,7 +60,7 @@ const meta = {
     tintColor: '#22d3ee',
     onTintColorChange: () => {},
   },
-} satisfies Meta<typeof VacuumSettingsDialog>;
+} satisfies Meta<typeof VacuumSettingsDialogStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -50,28 +78,4 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: (args) => {
-    const [tintColor, setTintColor] = useState(args.tintColor);
-
-    return (
-      <SettingsDialogStoryFrame parentCardClassName="bg-[radial-gradient(circle_at_14%_12%,rgba(56,189,248,0.18),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(155deg,rgba(14,165,233,0.05),transparent_60%)]">
-        <VacuumSettingsDialog
-          {...args}
-          tintColor={tintColor}
-          onTintColorChange={setTintColor}
-          surfaceGradientClassName="from-white/24 via-cyan-200/18 to-white/10"
-          surfaceBorderClassName="border-white/22"
-          surfaceBackdropClassName="backdrop-blur-2xl saturate-[1.18]"
-          surfaceGlowClassName="from-cyan-200/18"
-        />
-      </SettingsDialogStoryFrame>
-    );
-  },
-};
-
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
-  },
-};
+export const Default: Story = {};

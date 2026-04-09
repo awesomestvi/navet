@@ -60,8 +60,20 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
   },
 };

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { Button } from './button';
 import {
   DialogDoneButton,
   DialogFooter,
@@ -30,10 +31,35 @@ function BasicDialogStory() {
         overlayClassName="bg-black/55 backdrop-blur-sm"
         contentClassName={settingsDialogContentClass(surface, { padding: true, animate: true })}
       >
-        <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Device editor</h2>
-        <p className={`mt-2 text-sm ${surface.textSecondary}`}>
-          Shared shell primitive for settings and custom-card dialogs.
-        </p>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
+              Header
+            </p>
+            <div>
+              <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Device editor</h2>
+              <p className={`mt-2 text-sm ${surface.textSecondary}`}>
+                Shared shell primitive for settings and custom-card dialogs.
+              </p>
+            </div>
+          </div>
+
+          <div className={`rounded-2xl border p-4 ${surface.border} ${surface.panelMuted}`}>
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
+              Body
+            </p>
+            <div className="mt-3 grid gap-3">
+              <div className={`rounded-xl border p-3 ${surface.border} ${surface.subtleBg}`}>
+                <p className={`text-sm font-medium ${surface.textPrimary}`}>Display name</p>
+                <p className={`mt-1 text-sm ${surface.textSecondary}`}>Kitchen Accent Light</p>
+              </div>
+              <div className={`rounded-xl border p-3 ${surface.border} ${surface.subtleBg}`}>
+                <p className={`text-sm font-medium ${surface.textPrimary}`}>Room</p>
+                <p className={`mt-1 text-sm ${surface.textSecondary}`}>Kitchen</p>
+              </div>
+            </div>
+          </div>
+        </div>
         <DialogFooter>
           <DialogDoneButton
             label="Done"
@@ -74,15 +100,53 @@ function DecoratedDialogStory() {
         }}
         contentOverlayClassName="bg-white/[0.01]"
       >
-        <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Theme decoration</h2>
-        <p className={`mt-2 text-sm ${surface.textSecondary}`}>
-          Optional glow and overlay decoration layers are rendered by the shell.
-        </p>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
+              Decorated shell
+            </p>
+            <div>
+              <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Theme decoration</h2>
+              <p className={`mt-2 text-sm ${surface.textSecondary}`}>
+                Optional glow and overlay layers are rendered by the shell, while the content stays
+                readable above them.
+              </p>
+            </div>
+          </div>
+
+          <div className={`rounded-2xl border p-4 ${surface.border} ${surface.panelMuted}`}>
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
+              Layout helper example
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span
+                className={`rounded-full border px-3 py-1.5 text-xs ${surface.border} ${surface.textSecondary}`}
+              >
+                maxWidth: sm
+              </span>
+              <span
+                className={`rounded-full border px-3 py-1.5 text-xs ${surface.border} ${surface.textSecondary}`}
+              >
+                padding: true
+              </span>
+              <span
+                className={`rounded-full border px-3 py-1.5 text-xs ${surface.border} ${surface.textSecondary}`}
+              >
+                animate: true
+              </span>
+            </div>
+          </div>
+        </div>
         <DialogFooter>
-          <DialogDoneButton
-            label="Close"
-            className={`rounded-xl border px-4 py-2 text-sm font-medium ${surface.border} ${surface.textPrimary} ${surface.hoverBg}`}
-          />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="medium" className={`${surface.textSecondary}`}>
+              Secondary action
+            </Button>
+            <DialogDoneButton
+              label="Close"
+              className={`rounded-xl border px-4 py-2 text-sm font-medium ${surface.border} ${surface.textPrimary} ${surface.hoverBg}`}
+            />
+          </div>
         </DialogFooter>
       </DialogShell>
     </div>
@@ -93,6 +157,7 @@ const meta = {
   title: 'Components/Primitives/Dialog Shell',
   component: DialogShell,
   tags: ['autodocs'],
+  render: () => <BasicDialogStory />,
   parameters: {
     docs: {
       description: {
@@ -126,16 +191,3 @@ export const Basic = {
 export const Decorated = {
   render: () => <DecoratedDialogStory />,
 } as unknown as Story;
-
-export const Docs: Story = {
-  args: {
-    isOpen: false,
-    onOpenChange: () => {},
-    overlayClassName: '',
-    contentClassName: '',
-    children: null,
-  },
-  parameters: {
-    docsOnly: true,
-  },
-};

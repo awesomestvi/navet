@@ -1,13 +1,15 @@
 import type { CSSProperties } from 'react';
 import { memo } from 'react';
+import { Button } from '@/app/components/primitives/button';
 import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
+import { useI18n } from '@/app/hooks';
+import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 import { DialogSectionRow } from './dialog-section-row';
 
 interface CustomCardTintPickerProps {
   value?: string;
   onChange: (color: string) => void;
+  isOn?: boolean;
   defaultColor?: string;
   className?: string;
   pickerRingColor?: string;
@@ -17,17 +19,21 @@ interface CustomCardTintPickerProps {
 export const CustomCardTintPicker = memo(function CustomCardTintPicker({
   value,
   onChange,
+  isOn = true,
   defaultColor = '#f97316',
   className = '',
   pickerRingColor,
   resetButtonStyle,
 }: CustomCardTintPickerProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
+  const editorSurface = getDeviceEditorSurfaceTokens(isOn);
 
   return (
-    <DialogSectionRow label={t('widgets.customCard.color')} className={className}>
+    <DialogSectionRow
+      label={t('widgets.customCard.color')}
+      labelClassName={editorSurface.sectionLabelClassName}
+      className={className}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <ColorInputSwatch
           mode="picker"
@@ -39,14 +45,9 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
           onChange={onChange}
         />
         {value ? (
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            className={`ml-1 rounded-full border px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] transition-opacity hover:opacity-80 ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-            style={resetButtonStyle}
-          >
+          <Button variant="soft" size="small" onClick={() => onChange('')} style={resetButtonStyle}>
             {t('common.reset')}
-          </button>
+          </Button>
         ) : null}
       </div>
     </DialogSectionRow>

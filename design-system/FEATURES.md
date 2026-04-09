@@ -242,10 +242,14 @@ Navet now uses a single HVAC-based card path for Home Assistant climate entities
 Recent settings work pushes more entity dialogs onto the same shared surface language instead of leaving each feature on one-off form layouts.
 
 #### Current Behavior
-- **Shared section framing** - camera, weather, HVAC, vacuum, calendar, and photo-frame dialogs now group related controls with the shared `DialogSectionRow` pattern
+- **Unified header pattern** - all card settings dialogs (light, camera, HVAC, vacuum, weather, calendar) share a consistent header: room eyebrow selector → entity name h2 → close button
+- **Room eyebrow primitive** - `RoomEyebrow` is a standalone primitive with `visualOnly` + `forceDark` + keyboard focus-ring mirroring; compact `EntityRoomSelector` renders it over a native select overlay for accessible room assignment
+- **Interactive pill tabs** - light, vacuum, weather, and calendar dialogs use pill tabs to separate Controls from Card appearance settings; dialogs with a single concern (camera, HVAC) use the header pattern only
+- **Shared section framing** - all dialogs group related controls with the shared `DialogSectionRow` pattern
 - **Theme-aware immersive controls** - HVAC and vacuum dialogs use stronger accent surfaces, richer status summaries, and larger control affordances while still staying inside the shared dialog shell
-- **Focused preview treatment** - preview-oriented settings surfaces reuse the same shared panel, tint, and shell primitives instead of custom wrappers per feature
-- **Safer dialog focus behavior** - `DialogShell` can opt out of Radix open auto-focus when the immersive surface should preserve the current visual focus state
+- **`DialogDoneFooter`** - single combined component (`DialogFooter` + soft, color-aware done button) used across all card settings dialogs; replaces the previous mix of `CustomDialogDoneButton`, `SettingsDialogDoneButton`, and hand-rolled buttons
+- **Soft tone primitives** - `Button variant="soft"` and `Input variant="soft"` use the picker token system for theme- and accent-aware idle surfaces without raw color overrides
+- **Safer dialog focus behavior** - `DialogShell` opts out of Radix open auto-focus to prevent mobile native selects from opening on dialog mount
 
 #### Why
 - keeps user-facing settings consistent across device types
@@ -253,10 +257,11 @@ Recent settings work pushes more entity dialogs onto the same shared surface lan
 - makes richer controls easier to extend without reworking every feature independently
 
 #### Shared Primitives Involved
-- `DialogShell`
+- `DialogShell`, `DialogDoneFooter`, `DialogFooter`
 - `DialogSectionRow`
-- `Panel`
-- `Select`
+- `RoomEyebrow`, `EntityRoomSelector`
+- `InteractivePill`, `Tabs`, `TabPanel`
+- `Panel`, `Select`, `Button`, `Input`
 - `RotaryKnob`
 
 ---

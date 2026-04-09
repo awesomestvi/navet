@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { memo } from 'react';
+import { Input } from '@/app/components/primitives/input';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   DEFAULT_LIGHT_ICON,
@@ -141,24 +142,12 @@ export const IconPicker = memo(function IconPicker({
               </span>
             )}
           </div>
-          <input
+          <Input
             type="text"
+            variant="soft"
             value={selectedIcon}
             onChange={(e) => onIconChange(e.target.value)}
             placeholder={t('lighting.iconInputPlaceholder')}
-            className={`w-full rounded-[22px] border px-4 py-2 text-sm transition-all duration-500 focus:outline-none focus:ring-2 ${
-              isLightOn
-                ? 'border-white/10 bg-white/5 text-white placeholder:text-gray-500 focus:bg-white/10 focus:ring-transparent'
-                : 'border-white/5 bg-white/[0.02] text-gray-500 placeholder:text-gray-700 focus:border-gray-500/30 focus:bg-white/5 focus:ring-gray-500/20'
-            }`}
-            style={
-              isLightOn
-                ? {
-                    borderColor: selectedIcon.trim() ? `${activeColor}4d` : undefined,
-                    boxShadow: selectedIcon.trim() ? `0 0 0 2px ${activeColor}26` : undefined,
-                  }
-                : undefined
-            }
           />
         </div>
 

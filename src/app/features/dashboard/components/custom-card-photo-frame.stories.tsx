@@ -61,8 +61,30 @@ export const Playground: Story = {
   },
 };
 
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
+export const Small: Story = {
+  args: {
+    size: 'small',
+    shuffleEnabled: true,
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+    shuffleEnabled: true,
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
+    shuffleEnabled: true,
+  },
+};
+
+export const ExtraLarge: Story = {
+  args: {
+    size: 'extra-large',
+    shuffleEnabled: true,
   },
 };

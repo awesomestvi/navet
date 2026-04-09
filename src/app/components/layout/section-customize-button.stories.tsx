@@ -16,10 +16,18 @@ function SectionCustomizeButtonStory() {
 }
 
 const meta = {
-  title: 'App Shell/Section Customize Button',
+  title: 'App Shell/Header/Section Customize Button',
   component: SectionCustomizeButtonStory,
   tags: ['autodocs'],
-  parameters: { layout: 'padded', docs: { description: {} } },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'Small header-level toggle used to enter or exit section customization mode. Use this when a section only needs the control itself, without any layout wrapper.',
+      },
+    },
+  },
 } satisfies Meta<typeof SectionCustomizeButtonStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
@@ -38,10 +46,13 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Toggle: Story = {};
-
-export const Docs: Story = {
+export const Toggle: Story = {
   parameters: {
-    docsOnly: true,
+    docs: {
+      description: {
+        story:
+          'Shows the standalone customize toggle. Click it to see how the button changes between normal and editing states.',
+      },
+    },
   },
 };

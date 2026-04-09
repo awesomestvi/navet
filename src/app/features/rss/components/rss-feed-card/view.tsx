@@ -266,22 +266,44 @@ export function RSSFeedCardView({
             </div>
 
             {isSmall && latestArticle ? (
-              // Small: Single latest article
-              <div className="flex flex-1 flex-col items-start text-left">
-                <div className="w-full">
-                  <h3
-                    className="mb-1.5 text-left text-[15px] font-semibold leading-[1.2] line-clamp-2"
-                    style={{ color: rssSurface.textPrimaryColor }}
-                  >
-                    {latestArticle.title}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-[11px]">
-                    <span style={{ color: rssSurface.sourceColor }}>{latestArticle.source}</span>
-                    <span className={rssSurface.dotClassName}>•</span>
-                    <span style={{ color: rssSurface.textSecondaryColor }}>
-                      {latestArticle.timeAgo}
-                    </span>
-                  </div>
+              // Small: compact headline list
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="space-y-1.5 pr-1">
+                  {items.slice(0, 4).map((item, index) => (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`group/item -m-1 block min-w-0 rounded-lg px-1 py-1 text-left no-underline transition-colors ${
+                        inEditMode ? '' : `cursor-pointer ${rssSurface.hoverClassName}`
+                      }`}
+                      onClick={(e) => {
+                        if (inEditMode) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleArticleClick(item.url);
+                      }}
+                    >
+                      <h3
+                        className="text-left text-[10px] font-semibold leading-[1.3] line-clamp-2"
+                        style={{ color: rssSurface.textPrimaryColor }}
+                      >
+                        {item.title}
+                      </h3>
+                      <div className="mt-0.5 flex items-center gap-1 text-[10px] leading-none">
+                        <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
+                        <span className={rssSurface.dotClassName}>•</span>
+                        <span style={{ color: rssSurface.textSecondaryColor }}>{item.timeAgo}</span>
+                      </div>
+                      {index < Math.min(items.length, 4) - 1 ? (
+                        <div className={`mt-1.5 h-px ${rssSurface.dividerClassName}`} />
+                      ) : null}
+                    </a>
+                  ))}
                 </div>
               </div>
             ) : isMedium ? (
@@ -395,20 +417,22 @@ export function RSSFeedCardView({
               </div>
             )}
 
-            <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
-              <div
-                className="min-w-0 truncate text-[10px]"
-                style={{ color: rssSurface.textSecondaryColor }}
-              >
-                {t('rss.lastUpdated')}
-                <span
-                  className="ml-1.5 text-[11px] font-medium"
-                  style={{ color: rssSurface.textPrimaryColor }}
+            {!isSmall && !isMedium ? (
+              <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
+                <div
+                  className="min-w-0 truncate text-[10px]"
+                  style={{ color: rssSurface.textSecondaryColor }}
                 >
-                  {lastUpdatedLabel}
-                </span>
+                  {t('rss.lastUpdated')}
+                  <span
+                    className="ml-1.5 text-[11px] font-medium"
+                    style={{ color: rssSurface.textPrimaryColor }}
+                  >
+                    {lastUpdatedLabel}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : null}
           </>
         )}
       </div>

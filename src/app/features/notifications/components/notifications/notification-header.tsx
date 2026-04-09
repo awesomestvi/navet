@@ -1,4 +1,5 @@
 import { Bell, Check, Trash2, X } from 'lucide-react';
+import { Button } from '@/app/components/primitives/button';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 
@@ -57,27 +58,25 @@ export function NotificationHeader({
       {hasNotifications && (
         <div className={`flex items-center gap-2 border-b p-2 ${surface.borderClassName}`}>
           {unreadCount > 0 && onMarkAllAsRead && (
-            <button
-              type="button"
+            <Button
               onClick={onMarkAllAsRead}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 transition-all ${surface.hoverClassName}`}
+              variant="secondary"
+              size="small"
+              leading={<Check className="h-3.5 w-3.5" />}
+              className="min-h-8 justify-start rounded-full px-2 text-xs"
             >
-              <Check className={`h-3.5 w-3.5 ${surface.textSecondary}`} />
-              <span className={`text-xs font-medium ${surface.textPrimary}`}>
-                {t('notifications.header.markAllRead')}
-              </span>
-            </button>
+              {t('notifications.header.markAllRead')}
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
             onClick={onClearAll}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 transition-all ${surface.hoverClassName}`}
+            variant="secondary"
+            size="small"
+            leading={<Trash2 className="h-3.5 w-3.5" />}
+            className="min-h-8 justify-start rounded-full px-2 text-xs"
           >
-            <Trash2 className={`h-3.5 w-3.5 ${surface.textSecondary}`} />
-            <span className={`text-xs font-medium ${surface.textPrimary}`}>
-              {t('notifications.header.clearAll')}
-            </span>
-          </button>
+            {t('notifications.header.clearAll')}
+          </Button>
         </div>
       )}
     </>

@@ -26,7 +26,7 @@ export function getInteractivePillStyles({
   const pickerTokens = getThemeAppearancePickerTokens(theme, accent);
   const isGhost = variant === 'ghost';
   const baseClassName = isGhost
-    ? `${pickerTokens.textClassName} transition-all`
+    ? `border ${pickerTokens.textClassName} transition-all`
     : `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all`;
 
   if (!isActive) {

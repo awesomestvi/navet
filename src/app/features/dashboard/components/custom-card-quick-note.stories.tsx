@@ -4,7 +4,7 @@ import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '../stories/custom-card-story-helpers';
 
 type QuickNoteStoryArgs = {
-  size: CardSize;
+  size: Extract<CardSize, 'small' | 'medium' | 'large'>;
 };
 
 function QuickNoteStoryPreview({ size }: QuickNoteStoryArgs) {
@@ -25,7 +25,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['small', 'medium', 'large', 'extra-large'],
+      options: ['small', 'medium', 'large'],
     },
   },
   parameters: { docs: { description: {} } },
@@ -53,8 +53,20 @@ export const Playground: Story = {
   },
 };
 
-export const Docs: Story = {
-  parameters: {
-    docsOnly: true,
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
   },
 };
