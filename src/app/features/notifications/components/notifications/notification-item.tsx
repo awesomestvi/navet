@@ -1,4 +1,5 @@
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { Link } from '@/app/components/primitives/link';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useAuth } from '@/app/contexts/auth-context';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
@@ -100,7 +101,6 @@ export function NotificationItem({
               t('notifications.imageAlt')
             )}
           </div>
-
           {notification.source === 'update' &&
           notification.isBusy &&
           !notification.requiresRestart ? (
@@ -120,11 +120,6 @@ export function NotificationItem({
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              {notification.source === 'update' && notification.statusLabel && (
-                <span className={`mr-1 text-[11px] font-medium ${surface.textSecondary}`}>
-                  {notification.statusLabel}
-                </span>
-              )}
               {(notification.source === 'update' || !notification.read) && (
                 <InteractivePill
                   onClick={() => void onPrimaryAction(notification.id)}
@@ -142,6 +137,24 @@ export function NotificationItem({
               >
                 {secondaryActionLabel}
               </InteractivePill>
+              {notification.source === 'update' && notification.detailsUrl ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={`h-4 w-px shrink-0 ${theme === 'light' ? 'bg-gray-300/90' : 'bg-white/12'}`}
+                  />
+                  <Link
+                    href={notification.detailsUrl}
+                    target="_blank"
+                    size="small"
+                    appearance="subtle"
+                    showExternalIcon
+                    className={surface.textSecondary}
+                  >
+                    View changes
+                  </Link>
+                </>
+              ) : null}
             </div>
           )}
         </div>

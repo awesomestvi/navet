@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
   useCardState,
@@ -52,6 +52,7 @@ export function useDashboardController(): DashboardController {
   useEditModeBeforeUnload(isEditMode);
 
   const { activeRoom, changeRoom } = useRoomNavigation('All');
+  const previousRoomsRef = useRef<string[]>(rooms);
   const { addCard, removeCard, updateCard, getCardsForRoom } = useCustomCards();
   const dialogs = useDashboardDialogs();
   const allCustomCards = getCardsForRoom('All');
@@ -79,6 +80,37 @@ export function useDashboardController(): DashboardController {
       hiddenEntityIds,
       rooms,
     });
+
+  useEffect(() => {
+    if (activeRoom === 'All' || rooms.includes(activeRoom)) {
+      previousRoomsRef.current = rooms;
+      return;
+    }
+
+    if (rooms.length === 0) {
+      changeRoom('All');
+      previousRoomsRef.current = rooms;
+      return;
+    }
+
+    const previousRooms = previousRoomsRef.current;
+    const removedRoomIndex = previousRooms.indexOf(activeRoom);
+    const nextRoom =
+      (removedRoomIndex >= 0
+        ? (previousRooms
+            .slice(removedRoomIndex + 1)
+            .find((room) => room !== activeRoom && rooms.includes(room)) ??
+          previousRooms
+            .slice(0, removedRoomIndex)
+            .reverse()
+            .find((room) => room !== activeRoom && rooms.includes(room)))
+        : undefined) ??
+      rooms[0] ??
+      'All';
+
+    changeRoom(nextRoom);
+    previousRoomsRef.current = rooms;
+  }, [activeRoom, changeRoom, rooms]);
   const resetDashboard = useCallback(() => {
     homeLayoutController.resetLayout();
     useCustomCardsStore.getState().replaceCards([]);

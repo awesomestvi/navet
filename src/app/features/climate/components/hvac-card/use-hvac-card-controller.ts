@@ -1,3 +1,4 @@
+import type { HassEntity } from 'home-assistant-js-websocket';
 import { useState } from 'react';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
@@ -7,6 +8,11 @@ import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HVACCardProps } from './hvac-card.types';
 import { useHvacEntitySync } from './use-hvac-entity-sync';
 import { useHvacVisualMode } from './use-hvac-visual-mode';
+
+export interface HVACSiblingEntity {
+  id: string;
+  entity: HassEntity;
+}
 
 export function useHVACCardController({
   id,
@@ -40,6 +46,8 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
+  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
 
   useHvacEntitySync({
     liveEntity,
@@ -57,6 +65,20 @@ export function useHVACCardController({
 
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
+  const deviceId = entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null;
+  const siblingEntities =
+    deviceId && allEntities
+      ? entityRegistry
+          .filter((entry) => {
+            if (entry.device_id !== deviceId || entry.entity_id === id) {
+              return false;
+            }
+
+            return /^(switch|input_boolean|script|button|input_button)\./.test(entry.entity_id);
+          })
+          .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
+          .filter((entry) => entry.entity !== undefined)
+      : [];
 
   const visualMode = useHvacVisualMode({
     action,
@@ -116,6 +138,7 @@ export function useHVACCardController({
     mode,
     visualMode,
     secondaryTextColor,
+    siblingEntities,
     setIsOn,
     setIsSettingsOpen,
     setMode,

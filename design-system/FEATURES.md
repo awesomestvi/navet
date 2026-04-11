@@ -175,6 +175,8 @@ Recent UI cleanup moved repeated theme logic into shared primitives so cross-the
 - **Theme surface tokens** - still define the shared panel, border, text, and input surfaces used by these primitives
 - **Entity card title block** - centralized title/subtitle ordering so cards can switch between title-first and eyebrow-first header composition without duplicating text layout logic
 - **Tiny action card** - shared compact shell for the smallest interactive cards, including watermark, overlay, eyebrow/title text stack, and bottom action slot
+- **Card dialog pattern primitives** - shared `CardDialogHeader`, `CardDialogSection`, `CardDialogTabList`, `CardDialogTabTrigger`, and `CardDialogChoicePill` unify settings-dialog structure across light, weather, vacuum, calendar, camera, HVAC, and switch cards
+- **Link primitive** - shared inline link component for secondary actions in dense UI (for example, update notifications with external release-note links)
 
 #### Accent Card Shell Story
 
@@ -242,14 +244,19 @@ Navet now uses a single HVAC-based card path for Home Assistant climate entities
 Recent settings work pushes more entity dialogs onto the same shared surface language instead of leaving each feature on one-off form layouts.
 
 #### Current Behavior
-- **Unified header pattern** - all card settings dialogs (light, camera, HVAC, vacuum, weather, calendar) share a consistent header: room eyebrow selector → entity name h2 → close button
+- **Unified header pattern** - all card settings dialogs (light, camera, HVAC, vacuum, weather, calendar, switch) are composed from `CardDialogHeader`, giving a consistent room selector, title, subtitle, and close action
 - **Room eyebrow primitive** - `RoomEyebrow` is a standalone primitive with `visualOnly` + `forceDark` + keyboard focus-ring mirroring; compact `EntityRoomSelector` renders it over a native select overlay for accessible room assignment
-- **Interactive pill tabs** - light, vacuum, weather, and calendar dialogs use pill tabs to separate Controls from Card appearance settings; dialogs with a single concern (camera, HVAC) use the header pattern only
-- **Shared section framing** - all dialogs group related controls with the shared `DialogSectionRow` pattern
+- **Interactive pill tabs** - shared `CardDialogTabList` + `CardDialogTabTrigger` now standardize top-tab behavior in light, switch, HVAC, vacuum, weather, and calendar dialogs
+- **Shared section framing** - `DialogSectionRow` now composes shared `CardDialogSection`, keeping helper text and label spacing consistent
 - **Theme-aware immersive controls** - HVAC and vacuum dialogs use stronger accent surfaces, richer status summaries, and larger control affordances while still staying inside the shared dialog shell
 - **`DialogDoneFooter`** - single combined component (`DialogFooter` + soft, color-aware done button) used across all card settings dialogs; replaces the previous mix of `CustomDialogDoneButton`, `SettingsDialogDoneButton`, and hand-rolled buttons
 - **Soft tone primitives** - `Button variant="soft"` and `Input variant="soft"` use the picker token system for theme- and accent-aware idle surfaces without raw color overrides
 - **Safer dialog focus behavior** - `DialogShell` opts out of Radix open auto-focus to prevent mobile native selects from opening on dialog mount
+- **Sibling controls in settings dialogs** - switch and HVAC settings can render same-device sibling controls (switch/input_boolean/script/button) directly in a dedicated Controls tab
+
+#### Room Assignment Resilience
+- **Entity room overrides** - local room overrides are persisted and used as a fallback when entity/device registry updates fail or are delayed
+- **Device-aware room updates** - room assignment attempts both entity and device registry update paths and falls back safely with clearer error reporting
 
 #### Why
 - keeps user-facing settings consistent across device types

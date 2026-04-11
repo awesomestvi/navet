@@ -32,10 +32,17 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
 
   const availableCalendars = useMemo(
     () =>
-      devices.calendars.map((calendar, index) => ({
-        ...calendar,
-        color: SOURCE_COLOR_CLASSES[index % SOURCE_COLOR_CLASSES.length],
-      })),
+      devices.calendars.flatMap((calendar) => {
+        const sources =
+          Array.isArray(calendar.sources) && calendar.sources.length > 0
+            ? calendar.sources
+            : [calendar];
+
+        return sources.map((source, index) => ({
+          ...source,
+          color: SOURCE_COLOR_CLASSES[index % SOURCE_COLOR_CLASSES.length],
+        }));
+      }),
     [devices.calendars]
   );
 
@@ -49,8 +56,13 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
       return stored;
     }
 
+    const aggregateCard = devices.calendars.find((calendar) => calendar.id === cardId);
+    if (aggregateCard?.sourceIds?.length) {
+      return aggregateCard.sourceIds;
+    }
+
     return [cardId];
-  }, [calendarSources, cardId]);
+  }, [calendarSources, cardId, devices.calendars]);
   const viewMode = useMemo<CalendarViewMode>(() => {
     if (!cardId) {
       return 'week';

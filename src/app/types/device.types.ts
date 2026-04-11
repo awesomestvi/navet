@@ -149,6 +149,26 @@ export interface VacuumDevice extends BaseDevice {
 // Calendar device
 export interface CalendarDevice extends BaseDevice {
   room: string;
+  sourceIds?: string[];
+  sources?: Array<{
+    id: string;
+    name: string;
+    room: string;
+    events: Array<{
+      id: string;
+      title: string;
+      startTime: string;
+      endTime: string;
+      timeDisplay: string;
+      location?: string;
+      type: 'meeting' | 'call' | 'event';
+      color: string;
+      attendees?: number;
+      sortKey?: string;
+      sourceId?: string;
+      sourceName?: string;
+    }>;
+  }>;
   events: Array<{
     id: string;
     title: string;

@@ -14,7 +14,6 @@ import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { DashboardLayout } from '../shell';
 import { ENERGY_WIDGET_ROOM } from '../stores/custom-cards-store';
 import { HomeDashboardOverview } from './home-dashboard-overview';
-import { RoomOverviewPanel } from './room-overview-panel';
 
 const lazySections = () => import('@/app/components/layout/sections');
 
@@ -263,11 +262,12 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
         ) : (
           <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
             <div className="space-y-6">
-              <RoomOverviewPanel
+              {/* Note: Will be added later */}
+              {/* <RoomOverviewPanel
                 room={activeRoom}
                 orderedCardIds={orderedCardIds}
                 deviceMap={deviceMap}
-              />
+              /> */}
               <DeviceGrid
                 orderedCardIds={orderedCardIds}
                 deviceMap={deviceMap}

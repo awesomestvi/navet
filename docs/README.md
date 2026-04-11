@@ -65,4 +65,4 @@ Current workshop coverage includes theme docs, primitives/patterns/shared compon
 
 ---
 
-**Last Updated:** April 8, 2026
+**Last Updated:** April 11, 2026

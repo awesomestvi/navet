@@ -13,6 +13,7 @@ import {
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { useI18n } from '@/app/hooks';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { MediaDialogGroupingPlayer, MediaDialogProps } from './media-dialog.types';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import type { MediaDialogController } from './use-media-dialog-controller';
@@ -26,19 +27,12 @@ interface MediaDialogHeaderProps {
 
 export function MediaDialogHeader({ artist, controller, entityId, title }: MediaDialogHeaderProps) {
   const { t } = useI18n();
+  const entityType = getEntityTypeLabel(entityId);
 
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <Dialog.Title
-          className={`truncate text-xl font-semibold ${controller.surface.textPrimary}`}
-        >
-          {title}
-        </Dialog.Title>
-        <Dialog.Description className={`mt-1 truncate text-sm ${controller.surface.textSecondary}`}>
-          {artist}
-        </Dialog.Description>
-        <div className="mt-2">
+        <div className="mb-2">
           <EntityRoomSelector
             entityId={entityId}
             label={t('media.room')}
@@ -46,6 +40,19 @@ export function MediaDialogHeader({ artist, controller, entityId, title }: Media
             className={controller.surface.textSecondary}
           />
         </div>
+        <Dialog.Title
+          className={`truncate text-xl font-semibold ${controller.surface.textPrimary}`}
+        >
+          {title}
+        </Dialog.Title>
+        <Dialog.Description className={`mt-1 truncate text-sm ${controller.surface.textSecondary}`}>
+          {entityType}
+        </Dialog.Description>
+        {artist ? (
+          <div className={`mt-2 truncate text-sm ${controller.surface.textSecondary}`}>
+            {artist}
+          </div>
+        ) : null}
       </div>
 
       <Dialog.Close asChild>

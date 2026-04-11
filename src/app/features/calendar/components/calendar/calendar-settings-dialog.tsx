@@ -1,19 +1,19 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { Check, Palette, Sliders, X } from 'lucide-react';
+import { Check, Palette, Sliders } from 'lucide-react';
 import { useState } from 'react';
+import {
+  CardDialogChoicePill,
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
 import {
   customCardDialogShellProps,
   DialogDoneFooter,
   DialogShell,
-} from '@/app/components/primitives/dialog-shell';
-import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+} from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import {
-  CustomCardTintPicker,
-  CustomScrollbar,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
-import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
+import { CustomCardTintPicker, CustomScrollbar } from '@/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
@@ -24,6 +24,7 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import { type ThemeType, useTheme } from '@/app/hooks/use-theme';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 
 interface CalendarSourceOption {
   id: string;
@@ -63,6 +64,7 @@ export function CalendarSettingsDialog({
 }: CalendarSettingsDialogProps) {
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
+  const entityType = getEntityTypeLabel(entityId);
   const { primaryColor, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const isOn = theme !== 'light';
@@ -95,68 +97,46 @@ export function CalendarSettingsDialog({
     >
       <CustomScrollbar isOn={isOn}>
         <div className="p-8">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              {entityId ? <EntityRoomSelector entityId={entityId} compact forceDark /> : null}
-              <h2 className={`text-xl font-semibold text-white ${entityId ? 'mt-2' : ''}`}>
-                {title}
-              </h2>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t('common.close')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+          <CardDialogHeader title={title} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
-            <div className="mt-1 inline-flex items-center gap-1">
-              <InteractivePill
+            <CardDialogTabList>
+              <CardDialogTabTrigger
                 active={activeTab === 'controls'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
                 Controls
-              </InteractivePill>
+              </CardDialogTabTrigger>
               {onTintColorChange ? (
-                <InteractivePill
+                <CardDialogTabTrigger
                   active={activeTab === 'card'}
-                  size="compact"
-                  className="min-h-8 px-3 text-[11px]"
                   icon={Palette}
                   onClick={() => setActiveTab('card')}
                 >
-                  Card
-                </InteractivePill>
+                  Customize
+                </CardDialogTabTrigger>
               ) : null}
-            </div>
+            </CardDialogTabList>
 
             <TabPanel value="controls" className="mt-5 space-y-4">
-              <DialogSectionRow label={t('calendar.settings.view')} className="mb-4">
+              <CardDialogSection label={t('calendar.settings.view')} className="mb-4">
                 <div className="inline-flex items-center gap-1">
                   {(['week', 'month'] as const).map((option) => (
-                    <InteractivePill
+                    <CardDialogChoicePill
                       key={option}
                       active={viewMode === option}
-                      size="compact"
-                      className="min-h-8 px-3 text-[11px]"
                       onClick={() => onViewModeChange(option)}
                     >
                       {option === 'week'
                         ? t('calendar.settings.thisWeek')
                         : t('calendar.settings.thisMonth')}
-                    </InteractivePill>
+                    </CardDialogChoicePill>
                   ))}
                 </div>
-              </DialogSectionRow>
+              </CardDialogSection>
 
-              <DialogSectionRow label={t('calendar.settings.calendars')}>
+              <CardDialogSection label={t('calendar.settings.calendars')}>
                 <div className="space-y-2">
                   {calendars.map((calendar) => {
                     const isSelected = selectedCalendarIds.includes(calendar.id);
@@ -215,7 +195,7 @@ export function CalendarSettingsDialog({
                     );
                   })}
                 </div>
-              </DialogSectionRow>
+              </CardDialogSection>
             </TabPanel>
 
             {onTintColorChange ? (

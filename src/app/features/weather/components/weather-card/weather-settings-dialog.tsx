@@ -1,19 +1,18 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { Palette, Sliders, X } from 'lucide-react';
+import { Palette, Sliders } from 'lucide-react';
 import { useState } from 'react';
+import {
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
 import {
   customCardDialogShellProps,
   DialogDoneFooter,
   DialogShell,
-} from '@/app/components/primitives/dialog-shell';
-import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+} from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import {
-  CustomCardTintPicker,
-  CustomScrollbar,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
-import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
+import { CustomCardTintPicker, CustomScrollbar } from '@/app/components/shared/device-editor';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import {
   getCustomCardTintSurface,
@@ -24,6 +23,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import type { WeatherForecastMode } from '@/app/stores/settings-store';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 
 interface WeatherSettingsDialogProps {
   entityId: string;
@@ -50,6 +50,7 @@ export function WeatherSettingsDialog({
 }: WeatherSettingsDialogProps) {
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
+  const entityType = getEntityTypeLabel(entityId);
   const shell = getAccentCardShellTokens(theme, 'blue');
   const isOn = theme !== 'light';
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
@@ -79,48 +80,30 @@ export function WeatherSettingsDialog({
     >
       <CustomScrollbar isOn={isOn}>
         <div className="p-8">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <EntityRoomSelector entityId={entityId} compact forceDark />
-              <h2 className="mt-2 text-xl font-semibold text-white">{title}</h2>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t('common.close')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+          <CardDialogHeader title={title} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
-            <div className="mt-1 inline-flex items-center gap-1">
-              <InteractivePill
+            <CardDialogTabList>
+              <CardDialogTabTrigger
                 active={activeTab === 'controls'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
                 Controls
-              </InteractivePill>
+              </CardDialogTabTrigger>
               {onTintColorChange ? (
-                <InteractivePill
+                <CardDialogTabTrigger
                   active={activeTab === 'card'}
-                  size="compact"
-                  className="min-h-8 px-3 text-[11px]"
                   icon={Palette}
                   onClick={() => setActiveTab('card')}
                 >
-                  Card
-                </InteractivePill>
+                  Customize
+                </CardDialogTabTrigger>
               ) : null}
-            </div>
+            </CardDialogTabList>
 
             <TabPanel value="controls" className="mt-5">
-              <DialogSectionRow label={t('weather.settings.forecast')} className="mb-4">
+              <CardDialogSection label={t('weather.settings.forecast')} className="mb-4">
                 <div className="grid grid-cols-2 gap-2">
                   {(['hourly', 'weekly'] as const).map((option) => {
                     const isSelected = forecastMode === option;
@@ -151,7 +134,7 @@ export function WeatherSettingsDialog({
                     );
                   })}
                 </div>
-              </DialogSectionRow>
+              </CardDialogSection>
             </TabPanel>
 
             {onTintColorChange ? (

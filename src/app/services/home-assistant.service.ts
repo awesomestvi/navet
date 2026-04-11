@@ -375,18 +375,110 @@ class HomeAssistantService {
     await callHassService(this.connection, domain, service, normalizedServiceData, target);
   }
 
-  async updateEntityArea(entityId: string, areaId: string | null): Promise<void> {
+  async updateEntityArea(
+    entityId: string,
+    areaId: string | null,
+    options?: {
+      deviceId?: string | null;
+      entityAreaId?: string | null;
+    }
+  ): Promise<void> {
     if (!this.connection) {
       throw new Error('Home Assistant is not connected');
     }
 
-    await this.connection.sendMessagePromise({
-      type: 'config/entity_registry/update',
-      entity_id: entityId,
-      area_id: areaId,
-    });
+    const entityEntry = this.entityRegistry.find((entry) => entry.entity_id === entityId);
+    const deviceId = options?.deviceId ?? entityEntry?.device_id;
+    const entityAreaId = options?.entityAreaId ?? entityEntry?.area_id;
+    const tryEntityUpdate = async () => {
+      try {
+        await this.connection?.sendMessagePromise({
+          type: 'config/entity_registry/update',
+          entity_id: entityId,
+          area_id: areaId,
+        });
+      } catch (error) {
+        throw new Error(`entity registry update failed: ${this.getUnknownErrorMessage(error)}`);
+      }
+    };
+    const tryDeviceUpdate = async () => {
+      if (!deviceId) {
+        throw new Error(`No device registry entry found for ${entityId}`);
+      }
+
+      try {
+        await this.connection?.sendMessagePromise({
+          type: 'config/device_registry/update',
+          device_id: deviceId,
+          area_id: areaId,
+        });
+      } catch (error) {
+        throw new Error(`device registry update failed: ${this.getUnknownErrorMessage(error)}`);
+      }
+    };
+
+    // Prefer updating whichever registry currently owns the room assignment, then fall back.
+    if (entityAreaId) {
+      try {
+        await tryEntityUpdate();
+      } catch (entityError) {
+        try {
+          await tryDeviceUpdate();
+        } catch (deviceError) {
+          throw new Error(
+            `entity-first update failed: ${this.getUnknownErrorMessage(entityError)}; fallback device update failed: ${this.getUnknownErrorMessage(deviceError)}`
+          );
+        }
+      }
+    } else if (deviceId) {
+      try {
+        await tryDeviceUpdate();
+      } catch (deviceError) {
+        try {
+          await tryEntityUpdate();
+        } catch (entityError) {
+          throw new Error(
+            `device-first update failed: ${this.getUnknownErrorMessage(deviceError)}; fallback entity update failed: ${this.getUnknownErrorMessage(entityError)}`
+          );
+        }
+      }
+    } else {
+      await tryEntityUpdate();
+    }
 
     await this.loadRegistries();
+  }
+
+  private getUnknownErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message;
+    }
+
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return error;
+    }
+
+    if (error && typeof error === 'object') {
+      const message =
+        'message' in error && typeof error.message === 'string' ? error.message : null;
+      const code = 'code' in error ? String(error.code) : null;
+
+      if (message && code) {
+        return `${message} (${code})`;
+      }
+
+      if (message) {
+        return message;
+      }
+
+      try {
+        return JSON.stringify(error);
+      } catch {
+        return 'unknown error';
+      }
+    }
+
+    return 'unknown error';
   }
 
   /**

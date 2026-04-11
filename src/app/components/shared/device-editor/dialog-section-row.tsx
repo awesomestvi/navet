@@ -1,11 +1,12 @@
 import { memo, type ReactNode } from 'react';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { CardDialogSection } from '@/app/components/patterns';
 import { cn } from '@/app/components/ui/utils';
-import { useTheme } from '@/app/hooks';
 
 interface DialogSectionRowProps {
   children: ReactNode;
   className?: string;
+  helperText?: string;
+  helperTextClassName?: string;
   label?: string;
   labelClassName?: string;
 }
@@ -13,20 +14,20 @@ interface DialogSectionRowProps {
 export const DialogSectionRow = memo(function DialogSectionRow({
   children,
   className = '',
+  helperText,
+  helperTextClassName = '',
   label,
   labelClassName = '',
 }: DialogSectionRowProps) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-
   return (
-    <div className={cn('mb-6 min-w-0 last:mb-0', className)}>
-      {label ? (
-        <div className={cn('mb-2.5 text-sm font-medium', surface.textPrimary, labelClassName)}>
-          {label}
-        </div>
-      ) : null}
+    <CardDialogSection
+      className={cn(className)}
+      helperText={helperText}
+      helperTextClassName={helperTextClassName}
+      label={label}
+      labelClassName={labelClassName}
+    >
       {children}
-    </div>
+    </CardDialogSection>
   );
 });

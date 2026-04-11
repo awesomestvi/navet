@@ -21,6 +21,7 @@ export { Heading, type HeadingProps } from './heading';
 export { IconButton, type IconButtonProps } from './icon-button';
 export { Input, type InputProps } from './input';
 export { InteractivePill } from './interactive-pill';
+export { Link, type LinkProps } from './link';
 export { LoadingSpinner, type LoadingSpinnerProps } from './loading-spinner';
 export { MessageBar, type MessageBarProps } from './message-bar';
 export { Panel, type PanelProps } from './panel';

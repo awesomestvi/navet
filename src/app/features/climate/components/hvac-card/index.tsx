@@ -10,6 +10,7 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
 import { cn } from '@/app/components/ui/utils';
 import { useI18n, useTheme } from '@/app/hooks';
+import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACSettingsDialog } from '../hvac-settings-dialog';
 import type { HVACCardProps } from './hvac-card.types';
 import { HVACGauge } from './hvac-gauge';
@@ -45,10 +46,11 @@ export const HVACCard = memo(function HVACCard({
   });
   const cardShell = getCardShellSurfaceTokens(controller.theme);
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
-  const targetTemperatureLabel =
-    controller.targetTemp < controller.currentTemp
-      ? t('climate.coolingDownTo', { temp: controller.targetTemp })
-      : t('climate.heatingTo', { temp: controller.targetTemp });
+  const targetTemperatureLabel = getHvacTemperatureStatusLabel(
+    t,
+    controller.targetTemp,
+    controller.currentTemp
+  );
   const tone = !controller.isOn
     ? 'neutral'
     : controller.visualMode === 'heat'
@@ -348,9 +350,9 @@ export const HVACCard = memo(function HVACCard({
           mode={controller.mode}
           targetTemp={controller.targetTemp}
           currentTemp={controller.currentTemp}
+          siblingEntities={controller.siblingEntities}
           onTargetTempChange={controller.setTargetTemp}
           onModeChange={controller.setMode}
-          onTogglePower={() => controller.setIsOn(!controller.isOn)}
         />
       ) : null}
     </>

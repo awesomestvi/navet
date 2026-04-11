@@ -57,7 +57,7 @@ function EntityIconPillStylesShowcase() {
 }
 
 const meta = {
-  title: 'Theme/Cards/Entity Icon Pill Styles',
+  title: 'Cards/Theme/Entity Icon Pill Styles',
   component: EntityIconPillStylesShowcase,
   tags: ['autodocs'],
   parameters: {

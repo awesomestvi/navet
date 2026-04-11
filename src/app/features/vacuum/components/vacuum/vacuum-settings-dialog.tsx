@@ -1,4 +1,3 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import {
   Battery,
   Home,
@@ -10,9 +9,15 @@ import {
   Sliders,
   Sparkles,
   Wind,
-  X,
 } from 'lucide-react';
 import { type CSSProperties, memo, useEffect, useMemo, useState } from 'react';
+import {
+  CardDialogChoicePill,
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
 import {
   Button,
   DialogDoneFooter,
@@ -21,12 +26,7 @@ import {
   Panel,
 } from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import {
-  CustomCardTintPicker,
-  CustomScrollbar,
-  DialogSectionRow,
-} from '@/app/components/shared/device-editor';
-import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
+import { CustomCardTintPicker, CustomScrollbar } from '@/app/components/shared/device-editor';
 import {
   getCustomCardTintSurface,
   getInheritedDialogSectionStyle,
@@ -37,6 +37,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import { getVacuumSettingsDialogSurface } from './vacuum-settings-dialog-surface';
 import type { VacuumStatus } from './vacuum-utils';
 
@@ -189,6 +190,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
 }: VacuumSettingsDialogProps) {
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
+  const entityType = getEntityTypeLabel(entityId);
   const dialogSurface = getVacuumSettingsDialogSurface(theme, currentStatus);
   const isActive = currentStatus === 'cleaning' || currentStatus === 'returning';
   const isOn = theme !== 'light';
@@ -317,43 +319,25 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
     >
       <CustomScrollbar isOn={isActive}>
         <div className="p-8">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <EntityRoomSelector entityId={entityId} compact forceDark />
-              <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t('common.close')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
-            <div className="mt-1 inline-flex items-center gap-1">
-              <InteractivePill
+            <CardDialogTabList>
+              <CardDialogTabTrigger
                 active={activeTab === 'controls'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
                 Controls
-              </InteractivePill>
-              <InteractivePill
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
                 active={activeTab === 'card'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Palette}
                 onClick={() => setActiveTab('card')}
               >
-                Card
-              </InteractivePill>
-            </div>
+                Customize
+              </CardDialogTabTrigger>
+            </CardDialogTabList>
 
             <TabPanel value="controls" className="mt-5 space-y-6">
               {/* Status summary */}
@@ -422,14 +406,13 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 />
               </div>
 
-              <DialogSectionRow label={t('vacuum.settings.plan')}>
+              <CardDialogSection label={t('vacuum.settings.plan')}>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(['all', 'rooms', 'zones'] as PlannerView[]).map((view) => (
-                    <InteractivePill
+                    <CardDialogChoicePill
                       key={view}
                       active={plannerView === view}
                       onClick={() => setPlannerView(view)}
-                      className="min-w-22"
                       style={plannerView === view ? activePillStyle : undefined}
                     >
                       {view === 'all'
@@ -437,7 +420,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                         : view === 'rooms'
                           ? t('vacuum.plan.rooms')
                           : t('vacuum.plan.zones')}
-                    </InteractivePill>
+                    </CardDialogChoicePill>
                   ))}
                 </div>
 
@@ -532,41 +515,41 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                     )}
                   </div>
                 ) : null}
-              </DialogSectionRow>
+              </CardDialogSection>
 
               <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
-                <DialogSectionRow label={t('vacuum.settings.profile')}>
+                <CardDialogSection label={t('vacuum.settings.profile')}>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {cleaningModes.map((mode) => (
-                      <InteractivePill
+                      <CardDialogChoicePill
                         key={mode}
                         active={selectedCleaningMode === mode}
                         onClick={() => setSelectedCleaningMode(mode)}
                         style={selectedCleaningMode === mode ? activePillStyle : undefined}
                       >
                         {t(`vacuum.mode.${mode}`)}
-                      </InteractivePill>
+                      </CardDialogChoicePill>
                     ))}
                   </div>
-                </DialogSectionRow>
+                </CardDialogSection>
 
-                <DialogSectionRow label={t('vacuum.settings.fanSpeed')}>
+                <CardDialogSection label={t('vacuum.settings.fanSpeed')}>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {speedOptions.map((speed) => (
-                      <InteractivePill
+                      <CardDialogChoicePill
                         key={speed}
                         active={selectedFanSpeed === speed}
                         onClick={() => setSelectedFanSpeed(speed)}
                         style={selectedFanSpeed === speed ? activePillStyle : undefined}
                       >
                         {speed}
-                      </InteractivePill>
+                      </CardDialogChoicePill>
                     ))}
                   </div>
-                </DialogSectionRow>
+                </CardDialogSection>
               </div>
 
-              <DialogSectionRow label={t('vacuum.settings.actions')}>
+              <CardDialogSection label={t('vacuum.settings.actions')}>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Button
                     variant="primary"
@@ -601,7 +584,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                     {t('vacuum.action.returnToDock')}
                   </Button>
                 </div>
-              </DialogSectionRow>
+              </CardDialogSection>
             </TabPanel>
 
             <TabPanel value="card" className="mt-5">

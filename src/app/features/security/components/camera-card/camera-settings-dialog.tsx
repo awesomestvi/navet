@@ -1,13 +1,12 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { X } from 'lucide-react';
 import { memo, useCallback } from 'react';
-import { DialogDoneFooter, DialogShell } from '@/app/components/primitives/dialog-shell';
+import { CardDialogHeader } from '@/app/components/patterns';
+import { DialogDoneFooter, DialogShell } from '@/app/components/primitives';
 import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
-import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 
 export interface SiblingEntity {
   id: string;
@@ -164,6 +163,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const entityType = getEntityTypeLabel(entityId);
 
   const switches = siblingEntities.filter((s) => s.id.startsWith('switch.'));
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
@@ -180,21 +180,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
     >
       <CustomScrollbar isOn>
         <div className="p-8">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <EntityRoomSelector entityId={entityId} compact forceDark />
-              <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t('common.close')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           {hasControls ? (
             <div className="space-y-6">

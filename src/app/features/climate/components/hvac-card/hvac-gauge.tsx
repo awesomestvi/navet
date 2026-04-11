@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { RotaryKnob, RoundControlButton } from '@/app/components/primitives';
+import { RotaryKnob } from '@/app/components/primitives';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
@@ -20,6 +20,7 @@ interface HVACGaugeProps {
   minTemp?: number;
   maxTemp?: number;
   step?: number;
+  helperText?: string;
   onTargetTempChange?: (temp: number) => void;
   variant?: 'card' | 'immersive' | 'docked-card' | 'docked-card-small';
   className?: string;
@@ -63,14 +64,6 @@ function getTemperatureBandColors(progress: number) {
   };
 }
 
-function TemperatureStepGlyph({ children }: { children: string }) {
-  return (
-    <span className="relative top-[-2px] flex items-center justify-center text-2xl leading-none">
-      {children}
-    </span>
-  );
-}
-
 export const HVACGauge = memo(function HVACGauge({
   id,
   mode,
@@ -80,6 +73,7 @@ export const HVACGauge = memo(function HVACGauge({
   minTemp = 16,
   maxTemp = 30,
   step = 0.5,
+  helperText,
   onTargetTempChange,
   variant = 'card',
   className,
@@ -109,10 +103,6 @@ export const HVACGauge = memo(function HVACGauge({
       const steppedTemperature = Math.round((nextValue - minTemp) / stepSize) * stepSize + minTemp;
 
       onTargetTempChange(Number(clamp(steppedTemperature, minTemp, maxTemp).toFixed(1)));
-    };
-
-    const handleStepAdjust = (direction: -1 | 1) => {
-      updateTemperature(targetTemp + direction * stepSize);
     };
 
     if (variant === 'docked-card' || variant === 'docked-card-small') {
@@ -155,51 +145,23 @@ export const HVACGauge = memo(function HVACGauge({
     }
 
     return (
-      <div className={cn('relative h-[22rem] w-full overflow-visible', className)}>
-        <div className="relative z-[2] flex h-full max-w-[54%] flex-col justify-center px-6 pb-2">
-          <div className={`text-sm font-medium ${surface.textPrimary}`}>{t('climate.target')}</div>
-
+      <div className={cn('relative h-[10.5rem] w-full overflow-visible', className)}>
+        <div className="absolute bottom-0 left-0 z-[2] inline-flex max-w-[43%] flex-col px-8 pb-12">
           <div
-            className="mt-2 text-[5.5rem] font-semibold leading-none tracking-[-0.06em]"
+            className="text-3xl font-bold leading-none"
             style={{
               color: targetTemperatureColor,
               textShadow:
                 isOn && theme !== 'light'
-                  ? `0 0 22px ${withAlpha(targetTemperatureColor, '55')}`
+                  ? `0 0 14px ${withAlpha(targetTemperatureColor, '55')}`
                   : 'none',
             }}
           >
-            {formatDisplayTemperature(targetTemp)}°
+            {formatDisplayTemperature(currentTemp)}°
           </div>
 
-          <div className="mt-3 text-sm font-medium" style={{ color: textTokens.subtitleColor }}>
-            {t('climate.currentTemperature', { temp: currentTemp })}
-          </div>
-
-          <div className="mt-5 flex items-center gap-3">
-            <RoundControlButton
-              theme={theme}
-              size="large"
-              variant="soft"
-              aria-label={t('climate.decreaseTemperature')}
-              onClick={() => handleStepAdjust(-1)}
-              disabled={!isOn || targetTemp <= minTemp}
-              className="h-12 w-12 bg-white/10 text-white hover:bg-white/16"
-            >
-              <TemperatureStepGlyph>-</TemperatureStepGlyph>
-            </RoundControlButton>
-
-            <RoundControlButton
-              theme={theme}
-              size="large"
-              variant="soft"
-              aria-label={t('climate.increaseTemperature')}
-              onClick={() => handleStepAdjust(1)}
-              disabled={!isOn || targetTemp >= maxTemp}
-              className="h-12 w-12 bg-white/10 text-white hover:bg-white/16"
-            >
-              <TemperatureStepGlyph>+</TemperatureStepGlyph>
-            </RoundControlButton>
+          <div className="mt-0.5 text-xs" style={{ color: textTokens.subtitleColor }}>
+            {helperText ?? t('climate.currentTemperature', { temp: currentTemp })}
           </div>
         </div>
 
@@ -211,12 +173,12 @@ export const HVACGauge = memo(function HVACGauge({
           step={stepSize}
           isOn={isOn}
           glowClassName={bgGlowColor}
-          tickOffsetRem={11.1}
+          tickOffsetRem={10.6}
           bandPrimaryColor={bandColors.primary}
           bandSecondaryColor={bandColors.secondary}
           bandGlowColor={bandColors.glow}
           onValueChange={updateTemperature}
-          className="absolute right-[-11.25rem] top-1/2 -translate-y-1/2"
+          className="absolute right-[-9.25rem] top-[54%] h-[17rem] w-[17rem] -translate-y-1/2"
         />
       </div>
     );

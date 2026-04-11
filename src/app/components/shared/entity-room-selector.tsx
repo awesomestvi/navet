@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { STORAGE_KEYS } from '@/app/constants/storage-keys';
+import { useHomeAssistant, useI18n, usePersistedState, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
@@ -40,6 +41,10 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
   const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);
+  const [roomOverrides, setRoomOverrides] = usePersistedState<Record<string, string>>(
+    STORAGE_KEYS.entityRoomOverrides,
+    {}
+  );
   const resolvedLabel = label ?? t('common.room');
 
   const sortedAreas = useMemo(
@@ -47,6 +52,11 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     [areas]
   );
   const selectedAreaId = useMemo(() => {
+    const overrideAreaId = roomOverrides[entityId];
+    if (overrideAreaId) {
+      return overrideAreaId;
+    }
+
     const entityEntry = entityRegistry.find((entry) => entry.entity_id === entityId);
     if (!entityEntry) {
       return '';
@@ -61,7 +71,11 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     }
 
     return deviceRegistry.find((entry) => entry.id === entityEntry.device_id)?.area_id ?? '';
-  }, [deviceRegistry, entityId, entityRegistry]);
+  }, [deviceRegistry, entityId, entityRegistry, roomOverrides]);
+  const entityEntry = useMemo(
+    () => entityRegistry.find((entry) => entry.entity_id === entityId),
+    [entityId, entityRegistry]
+  );
   const selectedAreaLabel = useMemo(() => {
     if (!selectedAreaId) {
       return t('common.noRoom');
@@ -79,10 +93,39 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       sortedAreas.find((area) => area.area_id === nextAreaId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
-      await homeAssistantService.updateEntityArea(entityId, nextAreaId);
+      if (!entityEntry) {
+        setRoomOverrides((current) => {
+          const next = { ...current };
+          if (nextAreaId) {
+            next[entityId] = nextAreaId;
+          } else {
+            delete next[entityId];
+          }
+          return next;
+        });
+      } else {
+        await homeAssistantService.updateEntityArea(entityId, nextAreaId, {
+          deviceId: entityEntry?.device_id ?? null,
+          entityAreaId: entityEntry?.area_id ?? null,
+        });
+        setRoomOverrides((current) => {
+          if (!(entityId in current)) {
+            return current;
+          }
+
+          const next = { ...current };
+          delete next[entityId];
+          return next;
+        });
+      }
+
       toast.success(t('entityRoomSelector.movedTo', { room: nextRoomName }));
-    } catch {
-      toast.error(t('entityRoomSelector.updateFailed'));
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : t('entityRoomSelector.updateFailed');
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }

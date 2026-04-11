@@ -16,6 +16,9 @@ export interface Notification {
   progress?: number | null;
   statusLabel?: string;
   requiresRestart?: boolean;
+  installedVersion?: string | null;
+  latestVersion?: string | null;
+  detailsUrl?: string | null;
 }
 
 export interface UseNotificationsReturn {

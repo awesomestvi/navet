@@ -128,6 +128,20 @@ export function useNotificationList({
           typeof entity.attributes?.release_summary === 'string'
             ? entity.attributes.release_summary
             : null;
+        const releaseNotes =
+          typeof entity.attributes?.release_notes === 'string' &&
+          !/^https?:\/\//i.test(entity.attributes.release_notes)
+            ? entity.attributes.release_notes
+            : null;
+        const detailsUrl =
+          typeof entity.attributes?.release_url === 'string'
+            ? entity.attributes.release_url
+            : typeof entity.attributes?.release_notes_url === 'string'
+              ? entity.attributes.release_notes_url
+              : typeof entity.attributes?.release_notes === 'string' &&
+                  /^https?:\/\//i.test(entity.attributes.release_notes)
+                ? entity.attributes.release_notes
+                : null;
         const rawProgress =
           typeof entity.attributes?.update_percentage === 'number'
             ? entity.attributes.update_percentage
@@ -153,7 +167,8 @@ export function useNotificationList({
             : latestVersion
               ? t('notifications.update.availableTo', { version: latestVersion })
               : t('notifications.update.available');
-        const message = releaseSummary?.trim() || versionMessage;
+        const detailMessage = releaseNotes?.trim() || releaseSummary?.trim() || null;
+        const message = detailMessage ? `${versionMessage}\n\n${detailMessage}` : versionMessage;
         const statusLabel = requiresRestart
           ? t('notifications.update.restartToFinish')
           : isBusy
@@ -183,6 +198,9 @@ export function useNotificationList({
           progress,
           statusLabel,
           requiresRestart,
+          installedVersion,
+          latestVersion,
+          detailsUrl,
         };
       });
 

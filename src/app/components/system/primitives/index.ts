@@ -1,5 +1,15 @@
 // Public primitive exports for Storybook and cross-app discovery.
 // Prefer authoring new primitives in `src/app/components/primitives`.
+
+export {
+  CardDialogChoicePill,
+  CardDialogDoneFooter,
+  CardDialogFooter,
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
 export {
   Button,
   Checkbox,

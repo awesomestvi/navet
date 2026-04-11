@@ -3,7 +3,17 @@ import { useState } from 'react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { Checkbox } from './checkbox';
 
-function CheckboxStory({ defaultChecked = false, disabled = false }) {
+function CheckboxStory({
+  appearance = 'default',
+  defaultChecked = false,
+  disabled = false,
+  palette = 'accent',
+}: {
+  appearance?: 'default' | 'secondary';
+  defaultChecked?: boolean;
+  disabled?: boolean;
+  palette?: 'accent' | 'blue' | 'purple' | 'pink' | 'red' | 'orange' | 'yellow' | 'green' | 'teal';
+}) {
   const [checked, setChecked] = useState(defaultChecked);
   return (
     <label
@@ -14,7 +24,9 @@ function CheckboxStory({ defaultChecked = false, disabled = false }) {
         id="primitive-checkbox-story"
         checked={checked}
         onCheckedChange={(value) => setChecked(Boolean(value))}
+        appearance={appearance}
         disabled={disabled}
+        palette={palette}
       />
       Show hidden entities
     </label>
@@ -26,8 +38,10 @@ const meta = {
   component: CheckboxStory,
   tags: ['autodocs'],
   args: {
+    appearance: 'default',
     defaultChecked: false,
     disabled: false,
+    palette: 'accent',
   },
   parameters: {
     layout: 'centered',
@@ -57,6 +71,13 @@ type Story = StoryObj<typeof meta>;
 export const Unchecked: Story = { args: { defaultChecked: false } };
 export const Checked: Story = { args: { defaultChecked: true } };
 export const Disabled: Story = { args: { defaultChecked: true, disabled: true } };
+export const SecondaryRed: Story = {
+  args: {
+    appearance: 'secondary',
+    defaultChecked: true,
+    palette: 'red',
+  },
+};
 
 export const Docs: Story = {
   parameters: {

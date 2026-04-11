@@ -80,6 +80,8 @@ Internal UI-system foundation covering:
 12. **Shared Compact Card Layouts** - Tiny and other dense card variants should use shared title/action primitives rather than bespoke per-feature micro layouts
 13. **System Entry Points** - Promote stable shared UI through `src/app/components/system/{primitives,patterns,tokens}` before creating new package boundaries
 14. **Workshop Before Extraction** - New shared UI should prove itself in Storybook and the in-repo system layer before it is treated like a publishable package boundary
+15. **Card Dialog Pattern First** - New entity settings dialogs should compose from shared card-dialog patterns (`CardDialogHeader`, sections, tab triggers, choice pills) before creating feature-specific shells
+16. **Room Override Safety** - Entity room updates should preserve local override fallback behavior so UI room assignment remains stable when HA registry updates are delayed
 
 ### Authentication System
 - **Login Page** - Secure authentication with Home Assistant URL and long-lived access token
@@ -179,7 +181,9 @@ When creating a new card component:
 /\.storybook/                                      → Storybook configuration and preview decorators for the in-repo UI workshop
 /src/app/components/shared/                          → Shared UI building blocks
 /src/app/components/primitives/                      → Source-of-truth low-level shared UI primitives
+/src/app/components/primitives/link.tsx              → Shared inline link primitive for contextual external/internal references
 /src/app/components/patterns/                        → Source-of-truth composed shared UI patterns
+/src/app/components/patterns/card-dialog.tsx         → Shared settings-dialog header/section/tab/choice patterns
 /src/app/components/system/                          → Storybook-ready system entrypoints for shared primitives, patterns, and tokens
 /src/app/components/system/primitives/index.ts       → Stable low-level component exports
 /src/app/components/system/patterns/index.ts         → Stable composed-pattern exports
@@ -205,6 +209,7 @@ When creating a new card component:
 /src/app/features/lighting/components/light-card/use-light-runtime-state.ts → Light runtime sync orchestration
 /src/app/features/lighting/components/light-card/build-light-card-controller-state.ts → Light controller output shaping
 /src/app/features/climate/              → HVAC card, settings dialog, and climate-specific styles
+/src/app/features/lighting/components/switch-settings-dialog.tsx → Shared switch settings dialog with controls/metrics/customization tabs
 /src/app/features/climate/components/hvac-card/use-hvac-entity-sync.ts → HVAC live entity synchronization
 /src/app/features/auth/login-page.tsx   → Login interface
 /src/app/features/media/components/media-card/use-media-display-fields.ts → Media metadata display derivation
@@ -214,6 +219,7 @@ When creating a new card component:
 /src/app/stores/config-store.ts         → HA connection config (Zustand)
 /src/app/stores/theme-store.ts          → Theme mode and primary color (Zustand)
 /src/app/stores/navigation-store.ts     → Section and room navigation (Zustand)
+/src/app/constants/storage-keys.ts      → Persisted key contracts including entity room overrides and switch dialog appearance keys
 /src/app/components/layout/user-dropdown.tsx → User account menu in the header
 /src/app/components/layout/sidebar.tsx  → Primary desktop sidebar (icon-only, 64px wide)
 /src/app/hooks/use-theme.ts             → Theme hook (wraps theme store)

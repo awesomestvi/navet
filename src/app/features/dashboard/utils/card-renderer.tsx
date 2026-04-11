@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CalendarCard } from '@/app/features/calendar';
@@ -11,12 +11,13 @@ import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
 import { GroupedSensorCard, SensorCard, type SensorReading } from '@/app/features/sensors';
 import { VacuumCard } from '@/app/features/vacuum';
 import { WeatherCard } from '@/app/features/weather';
+import { useHomeAssistant, useI18n } from '@/app/hooks';
 import type { DeviceMetric } from '@/app/types/device.types';
 
 interface DeviceData {
   id: string;
   type: string;
-  [key: string]: string | number | boolean | object | undefined;
+  [key: string]: string | number | boolean | string[] | object | undefined;
 }
 
 interface CardRendererOptions {
@@ -27,6 +28,67 @@ interface CardRendererOptions {
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
+
+function isSameEntityStateList(left: Array<string | undefined>, right: Array<string | undefined>) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+}
+
+function getAvailabilityEntityIds(device: DeviceData): string[] {
+  const sourceIds = device.sourceIds;
+  if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
+    return sourceIds;
+  }
+
+  return device.id.includes('.') ? [device.id] : [];
+}
+
+function EntityAvailabilityFrame({
+  device,
+  isEditMode,
+  children,
+}: {
+  device: DeviceData;
+  isEditMode: boolean;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  const entityIds = getAvailabilityEntityIds(device);
+  const entityStates = useHomeAssistant(
+    (state) => entityIds.map((entityId) => state.entities?.[entityId]?.state),
+    isSameEntityStateList
+  );
+  const isUnavailable =
+    entityIds.length > 0 &&
+    entityStates.length === entityIds.length &&
+    entityStates.every((state) => state === 'unavailable');
+
+  if (!isUnavailable) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-3xl">
+      <div className="pointer-events-none h-full w-full opacity-45 saturate-50">{children}</div>
+      <div className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 backdrop-blur-[1px]" />
+      {!isEditMode ? (
+        <div className="pointer-events-auto absolute inset-0 z-20 rounded-[inherit]" />
+      ) : null}
+      <div
+        className={`pointer-events-none absolute z-30 ${
+          isEditMode ? 'bottom-3 left-3' : 'left-3 top-3'
+        }`}
+      >
+        <div className="inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-white/92 uppercase backdrop-blur-md">
+          {t('camera.status.unavailable')}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const cardRegistry: Partial<Record<string, CardRenderFn>> = {
   lights: ({ device, size, handleSizeChange, isEditMode }) => (
@@ -292,5 +354,11 @@ export const renderCard = (options: CardRendererOptions): ReactElement | null =>
   if (!renderer) return null;
   const card = renderer(options);
   if (!card) return null;
-  return <CardErrorBoundary>{card}</CardErrorBoundary>;
+  return (
+    <CardErrorBoundary>
+      <EntityAvailabilityFrame device={options.device} isEditMode={options.isEditMode}>
+        {card}
+      </EntityAvailabilityFrame>
+    </CardErrorBoundary>
+  );
 };

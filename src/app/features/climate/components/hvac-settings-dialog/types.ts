@@ -1,3 +1,5 @@
+import type { HVACSiblingEntity } from '../hvac-card/use-hvac-card-controller';
+
 export interface HVACTemperaturePreset {
   value: number;
   label?: string;
@@ -16,7 +18,7 @@ export interface HVACSettingsDialogProps {
   maxTemp?: number;
   step?: number;
   temperaturePresets?: HVACTemperaturePreset[];
+  siblingEntities?: HVACSiblingEntity[];
   onModeChange: (mode: string) => void;
   onTargetTempChange: (temp: number) => void;
-  onTogglePower: () => void;
 }

@@ -1,15 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import type { HassEntity } from 'home-assistant-js-websocket';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { SwitchCardProps } from './switch-card.types';
+import { useSwitchCardAppearance } from './use-switch-card-appearance';
 import { useSwitchMetricFormatters } from './use-switch-metric-formatters';
 import { useSwitchMetricState } from './use-switch-metric-state';
 import { useSwitchResetTimerCleanup } from './use-switch-reset-timer-cleanup';
 import { useSwitchToggleAction } from './use-switch-toggle-action';
+
+export interface SwitchSiblingEntity {
+  id: string;
+  entity: HassEntity;
+}
 
 export function useSwitchCardController({
   id,
@@ -32,6 +38,8 @@ export function useSwitchCardController({
   useSwitchResetTimerCleanup(resetTimerRef);
 
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
+  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const { colors, theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const resolvedEntityType = entityType || t('lighting.type.switch');
@@ -40,6 +48,11 @@ export function useSwitchCardController({
   const isScript = resolvedServiceDomain === 'script';
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
+  const appearance = useSwitchCardAppearance({ id, isScript });
+  const deviceId = useMemo(
+    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
+    [entityRegistry, id]
+  );
 
   useEffect(() => {
     if (liveEntity) {
@@ -59,21 +72,25 @@ export function useSwitchCardController({
     metrics,
   });
 
-  const hasControlsDialog = metricState.hasMetrics;
-  const surface = getThemeSurfaceTokens(theme);
+  const siblingEntities = useMemo(() => {
+    if (!deviceId || !allEntities) {
+      return [];
+    }
+
+    return entityRegistry
+      .filter((entry) => {
+        if (entry.device_id !== deviceId || entry.entity_id === id) {
+          return false;
+        }
+
+        return entry.entity_id.startsWith('switch.');
+      })
+      .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
+      .filter((entry) => entry.entity !== undefined) as SwitchSiblingEntity[];
+  }, [allEntities, deviceId, entityRegistry, id]);
+
   const cardColors = isOn ? colors.switch.on : colors.switch.off;
-  const textColor =
-    theme === 'light'
-      ? isOn
-        ? 'text-gray-900'
-        : 'text-gray-700'
-      : isOn
-        ? 'text-white'
-        : 'text-gray-100';
-  const valueColor = surface.textPrimary;
-  const labelColor = surface.textSecondary;
-  const settingsButtonClass = `${surface.subtleBg} ${surface.hoverBg} ${surface.textPrimary}`;
-  const dialogSurface = `${surface.panel} ${surface.border} ${surface.textPrimary}`;
+  const hasControlsDialog = true;
   const accentColor = getThemeColorValue(primaryColor);
 
   const handleToggle = useSwitchToggleAction({
@@ -115,34 +132,35 @@ export function useSwitchCardController({
     accentColor,
     cardColors,
     cardInteraction,
-    dialogSurface,
     entityType: resolvedEntityType,
     formatMetricValue,
     getMetricLabel,
     handleMetricToggle: metricState.handleMetricToggle,
+    HeaderIconComponent: appearance.HeaderIconComponent,
     hasControlsDialog,
     hasMetrics: metricState.hasMetrics,
+    headerIconText: appearance.headerIconText,
     isDialogOpen,
     isOn,
     isScript,
     isTiny,
-    labelColor,
     metricLimit: metricState.metricLimit,
     metricSectionDescription:
       metricState.metricLimit === 1
         ? t('lighting.switch.metricLimit.one', { count: metricState.metricLimit })
         : t('lighting.switch.metricLimit.other', { count: metricState.metricLimit }),
     metricSectionTitle: t('lighting.switch.cardMetric'),
-    roomLabel: t('lighting.settings.room'),
     renderMetricIcon,
     selectedMetricLabels: metricState.selectedMetricLabels,
     selectedMetrics: metricState.selectedMetrics,
+    selectedIcon: appearance.selectedIcon,
+    siblingEntities,
     setIsDialogOpen,
-    settingsButtonClass,
+    setSelectedIcon: appearance.setSelectedIcon,
+    setTintColor: appearance.setTintColor,
     showSettingsButton,
     isExtraSmall,
-    textColor,
     theme,
-    valueColor,
+    tintColor: appearance.tintColor,
   };
 }

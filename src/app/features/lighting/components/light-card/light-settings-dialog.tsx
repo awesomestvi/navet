@@ -1,8 +1,11 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { Palette, Sliders, Star, X } from 'lucide-react';
+import { Palette, Sliders, Star } from 'lucide-react';
 import { memo, useState } from 'react';
-import { DialogDoneFooter, DialogShell } from '@/app/components/primitives/dialog-shell';
-import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import {
+  CardDialogHeader,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
+import { DialogDoneFooter, DialogShell } from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import {
   BrightnessPresetEditor,
@@ -13,11 +16,11 @@ import {
   CustomScrollbar,
   IconPicker,
 } from '@/app/components/shared/device-editor';
-import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
 import { useI18n, useTheme } from '@/app/hooks';
+import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { BrightnessPresetKey } from '../../stores/light-preset-store';
 import type { LightBrightnessPreset } from './light-card-types';
 
@@ -96,6 +99,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
+  const entityType = getEntityTypeLabel(entityId) || t('lighting.type.light');
   const [activeTab, setActiveTab] = useState('controls');
 
   const activeDialogColors = colorMap[resolvePrimaryColorToken(primaryColor)];
@@ -113,52 +117,32 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
     >
       <CustomScrollbar isOn={isOn}>
         <div className="p-8">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <EntityRoomSelector entityId={entityId} compact forceDark />
-              <h2 className="mt-2 text-xl font-semibold text-white">{name}</h2>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label={t('common.close')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </Dialog.Close>
-          </div>
+          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
-            <div className="mt-1 inline-flex items-center gap-1">
-              <InteractivePill
+            <CardDialogTabList>
+              <CardDialogTabTrigger
                 active={activeTab === 'controls'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
                 Controls
-              </InteractivePill>
-              <InteractivePill
-                active={activeTab === 'card'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
-                icon={Palette}
-                onClick={() => setActiveTab('card')}
-              >
-                Card
-              </InteractivePill>
-              <InteractivePill
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
                 active={activeTab === 'presets'}
-                size="compact"
-                className="min-h-8 px-3 text-[11px]"
                 icon={Star}
                 onClick={() => setActiveTab('presets')}
               >
                 Presets
-              </InteractivePill>
-            </div>
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
+                active={activeTab === 'card'}
+                icon={Palette}
+                onClick={() => setActiveTab('card')}
+              >
+                Customize
+              </CardDialogTabTrigger>
+            </CardDialogTabList>
 
             <TabPanel value="controls" className="mt-5 space-y-6">
               {supportsColorTemperature && (

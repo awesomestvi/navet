@@ -6,7 +6,7 @@ import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { HVACSettingsDialog } from './index';
 
 function HVACSettingsDialogStory() {
-  const [isOn, setIsOn] = useState(true);
+  const [isOn] = useState(true);
   const [mode, setMode] = useState('cool');
   const [targetTemp, setTargetTemp] = useState(22);
   const [isOpen, setIsOpen] = useState(false);
@@ -34,7 +34,6 @@ function HVACSettingsDialogStory() {
         ]}
         onTargetTempChange={setTargetTemp}
         onModeChange={setMode}
-        onTogglePower={() => setIsOn((current) => !current)}
       />
     </SettingsDialogStoryFrame>
   );

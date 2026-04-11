@@ -15,7 +15,10 @@ function DialogSectionRowPanel({ children }: { children: ReactNode }) {
 function DialogSectionRowStory() {
   return (
     <DialogSectionRowPanel>
-      <DialogSectionRow label="Brightness">
+      <DialogSectionRow
+        label="Brightness"
+        helperText="Adjust the default brightness for this light."
+      >
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <Sun className="h-4 w-4 text-white/60" />
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -79,7 +82,10 @@ export const SettingsForm: Story = {
 export const SingleLabeledRow: Story = {
   render: () => (
     <DialogSectionRowPanel>
-      <DialogSectionRow label="Brightness">
+      <DialogSectionRow
+        label="Brightness"
+        helperText="Adjust the default brightness for this light."
+      >
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <Sun className="h-4 w-4 text-white/60" />
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -101,6 +107,18 @@ export const UnlabeledRow: Story = {
           <span className="text-sm text-white/80">
             Use an unlabeled row when surrounding copy already makes the control obvious.
           </span>
+        </div>
+      </DialogSectionRow>
+    </DialogSectionRowPanel>
+  ),
+};
+
+export const LabeledRowWithHelperText: Story = {
+  render: () => (
+    <DialogSectionRowPanel>
+      <DialogSectionRow label="Card Metric" helperText="Select up to 2 metrics for this card.">
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
+          Metric controls go here.
         </div>
       </DialogSectionRow>
     </DialogSectionRowPanel>

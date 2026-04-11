@@ -1,6 +1,8 @@
 import type { Connection, HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { useEffect, useMemo, useState } from 'react';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 import { useI18n } from '../i18n';
+import type { HomeAssistantEntityRegistryEntry } from '../services/home-assistant.service';
 import { homeAssistantSelectors, settingsSelectors } from '../stores/selectors';
 import { useSettingsStore } from '../stores/settings-store';
 import type {
@@ -20,6 +22,7 @@ import type {
   VacuumDevice,
   WeatherDevice,
 } from '../types/device.types';
+import { UNKNOWN_ROOM_LABEL } from '../utils/device-location';
 import {
   brightnessToPercent,
   formatCalendarTime,
@@ -41,6 +44,7 @@ import {
   resolveEntityRoom,
 } from './ha-entity-utils';
 import { useHomeAssistant } from './use-home-assistant';
+import { usePersistedState } from './use-persisted-state';
 
 type WeatherForecastEntry = Record<string, unknown>;
 
@@ -144,6 +148,51 @@ function entityStructureEqual(prev: HassEntities | null, next: HassEntities | nu
   return true;
 }
 
+function getEntityObjectId(entityId: string): string {
+  const separatorIndex = entityId.indexOf('.');
+  return separatorIndex === -1 ? entityId : entityId.slice(separatorIndex + 1);
+}
+
+function getEntityCategory(entityEntry?: HomeAssistantEntityRegistryEntry): string | null {
+  const raw = (entityEntry as Record<string, unknown> | undefined)?.entity_category;
+  return typeof raw === 'string' ? raw : null;
+}
+
+function getSwitchPrimarySortKey(
+  entityId: string,
+  entity: HassEntity,
+  entityEntry?: HomeAssistantEntityRegistryEntry
+): [number, number, string] {
+  const entityCategory = getEntityCategory(entityEntry);
+  const categoryPenalty =
+    entityCategory === 'config' ? 100 : entityCategory === 'diagnostic' ? 200 : 0;
+  const objectId = getEntityObjectId(entityId).toLowerCase();
+  const friendlyName =
+    typeof entity.attributes?.friendly_name === 'string'
+      ? entity.attributes.friendly_name.toLowerCase()
+      : '';
+  const helperKeywordPenalty =
+    /(boost|timer|speed|mode|humidity|light|delay|interval|preset|continuous|trickle|gateway|restart|reboot|update)/.test(
+      `${objectId} ${friendlyName}`
+    )
+      ? 20
+      : 0;
+
+  return [categoryPenalty + helperKeywordPenalty, objectId.length, objectId];
+}
+
+function compareSortKeys(left: [number, number, string], right: [number, number, string]): number {
+  if (left[0] !== right[0]) {
+    return left[0] - right[0];
+  }
+
+  if (left[1] !== right[1]) {
+    return left[1] - right[1];
+  }
+
+  return left[2].localeCompare(right[2]);
+}
+
 /**
  * Maps raw Home Assistant entities to typed device collections.
  */
@@ -158,6 +207,10 @@ export const useHADevices = (): DeviceCollection => {
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
+  const [entityRoomOverrides] = usePersistedState<Record<string, string>>(
+    STORAGE_KEYS.entityRoomOverrides,
+    {}
+  );
   const primaryWeatherEntityId = useMemo(() => {
     if (!entities) {
       return null;
@@ -274,6 +327,7 @@ export const useHADevices = (): DeviceCollection => {
     const vacuums: VacuumDevice[] = [];
     const weather: WeatherDevice[] = [];
     const calendars: CalendarDevice[] = [];
+    const calendarSources: CalendarDevice['sources'] = [];
     const cameras: CameraDevice[] = [];
     const areaMap = new Map(areas.map((area) => [area.area_id, area.name]));
     const entityRegistryMap = new Map(
@@ -281,9 +335,32 @@ export const useHADevices = (): DeviceCollection => {
     );
     const deviceRegistryMap = new Map(deviceRegistry.map((device) => [device.id, device]));
     const switchMetricsByDeviceId = new Map<string, DeviceMetric[]>();
+    const primarySwitchEntityIdByDeviceId = new Map<string, string>();
+    const deviceIdsWithVacuumEntity = new Set<string>();
+    const deviceIdsWithClimateEntity = new Set<string>();
+    const deviceIdsWithPrimaryCards = new Set<string>();
 
     const getRoom = (entityId: string, entity: HassEntity) =>
-      resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
+      resolveEntityRoom(
+        entityId,
+        entity,
+        entityRoomOverrides[entityId],
+        areaMap,
+        entityRegistryMap,
+        deviceRegistryMap
+      );
+    const shouldSuppressForVacuumDevice = (entityId: string) => {
+      const deviceId = entityRegistryMap.get(entityId)?.device_id;
+      return deviceId ? deviceIdsWithVacuumEntity.has(deviceId) : false;
+    };
+    const shouldSuppressHelperCard = (entityId: string) => {
+      if (shouldSuppressForVacuumDevice(entityId)) {
+        return true;
+      }
+
+      const deviceId = entityRegistryMap.get(entityId)?.device_id;
+      return deviceId ? deviceIdsWithPrimaryCards.has(deviceId) : false;
+    };
     const entityEntries = Object.entries(entities);
 
     const getDomain = (entityId: string): string => {
@@ -294,6 +371,22 @@ export const useHADevices = (): DeviceCollection => {
     // Pre-pass: collect power/config metrics for switch devices
     for (const [entityId, entity] of entityEntries) {
       const domain = getDomain(entityId);
+      if (domain === 'vacuum') {
+        const deviceId = entityRegistryMap.get(entityId)?.device_id;
+        if (deviceId) {
+          deviceIdsWithVacuumEntity.add(deviceId);
+        }
+
+        continue;
+      }
+
+      if (domain === 'climate') {
+        const deviceId = entityRegistryMap.get(entityId)?.device_id;
+        if (deviceId) {
+          deviceIdsWithClimateEntity.add(deviceId);
+        }
+      }
+
       if (domain === 'sensor') {
         const entityEntry = entityRegistryMap.get(entityId);
         const deviceId = entityEntry?.device_id;
@@ -348,8 +441,7 @@ export const useHADevices = (): DeviceCollection => {
       if (domain === 'number' || domain === 'input_number' || domain === 'select') {
         const entityEntry = entityRegistryMap.get(entityId);
         const deviceId = entityEntry?.device_id;
-        const entityCategory = (entityEntry as { entity_category?: string | null } | undefined)
-          ?.entity_category;
+        const entityCategory = getEntityCategory(entityEntry);
         if (!deviceId || entityCategory !== 'config') {
           continue;
         }
@@ -390,6 +482,63 @@ export const useHADevices = (): DeviceCollection => {
       }
     }
 
+    for (const [entityId] of entityEntries) {
+      const domain = getDomain(entityId);
+      if (
+        domain !== 'light' &&
+        domain !== 'switch' &&
+        domain !== 'climate' &&
+        domain !== 'cover' &&
+        domain !== 'lock' &&
+        domain !== 'media_player' &&
+        domain !== 'vacuum' &&
+        domain !== 'camera'
+      ) {
+        continue;
+      }
+
+      const deviceId = entityRegistryMap.get(entityId)?.device_id;
+      if (deviceId) {
+        deviceIdsWithPrimaryCards.add(deviceId);
+      }
+    }
+
+    // Pre-pass: choose one primary switch card entity per HA device.
+    for (const [entityId, entity] of entityEntries) {
+      if (getDomain(entityId) !== 'switch') {
+        continue;
+      }
+
+      const entityEntry = entityRegistryMap.get(entityId);
+      const deviceId = entityEntry?.device_id;
+      if (!deviceId) {
+        continue;
+      }
+
+      const currentPrimaryEntityId = primarySwitchEntityIdByDeviceId.get(deviceId);
+      if (!currentPrimaryEntityId) {
+        primarySwitchEntityIdByDeviceId.set(deviceId, entityId);
+        continue;
+      }
+
+      const currentPrimaryEntity = entities[currentPrimaryEntityId];
+      if (!currentPrimaryEntity) {
+        primarySwitchEntityIdByDeviceId.set(deviceId, entityId);
+        continue;
+      }
+
+      const currentSortKey = getSwitchPrimarySortKey(
+        currentPrimaryEntityId,
+        currentPrimaryEntity,
+        entityRegistryMap.get(currentPrimaryEntityId)
+      );
+      const candidateSortKey = getSwitchPrimarySortKey(entityId, entity, entityEntry);
+
+      if (compareSortKeys(candidateSortKey, currentSortKey) < 0) {
+        primarySwitchEntityIdByDeviceId.set(deviceId, entityId);
+      }
+    }
+
     // Process each entity based on domain
     for (const [entityId, entity] of entityEntries) {
       const domain = getDomain(entityId);
@@ -411,6 +560,26 @@ export const useHADevices = (): DeviceCollection => {
 
         case 'switch': {
           const entityEntry = entityRegistryMap.get(entityId);
+          const deviceId = entityEntry?.device_id;
+          if (
+            getEntityCategory(entityEntry) === 'config' ||
+            getEntityCategory(entityEntry) === 'diagnostic'
+          ) {
+            break;
+          }
+
+          if (deviceId && deviceIdsWithVacuumEntity.has(deviceId)) {
+            break;
+          }
+
+          if (deviceId && deviceIdsWithClimateEntity.has(deviceId)) {
+            break;
+          }
+
+          if (deviceId && primarySwitchEntityIdByDeviceId.get(deviceId) !== entityId) {
+            break;
+          }
+
           const deviceMetrics = entityEntry?.device_id
             ? switchMetricsByDeviceId.get(entityEntry.device_id)
             : undefined;
@@ -446,6 +615,17 @@ export const useHADevices = (): DeviceCollection => {
         }
 
         case 'input_boolean':
+          if (
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'config' ||
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'diagnostic'
+          ) {
+            break;
+          }
+
+          if (shouldSuppressHelperCard(entityId)) {
+            break;
+          }
+
           helpers.push({
             id: entityId,
             name,
@@ -458,6 +638,17 @@ export const useHADevices = (): DeviceCollection => {
           break;
 
         case 'script':
+          if (
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'config' ||
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'diagnostic'
+          ) {
+            break;
+          }
+
+          if (shouldSuppressHelperCard(entityId)) {
+            break;
+          }
+
           helpers.push({
             id: entityId,
             name,
@@ -472,6 +663,17 @@ export const useHADevices = (): DeviceCollection => {
 
         case 'button':
         case 'input_button':
+          if (
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'config' ||
+            getEntityCategory(entityRegistryMap.get(entityId)) === 'diagnostic'
+          ) {
+            break;
+          }
+
+          if (shouldSuppressHelperCard(entityId)) {
+            break;
+          }
+
           helpers.push({
             id: entityId,
             name,
@@ -645,6 +847,10 @@ export const useHADevices = (): DeviceCollection => {
           break;
 
         case 'camera':
+          if (shouldSuppressForVacuumDevice(entityId)) {
+            break;
+          }
+
           cameras.push({
             id: entityId,
             name,
@@ -790,11 +996,10 @@ export const useHADevices = (): DeviceCollection => {
             .slice(0, 5)
             .map(({ startDate: _startDate, ...event }) => event);
 
-          calendars.push({
+          calendarSources.push({
             id: entityId,
             name,
             room,
-            size: 'medium',
             events,
           });
           break;
@@ -946,6 +1151,51 @@ export const useHADevices = (): DeviceCollection => {
       }
     }
 
+    if (calendarSources.length > 0) {
+      const aggregatedCalendarId = 'calendar.navet_overview';
+      const roomSet = new Set(calendarSources.map((source) => source.room).filter(Boolean));
+      const aggregatedCalendarRoomOverride = entityRoomOverrides[aggregatedCalendarId];
+      const fallbackEventColors = [
+        'bg-blue-500',
+        'bg-purple-500',
+        'bg-green-500',
+        'bg-orange-500',
+        'bg-indigo-500',
+      ] as const;
+      const singleRoom = roomSet.size === 1 ? roomSet.values().next().value : null;
+      const combinedEvents = calendarSources
+        .flatMap((source, index) =>
+          source.events.map((event) => ({
+            ...event,
+            color:
+              event.color ||
+              fallbackEventColors[index % fallbackEventColors.length] ||
+              'bg-blue-500',
+          }))
+        )
+        .sort((left, right) => {
+          const leftKey = left.sortKey ?? left.startTime;
+          const rightKey = right.sortKey ?? right.startTime;
+          return leftKey.localeCompare(rightKey);
+        })
+        .slice(0, 12);
+
+      calendars.push({
+        id: aggregatedCalendarId,
+        name: t('calendar.defaultTitle'),
+        room:
+          (aggregatedCalendarRoomOverride
+            ? (areaMap.get(aggregatedCalendarRoomOverride) ?? aggregatedCalendarRoomOverride)
+            : null) ??
+          singleRoom ??
+          UNKNOWN_ROOM_LABEL,
+        size: 'medium',
+        sourceIds: calendarSources.map((source) => source.id),
+        sources: calendarSources,
+        events: combinedEvents,
+      });
+    }
+
     return {
       lights,
       hvac: [],
@@ -969,6 +1219,7 @@ export const useHADevices = (): DeviceCollection => {
     calendarEvents,
     config,
     deviceRegistry,
+    entityRoomOverrides,
     entities,
     entityRegistry,
     locale,
