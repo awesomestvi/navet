@@ -4,15 +4,6 @@ import {
   resolveHomeAssistantProxyUrl,
 } from '@/app/utils/home-assistant-url';
 
-const MAX_ARTWORK_ERROR_COUNT = 12;
-
-function isFailedArtworkCandidate(
-  candidate: string | null | undefined,
-  failedArtworkUrl: string | null
-) {
-  return Boolean(candidate) && candidate === failedArtworkUrl;
-}
-
 interface UseMediaArtworkResolutionParams {
   entityId: string;
   artworkKey?: string;
@@ -29,8 +20,6 @@ export function useMediaArtworkResolution({
   homeAssistantUrl,
 }: UseMediaArtworkResolutionParams) {
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
-  const [artworkErrorCount, setArtworkErrorCount] = useState(0);
-  const [resolvedAlbumArt, setResolvedAlbumArt] = useState<string | null>(null);
 
   const artworkRequestKey = [entityId, liveArtworkKey ?? artworkKey].filter(Boolean).join('::');
   const fallbackArtwork = liveEntityPicture
@@ -39,40 +28,22 @@ export function useMediaArtworkResolution({
       : resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
     : null;
 
+  // Clear the failed URL only when the track/content actually changes — never on error state changes.
+  // Previously this effect also depended on failedArtworkUrl, which caused a reset loop:
+  // error → failedArtworkUrl set → effect re-ran → failedArtworkUrl cleared → artwork re-shown → error again.
   useEffect(() => {
-    if (artworkRequestKey) {
-      setFailedArtworkUrl(null);
-      setArtworkErrorCount(0);
-    }
-    setResolvedAlbumArt(
-      isFailedArtworkCandidate(fallbackArtwork, failedArtworkUrl) ? null : fallbackArtwork
-    );
-  }, [artworkRequestKey, fallbackArtwork, failedArtworkUrl]);
+    void artworkRequestKey;
+    setFailedArtworkUrl(null);
+  }, [artworkRequestKey]);
 
-  const handleArtworkError = useCallback(
-    (imageUrl?: string | null) => {
-      if (!imageUrl) {
-        return;
-      }
+  // Derived: hide artwork only if the current URL is the one that just failed.
+  const albumArt =
+    failedArtworkUrl !== null && failedArtworkUrl === fallbackArtwork ? null : fallbackArtwork;
 
-      setArtworkErrorCount((currentCount) => {
-        if (currentCount >= MAX_ARTWORK_ERROR_COUNT) {
-          return currentCount;
-        }
+  const handleArtworkError = useCallback((imageUrl?: string | null) => {
+    if (!imageUrl) return;
+    setFailedArtworkUrl(imageUrl);
+  }, []);
 
-        return currentCount + 1;
-      });
-
-      setResolvedAlbumArt((current) => (current === imageUrl ? null : current));
-      setFailedArtworkUrl((current) =>
-        current === null && artworkErrorCount < MAX_ARTWORK_ERROR_COUNT ? imageUrl : current
-      );
-    },
-    [artworkErrorCount]
-  );
-
-  return {
-    albumArt: resolvedAlbumArt,
-    handleArtworkError,
-  };
+  return { albumArt, handleArtworkError };
 }

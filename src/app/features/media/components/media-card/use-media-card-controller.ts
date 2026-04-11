@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
@@ -10,6 +12,16 @@ import { useMediaGrouping } from './use-media-grouping';
 import { useMediaPlayback } from './use-media-playback';
 import { useMediaPlaybackProgress } from './use-media-playback-progress';
 import { useMediaVolume } from './use-media-volume';
+
+// useMediaGrouping only needs media_player.* entities to build the grouping picker.
+// Defined at module scope so the reference is stable and shallow equality can
+// suppress re-renders when unrelated entities (lights, sensors, etc.) update.
+function selectMediaPlayerEntities(state: HomeAssistantStore) {
+  if (!state.entities) return null;
+  return Object.fromEntries(
+    Object.entries(state.entities).filter(([id]) => id.startsWith('media_player.'))
+  );
+}
 
 export function useMediaCardController({
   entityId,
@@ -29,7 +41,7 @@ export function useMediaCardController({
   const authConfig = useAuth(authSelectors.config);
   const { t } = useI18n();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const mediaPlayerEntities = useHomeAssistant(selectMediaPlayerEntities, shallow);
   const [state, setState] = useState(initialState);
   const [elapsedSeconds, setElapsedSeconds] = useState(initialElapsedSeconds ?? 0);
   const [durationSeconds, setDurationSeconds] = useState(initialDurationSeconds ?? 0);
@@ -126,7 +138,7 @@ export function useMediaCardController({
 
   const { availableGroupingPlayers, attachGroupMember, detachGroupMember } = useMediaGrouping({
     entityId,
-    entities,
+    entities: mediaPlayerEntities,
     groupMembers,
     runAction,
     t,
@@ -148,7 +160,7 @@ export function useMediaCardController({
     handleNext,
     handlePrevious,
     handleVolumeChange,
-    isOff: state === 'off',
+    isOff: state === 'off' || state === 'idle',
     isMuted,
     isOpen,
     isPlaying,

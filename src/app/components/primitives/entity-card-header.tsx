@@ -26,6 +26,7 @@ interface EntityCardHeaderProps {
   className?: string;
   contentClassName?: string;
   marginBottomClassName?: string;
+  accentColor?: string | null;
 }
 
 export function EntityCardHeader({
@@ -42,10 +43,16 @@ export function EntityCardHeader({
   className = '',
   contentClassName = '',
   marginBottomClassName,
+  accentColor,
 }: EntityCardHeaderProps) {
-  const { theme, accentColor } = useTheme();
+  const { theme, accentColor: themeAccentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const textTokens = getCardReadableTextTokens({ theme, tone, accentColor });
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    tone,
+    accentColor: accentColor ?? themeAccentColor,
+    baseColor: tone === 'primary' ? (accentColor ?? themeAccentColor) : undefined,
+  });
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const isStandardCompact = size === 'small' || size === 'medium';

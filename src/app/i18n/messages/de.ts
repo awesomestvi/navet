@@ -616,6 +616,8 @@ export const deMessages = {
   'vacuum.status.docked': 'Angedockt',
   'vacuum.status.paused': 'Pausiert',
   'vacuum.status.idle': 'Leerlauf',
+  'vacuum.metric.charging': 'Lädt',
+  'vacuum.metric.fullyCharged': 'Voll geladen',
   'vacuum.cleanedArea': 'Gereinigte Fläche',
   'vacuum.cleaningTime': 'Reinigungszeit',
   'vacuum.settings.title': 'Einstellungen für {name}',

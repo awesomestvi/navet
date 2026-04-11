@@ -12,7 +12,12 @@ import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
-type CardActionRowSize = 'small' | 'medium' | 'large';
+type CardActionRowSize = 'small' | 'default' | 'medium' | 'large';
+type CardActionRowResolvedSize = 'small' | 'default' | 'large';
+
+function toControlButtonSize(size: CardActionRowResolvedSize): 'small' | 'medium' | 'large' {
+  return size === 'default' ? 'medium' : size;
+}
 
 interface CardActionOverflowItem {
   key: string;
@@ -30,15 +35,19 @@ interface CardActionRowProps {
   overflowItems?: CardActionOverflowItem[];
 }
 
-function getActionButtonSize(size: CardActionRowSize) {
+function resolveCardActionRowSize(size: CardActionRowSize): CardActionRowResolvedSize {
+  return size === 'medium' ? 'default' : size;
+}
+
+function getActionButtonSize(size: CardActionRowResolvedSize) {
   if (size === 'small') {
     return {
-      button: 'h-7 w-7',
+      button: 'h-8 w-8',
       icon: 'h-3 w-3',
     };
   }
 
-  if (size === 'medium') {
+  if (size === 'default') {
     return {
       button: 'h-8 w-8',
       icon: 'h-3.5 w-3.5',
@@ -53,19 +62,21 @@ function getActionButtonSize(size: CardActionRowSize) {
 
 export function CardActionRow({
   theme,
-  size = 'medium',
+  size = 'default',
   leftContent,
   rightContent,
   overflowItems = [],
 }: CardActionRowProps) {
-  const gapClass = size === 'small' ? 'gap-1' : size === 'large' ? 'gap-2.5' : 'gap-2';
+  const resolvedSize = resolveCardActionRowSize(size);
+  const gapClass =
+    resolvedSize === 'small' ? 'gap-1' : resolvedSize === 'large' ? 'gap-2.5' : 'gap-2';
 
   return (
     <div className={`flex items-center ${gapClass}`}>
       <div className={`flex min-w-0 flex-1 items-center ${gapClass}`}>
         {leftContent}
         {overflowItems.length > 0 ? (
-          <CardActionOverflowMenu theme={theme} size={size} items={overflowItems} />
+          <CardActionOverflowMenu theme={theme} size={resolvedSize} items={overflowItems} />
         ) : null}
       </div>
       {rightContent}
@@ -79,18 +90,19 @@ function CardActionOverflowMenu({
   items,
 }: {
   theme: ThemeType;
-  size: CardActionRowSize;
+  size: CardActionRowResolvedSize;
   items: CardActionOverflowItem[];
 }) {
   const { t } = useI18n();
   const actionSize = getActionButtonSize(size);
+  const buttonSize = toControlButtonSize(size);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <RoundControlButton
           theme={theme}
-          size={size}
+          size={buttonSize}
           variant="neutral"
           aria-label={t('common.moreActions')}
           className="hover:scale-105 active:scale-95"

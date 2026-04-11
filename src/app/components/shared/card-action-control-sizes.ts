@@ -28,7 +28,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'small') {
     return {
-      button: 'h-7 w-7',
+      button: 'h-8 w-8',
       icon: 'h-3 w-3',
       inner: 'h-3.5 w-3.5',
       dot: 'h-1.5 w-1.5',

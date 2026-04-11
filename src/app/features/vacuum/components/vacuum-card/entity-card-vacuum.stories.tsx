@@ -22,7 +22,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['extra-small', 'small', 'medium', 'large'],
+      options: ['small', 'medium', 'large'],
     },
   },
   args: {
@@ -31,6 +31,7 @@ const meta = {
     room: 'Ground Floor',
     status: 'cleaning',
     battery: 74,
+    cleaningProgress: 42,
     cleanedArea: '42 m2',
     cleaningTime: '38 min',
     size: 'medium',
@@ -56,6 +57,40 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
+  },
+};
+
+export const Charging: Story = {
+  args: {
+    status: 'docked',
+    battery: 82,
+    size: 'medium',
+  },
+};
+
+export const FullyCharged: Story = {
+  args: {
+    status: 'docked',
+    battery: 100,
+    size: 'medium',
+  },
+};
 
 export const Docs: Story = {
   parameters: {

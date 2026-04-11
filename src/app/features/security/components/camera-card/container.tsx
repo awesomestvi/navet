@@ -1,6 +1,9 @@
+import type { HassEntity } from 'home-assistant-js-websocket';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import type { CameraCardProps } from './types';
@@ -54,6 +57,9 @@ function resolveHomeAssistantImageUrl(
   return imageUrl.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${imageUrl}` : imageUrl;
 }
 
+const EMPTY_DEVICE_IDS: string[] = [];
+const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
+
 export const CameraCardContainer = memo(function CameraCardContainer({
   id,
   name,
@@ -65,7 +71,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
-  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -103,45 +108,51 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     return () => window.clearInterval(intervalId);
   }, []);
 
+  // Compute all sibling entity IDs from the registry (no entity state needed).
+  // Covers both the settings siblings (switch/select/number) and the motion sensor
+  // (binary_sensor) — avoiding a broad allEntities subscription.
+  const deviceEntityIds = useMemo<string[]>(() => {
+    if (!deviceId) return EMPTY_DEVICE_IDS;
+    return entityRegistry
+      .filter((e) => e.device_id === deviceId && e.entity_id !== id)
+      .map((e) => e.entity_id);
+  }, [deviceId, id, entityRegistry]);
+
+  // Subscribe to only entities belonging to this camera's device.
+  // Re-renders only when one of those entities changes, not on unrelated HA updates.
+  const deviceEntitySelector = useCallback(
+    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
+      if (!deviceEntityIds.length || !state.entities) return EMPTY_DEVICE_RECORD;
+      return Object.fromEntries(deviceEntityIds.map((eid) => [eid, state.entities?.[eid]]));
+    },
+    [deviceEntityIds]
+  );
+  const deviceEntities = useHomeAssistant(deviceEntitySelector, shallow);
+
   // Discover sibling entities from the same HA device (switches, selects, numbers)
   const siblingEntities = useMemo(() => {
-    if (!deviceId || !allEntities) return [];
-
-    return entityRegistry
-      .filter((e) => {
-        if (e.device_id !== deviceId || e.entity_id === id) return false;
-        const domain = e.entity_id.split('.')[0];
+    return deviceEntityIds
+      .filter((eid) => {
+        const domain = eid.split('.')[0];
         return domain === 'switch' || domain === 'select' || domain === 'number';
       })
-      .map((e) => ({ id: e.entity_id, entity: allEntities[e.entity_id] }))
-      .filter((e) => e.entity !== undefined) as {
-      id: string;
-      entity: NonNullable<typeof allEntities>[string];
-    }[];
-  }, [allEntities, deviceId, entityRegistry, id]);
+      .map((eid) => {
+        const entity = deviceEntities[eid];
+        return entity ? { id: eid, entity } : null;
+      })
+      .filter((entry): entry is { id: string; entity: HassEntity } => entry !== null);
+  }, [deviceEntityIds, deviceEntities]);
 
   const motionEntity = useMemo(() => {
-    if (!deviceId || !allEntities) {
-      return null;
+    for (const eid of deviceEntityIds) {
+      if (!eid.startsWith('binary_sensor.')) continue;
+      const entity = deviceEntities[eid];
+      if (entity && isMotionEntity(eid, entity)) {
+        return { id: eid, entity };
+      }
     }
-
-    return (
-      entityRegistry
-        .filter((entry) => {
-          if (entry.device_id !== deviceId || entry.entity_id === id) {
-            return false;
-          }
-
-          if (!entry.entity_id.startsWith('binary_sensor.')) {
-            return false;
-          }
-
-          return isMotionEntity(entry.entity_id, allEntities[entry.entity_id]);
-        })
-        .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
-        .find((entry) => entry.entity !== undefined) ?? null
-    );
-  }, [allEntities, deviceId, entityRegistry, id]);
+    return null;
+  }, [deviceEntityIds, deviceEntities]);
 
   const motionDetected =
     motionEntity?.entity?.state === 'on' ||

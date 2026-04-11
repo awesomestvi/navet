@@ -56,29 +56,25 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
             }}
           />
 
-          {/* Color Blend Overlay */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                theme === 'light'
-                  ? `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}${isLowEffects ? '38' : '46'}, ${getThemeColorValue(primaryColor)}${isLowEffects ? '22' : '2a'}, transparent 70%)`
-                  : isGlass
-                    ? resolvedEffectsQuality === 'high'
-                      ? `radial-gradient(circle at 14% 14%, rgba(255,255,255,0.24) 0%, transparent 18%), radial-gradient(circle at 16% 18%, ${getThemeColorValue(primaryColor)}52 0%, transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.22) 0%, transparent 24%), linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04) 24%, transparent 58%)`
-                      : isMediumEffects
-                        ? `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}28, rgba(255,255,255,0.08), rgba(15,23,42,0.18) 72%)`
-                        : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}18, rgba(15,23,42,0.12), transparent 72%)`
-                    : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}40, ${getThemeColorValue(primaryColor)}20, transparent 60%)`,
-              mixBlendMode: isLowEffects
-                ? undefined
-                : theme === 'light'
-                  ? 'multiply'
-                  : isGlass
-                    ? 'screen'
-                    : undefined,
-            }}
-          />
+          {/* Color Blend Overlay — skipped in LOW: no mixBlendMode is applied and
+              the readability layer above it is opaque enough to cover it fully,
+              so rendering this div in LOW mode is wasted paint work. */}
+          {!isLowEffects && (
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  theme === 'light'
+                    ? `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}46, ${getThemeColorValue(primaryColor)}2a, transparent 70%)`
+                    : isGlass
+                      ? resolvedEffectsQuality === 'high'
+                        ? `radial-gradient(circle at 14% 14%, rgba(255,255,255,0.24) 0%, transparent 18%), radial-gradient(circle at 16% 18%, ${getThemeColorValue(primaryColor)}52 0%, transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.22) 0%, transparent 24%), linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04) 24%, transparent 58%)`
+                        : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}28, rgba(255,255,255,0.08), rgba(15,23,42,0.18) 72%)`
+                      : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}40, ${getThemeColorValue(primaryColor)}20, transparent 60%)`,
+                mixBlendMode: theme === 'light' ? 'multiply' : isGlass ? 'screen' : undefined,
+              }}
+            />
+          )}
 
           {/* Shared readability/glass layer */}
           <div

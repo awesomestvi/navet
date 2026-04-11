@@ -149,6 +149,12 @@ Navet scales its glass treatment through visual quality tiers instead of forcing
 
 This keeps the same design language while making the UI practical on devices like Raspberry Pi.
 
+Current medium-tier behavior intentionally trims the most expensive visual work instead of just slowing it down:
+
+- shortens transition and animation durations to reduce time spent on compositor-heavy states
+- caps backdrop blur and suppresses ambient light-bleed overlays to lower overdraw cost
+- removes large outer shadows while preserving the shared theme surfaces and readability layers
+
 #### What Changes with Primary Color
 - Active card states
 - Button backgrounds and borders
@@ -534,6 +540,7 @@ A full-screen animated overlay shown on first load. Follows the hook/view split 
 #### Implementation Notes
 - CSS keyframes are scoped to the component via a `<style>` tag injected into the view
 - `useDashboardArrivalReveal` derives all color and copy values from the active theme; the view receives a single controller object
+- Ambient reveal layers now scale with the user's effects-quality setting so low-power devices keep the onboarding flow without paying for the full animated background stack
 - I18n keys are namespaced under `dashboard.arrival.*`
 
 ### Onboarding Wizard

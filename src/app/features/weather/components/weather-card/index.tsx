@@ -176,8 +176,8 @@ export const WeatherCard = memo(function WeatherCard({
             <div className="flex h-full flex-col">
               {visibleForecast.length > 0 ? (
                 <div className="mt-auto flex w-full items-start justify-between">
-                  {visibleForecast.map((day, index) => (
-                    <div key={index} className="min-w-0 text-center">
+                  {visibleForecast.map((day) => (
+                    <div key={day.day} className="min-w-0 text-center">
                       <div className="mb-1 text-[11px]" style={{ color: textSecondary }}>
                         {day.day}
                       </div>
@@ -326,8 +326,8 @@ export const WeatherCard = memo(function WeatherCard({
 
               {visibleForecast.length > 0 && (
                 <div className="flex justify-between gap-3">
-                  {visibleForecast.map((day, index) => (
-                    <div key={index} className="min-w-0 text-center">
+                  {visibleForecast.map((day) => (
+                    <div key={day.day} className="min-w-0 text-center">
                       <div
                         className="mb-2 text-xs"
                         style={{

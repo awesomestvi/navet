@@ -8,10 +8,19 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useTheme } from '@/app/hooks';
 import { CardActionRow } from './card-action-row';
 
-function CardActionRowStory({ size = 'medium' }: { size?: 'small' | 'medium' | 'large' }) {
+function resolveStoryCardActionRowSize(size: 'small' | 'default' | 'medium' | 'large') {
+  return size === 'default' ? 'medium' : size;
+}
+
+function CardActionRowStory({
+  size = 'default',
+}: {
+  size?: 'small' | 'default' | 'medium' | 'large';
+}) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const controlSizes = getCardActionControlSizes(size);
+  const resolvedSize = resolveStoryCardActionRowSize(size);
+  const controlSizes = getCardActionControlSizes(resolvedSize);
   const roundControl = getRoundControlStyles(theme);
   const selectedStyle = getBrightnessPresetSelectedStyle(theme, '#f97316', true);
 
@@ -45,7 +54,7 @@ function CardActionRowStory({ size = 'medium' }: { size?: 'small' | 'medium' | '
             })}
           </div>
         }
-        rightContent={<CardSettingsActionButton theme={theme} size={size} variant="soft" />}
+        rightContent={<CardSettingsActionButton theme={theme} size={resolvedSize} variant="soft" />}
         overflowItems={[
           { key: 'rename', label: 'Rename', onSelect: () => {} },
           { key: 'duplicate', label: 'Duplicate', onSelect: () => {} },
@@ -68,7 +77,7 @@ const meta = {
           'Composed action-row pattern for card footers and control strips, including left control groups, optional right utility actions, and overflow menu actions.',
           '',
           'What this page covers:',
-          '- Density variants (`small`, `medium`, `large`) mapped to card size and interaction context.',
+          '- Density variants (`small`, `default`, `large`) mapped to card size and interaction context.',
           '- Mixed-content row composition (preset controls + settings action + overflow commands).',
           '- Themed control tokens for selected and unselected round-control states.',
           '',
@@ -101,10 +110,12 @@ export const Small: Story = {
 };
 
 export const Medium: Story = {
+  args: { size: 'default' },
   parameters: {
     docs: {
       description: {
-        story: 'Default action-row density tuned for most card surfaces.',
+        story:
+          'Default action-row density tuned for most card surfaces. `medium` remains a compatibility alias.',
       },
     },
   },

@@ -1,9 +1,11 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HVACCardProps } from './hvac-card.types';
 import { useHvacEntitySync } from './use-hvac-entity-sync';
@@ -13,6 +15,12 @@ export interface HVACSiblingEntity {
   id: string;
   entity: HassEntity;
 }
+
+// Stable empty references so the selector and useMemo don't create new objects
+// when there are no siblings, which would break shallow equality.
+const EMPTY_SIBLING_IDS: string[] = [];
+const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
+const SIBLING_DOMAIN_PATTERN = /^(switch|input_boolean|script|button|input_button)\./;
 
 export function useHVACCardController({
   id,
@@ -46,7 +54,6 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
 
   useHvacEntitySync({
@@ -65,20 +72,49 @@ export function useHVACCardController({
 
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const deviceId = entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null;
-  const siblingEntities =
-    deviceId && allEntities
-      ? entityRegistry
-          .filter((entry) => {
-            if (entry.device_id !== deviceId || entry.entity_id === id) {
-              return false;
-            }
 
-            return /^(switch|input_boolean|script|button|input_button)\./.test(entry.entity_id);
-          })
-          .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
-          .filter((entry) => entry.entity !== undefined)
-      : [];
+  // Derive the parent device id from the entity registry. The registry only changes
+  // when devices are added/removed — not on entity state updates.
+  const deviceId = useMemo(
+    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
+    [entityRegistry, id]
+  );
+
+  // Compute the sibling entity IDs from the registry alone (no entity state needed).
+  // Changes only when the device topology changes, not on state updates.
+  const siblingEntityIds = useMemo<string[]>(() => {
+    if (!deviceId) return EMPTY_SIBLING_IDS;
+    return entityRegistry
+      .filter(
+        (e) =>
+          e.device_id === deviceId && e.entity_id !== id && SIBLING_DOMAIN_PATTERN.test(e.entity_id)
+      )
+      .map((e) => e.entity_id);
+  }, [deviceId, id, entityRegistry]);
+
+  // Subscribe to only the sibling entity states rather than the full entities dict.
+  // `shallow` does a key-wise === comparison: home-assistant-js-websocket preserves
+  // entity object references for unchanged entities, so this will not re-render when
+  // unrelated entities update elsewhere in HA.
+  const siblingEntitySelector = useCallback(
+    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
+      if (!siblingEntityIds.length || !state.entities) return EMPTY_SIBLING_RECORD;
+      return Object.fromEntries(siblingEntityIds.map((eid) => [eid, state.entities?.[eid]]));
+    },
+    [siblingEntityIds]
+  );
+  const siblingEntityRecord = useHomeAssistant(siblingEntitySelector, shallow);
+
+  const siblingEntities = useMemo<HVACSiblingEntity[]>(
+    () =>
+      siblingEntityIds
+        .map((eid) => {
+          const entity = siblingEntityRecord[eid];
+          return entity ? { id: eid, entity } : null;
+        })
+        .filter((entry): entry is HVACSiblingEntity => entry !== null),
+    [siblingEntityIds, siblingEntityRecord]
+  );
 
   const visualMode = useHvacVisualMode({
     action,

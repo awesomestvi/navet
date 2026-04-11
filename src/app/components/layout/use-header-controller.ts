@@ -1,18 +1,30 @@
 import { useMemo, useRef, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
 import { useNotifications } from '@/app/features/notifications';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
+
+// Narrow to only person.* entities — the only domain this controller needs.
+// Defined at module scope so the selector reference is stable and shallow equality
+// can do its job: no re-render unless a person entity actually changes.
+function selectPersonEntities(state: HomeAssistantStore) {
+  if (!state.entities) return null;
+  return Object.fromEntries(
+    Object.entries(state.entities).filter(([id]) => id.startsWith('person.'))
+  );
+}
 
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const authConfig = useAuth(authSelectors.config);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const personEntities = useHomeAssistant(selectPersonEntities, shallow);
   const user = useHomeAssistant(homeAssistantSelectors.user);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -44,7 +56,7 @@ export function useHeaderController() {
   }, [t, user?.name]);
 
   const avatarUrl = useMemo(() => {
-    const entityPicture = Object.values(entities ?? {}).find((entity) => {
+    const entityPicture = Object.values(personEntities ?? {}).find((entity) => {
       if (!entity.entity_id.startsWith('person.')) {
         return false;
       }
@@ -66,7 +78,7 @@ export function useHeaderController() {
     }
 
     return authConfig ? `${authConfig.url}${entityPicture}` : entityPicture;
-  }, [authConfig, entities, user?.name]);
+  }, [authConfig, personEntities, user?.name]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),

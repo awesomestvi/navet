@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { navetTypographyTokens } from '@/app/components/system/tokens/foundations';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
@@ -25,6 +25,8 @@ interface CardMetricProps {
   theme: ThemeType;
   /** Optional Tailwind class(es) for the label. Falls back to a muted secondary color. */
   labelClassName?: string;
+  valueStyle?: CSSProperties;
+  labelStyle?: CSSProperties;
   className?: string;
 }
 
@@ -42,6 +44,8 @@ export function CardMetric({
   accentClassName,
   theme,
   labelClassName,
+  valueStyle,
+  labelStyle,
   className = '',
 }: CardMetricProps) {
   const inactiveClassName = theme === 'light' ? 'text-slate-400' : 'text-white/40';
@@ -51,9 +55,14 @@ export function CardMetric({
 
   return (
     <div className={className}>
-      <div className={valueClassName}>{value}</div>
+      <div className={valueClassName} style={valueStyle}>
+        {value}
+      </div>
       {label !== undefined && (
-        <div className={`mt-1 ${navetTypographyTokens.helper} ${resolvedLabelClassName}`}>
+        <div
+          className={`mt-1 ${navetTypographyTokens.helper} ${resolvedLabelClassName}`}
+          style={labelStyle}
+        >
           {label}
         </div>
       )}

@@ -1,11 +1,13 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import type { HassEntities } from 'home-assistant-js-websocket';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSFeedCardProps } from './types';
 import { useRSSFeedItems } from './use-rss-feed-items';
@@ -13,6 +15,7 @@ import { useRSSFeedSources } from './use-rss-feed-sources';
 import { RSSFeedCardView } from './view';
 
 const RSS_REFRESH_INTERVAL_SECONDS = 120;
+const EMPTY_FEEDREADER_ENTITIES: HassEntities = {};
 
 export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   cardId,
@@ -24,7 +27,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   tintColor,
   onTintColorChange,
 }: RSSFeedCardProps) {
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const { theme, colors, primaryColor } = useTheme();
   const { t, formatRelativeTime } = useI18n();
   const allDevices = useDevices();
@@ -48,9 +50,32 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
     articleCount,
     setArticleCount,
   } = useRSSFeedSources(cardId);
+
+  // Only subscribe to the specific entity IDs used by HA feedreader providers.
+  // useRSSFeedItems accesses entities[provider.entityId] — never the full dict.
+  // Without narrowing, any HA entity update would re-trigger the RSS fetch effect.
+  const feedreaderEntityIds = useMemo(
+    () =>
+      selectedProviders
+        .filter((p) => p.type === 'home-assistant-feedreader' && p.entityId)
+        .map((p) => p.entityId as string),
+    [selectedProviders]
+  );
+
+  const feedreaderEntitySelector = useCallback(
+    (state: HomeAssistantStore): HassEntities => {
+      if (!feedreaderEntityIds.length || !state.entities) return EMPTY_FEEDREADER_ENTITIES;
+      return Object.fromEntries(
+        feedreaderEntityIds.map((eid) => [eid, state.entities?.[eid]])
+      ) as HassEntities;
+    },
+    [feedreaderEntityIds]
+  );
+  const feedreaderEntities = useHomeAssistant(feedreaderEntitySelector, shallow);
+
   const { items, isLoading, error } = useRSSFeedItems(
     selectedProviders,
-    entities,
+    feedreaderEntities,
     articleCount,
     refreshNonce
   );

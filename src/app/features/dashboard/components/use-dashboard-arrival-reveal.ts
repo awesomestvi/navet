@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@/app/hooks';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { ArrivalField, ArrivalPhase, ArrivalVariant } from './dashboard-arrival-reveal.view';
 import { getDashboardArrivalRevealTokens } from './dashboard-arrival-reveal-tokens';
 
@@ -18,6 +20,7 @@ export function useDashboardArrivalReveal(
 ) {
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const [phase, setPhase] = useState<ArrivalPhase>('baking');
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export function useDashboardArrivalReveal(
   return {
     accentColor,
     copy,
+    effectsQuality,
     phase,
     setPhase,
     theme,

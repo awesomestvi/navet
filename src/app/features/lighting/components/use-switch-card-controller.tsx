@@ -1,9 +1,11 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { SwitchCardProps } from './switch-card.types';
 import { useSwitchCardAppearance } from './use-switch-card-appearance';
@@ -16,6 +18,9 @@ export interface SwitchSiblingEntity {
   id: string;
   entity: HassEntity;
 }
+
+const EMPTY_SIBLING_IDS: string[] = [];
+const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
 
 export function useSwitchCardController({
   id,
@@ -38,7 +43,6 @@ export function useSwitchCardController({
   useSwitchResetTimerCleanup(resetTimerRef);
 
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
   const { colors, theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -49,6 +53,7 @@ export function useSwitchCardController({
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const appearance = useSwitchCardAppearance({ id, isScript });
+
   const deviceId = useMemo(
     () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
     [entityRegistry, id]
@@ -72,22 +77,36 @@ export function useSwitchCardController({
     metrics,
   });
 
-  const siblingEntities = useMemo(() => {
-    if (!deviceId || !allEntities) {
-      return [];
-    }
-
+  // Compute sibling switch entity IDs from the registry alone — no entity state needed.
+  // Registry only changes when devices are added/removed, not on state updates.
+  const siblingEntityIds = useMemo<string[]>(() => {
+    if (!deviceId) return EMPTY_SIBLING_IDS;
     return entityRegistry
-      .filter((entry) => {
-        if (entry.device_id !== deviceId || entry.entity_id === id) {
-          return false;
-        }
+      .filter(
+        (e) => e.device_id === deviceId && e.entity_id !== id && e.entity_id.startsWith('switch.')
+      )
+      .map((e) => e.entity_id);
+  }, [deviceId, id, entityRegistry]);
 
-        return entry.entity_id.startsWith('switch.');
-      })
-      .map((entry) => ({ id: entry.entity_id, entity: allEntities[entry.entity_id] }))
-      .filter((entry) => entry.entity !== undefined) as SwitchSiblingEntity[];
-  }, [allEntities, deviceId, entityRegistry, id]);
+  const siblingEntitySelector = useCallback(
+    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
+      if (!siblingEntityIds.length || !state.entities) return EMPTY_SIBLING_RECORD;
+      return Object.fromEntries(siblingEntityIds.map((eid) => [eid, state.entities?.[eid]]));
+    },
+    [siblingEntityIds]
+  );
+  const siblingEntityRecord = useHomeAssistant(siblingEntitySelector, shallow);
+
+  const siblingEntities = useMemo<SwitchSiblingEntity[]>(
+    () =>
+      siblingEntityIds
+        .map((eid) => {
+          const entity = siblingEntityRecord[eid];
+          return entity ? { id: eid, entity } : null;
+        })
+        .filter((entry): entry is SwitchSiblingEntity => entry !== null),
+    [siblingEntityIds, siblingEntityRecord]
+  );
 
   const cardColors = isOn ? colors.switch.on : colors.switch.off;
   const hasControlsDialog = true;

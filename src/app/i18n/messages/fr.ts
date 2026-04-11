@@ -618,6 +618,8 @@ export const frMessages = {
   'vacuum.status.docked': 'A la station',
   'vacuum.status.paused': 'En pause',
   'vacuum.status.idle': 'Inactif',
+  'vacuum.metric.charging': 'En charge',
+  'vacuum.metric.fullyCharged': 'Charge complète',
   'vacuum.cleanedArea': 'Zone nettoyee',
   'vacuum.cleaningTime': 'Temps de nettoyage',
   'vacuum.settings.title': 'Paramètres de {name}',

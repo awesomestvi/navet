@@ -1,3 +1,4 @@
+import type { EffectsQuality } from '@/app/stores/settings-store';
 import type { DashboardArrivalRevealController } from './use-dashboard-arrival-reveal';
 
 export type ArrivalVariant = 'all' | 'blank' | 'import';
@@ -49,7 +50,8 @@ const ARRIVAL_KEYFRAMES = `
   @keyframes navet-dashboard-reveal-ring {
     0% { transform: translate(-50%, -50%) scale(0.68); opacity: 0; }
     18% { opacity: 0.95; }
-    66% { opacity: 0.32; }
+    56% { opacity: 0.32; }
+    72% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
     100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
   }
 
@@ -86,6 +88,29 @@ const ARRIVAL_KEYFRAMES = `
     0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
     100% { opacity: 0; transform: translateY(16px) scale(0.985); filter: blur(8px); }
   }
+
+  @keyframes navet-arrival-ambient-drift {
+    0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+    50% { transform: translate3d(3%, 2%, 0) scale(1.06); }
+    100% { transform: translate3d(-1%, 3%, 0) scale(1.02); }
+  }
+
+  @keyframes navet-arrival-ambient-drift-reverse {
+    0% { transform: translate3d(2%, 3%, 0) scale(1.04); }
+    50% { transform: translate3d(-4%, -2%, 0) scale(1); }
+    100% { transform: translate3d(3%, -1%, 0) scale(1.05); }
+  }
+
+  @keyframes navet-arrival-grid-float {
+    0% { transform: translateY(0); opacity: 0.1; }
+    50% { transform: translateY(-1.1%); opacity: 0.18; }
+    100% { transform: translateY(0.6%); opacity: 0.12; }
+  }
+
+  @keyframes navet-arrival-halo {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.94); opacity: 0.28; }
+    50% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.48; }
+  }
 `;
 
 export function DashboardArrivalRevealView({
@@ -97,16 +122,14 @@ export function DashboardArrivalRevealView({
     accentColor,
     backdropColor,
     copy,
-    panelBackground,
-    panelBackgroundBottom,
-    panelShadow,
+    effectsQuality,
     phase,
-    revealBorderColor,
     revealButtonBackground,
     revealButtonShadow,
     setPhase,
     subtleColor,
     textColor,
+    theme,
   } = controller;
 
   return (
@@ -128,15 +151,16 @@ export function DashboardArrivalRevealView({
         }}
       />
 
+      {phase !== 'baking' && (
+        <RevealBackground accentColor={accentColor} effectsQuality={effectsQuality} theme={theme} />
+      )}
+
       <BakingStage controller={controller} />
-      <RevealEffects controller={controller} />
 
       <div className="absolute inset-0 flex items-center justify-center px-6">
         <div
-          className="pointer-events-auto relative w-full max-w-xl overflow-hidden rounded-4xl border px-8 py-10 text-center shadow-2xl backdrop-blur-2xl"
+          className="pointer-events-auto relative w-full max-w-xl px-8 py-10 text-center"
           style={{
-            background: `linear-gradient(180deg, ${panelBackground}, ${panelBackgroundBottom})`,
-            borderColor: revealBorderColor,
             animation:
               phase === 'revealed'
                 ? 'navet-dashboard-reveal-card 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards'
@@ -144,7 +168,6 @@ export function DashboardArrivalRevealView({
                   ? 'navet-dashboard-exit-card 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
                   : undefined,
             opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
-            boxShadow: panelShadow,
           }}
         >
           <div
@@ -159,7 +182,10 @@ export function DashboardArrivalRevealView({
               opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
             }}
           >
-            <img src="./logo.svg" alt="" className="h-24 w-24" />
+            <div className="relative flex h-24 w-24 items-center justify-center">
+              <RevealEffects controller={controller} />
+              <img src="./logo.svg" alt="" className="relative z-10 h-24 w-24" />
+            </div>
           </div>
           <div
             className="mx-auto mt-5 h-px w-28 origin-center"
@@ -305,22 +331,23 @@ function RevealEffects({ controller }: { controller: DashboardArrivalRevealContr
       {[0, 0.24, 0.48].map((delay, index) => (
         <div
           key={delay}
-          className="absolute left-1/2 top-[40%] rounded-full border"
+          className="absolute left-1/2 top-1/2 rounded-full border"
           style={{
             width: `${15 + index * 4}rem`,
             height: `${15 + index * 4}rem`,
             borderColor: `${accentColor}${index === 0 ? '88' : '44'}`,
-            transform: 'translate(-50%, -50%)',
+            transform: 'translate(-50%, -50%) scale(0.68)',
+            opacity: 0,
             animation:
               phase === 'revealed'
-                ? `navet-dashboard-reveal-ring 3.8s ease-out ${delay}s forwards`
+                ? `navet-dashboard-reveal-ring 4.6s ease-out ${delay}s backwards infinite`
                 : 'navet-dashboard-exit-shell 0.9s ease forwards',
           }}
         />
       ))}
 
       <div
-        className="absolute left-1/2 top-[40%] h-96 w-96 rounded-full blur-3xl"
+        className="absolute left-1/2 top-1/2 h-96 w-96 rounded-full blur-3xl"
         style={{
           background: `radial-gradient(circle, ${accentColor}40 0%, ${accentColor}08 56%, transparent 74%)`,
           transform: 'translate(-50%, -50%)',
@@ -328,6 +355,126 @@ function RevealEffects({ controller }: { controller: DashboardArrivalRevealContr
             phase === 'revealed'
               ? 'navet-dashboard-reveal-glow 3.5s ease-out forwards'
               : 'navet-dashboard-exit-shell 0.9s ease forwards',
+        }}
+      />
+    </>
+  );
+}
+
+const AMBIENT_LAYERS = [
+  {
+    size: 78,
+    left: '18%',
+    top: '12%',
+    opacity: '22',
+    animation: 'navet-arrival-ambient-drift 18s ease-in-out infinite alternate',
+  },
+  {
+    size: 58,
+    left: '70%',
+    top: '16%',
+    opacity: '16',
+    animation: 'navet-arrival-ambient-drift-reverse 22s ease-in-out infinite alternate',
+  },
+  {
+    size: 68,
+    left: '50%',
+    top: '68%',
+    opacity: '1a',
+    animation: 'navet-arrival-ambient-drift 26s ease-in-out 1.8s infinite alternate',
+  },
+] as const;
+
+function RevealBackground({
+  accentColor,
+  effectsQuality,
+  theme,
+}: {
+  accentColor: string;
+  effectsQuality: EffectsQuality;
+  theme: DashboardArrivalRevealController['theme'];
+}) {
+  const showFullAmbient = effectsQuality === 'high';
+  const showHaloMotion = effectsQuality !== 'low';
+  const isLight = theme === 'light';
+  const gridLine = isLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.06)';
+  const gridGlow = isLight ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.04)';
+  const softHighlight = isLight ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.07)';
+  const secondaryHighlight = isLight ? 'rgba(255,255,255,0.34)' : 'rgba(255,255,255,0.05)';
+  const verticalWash = isLight ? 'rgba(15,23,42,0.02)' : 'rgba(255,255,255,0.03)';
+  const lowerWash = isLight ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.04)';
+  const secondaryBloom = isLight ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.12)';
+
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-90"
+        style={{
+          background: [
+            `radial-gradient(circle at 50% 36%, ${accentColor}26 0%, ${accentColor}12 18%, transparent 42%)`,
+            `radial-gradient(circle at 20% 18%, ${softHighlight} 0%, transparent 30%)`,
+            `radial-gradient(circle at 78% 20%, ${secondaryHighlight} 0%, transparent 26%)`,
+            `linear-gradient(180deg, ${verticalWash} 0%, rgba(255,255,255,0) 38%, ${lowerWash} 100%)`,
+          ].join(', '),
+        }}
+      />
+
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: [
+            `linear-gradient(${gridLine} 1px, transparent 1px)`,
+            `linear-gradient(90deg, ${gridLine} 1px, transparent 1px)`,
+          ].join(', '),
+          backgroundPosition: 'center center',
+          backgroundSize: showFullAmbient ? '160px 160px' : '220px 220px',
+          maskImage:
+            'radial-gradient(circle at 50% 38%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 48%, transparent 78%)',
+          WebkitMaskImage:
+            'radial-gradient(circle at 50% 38%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 48%, transparent 78%)',
+          boxShadow: `inset 0 0 140px ${gridGlow}`,
+          opacity: showFullAmbient ? (isLight ? 0.22 : 0.18) : isLight ? 0.14 : 0.1,
+          animation: showFullAmbient
+            ? 'navet-arrival-grid-float 16s ease-in-out infinite'
+            : undefined,
+        }}
+      />
+
+      <div
+        className="pointer-events-none absolute left-1/2 top-[38%] h-[42rem] w-[42rem] rounded-full blur-3xl"
+        style={{
+          background: `radial-gradient(circle, ${accentColor}26 0%, ${accentColor}10 36%, transparent 70%)`,
+          transform: 'translate(-50%, -50%)',
+          animation: showHaloMotion ? 'navet-arrival-halo 12s ease-in-out infinite' : undefined,
+        }}
+      />
+
+      {showFullAmbient &&
+        AMBIENT_LAYERS.map((layer) => (
+          <div
+            key={`${layer.left}-${layer.top}`}
+            className="pointer-events-none absolute rounded-full blur-3xl"
+            style={{
+              left: layer.left,
+              top: layer.top,
+              width: `${layer.size}rem`,
+              height: `${layer.size}rem`,
+              background: `radial-gradient(circle, ${accentColor}${layer.opacity} 0%, transparent 68%)`,
+              animation: layer.animation,
+            }}
+          />
+        ))}
+
+      <div
+        className="pointer-events-none absolute -right-[12%] bottom-[-12%] h-[34rem] w-[28rem]"
+        style={{
+          background: `radial-gradient(circle at 40% 40%, ${secondaryBloom} 0%, ${accentColor}10 24%, transparent 72%)`,
+          filter: 'blur(26px)',
+          opacity: effectsQuality === 'high' ? (isLight ? 0.62 : 0.75) : isLight ? 0.34 : 0.42,
+          animation:
+            effectsQuality === 'high'
+              ? 'navet-arrival-ambient-drift-reverse 18s ease-in-out infinite alternate'
+              : undefined,
         }}
       />
     </>

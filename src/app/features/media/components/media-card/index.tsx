@@ -120,22 +120,22 @@ export const MediaCard = memo(function MediaCard({
   const inactiveShellBorder = colors.media.off.border;
   const cardBorder = hasArtwork ? 'border-transparent' : surface.border;
   const cardShadow = '';
-  const shellBg = hasArtwork
-    ? isGlass
-      ? 'bg-transparent'
-      : isLight
-        ? 'bg-white'
-        : 'bg-zinc-950'
-    : isOff
-      ? inactiveShellBg
+  const shellBg = isOff
+    ? inactiveShellBg
+    : hasArtwork
+      ? isGlass
+        ? 'bg-transparent'
+        : isLight
+          ? 'bg-white'
+          : 'bg-zinc-950'
       : isLight
         ? 'bg-white'
         : isGlass
           ? 'bg-white/8'
           : 'bg-zinc-900';
   const shellBorder = isOff ? inactiveShellBorder : cardBorder;
-  const shellBlur = hasArtwork ? '' : cardShell.backdropClassName;
-  const shellOverlayClassName = isOff && !hasArtwork ? null : stateSurface.overlayClassName;
+  const shellBlur = hasArtwork && !isOff ? '' : cardShell.backdropClassName;
+  const shellOverlayClassName = isOff ? null : stateSurface.overlayClassName;
   const interactiveShellProps = isEditMode
     ? {}
     : {

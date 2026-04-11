@@ -1,5 +1,5 @@
 import { Battery, BatteryLow } from 'lucide-react';
-import { useMemo } from 'react';
+import { memo, useDeferredValue, useMemo } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
@@ -16,11 +16,13 @@ interface BatteryOverviewWidgetProps {
   size?: CardSize;
 }
 
-export function BatteryOverviewWidget({ size = 'large' }: BatteryOverviewWidgetProps) {
+export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
+  size = 'large',
+}: BatteryOverviewWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
 
   const batteries = useMemo<BatteryDevice[]>(() => {
     if (!entities) return [];
@@ -96,4 +98,4 @@ export function BatteryOverviewWidget({ size = 'large' }: BatteryOverviewWidgetP
       )}
     </div>
   );
-}
+});

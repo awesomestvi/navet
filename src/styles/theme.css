@@ -258,9 +258,48 @@
     filter: none;
   }
 
+  /* ── MEDIUM: reduce motion and blur costs without eliminating them ─────────
+     Goal: mid-range phones and low-end desktops feel responsive while
+     preserving visual identity.                                               */
+
+  /* Cut transition/animation durations. Hover feedback and state changes still
+     animate, but the GPU spends less time per transition. 150 ms feels instant
+     on mid-range hardware while still communicating interactivity. */
+  html[data-effects-quality="medium"] *,
+  html[data-effects-quality="medium"] *::before,
+  html[data-effects-quality="medium"] *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must cap Tailwind transition/animation durations to reduce GPU workload on mid-range hardware */
+    transition-duration: 150ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must cap Tailwind transition/animation durations to reduce GPU workload on mid-range hardware */
+    animation-duration: 250ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: clears eager compositor-layer hints so the GPU isn't pre-promoting every animated card element */
+    will-change: auto !important;
+  }
+
+  /* Reduce backdrop-blur from the typical card value (~24 px) to 6 px.
+     Blur cost scales roughly with radius² on the GPU: 6 px vs 24 px is ~16×
+     less fill work per composited element. The glass aesthetic survives at
+     6 px — it reads as frosted rather than clear. */
+  html[data-effects-quality="medium"] [class*="backdrop-blur"] {
+    /* biome-ignore lint/complexity/noImportantStyles: must reduce Tailwind backdrop-blur utilities to cut GPU compositing cost on mid-range hardware */
+    backdrop-filter: blur(6px) !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must reduce Tailwind backdrop-blur utilities to cut GPU compositing cost on mid-range hardware */
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+
+  /* Ambient light bleed: mix-blend-mode radial gradient overlay per card.
+     Each one forces an independent compositing layer and GPU overdraw.
+     In MEDIUM this is a visual flourish worth trading for responsiveness. */
+  html[data-effects-quality="medium"] [data-ambient-light-bleed="true"] {
+    display: none;
+  }
+
+  /* Remove large drop shadows. [class*="shadow-[0_"] catches all outer arbitrary
+     shadows (0_22px, 0_24px, 0_28px, 0_32px …) while leaving inset shadows
+     (which start with "inset") untouched so borders/highlights are preserved. */
+  html[data-effects-quality="medium"] .shadow-xl,
   html[data-effects-quality="medium"] .shadow-2xl,
-  html[data-effects-quality="medium"] [class*="shadow-[0_24px"],
-  html[data-effects-quality="medium"] [class*="shadow-[0_-10px"] {
+  html[data-effects-quality="medium"] [class*="shadow-[0_"] {
     box-shadow: none;
   }
 
@@ -276,6 +315,7 @@
     box-shadow: none;
   }
 
+  html[data-effects-quality="medium"] [data-ambient-light-bleed="true"],
   html[data-effects-quality="low"] [data-ambient-light-bleed="true"] {
     display: none;
   }

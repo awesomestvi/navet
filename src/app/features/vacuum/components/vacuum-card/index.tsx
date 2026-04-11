@@ -20,6 +20,7 @@ interface VacuumCardProps {
   name: string;
   status: VacuumStatus;
   battery: number;
+  cleaningProgress?: number;
   cleanedArea?: string;
   cleaningTime?: string;
   room?: string;
@@ -33,6 +34,7 @@ export const VacuumCard = memo(function VacuumCard({
   name,
   status,
   battery,
+  cleaningProgress,
   cleanedArea = '0 m²',
   cleaningTime = '0 min',
   room = 'Living Room',
@@ -44,6 +46,14 @@ export const VacuumCard = memo(function VacuumCard({
     Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
       : undefined;
+  const parseNumberish = (value: unknown) => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return undefined;
+  };
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const liveState = liveEntity?.state;
   const liveStatus: typeof status =
@@ -65,6 +75,36 @@ export const VacuumCard = memo(function VacuumCard({
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const liveBattery =
     typeof liveAttrs?.battery_level === 'number' ? liveAttrs.battery_level : battery;
+  const areaBasedCleaningProgress = (() => {
+    const cleanedAreaValue =
+      parseNumberish(liveAttrs?.cleaned_area) ??
+      parseNumberish(liveAttrs?.cleaned_area_today) ??
+      parseNumberish(liveAttrs?.last_cleaned_area);
+    const totalAreaValue =
+      parseNumberish(liveAttrs?.total_clean_area) ??
+      parseNumberish(liveAttrs?.clean_area_total) ??
+      parseNumberish(liveAttrs?.total_area);
+
+    if (
+      typeof cleanedAreaValue === 'number' &&
+      typeof totalAreaValue === 'number' &&
+      totalAreaValue > 0
+    ) {
+      return Math.max(0, Math.min(100, (cleanedAreaValue / totalAreaValue) * 100));
+    }
+
+    return undefined;
+  })();
+  const liveCleaningProgress =
+    parseNumberish(liveAttrs?.cleaning_progress) ??
+    parseNumberish(liveAttrs?.clean_progress) ??
+    parseNumberish(liveAttrs?.progress) ??
+    parseNumberish(liveAttrs?.cleaned_percentage) ??
+    parseNumberish(liveAttrs?.cleaning_percentage) ??
+    parseNumberish(liveAttrs?.clean_percent) ??
+    parseNumberish(liveAttrs?.completed_percentage) ??
+    areaBasedCleaningProgress ??
+    cleaningProgress;
   const liveFanSpeed = typeof liveAttrs?.fan_speed === 'string' ? liveAttrs.fan_speed : undefined;
   const liveFanSpeeds =
     readStringList(liveAttrs?.fan_speed_list) ??
@@ -87,7 +127,7 @@ export const VacuumCard = memo(function VacuumCard({
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const { t } = useI18n();
-  const isActive = currentStatus === 'cleaning' || currentStatus === 'returning';
+  const isActive = currentStatus !== 'idle';
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const cardColors = colors.vacuum[getVacuumThemeStatus(currentStatus)];
 
@@ -116,26 +156,28 @@ export const VacuumCard = memo(function VacuumCard({
             subtitle={t('vacuum.subtitle')}
             layout="eyebrow-first"
             size={size}
+            accentColor={cardColors.accent}
             tone={
               currentStatus === 'returning'
                 ? 'purple'
                 : currentStatus === 'paused'
                   ? 'yellow'
-                  : currentStatus === 'cleaning'
+                  : currentStatus === 'cleaning' || currentStatus === 'docked'
                     ? 'primary'
                     : 'neutral'
             }
             leading={
               <EntityCardHeaderIcon
                 IconComponent={Bot}
-                isActive={currentStatus === 'cleaning' || currentStatus === 'returning'}
+                isActive={isActive}
                 size={size}
+                baseColor={cardColors.accent}
                 tone={
                   currentStatus === 'returning'
                     ? 'purple'
                     : currentStatus === 'paused'
                       ? 'yellow'
-                      : currentStatus === 'cleaning'
+                      : currentStatus === 'cleaning' || currentStatus === 'docked'
                         ? 'primary'
                         : 'neutral'
                 }
@@ -148,10 +190,10 @@ export const VacuumCard = memo(function VacuumCard({
               <VacuumStatusDisplay
                 currentStatus={currentStatus}
                 battery={liveBattery}
-                cleanedArea={cleanedArea}
-                cleaningTime={cleaningTime}
+                cleaningProgress={liveCleaningProgress}
                 room={room}
                 theme={theme}
+                accentColorValue={cardColors.accent}
                 isSmall={isSmall}
                 isMedium={isMedium}
               />

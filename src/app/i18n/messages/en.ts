@@ -604,6 +604,8 @@ export const enMessages = {
   'vacuum.status.docked': 'Docked',
   'vacuum.status.paused': 'Paused',
   'vacuum.status.idle': 'Idle',
+  'vacuum.metric.charging': 'Charging',
+  'vacuum.metric.fullyCharged': 'Fully charged',
   'vacuum.cleanedArea': 'Cleaned Area',
   'vacuum.cleaningTime': 'Cleaning Time',
   'vacuum.settings.title': '{name} Settings',

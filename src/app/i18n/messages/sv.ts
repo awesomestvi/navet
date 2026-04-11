@@ -611,6 +611,8 @@ export const svMessages = {
   'vacuum.status.docked': 'Dockad',
   'vacuum.status.paused': 'Pausad',
   'vacuum.status.idle': 'Vilar',
+  'vacuum.metric.charging': 'Laddar',
+  'vacuum.metric.fullyCharged': 'Fulladdad',
   'vacuum.cleanedArea': 'Städad yta',
   'vacuum.cleaningTime': 'Städtid',
   'vacuum.settings.title': 'Inställningar för {name}',

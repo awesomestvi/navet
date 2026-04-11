@@ -615,6 +615,8 @@ export const esMessages = {
   'vacuum.status.docked': 'En la base',
   'vacuum.status.paused': 'Pausada',
   'vacuum.status.idle': 'Inactiva',
+  'vacuum.metric.charging': 'Cargando',
+  'vacuum.metric.fullyCharged': 'Carga completa',
   'vacuum.cleanedArea': 'Área limpiada',
   'vacuum.cleaningTime': 'Tiempo de limpieza',
   'vacuum.settings.title': 'Ajustes de {name}',

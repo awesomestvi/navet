@@ -1,4 +1,4 @@
-import { Home, Pause, Play } from 'lucide-react';
+import { HousePlug, Pause, Play } from 'lucide-react';
 import { CardActionRow } from '@/app/components/patterns/card-action-row';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
@@ -36,7 +36,7 @@ export function VacuumControlsCompact({
             <RoundControlButton
               theme={theme}
               size="medium"
-              variant="neutral"
+              variant="soft"
               onClick={onPause}
               aria-label={t('vacuum.action.pause')}
               className="transition-colors"
@@ -62,12 +62,12 @@ export function VacuumControlsCompact({
           <RoundControlButton
             theme={theme}
             size="medium"
-            variant="neutral"
+            variant="soft"
             onClick={onReturnHome}
             aria-label={t('vacuum.action.returnToDock')}
             className="transition-colors"
           >
-            <Home className="h-3.5 w-3.5" />
+            <HousePlug className="h-3.5 w-3.5" />
           </RoundControlButton>
         </>
       }
@@ -75,6 +75,7 @@ export function VacuumControlsCompact({
         <CardSettingsActionButton
           theme={theme}
           size="medium"
+          variant="soft"
           onClick={(event) => {
             event.stopPropagation();
             onOpenSettings();
