@@ -54,9 +54,16 @@ function areValuesEqual(a: unknown, b: unknown): boolean {
 function areDevicesEqual(a: DeviceWithType, b: DeviceWithType): boolean {
   const aRaw = a as Record<string, unknown>;
   const bRaw = b as Record<string, unknown>;
+  if (aRaw.id !== bRaw.id) {
+    return false;
+  }
+
   const aKeys = Object.keys(aRaw);
   const bKeys = Object.keys(bRaw);
-  if (aKeys.length !== bKeys.length) return false;
+  if (aKeys.length !== bKeys.length) {
+    return false;
+  }
+
   for (const key of aKeys) {
     const av = aRaw[key];
     const bv = bRaw[key];
@@ -64,6 +71,7 @@ function areDevicesEqual(a: DeviceWithType, b: DeviceWithType): boolean {
       return false;
     }
   }
+
   return true;
 }
 

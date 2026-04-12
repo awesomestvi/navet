@@ -2,11 +2,18 @@ import { Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { shallow } from 'zustand/shallow';
 import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useHomeAssistant, useI18n, usePersistedState, useTheme } from '@/app/hooks';
+import {
+  useEntityRoomRegistryContext,
+  useHomeAssistant,
+  useI18n,
+  usePersistedState,
+  useTheme,
+} from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
@@ -35,9 +42,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 }: EntityRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
+  const roomRegistry = useEntityRoomRegistryContext(entityId);
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
   const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);
@@ -57,7 +63,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       return overrideAreaId;
     }
 
-    const entityEntry = entityRegistry.find((entry) => entry.entity_id === entityId);
+    const entityEntry = roomRegistry.entry;
     if (!entityEntry) {
       return '';
     }
@@ -70,12 +76,9 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       return '';
     }
 
-    return deviceRegistry.find((entry) => entry.id === entityEntry.device_id)?.area_id ?? '';
-  }, [deviceRegistry, entityId, entityRegistry, roomOverrides]);
-  const entityEntry = useMemo(
-    () => entityRegistry.find((entry) => entry.entity_id === entityId),
-    [entityId, entityRegistry]
-  );
+    return roomRegistry.deviceAreaId ?? '';
+  }, [entityId, roomRegistry.deviceAreaId, roomRegistry.entry, roomOverrides]);
+  const entityEntry = roomRegistry.entry;
   const selectedAreaLabel = useMemo(() => {
     if (!selectedAreaId) {
       return t('common.noRoom');
@@ -105,8 +108,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
         });
       } else {
         await homeAssistantService.updateEntityArea(entityId, nextAreaId, {
-          deviceId: entityEntry?.device_id ?? null,
-          entityAreaId: entityEntry?.area_id ?? null,
+          deviceId: entityEntry.device_id,
+          entityAreaId: entityEntry.area_id,
         });
         setRoomOverrides((current) => {
           if (!(entityId in current)) {

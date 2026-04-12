@@ -1,8 +1,10 @@
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useError } from '@/app/contexts/error-context';
 import { useI18n, useTheme } from '@/app/hooks';
+import { useErrorStore } from '@/app/stores';
+import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { appErrorSelectors } from '@/app/stores/selectors';
 
 interface ErrorDisplayProps {
   onRetry?: () => void;
@@ -16,7 +18,11 @@ export const ErrorDisplay = memo(function ErrorDisplay({
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const { error, clearError } = useError();
+  const error = useErrorStore(appErrorSelectors.error);
+  /** Clears the overlay and HA connection error (see `homeAssistantStore.clearError`). */
+  const dismissError = () => {
+    homeAssistantStore.getState().clearError();
+  };
 
   if (!error) return null;
 
@@ -34,7 +40,7 @@ export const ErrorDisplay = memo(function ErrorDisplay({
             {showClose && (
               <button
                 type="button"
-                onClick={clearError}
+                onClick={dismissError}
                 className={`w-8 h-8 rounded-lg ${surface.hoverBg} flex items-center justify-center transition-colors`}
               >
                 <X className={`w-4 h-4 ${surface.textSecondary}`} />
@@ -62,7 +68,6 @@ export const ErrorDisplay = memo(function ErrorDisplay({
             <button
               type="button"
               onClick={() => {
-                clearError();
                 onRetry();
               }}
               className="w-full px-4 py-3 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"

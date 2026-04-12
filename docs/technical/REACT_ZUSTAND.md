@@ -6,7 +6,7 @@ Current state-management guidance for Navet.
 
 Navet uses **Zustand exclusively** for all shared client state. React Context is reserved only
 for cross-cutting infrastructure concerns that have no reactive state of their own (i18n provider,
-error boundary, loading orchestration). Auth and config are Zustand stores.
+loading orchestration). Auth, config, and the global app error overlay are Zustand stores.
 
 ---
 
@@ -26,17 +26,15 @@ All shared, reactive state lives here. Stores self-initialize — no provider wr
 | `navigation-store` | Active section, current room (persisted via Zustand persist) |
 | `edit-mode-store` | Dashboard edit mode toggle |
 | `search-store` | Search query and filtered device ids |
+| `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
 
-### React Context (`src/app/contexts/`)
+### React Context
 
 Only used for providers that have no reactive state:
 
-- `I18nProvider` — locale loading and translation function
-- `LoadingProvider` — global loading overlay
-- `ErrorProvider` — error boundary
-
-`AuthProvider` and `ConfigProvider` still exist as identity pass-throughs to preserve import
-compatibility. They contain no state — all logic is in the stores.
+- `I18nProvider` (`src/app/i18n/`) — locale loading and translation function
+- `AuthProvider` and `ConfigProvider` (`src/app/contexts/`) — identity pass-throughs to preserve import
+  compatibility. They contain no state — all logic is in the stores.
 
 ---
 

@@ -1,5 +1,5 @@
-import * as Slider from '@radix-ui/react-slider';
 import { memo } from 'react';
+import { Slider } from '@/app/components/primitives/slider';
 import {
   isCompactCardSize,
   isExtraSmallCardSize,
@@ -39,12 +39,8 @@ export const BrightnessSlider = memo(function BrightnessSlider({
     accentColor,
   });
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
-  const trackHeightClass = isExtraSmall ? 'h-[3px]' : 'h-1';
-  const thumbSizeClass = isExtraSmall
-    ? 'w-3.5 h-3.5'
-    : isCompact || size === 'medium'
-      ? 'w-4 h-4'
-      : 'w-5 h-5';
+  const trackHeightClass = 'h-[3px]';
+  const thumbSizeClass = 'w-4 h-4';
   const trackBg = theme === 'light' ? 'bg-gray-200' : 'bg-white/10';
   const activeColor = accentColor;
   const rangeBg = isOn
@@ -89,31 +85,26 @@ export const BrightnessSlider = memo(function BrightnessSlider({
           </span>
         </div>
       )}
-      <Slider.Root
-        data-card-interactive
-        value={[value]}
-        onValueChange={(val) => onChange(val[0])}
-        onValueCommit={(val) => onCommit?.(val[0])}
+      <Slider
+        value={value}
+        onValueChange={onChange}
+        onValueCommit={onCommit}
         min={1}
         max={100}
         step={1}
         disabled={disabled}
-        className={`relative flex items-center w-full select-none touch-none ${heightClass}`}
-      >
-        <Slider.Track className={`relative grow rounded-full ${trackHeightClass} ${trackBg}`}>
-          <Slider.Range
-            className="absolute h-full rounded-full"
-            style={{
-              backgroundImage: rangeBg,
-            }}
-          />
-        </Slider.Track>
-        <Slider.Thumb
-          className={`block ${thumbSizeClass} rounded-full shadow-lg focus:outline-none cursor-pointer touch-none`}
-          aria-label={t('lighting.brightness')}
-          style={{ backgroundColor: thumbBg, boxShadow: `0 0 0 2px ${thumbRing}` }}
-        />
-      </Slider.Root>
+        dataCardInteractive
+        ariaLabel={t('lighting.brightness')}
+        rootClassName={`relative flex items-center w-full select-none touch-none ${heightClass}`}
+        trackClassName={`relative grow rounded-full ${trackHeightClass} ${trackBg}`}
+        rangeClassName="absolute h-full rounded-full"
+        thumbClassName={`block ${thumbSizeClass} rounded-full shadow-lg focus:outline-none cursor-pointer touch-none`}
+        touchThumbClassName="block h-6 w-6 rounded-full shadow-lg focus:outline-none cursor-pointer touch-none"
+        rangeStyle={{
+          backgroundImage: rangeBg,
+        }}
+        thumbStyle={{ backgroundColor: thumbBg, boxShadow: `0 0 0 2px ${thumbRing}` }}
+      />
     </div>
   );
 });

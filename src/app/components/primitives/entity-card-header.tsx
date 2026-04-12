@@ -55,7 +55,7 @@ export function EntityCardHeader({
   });
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
-  const isStandardCompact = size === 'small' || size === 'medium';
+  const isStandardCompact = size === 'small' || size === 'medium' || size === 'medium-vertical';
   const titleSize = isTiny || isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
   const marginBottom =
     marginBottomClassName ??

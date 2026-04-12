@@ -69,14 +69,18 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   return (
     <div className="relative">
       {activePoint && tooltipLeftPercent !== null ? (
-        <div
-          className="pointer-events-none absolute top-0 z-10 w-max max-w-[180px] -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left text-[11px] text-white shadow-2xl backdrop-blur-md"
-          style={{ left: `${tooltipLeftPercent}%` }}
-        >
-          <div className="text-white/85">{activePoint.x}</div>
-          <div className="mt-1 text-white/75">
-            {activePoint.y}
-            {yUnit}
+        <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-0 w-full">
+          <div
+            className="w-full"
+            style={{ transform: `translate3d(${tooltipLeftPercent}%, 0, 0)` }}
+          >
+            <div className="-translate-x-1/2 w-max max-w-[180px] rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left text-[11px] text-white shadow-2xl backdrop-blur-md">
+              <div className="text-white/85">{activePoint.x}</div>
+              <div className="mt-1 text-white/75">
+                {activePoint.y}
+                {yUnit}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

@@ -73,7 +73,6 @@ export const WeatherCard = memo(function WeatherCard({
     weatherTintStyle,
     weatherTextTreatment,
     weatherShellClassName,
-    dashedBorder,
     isSettingsOpen,
     setIsSettingsOpen,
     interaction,
@@ -296,13 +295,16 @@ export const WeatherCard = memo(function WeatherCard({
 
               <div className="my-8 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <Sunrise className="h-4 w-4 text-orange-400" />
+                  <Sunrise className="h-4 w-4" style={{ color: textSecondary }} />
                   <span className="text-xs font-medium" style={{ color: textPrimary }}>
                     {sunrise}
                   </span>
                 </div>
                 <div className="mx-4 flex flex-1 items-center">
-                  <div className={`flex-1 border-t border-dashed ${dashedBorder}`} />
+                  <div
+                    className="flex-1 border-t border-dashed"
+                    style={{ borderColor: textSecondary }}
+                  />
                 </div>
                 <div
                   className="mx-2 text-xs"
@@ -311,10 +313,13 @@ export const WeatherCard = memo(function WeatherCard({
                   {daylight}
                 </div>
                 <div className="mx-4 flex flex-1 items-center">
-                  <div className={`flex-1 border-t border-dashed ${dashedBorder}`} />
+                  <div
+                    className="flex-1 border-t border-dashed"
+                    style={{ borderColor: textSecondary }}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Sunset className="h-4 w-4 text-orange-400" />
+                  <Sunset className="h-4 w-4" style={{ color: textSecondary }} />
                   <span
                     className="text-xs font-medium"
                     style={{ color: textPrimary, textShadow: weatherTextTreatment.textShadow }}

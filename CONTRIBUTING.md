@@ -100,6 +100,24 @@ This project adheres to a code of conduct. By participating, you are expected to
    - Fill out the PR template
    - Link any related issues
 
+### CI and local checks
+
+Pull requests and pushes to `main` run **GitHub Actions** (`.github/workflows/ci.yml`) in this order:
+
+1. `pnpm check` — Biome lint and format
+2. `pnpm check:stories` — Storybook title and ownership rules
+3. `pnpm typecheck` — TypeScript (`tsc --noEmit`)
+4. `pnpm test` — Vitest unit tests
+5. `pnpm build` — production Vite build
+
+Before opening a PR, run the same sequence locally (or at minimum `pnpm check`, `pnpm typecheck`, and `pnpm test`) so CI stays green.
+
+[Dependabot](.github/dependabot.yml) opens weekly PRs for npm dependency updates; review them for breaking changes before merge.
+
+### Package layout note
+
+`react` and `react-dom` are listed as **optional** `peerDependencies` so Storybook and other tooling can resolve the workspace without forcing duplicate peer installs in every scenario. The app still expects React 18 at runtime; keep `peerDependencies` versions aligned with what Vite and Storybook use.
+
 ## 📝 Coding Standards
 
 ### TypeScript

@@ -110,10 +110,12 @@ These rules apply to all code written for this project. Follow them before writi
 ### Before Writing Code
 
 1. Check whether an existing component, hook, utility, or pattern should be reused.
-2. If creating something new, make it reusable if that is realistically beneficial.
-3. Explain any architectural decision that affects maintainability or performance.
-4. Flag any tradeoff where visual richness may hurt performance on low-power devices.
-5. Do not produce shortcut code that solves the immediate task but worsens the codebase.
+2. **Before building any new UI element, scan `src/app/components/primitives/` first.** If a primitive already covers the use case (button, slider, dialog shell, round control, card header, etc.), use it — do not re-implement it inline or in a feature folder.
+3. **Before adding a new Storybook story file, check whether a story for that component already exists** — run `glob src/app/**/*.stories.*` or search for the component name. Add to an existing story file rather than creating a duplicate.
+4. If creating something new, make it reusable if that is realistically beneficial.
+5. Explain any architectural decision that affects maintainability or performance.
+6. Flag any tradeoff where visual richness may hurt performance on low-power devices.
+7. Do not produce shortcut code that solves the immediate task but worsens the codebase.
 
 ### Before Finalizing Code
 
@@ -130,7 +132,7 @@ These rules apply to all code written for this project. Follow them before writi
 ### State Management
 
 - **All shared state is Zustand.** Do not introduce React Context for reactive state.
-- Context is only for infrastructure without reactive state: `I18nProvider`, `LoadingProvider`, `ErrorProvider`.
+- Context is only for infrastructure without reactive state (e.g. `I18nProvider` in `src/app/i18n/`).
 - Use selectors from `src/app/stores/selectors.ts` to subscribe to the minimum slice needed.
 - Persisted stores use `persist` middleware with `createJSONStorage(() => localStorage)` and a
   `merge` function that validates before rehydrating. Never use raw `window.localStorage` in stores.
@@ -148,6 +150,7 @@ These rules apply to all code written for this project. Follow them before writi
 | `navigation-store` | Active section, current room (persisted) |
 | `edit-mode-store` | Dashboard edit mode toggle |
 | `search-store` | Search query and filtered device ids |
+| `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
 
 ### Selector Usage
 
@@ -275,3 +278,5 @@ copy all service state on every event.
 - Do not duplicate a component, hook, or utility — check if something reusable already exists first.
 - Do not solve a task with shortcut code that makes the codebase harder to maintain.
 - Do not add new low-level shared UI to `src/app/components/shared/` when it should live in `primitives/` or `patterns/`.
+- Do not re-implement a UI element that already exists in `src/app/components/primitives/` — always check primitives before writing new UI.
+- Do not create a new `*.stories.*` file for a component that already has one — extend the existing story file instead.

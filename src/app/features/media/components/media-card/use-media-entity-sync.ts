@@ -1,8 +1,25 @@
-import { useEffect } from 'react';
+import { type Dispatch, type SetStateAction, useEffect } from 'react';
+import { normalizeMediaPlaybackState } from '@/app/features/media';
+
+function areStringArraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 interface UseMediaEntitySyncParams {
   liveEntity: { state: string; attributes: Record<string, unknown> } | undefined;
   entityId: string;
+  deviceClass?: string;
+  currentMuted: boolean;
   initialState: 'playing' | 'paused' | 'idle' | 'off';
   initialVolume: number;
   initialMuted: boolean;
@@ -11,19 +28,21 @@ interface UseMediaEntitySyncParams {
   initialSupportsGrouping: boolean;
   initialGroupMembers: string[];
   isAdjustingVolume: boolean;
-  setState: (state: 'playing' | 'paused' | 'idle' | 'off') => void;
-  setElapsedSeconds: (seconds: number) => void;
-  setDurationSeconds: (seconds: number) => void;
-  setVolume: (volume: number) => void;
-  setPreviousVolume: (volume: number) => void;
-  setIsMuted: (muted: boolean) => void;
-  setSupportsGrouping: (supports: boolean) => void;
-  setGroupMembers: (groupMembers: string[]) => void;
+  setState: Dispatch<SetStateAction<'playing' | 'paused' | 'idle' | 'off'>>;
+  setElapsedSeconds: Dispatch<SetStateAction<number>>;
+  setDurationSeconds: Dispatch<SetStateAction<number>>;
+  setVolume: Dispatch<SetStateAction<number>>;
+  setPreviousVolume: Dispatch<SetStateAction<number>>;
+  setIsMuted: Dispatch<SetStateAction<boolean>>;
+  setSupportsGrouping: Dispatch<SetStateAction<boolean>>;
+  setGroupMembers: Dispatch<SetStateAction<string[]>>;
 }
 
 export function useMediaEntitySync({
   liveEntity,
   entityId,
+  deviceClass,
+  currentMuted,
   initialState,
   initialVolume,
   initialMuted,
@@ -45,13 +64,13 @@ export function useMediaEntitySync({
     if (liveEntity) {
       const attrs = liveEntity.attributes;
       const rawState = liveEntity.state;
-      const nextState: typeof initialState =
-        rawState === 'playing' || rawState === 'paused' || rawState === 'idle' ? rawState : 'off';
+      const nextState: typeof initialState = normalizeMediaPlaybackState(rawState, deviceClass);
       const nextVolume =
         typeof attrs.volume_level === 'number'
           ? Math.round(attrs.volume_level * 100)
           : initialVolume;
-      const nextMuted = attrs.is_volume_muted === true || nextVolume === 0;
+      const nextMuted =
+        typeof attrs.is_volume_muted === 'boolean' ? attrs.is_volume_muted : currentMuted;
       const nextElapsed =
         typeof attrs.media_position === 'number'
           ? attrs.media_position
@@ -67,37 +86,82 @@ export function useMediaEntitySync({
             (value): value is string => typeof value === 'string' && value.length > 0
           )
         : [];
+      const resolvedGroupMembers = nextGroupMembers.length > 0 ? nextGroupMembers : [entityId];
+      const nextSupportsGrouping = (nextSupportedFeatures & 524288) === 524288;
 
-      setState(nextState);
-      setElapsedSeconds(nextElapsed);
-      setDurationSeconds(nextDuration);
+      setState((currentState) => (currentState === nextState ? currentState : nextState));
+      setElapsedSeconds((currentElapsedSeconds) =>
+        currentElapsedSeconds === nextElapsed ? currentElapsedSeconds : nextElapsed
+      );
+      setDurationSeconds((currentDurationSeconds) =>
+        currentDurationSeconds === nextDuration ? currentDurationSeconds : nextDuration
+      );
       if (!isAdjustingVolume) {
-        setVolume(nextVolume);
+        setVolume((currentVolume) => (currentVolume === nextVolume ? currentVolume : nextVolume));
         if (nextVolume > 0) {
-          setPreviousVolume(nextVolume);
+          setPreviousVolume((previousVolume) =>
+            previousVolume === nextVolume ? previousVolume : nextVolume
+          );
         }
-        setIsMuted(nextMuted);
+        setIsMuted((previousMuted) => (previousMuted === nextMuted ? previousMuted : nextMuted));
       }
-      setSupportsGrouping((nextSupportedFeatures & 524288) === 524288);
-      setGroupMembers(nextGroupMembers.length > 0 ? nextGroupMembers : [entityId]);
+      setSupportsGrouping((currentSupportsGrouping) =>
+        currentSupportsGrouping === nextSupportsGrouping
+          ? currentSupportsGrouping
+          : nextSupportsGrouping
+      );
+      setGroupMembers((currentGroupMembers) =>
+        areStringArraysEqual(currentGroupMembers, resolvedGroupMembers)
+          ? currentGroupMembers
+          : resolvedGroupMembers
+      );
       return;
     }
 
-    setState(initialState);
-    setElapsedSeconds(initialElapsedSeconds ?? 0);
-    setDurationSeconds(initialDurationSeconds ?? 0);
+    const resolvedInitialGroupMembers =
+      initialGroupMembers.length > 0 ? initialGroupMembers : [entityId];
+    const resolvedInitialElapsedSeconds = initialElapsedSeconds ?? 0;
+    const resolvedInitialDurationSeconds = initialDurationSeconds ?? 0;
+
+    setState((currentState) => (currentState === initialState ? currentState : initialState));
+    setElapsedSeconds((currentElapsedSeconds) =>
+      currentElapsedSeconds === resolvedInitialElapsedSeconds
+        ? currentElapsedSeconds
+        : resolvedInitialElapsedSeconds
+    );
+    setDurationSeconds((currentDurationSeconds) =>
+      currentDurationSeconds === resolvedInitialDurationSeconds
+        ? currentDurationSeconds
+        : resolvedInitialDurationSeconds
+    );
     if (!isAdjustingVolume) {
-      setVolume(initialVolume);
+      setVolume((currentVolume) =>
+        currentVolume === initialVolume ? currentVolume : initialVolume
+      );
       if (initialVolume > 0) {
-        setPreviousVolume(initialVolume);
+        setPreviousVolume((previousVolume) =>
+          previousVolume === initialVolume ? previousVolume : initialVolume
+        );
       }
-      setIsMuted(initialMuted || initialVolume === 0);
+      setIsMuted((previousMuted) =>
+        previousMuted === initialMuted ? previousMuted : initialMuted
+      );
     }
-    setSupportsGrouping(initialSupportsGrouping);
-    setGroupMembers(initialGroupMembers.length > 0 ? initialGroupMembers : [entityId]);
+    setSupportsGrouping((currentSupportsGrouping) =>
+      currentSupportsGrouping === initialSupportsGrouping
+        ? currentSupportsGrouping
+        : initialSupportsGrouping
+    );
+    setGroupMembers((currentGroupMembers) =>
+      areStringArraysEqual(currentGroupMembers, resolvedInitialGroupMembers)
+        ? currentGroupMembers
+        : resolvedInitialGroupMembers
+    );
   }, [
     liveEntity,
     initialState,
+    currentMuted,
+    deviceClass,
     initialVolume,
     initialMuted,
     initialElapsedSeconds,

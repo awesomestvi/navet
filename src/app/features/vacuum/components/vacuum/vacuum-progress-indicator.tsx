@@ -1,4 +1,3 @@
-import { MapPin } from 'lucide-react';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
@@ -8,7 +7,6 @@ interface VacuumProgressIndicatorProps {
   accentColorValue: string;
   label: string;
   progress: number;
-  room?: string;
   pulse?: boolean;
   variant?: 'battery' | 'cleaning';
 }
@@ -18,7 +16,6 @@ export function VacuumProgressIndicator({
   accentColorValue,
   label,
   progress,
-  room,
   pulse = false,
   variant = 'battery',
 }: VacuumProgressIndicatorProps) {
@@ -36,15 +33,6 @@ export function VacuumProgressIndicator({
     <div className="flex flex-col gap-1.5">
       <div className="flex items-end justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1.5">
-          {room ? (
-            <span
-              className={`flex min-w-0 items-center gap-1 text-xs ${surface.textSubtle}`}
-              style={{ color: textTokens.subtitleColor }}
-            >
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{room}</span>
-            </span>
-          ) : null}
           <span
             className="truncate text-xs font-medium"
             style={{ color: textTokens.subtitleColor }}
@@ -54,7 +42,7 @@ export function VacuumProgressIndicator({
         </div>
         <span className={`self-end text-xs font-medium ${surface.textSubtle}`}>{progress}%</span>
       </div>
-      <div className="w-full h-2.5 rounded-full bg-white/14 shadow-inner shadow-black/10 overflow-hidden">
+      <div className="w-full h-1.5 rounded-full bg-white/14 shadow-inner shadow-black/10 overflow-hidden">
         <div
           className={`relative h-full overflow-hidden rounded-full transition-all duration-500 ${
             pulse

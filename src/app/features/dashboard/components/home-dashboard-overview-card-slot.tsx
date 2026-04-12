@@ -8,12 +8,15 @@ function SortableHomeCard({
   sectionId,
   isPreviewHidden,
   className,
+  optimizeOffscreenPaint,
   children,
 }: {
   cardId: string;
   sectionId?: string;
   isPreviewHidden: boolean;
   className: string;
+  /** When true, skip layout/paint for off-screen cards (not used at `effectsQuality: high`). */
+  optimizeOffscreenPaint: boolean;
   children: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -32,7 +35,15 @@ function SortableHomeCard({
       }`}
       data-card-id={cardId}
     >
-      {children}
+      <div
+        className={
+          optimizeOffscreenPaint
+            ? 'h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]'
+            : 'h-full min-h-0'
+        }
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -44,6 +55,7 @@ export function HomeCardSlot({
   isPreviewHidden,
   className,
   content,
+  optimizeOffscreenPaint = false,
 }: {
   sortable: boolean;
   cardId: string;
@@ -51,6 +63,7 @@ export function HomeCardSlot({
   isPreviewHidden: boolean;
   className: string;
   content: ReactNode;
+  optimizeOffscreenPaint?: boolean;
 }) {
   if (!sortable) {
     return content;
@@ -62,6 +75,7 @@ export function HomeCardSlot({
       sectionId={sectionId}
       isPreviewHidden={isPreviewHidden}
       className={className}
+      optimizeOffscreenPaint={optimizeOffscreenPaint}
     >
       {content}
     </SortableHomeCard>

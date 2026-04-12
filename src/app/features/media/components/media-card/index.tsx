@@ -8,6 +8,7 @@ import { MediaLargeView } from '../media/media-large-view';
 import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
 import { MediaMediumView } from '../media/media-medium-view';
 import { MediaSmallView } from '../media/media-small-view';
+import { MediaTvView } from '../media/media-tv-view';
 import { useMediaCardController } from './use-media-card-controller';
 
 const MediaDialog = lazy(async () => {
@@ -22,6 +23,9 @@ interface MediaCardProps {
   title: string;
   artist: string;
   entityType?: string;
+  deviceClass?: string;
+  source?: string;
+  sourceList?: string[];
   entityPicture?: string;
   state: 'playing' | 'paused' | 'idle' | 'off';
   volume: number;
@@ -34,6 +38,11 @@ interface MediaCardProps {
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  /**
+   * When true, TV remote UI (D-pad, channel keys) renders as if a `remote.*` entity exists.
+   * Use in Storybook where HA is not connected; ignored for non-TV cards.
+   */
+  simulateTvRemote?: boolean;
 }
 
 export const MediaCard = memo(function MediaCard({
@@ -43,6 +52,9 @@ export const MediaCard = memo(function MediaCard({
   title,
   artist,
   entityType,
+  deviceClass,
+  source: initialSource,
+  sourceList: initialSourceList,
   entityPicture,
   state,
   volume: initialVolume,
@@ -55,6 +67,7 @@ export const MediaCard = memo(function MediaCard({
   size,
   onSizeChange: _onSizeChange,
   isEditMode,
+  simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -78,14 +91,20 @@ export const MediaCard = memo(function MediaCard({
     isMuted,
     isOpen,
     openDialog,
+    remoteAvailable,
     repeatMode,
+    selectSource,
     availableGroupingPlayers,
     attachGroupMember,
     detachGroupMember,
     shuffleEnabled,
+    source,
+    sourceList,
     supportsGrouping,
     startVolumeInteraction,
     endVolumeInteraction,
+    sendRemoteCommand,
+    toggleTvPower,
     toggleShuffle,
     toggleMute,
     togglePlay,
@@ -93,10 +112,13 @@ export const MediaCard = memo(function MediaCard({
     volume,
   } = useMediaCardController({
     entityId: id,
+    deviceClass,
     entityPicture,
     artworkKey: [entityPicture, title, artist].filter(Boolean).join('::'),
     initialTitle: title,
     initialArtist: artist,
+    initialSource,
+    initialSourceList,
     initialState: state,
     initialVolume,
     initialMuted,
@@ -112,40 +134,71 @@ export const MediaCard = memo(function MediaCard({
   const isMedium = mediaSize === 'medium';
   const isMediumVertical = mediaSize === 'medium-vertical';
   const isLarge = mediaSize === 'large';
-  const padding = isSmall ? 'p-4' : isLarge ? 'p-6' : 'p-5';
+  const isTv = deviceClass?.toLowerCase() === 'tv';
+  const tvRemoteAvailable = simulateTvRemote === true ? true : remoteAvailable;
+  const padding = isSmall
+    ? 'p-4'
+    : isLarge
+      ? 'p-6'
+      : isTv && (isMedium || isMediumVertical)
+        ? 'p-4'
+        : 'p-5';
   const isLight = theme === 'light';
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
+  const isActiveTv = isTv && !isOff;
   const inactiveShellBg = `bg-gradient-to-br ${colors.media.off.gradient}`;
   const inactiveShellBorder = colors.media.off.border;
   const cardBorder = hasArtwork ? 'border-transparent' : surface.border;
   const cardShadow = '';
+  const activeTvShellBg = isLight
+    ? 'bg-gradient-to-br from-violet-50 via-fuchsia-50 to-white'
+    : isGlass
+      ? 'bg-gradient-to-br from-fuchsia-500/12 via-violet-500/10 to-white/6'
+      : theme === 'black'
+        ? 'bg-gradient-to-br from-fuchsia-950/45 via-black to-black'
+        : 'bg-gradient-to-br from-violet-950/90 via-fuchsia-950/75 to-zinc-950';
+  const activeTvShellBorder = isLight
+    ? 'border-fuchsia-200/80'
+    : isGlass
+      ? 'border-fuchsia-400/20'
+      : theme === 'black'
+        ? 'border-fuchsia-500/35'
+        : 'border-fuchsia-500/25';
   const shellBg = isOff
     ? inactiveShellBg
-    : hasArtwork
-      ? isGlass
-        ? 'bg-transparent'
+    : isActiveTv
+      ? activeTvShellBg
+      : hasArtwork
+        ? isGlass
+          ? 'bg-transparent'
+          : isLight
+            ? 'bg-white'
+            : 'bg-zinc-950'
         : isLight
           ? 'bg-white'
-          : 'bg-zinc-950'
-      : isLight
-        ? 'bg-white'
-        : isGlass
-          ? 'bg-white/8'
-          : 'bg-zinc-900';
-  const shellBorder = isOff ? inactiveShellBorder : cardBorder;
+          : isGlass
+            ? 'bg-white/8'
+            : 'bg-zinc-900';
+  const shellBorder = isOff ? inactiveShellBorder : isActiveTv ? activeTvShellBorder : cardBorder;
   const shellBlur = hasArtwork && !isOff ? '' : cardShell.backdropClassName;
   const shellOverlayClassName = isOff ? null : stateSurface.overlayClassName;
+  const tvOnGlowClassName = isActiveTv
+    ? isLight
+      ? 'bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.1),transparent_48%)]'
+      : 'bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.18),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.14),transparent_44%)]'
+    : null;
+  const handleCardActivate = isTv ? toggleTvPower : openDialog;
   const interactiveShellProps = isEditMode
     ? {}
     : {
         role: 'button' as const,
         tabIndex: 0,
-        onClick: openDialog,
+        onClick: handleCardActivate,
         onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            openDialog();
+            handleCardActivate();
           }
         },
       };
@@ -161,9 +214,31 @@ export const MediaCard = memo(function MediaCard({
         {shellOverlayClassName && (
           <div className={`absolute inset-0 ${shellOverlayClassName}`}></div>
         )}
+        {tvOnGlowClassName && <div className={`absolute inset-0 ${tvOnGlowClassName}`}></div>}
 
         <div className="relative h-full flex flex-col">
-          {isSmall ? (
+          {isTv ? (
+            <MediaTvView
+              size={mediaSize}
+              playerName={name}
+              source={source}
+              sourceList={sourceList}
+              isOn={!isOff}
+              isPlaying={isPlaying}
+              volume={volume}
+              isMuted={isMuted}
+              theme={theme}
+              remoteAvailable={tvRemoteAvailable}
+              onTogglePlay={togglePlay}
+              onToggleMute={toggleMute}
+              onVolumeChange={handleVolumeChange}
+              onVolumeInteractionStart={startVolumeInteraction}
+              onVolumeInteractionEnd={endVolumeInteraction}
+              onSelectSource={selectSource}
+              onRemoteCommand={sendRemoteCommand}
+              onOpenDialog={openDialog}
+            />
+          ) : isSmall ? (
             <MediaSmallView
               entityId={id}
               artwork={resolvedAlbumArt}

@@ -1,5 +1,6 @@
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
+import { Slider } from '@/app/components/primitives/slider';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
@@ -66,7 +67,7 @@ export function MediaMediumVerticalView({
     useMediaVolumeMode();
   const displayVolume = Math.max(0, Math.min(100, isMuted ? 0 : volume));
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
-  const palette = useMediaArtworkColors(artwork, theme, `${entityId}::${title}::${artist}`);
+  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
@@ -110,15 +111,9 @@ export function MediaMediumVerticalView({
       }
     : neutralButtonStyle;
   const playButtonStyle = {
-    background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.34)} 0%, ${withAlpha(palette.vibrant, 0.62)} 100%)`,
-    borderColor: withAlpha(palette.highlight, 0.22),
-    boxShadow: `0 18px 42px -18px ${withAlpha(palette.vibrant, 0.7)}, inset 0 1px 0 ${withAlpha(palette.highlight, 0.22)}`,
-  };
-  const playGlowStyle = {
-    background: `radial-gradient(circle, ${withAlpha(palette.vibrant, 0.5)} 0%, ${withAlpha(
-      palette.highlight,
-      0.2
-    )} 38%, transparent 74%)`,
+    backgroundColor: withAlpha(palette.vibrant, 0.24),
+    borderColor: withAlpha(palette.highlight, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.14)}`,
   };
   const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
   const trackFillStyle = {
@@ -199,25 +194,17 @@ export function MediaMediumVerticalView({
             </div>
 
             <div className="relative">
-              {!subduedFallback && (
-                <div
-                  className="pointer-events-none absolute inset-[-26%] rounded-full blur-3xl"
-                  style={playGlowStyle}
-                />
-              )}
               <RoundControlButton
                 theme={theme}
                 size="large"
-                variant="emphasis"
+                variant="neutral"
                 aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
                 onClick={(event) => {
                   event.stopPropagation();
                   onTogglePlay();
                 }}
-                className={`h-12 w-12 hover:scale-[1.03] active:scale-95 ${
-                  subduedFallback ? '' : 'border backdrop-blur-xl'
-                }`}
-                iconClassName={subduedFallback ? undefined : '!text-white'}
+                className="h-10.5 w-10.5 border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
                 style={subduedFallback ? undefined : playButtonStyle}
               >
                 {isPlaying ? (
@@ -248,50 +235,27 @@ export function MediaMediumVerticalView({
 
             <div className="relative flex-1">
               {isVolumeMode ? (
-                <>
-                  <div
-                    className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
-                    style={trackBaseStyle}
-                  />
-                  <div
-                    className="absolute left-0 top-1/2 h-px -translate-y-1/2"
-                    style={{ ...trackFillStyle, width: `${displayVolume}%` }}
-                  />
-                  <div
-                    className="absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full"
-                    style={{ ...trackThumbStyle, left: `calc(${displayVolume}% - 5px)` }}
-                  />
-                  <input
-                    type="range"
-                    aria-label={t('media.volume')}
-                    min="0"
-                    max="100"
-                    value={displayVolume}
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onMouseDown={() => {
-                      registerVolumeInteraction();
-                      onVolumeInteractionStart();
-                    }}
-                    onTouchStart={() => {
-                      registerVolumeInteraction();
-                      onVolumeInteractionStart();
-                    }}
-                    onKeyDown={() => {
-                      registerVolumeInteraction();
-                      onVolumeInteractionStart();
-                    }}
-                    onMouseUp={onVolumeInteractionEnd}
-                    onTouchEnd={onVolumeInteractionEnd}
-                    onKeyUp={onVolumeInteractionEnd}
-                    onBlur={onVolumeInteractionEnd}
-                    onChange={(event) => {
-                      registerVolumeInteraction();
-                      onVolumeChange(parseInt(event.target.value, 10));
-                    }}
-                    className="absolute inset-0 h-6 w-full -translate-y-1/2 cursor-pointer opacity-0"
-                  />
-                </>
+                <Slider
+                  value={displayVolume}
+                  ariaLabel={t('media.volume')}
+                  onValueChange={(value) => {
+                    registerVolumeInteraction();
+                    onVolumeChange(value);
+                  }}
+                  onInteractionStart={() => {
+                    registerVolumeInteraction();
+                    onVolumeInteractionStart();
+                  }}
+                  onInteractionEnd={onVolumeInteractionEnd}
+                  rootClassName="relative flex h-6 w-full items-center touch-none select-none"
+                  trackClassName="relative h-[3px] grow rounded-full"
+                  rangeClassName="absolute h-full rounded-full"
+                  thumbClassName="block h-4 w-4 rounded-full outline-none"
+                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                  trackStyle={trackBaseStyle}
+                  rangeStyle={trackFillStyle}
+                  thumbStyle={trackThumbStyle}
+                />
               ) : null}
             </div>
 

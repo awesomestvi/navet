@@ -1,16 +1,13 @@
 import { Battery, BatteryLow } from 'lucide-react';
-import { memo, useDeferredValue, useMemo } from 'react';
+import { memo } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import {
+  haBatterySensorRowsEqual,
+  selectBatterySensorRowsFromHa,
+} from '@/app/hooks/ha-battery-sensor-rows';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
-
-interface BatteryDevice {
-  id: string;
-  name: string;
-  level: number;
-}
 
 interface BatteryOverviewWidgetProps {
   size?: CardSize;
@@ -22,25 +19,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme);
-  const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
-
-  const batteries = useMemo<BatteryDevice[]>(() => {
-    if (!entities) return [];
-    return Object.entries(entities)
-      .filter(
-        ([, entity]) =>
-          (entity.attributes as Record<string, unknown>).device_class === 'battery' &&
-          !Number.isNaN(Number(entity.state))
-      )
-      .map(([id, entity]) => ({
-        id,
-        name:
-          ((entity.attributes as Record<string, unknown>).friendly_name as string) ||
-          id.replace('sensor.', '').replace(/_/g, ' '),
-        level: Math.min(100, Math.max(0, Math.round(Number(entity.state)))),
-      }))
-      .sort((a, b) => a.level - b.level);
-  }, [entities]);
+  const batteries = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
 
   const isCompact = isCompactCardSize(size);
   const accentHex = getThemeColorValue(primaryColor);

@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useHomeAssistant } from '@/app/hooks';
+import {
+  haBatterySensorRowsEqual,
+  selectBatterySensorRowsFromHa,
+} from '@/app/hooks/ha-battery-sensor-rows';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { useEnergyDashboardStore } from '../stores/energy-dashboard-store';
@@ -19,7 +23,7 @@ export function useEnergyDashboard() {
   const setSourceConfig = useEnergyDashboardStore((state) => state.setSourceConfig);
   const clearSourceConfig = useEnergyDashboardStore((state) => state.clearSourceConfig);
   const isConnected = useHomeAssistant(homeAssistantSelectors.connected);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const batteryDevices = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
 
   const [showSetup, setShowSetup] = useState(false);
 
@@ -97,26 +101,6 @@ export function useEnergyDashboard() {
         ]
       : tracked;
   }, [overview.totals.importTodayKWh, topDeviceTotals]);
-
-  const batteryDevices = useMemo(() => {
-    if (!entities) return [];
-
-    return Object.entries(entities)
-      .filter(([, entity]) => {
-        const attributes = entity.attributes as Record<string, unknown>;
-        return attributes.device_class === 'battery' && !Number.isNaN(Number(entity.state));
-      })
-      .map(([id, entity]) => {
-        const attributes = entity.attributes as Record<string, unknown>;
-        return {
-          id,
-          name:
-            (attributes.friendly_name as string) || id.replace(/^sensor\./, '').replace(/_/g, ' '),
-          level: Math.min(100, Math.max(0, Math.round(Number(entity.state)))),
-        };
-      })
-      .sort((a, b) => a.level - b.level);
-  }, [entities]);
 
   const visibleWidgetSet = useMemo(() => new Set(visibleWidgets), [visibleWidgets]);
 

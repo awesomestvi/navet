@@ -2,7 +2,7 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useAuth } from '@/app/contexts/auth-context';
-import { useHomeAssistant } from '@/app/hooks';
+import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { CameraSettingsDialog } from './camera-settings-dialog';
@@ -57,7 +57,6 @@ function resolveHomeAssistantImageUrl(
   return imageUrl.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${imageUrl}` : imageUrl;
 }
 
-const EMPTY_DEVICE_IDS: string[] = [];
 const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
 
 export const CameraCardContainer = memo(function CameraCardContainer({
@@ -70,7 +69,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 }: CameraCardProps) {
   const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const { siblingIds: deviceEntityIds } = useCameraRegistryDeviceTopology(id);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -95,11 +94,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const statusChangedAt =
     parseTimestamp(liveEntity?.last_changed) ?? parseTimestamp(liveEntity?.last_updated);
 
-  const deviceId = useMemo(
-    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
-    [entityRegistry, id]
-  );
-
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setNow(Date.now());
@@ -107,16 +101,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
     return () => window.clearInterval(intervalId);
   }, []);
-
-  // Compute all sibling entity IDs from the registry (no entity state needed).
-  // Covers both the settings siblings (switch/select/number) and the motion sensor
-  // (binary_sensor) — avoiding a broad allEntities subscription.
-  const deviceEntityIds = useMemo<string[]>(() => {
-    if (!deviceId) return EMPTY_DEVICE_IDS;
-    return entityRegistry
-      .filter((e) => e.device_id === deviceId && e.entity_id !== id)
-      .map((e) => e.entity_id);
-  }, [deviceId, id, entityRegistry]);
 
   // Subscribe to only entities belonging to this camera's device.
   // Re-renders only when one of those entities changes, not on unrelated HA updates.

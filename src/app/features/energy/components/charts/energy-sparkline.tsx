@@ -188,16 +188,20 @@ export const EnergySparkline = memo(function EnergySparkline({
       ))}
 
       {activePoint && tooltipTimestamp && tooltipLeftPercent !== null ? (
-        <div
-          className="pointer-events-none absolute top-0 z-10 w-max max-w-55 -translate-x-1/2 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md"
-          style={{ left: `${tooltipLeftPercent}%` }}
-        >
-          <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
-            <span>
-              {t('charts.powerSparkline.useLabel', { value: Math.round(activePoint.value) })}
-            </span>
+        <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-0 w-full">
+          <div
+            className="w-full"
+            style={{ transform: `translate3d(${tooltipLeftPercent}%, 0, 0)` }}
+          >
+            <div className="-translate-x-1/2 w-max max-w-55 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md">
+              <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
+                <span>
+                  {t('charts.powerSparkline.useLabel', { value: Math.round(activePoint.value) })}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

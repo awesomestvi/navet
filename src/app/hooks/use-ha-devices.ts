@@ -1,6 +1,9 @@
-import type { Connection, HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { useEffect, useMemo, useState } from 'react';
+import type { Connection, HassEntity } from 'home-assistant-js-websocket';
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { STORAGE_KEYS } from '../constants/storage-keys';
+import { normalizeMediaPlaybackState } from '../features/media';
+import { normalizeVacuumStatus } from '../features/vacuum';
 import { useI18n } from '../i18n';
 import type { HomeAssistantEntityRegistryEntry } from '../services/home-assistant.service';
 import { homeAssistantSelectors, settingsSelectors } from '../stores/selectors';
@@ -23,6 +26,7 @@ import type {
   WeatherDevice,
 } from '../types/device.types';
 import { UNKNOWN_ROOM_LABEL } from '../utils/device-location';
+import { haEntityStructureEqual } from '../utils/ha-entity-structure-equal';
 import {
   brightnessToPercent,
   formatCalendarTime,
@@ -131,23 +135,6 @@ async function fetchCalendarEvents(
   return payload?.[entityId]?.events ?? [];
 }
 
-/**
- * Structural equality for HassEntities: returns true when the set of entity IDs is unchanged.
- * Entity state changes (brightness, temperature, etc.) do not trigger a DeviceCollection rebuild —
- * those are handled by per-card per-entity subscriptions via homeAssistantSelectors.entity(id).
- */
-function entityStructureEqual(prev: HassEntities | null, next: HassEntities | null): boolean {
-  if (prev === next) return true;
-  if (!prev || !next) return false;
-  const prevKeys = Object.keys(prev);
-  const nextKeys = Object.keys(next);
-  if (prevKeys.length !== nextKeys.length) return false;
-  for (const key of prevKeys) {
-    if (!(key in next)) return false;
-  }
-  return true;
-}
-
 function getEntityObjectId(entityId: string): string {
   const separatorIndex = entityId.indexOf('.');
   return separatorIndex === -1 ? entityId : entityId.slice(separatorIndex + 1);
@@ -197,14 +184,14 @@ function compareSortKeys(left: [number, number, string], right: [number, number,
  * Maps raw Home Assistant entities to typed device collections.
  */
 export const useHADevices = (): DeviceCollection => {
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const config = useHomeAssistant(homeAssistantSelectors.config);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
+  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry, shallow);
   // Structural equality: DeviceCollection only rebuilds when entities are added/removed,
   // not on every state change. Per-card subscriptions handle live state updates.
-  const entities = useHomeAssistant(homeAssistantSelectors.entities, entityStructureEqual);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const [entityRoomOverrides] = usePersistedState<Record<string, string>>(
@@ -229,10 +216,14 @@ export const useHADevices = (): DeviceCollection => {
   }, [entities]);
   const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
   const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
+  const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
+  const deferredCalendarEvents = useDeferredValue(calendarEvents);
 
   useEffect(() => {
     if (!connection || !primaryWeatherEntityId) {
-      setWeatherForecasts({});
+      startTransition(() => {
+        setWeatherForecasts({});
+      });
       return;
     }
 
@@ -246,11 +237,13 @@ export const useHADevices = (): DeviceCollection => {
         return;
       }
 
-      setWeatherForecasts({
-        [primaryWeatherEntityId]: {
-          daily,
-          hourly,
-        },
+      startTransition(() => {
+        setWeatherForecasts({
+          [primaryWeatherEntityId]: {
+            daily,
+            hourly,
+          },
+        });
       });
     });
 
@@ -261,7 +254,9 @@ export const useHADevices = (): DeviceCollection => {
 
   useEffect(() => {
     if (!connection || calendarEntityIds.length === 0) {
-      setCalendarEvents({});
+      startTransition(() => {
+        setCalendarEvents({});
+      });
       return;
     }
 
@@ -277,7 +272,9 @@ export const useHADevices = (): DeviceCollection => {
         return;
       }
 
-      setCalendarEvents(Object.fromEntries(entries));
+      startTransition(() => {
+        setCalendarEvents(Object.fromEntries(entries));
+      });
     });
 
     return () => {
@@ -709,7 +706,11 @@ export const useHADevices = (): DeviceCollection => {
 
         case 'media_player': {
           const supportedFeatures = parseNumberish(entity.attributes?.supported_features) ?? 0;
-          const mediaEntityType = formatMediaEntityType(entity.attributes?.device_class, t);
+          const mediaDeviceClass =
+            typeof entity.attributes?.device_class === 'string'
+              ? entity.attributes.device_class
+              : undefined;
+          const mediaEntityType = formatMediaEntityType(mediaDeviceClass, t);
           const entityPicture =
             (typeof entity.attributes?.entity_picture === 'string' &&
               entity.attributes.entity_picture) ||
@@ -718,25 +719,35 @@ export const useHADevices = (): DeviceCollection => {
             (typeof entity.attributes?.media_image_url === 'string' &&
               entity.attributes.media_image_url) ||
             undefined;
-          const normalizedState: MediaDevice['state'] =
-            entity.state === 'playing'
-              ? 'playing'
-              : entity.state === 'paused'
-                ? 'paused'
-                : entity.state === 'off' || entity.state === 'standby'
-                  ? 'off'
-                  : 'idle';
+          const normalizedState: MediaDevice['state'] = normalizeMediaPlaybackState(
+            entity.state,
+            mediaDeviceClass
+          );
           const mediaTitle =
             (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
             (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
+            (typeof entity.attributes?.media_channel === 'string' &&
+              entity.attributes.media_channel) ||
+            (typeof entity.attributes?.media_series_title === 'string' &&
+              entity.attributes.media_series_title) ||
             t('media.nothingPlaying');
           const mediaArtist =
             (typeof entity.attributes?.media_artist === 'string' &&
               entity.attributes.media_artist) ||
             (typeof entity.attributes?.media_album_name === 'string' &&
               entity.attributes.media_album_name) ||
+            (typeof entity.attributes?.media_series_title === 'string' &&
+              entity.attributes.media_series_title) ||
+            (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
             (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
             t('media.nothingPlayingDescription');
+          const mediaSource =
+            typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined;
+          const mediaSourceList = Array.isArray(entity.attributes?.source_list)
+            ? entity.attributes.source_list.filter(
+                (value): value is string => typeof value === 'string' && value.trim().length > 0
+              )
+            : [];
           const volumeLevel = parseNumberish(entity.attributes?.volume_level);
           const mediaPosition = parseNumberish(entity.attributes?.media_position);
           const mediaDuration = parseNumberish(entity.attributes?.media_duration);
@@ -758,10 +769,9 @@ export const useHADevices = (): DeviceCollection => {
             title: mediaTitle,
             artist: mediaArtist,
             entityType: mediaEntityType,
-            deviceClass:
-              typeof entity.attributes?.device_class === 'string'
-                ? entity.attributes.device_class
-                : undefined,
+            deviceClass: mediaDeviceClass,
+            source: mediaSource,
+            sourceList: mediaSourceList,
             entityPicture,
             state: normalizedState,
             volume:
@@ -875,16 +885,7 @@ export const useHADevices = (): DeviceCollection => {
             parseNumberish(entity.attributes?.clean_time) ??
             parseNumberish(entity.attributes?.cleaning_duration);
 
-          const normalizedStatus: VacuumDevice['status'] =
-            entity.state === 'cleaning'
-              ? 'cleaning'
-              : entity.state === 'returning' || entity.state === 'returning_home'
-                ? 'returning'
-                : entity.state === 'paused'
-                  ? 'paused'
-                  : entity.state === 'docked'
-                    ? 'docked'
-                    : 'idle';
+          const normalizedStatus: VacuumDevice['status'] = normalizeVacuumStatus(entity.state);
 
           vacuums.push({
             id: entityId,
@@ -907,7 +908,7 @@ export const useHADevices = (): DeviceCollection => {
         }
 
         case 'calendar': {
-          const rawEvents = calendarEvents[entityId] ?? [];
+          const rawEvents = deferredCalendarEvents[entityId] ?? [];
           const fallbackTitle =
             typeof entity.attributes?.message === 'string' ? entity.attributes.message : '';
           const fallbackLocation =
@@ -1010,7 +1011,7 @@ export const useHADevices = (): DeviceCollection => {
             break;
           }
 
-          const storedForecasts = weatherForecasts[entityId];
+          const storedForecasts = deferredWeatherForecasts[entityId];
           const fallbackDailyForecast = Array.isArray(entity.attributes?.forecast)
             ? (entity.attributes.forecast as WeatherForecastEntry[])
             : [];
@@ -1216,8 +1217,9 @@ export const useHADevices = (): DeviceCollection => {
     };
   }, [
     areas,
-    calendarEvents,
     config,
+    deferredCalendarEvents,
+    deferredWeatherForecasts,
     deviceRegistry,
     entityRoomOverrides,
     entities,
@@ -1226,6 +1228,5 @@ export const useHADevices = (): DeviceCollection => {
     primaryWeatherEntityId,
     t,
     weatherForecastMode,
-    weatherForecasts,
   ]);
 };

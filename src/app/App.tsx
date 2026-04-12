@@ -6,7 +6,6 @@ import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
 import { useAuth } from './contexts/auth-context';
 import { useConfig } from './contexts/config-context';
-import { ErrorProvider } from './contexts/error-context';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
 import { useHomeAssistant, useTheme } from './hooks';
@@ -54,14 +53,27 @@ function AppContent() {
 
   useViewportResize(syncZoomEnvironment);
 
+  const retryConnect = useCallback(() => {
+    const configToUse = authConfig || haConfig;
+    if (!isAuthenticated || !configToUse) {
+      return;
+    }
+    void connect({
+      hassUrl: configToUse.url,
+      token: configToUse.token,
+    });
+  }, [isAuthenticated, authConfig, haConfig, connect]);
+
   useEffect(() => {
     const configToUse = authConfig || haConfig;
 
     if (isAuthenticated && configToUse && !connected && !connecting) {
-      connect({
+      void connect({
         hassUrl: configToUse.url,
         token: configToUse.token,
-      }).catch((_err) => {});
+      }).catch(() => {
+        /* Error surfaced via `useErrorStore` from `homeAssistantStore.connect` */
+      });
     }
   }, [isAuthenticated, authConfig, haConfig, connected, connecting, connect]);
 
@@ -110,7 +122,9 @@ function AppContent() {
 
   return (
     <>
-      <ErrorDisplay />
+      <ErrorDisplay
+        onRetry={isAuthenticated && (authConfig || haConfig) ? retryConnect : undefined}
+      />
       <PwaUpdatePrompt />
       <NetworkStatusBanner
         connected={connected}
@@ -127,9 +141,7 @@ function AppContent() {
 export default function App() {
   return (
     <I18nProvider>
-      <ErrorProvider>
-        <AppContent />
-      </ErrorProvider>
+      <AppContent />
     </I18nProvider>
   );
 }

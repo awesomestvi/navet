@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 interface UseMediaPlaybackProgressParams {
   isPlaying: boolean;
   durationSeconds: number;
-  liveAttrs: Record<string, unknown> | undefined;
+  mediaPosition?: number;
+  mediaPositionUpdatedAt?: string;
   initialElapsedSeconds?: number;
   initialPositionUpdatedAt?: string;
   setElapsedSeconds: (seconds: number) => void;
@@ -12,7 +13,8 @@ interface UseMediaPlaybackProgressParams {
 export function useMediaPlaybackProgress({
   isPlaying,
   durationSeconds,
-  liveAttrs,
+  mediaPosition,
+  mediaPositionUpdatedAt,
   initialElapsedSeconds,
   initialPositionUpdatedAt,
   setElapsedSeconds,
@@ -23,13 +25,11 @@ export function useMediaPlaybackProgress({
     }
 
     const positionUpdatedAt =
-      typeof liveAttrs?.media_position_updated_at === 'string'
-        ? liveAttrs.media_position_updated_at
+      typeof mediaPositionUpdatedAt === 'string'
+        ? mediaPositionUpdatedAt
         : initialPositionUpdatedAt;
     const baseElapsedSeconds =
-      typeof liveAttrs?.media_position === 'number'
-        ? liveAttrs.media_position
-        : (initialElapsedSeconds ?? 0);
+      typeof mediaPosition === 'number' ? mediaPosition : (initialElapsedSeconds ?? 0);
 
     const getBaseElapsed = () => {
       if (!positionUpdatedAt) {
@@ -57,7 +57,8 @@ export function useMediaPlaybackProgress({
   }, [
     durationSeconds,
     isPlaying,
-    liveAttrs,
+    mediaPosition,
+    mediaPositionUpdatedAt,
     initialElapsedSeconds,
     initialPositionUpdatedAt,
     setElapsedSeconds,

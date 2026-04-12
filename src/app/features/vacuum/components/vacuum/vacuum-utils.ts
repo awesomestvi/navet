@@ -11,6 +11,18 @@ export interface VacuumProgressMetric {
   pulse: boolean;
 }
 
+export function normalizeVacuumStatus(
+  state: unknown,
+  fallback: VacuumStatus = 'idle'
+): VacuumStatus {
+  if (state === 'cleaning') return 'cleaning';
+  if (state === 'returning' || state === 'returning_home') return 'returning';
+  if (state === 'paused') return 'paused';
+  if (state === 'docked' || state === 'charging') return 'docked';
+  if (state === 'idle') return 'idle';
+  return fallback;
+}
+
 export function getVacuumThemeStatus(status: VacuumStatus): VacuumThemeStatus {
   return status === 'idle' ? 'docked' : status;
 }

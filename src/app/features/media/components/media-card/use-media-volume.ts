@@ -13,7 +13,7 @@ interface UseMediaVolumeParams {
 export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: UseMediaVolumeParams) {
   const [volume, setVolume] = useState(initialVolume);
   const [isMuted, setIsMuted] = useState(initialMuted);
-  const [previousVolume, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
+  const [, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
   const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
   const pendingVolumeRef = useRef<number | null>(null);
   const volumeCommitTimeoutRef = useRef<number | null>(null);
@@ -32,29 +32,27 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
     if (nextMuted) {
-      const nextPreviousVolume = volume > 0 ? volume : previousVolume;
-      setPreviousVolume(nextPreviousVolume);
-      setVolume(0);
+      if (volume > 0) {
+        setPreviousVolume(volume);
+      }
       void runVolumeAction(
-        () => homeAssistantService.setMediaPlayerVolume(entityId, 0),
+        () => homeAssistantService.setMediaPlayerMute(entityId, true),
         t('media.feedback.updateVolumeFailed')
       );
       return;
     }
-    const restoredVolume = previousVolume > 0 ? previousVolume : 50;
-    setVolume(restoredVolume);
     void runVolumeAction(
-      () => homeAssistantService.setMediaPlayerVolume(entityId, restoredVolume),
+      () => homeAssistantService.setMediaPlayerMute(entityId, false),
       t('media.feedback.updateVolumeFailed')
     );
-  }, [entityId, isMuted, previousVolume, runVolumeAction, t, volume]);
+  }, [entityId, isMuted, runVolumeAction, t, volume]);
 
   const handleVolumeChange = useCallback(
     (nextVolume: number) => {
       setVolume(nextVolume);
       if (nextVolume > 0) setPreviousVolume(nextVolume);
-      if (nextVolume > 0 && isMuted) setIsMuted(false);
-      else if (nextVolume === 0) setIsMuted(true);
+      const shouldUnmute = nextVolume > 0 && isMuted;
+      if (shouldUnmute) setIsMuted(false);
 
       pendingVolumeRef.current = nextVolume;
       if (volumeCommitTimeoutRef.current !== null) {
@@ -64,10 +62,12 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
         const pendingVolume = pendingVolumeRef.current;
         volumeCommitTimeoutRef.current = null;
         if (pendingVolume === null) return;
-        void runVolumeAction(
-          () => homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume),
-          t('media.feedback.updateVolumeFailed')
-        );
+        void runVolumeAction(async () => {
+          if (shouldUnmute) {
+            await homeAssistantService.setMediaPlayerMute(entityId, false);
+          }
+          await homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume);
+        }, t('media.feedback.updateVolumeFailed'));
       }, 120);
     },
     [entityId, isMuted, runVolumeAction, t]
@@ -84,11 +84,17 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
     const pendingVolume = pendingVolumeRef.current;
     pendingVolumeRef.current = null;
     if (pendingVolume === null) return;
-    void runVolumeAction(
-      () => homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume),
-      t('media.feedback.updateVolumeFailed')
-    );
-  }, [entityId, runVolumeAction, t]);
+    const shouldUnmute = pendingVolume > 0 && isMuted;
+    if (shouldUnmute) {
+      setIsMuted(false);
+    }
+    void runVolumeAction(async () => {
+      if (shouldUnmute) {
+        await homeAssistantService.setMediaPlayerMute(entityId, false);
+      }
+      await homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume);
+    }, t('media.feedback.updateVolumeFailed'));
+  }, [entityId, isMuted, runVolumeAction, t]);
 
   return {
     volume,

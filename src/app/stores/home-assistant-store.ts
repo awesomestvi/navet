@@ -7,6 +7,7 @@ import {
   type HomeAssistantEntityRegistryEntry,
   homeAssistantService,
 } from '../services/home-assistant.service';
+import { useErrorStore } from './error-store';
 
 interface HomeAssistantState {
   connected: boolean;
@@ -59,6 +60,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
 
     connect: async (config: HomeAssistantConfiguration) => {
       set({ connecting: true, error: null });
+      useErrorStore.getState().clearError();
 
       try {
         // Subscribe to each typed event — only update the slice of state that changed
@@ -109,22 +111,31 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
 
         return unsubscribe;
       } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Failed to connect';
         set({
-          error: error instanceof Error ? error.message : 'Failed to connect',
+          error: message,
           connecting: false,
           reconnecting: false,
           connected: false,
         });
+        useErrorStore.getState().setError(message);
         throw error;
       }
     },
 
     disconnect: () => {
+      useErrorStore.getState().clearError();
       homeAssistantService.disconnect();
       set(initialState);
     },
 
     clearError: () => {
+      useErrorStore.getState().clearError();
       set({ error: null });
     },
   };

@@ -4,7 +4,7 @@ import { shallow } from 'zustand/shallow';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useSwitchRegistryDeviceTopology, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { SwitchCardProps } from './switch-card.types';
@@ -19,7 +19,6 @@ export interface SwitchSiblingEntity {
   entity: HassEntity;
 }
 
-const EMPTY_SIBLING_IDS: string[] = [];
 const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
 
 export function useSwitchCardController({
@@ -43,7 +42,7 @@ export function useSwitchCardController({
   useSwitchResetTimerCleanup(resetTimerRef);
 
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const { siblingIds: siblingEntityIds } = useSwitchRegistryDeviceTopology(id);
   const { colors, theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const resolvedEntityType = entityType || t('lighting.type.switch');
@@ -53,11 +52,6 @@ export function useSwitchCardController({
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const appearance = useSwitchCardAppearance({ id, isScript });
-
-  const deviceId = useMemo(
-    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
-    [entityRegistry, id]
-  );
 
   useEffect(() => {
     if (liveEntity) {
@@ -76,17 +70,6 @@ export function useSwitchCardController({
     energy,
     metrics,
   });
-
-  // Compute sibling switch entity IDs from the registry alone — no entity state needed.
-  // Registry only changes when devices are added/removed, not on state updates.
-  const siblingEntityIds = useMemo<string[]>(() => {
-    if (!deviceId) return EMPTY_SIBLING_IDS;
-    return entityRegistry
-      .filter(
-        (e) => e.device_id === deviceId && e.entity_id !== id && e.entity_id.startsWith('switch.')
-      )
-      .map((e) => e.entity_id);
-  }, [deviceId, id, entityRegistry]);
 
   const siblingEntitySelector = useCallback(
     (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {

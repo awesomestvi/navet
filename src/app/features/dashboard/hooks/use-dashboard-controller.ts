@@ -34,6 +34,8 @@ export function useDashboardController(): DashboardController {
   const { t } = useI18n();
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
+  /** Avoid subscribing to the full entities map — only hydration matters for room edge cases. */
+  const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
     STORAGE_KEYS.allViewGrouping,
@@ -88,6 +90,10 @@ export function useDashboardController(): DashboardController {
     }
 
     if (rooms.length === 0) {
+      // Before HA entities hydrate, `rooms` is empty — do not wipe persisted `currentRoom`.
+      if (!hassEntitiesHydrated || !devicesLoaded) {
+        return;
+      }
       changeRoom('All');
       previousRoomsRef.current = rooms;
       return;
@@ -110,7 +116,7 @@ export function useDashboardController(): DashboardController {
 
     changeRoom(nextRoom);
     previousRoomsRef.current = rooms;
-  }, [activeRoom, changeRoom, rooms]);
+  }, [activeRoom, changeRoom, devicesLoaded, hassEntitiesHydrated, rooms]);
   const resetDashboard = useCallback(() => {
     homeLayoutController.resetLayout();
     useCustomCardsStore.getState().replaceCards([]);

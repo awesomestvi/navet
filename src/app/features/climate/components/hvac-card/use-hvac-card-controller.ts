@@ -4,7 +4,7 @@ import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useHvacRegistryDeviceTopology, useI18n, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HVACCardProps } from './hvac-card.types';
@@ -18,9 +18,7 @@ export interface HVACSiblingEntity {
 
 // Stable empty references so the selector and useMemo don't create new objects
 // when there are no siblings, which would break shallow equality.
-const EMPTY_SIBLING_IDS: string[] = [];
 const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
-const SIBLING_DOMAIN_PATTERN = /^(switch|input_boolean|script|button|input_button)\./;
 
 export function useHVACCardController({
   id,
@@ -54,7 +52,7 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
 
   useHvacEntitySync({
     liveEntity,
@@ -72,25 +70,6 @@ export function useHVACCardController({
 
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-
-  // Derive the parent device id from the entity registry. The registry only changes
-  // when devices are added/removed — not on entity state updates.
-  const deviceId = useMemo(
-    () => entityRegistry.find((entry) => entry.entity_id === id)?.device_id ?? null,
-    [entityRegistry, id]
-  );
-
-  // Compute the sibling entity IDs from the registry alone (no entity state needed).
-  // Changes only when the device topology changes, not on state updates.
-  const siblingEntityIds = useMemo<string[]>(() => {
-    if (!deviceId) return EMPTY_SIBLING_IDS;
-    return entityRegistry
-      .filter(
-        (e) =>
-          e.device_id === deviceId && e.entity_id !== id && SIBLING_DOMAIN_PATTERN.test(e.entity_id)
-      )
-      .map((e) => e.entity_id);
-  }, [deviceId, id, entityRegistry]);
 
   // Subscribe to only the sibling entity states rather than the full entities dict.
   // `shallow` does a key-wise === comparison: home-assistant-js-websocket preserves

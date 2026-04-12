@@ -1,7 +1,8 @@
-import { useDeferredValue, useMemo } from 'react';
+import { useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
+import { selectUpdateDomainEntities } from '@/app/hooks/ha-domain-entity-maps';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useI18n } from '@/app/i18n';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HaNotificationData } from './use-ha-notification-data';
 import type { Notification } from './use-notifications';
 
@@ -52,10 +53,15 @@ export function useNotificationList({
   pendingUpdateInstalls,
 }: UseNotificationListParams): Notification[] {
   const { t } = useI18n();
-  const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
+  const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
+  const updateEntities = useHomeAssistant(selectUpdateDomainEntities, shallow);
 
   return useMemo<Notification[]>(() => {
-    if (!entities && persistentNotifications.length === 0 && repairIssues.length === 0) {
+    if (
+      !hassEntitiesHydrated &&
+      persistentNotifications.length === 0 &&
+      repairIssues.length === 0
+    ) {
       return [];
     }
 
@@ -102,7 +108,7 @@ export function useNotificationList({
       };
     });
 
-    const updateNotifications = Object.entries(entities ?? {})
+    const updateNotifications = Object.entries(updateEntities)
       .filter(([entityId, entity]) => {
         if (!entityId.startsWith('update.')) return false;
         return (
@@ -208,12 +214,13 @@ export function useNotificationList({
       .filter((notification) => !hiddenNotifications.includes(notification.id))
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }, [
-    entities,
+    hassEntitiesHydrated,
     hiddenNotifications,
     pendingUpdateInstalls,
     persistentNotifications,
     readNotifications,
     repairIssues,
     t,
+    updateEntities,
   ]);
 }

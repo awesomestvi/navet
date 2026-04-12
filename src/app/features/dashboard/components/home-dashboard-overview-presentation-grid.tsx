@@ -2,6 +2,7 @@ import { type CSSProperties, memo, useEffect, useMemo, useRef, useState } from '
 import { CARD_GRID_ROW_CLASS, type CardSize } from '@/app/components/shared/card-size-selector';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
 import {
@@ -141,6 +142,15 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     [microCardMinWidth, renderedGridCols]
   );
 
+  const visibleCount = useProgressiveBatching(cardIds.length, false);
+  const visibleCardIds = useMemo(() => {
+    if (!Number.isFinite(visibleCount)) {
+      return cardIds;
+    }
+
+    return cardIds.slice(0, visibleCount);
+  }, [cardIds, visibleCount]);
+
   return (
     <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
@@ -152,7 +162,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
           className={`grid w-full ${CARD_GRID_ROW_CLASS} gap-3.5 md:gap-3 lg:gap-4`}
           style={gridStyle}
         >
-          {cardIds.map((cardId) => {
+          {visibleCardIds.map((cardId) => {
             const entry = allCards.get(cardId);
             if (!entry) {
               return null;

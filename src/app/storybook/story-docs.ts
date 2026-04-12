@@ -889,14 +889,17 @@ const STORY_DOCS: Record<string, string> = {
     [
       'How currently playing information, playback state, and transport affordances fit into one card.',
       'The balance between information richness and dashboard density for media surfaces.',
+      'TV variant: remote-style controls, one fixed-size D-pad (104×104) across all card sizes, small tile uses a header toggle to show or hide the pad with settings pinned when the pad is open.',
     ],
     [
       'Use this story when changing media hierarchy, progress treatment, or playback-control layout.',
       'Review it before extending the card toward a heavier full-player interface.',
+      'Use the TV stories when changing `MediaTvView`, remote affordances, or D-pad layout.',
     ],
     [
       'Check that playback state and current content are immediately recognizable.',
       'Check that progress and secondary metadata remain readable without cluttering the card.',
+      'For TV: check small vs wide layouts, source row, and D-pad visibility without overlapping controls.',
     ]
   ),
   'App Shell/Notifications/Panel': doc(

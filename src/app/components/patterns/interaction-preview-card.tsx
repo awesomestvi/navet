@@ -252,10 +252,16 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
                       background: `linear-gradient(to right, ${accentColor}aa, ${accentColor})`,
                     }}
                   />
-                  <div
-                    className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 ${thumbClassName}`}
-                    style={{ left: `calc(${brightness}% - 8px)` }}
-                  />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex w-full items-center">
+                    <div
+                      className="relative h-4 w-full shrink-0"
+                      style={{ transform: `translate3d(${brightness}%, 0, 0)` }}
+                    >
+                      <div
+                        className={`absolute left-0 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${thumbClassName}`}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -34,5 +34,11 @@ jobs:
       - name: Validate Storybook standards
         run: pnpm check:stories
 
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
       - name: Build app
         run: pnpm build

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/contexts/auth-context';
+import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import { authSelectors } from '@/app/stores/selectors';
 import { resolveArtworkPalette } from './media-artwork-palette';
@@ -56,11 +57,12 @@ export function withAlpha(color: string, alpha: number) {
 export function useMediaArtworkColors(
   artwork: string | null | undefined,
   theme: ThemeType,
+  entityId?: string,
   artworkKey?: string
 ) {
   const authConfig = useAuth(authSelectors.config);
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
-  const requestKey = [artwork, artworkKey].filter(Boolean).join('::');
+  const requestKey = [entityId, artwork, artworkKey].filter(Boolean).join('::');
 
   useEffect(() => {
     if (!artwork) {
@@ -80,7 +82,23 @@ export function useMediaArtworkColors(
     const existingRequest = pendingPaletteRequests.get(requestKey);
     const paletteRequest =
       existingRequest ??
-      resolveArtworkPalette(artwork, authConfig?.url, authConfig?.token).finally(() => {
+      (async () => {
+        if (entityId) {
+          const thumbnailDataUrl = await fetchMediaThumbnailDataUrl(entityId).catch(() => null);
+          if (thumbnailDataUrl) {
+            const thumbnailPalette = await resolveArtworkPalette(
+              thumbnailDataUrl,
+              authConfig?.url,
+              authConfig?.token
+            ).catch(() => null);
+            if (thumbnailPalette) {
+              return thumbnailPalette;
+            }
+          }
+        }
+
+        return resolveArtworkPalette(artwork, authConfig?.url, authConfig?.token);
+      })().finally(() => {
         pendingPaletteRequests.delete(requestKey);
       });
 
@@ -97,7 +115,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artwork, authConfig?.token, authConfig?.url, requestKey, theme]);
+  }, [artwork, authConfig?.token, authConfig?.url, entityId, requestKey, theme]);
 
   return colors;
 }

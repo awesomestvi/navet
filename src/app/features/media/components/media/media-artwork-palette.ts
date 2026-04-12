@@ -101,7 +101,7 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
     const color: [number, number, number] = [data[i], data[i + 1], data[i + 2]];
     const luminance = getLuminance(color);
     const saturation = getSaturation(color);
-    if (luminance > 0.985 || luminance < 0.02) continue;
+    if (luminance > 0.995 || luminance < 0.02) continue;
 
     const key = `${Math.round(color[0] / 28)}-${Math.round(color[1] / 28)}-${Math.round(color[2] / 28)}`;
     const bucket = buckets.get(key) ?? {
@@ -133,6 +133,7 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
   }));
 
   if (candidates.length === 0) return null;
+  const totalSampleCount = candidates.reduce((sum, candidate) => sum + candidate.count, 0);
 
   const dominantCandidate =
     pickCandidate(candidates, (c) => {
@@ -155,16 +156,63 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
       candidates,
       (c) => c.count * Math.max(0.12, c.luminance) * (0.42 + c.saturation * 1.35)
     ) ?? vibrantCandidate;
+  const lightNeutralCandidate =
+    pickCandidate(candidates, (c) => {
+      if (c.luminance < 0.78 || c.saturation > 0.18) {
+        return -1;
+      }
 
-  const dominantSource = blend(dominantCandidate.color, vibrantCandidate.color, 0.16);
-  const dominant = blend(dominantSource, highlightCandidate.color, 0.06);
+      return c.count * (1 + c.luminance * 1.8) * Math.max(0.22, 0.24 - c.saturation);
+    }) ?? null;
+  const lightNeutralCoverage =
+    lightNeutralCandidate && totalSampleCount > 0
+      ? lightNeutralCandidate.count / totalSampleCount
+      : 0;
+  const shouldFavorLightNeutral =
+    lightNeutralCandidate !== null &&
+    (lightNeutralCoverage >= 0.22 || lightNeutralCandidate.count >= dominantCandidate.count * 0.9);
+  const shouldUseNeutralLedPalette =
+    lightNeutralCandidate !== null &&
+    (lightNeutralCoverage >= 0.34 || lightNeutralCandidate.count >= dominantCandidate.count * 1.1);
+
+  const dominantSourceBase = blend(dominantCandidate.color, vibrantCandidate.color, 0.16);
+  const dominantSource = shouldFavorLightNeutral
+    ? blend(
+        dominantSourceBase,
+        lightNeutralCandidate.color,
+        shouldUseNeutralLedPalette ? 0.9 : 0.62
+      )
+    : dominantSourceBase;
+  const dominant = blend(
+    dominantSource,
+    shouldFavorLightNeutral ? lightNeutralCandidate.color : highlightCandidate.color,
+    shouldUseNeutralLedPalette ? 0.36 : shouldFavorLightNeutral ? 0.18 : 0.06
+  );
   const vibrant = brighten(desaturate(vibrantCandidate.color, 0.04), 8);
   const darkMuted = darken(
-    desaturate(blend(dominantSource, vibrantCandidate.color, 0.14), 0.12),
-    0.34
+    desaturate(
+      blend(
+        dominantSource,
+        shouldFavorLightNeutral ? lightNeutralCandidate.color : vibrantCandidate.color,
+        shouldUseNeutralLedPalette ? 0.18 : shouldFavorLightNeutral ? 0.08 : 0.14
+      ),
+      shouldUseNeutralLedPalette ? 0.42 : shouldFavorLightNeutral ? 0.22 : 0.12
+    ),
+    shouldUseNeutralLedPalette ? 0.08 : shouldFavorLightNeutral ? 0.22 : 0.34
   );
-  const highlight = brighten(blend(highlightCandidate.color, vibrantCandidate.color, 0.22), 14);
-  const gradientEnd = darken(blend(darkMuted, dominant, 0.12), 0.14);
+  const highlight = shouldFavorLightNeutral
+    ? brighten(
+        blend(
+          lightNeutralCandidate.color,
+          highlightCandidate.color,
+          shouldUseNeutralLedPalette ? 0.02 : 0.08
+        ),
+        shouldUseNeutralLedPalette ? 4 : 10
+      )
+    : brighten(blend(highlightCandidate.color, vibrantCandidate.color, 0.22), 14);
+  const gradientEnd = shouldUseNeutralLedPalette
+    ? darken(blend(darkMuted, dominant, 0.2), 0.04)
+    : darken(blend(darkMuted, dominant, 0.12), 0.14);
 
   return {
     dominant: toRgbString(dominant),

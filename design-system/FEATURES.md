@@ -291,12 +291,14 @@ Navet now uses a live Home Assistant-backed media card flow.
 - **Home Assistant media player wiring** - media cards map real `media_player` entities into playback state, volume, local mute/unmute volume restoration, metadata, artwork, and remaining-time UI
 - **Artwork-led layouts** - small, medium, and medium-vertical media cards use artwork-led surfaces rather than a separate album-art tile pattern
 - **Shared transport controls** - previous, play/pause, next, volume, and details actions use the shared round control button primitive
-- **Theme-aware inactive treatment** - media off state now follows the same shared card-state surface token system used by other cards
+- **Unified inactive treatment** - both `off` and `idle` HA states render the same inactive card shell (gradient background, inactive border, no active overlay); TV devices treat only `off` as inactive since `idle` means the TV is on but not casting
 - **Top-left playback indicator** - the visualizer animates while media is playing, and remaining time appears beside it only during active playback
 
 #### Notes
 - Remaining time is shown only when Home Assistant playback is active
 - Artwork is rendered only when the entity exposes artwork; Navet no longer injects a default placeholder image
+- Cached artwork from a previous session does not affect inactive shell styling — `isOff` always takes priority over `hasArtwork` for the card background, border, and overlay
+- Artwork load errors permanently suppress that URL for the current track; the failed URL is cleared only when `media_content_id` or the entity picture changes (no retry loop)
 - Production artwork color extraction uses the Navet Home Assistant proxy path instead of direct cross-origin image reads
 - The media dialog and card views share the same transport/action visual language
 - Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
@@ -534,13 +536,14 @@ A full-screen animated overlay shown on first load. Follows the hook/view split 
 | Phase | Duration | Description |
 |---|---|---|
 | `baking` | 3.2 s | Orbiting accent dots + pulsing glow + animated logo; communicates that the dashboard is loading |
-| `revealed` | — | Expanding ring borders + glow overlay; the main card slides in with heading and call-to-action |
+| `revealed` | — | Ambient background layers + expanding ring borders; heading and call-to-action float directly on the backdrop with no card chrome |
 | `exiting` | 900 ms | Fade-out; `onDone` is called when the animation clears |
 
 #### Implementation Notes
 - CSS keyframes are scoped to the component via a `<style>` tag injected into the view
 - `useDashboardArrivalReveal` derives all color and copy values from the active theme; the view receives a single controller object
-- Ambient reveal layers now scale with the user's effects-quality setting so low-power devices keep the onboarding flow without paying for the full animated background stack
+- The `revealed` phase shows an ambient background (`RevealBackground`) with a radial gradient wash, masked grid, pulsing halo, and floating accent blobs — all gated on effects quality so low-power devices skip the heavier layers
+- The reveal panel itself has no card chrome (no background fill, border, shadow, or backdrop blur); content floats directly on the backdrop matching the `baking` stage aesthetic
 - I18n keys are namespaced under `dashboard.arrival.*`
 
 ### Onboarding Wizard

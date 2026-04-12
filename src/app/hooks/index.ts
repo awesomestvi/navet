@@ -21,6 +21,17 @@ export { useMediaQuery } from './use-media-query';
 export { useNavigation } from './use-navigation';
 // New reusable hooks
 export { usePersistedState } from './use-persisted-state';
+export type {
+  EntityRoomRegistryContext,
+  EntityRoomRegistryPick,
+  RegistryDeviceIdsSlice,
+} from './use-registry-device-topology';
+export {
+  useCameraRegistryDeviceTopology,
+  useEntityRoomRegistryContext,
+  useHvacRegistryDeviceTopology,
+  useSwitchRegistryDeviceTopology,
+} from './use-registry-device-topology';
 export { useRoomNavigation } from './use-room-navigation';
 export { useSearch } from './use-search';
 export { useServiceActionHandler } from './use-service-action-handler';

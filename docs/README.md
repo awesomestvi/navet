@@ -46,6 +46,8 @@ Complete documentation for the Navet smart home dashboard.
 
 **Contribute to the project** → [Contributing Guide](../CONTRIBUTING.md)
 
+**Match CI before a PR** → [Contributing: CI and local checks](../CONTRIBUTING.md#ci-and-local-checks) (Biome, Storybook standards, `typecheck`, `test`, `build`)
+
 **Bump a release version** → [Versioning](VERSIONING.md)
 
 **Understand the design system** → [Design System](../design-system/README.md)

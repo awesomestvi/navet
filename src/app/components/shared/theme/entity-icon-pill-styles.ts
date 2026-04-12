@@ -30,7 +30,7 @@ function getBadgeSizeClass(size: CardSize) {
     return 'h-7 w-7';
   }
 
-  if (isCompactCardSize(size) || size === 'medium') {
+  if (isCompactCardSize(size) || size === 'medium' || size === 'medium-vertical') {
     return 'h-8 w-8';
   }
 
@@ -46,7 +46,7 @@ function getIconSizeClass(size: CardSize) {
     return 'h-3.5 w-3.5';
   }
 
-  if (isCompactCardSize(size) || size === 'medium') {
+  if (isCompactCardSize(size) || size === 'medium' || size === 'medium-vertical') {
     return 'h-4 w-4';
   }
 

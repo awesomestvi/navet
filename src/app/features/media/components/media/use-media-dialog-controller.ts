@@ -29,7 +29,7 @@ export function useMediaDialogController({
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
-  const palette = useMediaArtworkColors(artwork, theme, `${entityId}::${title}::${artist}`);
+  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
   const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const displayDuration = durationSeconds > 0 ? formatMediaTime(durationSeconds) : '--:--';
   const dialogSurfaceStyle = {

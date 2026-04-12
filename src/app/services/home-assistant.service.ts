@@ -586,6 +586,23 @@ class HomeAssistantService {
     );
   }
 
+  async updateMediaPlayerPower(entityId: string, state: 'on' | 'off'): Promise<void> {
+    await this.callService(
+      'media_player',
+      state === 'on' ? 'turn_on' : 'turn_off',
+      {},
+      { entity_id: entityId }
+    );
+  }
+
+  async selectMediaPlayerSource(entityId: string, source: string): Promise<void> {
+    await this.callService('media_player', 'select_source', { source }, { entity_id: entityId });
+  }
+
+  async sendRemoteCommand(entityId: string, command: string | string[]): Promise<void> {
+    await this.callService('remote', 'send_command', { command }, { entity_id: entityId });
+  }
+
   async setMediaPlayerShuffle(entityId: string, shuffle: boolean): Promise<void> {
     await this.callService('media_player', 'shuffle_set', { shuffle }, { entity_id: entityId });
   }

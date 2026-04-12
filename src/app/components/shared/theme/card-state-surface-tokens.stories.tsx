@@ -88,10 +88,10 @@ function LightCardReference({ theme, isActive }: { theme: ThemeType; isActive: b
         ? 'linear-gradient(to right, #d1d5db, #9ca3af)'
         : 'linear-gradient(to right, rgba(255,255,255,0.24), rgba(255,255,255,0.14))',
   };
+  const sliderThumbPercent = isActive ? 64 : 6;
   const sliderThumbStyle = {
     backgroundColor: isActive ? '#f97316' : theme === 'light' ? '#f3f4f6' : '#d1d5db',
     boxShadow: isActive ? '0 0 0 2px rgba(249,115,22,0.4)' : '0 0 0 2px rgba(156,163,175,0.45)',
-    left: isActive ? 'calc(64% - 0.5rem)' : 'calc(6% - 0.5rem)',
   } as const;
   const controlSizes = getCardActionControlSizes('medium');
   const roundControl = getRoundControlStyles(theme);
@@ -181,10 +181,17 @@ function LightCardReference({ theme, isActive }: { theme: ThemeType; isActive: b
                   className="absolute left-0 h-1 rounded-full"
                   style={{ ...sliderRangeStyle, width: isActive ? '64%' : '6%' }}
                 />
-                <div
-                  className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full shadow-lg"
-                  style={sliderThumbStyle}
-                />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex w-full items-center">
+                  <div
+                    className="relative h-4 w-full shrink-0"
+                    style={{ transform: `translate3d(${sliderThumbPercent}%, 0, 0)` }}
+                  >
+                    <div
+                      className="absolute left-0 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-lg"
+                      style={sliderThumbStyle}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

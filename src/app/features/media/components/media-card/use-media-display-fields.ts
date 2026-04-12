@@ -25,10 +25,15 @@ export function useMediaDisplayFields({
   const displayTitle =
     (typeof liveAttrs?.media_title === 'string' && liveAttrs.media_title) ||
     (typeof liveAttrs?.app_name === 'string' && liveAttrs.app_name) ||
+    (typeof liveAttrs?.media_channel === 'string' && liveAttrs.media_channel) ||
+    (typeof liveAttrs?.media_series_title === 'string' && liveAttrs.media_series_title) ||
     fallbackTitle;
   const displayArtist =
     (typeof liveAttrs?.media_artist === 'string' && liveAttrs.media_artist) ||
     (typeof liveAttrs?.media_album_name === 'string' && liveAttrs.media_album_name) ||
+    (typeof liveAttrs?.media_channel === 'string' && liveAttrs.media_channel) ||
+    (typeof liveAttrs?.media_series_title === 'string' && liveAttrs.media_series_title) ||
+    (typeof liveAttrs?.app_name === 'string' && liveAttrs.app_name) ||
     (typeof liveAttrs?.source === 'string' && liveAttrs.source) ||
     fallbackArtist;
   const liveArtworkKey =

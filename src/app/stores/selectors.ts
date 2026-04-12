@@ -5,6 +5,7 @@
 
 import type { AuthState } from './auth-store';
 import type { ConfigState } from './config-store';
+import type { ErrorStoreState } from './error-store';
 import type { HomeAssistantStore } from './home-assistant-store';
 import type {
   CustomCardsState,
@@ -18,6 +19,16 @@ import type {
 /**
  * Auth Store Selectors
  */
+/**
+ * Global app error overlay (`ErrorDisplay`) — distinct from HA connection errors.
+ */
+export const appErrorSelectors = {
+  error: (state: ErrorStoreState) => state.error,
+  hasError: (state: ErrorStoreState) => state.error !== null,
+  setError: (state: ErrorStoreState) => state.setError,
+  clearError: (state: ErrorStoreState) => state.clearError,
+};
+
 export const authSelectors = {
   isAuthenticated: (state: AuthState) => state.isAuthenticated,
   config: (state: AuthState) => state.config,

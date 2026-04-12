@@ -19,8 +19,11 @@ import {
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { DropMeta } from '../hooks/use-home-dashboard-editor';
+import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
 import {
@@ -149,6 +152,8 @@ export const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const { t } = useI18n();
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const optimizeOffscreenPaint = sortable && effectsQuality !== 'high';
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
@@ -276,6 +281,21 @@ export const CardGrid = memo(function CardGrid({
     [addCardSlotCols]
   );
 
+  const visibleCount = useProgressiveBatching(cardIds.length, isEditMode, !sortable);
+  const visibleCardIds = useMemo(() => {
+    // Sortable home sections must render every `HomeCardSlot` — `SortableContext` items
+    // must match mounted sortable nodes.
+    if (sortable) {
+      return cardIds;
+    }
+
+    if (!Number.isFinite(visibleCount)) {
+      return cardIds;
+    }
+
+    return cardIds.slice(0, visibleCount);
+  }, [cardIds, sortable, visibleCount]);
+
   return (
     <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
@@ -289,7 +309,7 @@ export const CardGrid = memo(function CardGrid({
           }`}
           style={gridStyle}
         >
-          {cardIds.map((cardId) => {
+          {visibleCardIds.map((cardId) => {
             const entry = allCards.get(cardId);
             if (!entry) {
               return null;
@@ -306,6 +326,7 @@ export const CardGrid = memo(function CardGrid({
                 sectionId={sectionId}
                 isPreviewHidden={activeDragCard === cardId}
                 className={spanClass}
+                optimizeOffscreenPaint={optimizeOffscreenPaint}
                 content={
                   !isCustomCard(entry) ? (
                     <DashboardCardItem

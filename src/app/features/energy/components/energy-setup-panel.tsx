@@ -7,7 +7,7 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { FieldBlock } from '@/app/components/patterns';
 import { Input } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -15,6 +15,7 @@ import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
 import { getEnergyPrefs, mapPrefsToConfig } from '../services/energy-ha-service';
 import type { EnergyDeviceSource, EnergySourceConfig } from '../types/energy.types';
 
@@ -125,7 +126,7 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
 
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
 
   const hasAdvancedFields = FIELD_META.some(
@@ -142,7 +143,10 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
   const [detectError, setDetectError] = useState<string | null>(null);
   const [detected, setDetected] = useState(false);
 
-  const sensorIds = Object.keys(entities ?? {}).filter((sid) => sid.startsWith('sensor.'));
+  const sensorIds = useMemo(
+    () => Object.keys(entities ?? {}).filter((sid) => sid.startsWith('sensor.')),
+    [entities]
+  );
 
   function setField(key: keyof FormFields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));

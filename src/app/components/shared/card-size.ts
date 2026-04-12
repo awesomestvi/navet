@@ -15,7 +15,7 @@ export const CARD_GRID_ROW_CLASS = 'auto-rows-[87px]';
  * Cards with intentionally custom layouts can still opt out.
  */
 export function getStandardCardPadding(size: CardSize) {
-  if (size === 'large' || size === 'extra-large' || size === 'medium-vertical') {
+  if (size === 'large' || size === 'extra-large') {
     return 'p-5';
   }
 

@@ -13,7 +13,13 @@ import { VacuumControlsMedium } from '../vacuum/vacuum-controls-medium';
 import { VacuumControlsSmall } from '../vacuum/vacuum-controls-small';
 import { VacuumSettingsDialog } from '../vacuum/vacuum-settings-dialog';
 import { VacuumStatusDisplay } from '../vacuum/vacuum-status-display';
-import { getVacuumThemeStatus, type VacuumStatus } from '../vacuum/vacuum-utils';
+import {
+  getVacuumThemeStatus,
+  normalizeVacuumStatus,
+  type VacuumStatus,
+} from '../vacuum/vacuum-utils';
+
+type VacuumCardSize = 'small' | 'medium' | 'large';
 
 interface VacuumCardProps {
   id: string;
@@ -29,6 +35,31 @@ interface VacuumCardProps {
   isEditMode: boolean;
 }
 
+function normalizeVacuumCardSize(size: CardSize): VacuumCardSize {
+  if (size === 'small' || size === 'medium' || size === 'large') {
+    return size;
+  }
+
+  return 'medium';
+}
+
+function normalizeVacuumDisplayName(value: string): string {
+  const trimmed = value.trim().replace(/\s+/g, ' ');
+  const parts = trimmed.split(' ');
+
+  if (parts.length % 2 === 0) {
+    const half = parts.length / 2;
+    const left = parts.slice(0, half).join(' ');
+    const right = parts.slice(half).join(' ');
+
+    if (left === right) {
+      return left;
+    }
+  }
+
+  return trimmed;
+}
+
 export const VacuumCard = memo(function VacuumCard({
   id,
   name,
@@ -42,6 +73,7 @@ export const VacuumCard = memo(function VacuumCard({
   onSizeChange: _onSizeChange,
   isEditMode: _isEditMode,
 }: VacuumCardProps) {
+  const resolvedSize = normalizeVacuumCardSize(size);
   const readStringList = (value: unknown) =>
     Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
@@ -55,15 +87,7 @@ export const VacuumCard = memo(function VacuumCard({
     return undefined;
   };
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const liveState = liveEntity?.state;
-  const liveStatus: typeof status =
-    liveState === 'cleaning' ||
-    liveState === 'returning' ||
-    liveState === 'docked' ||
-    liveState === 'paused' ||
-    liveState === 'idle'
-      ? liveState
-      : status;
+  const liveStatus = normalizeVacuumStatus(liveEntity?.state, status);
   const {
     currentStatus,
     isDialogOpen,
@@ -73,24 +97,51 @@ export const VacuumCard = memo(function VacuumCard({
     handleReturnHome,
   } = useVacuumControl({ initialStatus: liveStatus });
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const liveName =
+    typeof liveAttrs?.friendly_name === 'string' && liveAttrs.friendly_name.length > 0
+      ? normalizeVacuumDisplayName(liveAttrs.friendly_name)
+      : normalizeVacuumDisplayName(name);
   const liveBattery =
-    typeof liveAttrs?.battery_level === 'number' ? liveAttrs.battery_level : battery;
+    parseNumberish(liveAttrs?.battery_level) ??
+    parseNumberish(liveAttrs?.battery) ??
+    parseNumberish(liveAttrs?.battery_percent) ??
+    battery;
+  const liveRoom =
+    typeof liveAttrs?.current_room === 'string' && liveAttrs.current_room.length > 0
+      ? liveAttrs.current_room
+      : typeof liveAttrs?.current_zone === 'string' && liveAttrs.current_zone.length > 0
+        ? liveAttrs.current_zone
+        : typeof liveAttrs?.room === 'string' && liveAttrs.room.length > 0
+          ? liveAttrs.room
+          : room;
+  const liveCleanedAreaValue =
+    parseNumberish(liveAttrs?.cleaned_area) ??
+    parseNumberish(liveAttrs?.cleaned_area_today) ??
+    parseNumberish(liveAttrs?.last_cleaned_area);
+  const liveCleanedArea =
+    typeof liveCleanedAreaValue === 'number'
+      ? `${liveCleanedAreaValue.toFixed(liveCleanedAreaValue >= 10 ? 0 : 1)} m²`
+      : cleanedArea;
+  const liveCleaningTimeMinutes =
+    parseNumberish(liveAttrs?.cleaning_time) ??
+    parseNumberish(liveAttrs?.clean_time) ??
+    parseNumberish(liveAttrs?.cleaning_duration);
+  const liveCleaningTime =
+    typeof liveCleaningTimeMinutes === 'number'
+      ? `${Math.max(0, Math.round(liveCleaningTimeMinutes))} min`
+      : cleaningTime;
   const areaBasedCleaningProgress = (() => {
-    const cleanedAreaValue =
-      parseNumberish(liveAttrs?.cleaned_area) ??
-      parseNumberish(liveAttrs?.cleaned_area_today) ??
-      parseNumberish(liveAttrs?.last_cleaned_area);
     const totalAreaValue =
       parseNumberish(liveAttrs?.total_clean_area) ??
       parseNumberish(liveAttrs?.clean_area_total) ??
       parseNumberish(liveAttrs?.total_area);
 
     if (
-      typeof cleanedAreaValue === 'number' &&
+      typeof liveCleanedAreaValue === 'number' &&
       typeof totalAreaValue === 'number' &&
       totalAreaValue > 0
     ) {
-      return Math.max(0, Math.min(100, (cleanedAreaValue / totalAreaValue) * 100));
+      return Math.max(0, Math.min(100, (liveCleanedAreaValue / totalAreaValue) * 100));
     }
 
     return undefined;
@@ -131,8 +182,8 @@ export const VacuumCard = memo(function VacuumCard({
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const cardColors = colors.vacuum[getVacuumThemeStatus(currentStatus)];
 
-  const isSmall = isCompactCardSize(size);
-  const isMedium = size === 'medium';
+  const isSmall = isCompactCardSize(resolvedSize);
+  const isMedium = resolvedSize === 'medium';
   const padding = isSmall ? 'p-4' : 'p-5';
 
   return (
@@ -152,10 +203,10 @@ export const VacuumCard = memo(function VacuumCard({
 
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
-            title={name}
+            title={liveName}
             subtitle={t('vacuum.subtitle')}
             layout="eyebrow-first"
-            size={size}
+            size={resolvedSize}
             accentColor={cardColors.accent}
             tone={
               currentStatus === 'returning'
@@ -170,7 +221,7 @@ export const VacuumCard = memo(function VacuumCard({
               <EntityCardHeaderIcon
                 IconComponent={Bot}
                 isActive={isActive}
-                size={size}
+                size={resolvedSize}
                 baseColor={cardColors.accent}
                 tone={
                   currentStatus === 'returning'
@@ -191,7 +242,7 @@ export const VacuumCard = memo(function VacuumCard({
                 currentStatus={currentStatus}
                 battery={liveBattery}
                 cleaningProgress={liveCleaningProgress}
-                room={room}
+                room={liveRoom}
                 theme={theme}
                 accentColorValue={cardColors.accent}
                 isSmall={isSmall}
@@ -244,14 +295,14 @@ export const VacuumCard = memo(function VacuumCard({
           onStartCleaning={handleStartCleaning}
           onPauseCleaning={handlePause}
           onReturnHome={handleReturnHome}
-          name={name}
-          room={room}
+          name={liveName}
+          room={liveRoom}
           theme={theme}
           accentColorValue={cardColors.accent}
           currentStatus={currentStatus}
           battery={liveBattery}
-          cleanedArea={cleanedArea}
-          cleaningTime={cleaningTime}
+          cleanedArea={liveCleanedArea}
+          cleaningTime={liveCleaningTime}
           cleaningMode={
             liveCleaningMode === 'spot' ||
             liveCleaningMode === 'edge' ||

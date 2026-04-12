@@ -1,8 +1,9 @@
-import { useDeferredValue, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useHomeAssistant } from '@/app/hooks';
+import { selectFeedreaderEventEntities } from '@/app/hooks/ha-domain-entity-maps';
 import { usePersistedState } from '@/app/hooks/use-persisted-state';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEFAULT_RSS_PROVIDERS } from './providers';
 import type { RSSProvider } from './types';
 
@@ -16,7 +17,7 @@ const toProviderId = (value: string): string =>
     .replace(/^-+|-+$/g, '');
 
 export function useRSSFeedSources(cardId: string) {
-  const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
+  const feedreaderEntities = useHomeAssistant(selectFeedreaderEventEntities, shallow);
   const [customProviders, setCustomProviders] = usePersistedState<RSSProvider[]>(
     STORAGE_KEYS.rssFeedProviders,
     DEFAULT_RSS_PROVIDERS
@@ -41,24 +42,7 @@ export function useRSSFeedSources(cardId: string) {
   };
 
   const homeAssistantProviders = useMemo<RSSProvider[]>(() => {
-    if (!entities) {
-      return [];
-    }
-
-    return Object.entries(entities)
-      .filter(([entityId, entity]) => {
-        if (!entityId.startsWith('event.')) {
-          return false;
-        }
-
-        const attributes = entity.attributes as Record<string, unknown> | undefined;
-        return (
-          typeof attributes?.link === 'string' &&
-          (entityId.includes('feedreader') ||
-            typeof attributes?.title === 'string' ||
-            typeof attributes?.attribution === 'string')
-        );
-      })
+    return Object.entries(feedreaderEntities)
       .map(([entityId, entity]) => {
         const attributes = entity.attributes as Record<string, unknown> | undefined;
 
@@ -73,7 +57,7 @@ export function useRSSFeedSources(cardId: string) {
         };
       })
       .sort((left, right) => left.name.localeCompare(right.name));
-  }, [entities]);
+  }, [feedreaderEntities]);
 
   const providers = useMemo(
     () => [...customProviders, ...homeAssistantProviders],

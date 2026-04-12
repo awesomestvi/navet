@@ -18,7 +18,6 @@ export function VacuumStatusDisplay({
   currentStatus,
   battery,
   cleaningProgress,
-  room,
   theme,
   accentColorValue,
   isSmall,
@@ -31,41 +30,51 @@ export function VacuumStatusDisplay({
     cleaningProgress,
   });
   const progressLabel = t(progressMetric.labelKey);
+  const statusLabel =
+    currentStatus === 'cleaning'
+      ? null
+      : currentStatus === 'returning'
+        ? t('vacuum.status.returning')
+        : currentStatus === 'docked'
+          ? t('vacuum.status.docked')
+          : currentStatus === 'paused'
+            ? t('vacuum.status.paused')
+            : t('vacuum.status.idle');
 
   return (
     <div className={`flex flex-col ${isMedium ? '' : 'h-full'}`}>
       {isSmall ? (
-        <div className="flex flex-1 flex-col justify-end gap-3">
+        <div className="flex flex-1 flex-col justify-end">
+          {statusLabel ? <div className="text-sm font-medium">{statusLabel}</div> : null}
           <VacuumProgressIndicator
             theme={theme}
             accentColorValue={accentColorValue}
             label={progressLabel}
             progress={progressMetric.progress}
-            room={room}
             pulse={progressMetric.pulse}
             variant={currentStatus === 'cleaning' ? 'cleaning' : 'battery'}
           />
         </div>
       ) : isMedium ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
+          {statusLabel ? <div className="text-sm font-medium">{statusLabel}</div> : null}
           <VacuumProgressIndicator
             theme={theme}
             accentColorValue={accentColorValue}
             label={progressLabel}
             progress={progressMetric.progress}
-            room={room}
             pulse={progressMetric.pulse}
             variant={currentStatus === 'cleaning' ? 'cleaning' : 'battery'}
           />
         </div>
       ) : (
         <div className="flex flex-1 flex-col justify-between pt-2">
+          {statusLabel ? <div className="text-sm font-medium">{statusLabel}</div> : null}
           <VacuumProgressIndicator
             theme={theme}
             accentColorValue={accentColorValue}
             label={progressLabel}
             progress={progressMetric.progress}
-            room={room}
             pulse={progressMetric.pulse}
             variant={currentStatus === 'cleaning' ? 'cleaning' : 'battery'}
           />
