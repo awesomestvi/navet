@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
@@ -51,27 +51,51 @@ function selectUpdateEntities(state: HomeAssistantStore) {
 
 export function useNotificationStorage(): NotificationStorageState {
   const updateEntities = useHomeAssistant(selectUpdateEntities, shallow);
-  const [readNotifications, setReadNotifications] = useState<string[]>(() =>
+  const [readNotifications, setReadNotificationsState] = useState<string[]>(() =>
     loadNotificationIds(READ_NOTIFICATIONS_STORAGE_KEY)
   );
-  const [hiddenNotifications, setHiddenNotifications] = useState<string[]>(() =>
+  const [hiddenNotifications, setHiddenNotificationsState] = useState<string[]>(() =>
     loadNotificationIds(HIDDEN_NOTIFICATIONS_STORAGE_KEY)
   );
-  const [pendingUpdateInstalls, setPendingUpdateInstalls] = useState<string[]>(() =>
+  const [pendingUpdateInstalls, setPendingUpdateInstallsState] = useState<string[]>(() =>
     loadNotificationIds(PENDING_UPDATE_INSTALLS_STORAGE_KEY)
   );
 
-  useEffect(() => {
-    persistReadNotifications(readNotifications);
-  }, [readNotifications]);
+  const setReadNotifications = useCallback<React.Dispatch<React.SetStateAction<string[]>>>(
+    (value) => {
+      setReadNotificationsState((current) => {
+        const next = typeof value === 'function' ? value(current) : value;
+        if (areNotificationIdListsEqual(current, next)) return current;
+        persistReadNotifications(next);
+        return next;
+      });
+    },
+    []
+  );
 
-  useEffect(() => {
-    persistHiddenNotifications(hiddenNotifications);
-  }, [hiddenNotifications]);
+  const setHiddenNotifications = useCallback<React.Dispatch<React.SetStateAction<string[]>>>(
+    (value) => {
+      setHiddenNotificationsState((current) => {
+        const next = typeof value === 'function' ? value(current) : value;
+        if (areNotificationIdListsEqual(current, next)) return current;
+        persistHiddenNotifications(next);
+        return next;
+      });
+    },
+    []
+  );
 
-  useEffect(() => {
-    persistPendingUpdateInstalls(pendingUpdateInstalls);
-  }, [pendingUpdateInstalls]);
+  const setPendingUpdateInstalls = useCallback<React.Dispatch<React.SetStateAction<string[]>>>(
+    (value) => {
+      setPendingUpdateInstallsState((current) => {
+        const next = typeof value === 'function' ? value(current) : value;
+        if (areNotificationIdListsEqual(current, next)) return current;
+        persistPendingUpdateInstalls(next);
+        return next;
+      });
+    },
+    []
+  );
 
   // Keep cross-tab state in sync via storage events
   useEffect(() => {
@@ -82,9 +106,14 @@ export function useNotificationStorage(): NotificationStorageState {
       const nextHidden = loadNotificationIds(HIDDEN_NOTIFICATIONS_STORAGE_KEY);
       const nextPending = loadNotificationIds(PENDING_UPDATE_INSTALLS_STORAGE_KEY);
 
-      setReadNotifications((c) => (areNotificationIdListsEqual(c, nextRead) ? c : nextRead));
-      setHiddenNotifications((c) => (areNotificationIdListsEqual(c, nextHidden) ? c : nextHidden));
-      setPendingUpdateInstalls((c) =>
+      // Use state setters directly — not the persist wrappers. Otherwise this
+      // same-tab CustomEvent runs synchronously after persist, and setHiddenNotifications
+      // would persist + dispatch again → unbounded recursion.
+      setReadNotificationsState((c) => (areNotificationIdListsEqual(c, nextRead) ? c : nextRead));
+      setHiddenNotificationsState((c) =>
+        areNotificationIdListsEqual(c, nextHidden) ? c : nextHidden
+      );
+      setPendingUpdateInstallsState((c) =>
         areNotificationIdListsEqual(c, nextPending) ? c : nextPending
       );
     };
@@ -108,7 +137,7 @@ export function useNotificationStorage(): NotificationStorageState {
     setPendingUpdateInstalls((current) =>
       current.filter((entityId) => Boolean(updateEntities[entityId]))
     );
-  }, [updateEntities]);
+  }, [updateEntities, setPendingUpdateInstalls]);
 
   return {
     readNotifications,

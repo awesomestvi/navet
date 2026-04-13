@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CalendarCard } from '@/app/features/calendar';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
+import {
+  EntityCardStoryFrame,
+  getEntityCardStoryFrameClassName,
+} from '../../dashboard/stories/entity-card-story-frame';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
   const date = new Date();
@@ -13,7 +16,10 @@ function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
 
 function CalendarCardStory(args: Omit<ComponentProps<typeof CalendarCard>, 'onSizeChange'>) {
   return (
-    <EntityCardStoryFrame size={args.size ?? 'medium'}>
+    <EntityCardStoryFrame
+      size={args.size ?? 'medium'}
+      className={`${getEntityCardStoryFrameClassName(args.size ?? 'medium')} overflow-hidden rounded-3xl`}
+    >
       <CalendarCard {...args} onSizeChange={() => undefined} />
     </EntityCardStoryFrame>
   );
@@ -80,6 +86,24 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
+  },
+};
 
 export const Docs: Story = {
   parameters: {

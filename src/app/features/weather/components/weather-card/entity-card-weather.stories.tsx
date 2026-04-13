@@ -95,6 +95,47 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
+
+export const Large: Story = {
+  args: {
+    size: 'large',
+  },
+};
+
+export const Hourly: Story = {
+  args: {
+    forecastMode: 'hourly',
+    size: 'medium',
+  },
+};
+
+export const Weekly: Story = {
+  args: {
+    forecastMode: 'weekly',
+    size: 'medium',
+  },
+};
+
+export const Sunny: Story = {
+  args: {
+    condition: 'sunny',
+    forecastMode: 'weekly',
+    size: 'medium',
+    rainForecast: 'Dry and bright through the afternoon',
+  },
+};
+
 export const Docs: Story = {
   parameters: {
     docsOnly: true,

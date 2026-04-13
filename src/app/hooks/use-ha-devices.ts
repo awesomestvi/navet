@@ -777,7 +777,7 @@ export const useHADevices = (): DeviceCollection => {
             volume:
               typeof volumeLevel === 'number'
                 ? Math.max(0, Math.min(100, Math.round(volumeLevel * 100)))
-                : 70,
+                : 0,
             isMuted: entity.attributes?.is_volume_muted === true,
             elapsedSeconds:
               typeof mediaPosition === 'number'

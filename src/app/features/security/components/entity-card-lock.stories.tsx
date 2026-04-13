@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { expect } from 'storybook/test';
 import { LockCard } from '@/app/features/security';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -21,7 +20,6 @@ function LockCardStory(args: ComponentProps<typeof LockCard>) {
     homeAssistantService.updateLock = async (_entityId: string, state: 'locked' | 'unlocked') => {
       const nextLocked = state === 'locked';
       setMockState(nextLocked);
-      toast.success(nextLocked ? 'Locked' : 'Unlocked');
     };
 
     return () => {
@@ -102,6 +100,33 @@ export const Playground: Story = {
       await expect(canvas.getByText(/unlocked/i)).toBeInTheDocument();
       await expect(canvas.getByRole('button', { name: /lock/i })).toBeInTheDocument();
     });
+  },
+};
+
+export const Tiny: Story = {
+  args: {
+    size: 'tiny',
+    initialState: true,
+    id: 'lock.front_door',
+    name: 'Front Door',
+  },
+};
+
+export const ExtraSmall: Story = {
+  args: {
+    size: 'extra-small',
+    initialState: true,
+    id: 'lock.front_door',
+    name: 'Front Door',
+  },
+};
+
+export const Small: Story = {
+  args: {
+    size: 'small',
+    initialState: true,
+    id: 'lock.front_door',
+    name: 'Front Door',
   },
 };
 

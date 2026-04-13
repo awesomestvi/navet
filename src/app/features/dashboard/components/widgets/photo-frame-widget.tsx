@@ -2,8 +2,12 @@ import { ChevronLeft, ChevronRight, Settings2, Shuffle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
+import { useAuth } from '@/app/contexts/auth-context';
 import { useI18n, useTheme } from '@/app/hooks';
+import { authSelectors } from '@/app/stores/selectors';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
+import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
+import { usePhotoFrameSources } from './use-photo-frame-sources';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 const mockPhotos = [
@@ -35,9 +39,13 @@ const PHOTO_SHUFFLE_INTERVAL_MS = 8000;
 
 interface PhotoFrameWidgetProps {
   size?: CardSize;
+  sourceMode?: PhotoFrameSourceMode;
   photoUrls?: string[];
+  mediaSourceId?: string;
   shuffleEnabled?: boolean;
   onUpdateUrls?: (urls: string[]) => void;
+  onSourceModeChange?: (mode: PhotoFrameSourceMode) => void;
+  onMediaSourceIdChange?: (mediaSourceId: string) => void;
   onShuffleEnabledChange?: (enabled: boolean) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
@@ -46,9 +54,13 @@ interface PhotoFrameWidgetProps {
 
 export function PhotoFrameWidget({
   size = 'large',
+  sourceMode,
   photoUrls,
+  mediaSourceId,
   shuffleEnabled = true,
   onUpdateUrls,
+  onSourceModeChange,
+  onMediaSourceIdChange,
   onShuffleEnabledChange,
   tintColor,
   onTintColorChange,
@@ -56,14 +68,20 @@ export function PhotoFrameWidget({
 }: PhotoFrameWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const authConfig = useAuth(authSelectors.config);
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isCompact = isCompactCardSize(size);
-  const hasCustomPhotos = photoUrls && photoUrls.length > 0;
+  const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
+  const { activePhotoUrls, hasCustomPhotos } = usePhotoFrameSources({
+    sourceMode: resolvedSourceMode,
+    photoUrls,
+    mediaSourceId,
+    hassUrl: authConfig?.url,
+  });
 
-  const photoCount = hasCustomPhotos ? photoUrls.length : mockPhotos.length;
-  const activePhotoUrls = hasCustomPhotos ? photoUrls : [];
+  const photoCount = hasCustomPhotos ? activePhotoUrls.length : mockPhotos.length;
   const safeIndex = Math.min(currentIndex, Math.max(0, photoCount - 1));
   const currentPhoto = hasCustomPhotos ? null : mockPhotos[safeIndex];
   const currentPhotoUrl = activePhotoUrls[safeIndex];
@@ -110,6 +128,12 @@ export function PhotoFrameWidget({
     }
   }, [currentIndex, photoCount]);
 
+  useEffect(() => {
+    if (!isEditMode) {
+      setIsSettingsOpen(false);
+    }
+  }, [isEditMode]);
+
   return (
     <div
       className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10"
@@ -121,17 +145,6 @@ export function PhotoFrameWidget({
       }}
     >
       <div className="relative z-[2] flex h-full flex-col">
-        {onUpdateUrls && (isEditMode || !hasCustomPhotos) && (
-          <button
-            type="button"
-            onClick={() => setIsSettingsOpen(true)}
-            className={`absolute right-4 top-4 z-20 shrink-0 rounded-full border border-white/14 bg-black/28 p-2 text-white/80 backdrop-blur-md transition-opacity hover:opacity-90 ${surface.textMuted}`}
-            aria-label={t('widgets.photoFrame.settings.title')}
-          >
-            <Settings2 className="h-4 w-4" />
-          </button>
-        )}
-
         <div className="relative flex-1 overflow-hidden rounded-[28px] group">
           {hasCustomPhotos ? (
             <img
@@ -144,6 +157,17 @@ export function PhotoFrameWidget({
           )}
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_22%,rgba(0,0,0,0.12)_66%,rgba(2,6,23,0.44)_100%)]" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+
+          {isEditMode && onUpdateUrls && onSourceModeChange && onMediaSourceIdChange && (
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className={`absolute bottom-4 right-4 z-20 shrink-0 rounded-full border border-white/14 bg-black/28 p-2 text-white/80 backdrop-blur-md transition-opacity hover:opacity-90 ${surface.textMuted}`}
+              aria-label={t('widgets.photoFrame.settings.title')}
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
+          )}
 
           {showShuffleControl ? (
             <button
@@ -199,12 +223,16 @@ export function PhotoFrameWidget({
           </div>
         )}
 
-        {onUpdateUrls && (
+        {isEditMode && onUpdateUrls && onSourceModeChange && onMediaSourceIdChange && (
           <PhotoFrameSettingsDialog
             isOpen={isSettingsOpen}
             onOpenChange={setIsSettingsOpen}
+            sourceMode={resolvedSourceMode}
+            onSourceModeChange={onSourceModeChange}
             photoUrls={photoUrls ?? []}
             onUpdateUrls={onUpdateUrls}
+            mediaSourceId={mediaSourceId}
+            onMediaSourceIdChange={onMediaSourceIdChange}
             shuffleEnabled={shuffleEnabled}
             onShuffleEnabledChange={onShuffleEnabledChange}
             tintColor={tintColor}

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
-import { expect, screen } from 'storybook/test';
+import { expect, within } from 'storybook/test';
 import { MediaCard } from '@/app/features/media';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
@@ -78,9 +78,14 @@ export const SpeakerDialog: Story = {
   play: async ({ canvas, userEvent, step }) => {
     await step('opens the media details dialog', async () => {
       await userEvent.click(canvas.getByRole('button', { name: /open media details/i }));
-      await expect(screen.getByRole('dialog')).toBeInTheDocument();
-      await expect(screen.getByText(/smells like teen spirit/i)).toBeInTheDocument();
-      await expect(screen.getByText(/nirvana/i)).toBeInTheDocument();
+      // Dialog is lazy-loaded inside Suspense; wait for chunk + Radix portal mount.
+      const dialog = await within(document.body).findByRole('dialog');
+      await expect(dialog).toBeInTheDocument();
+      const inDialog = within(dialog);
+      await expect(
+        inDialog.getByRole('heading', { name: /smells like teen spirit/i })
+      ).toBeInTheDocument();
+      await expect(inDialog.getByText(/nirvana/i)).toBeInTheDocument();
     });
   },
 };
@@ -88,6 +93,18 @@ export const SpeakerDialog: Story = {
 export const SpeakerCompact: Story = {
   args: {
     size: 'small',
+  },
+};
+
+export const SpeakerMediumVertical: Story = {
+  args: {
+    size: 'medium-vertical',
+  },
+};
+
+export const SpeakerLarge: Story = {
+  args: {
+    size: 'large',
   },
 };
 

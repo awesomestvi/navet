@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
-import { expect } from 'storybook/test';
+import { expect, within } from 'storybook/test';
 import { Button } from '@/app/components/primitives/button';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
@@ -96,18 +96,21 @@ export const Default: Story = {
       await userEvent.click(openButton);
     });
 
-    const brightnessSlider = canvas.getByRole('slider', { name: /brightness/i });
+    // Dialog content is portaled under `document.body`; `#storybook-root` is aria-hidden while open.
+    const dialog = await within(document.body).findByRole('dialog');
+    const dialogScope = within(dialog);
+    const brightnessSlider = dialogScope.getByRole('slider', { name: /brightness/i });
 
     await step('starts with the expected brightness value', async () => {
       await expect(brightnessSlider).toHaveAttribute('aria-valuenow', '62');
-      await expect(canvas.getByText('62%')).toBeInTheDocument();
+      await expect(dialogScope.getByText('62%')).toBeInTheDocument();
     });
 
     await step('updates brightness with keyboard interaction', async () => {
       brightnessSlider.focus();
       await userEvent.keyboard('{ArrowRight}');
       await expect(brightnessSlider).toHaveAttribute('aria-valuenow', '63');
-      await expect(canvas.getByText('63%')).toBeInTheDocument();
+      await expect(dialogScope.getByText('63%')).toBeInTheDocument();
     });
   },
 };

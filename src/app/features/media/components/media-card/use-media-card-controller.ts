@@ -91,6 +91,14 @@ export function useMediaCardController({
       : (initialDurationSeconds ?? 0);
   const resolvedInitialSupportedFeatures =
     typeof liveAttrs?.supported_features === 'number' ? liveAttrs.supported_features : undefined;
+  const canSetVolume =
+    typeof resolvedInitialSupportedFeatures === 'number'
+      ? (resolvedInitialSupportedFeatures & 4) === 4
+      : true;
+  const canMuteVolume =
+    typeof resolvedInitialSupportedFeatures === 'number'
+      ? (resolvedInitialSupportedFeatures & 8) === 8
+      : true;
   const resolvedInitialSupportsGrouping =
     typeof resolvedInitialSupportedFeatures === 'number'
       ? (resolvedInitialSupportedFeatures & 524288) === 524288
@@ -161,6 +169,8 @@ export function useMediaCardController({
     startVolumeInteraction,
     endVolumeInteraction,
   } = useMediaVolume({
+    canMuteVolume,
+    canSetVolume,
     entityId,
     initialVolume: resolvedInitialVolume,
     initialMuted: resolvedInitialMuted,

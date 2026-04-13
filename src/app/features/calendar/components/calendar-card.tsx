@@ -79,16 +79,18 @@ export const CalendarCard = memo(function CalendarCard({
         `}
         style={tintSurface.panelStyle}
       >
-        <div className={`absolute inset-0 ${overlayBg}`} />
+        <div className={`absolute inset-0 rounded-[inherit] ${overlayBg}`} />
         {tintSurface.glowStyle ? (
-          <div className="absolute inset-0" style={tintSurface.glowStyle} />
+          <div className="absolute inset-0 rounded-[inherit]" style={tintSurface.glowStyle} />
         ) : null}
         {tintSurface.overlayClassName ? (
-          <div className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`} />
+          <div
+            className={`pointer-events-none absolute inset-0 rounded-[inherit] ${tintSurface.overlayClassName}`}
+          />
         ) : null}
         {!hasCustomTint ? (
           <div
-            className={`absolute inset-0 bg-linear-to-br ${colors.calendar.glow} to-transparent`}
+            className={`absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent`}
           />
         ) : null}
 

@@ -891,11 +891,19 @@ export const frMessages = {
   'widgets.photoFrame.photo.coastalBreeze.title': 'Coastal Breeze',
   'widgets.photoFrame.photo.coastalBreeze.subtitle': 'Ecume et sable',
   'widgets.photoFrame.settings.title': 'Sources photos',
+  'widgets.photoFrame.settings.source': 'Source',
+  'widgets.photoFrame.settings.sourceUrls': 'URL manuelles',
+  'widgets.photoFrame.settings.sourceHomeAssistant': 'Media Home Assistant',
   'widgets.photoFrame.settings.shuffle': 'Melange photo',
   'widgets.photoFrame.settings.shuffleDescription': 'Mélanger automatiquement les photos.',
   'widgets.photoFrame.settings.addUrl': 'Ajouter une URL',
   'widgets.photoFrame.settings.photos': 'Photos',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://exemple.fr/photo.jpg',
+  'widgets.photoFrame.settings.homeAssistantMedia': 'Media Home Assistant',
+  'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
+    'media-source://media_source/local/family',
+  'widgets.photoFrame.settings.homeAssistantMediaDescription':
+    "Entrez un identifiant media-source Home Assistant pour un dossier ou une image. La carte chargera les images via Home Assistant au lieu d'une integration directe du fournisseur.",
   'widgets.photoFrame.settings.noPhotos':
     'Aucune photo ajoutée. Ajoutez une URL pour afficher vos propres images.',
   'widgets.photoFrame.settings.emptyHint': 'Affichage des photos intégrées',

@@ -4,16 +4,25 @@ import { useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaVolumeParams {
+  canMuteVolume: boolean;
+  canSetVolume: boolean;
   entityId: string;
   initialVolume: number;
   initialMuted: boolean;
   t: TranslateFn;
 }
 
-export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: UseMediaVolumeParams) {
+export function useMediaVolume({
+  canMuteVolume,
+  canSetVolume,
+  entityId,
+  initialVolume,
+  initialMuted,
+  t,
+}: UseMediaVolumeParams) {
   const [volume, setVolume] = useState(initialVolume);
   const [isMuted, setIsMuted] = useState(initialMuted);
-  const [, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
+  const [previousVolume, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
   const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
   const pendingVolumeRef = useRef<number | null>(null);
   const volumeCommitTimeoutRef = useRef<number | null>(null);
@@ -29,8 +38,28 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
   const runVolumeAction = useServiceActionHandler();
 
   const toggleMute = useCallback(() => {
+    if (!canMuteVolume && !canSetVolume) {
+      return;
+    }
+
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
+
+    if (!canMuteVolume && canSetVolume) {
+      const fallbackVolume = nextMuted ? 0 : previousVolume;
+      if (nextMuted && volume > 0) {
+        setPreviousVolume(volume);
+      }
+      if (!nextMuted && fallbackVolume > 0) {
+        setVolume(fallbackVolume);
+      }
+      void runVolumeAction(
+        () => homeAssistantService.setMediaPlayerVolume(entityId, fallbackVolume),
+        t('media.feedback.updateVolumeFailed')
+      );
+      return;
+    }
+
     if (nextMuted) {
       if (volume > 0) {
         setPreviousVolume(volume);
@@ -45,13 +74,17 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
       () => homeAssistantService.setMediaPlayerMute(entityId, false),
       t('media.feedback.updateVolumeFailed')
     );
-  }, [entityId, isMuted, runVolumeAction, t, volume]);
+  }, [canMuteVolume, canSetVolume, entityId, isMuted, previousVolume, runVolumeAction, t, volume]);
 
   const handleVolumeChange = useCallback(
     (nextVolume: number) => {
+      if (!canSetVolume) {
+        return;
+      }
+
       setVolume(nextVolume);
       if (nextVolume > 0) setPreviousVolume(nextVolume);
-      const shouldUnmute = nextVolume > 0 && isMuted;
+      const shouldUnmute = nextVolume > 0 && isMuted && canMuteVolume;
       if (shouldUnmute) setIsMuted(false);
 
       pendingVolumeRef.current = nextVolume;
@@ -70,12 +103,18 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
         }, t('media.feedback.updateVolumeFailed'));
       }, 120);
     },
-    [entityId, isMuted, runVolumeAction, t]
+    [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]
   );
 
   const startVolumeInteraction = useCallback(() => setIsAdjustingVolume(true), []);
 
   const endVolumeInteraction = useCallback(() => {
+    if (!canSetVolume) {
+      setIsAdjustingVolume(false);
+      pendingVolumeRef.current = null;
+      return;
+    }
+
     setIsAdjustingVolume(false);
     if (volumeCommitTimeoutRef.current !== null) {
       window.clearTimeout(volumeCommitTimeoutRef.current);
@@ -84,7 +123,7 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
     const pendingVolume = pendingVolumeRef.current;
     pendingVolumeRef.current = null;
     if (pendingVolume === null) return;
-    const shouldUnmute = pendingVolume > 0 && isMuted;
+    const shouldUnmute = pendingVolume > 0 && isMuted && canMuteVolume;
     if (shouldUnmute) {
       setIsMuted(false);
     }
@@ -94,7 +133,7 @@ export function useMediaVolume({ entityId, initialVolume, initialMuted, t }: Use
       }
       await homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume);
     }, t('media.feedback.updateVolumeFailed'));
-  }, [entityId, isMuted, runVolumeAction, t]);
+  }, [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]);
 
   return {
     volume,

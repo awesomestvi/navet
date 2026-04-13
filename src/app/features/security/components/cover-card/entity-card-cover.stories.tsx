@@ -22,7 +22,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['small', 'medium', 'large'],
+      options: ['small', 'medium'],
     },
   },
   args: {
@@ -54,6 +54,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+  },
+};
 
 export const Docs: Story = {
   parameters: {

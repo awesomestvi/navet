@@ -888,11 +888,19 @@ export const esMessages = {
   'widgets.photoFrame.photo.coastalBreeze.title': 'Coastal Breeze',
   'widgets.photoFrame.photo.coastalBreeze.subtitle': 'Espuma marina y arena',
   'widgets.photoFrame.settings.title': 'Fuentes de fotos',
+  'widgets.photoFrame.settings.source': 'Fuente',
+  'widgets.photoFrame.settings.sourceUrls': 'URLs manuales',
+  'widgets.photoFrame.settings.sourceHomeAssistant': 'Media de Home Assistant',
   'widgets.photoFrame.settings.shuffle': 'Mezclador de fotos',
   'widgets.photoFrame.settings.shuffleDescription': 'Baraja las fotos automáticamente.',
   'widgets.photoFrame.settings.addUrl': 'Añadir URL',
   'widgets.photoFrame.settings.photos': 'Fotos',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://ejemplo.com/foto.jpg',
+  'widgets.photoFrame.settings.homeAssistantMedia': 'Media de Home Assistant',
+  'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
+    'media-source://media_source/local/family',
+  'widgets.photoFrame.settings.homeAssistantMediaDescription':
+    'Introduce un id de media-source de Home Assistant para una carpeta o imagen. La tarjeta cargara las imagenes a traves de Home Assistant en lugar de una integracion directa del proveedor.',
   'widgets.photoFrame.settings.noPhotos':
     'No hay fotos añadidas. Añade una URL para mostrar tus propias imágenes.',
   'widgets.photoFrame.settings.emptyHint': 'Mostrando fotos integradas',

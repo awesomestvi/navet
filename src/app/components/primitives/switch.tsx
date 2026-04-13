@@ -10,7 +10,7 @@ export interface SwitchProps
 
 // Status: proposed. Minimal switch primitive for boolean settings where checkbox semantics read awkwardly.
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
-  { checked, onCheckedChange, className, disabled, ...props },
+  { checked, onCheckedChange, className, disabled, style, ...props },
   ref
 ) {
   const { theme, accentColor } = useTheme();
@@ -45,7 +45,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
                 : 'border-zinc-800 bg-zinc-900',
         className
       )}
-      style={checked ? { backgroundColor: accentColor } : undefined}
+      style={checked ? { backgroundColor: accentColor, ...style } : style}
     >
       <span
         className={cn(

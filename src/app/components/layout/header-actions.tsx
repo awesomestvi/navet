@@ -140,11 +140,13 @@ function HeaderNotificationButton({
         ) : null}
       </button>
 
-      <NotificationPanel
-        isOpen={isNotificationOpen}
-        onClose={() => setIsNotificationOpen(false)}
-        triggerRefs={[mobileNotificationButtonRef, desktopNotificationButtonRef]}
-      />
+      {!mobile ? (
+        <NotificationPanel
+          isOpen={isNotificationOpen}
+          onClose={() => setIsNotificationOpen(false)}
+          triggerRefs={[mobileNotificationButtonRef, desktopNotificationButtonRef]}
+        />
+      ) : null}
     </div>
   );
 }

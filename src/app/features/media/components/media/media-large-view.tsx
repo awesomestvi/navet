@@ -127,18 +127,18 @@ export function MediaLargeView({
           palette.dominant,
           0.14
         )} 48%, ${withAlpha(palette.darkMuted, 0.18)} 100%)`
-      : `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.52)} 0%, ${withAlpha(
+      : `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.12)} 0%, ${withAlpha(
           palette.dominant,
-          0.3
-        )} 48%, ${withAlpha(palette.darkMuted, 0.34)} 100%)`,
+          0.06
+        )} 48%, ${withAlpha(palette.darkMuted, 0.08)} 100%)`,
   };
   const readabilityGradientStyle = {
     background: subduedFallback
       ? `linear-gradient(180deg, rgba(0,0,0,0.24) 0%, rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.16) 68%, rgba(0,0,0,0.28) 100%)`
       : `radial-gradient(circle at 50% 46%, ${withAlpha(
           palette.highlight,
-          0.14
-        )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.14) 68%, rgba(0,0,0,0.24) 100%)`,
+          0.03
+        )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%)`,
   };
   const artworkAtmosphereStyle = {
     background: `radial-gradient(circle at 50% 50%, ${withAlpha(
@@ -158,7 +158,7 @@ export function MediaLargeView({
               alt=""
               aria-hidden="true"
               onError={() => onArtworkError?.(artwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-36 saturate-[0.98] contrast-[0.94]"
+              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-58 saturate-[1.02] contrast-[0.98]"
               decoding="async"
             />
             <img
@@ -166,7 +166,7 @@ export function MediaLargeView({
               alt=""
               aria-hidden="true"
               onError={() => onArtworkError?.(artwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-22 blur-[26px] saturate-[1.02]"
+              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-16 blur-[26px] saturate-[1.02]"
               decoding="async"
             />
           </>

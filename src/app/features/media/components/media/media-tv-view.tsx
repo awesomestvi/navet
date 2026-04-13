@@ -681,20 +681,20 @@ export function MediaTvView({
     return (
       <div className="relative flex h-full flex-col">
         {header}
-        <div className="relative flex min-h-0 flex-1 flex-col gap-8">
-          <div className="flex min-h-0 flex-1 items-end justify-center pb-1 pt-1">
-            <div className="shrink-0">{renderDpadInline()}</div>
-          </div>
+        <div className="relative flex min-h-0 flex-1 flex-col gap-5">
+          <div className="flex min-h-0 flex-1 items-end justify-center">{renderDpadInline()}</div>
           <div className={`flex flex-col ${tvSectionStackGap}`}>
             {utilityControls}
-            <div className={`flex flex-wrap items-center justify-center ${tvControlClusterGap}`}>
+            <div
+              className={`mt-3 flex flex-wrap items-center justify-center ${tvControlClusterGap}`}
+            >
               {transportActionButtons}
             </div>
-            <div className="relative flex w-full min-w-0 items-center justify-end">
-              <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 flex w-full -translate-x-1/2 -translate-y-1/2 justify-center px-2">
-                <div className="pointer-events-auto min-w-0 max-w-36">{sourceDropdown}</div>
-              </div>
-              <div className="relative z-10 shrink-0">{tvSettingsButton}</div>
+            <div
+              className={`mt-3 flex w-full min-w-0 items-center justify-center ${tvControlClusterGap}`}
+            >
+              <div className="min-w-0 max-w-36">{sourceDropdown}</div>
+              <div className="shrink-0">{tvSettingsButton}</div>
             </div>
           </div>
         </div>

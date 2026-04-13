@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Component, lazy, Suspense } from 'react';
 import { RSSFeedCard } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
+import { useCustomCardsStore } from '../stores/custom-cards-store';
+import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
 
 class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -56,10 +58,11 @@ function WidgetFallback() {
 }
 
 export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
+  const updateCustomCard = useCustomCardsStore((state) => state.updateCard);
+  const handleCardUpdate = onUpdate ?? updateCustomCard;
+
   const handleNoteChange = (note: string) => {
-    if (onUpdate) {
-      onUpdate(card.id, { data: { ...card.data, note } });
-    }
+    handleCardUpdate(card.id, { data: { ...card.data, note } });
   };
 
   let widgetContent: React.ReactNode;
@@ -71,12 +74,10 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           inEditMode={isEditMode}
           size={card.size}
           room={card.room}
-          onRoomChange={onUpdate ? (room) => onUpdate(card.id, { room }) : undefined}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           tintColor={card.data?.tintColor as string | undefined}
-          onTintColorChange={
-            onUpdate
-              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
-              : undefined
+          onTintColorChange={(tintColor) =>
+            handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
         />
       );
@@ -85,23 +86,25 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
       widgetContent = (
         <PhotoFrameWidget
           size={card.size}
+          sourceMode={card.data?.sourceMode as PhotoFrameSourceMode | undefined}
           photoUrls={card.data?.photoUrls as string[] | undefined}
+          mediaSourceId={card.data?.mediaSourceId as string | undefined}
           shuffleEnabled={(card.data?.shuffleEnabled as boolean | undefined) ?? true}
-          onUpdateUrls={
-            onUpdate
-              ? (urls) => onUpdate(card.id, { data: { ...card.data, photoUrls: urls } })
-              : undefined
+          onUpdateUrls={(urls) =>
+            handleCardUpdate(card.id, { data: { ...card.data, photoUrls: urls } })
           }
-          onShuffleEnabledChange={
-            onUpdate
-              ? (shuffleEnabled) => onUpdate(card.id, { data: { ...card.data, shuffleEnabled } })
-              : undefined
+          onSourceModeChange={(sourceMode) =>
+            handleCardUpdate(card.id, { data: { ...card.data, sourceMode } })
+          }
+          onMediaSourceIdChange={(mediaSourceId) =>
+            handleCardUpdate(card.id, { data: { ...card.data, mediaSourceId } })
+          }
+          onShuffleEnabledChange={(shuffleEnabled) =>
+            handleCardUpdate(card.id, { data: { ...card.data, shuffleEnabled } })
           }
           tintColor={card.data?.tintColor as string | undefined}
-          onTintColorChange={
-            onUpdate
-              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
-              : undefined
+          onTintColorChange={(tintColor) =>
+            handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
           isEditMode={isEditMode}
         />
@@ -113,10 +116,8 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           initialNote={card.data?.note as string}
           onNoteChange={handleNoteChange}
           tintColor={card.data?.tintColor as string | undefined}
-          onTintColorChange={
-            onUpdate
-              ? (tintColor) => onUpdate(card.id, { data: { ...card.data, tintColor } })
-              : undefined
+          onTintColorChange={(tintColor) =>
+            handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
         />
       );
@@ -138,9 +139,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
                 }
               | undefined
           }
-          onUpdate={
-            onUpdate ? (data) => onUpdate(card.id, { data: { ...card.data, ...data } }) : undefined
-          }
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
         />
       );

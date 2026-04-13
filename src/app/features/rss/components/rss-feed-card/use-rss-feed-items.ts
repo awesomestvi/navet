@@ -3,8 +3,20 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '@/app/hooks';
 import type { RSSItem, RSSProvider } from './types';
 
-const RSS_PROXY_PATH = '/__navet_rss_proxy__';
+const RSS_PROXY_PATH = '__navet_rss_proxy__';
 const rssFeedItemsCache = new Map<string, { items: RSSItem[]; error: string | null }>();
+
+function getRSSProxyRequestUrl(feedUrl: string) {
+  const baseUrl =
+    typeof document !== 'undefined' && document.baseURI
+      ? document.baseURI
+      : typeof window !== 'undefined'
+        ? window.location.href
+        : '/';
+  const proxyUrl = new URL(RSS_PROXY_PATH, baseUrl);
+  proxyUrl.searchParams.set('url', feedUrl);
+  return proxyUrl.toString();
+}
 
 const stripHtml = (value: string): string =>
   value
@@ -177,8 +189,7 @@ async function fetchUrlProviderItems(
     return [];
   }
 
-  const requestUrl = `${RSS_PROXY_PATH}?url=${encodeURIComponent(provider.feedUrl)}`;
-  const response = await fetch(requestUrl);
+  const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl));
 
   if (!response.ok) {
     throw new Error(`unable-to-load:${provider.name}`);

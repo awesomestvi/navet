@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react';
 import {
   type ComponentType,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type SVGProps,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -39,8 +41,8 @@ export function SlideAction({
     startProgress: number;
     startX: number;
   } | null>(null);
+  const rafRef = useRef<number | null>(null);
   const progressRef = useRef(0);
-  const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -49,12 +51,11 @@ export function SlideAction({
       if (completionTimerRef.current !== null) {
         window.clearTimeout(completionTimerRef.current);
       }
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
     };
   }, []);
-
-  useEffect(() => {
-    progressRef.current = progress;
-  }, [progress]);
 
   const metrics =
     size === 'extra-small'
@@ -82,17 +83,57 @@ export function SlideAction({
       : 'bg-white text-zinc-950 shadow-[0_12px_24px_-16px_rgba(0,0,0,0.72)]';
   const progressFillClassName = theme === 'light' ? 'bg-white/44' : 'bg-white/10';
 
+  const applyProgress = useCallback(
+    (nextProgress: number) => {
+      progressRef.current = nextProgress;
+      const track = trackRef.current;
+      if (!track) {
+        return;
+      }
+
+      const idleTravel = Math.max(track.clientWidth - metrics.knobSize - metrics.padding * 2, 1);
+      const progressTravel = dragStateRef.current?.maxTravel ?? idleTravel;
+      const knobOffset = nextProgress * progressTravel;
+      const clipInset = metrics.padding + knobOffset + metrics.knobSize * 0.82;
+      const labelOpacity = 1 - Math.min(nextProgress * 0.6, 0.45);
+
+      track.style.setProperty('--slide-knob-offset', `${knobOffset}px`);
+      track.style.setProperty('--slide-fill-width', `${metrics.knobSize + knobOffset}px`);
+      track.style.setProperty('--slide-label-clip-inset', `${clipInset}px`);
+      track.style.setProperty('--slide-label-opacity', `${labelOpacity}`);
+    },
+    [metrics.knobSize, metrics.padding]
+  );
+
+  const scheduleProgress = useCallback(
+    (nextProgress: number) => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+
+      rafRef.current = window.requestAnimationFrame(() => {
+        rafRef.current = null;
+        applyProgress(nextProgress);
+      });
+    },
+    [applyProgress]
+  );
+
+  useEffect(() => {
+    applyProgress(progressRef.current);
+  }, [applyProgress]);
+
   const runCompletion = () => {
     if (completionTimerRef.current !== null) {
       window.clearTimeout(completionTimerRef.current);
     }
 
     setIsCompleting(true);
-    setProgress(1);
+    applyProgress(1);
     completionTimerRef.current = window.setTimeout(() => {
       onComplete();
       setIsCompleting(false);
-      setProgress(0);
+      applyProgress(0);
     }, 140);
   };
 
@@ -112,7 +153,7 @@ export function SlideAction({
     dragStateRef.current = {
       maxTravel: nextMaxTravel,
       pointerId: event.pointerId,
-      startProgress: progress,
+      startProgress: progressRef.current,
       startX: event.clientX,
     };
 
@@ -134,7 +175,7 @@ export function SlideAction({
       Math.max(0, dragState.startProgress + deltaX / dragState.maxTravel)
     );
 
-    setProgress(nextProgress);
+    scheduleProgress(nextProgress);
     event.preventDefault();
     event.stopPropagation();
   };
@@ -155,7 +196,7 @@ export function SlideAction({
       return;
     }
 
-    setProgress(0);
+    applyProgress(0);
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -172,13 +213,14 @@ export function SlideAction({
     runCompletion();
   };
 
-  const idleTravel = trackRef.current
-    ? Math.max(trackRef.current.clientWidth - metrics.knobSize - metrics.padding * 2, 1)
-    : Math.max(metrics.knobSize, 1);
-  const progressTravel = dragStateRef.current?.maxTravel ?? idleTravel;
-  const knobOffset = progress * progressTravel;
   const labelPaddingLeft = metrics.knobSize + metrics.padding + 6;
   const labelPaddingRight = metrics.padding + 10;
+  const slideActionStyle = {
+    ['--slide-knob-offset' as string]: '0px',
+    ['--slide-fill-width' as string]: `${metrics.knobSize}px`,
+    ['--slide-label-clip-inset' as string]: `${metrics.padding + metrics.knobSize * 0.82}px`,
+    ['--slide-label-opacity' as string]: '1',
+  } as CSSProperties;
 
   return (
     <button
@@ -189,6 +231,7 @@ export function SlideAction({
       className={`relative block w-full overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
         disabled || isCompleting ? 'cursor-default opacity-70' : 'cursor-ew-resize'
       } select-none touch-none`}
+      style={slideActionStyle}
       data-card-interactive="true"
       disabled={disabled || isCompleting}
       tabIndex={disabled || isCompleting ? -1 : 0}
@@ -208,21 +251,21 @@ export function SlideAction({
           bottom: metrics.padding,
           left: metrics.padding,
           top: metrics.padding,
-          width: metrics.knobSize + knobOffset,
+          width: 'var(--slide-fill-width)',
         }}
       />
 
       <div
         className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center"
         style={{
-          clipPath: `inset(0 0 0 ${metrics.padding + knobOffset + metrics.knobSize * 0.82}px)`,
+          clipPath: 'inset(0 0 0 var(--slide-label-clip-inset))',
           paddingLeft: labelPaddingLeft,
           paddingRight: labelPaddingRight,
         }}
       >
         <div
           className={`flex min-w-0 flex-col items-center justify-center font-medium ${metrics.labelClassName} ${labelColorClassName}`}
-          style={{ opacity: 1 - Math.min(progress * 0.6, 0.45) }}
+          style={{ opacity: 'var(--slide-label-opacity)' }}
         >
           <span className="line-clamp-2 text-center">{actionLabel}</span>
         </div>
@@ -234,7 +277,7 @@ export function SlideAction({
         }`}
         style={{
           height: metrics.knobSize,
-          transform: `translateX(${metrics.padding + knobOffset}px) translateY(-50%)`,
+          transform: `translateX(calc(${metrics.padding}px + var(--slide-knob-offset))) translateY(-50%)`,
           width: metrics.knobSize,
         }}
       >

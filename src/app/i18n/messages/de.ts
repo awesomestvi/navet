@@ -890,11 +890,19 @@ export const deMessages = {
   'widgets.photoFrame.photo.coastalBreeze.title': 'Coastal Breeze',
   'widgets.photoFrame.photo.coastalBreeze.subtitle': 'Meerschaum und Sand',
   'widgets.photoFrame.settings.title': 'Fotoquellen',
+  'widgets.photoFrame.settings.source': 'Quelle',
+  'widgets.photoFrame.settings.sourceUrls': 'Manuelle URLs',
+  'widgets.photoFrame.settings.sourceHomeAssistant': 'Home Assistant Medien',
   'widgets.photoFrame.settings.shuffle': 'Foto-Mischer',
   'widgets.photoFrame.settings.shuffleDescription': 'Fotos automatisch durchmischen.',
   'widgets.photoFrame.settings.addUrl': 'URL hinzufügen',
   'widgets.photoFrame.settings.photos': 'Fotos',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://beispiel.de/foto.jpg',
+  'widgets.photoFrame.settings.homeAssistantMedia': 'Home Assistant Medien',
+  'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
+    'media-source://media_source/local/family',
+  'widgets.photoFrame.settings.homeAssistantMediaDescription':
+    'Gib eine Home-Assistant-Media-Source für einen Ordner oder ein Bild an. Die Karte lädt Bilder dann über Home Assistant statt über eine direkte Provider-Integration.',
   'widgets.photoFrame.settings.noPhotos':
     'Keine Fotos hinzugefügt. Füge eine URL hinzu, um eigene Bilder anzuzeigen.',
   'widgets.photoFrame.settings.emptyHint': 'Zeigt integrierte Fotos',

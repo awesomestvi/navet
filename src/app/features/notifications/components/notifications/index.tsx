@@ -24,11 +24,15 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: NotificationPanelProps) {
-  const panelRef = useClickOutside<HTMLDivElement>(onClose, isOpen, triggerRefs);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const panelRef = useClickOutside<HTMLDivElement>(
+    onClose,
+    isOpen && !showClearAllConfirm,
+    triggerRefs
+  );
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getNotificationSurfaceTokens(theme);
-  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const {
     notifications,
     unreadCount,

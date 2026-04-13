@@ -881,11 +881,19 @@ export const svMessages = {
   'widgets.photoFrame.photo.coastalBreeze.title': 'Coastal Breeze',
   'widgets.photoFrame.photo.coastalBreeze.subtitle': 'Sjöskum och sand',
   'widgets.photoFrame.settings.title': 'Fotokällor',
+  'widgets.photoFrame.settings.source': 'Källa',
+  'widgets.photoFrame.settings.sourceUrls': 'Manuella URL:er',
+  'widgets.photoFrame.settings.sourceHomeAssistant': 'Home Assistant-media',
   'widgets.photoFrame.settings.shuffle': 'Fotoblandare',
   'widgets.photoFrame.settings.shuffleDescription': 'Blanda bilder automatiskt.',
   'widgets.photoFrame.settings.addUrl': 'Lägg till URL',
   'widgets.photoFrame.settings.photos': 'Foton',
   'widgets.photoFrame.settings.urlPlaceholder': 'https://exempel.se/foto.jpg',
+  'widgets.photoFrame.settings.homeAssistantMedia': 'Home Assistant-media',
+  'widgets.photoFrame.settings.homeAssistantMediaPlaceholder':
+    'media-source://media_source/local/family',
+  'widgets.photoFrame.settings.homeAssistantMediaDescription':
+    'Ange ett media-source-id för en mapp eller bild i Home Assistant. Kortet laddar då bilder via Home Assistant i stället för direkt från en provider.',
   'widgets.photoFrame.settings.noPhotos':
     'Inga foton tillagda. Lägg till en URL för att visa egna bilder.',
   'widgets.photoFrame.settings.emptyHint': 'Visar inbyggda foton',

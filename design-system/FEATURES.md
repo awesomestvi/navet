@@ -666,6 +666,8 @@ The editor header displays four live counters supplied by `useHomeDashboardEdito
 | Widgets | Total custom widgets (RSS, Photo, Note, Battery, Button) |
 | Hidden | Entity IDs hidden from all dashboard views |
 
+The **Photo frame** widget supports custom image URLs and Home Assistant media sources (`media_source/browse_media` and `media_source/resolve_media` over the active connection). Configuration controls are available in dashboard edit mode.
+
 ### Hero Section Toggle
 
 A toggle in the edit toolbar shows or hides the Hero section at the top of the Home view. Cards with `hero` size degrade to `large` when the hero section is hidden.

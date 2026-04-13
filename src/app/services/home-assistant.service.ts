@@ -45,6 +45,22 @@ export interface HomeAssistantEntityRegistryEntry {
   original_name?: string | null;
 }
 
+export interface HomeAssistantMediaSourceItem {
+  title: string;
+  media_class: string;
+  media_content_id: string;
+  media_content_type?: string;
+  children?: HomeAssistantMediaSourceItem[];
+  can_expand?: boolean;
+  can_play?: boolean;
+  thumbnail?: string | null;
+}
+
+export interface HomeAssistantResolvedMediaSource {
+  url: string;
+  mime_type?: string;
+}
+
 interface CallServiceTarget {
   entity_id?: string | string[];
   area_id?: string | string[];
@@ -344,6 +360,28 @@ class HomeAssistantService {
    */
   getConnection(): Connection | null {
     return this.connection;
+  }
+
+  async browseMediaSource(mediaContentId: string): Promise<HomeAssistantMediaSourceItem> {
+    if (!this.connection) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return this.connection.sendMessagePromise({
+      type: 'media_source/browse_media',
+      media_content_id: mediaContentId,
+    }) as Promise<HomeAssistantMediaSourceItem>;
+  }
+
+  async resolveMediaSource(mediaContentId: string): Promise<HomeAssistantResolvedMediaSource> {
+    if (!this.connection) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return this.connection.sendMessagePromise({
+      type: 'media_source/resolve_media',
+      media_content_id: mediaContentId,
+    }) as Promise<HomeAssistantResolvedMediaSource>;
   }
 
   /**

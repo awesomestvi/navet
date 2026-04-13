@@ -10,6 +10,7 @@ import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import {
   BrightnessPresetEditor,
   BrightnessPresets,
+  BrightnessSlider,
   ColorSelectorSection,
   ColorTemperatureSection,
   CustomCardTintPicker,
@@ -47,6 +48,8 @@ interface LightSettingsDialogProps {
   onColorChange: (color: string) => void;
   onCustomColorChange: (color: string) => void;
   onBrightnessChange: (brightness: number) => void;
+  /** When set, slider drag uses `onBrightnessChange`; release uses this (matches card + HA). */
+  onBrightnessCommit?: (brightness: number) => void;
   applyBrightnessPresetsToAll: boolean;
   onApplyBrightnessPresetsToAllChange: (applyToAll: boolean) => void;
   onBrightnessPresetValueChange: (key: BrightnessPresetKey, value: number) => void;
@@ -89,6 +92,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onColorChange,
   onCustomColorChange,
   onBrightnessChange,
+  onBrightnessCommit,
   applyBrightnessPresetsToAll,
   onApplyBrightnessPresetsToAllChange,
   onBrightnessPresetValueChange,
@@ -166,11 +170,18 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                   onCustomColorChange={onCustomColorChange}
                 />
               )}
+              <BrightnessSlider
+                value={brightness}
+                onChange={onBrightnessChange}
+                onCommit={onBrightnessCommit ?? onBrightnessChange}
+                isOn={isOn}
+                disabled={!isOn}
+              />
               <BrightnessPresets
                 presets={brightnessPresets}
                 currentBrightness={brightness}
                 isOn={isOn}
-                onBrightnessChange={onBrightnessChange}
+                onBrightnessChange={onBrightnessCommit ?? onBrightnessChange}
               />
             </TabPanel>
 
