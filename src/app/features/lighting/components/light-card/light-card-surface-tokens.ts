@@ -1,5 +1,8 @@
 import type { CSSProperties } from 'react';
-import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import {
+  getCardStateSurfaceStyleTokens,
+  getCardStateSurfaceTokens,
+} from '@/app/components/shared/theme/card-state-surface-tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import { darkenColor, getGradientColors } from '@/app/utils/color-utils';
 
@@ -23,6 +26,7 @@ export interface LightCardSurfaceTokens {
   cardClassName: string;
   cardStyle?: CSSProperties;
   glowColor: string;
+  activeGlowClassName: string | null;
   innerOverlayClassName: string | null;
   innerOverlayStyle?: CSSProperties;
   shineOverlayClassName: string | null;
@@ -38,6 +42,13 @@ export function getLightCardSurfaceTokens({
 }: LightCardSurfaceTokensParams): LightCardSurfaceTokens {
   const gradientColors = getGradientColors(isOn, selectedColor, theme);
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
+  const selectedColorBorder =
+    theme === 'black'
+      ? `${selectedColor}33`
+      : theme === 'dark'
+        ? `${selectedColor}4d`
+        : `${selectedColor}66`;
+  const activeBaseColor = selectedColor ?? accentColor ?? '#f97316';
 
   // When on with no color selected, use the theme-aware lightColors gradient (same source as switch cards)
   const useAccentGradient = isOn && !selectedColor && lightColors;
@@ -57,10 +68,11 @@ export function getLightCardSurfaceTokens({
         !useAccentGradient && gradientColors.customGradient
           ? {
               background: gradientColors.customGradient,
-              borderColor: selectedColor ? `${selectedColor}66` : undefined,
+              borderColor: selectedColor ? selectedColorBorder : undefined,
             }
           : undefined,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
+      activeGlowClassName: null,
       innerOverlayClassName: 'absolute inset-0',
       innerOverlayStyle: isOn
         ? {
@@ -81,10 +93,11 @@ export function getLightCardSurfaceTokens({
         !useAccentGradient && gradientColors.customGradient
           ? {
               background: gradientColors.customGradient,
-              borderColor: selectedColor ? `${selectedColor}66` : undefined,
+              borderColor: selectedColor ? selectedColorBorder : undefined,
             }
           : undefined,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
+      activeGlowClassName: null,
       innerOverlayClassName: stateSurface.overlayClassName
         ? `absolute inset-0 ${stateSurface.overlayClassName}`
         : null,
@@ -94,11 +107,31 @@ export function getLightCardSurfaceTokens({
     };
   }
 
+  if (theme === 'black' && isOn) {
+    const blackSurface = getCardStateSurfaceStyleTokens({
+      theme,
+      isActive: true,
+      baseColor: activeBaseColor,
+      borderAlphaHex: selectedColor ? '33' : '47',
+    });
+
+    return {
+      cardClassName: baseCardClassName,
+      cardStyle: blackSurface.cardStyle,
+      glowColor: useAccentGradient ? activeBaseColor : gradientColors.glow || activeBaseColor,
+      activeGlowClassName: `absolute inset-0 bg-gradient-to-br ${lightColors?.glow || 'from-orange-400/18'} to-transparent transition-all duration-500`,
+      innerOverlayClassName: blackSurface.innerOverlayClassName,
+      innerOverlayStyle: blackSurface.innerOverlayStyle,
+      shineOverlayClassName: blackSurface.shineOverlayClassName,
+      stateSurface,
+    };
+  }
+
   if (theme === 'dark' && isOn) {
     const darkCardStyle = selectedColor
       ? {
           background: `linear-gradient(135deg, ${darkenColor(selectedColor, 100)} 0%, ${darkenColor(selectedColor, 130)} 100%)`,
-          borderColor: `${selectedColor}66`,
+          borderColor: selectedColorBorder,
         }
       : undefined; // useAccentGradient handles the className when no selectedColor
 
@@ -106,6 +139,7 @@ export function getLightCardSurfaceTokens({
       cardClassName: baseCardClassName,
       cardStyle: darkCardStyle,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
+      activeGlowClassName: null,
       innerOverlayClassName: stateSurface.overlayClassName
         ? `absolute inset-0 ${stateSurface.overlayClassName}`
         : null,
@@ -120,10 +154,11 @@ export function getLightCardSurfaceTokens({
       !useAccentGradient && gradientColors.customGradient
         ? {
             background: gradientColors.customGradient,
-            borderColor: selectedColor ? `${selectedColor}66` : undefined,
+            borderColor: selectedColor ? selectedColorBorder : undefined,
           }
         : undefined,
     glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
+    activeGlowClassName: null,
     innerOverlayClassName: stateSurface.overlayClassName
       ? `absolute inset-0 ${stateSurface.overlayClassName}`
       : null,

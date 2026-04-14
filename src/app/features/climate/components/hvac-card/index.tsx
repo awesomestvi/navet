@@ -6,7 +6,10 @@ import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-he
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import {
+  getCardStateSurfaceStyleTokens,
+  getCardStateSurfaceTokens,
+} from '@/app/components/shared/theme/card-state-surface-tokens';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
 import { cn } from '@/app/components/ui/utils';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -63,6 +66,50 @@ export const HVACCard = memo(function HVACCard({
     tone,
     accentColor,
   });
+  const stateSurfaceStyle = getCardStateSurfaceStyleTokens({
+    theme: controller.theme,
+    isActive: controller.isOn,
+    baseColor:
+      controller.visualMode === 'heat'
+        ? '#f97316'
+        : controller.visualMode === 'cool'
+          ? '#06b6d4'
+          : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+            ? '#3b82f6'
+            : accentColor,
+    borderAlphaHex:
+      controller.visualMode === 'heat'
+        ? '40'
+        : controller.visualMode === 'cool'
+          ? '3a'
+          : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+            ? '36'
+            : '47',
+    tintMidAlphaHex:
+      controller.visualMode === 'heat'
+        ? '12'
+        : controller.visualMode === 'cool'
+          ? '10'
+          : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+            ? '10'
+            : '14',
+    tintEndAlphaHex:
+      controller.visualMode === 'heat'
+        ? '24'
+        : controller.visualMode === 'cool'
+          ? '1f'
+          : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+            ? '1d'
+            : '26',
+    radialAlphaHex:
+      controller.visualMode === 'heat'
+        ? '28'
+        : controller.visualMode === 'cool'
+          ? '24'
+          : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+            ? '22'
+            : '30',
+  });
   const HeaderIcon =
     controller.visualMode === 'heat'
       ? Flame
@@ -78,6 +125,7 @@ export const HVACCard = memo(function HVACCard({
       <CardWrapper
         interactionProps={controller.cardInteraction.cardProps}
         className={`bg-gradient-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} p-4 ${stateSurface.containerClassName}`}
+        style={stateSurfaceStyle.cardStyle}
         lightOverlayClassName={controller.lightOverlay}
         showShadow={controller.isOn && controller.theme !== 'light'}
       >
@@ -89,6 +137,15 @@ export const HVACCard = memo(function HVACCard({
 
         {cardShell.sheenOverlayClassName ? (
           <div className={cardShell.sheenOverlayClassName} />
+        ) : null}
+        {stateSurfaceStyle.innerOverlayClassName ? (
+          <div
+            className={stateSurfaceStyle.innerOverlayClassName}
+            style={stateSurfaceStyle.innerOverlayStyle}
+          />
+        ) : null}
+        {stateSurfaceStyle.shineOverlayClassName ? (
+          <div className={stateSurfaceStyle.shineOverlayClassName} />
         ) : null}
 
         {stateSurface.overlayClassName && (
@@ -185,7 +242,7 @@ export const HVACCard = memo(function HVACCard({
                   isOn={controller.isOn}
                   onTargetTempChange={controller.setTargetTemp}
                   variant="docked-card-small"
-                  className="pointer-events-auto absolute right-[-2rem] top-[36%] z-[2] -translate-y-1/2"
+                  className="pointer-events-auto absolute right-[-0.25rem] top-[36%] z-[2] -translate-y-1/2"
                 />
 
                 <div className="mt-auto inline-flex w-fit flex-col self-start">

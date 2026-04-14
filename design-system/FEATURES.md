@@ -304,6 +304,58 @@ Navet now uses a live Home Assistant-backed media card flow.
 - Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
 - Media card headers now use the same shared eyebrow-first title treatment as other feature cards, aligning subtitle/type placement across the dashboard
 
+### TV Card
+
+**Location**: `src/app/features/media/components/media/media-tv-view.tsx`
+**Remote commands**: `src/app/features/media/tv-remote-commands.ts`
+
+TV media player entities (those with `device_class: tv`) render `MediaTvView` instead of the standard music player layout. The TV card has its own visual language and interaction model.
+
+#### Layout
+
+The TV card places a D-pad navigation cluster in the top-right corner and fills the remaining area with playback and navigation controls. Layout density scales with card size:
+
+| Card size | D-pad density | D-pad size |
+|---|---|---|
+| `small` (compact) | compact | 104 × 104 px |
+| `medium` | compact | 104 × 104 px |
+| `medium-vertical` | comfortable | 176 × 176 px |
+| `large` / `extra-large` | spacious | 212 × 212 px |
+
+The bottom of the card contains:
+- **Volume buttons** — step −10 / mute / +10
+- **Channel buttons** — channel down / channel up (requires `remoteAvailable`)
+- **Quick action row** — menu, home, back, play/pause on the left; source dropdown and settings button on the right
+
+#### Power toggle
+
+Clicking the card shell toggles TV power (`on` / `off`) via `homeAssistantService.updateMediaPlayerPower`. This replaces the open-dialog behaviour used by music player cards. The settings gear button in the quick action row still opens the standard media dialog.
+
+#### Source display
+
+For TV entities, the currently active source label is resolved in priority order: `app_name` → `media_title` → `media_channel` → `media_series_title` → `source` attribute → prop fallbacks. The source label is shown in a pill dropdown; selecting an item calls `media_player.select_source`.
+
+#### Remote profile system
+
+Remote commands are dispatched to the paired `remote.*` entity (derived by replacing `media_player.` with `remote.`). Navet selects a command profile based on the entity ID and friendly name:
+
+| Profile | Detection | Example commands |
+|---|---|---|
+| `samsung` | entity ID or friendly name contains `"samsung"` | `KEY_UP`, `KEY_HOME`, `KEY_RETURN`, `KEY_CHUP` |
+| `default` | all other remotes | `up`, `home`, `back`, `channel_up` |
+
+If no `remote.*` entity is present, D-pad and channel buttons are disabled (`remoteAvailable = false`).
+
+#### Shell styling
+
+An active TV card (state is not `off`) uses a fuchsia / violet gradient shell:
+
+- **glass / dark**: `from-fuchsia-500/12 via-violet-500/10 to-white/6` with a `fuchsia-400/20` border
+- **light**: `from-violet-50 via-fuchsia-50 to-white` with a `fuchsia-200/80` border
+- **contrast**: `from-fuchsia-950/45 via-black to-black` with a `fuchsia-500/35` border
+
+A radial glow overlay (`fuchsia` top-right, `violet` bottom-left) is composited over the shell when the TV is active.
+
 ### Media Dialog Architecture
 
 **Location**: `src/app/features/media/components/media/`
@@ -698,7 +750,7 @@ Full-page settings interface with card-based organization. Appearance section it
 - **Theme Mode Selection**: 2 × 2 grid of theme option cards
 - **Primary Color Picker**: 8 built-in accent circles plus a custom accent swatch
 - **Visual quality**: choose between High, Medium, and Low glass rendering; shows the recommended tier for the current device based on an automatic benchmark run at first load
-- **Built-in wallpapers**: 8 bundled SVG scenes (Serene Dawn, Starfield Nocturne, Aurora Veil, Rainforest Canopy, Ember Loft, Slate Passage, Coastal Haze, Night Lounge) shown as compact circle swatches; custom image upload still available alongside them
+- **Built-in wallpapers**: 11 bundled SVG scenes (Serene Dawn, Citrus Courtyard, Petal Horizon, Sky Bloom, Starfield Nocturne, Aurora Veil, Rainforest Canopy, Ember Loft, Slate Passage, Coastal Haze, Night Lounge) shown as compact circle swatches; custom image upload still available alongside them
 - **Localized theme picker copy**: theme names and descriptions resolve through the shared i18n dictionaries
 - **Light card ambience**: global visual toggle between ambient bleed and contained light-card rendering
 - **Theme-aware ambience preview**: the ambience preview uses the shared preview-frame primitive, and the shared `Live Preview` header localizes with the active language
@@ -1064,7 +1116,7 @@ Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
 
 ---
 
-**Last Updated**: April 8, 2026
+**Last Updated**: April 15, 2026
 **Version**: 1.8
 **Status**: Living Document
 

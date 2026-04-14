@@ -9,6 +9,7 @@ import {
 } from '@/app/components/shared/card-size-selector';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -108,6 +109,16 @@ export const LockCard = memo(function LockCard({
     tone: isLocked ? 'primary' : 'red',
     accentColor,
   });
+  const activeBaseColor = isLocked ? accentColor : '#ef4444';
+  const blackActiveSurface =
+    theme === 'black'
+      ? getCardStateSurfaceStyleTokens({
+          theme,
+          isActive: true,
+          baseColor: activeBaseColor,
+          borderAlphaHex: '47',
+        })
+      : null;
 
   const handleToggleLock = () => {
     if (isPendingAction) {
@@ -128,12 +139,22 @@ export const LockCard = memo(function LockCard({
     return (
       <div
         className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
+        style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
       >
         <div
           className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
         />
+        {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+          <div
+            className={blackActiveSurface.innerOverlayClassName}
+            style={blackActiveSurface.innerOverlayStyle}
+          />
+        ) : null}
         {securitySurface.overlayClassName ? (
           <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+        ) : null}
+        {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+          <div className={blackActiveSurface.shineOverlayClassName} />
         ) : null}
         <TinyCardWatermark
           IconComponent={IconComponent}
@@ -179,11 +200,23 @@ export const LockCard = memo(function LockCard({
 
   if (isExtraSmall) {
     return (
-      <div className={`${compactRootClassName} px-3 py-3`}>
+      <div
+        className={`${compactRootClassName} px-3 py-3`}
+        style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+      >
         <div
           className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
         />
+        {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+          <div
+            className={blackActiveSurface.innerOverlayClassName}
+            style={blackActiveSurface.innerOverlayStyle}
+          />
+        ) : null}
         <div className={`absolute inset-0 ${overlayTintClassName}`} />
+        {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+          <div className={blackActiveSurface.shineOverlayClassName} />
+        ) : null}
 
         <div className="relative flex h-full flex-col justify-between gap-3">
           <p className={`${topNameClassName} text-[12px]`}>{name}</p>
@@ -203,11 +236,23 @@ export const LockCard = memo(function LockCard({
   }
 
   return (
-    <div className={`${compactRootClassName} p-2.5`}>
+    <div
+      className={`${compactRootClassName} p-2.5`}
+      style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+    >
       <div
         className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
       />
+      {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+        <div
+          className={blackActiveSurface.innerOverlayClassName}
+          style={blackActiveSurface.innerOverlayStyle}
+        />
+      ) : null}
       <div className={`absolute inset-0 ${overlayTintClassName}`} />
+      {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+        <div className={blackActiveSurface.shineOverlayClassName} />
+      ) : null}
 
       <div className="relative flex h-full flex-col">
         <div className="flex flex-col items-center gap-0.5 text-center">

@@ -23,7 +23,7 @@ function CardShellSurfaceTokensShowcase() {
           theme === 'light'
             ? `${surface.panel} ${surface.border}`
             : theme === 'black'
-              ? 'border-zinc-800 bg-black shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+              ? `${surface.panel} ${surface.border} shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]`
               : theme === 'glass'
                 ? `${surface.panel} ${surface.border} ${surface.cardShadow}`
                 : 'border-zinc-700 bg-[linear-gradient(180deg,rgba(39,39,42,0.96),rgba(9,9,11,0.98))] shadow-[0_24px_60px_-36px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]';

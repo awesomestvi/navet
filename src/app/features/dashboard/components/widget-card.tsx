@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Component, lazy, Suspense } from 'react';
+import type { RSSCardData } from '@/app/features/rss';
 import { RSSFeedCard } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
@@ -74,7 +75,9 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           inEditMode={isEditMode}
           size={card.size}
           room={card.room}
+          data={card.data as RSSCardData | undefined}
           onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          onDataChange={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           tintColor={card.data?.tintColor as string | undefined}
           onTintColorChange={(tintColor) =>
             handleCardUpdate(card.id, { data: { ...card.data, tintColor } })

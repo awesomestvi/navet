@@ -39,23 +39,28 @@ export function getThemeSurfaceTokens(
 ): ThemeSurfaceTokens {
   if (theme === 'light') {
     return {
-      appBg: 'bg-gray-50',
-      shellPanel: 'bg-white border-gray-200',
+      appBg: 'bg-stone-50',
+      shellPanel: 'bg-white border-slate-300/80',
       panel: 'bg-white',
-      panelMuted: 'bg-gray-50',
-      border: 'border-gray-200',
-      borderStrong: 'border-gray-200',
-      divider: 'divide-gray-200',
-      textPrimary: 'text-gray-900',
-      textSecondary: 'text-gray-600',
-      textSubtle: 'text-gray-500',
-      textMuted: 'text-gray-500',
-      iconBg: 'bg-gray-100',
-      subtleBg: 'bg-gray-100',
-      hoverBg: 'hover:bg-gray-100',
-      inputBg: 'bg-gray-100',
-      placeholder: 'placeholder-gray-400',
-      cardShadow: effectsQuality === 'high' ? 'shadow-md' : '',
+      panelMuted: 'bg-slate-50',
+      border: 'border-slate-300/80',
+      borderStrong: 'border-slate-300',
+      divider: 'divide-slate-300/80',
+      textPrimary: 'text-slate-950',
+      textSecondary: 'text-slate-700',
+      textSubtle: 'text-slate-600',
+      textMuted: 'text-slate-500',
+      iconBg: 'bg-slate-100',
+      subtleBg: 'bg-slate-100/90',
+      hoverBg: 'hover:bg-slate-100',
+      inputBg: 'bg-slate-100/95',
+      placeholder: 'placeholder-slate-400',
+      cardShadow:
+        effectsQuality === 'high'
+          ? 'shadow-[0_22px_44px_-28px_rgba(15,23,42,0.22),0_8px_16px_-14px_rgba(15,23,42,0.14)]'
+          : effectsQuality === 'medium'
+            ? 'shadow-[0_16px_32px_-26px_rgba(15,23,42,0.18)]'
+            : '',
       lightOverlay: null,
       dialogBackdrop: 'bg-black/48',
       ringOffset: 'ring-offset-white',
@@ -65,11 +70,11 @@ export function getThemeSurfaceTokens(
   if (theme === 'black') {
     return {
       appBg: 'bg-black',
-      shellPanel: 'bg-black border-white/16',
+      shellPanel: 'bg-black border-white/6',
       panel: 'bg-black',
       panelMuted: 'bg-black',
-      border: 'border-white/16',
-      borderStrong: 'border-white/16',
+      border: 'border-white/6',
+      borderStrong: 'border-white/8',
       divider: 'divide-white/10',
       textPrimary: 'text-white',
       textSecondary: 'text-gray-300',

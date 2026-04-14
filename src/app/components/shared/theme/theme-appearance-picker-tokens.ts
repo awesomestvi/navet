@@ -6,32 +6,32 @@ export function getThemeAppearancePickerTokens(previewTheme: ThemeType, accentCo
   const isBlack = previewTheme === 'black';
 
   return {
-    textClassName: isLight ? 'text-gray-900' : 'text-white',
-    mutedClassName: isLight ? 'text-gray-600' : 'text-gray-300',
+    textClassName: isLight ? 'text-slate-950' : 'text-white',
+    mutedClassName: isLight ? 'text-slate-700' : 'text-gray-300',
     optionCardClassName: isLight
-      ? 'bg-gray-50 hover:bg-gray-100'
+      ? 'bg-white hover:bg-slate-50'
       : isBlack
         ? 'bg-black hover:bg-black'
         : isGlass
           ? 'bg-white/8 hover:bg-white/12'
           : 'bg-white/5 hover:bg-white/10',
     optionBorderClassName: isLight
-      ? 'border-gray-200/80'
+      ? 'border-slate-300/80'
       : isBlack
         ? 'border-white/16'
         : isGlass
           ? 'border-white/16'
           : 'border-white/10',
     panelInsetClassName: isLight
-      ? 'bg-gray-50/90 border-gray-200/80'
+      ? 'bg-white/92 border-slate-300/80'
       : isBlack
         ? 'bg-black border-white/16'
         : isGlass
           ? 'bg-white/[0.06] border-white/16'
           : 'bg-white/[0.045] border-white/10',
     activeOptionStyle: {
-      borderColor: `${accentColor}80`,
-      backgroundColor: isBlack ? '#000000' : `${accentColor}14`,
+      borderColor: isLight ? `${accentColor}66` : `${accentColor}80`,
+      backgroundColor: isBlack ? '#000000' : isLight ? `${accentColor}1f` : `${accentColor}14`,
     },
     accentRingShadow: `0 0 0 2px ${isLight ? '#ffffff' : '#111827'}, 0 0 0 4px `,
     previewBackground: isLight

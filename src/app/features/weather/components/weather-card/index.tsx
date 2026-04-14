@@ -94,6 +94,8 @@ export const WeatherCard = memo(function WeatherCard({
 
   const textPrimary = weatherTextTreatment.primary;
   const textSecondary = weatherTextTreatment.secondary;
+  const shellGlowOpacityClass =
+    theme === 'black' ? 'opacity-18' : theme === 'dark' ? 'opacity-28' : 'opacity-55';
 
   return (
     <>
@@ -109,14 +111,19 @@ export const WeatherCard = memo(function WeatherCard({
         }
         interactionProps={interaction.cardProps}
       >
-        <WeatherBackground condition={condition} hasCustomTint={hasCustomTint} size={size} />
+        <WeatherBackground
+          condition={condition}
+          hasCustomTint={hasCustomTint}
+          size={size}
+          theme={theme}
+        />
 
         {hasCustomTint ? (
           tintSurface.glowStyle ? (
             <div className="absolute inset-0" style={tintSurface.glowStyle} />
           ) : null
         ) : (
-          <div className={`absolute inset-0 ${shell.glowClassName} opacity-55`} />
+          <div className={`absolute inset-0 ${shell.glowClassName} ${shellGlowOpacityClass}`} />
         )}
 
         <div className="relative z-2 flex h-full flex-col">

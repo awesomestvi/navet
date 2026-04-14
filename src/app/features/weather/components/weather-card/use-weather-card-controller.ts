@@ -4,6 +4,7 @@ import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-c
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useI18n, usePersistedState, useTheme } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
@@ -35,6 +36,7 @@ export function useWeatherCardController({
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
 
   const cardShell = getCardShellSurfaceTokens(theme);
+  const surface = getThemeSurfaceTokens(theme);
   const tintColor = weatherTintColors[id];
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
@@ -60,7 +62,7 @@ export function useWeatherCardController({
       : theme === 'glass'
         ? 'border-white/10'
         : theme === 'black'
-          ? 'border-white/16'
+          ? surface.border
           : 'border-sky-700/70';
 
   const cityName = getWeatherCityName(location);

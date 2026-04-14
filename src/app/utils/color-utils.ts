@@ -48,7 +48,7 @@ export const getGradientColors = (
       return {
         from: 'from-black',
         to: 'to-black',
-        border: 'border-white/16',
+        border: 'border-white/6',
         glow: 'transparent',
         customGradient: 'linear-gradient(135deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 100%)',
       };
@@ -78,7 +78,7 @@ export const getGradientColors = (
     return {
       from: '',
       to: '',
-      border: 'border-white/10',
+      border: theme === 'black' ? 'border-white/6' : 'border-white/10',
       glow: selectedColor,
       customGradient: `linear-gradient(135deg, ${darkColor}66 0%, ${darkerColor}66 100%)`,
     };

@@ -6,7 +6,10 @@ import { CardSettingsActionButton } from '@/app/components/shared/card-settings-
 import { isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import {
+  getCardStateSurfaceStyleTokens,
+  getCardStateSurfaceTokens,
+} from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import type { SwitchCardProps } from './switch-card.types';
@@ -44,6 +47,15 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   const tintGlow = tintSurface.glowStyle ? (
     <div className="absolute inset-0" style={tintSurface.glowStyle} />
   ) : null;
+  const blackActiveSurface =
+    controller.theme === 'black' && controller.isOn
+      ? getCardStateSurfaceStyleTokens({
+          theme: controller.theme,
+          isActive: true,
+          baseColor: controller.tintColor || controller.accentColor,
+          borderAlphaHex: controller.tintColor ? '33' : '47',
+        })
+      : null;
 
   const controlsDialog =
     controller.hasControlsDialog && controller.isDialogOpen ? (
@@ -74,8 +86,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-          style={tintSurface.panelStyle}
+          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         >
           {controller.isOn ? (
             <div
@@ -84,7 +96,16 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           ) : null}
           {tintGlow}
           {lightOverlay}
+          {blackActiveSurface?.innerOverlayClassName ? (
+            <div
+              className={blackActiveSurface.innerOverlayClassName}
+              style={blackActiveSurface.innerOverlayStyle}
+            />
+          ) : null}
           {sheenOverlay}
+          {blackActiveSurface?.shineOverlayClassName ? (
+            <div className={blackActiveSurface.shineOverlayClassName} />
+          ) : null}
           {stateOverlay}
           {tintOverlay}
           <TinyCardWatermark
@@ -120,8 +141,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-          style={tintSurface.panelStyle}
+          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         >
           {controller.isOn ? (
             <div
@@ -131,7 +152,16 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
 
           {tintGlow}
           {lightOverlay}
+          {blackActiveSurface?.innerOverlayClassName ? (
+            <div
+              className={blackActiveSurface.innerOverlayClassName}
+              style={blackActiveSurface.innerOverlayStyle}
+            />
+          ) : null}
           {sheenOverlay}
+          {blackActiveSurface?.shineOverlayClassName ? (
+            <div className={blackActiveSurface.shineOverlayClassName} />
+          ) : null}
           {stateOverlay}
           {tintOverlay}
 
@@ -172,8 +202,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
     <>
       <div
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full bg-linear-to-br ${controller.cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${controller.cardColors.border} overflow-hidden transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
-        style={tintSurface.panelStyle}
+        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
+        style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
       >
         {controller.isOn && (
           <div
@@ -183,8 +213,17 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
 
         {tintGlow}
         {controller.theme === 'light' && <div className="absolute inset-0 bg-white/60" />}
+        {blackActiveSurface?.innerOverlayClassName ? (
+          <div
+            className={blackActiveSurface.innerOverlayClassName}
+            style={blackActiveSurface.innerOverlayStyle}
+          />
+        ) : null}
 
         {sheenOverlay}
+        {blackActiveSurface?.shineOverlayClassName ? (
+          <div className={blackActiveSurface.shineOverlayClassName} />
+        ) : null}
 
         {stateOverlay}
         {tintOverlay}

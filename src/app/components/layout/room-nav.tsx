@@ -40,8 +40,8 @@ interface RoomNavItemProps {
   room: string;
   activeRoom: string;
   allLabel: string;
-  textSecondary: string;
-  hoverBg: string;
+  activeClassName: string;
+  inactiveClassName: string;
   onRoomChange: (room: string) => void;
 }
 
@@ -116,14 +116,14 @@ export const RoomNav = memo(function RoomNav({
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
   const dividerClass =
-    theme === 'light' ? 'bg-gray-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
+    theme === 'light' ? 'bg-slate-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
   const stickyOffset = 'calc(env(safe-area-inset-top, 0px) + 8px)';
   const stickyShellStyle = useMemo<CSSProperties>(() => {
     if (theme === 'light') {
       return {
         '--room-nav-sticky-border': 'rgba(229, 231, 235, 0.8)',
-        '--room-nav-sticky-bg': 'rgba(255, 255, 255, 0.9)',
-        '--room-nav-sticky-shadow': '0 10px 24px -24px rgba(15, 23, 42, 0.22)',
+        '--room-nav-sticky-bg': 'rgba(255, 255, 255, 0.96)',
+        '--room-nav-sticky-shadow': '0 18px 38px -30px rgba(15, 23, 42, 0.22)',
       } as CSSProperties;
     }
 
@@ -151,7 +151,17 @@ export const RoomNav = memo(function RoomNav({
   }, [theme]);
   const showAllViewGrouping = activeRoom === 'All' && onAllViewGroupingChange;
   const hasEditMenus = Boolean((isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity));
-  const actionPillClassName = `flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${inactiveBg} ${hoverBg}`;
+  const lightPillClassName =
+    theme === 'light'
+      ? 'border-slate-300/80 bg-white/92 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.3)]'
+      : '';
+  const inactiveRoomItemClassName =
+    theme === 'light' ? `${textSecondary} ${hoverBg}` : `${textSecondary} ${hoverBg}`;
+  const activeRoomItemClassName =
+    theme === 'light'
+      ? 'room-nav-item-active text-slate-950 shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)]'
+      : 'room-nav-item-active text-white';
+  const actionPillClassName = `flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${inactiveBg} ${lightPillClassName} ${hoverBg}`;
   const dropdownItemClassName = `rounded-xl px-3 py-2 ${surface.textPrimary} ${hoverBg}`;
   const allViewGroupingOptions: Array<{ label: string; value: AllViewGrouping }> = [
     { label: t('dashboard.roomNav.grouping.custom'), value: 'custom' },
@@ -180,8 +190,8 @@ export const RoomNav = memo(function RoomNav({
                     room={room}
                     activeRoom={activeRoom}
                     allLabel={t('dashboard.roomNav.all')}
-                    textSecondary={textSecondary}
-                    hoverBg={hoverBg}
+                    activeClassName={activeRoomItemClassName}
+                    inactiveClassName={inactiveRoomItemClassName}
                     onRoomChange={onRoomChange}
                   />
                 ))}
@@ -258,7 +268,7 @@ export const RoomNav = memo(function RoomNav({
                 active={isEditMode}
                 intent="action"
                 className={`room-nav-action-pill flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${
-                  isEditMode ? 'shadow-sm' : `${inactiveBg} ${hoverBg}`
+                  isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
                 }`}
                 style={
                   isEditMode
@@ -312,8 +322,8 @@ const RoomNavItem = memo(function RoomNavItem({
   room,
   activeRoom,
   allLabel,
-  textSecondary,
-  hoverBg,
+  activeClassName,
+  inactiveClassName,
   onRoomChange,
 }: RoomNavItemProps) {
   return (
@@ -322,7 +332,7 @@ const RoomNavItem = memo(function RoomNavItem({
       onClick={() => onRoomChange(room)}
       variant="ghost"
       className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
-        activeRoom === room ? 'room-nav-item-active text-white' : `${textSecondary} ${hoverBg}`
+        activeRoom === room ? activeClassName : inactiveClassName
       }`}
     >
       {room === 'All' ? allLabel : room}

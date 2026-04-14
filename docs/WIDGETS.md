@@ -19,6 +19,7 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 ### Core Behavior
 
 - Widgets are stored locally in browser storage (`ha-dashboard-custom-cards`)
+- RSS widget feed configuration is stored on the widget card itself so exports/imports keep provider selection and article count
 - Widgets support edit-mode move/resize/delete flows
 - Widget sizing is template-specific (not one global size list)
 - Widgets can be assigned to rooms and participate in home layout sections

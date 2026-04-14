@@ -5,7 +5,7 @@ import { useHomeAssistant } from '@/app/hooks';
 import { selectFeedreaderEventEntities } from '@/app/hooks/ha-domain-entity-maps';
 import { usePersistedState } from '@/app/hooks/use-persisted-state';
 import { DEFAULT_RSS_PROVIDERS } from './providers';
-import type { RSSProvider } from './types';
+import type { RSSCardData, RSSProvider } from './types';
 
 const DEFAULT_PROVIDER_ID = 'bbc-world';
 
@@ -16,29 +16,43 @@ const toProviderId = (value: string): string =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-export function useRSSFeedSources(cardId: string) {
+export function useRSSFeedSources(
+  cardId: string,
+  cardData?: RSSCardData,
+  onCardDataChange?: (updates: Partial<RSSCardData>) => void
+) {
   const feedreaderEntities = useHomeAssistant(selectFeedreaderEventEntities, shallow);
-  const [customProviders, setCustomProviders] = usePersistedState<RSSProvider[]>(
+  const [legacyCustomProviders, setLegacyCustomProviders] = usePersistedState<RSSProvider[]>(
     STORAGE_KEYS.rssFeedProviders,
     DEFAULT_RSS_PROVIDERS
   );
-  const [providerSelectionByCardId, setProviderSelectionByCardId] = usePersistedState<
+  const [legacyProviderSelectionByCardId, setLegacyProviderSelectionByCardId] = usePersistedState<
     Record<string, string[]>
   >(STORAGE_KEYS.rssCardProviders, {});
 
-  const [articleCountByCardId, setArticleCountByCardId] = usePersistedState<Record<string, number>>(
-    STORAGE_KEYS.rssCardArticleCount,
-    {}
-  );
+  const [legacyArticleCountByCardId, setLegacyArticleCountByCardId] = usePersistedState<
+    Record<string, number>
+  >(STORAGE_KEYS.rssCardArticleCount, {});
+  const customProviders = cardData?.customProviders ?? legacyCustomProviders;
   useEffect(() => {
     if (customProviders.length === 0) {
-      setCustomProviders(DEFAULT_RSS_PROVIDERS);
-    }
-  }, [customProviders.length, setCustomProviders]);
+      if (onCardDataChange) {
+        onCardDataChange({ customProviders: DEFAULT_RSS_PROVIDERS });
+        return;
+      }
 
-  const articleCount = articleCountByCardId[cardId] ?? 10;
+      setLegacyCustomProviders(DEFAULT_RSS_PROVIDERS);
+    }
+  }, [customProviders.length, onCardDataChange, setLegacyCustomProviders]);
+
+  const articleCount = cardData?.articleCount ?? legacyArticleCountByCardId[cardId] ?? 10;
   const setArticleCount = (count: number) => {
-    setArticleCountByCardId((current) => ({ ...current, [cardId]: count }));
+    if (onCardDataChange) {
+      onCardDataChange({ articleCount: count });
+      return;
+    }
+
+    setLegacyArticleCountByCardId((current) => ({ ...current, [cardId]: count }));
   };
 
   const homeAssistantProviders = useMemo<RSSProvider[]>(() => {
@@ -73,7 +87,7 @@ export function useRSSFeedSources(cardId: string) {
   );
 
   const selectedProviderIds = useMemo(() => {
-    const savedSelection = providerSelectionByCardId[cardId];
+    const savedSelection = cardData?.selectedProviderIds ?? legacyProviderSelectionByCardId[cardId];
     if (savedSelection) {
       const validSelection = savedSelection.filter((providerId) =>
         providers.some((provider) => provider.id === providerId)
@@ -83,7 +97,13 @@ export function useRSSFeedSources(cardId: string) {
     }
 
     return fallbackProviderIds;
-  }, [cardId, fallbackProviderIds, providerSelectionByCardId, providers]);
+  }, [
+    cardData?.selectedProviderIds,
+    cardId,
+    fallbackProviderIds,
+    legacyProviderSelectionByCardId,
+    providers,
+  ]);
 
   const selectedProviders = useMemo(
     () => providers.filter((provider) => selectedProviderIds.includes(provider.id)),
@@ -91,7 +111,12 @@ export function useRSSFeedSources(cardId: string) {
   );
 
   const setSelectedProviderIds = (nextProviderIds: string[]) => {
-    setProviderSelectionByCardId((current) => ({
+    if (onCardDataChange) {
+      onCardDataChange({ selectedProviderIds: nextProviderIds });
+      return;
+    }
+
+    setLegacyProviderSelectionByCardId((current) => ({
       ...current,
       [cardId]: nextProviderIds,
     }));
@@ -117,22 +142,75 @@ export function useRSSFeedSources(cardId: string) {
       feedUrl: trimmedFeedUrl,
     };
 
-    setCustomProviders((current) => [...current, nextProvider]);
-    setProviderSelectionByCardId((current) => ({
-      ...current,
-      [cardId]: [...new Set([...(current[cardId] ?? selectedProviderIds), nextProvider.id])],
-    }));
+    const nextSelectedProviderIds = [...new Set([...selectedProviderIds, nextProvider.id])];
+
+    if (onCardDataChange) {
+      onCardDataChange({
+        customProviders: [...customProviders, nextProvider],
+        selectedProviderIds: nextSelectedProviderIds,
+      });
+    } else {
+      setLegacyCustomProviders((current) => [...current, nextProvider]);
+      setLegacyProviderSelectionByCardId((current) => ({
+        ...current,
+        [cardId]: [...new Set([...(current[cardId] ?? selectedProviderIds), nextProvider.id])],
+      }));
+    }
 
     return nextProvider;
   };
 
   const removeProvider = (providerId: string) => {
-    setCustomProviders((current) => current.filter((provider) => provider.id !== providerId));
-    setProviderSelectionByCardId((current) => ({
+    if (onCardDataChange) {
+      onCardDataChange({
+        customProviders: customProviders.filter((provider) => provider.id !== providerId),
+        selectedProviderIds: selectedProviderIds.filter((selectedId) => selectedId !== providerId),
+      });
+      return;
+    }
+
+    setLegacyCustomProviders((current) => current.filter((provider) => provider.id !== providerId));
+    setLegacyProviderSelectionByCardId((current) => ({
       ...current,
       [cardId]: (current[cardId] ?? []).filter((selectedId) => selectedId !== providerId),
     }));
   };
+
+  useEffect(() => {
+    if (!onCardDataChange) {
+      return;
+    }
+
+    const migrationUpdates: Partial<RSSCardData> = {};
+
+    if (cardData?.customProviders === undefined && legacyCustomProviders.length > 0) {
+      migrationUpdates.customProviders = legacyCustomProviders;
+    }
+
+    if (
+      cardData?.selectedProviderIds === undefined &&
+      legacyProviderSelectionByCardId[cardId] !== undefined
+    ) {
+      migrationUpdates.selectedProviderIds = legacyProviderSelectionByCardId[cardId];
+    }
+
+    if (cardData?.articleCount === undefined && legacyArticleCountByCardId[cardId] !== undefined) {
+      migrationUpdates.articleCount = legacyArticleCountByCardId[cardId];
+    }
+
+    if (Object.keys(migrationUpdates).length > 0) {
+      onCardDataChange(migrationUpdates);
+    }
+  }, [
+    cardData?.articleCount,
+    cardData?.customProviders,
+    cardData?.selectedProviderIds,
+    cardId,
+    legacyArticleCountByCardId,
+    legacyCustomProviders,
+    legacyProviderSelectionByCardId,
+    onCardDataChange,
+  ]);
 
   return {
     providers,

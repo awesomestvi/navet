@@ -20,6 +20,13 @@ export interface RSSProvider {
   entityId?: string;
 }
 
+export interface RSSCardData {
+  customProviders?: RSSProvider[];
+  selectedProviderIds?: string[];
+  articleCount?: number;
+  tintColor?: string;
+}
+
 export interface RSSFeedCardProps {
   cardId: string;
   inEditMode?: boolean;
@@ -27,6 +34,8 @@ export interface RSSFeedCardProps {
   onSizeChange?: (size: CardSize) => void;
   room?: string;
   onRoomChange?: (room: string) => void;
+  data?: RSSCardData;
+  onDataChange?: (updates: Partial<RSSCardData>) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
 }

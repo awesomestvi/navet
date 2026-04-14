@@ -24,6 +24,8 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   onSizeChange,
   room,
   onRoomChange,
+  data,
+  onDataChange,
   tintColor,
   onTintColorChange,
 }: RSSFeedCardProps) {
@@ -49,7 +51,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
     homeAssistantProviders,
     articleCount,
     setArticleCount,
-  } = useRSSFeedSources(cardId);
+  } = useRSSFeedSources(cardId, data, onDataChange);
 
   // Only subscribe to the specific entity IDs used by HA feedreader providers.
   // useRSSFeedItems accesses entities[provider.entityId] — never the full dict.

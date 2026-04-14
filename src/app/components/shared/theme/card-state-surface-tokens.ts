@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import { getBlackActiveCardSurfaceTokens } from './black-active-card-surface';
 import { getThemeSurfaceTokens } from './theme-surface-tokens';
 
 export interface CardStateSurfaceTokens {
@@ -10,6 +12,13 @@ export interface CardStateSurfaceTokens {
   artworkClassName: string;
 }
 
+export interface CardStateSurfaceStyleTokens {
+  cardStyle?: CSSProperties;
+  innerOverlayClassName: string | null;
+  innerOverlayStyle?: CSSProperties;
+  shineOverlayClassName: string | null;
+}
+
 export function getCardStateSurfaceTokens(
   theme: ThemeType,
   isActive: boolean
@@ -18,12 +27,12 @@ export function getCardStateSurfaceTokens(
 
   if (theme === 'light') {
     return {
-      containerClassName: isActive ? '' : 'brightness-[0.98]',
+      containerClassName: isActive ? '' : 'brightness-[0.985]',
       overlayClassName: null,
-      primaryTextClassName: isActive ? surface.textPrimary : 'text-gray-700',
-      secondaryTextClassName: isActive ? surface.textSecondary : 'text-gray-500',
-      mutedTextClassName: isActive ? surface.textMuted : 'text-gray-400',
-      artworkClassName: isActive ? '' : 'brightness-[0.92] saturate-[0.78]',
+      primaryTextClassName: isActive ? surface.textPrimary : 'text-slate-800',
+      secondaryTextClassName: isActive ? surface.textSecondary : 'text-slate-600',
+      mutedTextClassName: isActive ? surface.textMuted : 'text-slate-500',
+      artworkClassName: isActive ? '' : 'brightness-[0.94] saturate-[0.82]',
     };
   }
 
@@ -68,5 +77,44 @@ export function getCardStateSurfaceTokens(
     secondaryTextClassName: 'text-gray-300',
     mutedTextClassName: 'card-muted-text',
     artworkClassName: 'brightness-[0.88] saturate-[0.72]',
+  };
+}
+
+export function getCardStateSurfaceStyleTokens({
+  theme,
+  isActive,
+  baseColor,
+  borderAlphaHex,
+  tintMidAlphaHex,
+  tintEndAlphaHex,
+  radialAlphaHex,
+}: {
+  theme: ThemeType;
+  isActive: boolean;
+  baseColor?: string | null;
+  borderAlphaHex?: string;
+  tintMidAlphaHex?: string;
+  tintEndAlphaHex?: string;
+  radialAlphaHex?: string;
+}): CardStateSurfaceStyleTokens {
+  if (!isActive || theme !== 'black' || !baseColor) {
+    return {
+      innerOverlayClassName: null,
+      shineOverlayClassName: null,
+    };
+  }
+
+  const blackSurface = getBlackActiveCardSurfaceTokens(baseColor, {
+    borderAlphaHex,
+    tintMidAlphaHex,
+    tintEndAlphaHex,
+    radialAlphaHex,
+  });
+
+  return {
+    cardStyle: blackSurface.cardStyle,
+    innerOverlayClassName: 'absolute inset-0',
+    innerOverlayStyle: blackSurface.innerOverlayStyle,
+    shineOverlayClassName: blackSurface.shineOverlayClassName,
   };
 }

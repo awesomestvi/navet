@@ -113,7 +113,7 @@ const getInactiveThemeTone = (themeType: ThemeType) => {
   if (themeType === 'black') {
     return {
       gradient: 'from-black via-black to-black',
-      border: 'border-zinc-700',
+      border: 'border-white/6',
       iconBg: 'bg-zinc-900',
       accent: 'text-gray-300',
       glow: 'transparent',
@@ -531,21 +531,21 @@ export const generateThemeColors = (
     return {
       light: {
         gradient: `from-black via-black to-${color}-950`,
-        border: `border-${color}-400/85`,
+        border: `border-${color}-400/28`,
         iconBg: `bg-${color}-500/30`,
         glow: `from-${color}-400/18`,
       },
       hvac: {
         heating: {
           gradient: 'from-black via-black to-orange-950',
-          border: 'border-orange-400/85',
+          border: 'border-orange-400/28',
           iconBg: 'bg-orange-500/30',
           accent: 'text-orange-300',
           glow: 'from-orange-400/18',
         },
         cooling: {
           gradient: 'from-black via-black to-cyan-950',
-          border: 'border-cyan-400/85',
+          border: 'border-cyan-400/28',
           iconBg: 'bg-cyan-500/30',
           accent: 'text-cyan-300',
           glow: 'from-cyan-400/18',
@@ -563,7 +563,7 @@ export const generateThemeColors = (
       switch: {
         on: {
           gradient: `from-black via-black to-${color}-950`,
-          border: `border-${color}-400/85`,
+          border: `border-${color}-400/28`,
           iconBg: `bg-${color}-500/30`,
           accent: `text-${color}-300`,
           glow: `from-${color}-400/18`,
@@ -573,7 +573,7 @@ export const generateThemeColors = (
       cover: {
         open: {
           gradient: `from-black via-black to-${color}-950`,
-          border: `border-${color}-400/85`,
+          border: `border-${color}-400/28`,
           iconBg: `bg-${color}-500/30`,
           accent: `text-${color}-300`,
           glow: `from-${color}-400/18`,
@@ -583,14 +583,14 @@ export const generateThemeColors = (
       lock: {
         locked: {
           gradient: `from-black via-black to-${color}-950`,
-          border: `border-${color}-400/85`,
+          border: `border-${color}-400/28`,
           iconBg: `bg-${color}-500/30`,
           accent: `text-${color}-300`,
           glow: `from-${color}-400/18`,
         },
         unlocked: {
           gradient: 'from-black via-black to-red-950',
-          border: 'border-red-400/85',
+          border: 'border-red-400/28',
           iconBg: 'bg-red-500/30',
           accent: 'text-red-300',
           glow: 'from-red-400/18',
@@ -599,7 +599,7 @@ export const generateThemeColors = (
       person: {
         home: {
           gradient: `from-black via-black to-${color}-950`,
-          border: `border-${color}-400/85`,
+          border: `border-${color}-400/28`,
           iconBg: `bg-${color}-500/30`,
           accent: `text-${color}-300`,
           glow: `from-${color}-400/18`,
@@ -608,7 +608,7 @@ export const generateThemeColors = (
       },
       sensor: {
         gradient: `from-black via-black to-${color}-950`,
-        border: `border-${color}-400/85`,
+        border: `border-${color}-400/28`,
         iconBg: `bg-${color}-500/30`,
         accent: `text-${color}-300`,
         glow: `from-${color}-400/18`,
@@ -616,14 +616,14 @@ export const generateThemeColors = (
       vacuum: {
         cleaning: {
           gradient: `from-black via-black to-${color}-950`,
-          border: `border-${color}-400/85`,
+          border: `border-${color}-400/28`,
           iconBg: `bg-${color}-500/30`,
           accent: `text-${color}-300`,
           glow: `from-${color}-400/18`,
         },
         returning: {
           gradient: 'from-black via-black to-purple-950',
-          border: 'border-purple-400/85',
+          border: 'border-purple-400/28',
           iconBg: 'bg-purple-500/30',
           accent: 'text-purple-300',
           glow: 'from-purple-400/18',
@@ -631,14 +631,14 @@ export const generateThemeColors = (
         docked: inactiveTone,
         paused: {
           gradient: 'from-black via-black to-yellow-950',
-          border: 'border-yellow-400/85',
+          border: 'border-yellow-400/28',
           iconBg: 'bg-yellow-500/30',
           accent: 'text-yellow-300',
           glow: 'from-yellow-400/18',
         },
         error: {
           gradient: 'from-black via-black to-red-950',
-          border: 'border-red-400/85',
+          border: 'border-red-400/28',
           iconBg: 'bg-red-500/30',
           accent: 'text-red-300',
           glow: 'from-red-400/18',
@@ -646,12 +646,12 @@ export const generateThemeColors = (
       },
       rss: {
         gradient: 'from-black via-orange-950 to-red-900',
-        border: 'border-orange-400/85',
+        border: 'border-orange-400/28',
         glow: 'from-orange-400/18',
       },
       calendar: {
         gradient: 'from-black via-black to-indigo-950',
-        border: 'border-indigo-400/85',
+        border: 'border-indigo-400/28',
         glow: 'from-indigo-400/18',
       },
     };

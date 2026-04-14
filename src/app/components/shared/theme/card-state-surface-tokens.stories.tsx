@@ -1,117 +1,125 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Lightbulb, Moon, Settings2, Sparkles, SunMedium } from 'lucide-react';
-import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
-import { getBrightnessPresetSelectedStyle } from '@/app/components/shared/device-editor/brightness-preset-styles';
+import { AlertTriangle, Lightbulb, ShieldCheck, Zap } from 'lucide-react';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import {
+  getCardStateSurfaceStyleTokens,
+  getCardStateSurfaceTokens,
+} from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
-import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { getCardStateSurfaceTokens } from '@/app/components/system/tokens';
-import { getLightCardSurfaceTokens } from '@/app/features/lighting/components/light-card/light-card-surface-tokens';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 
-const ACTIVE_LIGHT_COLORS: Record<
-  ThemeType,
+const STATE_VARIANTS = [
   {
-    gradient: string;
-    border: string;
-    iconBg: string;
-    glow: string;
-  }
-> = {
-  light: {
-    gradient: 'from-orange-200 to-orange-100',
-    border: 'border-orange-300',
-    iconBg: 'bg-orange-400',
-    glow: 'transparent',
+    key: 'off',
+    label: 'Off',
+    isActive: false,
+    tone: 'neutral' as const,
+    baseColor: null,
+    primaryColor: 'orange' as const,
+    Icon: Lightbulb,
   },
-  dark: {
-    gradient: 'from-orange-900 to-orange-950',
-    border: 'border-orange-700',
-    iconBg: 'bg-orange-500',
-    glow: 'transparent',
+  {
+    key: 'on',
+    label: 'On',
+    isActive: true,
+    tone: 'primary' as const,
+    baseColor: '#f97316',
+    primaryColor: 'orange' as const,
+    Icon: Zap,
   },
-  glass: {
-    gradient: 'from-white/28 via-orange-200/20 to-white/08',
-    border: 'border-white/24',
-    iconBg: 'bg-orange-300/22',
-    glow: 'from-orange-300/22',
+  {
+    key: 'special',
+    label: 'Special',
+    isActive: true,
+    tone: 'blue' as const,
+    baseColor: '#3b82f6',
+    primaryColor: 'blue' as const,
+    Icon: ShieldCheck,
   },
-  black: {
-    gradient: 'from-black via-black to-orange-950',
-    border: 'border-orange-400/85',
-    iconBg: 'bg-orange-500/30',
-    glow: 'from-orange-400/18',
+  {
+    key: 'danger',
+    label: 'Danger',
+    isActive: true,
+    tone: 'red' as const,
+    baseColor: '#ef4444',
+    primaryColor: 'red' as const,
+    Icon: AlertTriangle,
   },
-};
+] as const;
 
-function LightCardReference({ theme, isActive }: { theme: ThemeType; isActive: boolean }) {
+function getFrameClassName(theme: ThemeType) {
+  if (theme === 'light') {
+    return 'bg-[linear-gradient(180deg,#f5f7fb,#e7edf6)]';
+  }
+
+  if (theme === 'black') {
+    return 'bg-neutral-950';
+  }
+
+  if (theme === 'glass') {
+    return 'bg-[radial-gradient(circle_at_top_left,#1e293b,transparent_45%),linear-gradient(180deg,#020617,#0f172a)]';
+  }
+
+  return 'bg-[radial-gradient(circle_at_top_center,rgba(249,115,22,0.08),transparent_42%),linear-gradient(180deg,#22131a,#1a1117)]';
+}
+
+function StateCardReference({
+  theme,
+  variant,
+}: {
+  theme: ThemeType;
+  variant: (typeof STATE_VARIANTS)[number];
+}) {
   const surface = getThemeSurfaceTokens(theme);
   const shell = getCardShellSurfaceTokens(theme);
-  const lightSurface = getLightCardSurfaceTokens({
-    isOn: isActive,
-    selectedColor: null,
+  const state = getCardStateSurfaceTokens(theme, variant.isActive);
+  const stateStyle = getCardStateSurfaceStyleTokens({
     theme,
-    lightColors: ACTIVE_LIGHT_COLORS[theme],
-    accentColor: '#f97316',
+    isActive: variant.isActive,
+    baseColor: variant.baseColor,
   });
-  const state = getCardStateSurfaceTokens(theme, isActive);
   const iconStyles = getEntityIconPillStyles({
-    isActive,
+    isActive: variant.isActive,
     isInteractive: false,
-    primaryColor: 'orange',
-    accentColor: '#f97316',
+    primaryColor: variant.primaryColor,
+    accentColor: variant.baseColor ?? '#f97316',
     size: 'medium',
     theme,
-    tone: isActive ? 'primary' : 'neutral',
+    tone: variant.isActive ? variant.tone : 'neutral',
   });
-  const frameClassName =
-    theme === 'light'
-      ? 'bg-[linear-gradient(180deg,#f5f7fb,#e7edf6)]'
-      : theme === 'black'
-        ? 'bg-neutral-950'
-        : theme === 'glass'
-          ? 'bg-[radial-gradient(circle_at_top_left,#1e293b,transparent_45%),linear-gradient(180deg,#020617,#0f172a)]'
-          : 'bg-[radial-gradient(circle_at_top_center,rgba(249,115,22,0.08),transparent_42%),linear-gradient(180deg,#22131a,#1a1117)]';
-  const sliderTrackClassName = theme === 'light' ? 'bg-gray-200' : 'bg-white/10';
-  const sliderRangeStyle = {
-    backgroundImage: isActive
-      ? theme === 'glass'
-        ? 'linear-gradient(to right, rgba(255,255,255,0.42), #f97316cc)'
-        : theme === 'light'
-          ? 'linear-gradient(to right, #fb923c99, #f97316)'
-          : 'linear-gradient(to right, #f97316cc, #f97316)'
-      : theme === 'light'
-        ? 'linear-gradient(to right, #d1d5db, #9ca3af)'
-        : 'linear-gradient(to right, rgba(255,255,255,0.24), rgba(255,255,255,0.14))',
-  };
-  const sliderThumbPercent = isActive ? 64 : 6;
-  const sliderThumbStyle = {
-    backgroundColor: isActive ? '#f97316' : theme === 'light' ? '#f3f4f6' : '#d1d5db',
-    boxShadow: isActive ? '0 0 0 2px rgba(249,115,22,0.4)' : '0 0 0 2px rgba(156,163,175,0.45)',
-  } as const;
-  const controlSizes = getCardActionControlSizes('medium');
-  const roundControl = getRoundControlStyles(theme);
-  const selectedControlStyle = getBrightnessPresetSelectedStyle(theme, '#f97316', isActive);
   const readableText = getCardReadableTextTokens({
     theme,
-    tone: isActive ? 'primary' : 'neutral',
-    accentColor: '#f97316',
+    tone: variant.isActive ? variant.tone : 'neutral',
+    accentColor: variant.baseColor,
+    baseColor: variant.baseColor,
   });
+  const activeGlowClassName =
+    variant.isActive && variant.baseColor
+      ? `absolute inset-0 bg-gradient-to-br ${
+          variant.tone === 'red'
+            ? 'from-red-400/18'
+            : variant.tone === 'blue'
+              ? 'from-blue-400/18'
+              : 'from-orange-400/18'
+        } to-transparent transition-all duration-500`
+      : null;
 
   return (
-    <article className={`relative h-55 w-90 overflow-visible rounded-[32px] p-3 ${frameClassName}`}>
-      {isActive && lightSurface.glowColor && lightSurface.glowColor !== 'transparent' ? (
+    <article
+      className={`relative h-55 w-90 overflow-visible rounded-[32px] p-3 ${getFrameClassName(theme)}`}
+    >
+      {variant.baseColor ? (
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute -inset-full z-0 blur-3xl ${
             theme === 'light' ? 'opacity-40' : 'opacity-20'
           }`}
           style={{
-            background: `radial-gradient(circle, ${lightSurface.glowColor} 0%, transparent 70%)`,
+            background: `radial-gradient(circle, ${variant.baseColor} 0%, transparent 70%)`,
           }}
         />
       ) : null}
@@ -119,25 +127,26 @@ function LightCardReference({ theme, isActive }: { theme: ThemeType; isActive: b
       <div
         className={`relative z-10 h-full w-full overflow-hidden rounded-3xl ${
           theme !== 'dark' ? 'border' : ''
-        } p-4 transition-all duration-500 ${lightSurface.cardClassName} ${shell.backdropClassName}`}
-        style={lightSurface.cardStyle}
+        } p-4 transition-all duration-500 ${shell.backdropClassName} ${surface.panel} ${surface.border} ${state.containerClassName}`}
+        style={stateStyle.cardStyle}
       >
-        {lightSurface.innerOverlayClassName ? (
+        {activeGlowClassName ? <div aria-hidden="true" className={activeGlowClassName} /> : null}
+        {stateStyle.innerOverlayClassName ? (
           <div
             aria-hidden="true"
-            className={lightSurface.innerOverlayClassName}
-            style={lightSurface.innerOverlayStyle}
+            className={stateStyle.innerOverlayClassName}
+            style={stateStyle.innerOverlayStyle}
           />
         ) : null}
-        {lightSurface.shineOverlayClassName ? (
-          <div aria-hidden="true" className={lightSurface.shineOverlayClassName} />
+        {stateStyle.shineOverlayClassName ? (
+          <div aria-hidden="true" className={stateStyle.shineOverlayClassName} />
         ) : null}
 
         <div className="relative flex h-full flex-col">
           <div className="mb-2 flex items-start gap-3">
             <div className="shrink-0">
               <div className={iconStyles.badgeClassName} style={iconStyles.badgeStyle}>
-                <Lightbulb className={iconStyles.iconClassName} style={iconStyles.iconStyle} />
+                <variant.Icon className={iconStyles.iconClassName} style={iconStyles.iconStyle} />
               </div>
             </div>
             <div className="min-w-0 flex-1">
@@ -145,89 +154,44 @@ function LightCardReference({ theme, isActive }: { theme: ThemeType; isActive: b
                 className={`truncate text-[10px] tracking-normal ${surface.textMuted} ${state.mutedTextClassName}`}
                 style={{ color: readableText.subtitleColor }}
               >
-                Lighting
+                Shared card state
               </p>
               <h4
                 className={`truncate text-xs font-semibold ${state.primaryTextClassName}`}
                 style={{ color: readableText.titleColor }}
               >
-                Living Room
+                {variant.label} surface
               </h4>
             </div>
           </div>
 
-          <div className="mt-auto flex flex-1 flex-col justify-end gap-4">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
+          <div className="mt-auto flex flex-1 flex-col justify-end gap-3">
+            <div
+              className={`rounded-2xl border px-3 py-2.5 ${surface.border} ${surface.panelMuted}`}
+            >
+              <div className="flex items-center justify-between gap-3">
                 <span
-                  className={`text-xs ${state.secondaryTextClassName}`}
+                  className={`text-xs font-medium ${state.secondaryTextClassName}`}
                   style={{ color: readableText.subtitleColor }}
                 >
-                  Brightness
+                  State label
                 </span>
                 <span
-                  className={`text-sm font-bold ${state.primaryTextClassName}`}
+                  className={`text-sm font-semibold ${state.primaryTextClassName}`}
                   style={{ color: readableText.titleColor }}
                 >
-                  {isActive ? '64%' : '0%'}
+                  {variant.label}
                 </span>
-              </div>
-
-              <div className="relative flex h-6 items-center">
-                <div
-                  className={`absolute left-0 right-0 h-1 rounded-full ${sliderTrackClassName}`}
-                />
-                <div
-                  className="absolute left-0 h-1 rounded-full"
-                  style={{ ...sliderRangeStyle, width: isActive ? '64%' : '6%' }}
-                />
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex w-full items-center">
-                  <div
-                    className="relative h-4 w-full shrink-0"
-                    style={{ transform: `translate3d(${sliderThumbPercent}%, 0, 0)` }}
-                  >
-                    <div
-                      className="absolute left-0 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-lg"
-                      style={sliderThumbStyle}
-                    />
-                  </div>
-                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {[
-                { icon: SunMedium, selected: false },
-                { icon: Moon, selected: true },
-                { icon: Sparkles, selected: false },
-              ].map((item, index) => {
-                const PillIcon = item.icon;
-                const isSelected = isActive && item.selected;
-
-                return (
-                  <div
-                    key={`${theme}-${index}`}
-                    className={`${controlSizes.button} flex items-center justify-center rounded-full border transition-all duration-300 ${
-                      isSelected
-                        ? `${roundControl.selectedText}`
-                        : isActive
-                          ? roundControl.softButton
-                          : roundControl.softDisabledButton
-                    }`}
-                    style={isSelected ? selectedControlStyle : undefined}
-                  >
-                    <PillIcon className={controlSizes.icon} />
-                  </div>
-                );
-              })}
-
+            <div className="flex gap-2">
               <div
-                className={`ml-auto ${controlSizes.button} flex items-center justify-center rounded-full ${
-                  isActive ? roundControl.softButton : roundControl.softDisabledButton
-                }`}
-              >
-                <Settings2 className={controlSizes.icon} />
-              </div>
+                className={`h-9 flex-1 rounded-full border ${surface.border} ${surface.subtleBg}`}
+              />
+              <div
+                className={`h-9 w-9 rounded-full border ${surface.border} ${surface.subtleBg}`}
+              />
             </div>
           </div>
         </div>
@@ -250,23 +214,18 @@ function CardStateSurfaceTokensShowcase() {
             <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}>
               {theme}
             </p>
+
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <div className="space-y-2">
-                <p
-                  className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-                >
-                  Active reference
-                </p>
-                <LightCardReference theme={theme} isActive />
-              </div>
-              <div className="space-y-2">
-                <p
-                  className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-                >
-                  Inactive reference
-                </p>
-                <LightCardReference theme={theme} isActive={false} />
-              </div>
+              {STATE_VARIANTS.map((variant) => (
+                <div key={`${theme}-${variant.key}`} className="space-y-2">
+                  <p
+                    className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+                  >
+                    {variant.label}
+                  </p>
+                  <StateCardReference theme={theme} variant={variant} />
+                </div>
+              ))}
             </div>
           </section>
         );
@@ -283,18 +242,19 @@ const meta = {
     docs: {
       description: {
         component: [
-          'Reference preview for `getCardStateSurfaceTokens(theme, isActive)` using the actual light-card composition across all themes.',
+          'Reference preview for shared card-state semantics across all themes using generic card composition instead of a single feature card.',
           '',
           'What this page covers:',
-          '- Active and inactive readability behavior in realistic card shells and content density.',
-          '- Interaction between state tokens, shell tokens, icon pills, and readable text helpers.',
+          '- Reusable `off`, `on`, `special`, and `danger` state surfaces in the same shell.',
+          '- Interaction between state text tokens, shared active-surface styling, shell tokens, and readable text helpers.',
           '',
           'Usage notes:',
-          '- Treat this page as the canonical visual check before adjusting card-state readability logic.',
-          '- Prefer updating shared token calculators instead of patching per-feature card state classes.',
+          '- Treat this page as the canonical visual check before adjusting repeated card-state logic.',
+          '- Prefer updating shared state/surface helpers instead of patching per-feature card state styles.',
           '',
           'Review expectations:',
           '- Active cards should read energetic but still readable.',
+          '- Special-state cards should feel distinct without becoming a separate shell system.',
           '- Inactive cards should feel clearly subdued while preserving essential legibility.',
         ].join('\n'),
       },

@@ -12,11 +12,16 @@ import {
 import { detectDeviceTier } from '@/app/utils/detect-device-tier';
 import { getLegacyReducedEffectsFlags } from '@/app/utils/effects-quality';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
-import { AmbientLightPreviewCard } from './ambient-light-preview-card';
 import { SettingsItem } from './settings-section-shell';
 
-const BUILT_IN_WALLPAPERS = [
+const LIGHT_THEME_WALLPAPERS = [
   { id: 'serene-dawn', src: './wallpapers/serene-dawn.svg' },
+  { id: 'citrus-courtyard', src: './wallpapers/citrus-courtyard.svg' },
+  { id: 'petal-horizon', src: './wallpapers/petal-horizon.svg' },
+  { id: 'sky-bloom', src: './wallpapers/sky-bloom.svg' },
+] as const;
+
+const DEFAULT_THEME_WALLPAPERS = [
   { id: 'starfield-nocturne', src: './wallpapers/starfield-nocturne.svg' },
   { id: 'aurora-veil', src: './wallpapers/aurora-veil.svg' },
   { id: 'rainforest-canopy', src: './wallpapers/rainforest-canopy.svg' },
@@ -221,46 +226,36 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
       description={t('settings.appearance.ambience.description')}
       styles={styles}
     >
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_13rem] md:gap-5 md:items-start xl:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="space-y-3">
-          <div className="flex w-fit flex-wrap gap-2">
-            {[
-              { value: true, label: t('settings.appearance.ambience.ambientBleed') },
-              { value: false, label: t('settings.appearance.ambience.contained') },
-            ].map((option) => {
-              const isActive = effectiveAmbientLightBleed === option.value;
-              return (
-                <button
-                  type="button"
-                  key={option.label}
-                  onClick={() => updateSettings({ ambientLightBleed: option.value })}
-                  disabled={ambienceDisabled}
-                  style={isActive ? pillTokens.activeOptionStyle : undefined}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                    isActive ? 'shadow-sm' : ''
-                  } ${ambienceDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
-                  aria-pressed={isActive}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {ambienceDisabled ? (
-            <p className={`text-sm ${styles.subtleColor}`}>
-              {t('settings.appearance.ambience.disabledInLowPower')}
-            </p>
-          ) : null}
+      <div className="space-y-3">
+        <div className="flex w-fit flex-wrap gap-2">
+          {[
+            { value: true, label: t('settings.appearance.ambience.ambientBleed') },
+            { value: false, label: t('settings.appearance.ambience.contained') },
+          ].map((option) => {
+            const isActive = effectiveAmbientLightBleed === option.value;
+            return (
+              <button
+                type="button"
+                key={option.label}
+                onClick={() => updateSettings({ ambientLightBleed: option.value })}
+                disabled={ambienceDisabled}
+                style={isActive ? pillTokens.activeOptionStyle : undefined}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
+                  isActive ? 'shadow-sm' : ''
+                } ${ambienceDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                aria-pressed={isActive}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="hidden md:block">
-          <AmbientLightPreviewCard
-            accentColor={styles.accentColor}
-            ambientLightBleed={effectiveAmbientLightBleed}
-            theme={theme}
-          />
-        </div>
+        {ambienceDisabled ? (
+          <p className={`text-sm ${styles.subtleColor}`}>
+            {t('settings.appearance.ambience.disabledInLowPower')}
+          </p>
+        ) : null}
       </div>
     </SettingsItem>
   );
@@ -268,8 +263,15 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
 
 export function AppearanceWallpaperItem({ controller }: { controller: SettingsSectionController }) {
   const { t } = useI18n();
-  const { handleRemoveWallpaper, handleSelectWallpaper, handleWallpaperUpload, styles, wallpaper } =
-    controller;
+  const {
+    handleRemoveWallpaper,
+    handleSelectWallpaper,
+    handleWallpaperUpload,
+    styles,
+    theme,
+    wallpaper,
+  } = controller;
+  const builtInWallpapers = theme === 'light' ? LIGHT_THEME_WALLPAPERS : DEFAULT_THEME_WALLPAPERS;
 
   return (
     <SettingsItem
@@ -348,7 +350,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
 
         <div className="max-w-5xl">
           <div className="flex flex-wrap gap-3">
-            {BUILT_IN_WALLPAPERS.map((option) => {
+            {builtInWallpapers.map((option) => {
               const isSelected = wallpaper === option.src;
 
               return (
