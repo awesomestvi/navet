@@ -29,7 +29,7 @@ export const CardEditActionButton = forwardRef<HTMLButtonElement, CardEditAction
       <button
         ref={ref}
         type="button"
-        className={`absolute ${positionClass} z-20 ${layout.buttonSize} ${getEditControlButtonClass(variant)} ${className}`}
+        className={`absolute ${positionClass} z-500 ${layout.buttonSize} ${getEditControlButtonClass(variant)} ${className}`}
         {...props}
       >
         <Icon className={`${layout.iconSize} text-white`} />

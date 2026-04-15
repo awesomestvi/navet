@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { expect } from 'storybook/test';
-import { EntityCardStoryFrame } from '@/app/features/dashboard/stories/entity-card-story-frame';
 import { SwitchCard } from '@/app/features/lighting';
-import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { EntityCardStoryFrame, SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 
 function SwitchCardDialogStory(args: ComponentProps<typeof SwitchCard>) {
   return (

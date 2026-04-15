@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { expect, within } from 'storybook/test';
 import { Button } from '@/app/components/primitives/button';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
-import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import type { LightBrightnessPreset } from './light-card-types';
 import { LightSettingsDialog } from './light-settings-dialog';
 

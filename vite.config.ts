@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'node:fs'
+import type { ServerResponse } from 'node:http'
 import path from 'path'
 import { defineConfig, loadEnv, type PluginOption, type PreviewServer, type ViteDevServer } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -26,57 +27,66 @@ function getPackageName(id: string) {
 }
 
 function rssProxyPlugin() {
+  const handleRequest = async (requestUrlValue: string | null | undefined, res: ServerResponse) => {
+    const requestUrl = requestUrlValue ? new URL(requestUrlValue, 'http://localhost') : null
+    const targetUrl = requestUrl?.searchParams.get('url')?.trim()
+
+    if (!targetUrl) {
+      res.statusCode = 400
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Missing url query parameter' }))
+      return
+    }
+
+    try {
+      const parsedUrl = new URL(targetUrl)
+
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new Error('Invalid protocol')
+      }
+
+      const upstreamResponse = await fetch(parsedUrl, {
+        headers: {
+          Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+          'User-Agent': 'Navet RSS Reader/1.0',
+        },
+      })
+
+      if (!upstreamResponse.ok) {
+        res.statusCode = 502
+        res.setHeader('Content-Type', 'application/json')
+        res.end(
+          JSON.stringify({
+            error: `Upstream feed request failed with status ${upstreamResponse.status}`,
+          })
+        )
+        return
+      }
+
+      const contentType =
+        upstreamResponse.headers.get('content-type') ?? 'application/xml; charset=utf-8'
+      const body = await upstreamResponse.text()
+
+      res.statusCode = 200
+      res.setHeader('Content-Type', contentType)
+      res.end(body)
+    } catch {
+      res.statusCode = 502
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unable to load feed' }))
+    }
+  }
+
   return {
     name: 'navet-rss-proxy',
     configureServer(server: ViteDevServer) {
       server.middlewares.use('/__navet_rss_proxy__', async (req, res) => {
-        const requestUrl = req.url ? new URL(req.url, 'http://localhost') : null
-        const targetUrl = requestUrl?.searchParams.get('url')?.trim()
-
-        if (!targetUrl) {
-          res.statusCode = 400
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Missing url query parameter' }))
-          return
-        }
-
-        try {
-          const parsedUrl = new URL(targetUrl)
-
-          if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-            throw new Error('Invalid protocol')
-          }
-
-          const upstreamResponse = await fetch(parsedUrl, {
-            headers: {
-              Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
-              'User-Agent': 'Navet RSS Reader/1.0',
-            },
-          })
-
-          if (!upstreamResponse.ok) {
-            res.statusCode = 502
-            res.setHeader('Content-Type', 'application/json')
-            res.end(
-              JSON.stringify({
-                error: `Upstream feed request failed with status ${upstreamResponse.status}`,
-              })
-            )
-            return
-          }
-
-          const contentType =
-            upstreamResponse.headers.get('content-type') ?? 'application/xml; charset=utf-8'
-          const body = await upstreamResponse.text()
-
-          res.statusCode = 200
-          res.setHeader('Content-Type', contentType)
-          res.end(body)
-        } catch {
-          res.statusCode = 502
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Unable to load feed' }))
-        }
+        await handleRequest(req.url, res)
+      })
+    },
+    configurePreviewServer(server: PreviewServer) {
+      server.middlewares.use('/__navet_rss_proxy__', async (req, res) => {
+        await handleRequest(req.url, res)
       })
     },
   }

@@ -5,7 +5,7 @@ import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import {
   EntityCardStoryFrame,
   getEntityCardStoryFrameClassName,
-} from '../../dashboard/stories/entity-card-story-frame';
+} from '@/app/storybook/story-frames';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
   const date = new Date();

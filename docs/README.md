@@ -53,7 +53,7 @@ Complete documentation for the Navet smart home dashboard.
 **Understand the design system** → [Design System](../design-system/README.md)
 
 **Run the UI workshop** → [Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)
-Current workshop coverage includes theme docs, primitives/patterns/shared component layers, app shell, cards (entity + custom), dashboard flows, energy, and settings dialogs.
+Current workshop coverage includes theme docs, primitives/patterns/shared component layers, app shell, cards (entity + custom), dashboard flows, energy, and settings dialogs. Shared story frame utilities live in `src/app/storybook/story-frames.tsx`.
 
 **Run Navet in Docker or as a Home Assistant add-on** → [Docker and Home Assistant Add-on](DOCKER_HOME_ASSISTANT_ADDON.md)
 

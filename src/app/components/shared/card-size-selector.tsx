@@ -142,13 +142,13 @@ export const CardSizeSelector = memo(function CardSizeSelector({
           cardSize={triggerSize ?? currentSize}
           Icon={Maximize2}
           placement="top-right"
-          className="z-50 group cursor-pointer"
+          className="z-500 group cursor-pointer"
           onClick={(e) => e.stopPropagation()}
         />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className={`z-50 rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+          className={`z-510 rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
           sideOffset={8}
         >
           <div className="space-y-3">

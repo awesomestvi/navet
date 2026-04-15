@@ -3,11 +3,8 @@ import type { ComponentProps } from 'react';
 import { expect, within } from 'storybook/test';
 import { MediaCard } from '@/app/features/media';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
 import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
-import {
-  EntityCardStoryFrame,
-  noopCardSizeChange,
-} from '../../../dashboard/stories/entity-card-story-frame';
 
 function MediaCardStory(args: Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>) {
   return (

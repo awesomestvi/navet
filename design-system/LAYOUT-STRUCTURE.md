@@ -103,32 +103,23 @@ Icon-only — no visible text labels in the sidebar. Each item is a square butto
 ### Mobile Structure
 ```tsx
 <header className="sticky top-0 z-40">
+  {/* Single compact row: greeting left, search icon + notifications + avatar right */}
   <div className="flex items-center justify-between px-4 py-3">
-    {/* Left: Menu Toggle */}
-    <button className="w-10 h-10">
-      <MenuIcon />
-    </button>
+    {/* Left: greeting */}
+    <h1 className="text-lg font-bold">Good morning</h1>
     
-    {/* Center: Title */}
-    <h1 className="text-lg font-bold">Dashboard</h1>
-    
-    {/* Right: User/actions */}
-    <button className="w-10 h-10">
-      <HeaderActionsIcon />
-    </button>
-  </div>
-  
-  {/* Search bar moves below on mobile */}
-  <div className="px-4 pb-3">
-    <SearchInput />
+    {/* Right: search icon toggle, notifications badge, user dropdown */}
+    <HeaderMobileActions />
   </div>
 </header>
 ```
 
+On mobile, tapping the search icon expands a compact search field inline rather than showing a persistent search bar below the header.
+
 ### Header Height
 ```css
 Desktop: 72px (excluding border)
-Mobile: 56px title + 48px search = 104px total
+Mobile: ~56px single compact row
 ```
 
 ---
@@ -384,7 +375,8 @@ z-index: above card content
 ## Content Organization Patterns
 
 ### Entity Type Grouping
-Cards are rendered in this order:
+
+In room views, cards are rendered in this order:
 1. Lights
 2. Climate/HVAC
 3. Media
@@ -396,6 +388,11 @@ Cards are rendered in this order:
 9. Locks
 10. Persons
 11. Sensors
+
+The `/media` section uses a different sub-section layout instead of a flat grid:
+- **Players & speakers** — entity type is `player`, `speaker`, `receiver`, or `soundbar`
+- **TVs** — entity type is `tv`
+- **Other groups** — all remaining types, each forming their own labeled sub-section
 
 ### Room-Based Filtering
 ```typescript

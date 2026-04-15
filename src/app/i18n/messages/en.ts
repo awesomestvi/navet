@@ -912,6 +912,13 @@ export const enMessages = {
   'dashboard.addCard.templates.button.name': 'Action Button',
   'dashboard.addCard.templates.button.description':
     'Tap to trigger any Home Assistant service, scene, or script.',
+  'widgets.map.title': 'Trackers',
+  'widgets.map.eyebrow': 'Live',
+  'widgets.map.noTrackers': 'No GPS data',
+  'widgets.map.trackerCount': '{count} tracked',
+  'dashboard.addCard.templates.map.name': 'Map',
+  'dashboard.addCard.templates.map.description':
+    'Live map showing person and device_tracker entities with GPS coordinates.',
   'widgets.note.title': 'Quick Note',
   'widgets.note.emptyState': 'Click to add a note...',
   'widgets.note.placeholder': 'Write your note here...',

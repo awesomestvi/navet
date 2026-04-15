@@ -927,6 +927,13 @@ export const deMessages = {
   'dashboard.addCard.templates.button.name': 'Aktionsschaltfläche',
   'dashboard.addCard.templates.button.description':
     'Tippen zum Auslösen eines Home Assistant-Dienstes, einer Szene oder eines Skripts.',
+  'widgets.map.title': 'Tracker',
+  'widgets.map.eyebrow': 'Live',
+  'widgets.map.noTrackers': 'Keine GPS-Daten',
+  'widgets.map.trackerCount': '{count} verfolgt',
+  'dashboard.addCard.templates.map.name': 'Karte',
+  'dashboard.addCard.templates.map.description':
+    'Live-Karte mit Personen- und device_tracker-Entitäten mit GPS-Koordinaten.',
   'widgets.note.title': 'Schnelle Notiz',
   'widgets.note.emptyState': 'Klicken Sie, um eine Notiz hinzuzufugen...',
   'widgets.note.placeholder': 'Schreiben Sie Ihre Notiz hier...',

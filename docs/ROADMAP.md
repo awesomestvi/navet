@@ -21,7 +21,6 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [ ] **Conditional card** — show/hide a card based on entity state, template, or logged-in user
 - [ ] **Entity filter card** — dynamically list entities matching a state condition (e.g. all lights that are on)
 - [ ] **Floor plan card** — interactive controls overlaid on a custom image
-- [ ] **Map card** — render `device_tracker` and `person` entities on a live map
 - [ ] **Logbook card** — recent entity state change history feed
 - [ ] **Gauge card** — radial gauge for numeric sensor entities
 - [ ] **Badges** — compact row of entity states at the top of a view, no full card footprint
@@ -37,13 +36,10 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 
 ### Customization
 
-- [ ] **Time-based light/dark schedule** — switch theme automatically by time of day
 - [ ] **Section reordering** — drag sidebar sections into a custom order
 - [ ] **Custom navigation section creation** — user-defined top-level sidebar sections beyond the built-in ones
 - [ ] **Per-section customization** — background, column count, or grouping mode per section
 - [ ] **Gesture navigation** — swipe between rooms on mobile
-- [ ] **Advanced accessibility settings** — font size, reduced motion, high contrast overrides
-- [ ] **Widget marketplace** — community-contributed widget types beyond RSS/Photo/Note/Battery/Button
 
 ### Integrations
 
@@ -52,14 +48,11 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 ### Smart Home
 
 - [ ] **Automations management** — view, trigger, and edit Home Assistant automations
-- [ ] **Camera / video feed card** — live stream from `camera.*` entities; MJPEG streaming and recording controls
 - [ ] **Light group card** — control a group of lights as one unit (brightness, color, on/off)
 - [ ] **Alarm panel card** — arm, disarm, and show state of `alarm_control_panel.*` entities
 - [ ] **Timer card** — start, pause, and cancel Home Assistant timers from the dashboard
 - [ ] **Todo / shopping list card** — view and check off items from `todo.*` list entities
 - [ ] **Template sensor card** — display the output of a Home Assistant template expression
-- [ ] **Climate schedule card** — set and visualize thermostat schedules directly from the dashboard
-- [ ] **Media queue card** — show upcoming tracks / queue for an active media player
 
 ---
 
@@ -84,6 +77,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Vacuum card** — live vacuum entity state and controls
 - [x] **Media player card** — playback, local mute memory, artwork, remaining time
 - [x] **Media player large card** — expanded large-size card with more playback controls and metadata
+- [x] **TV card** — `device_class: tv` entities render a dedicated TV layout with D-pad navigation, source dropdown, volume/channel controls, and power-toggle-on-click; remote commands route through the paired `remote.*` entity using `samsung` or `default` key profiles; active card uses a fuchsia/violet shell across all four themes
 - [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
 - [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [x] **HVAC card** — unified climate entity card
@@ -104,3 +98,4 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Section resize actions** — −/+ buttons resize by rendered-column units at the current breakpoint; the row neighbor compensates automatically and stacked descendant sections in the same column update together; controls appear only when two or more sections share the same row
 - [x] **Media player grouping controls** — media cards support attaching and detaching compatible players in a speaker group directly from the dialog (`join` / `unjoin`)
 - [x] **Home section creation (sectioned layout)** — Home Dashboard Builder supports adding, renaming, and removing user-defined sections in `sectioned` mode
+- [x] **Map card** — custom widget showing all `person.*` and `device_tracker.*` entities with GPS on an interactive Leaflet map; circular avatar markers with entity pictures or initials; GPS accuracy circles; home/away border accent; dark and light CartoDB tile variants follow the active theme; added from the card library like other widgets

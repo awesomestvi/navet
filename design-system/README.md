@@ -46,6 +46,7 @@ Complete feature implementation guide:
 - Authentication system and login flow
 - Theme customization (4 modes, built-in accents, custom accent color, and visual quality tiers)
 - Navigation and section management
+- Media system including TV card (D-pad, remote profiles, source resolution, fuchsia shell)
 - Settings page architecture
 - Empty states for sections
 - User management and profiles
@@ -215,6 +216,7 @@ When creating a new card component:
 /src/app/features/media/components/media-card/use-media-display-fields.ts → Media metadata display derivation
 /src/app/features/dashboard/hooks/use-dashboard-devices-loaded.ts → Dashboard connection-hydration sync
 /src/app/features/dashboard/hooks/use-dashboard-entity-visibility.ts → Dashboard entity visibility selectors
+/src/app/storybook/story-frames.tsx → Shared Storybook frame utilities (EntityCardStoryFrame, SettingsDialogStoryFrame, noopCardSizeChange)
 /src/app/stores/auth-store.ts           → Authentication state (Zustand)
 /src/app/stores/config-store.ts         → HA connection config (Zustand)
 /src/app/stores/theme-store.ts          → Theme mode and primary color (Zustand)
@@ -280,4 +282,4 @@ Use these values in your design tools (Figma, Sketch, etc.):
 
 ---
 
-**Last Updated:** April 8, 2026
+**Last Updated:** April 15, 2026

@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Paintbrush } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { noopCardSizeChange } from '@/app/features/dashboard/stories/entity-card-story-frame';
 import { LightCard } from '@/app/features/lighting';
 import { useTheme } from '@/app/hooks';
+import { noopCardSizeChange } from '@/app/storybook/story-frames';
 import { getThemeSurfaceTokens } from '../shared/theme/theme-surface-tokens';
 import { InteractionPreviewCard, SettingsLivePreviewFrame } from './interaction-preview-card';
 

@@ -925,6 +925,13 @@ export const esMessages = {
   'dashboard.addCard.templates.button.name': 'Botón de acción',
   'dashboard.addCard.templates.button.description':
     'Toca para activar cualquier servicio, escena o script de Home Assistant.',
+  'widgets.map.title': 'Rastreadores',
+  'widgets.map.eyebrow': 'En vivo',
+  'widgets.map.noTrackers': 'Sin datos GPS',
+  'widgets.map.trackerCount': '{count} rastreado(s)',
+  'dashboard.addCard.templates.map.name': 'Mapa',
+  'dashboard.addCard.templates.map.description':
+    'Mapa en vivo que muestra entidades person y device_tracker con coordenadas GPS.',
   'widgets.note.title': 'Nota rápida',
   'widgets.note.emptyState': 'Haz clic para agregar una nota...',
   'widgets.note.placeholder': 'Escribe tu nota aquí...',

@@ -15,10 +15,11 @@ FROM ${BUILD_FROM}
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 
-RUN apk add --no-cache bash nginx
+RUN apk add --no-cache bash nginx nodejs
 
 COPY addons/navet/run.sh /run.sh
 COPY addons/navet/rootfs/ /
+COPY docker/rss-proxy-server.mjs /usr/local/bin/navet-rss-proxy.mjs
 COPY --from=build /app/dist /usr/share/nginx/html
 
 RUN chmod a+x /run.sh

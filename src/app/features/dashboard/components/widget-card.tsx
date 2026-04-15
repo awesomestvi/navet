@@ -48,6 +48,11 @@ const ButtonWidget = lazy(async () => {
   return { default: module.ButtonWidget };
 });
 
+const MapWidget = lazy(async () => {
+  const module = await import('./widgets/map-widget');
+  return { default: module.MapWidget };
+});
+
 interface WidgetCardProps {
   card: CustomCard;
   isEditMode: boolean;
@@ -143,6 +148,18 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
               | undefined
           }
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+        />
+      );
+      break;
+    case 'map':
+      widgetContent = (
+        <MapWidget
+          size={card.size}
+          tintColor={card.data?.tintColor as string | undefined}
+          onTintColorChange={(tintColor) =>
+            handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
+          }
           isEditMode={isEditMode}
         />
       );

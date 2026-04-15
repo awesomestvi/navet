@@ -3,10 +3,7 @@ import type { ComponentProps } from 'react';
 import { expect } from 'storybook/test';
 import { LightCard } from '@/app/features/lighting';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import {
-  EntityCardStoryFrame,
-  noopCardSizeChange,
-} from '../../../dashboard/stories/entity-card-story-frame';
+import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
 
 function LightCardStory(args: Omit<ComponentProps<typeof LightCard>, 'onSizeChange'>) {
   return (

@@ -41,6 +41,7 @@ Current release channel: `0.1.0-beta.2`. See [docs/VERSIONING.md](docs/VERSIONIN
 - **Multi-Entity Support** - Lights, HVAC, switches, covers, locks, sensors, helpers, scripts, people, media players, vacuums, and more
 - **Unified Climate Controls** - Home Assistant climate entities now render through the HVAC card and settings flow across the dashboard
 - **Home Assistant Media Controls** - Media player cards now use live Home Assistant playback, local mute/unmute volume memory, shuffle and repeat cycle controls, up-next track display, metadata, remaining-time, and artwork data
+- **TV Card** - Media player entities with `device_class: tv` render a dedicated TV layout with a D-pad navigation cluster, source dropdown, volume/channel controls, quick-action row, and a fuchsia/violet shell when active; clicking the card toggles TV power; remote commands route through the paired `remote.*` entity using either a `samsung` or `default` key profile
 - **Real-Time Updates** - Live state updates from your smart home system
 - **Resilient Connection Recovery** - Home Assistant reconnect now retries automatically with bounded exponential backoff after disconnects
 - **Quick Actions** - Toggle, adjust, and control devices with intuitive controls
@@ -192,6 +193,7 @@ Recent workshop updates:
 
 - Story docs now use story-specific descriptions across layout, primitive, shared, entity-card, dialog, and overview stories so each docs page explains what the story represents and how to review it.
 - Storybook coverage now aligns with the current dashboard/card polish work, including updated app-shell stories, card stories, and custom-card review surfaces.
+- Shared story frame utilities (`EntityCardStoryFrame`, `SettingsDialogStoryFrame`) are consolidated in `src/app/storybook/story-frames.tsx` — import from `@/app/storybook/story-frames` in all entity-card and settings-dialog stories.
 
 The current sidebar taxonomy is organized under these top-level groups:
 

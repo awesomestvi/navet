@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
-import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import type { WeatherForecastMode } from '@/app/stores/settings-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { WeatherSettingsDialog } from './weather-settings-dialog';
 
 function WeatherSettingsDialogStory() {

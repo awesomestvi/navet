@@ -1,4 +1,37 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
+
+// ---------------------------------------------------------------------------
+// EntityCardStoryFrame
+// Shared story utility — sizes a card story to the standard dashboard grid
+// cell dimensions. Used across all entity card stories.
+// ---------------------------------------------------------------------------
+
+export function EntityCardStoryFrame({
+  children,
+  className,
+  size = 'medium',
+}: {
+  children: ReactNode;
+  className?: string;
+  size?: CardSize;
+}) {
+  return <div className={className ?? getEntityCardStoryFrameClassName(size)}>{children}</div>;
+}
+
+export function noopCardSizeChange() {
+  return;
+}
+
+export function getEntityCardStoryFrameClassName(size: CardSize) {
+  return cardSizeOverlayClass[size];
+}
+
+// ---------------------------------------------------------------------------
+// SettingsDialogStoryFrame
+// Shared story utility — provides a dark card backdrop for settings dialog
+// stories so dialogs render in a realistic context.
+// ---------------------------------------------------------------------------
 
 interface SettingsDialogStoryFrameProps {
   children: ReactNode;

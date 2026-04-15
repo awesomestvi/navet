@@ -918,6 +918,13 @@ export const svMessages = {
   'dashboard.addCard.templates.button.name': 'Åtgärdsknapp',
   'dashboard.addCard.templates.button.description':
     'Tryck för att aktivera en Home Assistant-tjänst, scen eller skript.',
+  'widgets.map.title': 'Spårare',
+  'widgets.map.eyebrow': 'Live',
+  'widgets.map.noTrackers': 'Ingen GPS-data',
+  'widgets.map.trackerCount': '{count} spårade',
+  'dashboard.addCard.templates.map.name': 'Karta',
+  'dashboard.addCard.templates.map.description':
+    'Livekarta som visar person- och device_tracker-entiteter med GPS-koordinater.',
   'widgets.note.title': 'Snabb anteckning',
   'widgets.note.emptyState': 'Klicka för att lägga till en anteckning...',
   'widgets.note.placeholder': 'Skriv din anteckning här...',

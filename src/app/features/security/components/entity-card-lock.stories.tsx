@@ -5,7 +5,7 @@ import { expect } from 'storybook/test';
 import { LockCard } from '@/app/features/security';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
+import { EntityCardStoryFrame } from '@/app/storybook/story-frames';
 
 function LockCardStory(args: ComponentProps<typeof LockCard>) {
   const [mockState, setMockState] = useState(args.initialState ?? true);

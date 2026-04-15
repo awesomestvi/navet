@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
-import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { HVACSettingsDialog } from './index';
 
 function HVACSettingsDialogStory() {

@@ -13,7 +13,7 @@ export interface AddCardDialogContainerProps {
   showCardsTab?: boolean;
 }
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'map';
 
 export interface CardTemplate {
   id: CardType;

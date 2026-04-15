@@ -3,8 +3,8 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
-import { SettingsDialogStoryFrame } from '@/app/features/settings/components/settings-dialog-story-frame';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
+import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';
 
 const siblingEntities: SiblingEntity[] = [

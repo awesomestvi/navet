@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { SwitchCard } from '@/app/features/lighting';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import { EntityCardStoryFrame } from '../../dashboard/stories/entity-card-story-frame';
+import { EntityCardStoryFrame } from '@/app/storybook/story-frames';
 
 function SwitchCardStory(args: ComponentProps<typeof SwitchCard>) {
   return (

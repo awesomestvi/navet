@@ -56,6 +56,16 @@ function StickyNote(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function MapPinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <title>Map</title>
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
 export const cardTemplates: CardTemplate[] = [
   {
     id: 'rss',
@@ -96,5 +106,13 @@ export const cardTemplates: CardTemplate[] = [
     icon: <Zap className="w-5 h-5" />,
     defaultSize: 'small',
     supportedSizes: ['tiny', 'extra-small', 'small'],
+  },
+  {
+    id: 'map',
+    nameKey: 'dashboard.addCard.templates.map.name',
+    descriptionKey: 'dashboard.addCard.templates.map.description',
+    icon: <MapPinIcon className="w-5 h-5" />,
+    defaultSize: 'medium',
+    supportedSizes: ['small', 'medium', 'large'],
   },
 ];

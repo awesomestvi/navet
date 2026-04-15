@@ -928,6 +928,13 @@ export const frMessages = {
   'dashboard.addCard.templates.button.name': "Bouton d'action",
   'dashboard.addCard.templates.button.description':
     'Appuyez pour déclencher un service, une scène ou un script Home Assistant.',
+  'widgets.map.title': 'Trackers',
+  'widgets.map.eyebrow': 'En direct',
+  'widgets.map.noTrackers': 'Aucune donnée GPS',
+  'widgets.map.trackerCount': '{count} suivi(s)',
+  'dashboard.addCard.templates.map.name': 'Carte',
+  'dashboard.addCard.templates.map.description':
+    'Carte en direct affichant les entités person et device_tracker avec coordonnées GPS.',
   'widgets.note.title': 'Note rapide',
   'widgets.note.emptyState': 'Cliquez pour ajouter une note...',
   'widgets.note.placeholder': 'Ecrivez votre note ici...',

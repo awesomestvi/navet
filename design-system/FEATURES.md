@@ -217,6 +217,19 @@ Navet now has a lightweight in-repo system layer that exposes stable UI exports 
 
 Author new shared UI in `src/app/components/primitives/` or `src/app/components/patterns/` first, then re-export stable pieces through `src/app/components/system/`. Do not treat `system/` as a separate package or as the authoring location for new components.
 
+#### Shared Story Utilities
+
+**Location**: `src/app/storybook/`
+
+Cross-feature Storybook helper components live here rather than inside any feature subdirectory.
+
+| File | Exports |
+|---|---|
+| `story-frames.tsx` | `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange`, `getEntityCardStoryFrameClassName` |
+| `story-docs.ts` | Story-specific description strings for all Storybook pages |
+
+All entity-card and settings-dialog story files import frame utilities from `@/app/storybook/story-frames`. Placing these helpers inside a feature directory (e.g. `dashboard/stories/` or `settings/components/`) causes every consumer outside that feature to violate the feature-boundary import rule.
+
 ---
 
 ## Climate System

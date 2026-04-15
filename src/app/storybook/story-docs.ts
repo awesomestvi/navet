@@ -734,6 +734,22 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the card stays concise enough for dashboard use.',
     ]
   ),
+  'Cards/Custom/Map': doc(
+    'Custom map card rendering person and device_tracker entities with GPS on an interactive Leaflet map.',
+    [
+      'How GPS-bearing entities are aggregated into a single spatial overview card.',
+      'The full-bleed map layout and overlay conventions for non-entity custom cards.',
+    ],
+    [
+      'Use this story when changing map tile styles, marker design, or GPS accuracy visualisation.',
+      'Review when adjusting the bottom overlay or empty-state treatment.',
+    ],
+    [
+      'Check that markers are readable at all three supported sizes (small, medium, large).',
+      'Check that the dark/light tile variant switches correctly with the active theme.',
+      'Check the empty state when no entities have GPS attributes.',
+    ]
+  ),
   'Cards/Custom/Battery Overview': doc(
     'Custom dashboard card for summarizing battery status across devices.',
     [

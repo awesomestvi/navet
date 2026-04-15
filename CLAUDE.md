@@ -241,6 +241,7 @@ copy all service state on every event.
 | [src/app/components/shared/theme/theme-surface-tokens.ts](src/app/components/shared/theme/theme-surface-tokens.ts) | Shared surface theme tokens |
 | [src/app/hooks/use-device-map.ts](src/app/hooks/use-device-map.ts) | Typed device map from raw HA entities |
 | [src/app/stores/selectors.ts](src/app/stores/selectors.ts) | Typed selectors for all stores |
+| [src/app/storybook/story-frames.tsx](src/app/storybook/story-frames.tsx) | Shared Storybook frame utilities — `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange` |
 | [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) | State management decision guide |
 | [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md) | Color system, typography, card sizes, glass effects |
 
@@ -280,3 +281,4 @@ copy all service state on every event.
 - Do not add new low-level shared UI to `src/app/components/shared/` when it should live in `primitives/` or `patterns/`.
 - Do not re-implement a UI element that already exists in `src/app/components/primitives/` — always check primitives before writing new UI.
 - Do not create a new `*.stories.*` file for a component that already has one — extend the existing story file instead.
+- Do not place Storybook frame or utility components (e.g. `EntityCardStoryFrame`, `SettingsDialogStoryFrame`) inside feature or dashboard subdirectories — they belong in `src/app/storybook/story-frames.tsx`.
