@@ -8,8 +8,9 @@ COPY . .
 RUN pnpm build
 
 FROM --platform=$TARGETPLATFORM nginx:1.27-alpine
+ARG NAVET_ENABLE_RSS_PROXY=false
 
-RUN apk add --no-cache nodejs
+RUN if [ "$NAVET_ENABLE_RSS_PROXY" = "true" ]; then apk add --no-cache nodejs; fi
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/nginx.proxy.conf.template /etc/navet-nginx/default.proxy.conf.template

@@ -52,6 +52,10 @@ function getRSSProxyRequestUrl(feedUrl: string) {
   return proxyUrl.toString();
 }
 
+function shouldFallbackToDirectRSSFetch(status: number) {
+  return status === 404 || status === 502 || status === 503 || status === 504;
+}
+
 const stripHtml = (value: string): string =>
   value
     .replace(/<[^>]+>/g, ' ')
@@ -223,15 +227,34 @@ async function fetchUrlProviderItems(
     return [];
   }
 
-  const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl), {
-    cache: 'no-store',
-  });
+  let xml: string | null = null;
 
-  if (!response.ok) {
-    throw new Error(`unable-to-load:${provider.name}`);
+  try {
+    const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl), {
+      cache: 'no-store',
+    });
+
+    if (response.ok) {
+      xml = await response.text();
+    } else if (!shouldFallbackToDirectRSSFetch(response.status)) {
+      throw new Error(`unable-to-load:${provider.name}`);
+    }
+  } catch {
+    // Fall back to a direct browser fetch when the optional container proxy is unavailable.
   }
 
-  const xml = await response.text();
+  if (!xml) {
+    const response = await fetch(provider.feedUrl, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`unable-to-load:${provider.name}`);
+    }
+
+    xml = await response.text();
+  }
+
   return parseRSSDocument(xml, provider.name, fallbackRecentLabel, formatRelativeTime);
 }
 
