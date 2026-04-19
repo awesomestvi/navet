@@ -1,9 +1,11 @@
 services:
   navet:
-    image: ghcr.io/awesomestvi/navet:latest
-    environment:
-      NAVET_HASS_URL: ${NAVET_HASS_URL}
-      NAVET_HASS_TOKEN: ${NAVET_HASS_TOKEN}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: navet:local
+    env_file:
+      - .env
     ports:
       - "8080:80"
     restart: unless-stopped

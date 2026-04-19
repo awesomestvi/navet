@@ -344,7 +344,7 @@ This builds the app, writes `dist/config.js` from `NAVET_HASS_URL` and `NAVET_HA
 - Some dashboard cards also support an **Extra-Small** `1 × 0.5` size and a new **Tiny** `0.5 × 0.5` micro tile where that compact treatment exists
 - Widgets persist across browser sessions
 - Full drag-and-drop and delete support
-- Container images keep RSS URL fetching proxy-free by default to stay smaller; if a feed blocks browser CORS, rebuild with `--build-arg NAVET_ENABLE_RSS_PROXY=true`
+- Direct RSS URLs load through the same-origin `/__navet_rss_proxy__` path in Docker and the Home Assistant add-on; nginx fetches those feeds directly through its embedded JS runtime so the browser avoids CORS limits without shipping a separate Node proxy
 - See [WIDGETS.md](docs/WIDGETS.md) for detailed documentation
 
 #### Sidebar Sections

@@ -8,19 +8,17 @@ COPY . .
 RUN pnpm build
 
 FROM --platform=$TARGETPLATFORM nginx:1.27-alpine
-ARG NAVET_ENABLE_RSS_PROXY=false
 
-RUN if [ "$NAVET_ENABLE_RSS_PROXY" = "true" ]; then apk add --no-cache nodejs; fi
-
+COPY docker/nginx.main.conf /etc/nginx/nginx.conf
+COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
+COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/nginx.proxy.conf.template /etc/navet-nginx/default.proxy.conf.template
 COPY docker/nginx.no-proxy.conf /etc/navet-nginx/default.no-proxy.conf
 COPY docker/config.js.template /usr/share/nginx/html/config.js.template
 COPY docker/30-navet-config.sh /docker-entrypoint.d/30-navet-config.sh
-COPY docker/40-navet-rss-proxy.sh /docker-entrypoint.d/40-navet-rss-proxy.sh
-COPY docker/rss-proxy-server.mjs /usr/local/bin/navet-rss-proxy.mjs
 COPY --from=build /app/dist /usr/share/nginx/html
 
-RUN chmod +x /docker-entrypoint.d/30-navet-config.sh /docker-entrypoint.d/40-navet-rss-proxy.sh
+RUN chmod +x /docker-entrypoint.d/30-navet-config.sh
 
 EXPOSE 80

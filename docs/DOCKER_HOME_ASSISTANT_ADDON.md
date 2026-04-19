@@ -31,7 +31,9 @@ The current deployment path is:
 ### Files in This Repo
 
 - `Dockerfile`
+- `docker/nginx.main.conf`
 - `docker/nginx.conf`
+- `docker/njs/rss-proxy.js`
 - `docker/config.js.template`
 - `docker/30-navet-config.sh`
 - `docker-compose.yml`
@@ -46,14 +48,22 @@ The production container writes `/config.js` from:
 
 If those are unset, Navet falls back to manual setup in the UI.
 
+Direct RSS URLs also flow through the same-origin `/__navet_rss_proxy__` path. nginx handles those
+requests directly through its embedded `njs` runtime so the browser avoids CORS issues without a
+separate Node process in the runtime image.
+
 ### Local Run Example
 
 ```bash
-docker compose pull
-docker compose up -d
+cp .env.example .env
+# edit .env and set NAVET_HASS_URL + NAVET_HASS_TOKEN
+
+docker compose up --build -d
 ```
 
 Then open `http://localhost:8080`.
+
+`docker-compose.yml` builds the image from this repository (`Dockerfile`) and tags it as `navet:local`. Compose also loads runtime variables from a repo-root `.env` file via `env_file`, so you do not need to manually `export` the Home Assistant URL/token before starting the container.
 
 ### Release Pipeline
 
@@ -86,7 +96,9 @@ The token should have package read access.
 - `addons/navet/config.yaml`
 - `addons/navet/Dockerfile`
 - `addons/navet/run.sh`
+- `addons/navet/rootfs/etc/nginx/nginx.conf`
 - `addons/navet/rootfs/etc/nginx/http.d/default.conf`
+- `docker/njs/rss-proxy.js`
 - `addons/navet/CHANGELOG.md`
 - `addons/navet/icon.png`
 - `addons/navet/logo.png`
@@ -100,6 +112,7 @@ The add-on:
 - Pulls a prebuilt add-on image from GHCR
 - Builds that image from repo root in CI
 - Serves Navet with `nginx`
+- Handles direct RSS proxy requests through nginx `njs`
 - Use `ingress: true`
 - Generate `/config.js` from add-on options
 - Fall back to manual login in Navet if no options are provided
@@ -136,7 +149,7 @@ For standalone Docker users:
 
 1. Push changes to `main` or run the `Publish` workflow manually
 2. Pull the updated image from GHCR on your deployment host
-3. Restart the container with `docker compose up -d`
+3. Restart the container (for example `docker compose up -d` if your deployment compose file references the GHCR image tag)
 
 ## Runtime Config Resolution
 

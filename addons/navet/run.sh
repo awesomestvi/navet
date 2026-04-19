@@ -36,12 +36,7 @@ server {
 ${PROXY_AUTH_DIRECTIVE}
   }
 
-  location = /__navet_rss_proxy__ {
-    proxy_pass http://127.0.0.1:8081;
-    proxy_http_version 1.1;
-    proxy_set_header Host \$host;
-    add_header Cache-Control "no-store" always;
-  }
+  include /etc/nginx/snippets/navet-rss-proxy.conf;
 
   location = /config.js {
     add_header Cache-Control "no-store";
@@ -64,10 +59,6 @@ ${PROXY_AUTH_DIRECTIVE}
   }
 }
 EOF
-fi
-
-if command -v node >/dev/null 2>&1 && [[ -f /usr/local/bin/navet-rss-proxy.mjs ]]; then
-  node /usr/local/bin/navet-rss-proxy.mjs &
 fi
 
 nginx -g 'daemon off;'

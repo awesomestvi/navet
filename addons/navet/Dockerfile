@@ -1,7 +1,6 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.20
 ARG BUILD_VERSION=dev
 ARG BUILD_ARCH=amd64
-ARG NAVET_ENABLE_RSS_PROXY=false
 
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
@@ -15,14 +14,13 @@ RUN pnpm build
 FROM ${BUILD_FROM}
 ARG BUILD_VERSION
 ARG BUILD_ARCH
-ARG NAVET_ENABLE_RSS_PROXY
 
-RUN apk add --no-cache bash nginx \
-  && if [ "$NAVET_ENABLE_RSS_PROXY" = "true" ]; then apk add --no-cache nodejs; fi
+RUN apk add --no-cache bash nginx nginx-mod-http-js
 
 COPY addons/navet/run.sh /run.sh
 COPY addons/navet/rootfs/ /
-COPY docker/rss-proxy-server.mjs /usr/local/bin/navet-rss-proxy.mjs
+COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
+COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 RUN chmod a+x /run.sh
