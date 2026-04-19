@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
-    "@chromatic-com/storybook": "^5.1.1",
+    "@chromatic-com/storybook": "^5.1.2",
     "@storybook/addon-a11y": "^10.3.5",
     "@storybook/addon-docs": "10.3.5",
     "@storybook/addon-vitest": "^10.3.5",
