@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { HA_CONTROL_DEBOUNCE_MS } from '@/app/constants/interaction-timing';
 import type { TranslateFn } from '@/app/hooks';
 import { useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -101,7 +102,7 @@ export function useMediaVolume({
           }
           await homeAssistantService.setMediaPlayerVolume(entityId, pendingVolume);
         }, t('media.feedback.updateVolumeFailed'));
-      }, 120);
+      }, HA_CONTROL_DEBOUNCE_MS);
     },
     [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]
   );

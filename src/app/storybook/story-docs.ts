@@ -689,6 +689,21 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the card remains useful even when events are sparse or brief.',
     ]
   ),
+  'Cards/Dialogs/Calendar': doc(
+    'Settings dialog for calendar-card configuration, including selected sources and compact view behavior.',
+    [
+      'The dialog surface for choosing which calendars feed the card and how they are summarized.',
+      'How card-dialog tabs, sections, and list selection patterns are applied to calendar data.',
+    ],
+    [
+      'Use this story when changing calendar-card settings structure, selection behavior, or tint customization.',
+      'Keep calendar configuration aligned with the broader card-dialog family rather than creating calendar-only layout rules.',
+    ],
+    [
+      'Check that source selection is easy to scan and toggle.',
+      'Check that the controls and customize tabs remain balanced and lightweight.',
+    ]
+  ),
   'Cards/Entity/HVAC': doc(
     'Entity card for HVAC control and status, focused on current mode, action, and target temperature.',
     [
@@ -765,6 +780,51 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the card remains readable without turning into a dense list.',
     ]
   ),
+  'Cards/Dialogs/Battery Overview': doc(
+    'Settings dialog for choosing which battery entities are included in the battery-overview custom card.',
+    [
+      'The selection workflow for a maintenance-oriented summary card.',
+      'How compact list controls and multi-select rows fit inside the card-dialog shell.',
+    ],
+    [
+      'Use this story when changing battery selection behavior, empty states, or card-settings copy.',
+      'Keep the battery-overview setup flow simple enough for quick dashboard curation.',
+    ],
+    [
+      'Check that multi-select rows are easy to toggle without accidental misses.',
+      'Check that bulk actions and list density remain readable in the capped dialog body.',
+    ]
+  ),
+  'Cards/Custom/Energy Now': doc(
+    'Custom dashboard energy snapshot card with a full-bleed live trend backdrop and current power as the primary reading.',
+    [
+      'How a chart-first energy card can still read clearly inside the custom-card system.',
+      'The full-bleed sparkline treatment used to make live usage feel ambient and glanceable.',
+    ],
+    [
+      'Use this story when changing hierarchy, overlay placement, or chart emphasis for the energy-now custom card.',
+      'Review it before adjusting other chart-led custom cards so the full-bleed treatment stays coherent.',
+    ],
+    [
+      'Check that current power remains the dominant reading at all three supported sizes.',
+      'Check that the chart still reads as the main surface rather than background decoration.',
+    ]
+  ),
+  'Cards/Dialogs/Energy': doc(
+    'Settings dialog for choosing which configured energy source or energy-usage sensor the custom energy card should show.',
+    [
+      'The grouped selection flow for home, source, and device energy entities, including energy-usage sensors exposed from Home Assistant.',
+      'How the card-dialog pattern supports a chart-led custom card without overcomplicating setup.',
+    ],
+    [
+      'Use this story when changing energy source grouping, sensor selection affordances, or wording.',
+      'Keep the dialog focused on choosing the reading rather than turning it into a full energy-management surface.',
+    ],
+    [
+      'Check that grouped options are easy to compare at a glance.',
+      'Check that the currently selected energy source or usage sensor remains visually obvious.',
+    ]
+  ),
   'Cards/Custom/Photo': doc(
     'Custom photo-frame card used to surface imagery as a dashboard-native visual widget.',
     [
@@ -778,6 +838,21 @@ const STORY_DOCS: Record<string, string> = {
     [
       'Check cropping, readability of any overlaid content, and overall visual restraint.',
       'Check that the card still feels intentional within a functional dashboard layout.',
+    ]
+  ),
+  'Cards/Dialogs/Photo': doc(
+    'Settings dialog for configuring the photo-frame custom card source, shuffle behavior, and media inputs.',
+    [
+      'The setup flow for switching between direct URLs and Home Assistant media sources.',
+      'How richer form controls fit into the same custom-card dialog shell.',
+    ],
+    [
+      'Use this story when changing photo-source setup, media-source wording, or list editing behavior.',
+      'Keep the photo dialog aligned with other custom-card settings instead of introducing a separate media form style.',
+    ],
+    [
+      'Check that source switching keeps the form easy to understand.',
+      'Check that URL list editing remains tidy and scannable inside the dialog body.',
     ]
   ),
   'Cards/Custom/Quick Note': doc(

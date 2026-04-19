@@ -318,7 +318,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
       contentOverlayClassName={surfaceOverlayClassName ?? tintSurface.overlayClassName ?? undefined}
     >
       <CustomScrollbar isOn={isActive}>
-        <div className="p-8">
+        <div className="p-6">
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>

@@ -237,7 +237,7 @@ export const LockCard = memo(function LockCard({
 
   return (
     <div
-      className={`${compactRootClassName} p-2.5`}
+      className={`${compactRootClassName} p-3`}
       style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
     >
       <div

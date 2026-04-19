@@ -8,6 +8,7 @@ import { useI18n, useTheme } from '@/app/hooks';
 interface HVACTempControlsProps {
   targetTemp: number;
   onTempChange: (temp: number) => void;
+  onTempCommit?: (temp: number) => void;
   isOn: boolean;
   size?: CardSize;
 }
@@ -15,6 +16,7 @@ interface HVACTempControlsProps {
 export const HVACTempControls = memo(function HVACTempControls({
   targetTemp,
   onTempChange,
+  onTempCommit,
   isOn,
   size = 'medium',
 }: HVACTempControlsProps) {
@@ -33,7 +35,8 @@ export const HVACTempControls = memo(function HVACTempControls({
         variant="soft"
         onClick={(e) => {
           e.stopPropagation();
-          onTempChange(Math.max(16, targetTemp - 0.5));
+          const nextTemp = Math.max(16, targetTemp - 0.5);
+          (onTempCommit ?? onTempChange)(nextTemp);
         }}
         aria-label={t('climate.decreaseTemperature')}
         disabled={!isOn}
@@ -47,7 +50,8 @@ export const HVACTempControls = memo(function HVACTempControls({
         variant="soft"
         onClick={(e) => {
           e.stopPropagation();
-          onTempChange(Math.min(30, targetTemp + 0.5));
+          const nextTemp = Math.min(30, targetTemp + 0.5);
+          (onTempCommit ?? onTempChange)(nextTemp);
         }}
         aria-label={t('climate.increaseTemperature')}
         disabled={!isOn}

@@ -1,10 +1,19 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useHvacRegistryDeviceTopology, useI18n, useTheme } from '@/app/hooks';
+import { HA_PENDING_ECHO_WINDOW_MS } from '@/app/constants/interaction-timing';
+import {
+  useHaCommandQueue,
+  useHomeAssistant,
+  useHvacRegistryDeviceTopology,
+  useI18n,
+  useServiceActionHandler,
+  useTheme,
+} from '@/app/hooks';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HVACCardProps } from './hvac-card.types';
@@ -53,6 +62,71 @@ export function useHVACCardController({
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
+  const pendingTargetTempRef = useRef<number | null>(null);
+  const targetTempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runTemperatureAction = useServiceActionHandler();
+
+  useEffect(() => {
+    return () => {
+      if (targetTempSyncTimeoutRef.current !== null) {
+        clearTimeout(targetTempSyncTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const syncTargetTempFromEntity = useCallback(
+    (nextValue: number | ((current: number) => number)) => {
+      setTargetTemp((current) => {
+        const resolvedValue = typeof nextValue === 'function' ? nextValue(current) : nextValue;
+
+        if (
+          pendingTargetTempRef.current !== null &&
+          Math.abs(resolvedValue - pendingTargetTempRef.current) > 0.05
+        ) {
+          return current;
+        }
+
+        if (pendingTargetTempRef.current !== null) {
+          pendingTargetTempRef.current = null;
+          if (targetTempSyncTimeoutRef.current !== null) {
+            clearTimeout(targetTempSyncTimeoutRef.current);
+            targetTempSyncTimeoutRef.current = null;
+          }
+        }
+
+        return resolvedValue;
+      });
+    },
+    []
+  );
+
+  const { queue: queueTargetTempSync } = useHaCommandQueue((nextTemp: number) =>
+    runTemperatureAction(
+      () => homeAssistantService.setClimateTemperature(id, nextTemp),
+      t('climate.feedback.updateTemperatureFailed')
+    )
+  );
+
+  const schedulePendingTargetTemp = useCallback((nextTemp: number) => {
+    pendingTargetTempRef.current = nextTemp;
+    if (targetTempSyncTimeoutRef.current !== null) {
+      clearTimeout(targetTempSyncTimeoutRef.current);
+    }
+    targetTempSyncTimeoutRef.current = setTimeout(() => {
+      pendingTargetTempRef.current = null;
+      targetTempSyncTimeoutRef.current = null;
+    }, HA_PENDING_ECHO_WINDOW_MS);
+  }, []);
+
+  const updateTargetTemp = useCallback(
+    (nextTemp: number, immediate = false) => {
+      const normalizedTemp = Number(nextTemp.toFixed(1));
+      setTargetTemp(normalizedTemp);
+      schedulePendingTargetTemp(normalizedTemp);
+      queueTargetTempSync(normalizedTemp, immediate);
+    },
+    [queueTargetTempSync, schedulePendingTargetTemp]
+  );
 
   useHvacEntitySync({
     liveEntity,
@@ -61,7 +135,7 @@ export function useHVACCardController({
     initialMode,
     initialAction,
     initialState,
-    setTargetTemp,
+    setTargetTemp: syncTargetTempFromEntity,
     setCurrentTemp,
     setMode,
     setAction,
@@ -157,7 +231,8 @@ export function useHVACCardController({
     setIsOn,
     setIsSettingsOpen,
     setMode,
-    setTargetTemp,
+    setTargetTemp: (nextTemp: number) => updateTargetTemp(nextTemp),
+    commitTargetTemp: (nextTemp: number) => updateTargetTemp(nextTemp, true),
     targetTemp,
     textColor,
     theme,

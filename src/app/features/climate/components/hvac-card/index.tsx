@@ -124,7 +124,7 @@ export const HVACCard = memo(function HVACCard({
     <>
       <CardWrapper
         interactionProps={controller.cardInteraction.cardProps}
-        className={`bg-gradient-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} p-4 ${stateSurface.containerClassName}`}
+        className={`bg-gradient-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} p-3 ${stateSurface.containerClassName}`}
         style={stateSurfaceStyle.cardStyle}
         lightOverlayClassName={controller.lightOverlay}
         showShadow={controller.isOn && controller.theme !== 'light'}
@@ -183,6 +183,7 @@ export const HVACCard = memo(function HVACCard({
                   currentTemp={controller.currentTemp}
                   isOn={controller.isOn}
                   onTargetTempChange={controller.setTargetTemp}
+                  onTargetTempCommit={controller.commitTargetTemp}
                   variant="docked-card-small"
                   className="pointer-events-auto absolute right-[-1.9rem] top-[36%] z-[2] -translate-y-1/2"
                 />
@@ -213,6 +214,7 @@ export const HVACCard = memo(function HVACCard({
                         <HVACTempControls
                           targetTemp={controller.targetTemp}
                           onTempChange={controller.setTargetTemp}
+                          onTempCommit={controller.commitTargetTemp}
                           isOn={controller.isOn}
                           size="small"
                         />
@@ -241,6 +243,7 @@ export const HVACCard = memo(function HVACCard({
                   currentTemp={controller.currentTemp}
                   isOn={controller.isOn}
                   onTargetTempChange={controller.setTargetTemp}
+                  onTargetTempCommit={controller.commitTargetTemp}
                   variant="docked-card-small"
                   className="pointer-events-auto absolute right-[-0.25rem] top-[36%] z-[2] -translate-y-1/2"
                 />
@@ -305,6 +308,7 @@ export const HVACCard = memo(function HVACCard({
                   currentTemp={controller.currentTemp}
                   isOn={controller.isOn}
                   onTargetTempChange={controller.setTargetTemp}
+                  onTargetTempCommit={controller.commitTargetTemp}
                   variant="docked-card"
                   className="pointer-events-auto absolute right-[-3.4rem] top-[38%] z-[2] -translate-y-1/2"
                 />
@@ -336,7 +340,7 @@ export const HVACCard = memo(function HVACCard({
                             key={preset}
                             onClick={(event) => {
                               event.stopPropagation();
-                              controller.setTargetTemp(preset);
+                              controller.commitTargetTemp(preset);
                             }}
                             className={cn(
                               'relative z-[3] min-w-[4.5rem] rounded-2xl border px-3 py-2 text-sm font-semibold transition-all',
@@ -361,20 +365,20 @@ export const HVACCard = memo(function HVACCard({
                 <div className="pt-4">
                   <CardActionRow
                     theme={controller.theme}
-                    size="large"
+                    size="medium"
                     leftContent={
                       <div className="relative z-[3] flex items-center gap-2">
                         <HVACTempControls
                           targetTemp={controller.targetTemp}
                           onTempChange={controller.setTargetTemp}
                           isOn={controller.isOn}
-                          size="large"
+                          size="medium"
                         />
                         <HVACModeControls
                           mode={controller.visualMode}
                           isOn={controller.isOn}
                           onModeChange={controller.setMode}
-                          size="large"
+                          size="medium"
                         />
                       </div>
                     }
@@ -383,7 +387,7 @@ export const HVACCard = memo(function HVACCard({
                         <CardSettingsActionButton
                           {...controller.cardInteraction.settingsButtonProps}
                           theme={controller.theme}
-                          size="large"
+                          size="medium"
                           tone={controller.isOn ? 'default' : 'muted'}
                           variant="soft"
                         />
@@ -409,6 +413,7 @@ export const HVACCard = memo(function HVACCard({
           currentTemp={controller.currentTemp}
           siblingEntities={controller.siblingEntities}
           onTargetTempChange={controller.setTargetTemp}
+          onTargetTempCommit={controller.commitTargetTemp}
           onModeChange={controller.setMode}
         />
       ) : null}

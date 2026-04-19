@@ -63,10 +63,7 @@ function ButtonSettingsDialog({
   const dialogShell = customCardDialogShellProps(
     { panel: surface.panelClassName, border: surface.borderClassName },
     tintSurface,
-    {
-      maxWidth: 'sm',
-      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`,
-    }
+    { maxWidth: 'sm' }
   );
 
   const handleSave = () => {

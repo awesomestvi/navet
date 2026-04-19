@@ -17,10 +17,10 @@ interface EnergySparklineProps {
   height?: number;
   className?: string;
   showYAxisMarks?: boolean;
+  padX?: number;
 }
 
 const VB_W = 200;
-const PAD_X = 1;
 const PAD_TOP = 2;
 const PAD_BOTTOM = 0;
 
@@ -57,6 +57,7 @@ export const EnergySparkline = memo(function EnergySparkline({
   height = 40,
   className,
   showYAxisMarks = false,
+  padX = 1,
 }: EnergySparklineProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
@@ -99,7 +100,7 @@ export const EnergySparkline = memo(function EnergySparkline({
       };
     }
 
-    const chartW = VB_W - PAD_X * 2;
+    const chartW = VB_W - padX * 2;
     const chartH = height - PAD_TOP - PAD_BOTTOM;
     const nextBaseline = PAD_TOP + chartH;
     const rawMin = Math.min(...data.map((d) => d.value));
@@ -107,7 +108,7 @@ export const EnergySparkline = memo(function EnergySparkline({
     const valueRange = Math.max(rawMax - rawMin, Math.max(rawMax * 0.04, 1));
     const nextMinVal = rawMin;
     const nextMaxVal = rawMax + valueRange * 0.04;
-    const xAt = (i: number) => PAD_X + (i / (data.length - 1)) * chartW;
+    const xAt = (i: number) => padX + (i / (data.length - 1)) * chartW;
     const yAt = (v: number) =>
       PAD_TOP + (1 - (v - nextMinVal) / Math.max(nextMaxVal - nextMinVal, 1)) * chartH;
     const nextPoints = data.map((d, i) => ({ x: xAt(i), y: yAt(d.value) }));
@@ -120,7 +121,7 @@ export const EnergySparkline = memo(function EnergySparkline({
       minVal: nextMinVal,
       maxVal: nextMaxVal,
     };
-  }, [data, height]);
+  }, [data, height, padX]);
 
   const activeIndex = hoverIndex;
   const activePoint = activeIndex === null ? null : data[activeIndex];
@@ -140,6 +141,8 @@ export const EnergySparkline = memo(function EnergySparkline({
   const tooltipTimestamp = formatTooltipTimestamp(activePoint?.timestampMs);
   const tooltipLeftPercent =
     activeCoords === null ? null : Math.max(18, Math.min(82, (activeCoords.x / VB_W) * 100));
+  const tooltipTopPercent =
+    activeCoords === null ? null : Math.max(14, Math.min(84, (activeCoords.y / height) * 100));
   const yAxisMarks = useMemo(() => {
     if (!showYAxisMarks) {
       return [];
@@ -187,13 +190,20 @@ export const EnergySparkline = memo(function EnergySparkline({
         </div>
       ))}
 
-      {activePoint && tooltipTimestamp && tooltipLeftPercent !== null ? (
-        <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-0 w-full">
+      {activePoint &&
+      tooltipTimestamp &&
+      tooltipLeftPercent !== null &&
+      tooltipTopPercent !== null ? (
+        <div className="pointer-events-none absolute inset-0 z-20">
           <div
-            className="w-full"
-            style={{ transform: `translate3d(${tooltipLeftPercent}%, 0, 0)` }}
+            className="absolute"
+            style={{
+              left: `${tooltipLeftPercent}%`,
+              top: `${tooltipTopPercent}%`,
+              transform: 'translate(-50%, calc(-100% - 10px))',
+            }}
           >
-            <div className="-translate-x-1/2 w-max max-w-55 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md">
+            <div className="w-max max-w-55 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md">
               <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
               <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />

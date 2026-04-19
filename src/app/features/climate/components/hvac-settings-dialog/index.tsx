@@ -38,6 +38,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   siblingEntities = [],
   onModeChange,
   onTargetTempChange,
+  onTargetTempCommit,
 }: HVACSettingsDialogProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
@@ -62,7 +63,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
     accentColor,
   });
   const styles = getHVACSettingsDialogStyles(visualMode, isOn);
-  const contentInsetClassName = 'px-8';
+  const contentInsetClassName = 'px-6';
   const [activeTab, setActiveTab] = useState('hvac');
 
   return (
@@ -74,7 +75,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
     >
       <CustomScrollbar isOn={isOn}>
-        <div className="pt-8 pb-8">
+        <div className="pt-6 pb-6">
           <div className={contentInsetClassName}>
             <CardDialogHeader title={name} description={entityType} entityId={entityId} />
           </div>
@@ -111,6 +112,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                   step={step}
                   helperText={getHvacTemperatureStatusLabel(t, targetTemp, currentTemp)}
                   onTargetTempChange={onTargetTempChange}
+                  onTargetTempCommit={onTargetTempCommit}
                   variant="immersive"
                 />
               </div>
@@ -123,6 +125,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                       <HVACTempControls
                         targetTemp={targetTemp}
                         onTempChange={onTargetTempChange}
+                        onTempCommit={onTargetTempCommit}
                         isOn={isOn}
                         size="medium"
                       />
@@ -145,7 +148,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                         <button
                           type="button"
                           key={`${preset.label ?? preset.value}`}
-                          onClick={() => onTargetTempChange(preset.value)}
+                          onClick={() => (onTargetTempCommit ?? onTargetTempChange)(preset.value)}
                           disabled={!isOn}
                           className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
                         >

@@ -596,6 +596,7 @@ export const esMessages = {
   'climate.settings.room': 'Habitación',
   'climate.coolingDownTo': 'Enfriando hasta {temp}°C',
   'climate.heatingTo': 'Calentar hasta {temp}°C',
+  'climate.feedback.updateTemperatureFailed': 'No se pudo actualizar la temperatura',
   'climate.decreaseTemperature': 'Bajar temperatura',
   'climate.increaseTemperature': 'Subir temperatura',
   'climate.gaugeLabel': 'Indicador de temperatura {mode} que muestra {temp} grados',
@@ -907,7 +908,24 @@ export const esMessages = {
   'widgets.photoFrame.shuffle': 'Aleatorio',
   'widgets.battery.title': 'Resumen de batería',
   'widgets.battery.noBatteries': 'No se encontraron sensores de batería',
+  'widgets.battery.noSelectedBatteries': 'No hay baterías seleccionadas',
   'widgets.battery.low': 'Bajo',
+  'widgets.battery.settings.title': 'Configuración de batería',
+  'widgets.battery.settings.sensors': 'Baterías visibles',
+  'widgets.battery.settings.help': 'Elige qué sensores de batería quieres mostrar en esta tarjeta.',
+  'widgets.battery.settings.selectAll': 'Seleccionar todo',
+  'widgets.battery.settings.clearAll': 'Borrar selección',
+  'widgets.battery.settings.noneAvailable': 'Todavía no hay sensores de batería disponibles.',
+  'widgets.energyNow.settings.title': 'Tarjeta de energia',
+  'widgets.energyNow.settings.sources': 'Entidades de energia',
+  'widgets.energyNow.settings.help':
+    'Elige qué entidad de energia configurada debe mostrar esta tarjeta.',
+  'widgets.energyNow.settings.noneAvailable':
+    'Todavía no hay entidades de energia con potencia en vivo disponibles.',
+  'widgets.energyNow.settings.home': 'Energia de hoy',
+  'widgets.energyNow.settings.group.home': 'Hogar',
+  'widgets.energyNow.settings.group.sources': 'Fuentes',
+  'widgets.energyNow.settings.group.devices': 'Dispositivos',
   'widgets.button.title': 'Botón de acción',
   'widgets.button.labelPlaceholder': 'Etiqueta del botón',
   'widgets.button.servicePlaceholder': 'ej. scene.turn_on',
@@ -922,6 +940,9 @@ export const esMessages = {
   'dashboard.addCard.templates.battery.name': 'Resumen de batería',
   'dashboard.addCard.templates.battery.description':
     'Todos los sensores de batería ordenados por nivel de carga, los más bajos primero.',
+  'dashboard.addCard.templates.energyNow.name': 'Energia ahora',
+  'dashboard.addCard.templates.energyNow.description':
+    'Grafico en vivo a pantalla completa con la potencia actual como foco.',
   'dashboard.addCard.templates.button.name': 'Botón de acción',
   'dashboard.addCard.templates.button.description':
     'Toca para activar cualquier servicio, escena o script de Home Assistant.',
@@ -1059,9 +1080,13 @@ export const esMessages = {
   'energy.widgets.now.currentPower': 'Potencia actual',
   'energy.widgets.now.gridImportActive': '{value} W vienen actualmente de la red',
   'energy.widgets.now.gridImportInactive': 'No hay importacion de red activa ahora',
+  'energy.widgets.now.liveBadge': 'Live',
   'energy.widgets.now.sparklineTitle': 'Sparkline de 5 minutos',
   'energy.widgets.now.sparklineDescription':
     'Ultimas 24 horas, media de Home Assistant en 5 minutos',
+  'energy.widgets.now.totalUsage': 'Uso total de hoy',
+  'energy.widgets.now.totalUsageDescription':
+    'Derivado del historial de carga del hogar desde medianoche',
   'energy.widgets.gridAllocation.title': 'Energia de red a dispositivos',
   'energy.widgets.gridAllocation.eyebrow': 'Asignacion estimada',
   'energy.widgets.gridAllocation.basisTitle': 'Base de asignacion',

@@ -22,6 +22,7 @@ interface HVACGaugeProps {
   step?: number;
   helperText?: string;
   onTargetTempChange?: (temp: number) => void;
+  onTargetTempCommit?: (temp: number) => void;
   variant?: 'card' | 'immersive' | 'docked-card' | 'docked-card-small';
   className?: string;
 }
@@ -75,6 +76,7 @@ export const HVACGauge = memo(function HVACGauge({
   step = 0.5,
   helperText,
   onTargetTempChange,
+  onTargetTempCommit,
   variant = 'card',
   className,
 }: HVACGaugeProps) {
@@ -96,13 +98,24 @@ export const HVACGauge = memo(function HVACGauge({
     const targetTemperatureColor = textTokens.titleColor;
 
     const updateTemperature = (nextValue: number) => {
+      const steppedTemperature = Math.round((nextValue - minTemp) / stepSize) * stepSize + minTemp;
+      return Number(clamp(steppedTemperature, minTemp, maxTemp).toFixed(1));
+    };
+
+    const handleTemperatureChange = (nextValue: number) => {
       if (!onTargetTempChange) {
         return;
       }
 
-      const steppedTemperature = Math.round((nextValue - minTemp) / stepSize) * stepSize + minTemp;
+      onTargetTempChange(updateTemperature(nextValue));
+    };
 
-      onTargetTempChange(Number(clamp(steppedTemperature, minTemp, maxTemp).toFixed(1)));
+    const handleTemperatureCommit = (nextValue: number) => {
+      if (!onTargetTempCommit) {
+        return;
+      }
+
+      onTargetTempCommit(updateTemperature(nextValue));
     };
 
     if (variant === 'docked-card' || variant === 'docked-card-small') {
@@ -132,7 +145,8 @@ export const HVACGauge = memo(function HVACGauge({
             bandPrimaryColor={primaryBandColor}
             bandSecondaryColor={secondaryBandColor}
             bandGlowColor={glowBandColor}
-            onValueChange={updateTemperature}
+            onValueChange={handleTemperatureChange}
+            onValueCommit={handleTemperatureCommit}
             className={cn(
               'absolute top-1/2 -translate-y-1/2',
               isCompact
@@ -177,7 +191,8 @@ export const HVACGauge = memo(function HVACGauge({
           bandPrimaryColor={bandColors.primary}
           bandSecondaryColor={bandColors.secondary}
           bandGlowColor={bandColors.glow}
-          onValueChange={updateTemperature}
+          onValueChange={handleTemperatureChange}
+          onValueCommit={handleTemperatureCommit}
           className="absolute right-[-9.25rem] top-[54%] h-[17rem] w-[17rem] -translate-y-1/2"
         />
       </div>

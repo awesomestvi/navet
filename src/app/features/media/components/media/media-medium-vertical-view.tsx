@@ -130,7 +130,7 @@ export function MediaMediumVerticalView({
   return (
     <div
       ref={containerRef}
-      className="relative -m-6 flex h-[calc(100%+3rem)] flex-col overflow-hidden rounded-[inherit]"
+      className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]"
     >
       <MediaArtworkSurface
         artwork={artwork}
@@ -146,7 +146,7 @@ export function MediaMediumVerticalView({
       <div className="relative z-[1] flex h-full flex-col">
         <div className="h-[52%]" />
 
-        <div className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-5">
+        <div className="flex min-h-0 flex-1 flex-col p-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div

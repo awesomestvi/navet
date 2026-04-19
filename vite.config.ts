@@ -27,12 +27,17 @@ function getPackageName(id: string) {
 }
 
 function rssProxyPlugin() {
+  const setNoStoreHeaders = (res: ServerResponse) => {
+    res.setHeader('Cache-Control', 'no-store')
+  }
+
   const handleRequest = async (requestUrlValue: string | null | undefined, res: ServerResponse) => {
     const requestUrl = requestUrlValue ? new URL(requestUrlValue, 'http://localhost') : null
     const targetUrl = requestUrl?.searchParams.get('url')?.trim()
 
     if (!targetUrl) {
       res.statusCode = 400
+      setNoStoreHeaders(res)
       res.setHeader('Content-Type', 'application/json')
       res.end(JSON.stringify({ error: 'Missing url query parameter' }))
       return
@@ -54,6 +59,7 @@ function rssProxyPlugin() {
 
       if (!upstreamResponse.ok) {
         res.statusCode = 502
+        setNoStoreHeaders(res)
         res.setHeader('Content-Type', 'application/json')
         res.end(
           JSON.stringify({
@@ -68,10 +74,12 @@ function rssProxyPlugin() {
       const body = await upstreamResponse.text()
 
       res.statusCode = 200
+      setNoStoreHeaders(res)
       res.setHeader('Content-Type', contentType)
       res.end(body)
     } catch {
       res.statusCode = 502
+      setNoStoreHeaders(res)
       res.setHeader('Content-Type', 'application/json')
       res.end(JSON.stringify({ error: 'Unable to load feed' }))
     }

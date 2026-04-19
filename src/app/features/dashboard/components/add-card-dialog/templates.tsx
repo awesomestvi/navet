@@ -11,6 +11,15 @@ function BatteryIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function EnergyNowIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <title>Energy now</title>
+      <path d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z" />
+    </svg>
+  );
+}
+
 function Zap(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -97,6 +106,14 @@ export const cardTemplates: CardTemplate[] = [
     descriptionKey: 'dashboard.addCard.templates.battery.description',
     icon: <BatteryIcon className="w-5 h-5" />,
     defaultSize: 'large',
+    supportedSizes: ['small', 'medium', 'large'],
+  },
+  {
+    id: 'energy-now',
+    nameKey: 'dashboard.addCard.templates.energyNow.name',
+    descriptionKey: 'dashboard.addCard.templates.energyNow.description',
+    icon: <EnergyNowIcon className="w-5 h-5" />,
+    defaultSize: 'medium',
     supportedSizes: ['small', 'medium', 'large'],
   },
   {

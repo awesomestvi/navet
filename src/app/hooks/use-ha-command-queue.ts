@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { HA_CONTROL_DEBOUNCE_MS } from '@/app/constants/interaction-timing';
 
 export interface HaCommandQueue<T> {
   queue: (value: T, immediate?: boolean) => void;
@@ -15,7 +16,7 @@ export interface HaCommandQueue<T> {
  */
 export function useHaCommandQueue<T>(
   send: (value: T) => Promise<void>,
-  debounceMs = 75
+  debounceMs = HA_CONTROL_DEBOUNCE_MS
 ): HaCommandQueue<T> {
   // Always-current reference so flush never captures a stale send closure.
   const sendRef = useRef(send);

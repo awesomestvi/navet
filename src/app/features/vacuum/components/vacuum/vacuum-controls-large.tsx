@@ -29,24 +29,24 @@ export function VacuumControlsLarge({
   return (
     <CardActionRow
       theme={theme}
-      size="large"
+      size="medium"
       leftContent={
         <>
           {currentStatus === 'cleaning' ? (
             <RoundControlButton
               theme={theme}
-              size="large"
+              size="medium"
               variant="soft"
               onClick={onPause}
               aria-label={t('vacuum.action.pause')}
               className="transition-colors"
             >
-              <Pause className="h-5 w-5" />
+              <Pause className="h-3.5 w-3.5" />
             </RoundControlButton>
           ) : (
             <RoundControlButton
               theme={theme}
-              size="large"
+              size="medium"
               variant="emphasis"
               onClick={onStartCleaning}
               aria-label={t('vacuum.action.startCleaning')}
@@ -56,25 +56,25 @@ export function VacuumControlsLarge({
                 boxShadow: `0 10px 24px ${accentColorValue}55`,
               }}
             >
-              <Play className="h-5 w-5 text-white" />
+              <Play className="h-3.5 w-3.5 text-white" />
             </RoundControlButton>
           )}
           <RoundControlButton
             theme={theme}
-            size="large"
+            size="medium"
             variant="soft"
             onClick={onReturnHome}
             aria-label={t('vacuum.action.returnToDock')}
             className="transition-colors"
           >
-            <HousePlug className="h-5 w-5" />
+            <HousePlug className="h-3.5 w-3.5" />
           </RoundControlButton>
         </>
       }
       rightContent={
         <CardSettingsActionButton
           theme={theme}
-          size="large"
+          size="medium"
           variant="soft"
           onClick={(event) => {
             event.stopPropagation();

@@ -597,6 +597,7 @@ export const deMessages = {
   'climate.settings.room': 'Raum',
   'climate.coolingDownTo': 'Kühlt auf {temp}°C herunter',
   'climate.heatingTo': 'Heizt auf {temp}°C',
+  'climate.feedback.updateTemperatureFailed': 'Temperatur konnte nicht aktualisiert werden',
   'climate.decreaseTemperature': 'Temperatur senken',
   'climate.increaseTemperature': 'Temperatur erhöhen',
   'climate.gaugeLabel': '{mode} Temperaturanzeige zeigt {temp} Grad',
@@ -909,7 +910,25 @@ export const deMessages = {
   'widgets.photoFrame.shuffle': 'Mischen',
   'widgets.battery.title': 'Akkuübersicht',
   'widgets.battery.noBatteries': 'Keine Akkusensoren gefunden',
+  'widgets.battery.noSelectedBatteries': 'Keine Batterien ausgewählt',
   'widgets.battery.low': 'Niedrig',
+  'widgets.battery.settings.title': 'Akkueinstellungen',
+  'widgets.battery.settings.sensors': 'Sichtbare Batterien',
+  'widgets.battery.settings.help':
+    'Wähle aus, welche Batteriesensoren auf dieser Karte angezeigt werden sollen.',
+  'widgets.battery.settings.selectAll': 'Alle auswählen',
+  'widgets.battery.settings.clearAll': 'Auswahl löschen',
+  'widgets.battery.settings.noneAvailable': 'Noch keine Batteriesensoren verfügbar.',
+  'widgets.energyNow.settings.title': 'Energiekarte',
+  'widgets.energyNow.settings.sources': 'Energieentitäten',
+  'widgets.energyNow.settings.help':
+    'Wähle, welche konfigurierte Energieentität diese Karte anzeigen soll.',
+  'widgets.energyNow.settings.noneAvailable':
+    'Noch keine Energieentitäten mit Live-Leistung verfügbar.',
+  'widgets.energyNow.settings.home': 'Energie heute',
+  'widgets.energyNow.settings.group.home': 'Zuhause',
+  'widgets.energyNow.settings.group.sources': 'Quellen',
+  'widgets.energyNow.settings.group.devices': 'Geräte',
   'widgets.button.title': 'Aktionsschaltfläche',
   'widgets.button.labelPlaceholder': 'Schaltflächenbeschriftung',
   'widgets.button.servicePlaceholder': 'z.B. scene.turn_on',
@@ -924,6 +943,9 @@ export const deMessages = {
   'dashboard.addCard.templates.battery.name': 'Akkuübersicht',
   'dashboard.addCard.templates.battery.description':
     'Alle Akkusensoren nach Ladestand sortiert, niedrigste zuerst.',
+  'dashboard.addCard.templates.energyNow.name': 'Energie jetzt',
+  'dashboard.addCard.templates.energyNow.description':
+    'Vollflachige Live-Verbrauchskurve mit aktueller Leistung im Fokus.',
   'dashboard.addCard.templates.button.name': 'Aktionsschaltfläche',
   'dashboard.addCard.templates.button.description':
     'Tippen zum Auslösen eines Home Assistant-Dienstes, einer Szene oder eines Skripts.',
@@ -1060,9 +1082,13 @@ export const deMessages = {
   'energy.widgets.now.currentPower': 'Aktuelle Leistung',
   'energy.widgets.now.gridImportActive': '{value} W kommen derzeit aus dem Netz',
   'energy.widgets.now.gridImportInactive': 'Derzeit kein aktiver Netzbezug',
+  'energy.widgets.now.liveBadge': 'Live',
   'energy.widgets.now.sparklineTitle': '5-Minuten-Sparkline',
   'energy.widgets.now.sparklineDescription':
     'Letzte 24 Stunden, Home Assistant 5-Minuten-Mittelwert',
+  'energy.widgets.now.totalUsage': 'Gesamtverbrauch heute',
+  'energy.widgets.now.totalUsageDescription':
+    'Abgeleitet aus der Home-Load-Historie seit Mitternacht',
   'energy.widgets.gridAllocation.title': 'Netzenergie pro Gerat',
   'energy.widgets.gridAllocation.eyebrow': 'Geschtzte Verteilung',
   'energy.widgets.gridAllocation.basisTitle': 'Verteilungsbasis',

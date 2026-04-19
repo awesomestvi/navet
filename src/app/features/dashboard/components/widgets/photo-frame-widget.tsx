@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useAuth } from '@/app/contexts/auth-context';
-import { useI18n, useTheme } from '@/app/hooks';
+import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
+import { useDevices, useI18n, useRooms, useTheme } from '@/app/hooks';
 import { authSelectors } from '@/app/stores/selectors';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
@@ -39,6 +40,8 @@ const PHOTO_SHUFFLE_INTERVAL_MS = 8000;
 
 interface PhotoFrameWidgetProps {
   size?: CardSize;
+  room?: string;
+  onRoomChange?: (room: string) => void;
   sourceMode?: PhotoFrameSourceMode;
   photoUrls?: string[];
   mediaSourceId?: string;
@@ -54,6 +57,8 @@ interface PhotoFrameWidgetProps {
 
 export function PhotoFrameWidget({
   size = 'large',
+  room,
+  onRoomChange,
   sourceMode,
   photoUrls,
   mediaSourceId,
@@ -68,10 +73,18 @@ export function PhotoFrameWidget({
 }: PhotoFrameWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const devices = useDevices();
+  const rooms = useRooms(devices);
   const authConfig = useAuth(authSelectors.config);
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const roomValue = room === 'All' || !room ? HOME_WIDGET_ROOM : room;
+  const roomLabel = roomValue === HOME_WIDGET_ROOM ? t('dashboard.roomNav.all') : roomValue;
+  const roomOptions = [
+    { label: t('dashboard.roomNav.all'), value: HOME_WIDGET_ROOM },
+    ...rooms.map((entry) => ({ label: entry, value: entry })),
+  ];
   const isCompact = isCompactCardSize(size);
   const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
   const { activePhotoUrls, hasCustomPhotos } = usePhotoFrameSources({
@@ -227,6 +240,10 @@ export function PhotoFrameWidget({
           <PhotoFrameSettingsDialog
             isOpen={isSettingsOpen}
             onOpenChange={setIsSettingsOpen}
+            roomValue={roomValue}
+            roomLabel={roomLabel}
+            roomOptions={roomOptions}
+            onRoomChange={onRoomChange}
             sourceMode={resolvedSourceMode}
             onSourceModeChange={onSourceModeChange}
             photoUrls={photoUrls ?? []}

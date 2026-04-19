@@ -39,9 +39,7 @@ export function NoteWidget({
   const dialogShell = customCardDialogShellProps(
     { panel: surface.panelClassName, border: surface.borderClassName },
     tintSurface,
-    {
-      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-5 shadow-2xl ${surface.panelClassName}`,
-    }
+    { maxWidth: 'md' }
   );
   const emptyNote = t('widgets.note.emptyState');
   const [note, setNote] = useState(initialNote || emptyNote);

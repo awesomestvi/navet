@@ -20,7 +20,7 @@ function CardDialogPreviewStory() {
   return (
     <Dialog.Root open modal={false}>
       <Dialog.Content asChild>
-        <div className="max-w-md rounded-[28px] border border-white/10 bg-linear-to-br from-slate-900/95 to-slate-950/95 p-8 shadow-2xl backdrop-blur-xl">
+        <div className="max-w-md rounded-[28px] border border-white/10 bg-linear-to-br from-slate-900/95 to-slate-950/95 p-6 shadow-2xl backdrop-blur-xl">
           <CardDialogHeader
             title="Pax Calima"
             description="Switch"
@@ -143,7 +143,7 @@ export function Example() {
   return (
     <Dialog.Root open modal={false}>
       <Dialog.Content asChild>
-        <div className="rounded-[28px] border border-white/10 bg-linear-to-br from-slate-900/95 to-slate-950/95 p-8">
+        <div className="rounded-[28px] border border-white/10 bg-linear-to-br from-slate-900/95 to-slate-950/95 p-6">
           <CardDialogHeader
             title="Pax Calima"
             description="Switch"

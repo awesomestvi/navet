@@ -2,6 +2,21 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/app/components/primitives/button';
 
+function getDialogPanelSurfaceClassName(className: string): string {
+  return className
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(
+      (token) =>
+        !/^(relative|absolute|fixed|sticky)$/.test(token) &&
+        !/^overflow(?:-[xy])?(?:-.+)?$/.test(token) &&
+        !/^rounded(?:-.+)?$/.test(token) &&
+        !/^p[trblxy]?-.+$/.test(token) &&
+        !/^border(?:-.+)?$/.test(token)
+    )
+    .join(' ');
+}
+
 interface DialogShellProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -166,6 +181,7 @@ export function settingsDialogContentClass(
 
   const maxWidthClass =
     maxWidth === 'sm' ? 'max-w-sm' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-md';
+  const panelClassName = getDialogPanelSurfaceClassName(surface.panel);
 
   const parts = [
     'fixed top-1/2 left-1/2 z-50',
@@ -176,7 +192,7 @@ export function settingsDialogContentClass(
     height === 'tall' ? 'h-[85vh]' : height === 'capped' ? 'max-h-[85vh]' : '',
     padding ? 'p-6' : '',
     animate ? 'animate-in fade-in zoom-in duration-200' : '',
-    surface.panel,
+    panelClassName,
     surface.border,
   ];
 
@@ -193,7 +209,10 @@ export function customCardDialogShellProps(
   },
   options?: {
     maxWidth?: 'sm' | 'md' | 'lg';
+    height?: 'tall' | 'capped';
+    overflow?: boolean;
     padding?: boolean;
+    animate?: boolean;
     fallbackContentClassName?: string;
     fallbackDecoration?: {
       panelStyle?: CSSProperties;
@@ -205,7 +224,10 @@ export function customCardDialogShellProps(
 ) {
   const {
     maxWidth = 'md',
+    height,
+    overflow = Boolean(height),
     padding = true,
+    animate = false,
     fallbackContentClassName,
     fallbackDecoration,
   } = options ?? {};
@@ -228,12 +250,19 @@ export function customCardDialogShellProps(
       resolvedDecoration?.glowStyle ||
       resolvedDecoration?.overlayClassName
   );
+  const centeredContentStyle: CSSProperties = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    translate: '-50% -50%',
+  };
 
   if (!hasDecoration) {
     return {
       contentClassName:
-        fallbackContentClassName ?? settingsDialogContentClass(surface, { maxWidth, padding }),
-      contentStyle: undefined,
+        fallbackContentClassName ??
+        settingsDialogContentClass(surface, { maxWidth, height, overflow, padding, animate }),
+      contentStyle: centeredContentStyle,
       contentGlowClassName: undefined,
       contentGlowStyle: undefined,
       contentOverlayClassName: undefined,
@@ -242,6 +271,7 @@ export function customCardDialogShellProps(
 
   const maxWidthClass =
     maxWidth === 'sm' ? 'max-w-sm' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-md';
+  const panelClassName = getDialogPanelSurfaceClassName(surface.panel);
 
   return {
     contentClassName:
@@ -251,12 +281,20 @@ export function customCardDialogShellProps(
             'fixed top-1/2 left-1/2 z-50',
             `w-[90vw] ${maxWidthClass}`,
             '-translate-x-1/2 -translate-y-1/2',
-            'overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl',
+            overflow ? 'overflow-hidden' : '',
+            'rounded-3xl border shadow-2xl backdrop-blur-xl',
+            height === 'tall' ? 'h-[85vh]' : height === 'capped' ? 'max-h-[85vh]' : '',
             padding ? 'p-6' : '',
+            animate ? 'animate-in fade-in zoom-in duration-200' : '',
+            panelClassName,
+            surface.border,
           ]
             .filter(Boolean)
             .join(' '),
-    contentStyle: resolvedDecoration?.panelStyle,
+    contentStyle: {
+      ...centeredContentStyle,
+      ...resolvedDecoration?.panelStyle,
+    },
     contentGlowClassName: resolvedDecoration?.glowClassName,
     contentGlowStyle: resolvedDecoration?.glowStyle,
     contentOverlayClassName: resolvedDecoration?.overlayClassName,

@@ -94,7 +94,7 @@ export const CalendarCard = memo(function CalendarCard({
           />
         ) : null}
 
-        <div className={`relative flex h-full flex-col ${isSmall ? 'p-3' : 'p-4'}`}>
+        <div className="relative flex h-full flex-col p-3">
           {canOpenSettings ? (
             <div className="absolute bottom-3 right-3 z-10">
               <EntityCardHeaderIcon

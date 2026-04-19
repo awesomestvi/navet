@@ -48,7 +48,7 @@ export const SensorCard = memo(function SensorCard({
 
   // Size-specific styling
   const isSmall = isCompactCardSize(size);
-  const padding = isSmall ? 'p-4' : 'p-5';
+  const padding = 'p-3';
 
   const IconComponent =
     icon === 'trend-up' ? TrendingUp : icon === 'trend-down' ? TrendingDown : Gauge;

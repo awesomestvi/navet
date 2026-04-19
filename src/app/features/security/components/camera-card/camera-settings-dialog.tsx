@@ -179,7 +179,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       contentClassName="fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200"
     >
       <CustomScrollbar isOn>
-        <div className="p-8">
+        <div className="p-6">
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           {hasControls ? (

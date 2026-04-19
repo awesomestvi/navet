@@ -73,6 +73,7 @@ export function CalendarSettingsDialog({
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const activeAccentColor = resolvedTintColor ?? accentColor;
   const dialogShell = customCardDialogShellProps(surface, tintSurface, {
+    padding: false,
     fallbackDecoration: {
       glowClassName: `bg-linear-to-br ${colors.calendar.glow} to-transparent`,
       overlayClassName:
@@ -96,7 +97,7 @@ export function CalendarSettingsDialog({
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <CustomScrollbar isOn={isOn}>
-        <div className="p-8">
+        <div className="p-6">
           <CardDialogHeader title={title} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>

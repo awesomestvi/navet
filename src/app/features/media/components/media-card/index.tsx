@@ -136,13 +136,7 @@ export const MediaCard = memo(function MediaCard({
   const isLarge = mediaSize === 'large';
   const isTv = deviceClass?.toLowerCase() === 'tv';
   const tvRemoteAvailable = simulateTvRemote === true ? true : remoteAvailable;
-  const padding = isSmall
-    ? 'p-4'
-    : isLarge
-      ? 'p-6'
-      : isTv && (isMedium || isMediumVertical)
-        ? 'p-4'
-        : 'p-5';
+  const padding = 'p-3';
   const isLight = theme === 'light';
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);

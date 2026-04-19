@@ -56,7 +56,12 @@ export function EntityCardHeader({
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const isStandardCompact = size === 'small' || size === 'medium' || size === 'medium-vertical';
-  const titleSize = isTiny || isExtraSmall || isStandardCompact ? 'text-xs' : 'text-sm';
+  const titleSize =
+    size === 'tiny' || size === 'extra-small' || size === 'large' || size === 'extra-large'
+      ? 'text-xs'
+      : isStandardCompact
+        ? 'text-xs'
+        : 'text-sm';
   const marginBottom =
     marginBottomClassName ??
     (isTiny || isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
@@ -65,8 +70,8 @@ export function EntityCardHeader({
     : isExtraSmall
       ? 'gap-2'
       : isStandardCompact
-        ? 'gap-3'
-        : 'gap-3';
+        ? 'gap-2'
+        : 'gap-2';
   const subtitleClassBase =
     layout === 'eyebrow-first' ? 'truncate text-[10px] tracking-normal' : 'truncate text-[10px]';
   const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';

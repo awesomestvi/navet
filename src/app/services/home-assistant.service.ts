@@ -587,6 +587,10 @@ class HomeAssistantService {
     );
   }
 
+  async setClimateTemperature(entityId: string, temperature: number): Promise<void> {
+    await this.callService('climate', 'set_temperature', { temperature }, { entity_id: entityId });
+  }
+
   async updateMediaPlayerPlayback(
     entityId: string,
     action: 'toggle' | 'play' | 'pause' | 'previous' | 'next'

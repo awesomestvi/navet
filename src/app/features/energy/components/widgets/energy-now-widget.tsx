@@ -8,16 +8,20 @@ import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface EnergyNowWidgetProps {
   currentLoadW: number;
+  todayUsageKWh: number;
   gridImportW: number;
   trend: EnergySeriesPoint[];
   accentColor: string;
+  forceTwoColumn?: boolean;
 }
 
 export const EnergyNowWidget = memo(function EnergyNowWidget({
   currentLoadW,
+  todayUsageKWh,
   gridImportW,
   trend,
   accentColor,
+  forceTwoColumn: _forceTwoColumn = false,
 }: EnergyNowWidgetProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -34,35 +38,36 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
       eyebrow={t('energy.widgets.now.eyebrow')}
       action={<Bolt className={`h-4 w-4 ${surface.textMuted}`} />}
     >
-      <div className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-        <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
-          <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-            {t('energy.widgets.now.currentPower')}
+      <div className="space-y-3">
+        <div
+          className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}
+          style={{
+            background: `linear-gradient(180deg, ${accentColor}16 0%, transparent 38%), linear-gradient(180deg, transparent 0%, ${accentColor}08 100%)`,
+          }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
+                {t('energy.widgets.now.currentPower')}
+              </div>
+              <div className={`mt-2 text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
+                {Math.round(currentLoadW)} W
+              </div>
+            </div>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${surface.border} ${surface.textSecondary}`}
+            >
+              {t('energy.widgets.now.liveBadge')}
+            </span>
           </div>
-          <div className={`mt-3 text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
-            {Math.round(currentLoadW)} W
-          </div>
-          <div className={`mt-3 text-sm ${surface.textSecondary}`}>
+
+          <div className={`mt-2 text-sm ${surface.textSecondary}`}>
             {gridImportW > 0
               ? t('energy.widgets.now.gridImportActive', { value: Math.round(gridImportW) })
               : t('energy.widgets.now.gridImportInactive')}
           </div>
-        </div>
 
-        <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-                {t('energy.widgets.now.sparklineTitle')}
-              </div>
-              <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-                {t('energy.widgets.now.sparklineDescription')}
-              </div>
-            </div>
-            <div className={`text-xs ${surface.textMuted}`}>W</div>
-          </div>
-
-          <div className="mt-4">
+          <div className="mt-5">
             <EnergySparkline
               data={trend.map((point) => ({
                 value: point.value,
@@ -72,18 +77,68 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
                 maxValue: point.maxValue,
               }))}
               accentColor={accentColor}
-              height={54}
+              height={118}
             />
           </div>
 
           <div
-            className={`mt-3 flex items-center justify-between gap-3 text-[11px] ${surface.textMuted}`}
+            className={`mt-4 flex items-center justify-between gap-3 overflow-hidden text-[11px] ${surface.textMuted}`}
           >
             {trendTicks.map((point, index) => (
-              <div key={`${point.label || 'tick'}-${index}`} className="min-w-0 whitespace-nowrap">
+              <div
+                key={`${point.label || 'tick'}-${index}`}
+                className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
+              >
                 {point.label}
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
+            <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
+              {t('energy.stats.gridImport')}
+            </div>
+            <div className={`mt-2 text-2xl font-semibold tracking-tight ${surface.textPrimary}`}>
+              {Math.round(gridImportW)} W
+            </div>
+            <div className={`mt-2 text-sm ${surface.textSecondary}`}>
+              {gridImportW > 0
+                ? t('energy.widgets.now.gridImportActive', { value: Math.round(gridImportW) })
+                : t('energy.widgets.now.gridImportInactive')}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}
+            style={{
+              background: `linear-gradient(180deg, ${accentColor}12, transparent 48%)`,
+            }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
+                  {t('energy.widgets.common.today')}
+                </div>
+                <div className={`mt-2 text-base font-semibold ${surface.textPrimary}`}>
+                  {t('energy.widgets.now.totalUsage')}
+                </div>
+              </div>
+              <div
+                className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
+              >
+                kWh
+              </div>
+            </div>
+
+            <div className={`mt-5 text-2xl font-semibold tracking-tight ${surface.textPrimary}`}>
+              {todayUsageKWh.toFixed(1)} kWh
+            </div>
+            <div className={`mt-2 text-sm ${surface.textSecondary}`}>
+              {t('energy.widgets.now.totalUsageDescription')}
+            </div>
           </div>
         </div>
       </div>

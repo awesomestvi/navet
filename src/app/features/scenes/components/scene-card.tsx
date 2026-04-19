@@ -120,7 +120,7 @@ export const SceneCard = memo(function SceneCard({
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-3xl border p-4 ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`}
+      className={`relative h-full overflow-hidden rounded-3xl border p-3 ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`}
     >
       <div
         className="absolute inset-0"

@@ -1,27 +1,285 @@
-import { Battery, BatteryLow } from 'lucide-react';
-import { memo } from 'react';
+import { Battery, BatteryLow, Check, Palette, Sliders } from 'lucide-react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import {
+  CardDialogChoicePill,
+  CardDialogDoneFooter,
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
+import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
+import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  CompactRoomSelector,
+  CustomCardTintPicker,
+  CustomScrollbar,
+} from '@/app/components/shared/device-editor';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
+import { useDevices, useHomeAssistant, useI18n, useRooms, useTheme } from '@/app/hooks';
+import type { HaBatterySensorRow } from '@/app/hooks/ha-battery-sensor-rows';
 import {
   haBatterySensorRowsEqual,
   selectBatterySensorRowsFromHa,
 } from '@/app/hooks/ha-battery-sensor-rows';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
+export interface BatteryOverviewWidgetData {
+  selectedEntityIds?: string[];
+  tintColor?: string;
+}
+
 interface BatteryOverviewWidgetProps {
   size?: CardSize;
+  data?: BatteryOverviewWidgetData;
+  onUpdate?: (data: BatteryOverviewWidgetData) => void;
+  isEditMode?: boolean;
+  room?: string;
+  onRoomChange?: (room: string) => void;
+}
+
+function getSelectedEntityIds(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  return value.filter((item): item is string => typeof item === 'string');
+}
+
+interface BatterySettingsDialogProps {
+  batteries: HaBatterySensorRow[];
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedEntityIds?: string[];
+  onSelectionChange?: (selectedEntityIds: string[]) => void;
+  roomValue: string;
+  roomLabel: string;
+  roomOptions: Array<{ label: string; value: string }>;
+  onRoomChange?: (room: string) => void;
+  tintColor?: string;
+  onTintColorChange?: (color: string) => void;
+}
+
+export function BatterySettingsDialog({
+  batteries,
+  isOpen,
+  onOpenChange,
+  selectedEntityIds,
+  onSelectionChange,
+  roomValue,
+  roomLabel,
+  roomOptions,
+  onRoomChange,
+  tintColor,
+  onTintColorChange,
+}: BatterySettingsDialogProps) {
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const dialogShell = customCardDialogShellProps(
+    { panel: surface.panelClassName, border: surface.borderClassName },
+    tintSurface,
+    {
+      maxWidth: 'sm',
+      padding: false,
+      height: 'capped',
+    }
+  );
+  const effectiveSelectedIds = useMemo(
+    () => selectedEntityIds ?? batteries.map((battery) => battery.id),
+    [batteries, selectedEntityIds]
+  );
+  const selectedIdSet = useMemo(() => new Set(effectiveSelectedIds), [effectiveSelectedIds]);
+  const [activeTab, setActiveTab] = useState<'controls' | 'card'>('controls');
+
+  const updateSelection = (nextSelectedIds: string[]) => {
+    onSelectionChange?.(nextSelectedIds);
+  };
+
+  const handleToggle = (batteryId: string) => {
+    if (!onSelectionChange) {
+      return;
+    }
+
+    const nextSelectedIds = selectedIdSet.has(batteryId)
+      ? effectiveSelectedIds.filter((id) => id !== batteryId)
+      : [...effectiveSelectedIds, batteryId];
+
+    updateSelection(nextSelectedIds);
+  };
+
+  return (
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      disableOpenAutoFocus
+      overlayClassName={surface.dialogBackdrop}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowClassName={dialogShell.contentGlowClassName}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
+    >
+      <CustomScrollbar isOn={theme !== 'light'}>
+        <div className="p-6">
+          <CardDialogHeader
+            title={t('widgets.battery.settings.title')}
+            showRoomSelector={false}
+            eyebrow={
+              <CompactRoomSelector
+                value={roomValue}
+                label={roomLabel}
+                options={roomOptions}
+                onChange={onRoomChange}
+              />
+            }
+          />
+
+          <Tabs
+            value={activeTab}
+            defaultValue="controls"
+            onValueChange={(value) => setActiveTab(value as 'controls' | 'card')}
+          >
+            <CardDialogTabList>
+              <CardDialogTabTrigger
+                active={activeTab === 'controls'}
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                Controls
+              </CardDialogTabTrigger>
+              {onTintColorChange ? (
+                <CardDialogTabTrigger
+                  active={activeTab === 'card'}
+                  icon={Palette}
+                  onClick={() => setActiveTab('card')}
+                >
+                  Customize
+                </CardDialogTabTrigger>
+              ) : null}
+            </CardDialogTabList>
+
+            <TabPanel value="controls" className="mt-5">
+              <CardDialogSection
+                label={t('widgets.battery.settings.sensors')}
+                helperText={t('widgets.battery.settings.help')}
+              >
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <CardDialogChoicePill
+                      onClick={() => updateSelection(batteries.map((battery) => battery.id))}
+                      className={`min-h-8 px-3 text-[11px] ${surface.textSecondary}`}
+                    >
+                      {t('widgets.battery.settings.selectAll')}
+                    </CardDialogChoicePill>
+                    <CardDialogChoicePill
+                      onClick={() => updateSelection([])}
+                      className={`min-h-8 px-3 text-[11px] ${surface.textSecondary}`}
+                    >
+                      {t('widgets.battery.settings.clearAll')}
+                    </CardDialogChoicePill>
+                  </div>
+
+                  {batteries.length === 0 ? (
+                    <p
+                      className={`rounded-2xl border px-4 py-4 text-sm ${surface.borderClassName} ${surface.textMuted}`}
+                    >
+                      {t('widgets.battery.settings.noneAvailable')}
+                    </p>
+                  ) : (
+                    <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+                      {batteries.map((battery) => {
+                        const isChecked = selectedIdSet.has(battery.id);
+                        return (
+                          <CardDialogChoicePill
+                            key={battery.id}
+                            onClick={() => handleToggle(battery.id)}
+                            active={isChecked}
+                            className={`flex h-auto w-full items-center justify-start gap-3 rounded-2xl border px-3 py-3 text-left ${surface.borderClassName} ${surface.textPrimary}`}
+                            style={{ background: surface.subtleFill }}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border transition-colors ${
+                                isChecked
+                                  ? 'border-transparent bg-emerald-500 text-white'
+                                  : surface.borderClassName
+                              }`}
+                            >
+                              {isChecked ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">{battery.name}</div>
+                              <div className={`mt-0.5 text-xs ${surface.textMuted}`}>
+                                {battery.id}
+                              </div>
+                            </div>
+                            <div className="shrink-0 text-sm font-semibold tabular-nums">
+                              {battery.level}%
+                            </div>
+                          </CardDialogChoicePill>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CardDialogSection>
+            </TabPanel>
+
+            {onTintColorChange ? (
+              <TabPanel value="card" className="mt-5">
+                <CustomCardTintPicker
+                  value={tintColor}
+                  onChange={onTintColorChange}
+                  defaultColor="#f97316"
+                  className={surface.textMuted}
+                />
+              </TabPanel>
+            ) : null}
+          </Tabs>
+
+          <CardDialogDoneFooter label={t('common.done')} />
+        </div>
+      </CustomScrollbar>
+    </DialogShell>
+  );
 }
 
 export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   size = 'large',
+  data,
+  onUpdate,
+  isEditMode = false,
+  room,
+  onRoomChange,
 }: BatteryOverviewWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const surface = getDashboardWidgetSurfaceTokens(theme);
+  const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
+  const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
+  const devices = useDevices();
+  const rooms = useRooms(devices);
   const batteries = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
+  const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
+  const selectedIdSet = useMemo(() => new Set(selectedEntityIds ?? []), [selectedEntityIds]);
+  const filteredBatteries =
+    selectedEntityIds === undefined
+      ? batteries
+      : batteries.filter((battery) => selectedIdSet.has(battery.id));
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const chromeSize = size === 'large' ? 'medium' : size;
+  const roomValue = room === 'All' || !room ? HOME_WIDGET_ROOM : room;
+  const roomLabel = roomValue === HOME_WIDGET_ROOM ? t('dashboard.roomNav.all') : roomValue;
+  const roomOptions = [
+    { label: t('dashboard.roomNav.all'), value: HOME_WIDGET_ROOM },
+    ...rooms.map((entry) => ({ label: entry, value: entry })),
+  ];
 
   const isCompact = isCompactCardSize(size);
   const accentHex = getThemeColorValue(primaryColor);
@@ -32,24 +290,54 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
     return accentHex;
   };
 
+  useEffect(() => {
+    if (!isEditMode) {
+      setIsSettingsOpen(false);
+    }
+  }, [isEditMode]);
+
+  const handleSelectionChange = (nextSelectedEntityIds: string[]) => {
+    onUpdate?.({ selectedEntityIds: nextSelectedEntityIds });
+  };
+
+  const emptyStateLabel =
+    batteries.length === 0
+      ? t('widgets.battery.noBatteries')
+      : selectedEntityIds !== undefined
+        ? t('widgets.battery.noSelectedBatteries')
+        : t('widgets.battery.noBatteries');
+
   return (
-    <div className={`${surface.panelClassName} flex h-full flex-col`}>
+    <div className={`${surface.panelClassName} relative flex h-full min-w-0 flex-col`}>
+      {onUpdate ? (
+        <CardSettingsActionButton
+          theme={theme}
+          size={chromeSize === 'small' ? 'small' : 'medium'}
+          variant="soft"
+          className="absolute right-3 top-3 z-[3]"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsSettingsOpen(true);
+          }}
+          aria-label={t('widgets.battery.settings.title')}
+        />
+      ) : null}
       <EntityCardHeader
         title={t('widgets.battery.title')}
         subtitle="Custom"
         layout="eyebrow-first"
-        size={size}
-        leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={size} />}
+        size={chromeSize}
+        leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />}
       />
-      {batteries.length === 0 ? (
+      {filteredBatteries.length === 0 ? (
         <div className={`flex flex-1 items-center justify-center text-sm ${surface.textMuted}`}>
-          {t('widgets.battery.noBatteries')}
+          {emptyStateLabel}
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <ul className="mt-auto space-y-1.5">
-            {batteries.map((device) => (
-              <li key={device.id} className="flex items-center gap-2">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+          <ul className="mt-auto min-w-0 space-y-1.5">
+            {filteredBatteries.map((device) => (
+              <li key={device.id} className="flex min-w-0 items-center gap-2">
                 {device.level <= 20 ? (
                   <BatteryLow className="h-3.5 w-3.5 shrink-0 text-red-400" />
                 ) : (
@@ -58,7 +346,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
                     style={{ color: getLevelColor(device.level) }}
                   />
                 )}
-                <span className={`flex-1 truncate text-xs ${surface.textSecondary}`}>
+                <span className={`min-w-0 flex-1 truncate text-xs ${surface.textSecondary}`}>
                   {device.name}
                 </span>
                 {!isCompact && (
@@ -76,7 +364,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
                   </div>
                 )}
                 <span
-                  className="w-8 shrink-0 text-right text-xs font-medium tabular-nums"
+                  className="w-10 shrink-0 text-right text-xs font-medium tabular-nums"
                   style={{ color: getLevelColor(device.level) }}
                 >
                   {device.level}%
@@ -86,6 +374,21 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
           </ul>
         </div>
       )}
+      <BatterySettingsDialog
+        batteries={batteries}
+        isOpen={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        selectedEntityIds={selectedEntityIds}
+        onSelectionChange={handleSelectionChange}
+        roomValue={roomValue}
+        roomLabel={roomLabel}
+        roomOptions={roomOptions}
+        onRoomChange={onRoomChange}
+        tintColor={tintColor}
+        onTintColorChange={(nextTintColor) =>
+          onUpdate?.({ ...(data ?? {}), tintColor: nextTintColor })
+        }
+      />
     </div>
   );
 });

@@ -4,6 +4,8 @@ import type { RSSCardData } from '@/app/features/rss';
 import { RSSFeedCard } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
+import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
+import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
 import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
 
 class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -41,6 +43,11 @@ const PhotoFrameWidget = lazy(async () => {
 const BatteryOverviewWidget = lazy(async () => {
   const module = await import('./widgets/battery-overview-widget');
   return { default: module.BatteryOverviewWidget };
+});
+
+const EnergyNowDashboardWidget = lazy(async () => {
+  const module = await import('./widgets/energy-now-dashboard-widget');
+  return { default: module.EnergyNowDashboardWidget };
 });
 
 const ButtonWidget = lazy(async () => {
@@ -94,6 +101,8 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
       widgetContent = (
         <PhotoFrameWidget
           size={card.size}
+          room={card.room}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           sourceMode={card.data?.sourceMode as PhotoFrameSourceMode | undefined}
           photoUrls={card.data?.photoUrls as string[] | undefined}
           mediaSourceId={card.data?.mediaSourceId as string | undefined}
@@ -131,7 +140,28 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
       );
       break;
     case 'battery':
-      widgetContent = <BatteryOverviewWidget size={card.size} />;
+      widgetContent = (
+        <BatteryOverviewWidget
+          size={card.size}
+          room={card.room}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          data={card.data as BatteryOverviewWidgetData | undefined}
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+        />
+      );
+      break;
+    case 'energy-now':
+      widgetContent = (
+        <EnergyNowDashboardWidget
+          size={card.size}
+          room={card.room}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          data={card.data as EnergyNowWidgetData | undefined}
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+        />
+      );
       break;
     case 'button':
       widgetContent = (

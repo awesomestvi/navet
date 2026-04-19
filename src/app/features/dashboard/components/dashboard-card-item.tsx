@@ -155,6 +155,9 @@ function getAllowedSizes(
     if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
       return ['small', 'medium', 'large', 'extra-large'];
     }
+    if (card.type === 'energy-now') {
+      return ['small', 'medium', 'large'];
+    }
     if (card.type === 'map') {
       return ['small', 'medium', 'large'];
     }

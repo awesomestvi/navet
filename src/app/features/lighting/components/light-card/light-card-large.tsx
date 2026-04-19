@@ -194,12 +194,12 @@ export const LightCardLarge = memo(function LightCardLarge({
           <div className="mt-auto pt-4">
             <CardActionRow
               theme={theme}
-              size="large"
+              size="medium"
               rightContent={
                 <CardSettingsActionButton
                   {...settingsButtonProps}
                   theme={theme}
-                  size="large"
+                  size="medium"
                   tone={isOn ? 'default' : 'muted'}
                   variant="soft"
                 />

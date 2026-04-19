@@ -4,7 +4,41 @@ import { useI18n } from '@/app/hooks';
 import type { RSSItem, RSSProvider } from './types';
 
 const RSS_PROXY_PATH = '__navet_rss_proxy__';
-const rssFeedItemsCache = new Map<string, { items: RSSItem[]; error: string | null }>();
+const RSS_SUCCESS_CACHE_TTL_MS = 120_000;
+const RSS_ERROR_CACHE_TTL_MS = 15_000;
+
+type RSSFeedItemsCacheEntry = {
+  items: RSSItem[];
+  error: string | null;
+  createdAt: number;
+};
+
+const rssFeedItemsCache = new Map<string, RSSFeedItemsCacheEntry>();
+
+function getProviderCacheKey(provider: RSSProvider) {
+  return [
+    provider.id,
+    provider.name,
+    provider.type,
+    provider.feedUrl ?? '',
+    provider.entityId ?? '',
+  ].join('::');
+}
+
+function getCachedEntry(cacheKey: string): RSSFeedItemsCacheEntry | null {
+  const cachedEntry = rssFeedItemsCache.get(cacheKey);
+  if (!cachedEntry) {
+    return null;
+  }
+
+  const maxAge = cachedEntry.error ? RSS_ERROR_CACHE_TTL_MS : RSS_SUCCESS_CACHE_TTL_MS;
+  if (Date.now() - cachedEntry.createdAt > maxAge) {
+    rssFeedItemsCache.delete(cacheKey);
+    return null;
+  }
+
+  return cachedEntry;
+}
 
 function getRSSProxyRequestUrl(feedUrl: string) {
   const baseUrl =
@@ -189,7 +223,9 @@ async function fetchUrlProviderItems(
     return [];
   }
 
-  const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl));
+  const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl), {
+    cache: 'no-store',
+  });
 
   if (!response.ok) {
     throw new Error(`unable-to-load:${provider.name}`);
@@ -263,14 +299,21 @@ export function useRSSFeedItems(
   refreshNonce = 0
 ) {
   const { formatRelativeTime, t } = useI18n();
-  const cacheKey = `${providers.map((provider) => provider.id).join('|')}::${limit}`;
-  const cachedEntry = rssFeedItemsCache.get(cacheKey);
+  const cacheKey = `${providers.map(getProviderCacheKey).join('|')}::${limit}`;
+  const cachedEntry = getCachedEntry(cacheKey);
   const [items, setItems] = useState<RSSItem[]>(() => cachedEntry?.items ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(() => cachedEntry?.error ?? null);
 
   useEffect(() => {
+    const nextCachedEntry = getCachedEntry(cacheKey);
+    setItems(nextCachedEntry?.items ?? []);
+    setError(nextCachedEntry?.error ?? null);
+  }, [cacheKey]);
+
+  useEffect(() => {
     if (providers.length === 0) {
+      rssFeedItemsCache.delete(cacheKey);
       setItems([]);
       setIsLoading(false);
       setError(null);
@@ -319,6 +362,7 @@ export function useRSSFeedItems(
         rssFeedItemsCache.set(cacheKey, {
           items: nextItems,
           error: nextError,
+          createdAt: Date.now(),
         });
         setItems(nextItems);
         setError(nextError);

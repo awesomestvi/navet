@@ -599,6 +599,7 @@ export const frMessages = {
   'climate.settings.room': 'Piece',
   'climate.coolingDownTo': 'Refroidit jusqu’à {temp}°C',
   'climate.heatingTo': 'Chauffe jusqu’à {temp}°C',
+  'climate.feedback.updateTemperatureFailed': 'Impossible de mettre à jour la temperature',
   'climate.decreaseTemperature': 'Baisser la temperature',
   'climate.increaseTemperature': 'Augmenter la temperature',
   'climate.gaugeLabel': 'Jauge de temperature {mode} affichant {temp} degres',
@@ -910,7 +911,25 @@ export const frMessages = {
   'widgets.photoFrame.shuffle': 'Aleatoire',
   'widgets.battery.title': 'Aperçu des batteries',
   'widgets.battery.noBatteries': 'Aucun capteur de batterie trouvé',
+  'widgets.battery.noSelectedBatteries': 'Aucune batterie sélectionnée',
   'widgets.battery.low': 'Faible',
+  'widgets.battery.settings.title': 'Paramètres de batterie',
+  'widgets.battery.settings.sensors': 'Batteries visibles',
+  'widgets.battery.settings.help':
+    'Choisissez quels capteurs de batterie afficher sur cette carte.',
+  'widgets.battery.settings.selectAll': 'Tout sélectionner',
+  'widgets.battery.settings.clearAll': 'Tout effacer',
+  'widgets.battery.settings.noneAvailable': 'Aucun capteur de batterie disponible pour le moment.',
+  'widgets.energyNow.settings.title': 'Carte energie',
+  'widgets.energyNow.settings.sources': 'Entites energie',
+  'widgets.energyNow.settings.help':
+    'Choisissez quelle entite energie configuree cette carte doit afficher.',
+  'widgets.energyNow.settings.noneAvailable':
+    "Aucune entite energie avec puissance en direct n'est disponible pour le moment.",
+  'widgets.energyNow.settings.home': "Energie d'aujourd'hui",
+  'widgets.energyNow.settings.group.home': 'Maison',
+  'widgets.energyNow.settings.group.sources': 'Sources',
+  'widgets.energyNow.settings.group.devices': 'Appareils',
   'widgets.button.title': "Bouton d'action",
   'widgets.button.labelPlaceholder': 'Libellé du bouton',
   'widgets.button.servicePlaceholder': 'ex. scene.turn_on',
@@ -925,6 +944,9 @@ export const frMessages = {
   'dashboard.addCard.templates.battery.name': 'Aperçu des batteries',
   'dashboard.addCard.templates.battery.description':
     'Tous les capteurs de batterie triés par niveau de charge, les plus bas en premier.',
+  'dashboard.addCard.templates.energyNow.name': 'Energie maintenant',
+  'dashboard.addCard.templates.energyNow.description':
+    'Courbe plein cadre en direct avec la puissance actuelle en point focal.',
   'dashboard.addCard.templates.button.name': "Bouton d'action",
   'dashboard.addCard.templates.button.description':
     'Appuyez pour déclencher un service, une scène ou un script Home Assistant.',
@@ -1062,9 +1084,13 @@ export const frMessages = {
   'energy.widgets.now.currentPower': 'Puissance actuelle',
   'energy.widgets.now.gridImportActive': '{value} W proviennent actuellement du reseau',
   'energy.widgets.now.gridImportInactive': 'Aucune importation reseau active actuellement',
+  'energy.widgets.now.liveBadge': 'Live',
   'energy.widgets.now.sparklineTitle': 'Sparkline 5 minutes',
   'energy.widgets.now.sparklineDescription':
     '24 dernieres heures, moyenne Home Assistant sur 5 minutes',
+  'energy.widgets.now.totalUsage': 'Usage total aujourd hui',
+  'energy.widgets.now.totalUsageDescription':
+    'Derive de l historique de charge de la maison depuis minuit',
   'energy.widgets.gridAllocation.title': 'Energie reseau vers appareils',
   'energy.widgets.gridAllocation.eyebrow': 'Repartition estimee',
   'energy.widgets.gridAllocation.basisTitle': 'Base de repartition',

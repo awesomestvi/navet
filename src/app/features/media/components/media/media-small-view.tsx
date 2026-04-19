@@ -197,7 +197,7 @@ export function MediaSmallView({
   return (
     <div
       ref={containerRef}
-      className="relative -m-4 flex h-[calc(100%+2rem)] flex-col overflow-hidden rounded-[inherit]"
+      className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]"
     >
       <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
       {artwork ? (
@@ -233,7 +233,7 @@ export function MediaSmallView({
       <div className="pointer-events-none absolute inset-0" style={colorTintStyle} />
       <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
 
-      <div className="relative flex h-full flex-col p-4">
+      <div className="relative flex h-full flex-col p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div

@@ -14,6 +14,7 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 - Photo Frame
 - Quick Note
 - Battery Overview
+- Energy Now
 - Button
 
 ### Core Behavior
@@ -32,6 +33,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - `photo`: `small`, `medium`, `large`, `extra-large`
 - `note`: `small`, `medium`, `large`, `extra-large`
 - `battery`: `small`, `medium`, `large`
+- `energy-now`: `small`, `medium`, `large`
 - `button`: `tiny`, `extra-small`, `small`
 
 ## Add and Manage Widgets
@@ -68,6 +70,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - Photo Frame: image URLs, shuffle mode, and tint configuration.
 - Button: action label/icon/service/entity/service-data configuration.
 - Battery Overview: read-only overview of battery entities.
+- Energy Now: full-bleed live usage chart with current power overlaid on top, plus a settings dialog for choosing configured energy sources or matching energy-usage sensors/entities.
 
 ## Architecture and File Map
 
@@ -106,7 +109,7 @@ Store responsibilities:
 ## Type Reference
 
 ```ts
-type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
+type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'energy-now' | 'button' | 'map';
 
 type CardSize =
   | 'tiny'

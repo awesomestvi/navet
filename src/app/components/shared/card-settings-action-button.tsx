@@ -38,7 +38,7 @@ export function CardSettingsActionButton({
       <Settings2
         className={
           size === 'large'
-            ? 'h-4 w-4'
+            ? 'h-3.5 w-3.5'
             : size === 'tiny'
               ? 'h-2.5 w-2.5'
               : size === 'extra-small'

@@ -50,7 +50,7 @@ export function useLightCardDisplay({
 
   const isExtraSmall = isExtraSmallCardSize(size);
   const isSmall = isExtraSmall || size === 'small';
-  const padding = isExtraSmall ? 'px-3.5 pt-3 pb-4' : size === 'large' ? 'p-5' : 'p-4';
+  const padding = 'p-3';
 
   const normalizedSelectedIcon = normalizeLightIconName(selectedIcon);
   const customIconComponent = normalizedSelectedIcon

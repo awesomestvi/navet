@@ -29,6 +29,7 @@ export function CalendarLargeView({
         hoverText={hoverText}
         hoverBg={hoverBg}
         dividerColor={dividerColor}
+        density="compact"
         onEventClick={onEventClick}
       />
     </div>

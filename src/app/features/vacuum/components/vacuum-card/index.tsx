@@ -184,7 +184,7 @@ export const VacuumCard = memo(function VacuumCard({
 
   const isSmall = isCompactCardSize(resolvedSize);
   const isMedium = resolvedSize === 'medium';
-  const padding = isSmall ? 'p-4' : 'p-5';
+  const padding = 'p-3';
 
   return (
     <div className="h-full w-full relative">

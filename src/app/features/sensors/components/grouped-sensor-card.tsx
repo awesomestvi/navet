@@ -54,7 +54,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   // Size-specific styling with intelligent layout adaptation
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const padding = isSmall ? 'p-4' : 'p-5';
+  const padding = 'p-3';
 
   const colors = theme === 'light' ? lightColorMap[accentColor] : darkColorMap[accentColor];
   const shell = getAccentCardShellTokens(theme, accentColor);

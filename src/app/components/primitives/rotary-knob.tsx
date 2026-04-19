@@ -17,6 +17,7 @@ export interface RotaryKnobProps {
   bandSecondaryColor: string;
   bandGlowColor: string;
   onValueChange?: (value: number) => void;
+  onValueCommit?: (value: number) => void;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -71,6 +72,7 @@ export const RotaryKnob = memo(function RotaryKnob({
   bandSecondaryColor,
   bandGlowColor,
   onValueChange,
+  onValueCommit,
 }: RotaryKnobProps) {
   const { theme } = useTheme();
   const knobRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +80,7 @@ export const RotaryKnob = memo(function RotaryKnob({
   const dragStartValueRef = useRef<number>(value);
   const dragLastAngleRef = useRef<number | null>(null);
   const dragAccumulatedAngleRef = useRef<number>(0);
+  const lastIssuedValueRef = useRef<number>(snapToStep(value, min, max, step || 1));
   const [isDragging, setIsDragging] = useState(false);
   const safeStep = step || 1;
   const knobTurns = (value - min) / safeStep;
@@ -92,14 +95,25 @@ export const RotaryKnob = memo(function RotaryKnob({
 
   const commitValueChange = useCallback(
     (nextValue: number) => {
+      const snappedValue = snapToStep(nextValue, min, max, safeStep);
+      lastIssuedValueRef.current = snappedValue;
+
       if (!onValueChange) {
         return;
       }
 
-      onValueChange(snapToStep(nextValue, min, max, safeStep));
+      onValueChange(snappedValue);
     },
     [max, min, onValueChange, safeStep]
   );
+
+  useEffect(() => {
+    if (isDragging) {
+      return;
+    }
+
+    lastIssuedValueRef.current = snapToStep(value, min, max, safeStep);
+  }, [isDragging, max, min, safeStep, value]);
 
   useEffect(() => {
     if (!isDragging || !onValueChange) {
@@ -164,6 +178,7 @@ export const RotaryKnob = memo(function RotaryKnob({
     dragStartValueRef.current = value;
     dragAccumulatedAngleRef.current = 0;
     dragLastAngleRef.current = getPointerAngle(knobRef.current, event.clientX, event.clientY);
+    lastIssuedValueRef.current = snapToStep(value, min, max, safeStep);
     setIsDragging(true);
   };
 
@@ -173,6 +188,7 @@ export const RotaryKnob = memo(function RotaryKnob({
     }
 
     resetDragState();
+    onValueCommit?.(lastIssuedValueRef.current);
   };
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -182,7 +198,9 @@ export const RotaryKnob = memo(function RotaryKnob({
 
     event.preventDefault();
     const direction = event.deltaY > 0 ? -1 : 1;
-    commitValueChange(value + direction * safeStep);
+    const nextValue = value + direction * safeStep;
+    commitValueChange(nextValue);
+    onValueCommit?.(snapToStep(nextValue, min, max, safeStep));
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -192,25 +210,31 @@ export const RotaryKnob = memo(function RotaryKnob({
 
     if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
       event.preventDefault();
-      commitValueChange(value + safeStep);
+      const nextValue = value + safeStep;
+      commitValueChange(nextValue);
+      onValueCommit?.(snapToStep(nextValue, min, max, safeStep));
       return;
     }
 
     if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
       event.preventDefault();
-      commitValueChange(value - safeStep);
+      const nextValue = value - safeStep;
+      commitValueChange(nextValue);
+      onValueCommit?.(snapToStep(nextValue, min, max, safeStep));
       return;
     }
 
     if (event.key === 'Home') {
       event.preventDefault();
       commitValueChange(min);
+      onValueCommit?.(snapToStep(min, min, max, safeStep));
       return;
     }
 
     if (event.key === 'End') {
       event.preventDefault();
       commitValueChange(max);
+      onValueCommit?.(snapToStep(max, min, max, safeStep));
     }
   };
 

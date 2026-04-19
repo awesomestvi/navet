@@ -13,9 +13,9 @@ import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
 type CardActionRowSize = 'small' | 'default' | 'medium' | 'large';
-type CardActionRowResolvedSize = 'small' | 'default' | 'large';
+type CardActionRowResolvedSize = 'small' | 'default';
 
-function toControlButtonSize(size: CardActionRowResolvedSize): 'small' | 'medium' | 'large' {
+function toControlButtonSize(size: CardActionRowResolvedSize): 'small' | 'medium' {
   return size === 'default' ? 'medium' : size;
 }
 
@@ -36,7 +36,7 @@ interface CardActionRowProps {
 }
 
 function resolveCardActionRowSize(size: CardActionRowSize): CardActionRowResolvedSize {
-  return size === 'medium' ? 'default' : size;
+  return size === 'small' ? 'small' : 'default';
 }
 
 function getActionButtonSize(size: CardActionRowResolvedSize) {
@@ -56,7 +56,7 @@ function getActionButtonSize(size: CardActionRowResolvedSize) {
 
   return {
     button: 'h-10 w-10',
-    icon: 'h-5 w-5',
+    icon: 'h-3.5 w-3.5',
   };
 }
 
@@ -68,8 +68,7 @@ export function CardActionRow({
   overflowItems = [],
 }: CardActionRowProps) {
   const resolvedSize = resolveCardActionRowSize(size);
-  const gapClass =
-    resolvedSize === 'small' ? 'gap-1' : resolvedSize === 'large' ? 'gap-2.5' : 'gap-2';
+  const gapClass = resolvedSize === 'small' ? 'gap-1' : 'gap-2';
 
   return (
     <div className={`flex items-center ${gapClass}`}>

@@ -71,6 +71,7 @@ export const EnergySection = memo(function EnergySection() {
     gridAllocation,
     recentLoadTrend,
     periodTotals,
+    todayTotalUsageKWh,
     batteryDevices,
   } = useEnergyDashboard();
 
@@ -199,6 +200,7 @@ export const EnergySection = memo(function EnergySection() {
         >
           <EnergyNowWidget
             currentLoadW={overview.totals.currentLoadW}
+            todayUsageKWh={todayTotalUsageKWh}
             gridImportW={overview.totals.importW}
             trend={recentLoadTrend}
             accentColor={accentColor}

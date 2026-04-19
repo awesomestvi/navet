@@ -141,7 +141,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br p-3 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         >
           {controller.isOn ? (
@@ -202,7 +202,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
     <>
       <div
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} ${controller.isExtraSmall ? 'px-3.5 pb-3.5 pt-3' : 'p-4'} ${stateSurface.containerClassName}`}
+        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} p-3 ${stateSurface.containerClassName}`}
         style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
       >
         {controller.isOn && (

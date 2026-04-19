@@ -100,9 +100,7 @@ export const WeatherCard = memo(function WeatherCard({
   return (
     <>
       <CardWrapper
-        className={`${cardShell.backdropClassName} ${weatherShellClassName} ${
-          isSmall || usesDetailedLayout ? 'p-5' : 'p-4.5'
-        } ${!isEditMode ? 'cursor-pointer' : ''}`}
+        className={`${cardShell.backdropClassName} ${weatherShellClassName} p-3 ${!isEditMode ? 'cursor-pointer' : ''}`}
         style={weatherTintStyle}
         lightOverlayClassName={
           hasCustomTint

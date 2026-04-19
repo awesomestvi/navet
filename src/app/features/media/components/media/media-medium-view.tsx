@@ -100,7 +100,7 @@ export function MediaMediumView({
   };
 
   return (
-    <div className="relative -m-5 flex flex-1 overflow-hidden">
+    <div className="relative -m-3 flex flex-1 overflow-hidden">
       <MediaArtworkSurface
         artwork={artwork}
         onArtworkError={onArtworkError}
@@ -115,7 +115,7 @@ export function MediaMediumView({
       <div className="relative z-[1] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
         <div />
 
-        <div className="flex min-w-0 flex-col pl-2 pr-5 py-5">
+        <div className="flex min-w-0 flex-col pl-2 pr-3 py-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div

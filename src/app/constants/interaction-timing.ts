@@ -1,0 +1,2 @@
+export const HA_CONTROL_DEBOUNCE_MS = 120;
+export const HA_PENDING_ECHO_WINDOW_MS = 1500;

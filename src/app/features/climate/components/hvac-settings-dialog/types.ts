@@ -21,4 +21,5 @@ export interface HVACSettingsDialogProps {
   siblingEntities?: HVACSiblingEntity[];
   onModeChange: (mode: string) => void;
   onTargetTempChange: (temp: number) => void;
+  onTargetTempCommit?: (temp: number) => void;
 }

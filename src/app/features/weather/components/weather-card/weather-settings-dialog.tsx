@@ -57,6 +57,7 @@ export function WeatherSettingsDialog({
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const activeAccentColor = resolvedTintColor ?? '#3b82f6';
   const dialogShell = customCardDialogShellProps(surface, tintSurface, {
+    padding: false,
     fallbackDecoration: {
       glowClassName: shell.glowClassName,
       overlayClassName: shell.overlayClassName,
@@ -79,7 +80,7 @@ export function WeatherSettingsDialog({
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
       <CustomScrollbar isOn={isOn}>
-        <div className="p-8">
+        <div className="p-6">
           <CardDialogHeader title={title} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>

@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { HA_CONTROL_DEBOUNCE_MS } from '@/app/constants/interaction-timing';
 import type { ThemeType } from '@/app/hooks/use-theme';
 
 export interface SlideActionProps {
@@ -134,7 +135,7 @@ export function SlideAction({
       onComplete();
       setIsCompleting(false);
       applyProgress(0);
-    }, 140);
+    }, HA_CONTROL_DEBOUNCE_MS);
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {

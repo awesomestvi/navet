@@ -161,14 +161,12 @@ export function RSSFeedCardView({
             )}
           </div>
         ) : isLoading && !latestArticle ? (
-          <div className="flex flex-1 flex-col justify-center text-left">
-            <p
-              className={`mt-2 text-sm leading-relaxed ${rssSurface.textSecondaryClassName}`}
-              style={{ color: rssSurface.textSecondaryColor }}
-            >
-              {t('rss.loading.description')}
-            </p>
-          </div>
+          <RSSFeedLoadingSkeleton
+            isSmall={isSmall}
+            isMedium={isMedium}
+            theme={theme}
+            accentColor={controlAccentColor}
+          />
         ) : (
           <>
             <div className="mb-2 flex items-start gap-2">
@@ -385,12 +383,12 @@ export function RSSFeedCardView({
                           )}
                           <div className="min-w-0 flex-1 text-left">
                             <h3
-                              className="mb-1 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
+                              className="mb-0.5 text-left text-[10px] font-semibold leading-[1.3] line-clamp-2 transition-colors"
                               style={{ color: rssSurface.textPrimaryColor }}
                             >
                               {item.title}
                             </h3>
-                            <div className="mb-1 flex items-center gap-1.5 text-[11px]">
+                            <div className="mb-0.5 flex items-center gap-1 text-[10px] leading-none">
                               <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
                               <span className={rssSurface.dotClassName}>•</span>
                               <span style={{ color: rssSurface.textSecondaryColor }}>
@@ -399,7 +397,7 @@ export function RSSFeedCardView({
                             </div>
                             {item.excerpt ? (
                               <p
-                                className={`text-left text-[11px] whitespace-normal wrap-break-word leading-[1.4] ${rssSurface.excerptClassName}`}
+                                className={`text-left text-[10px] whitespace-normal wrap-break-word leading-[1.4] ${rssSurface.excerptClassName}`}
                                 style={{ color: rssSurface.excerptColor }}
                               >
                                 {truncateExcerpt(item.excerpt)}
@@ -425,7 +423,7 @@ export function RSSFeedCardView({
                 >
                   {t('rss.lastUpdated')}
                   <span
-                    className="ml-1.5 text-[11px] font-medium"
+                    className="ml-1.5 text-[10px] font-medium"
                     style={{ color: rssSurface.textPrimaryColor }}
                   >
                     {lastUpdatedLabel}
@@ -436,6 +434,110 @@ export function RSSFeedCardView({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function RSSFeedLoadingSkeleton({
+  isSmall,
+  isMedium,
+  theme,
+  accentColor,
+}: {
+  isSmall: boolean;
+  isMedium: boolean;
+  theme: ThemeType;
+  accentColor: string;
+}) {
+  const pillStyle = {
+    backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.1 : 0.18),
+    borderColor: withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.24),
+  };
+  const blockStyle = {
+    backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.12 : 0.18),
+  };
+  const lineStyle = {
+    backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.24),
+  };
+  const dividerStyle = {
+    backgroundColor: withTintAlpha(accentColor, theme === 'light' ? 0.12 : 0.16),
+  };
+
+  return (
+    <div className="flex flex-1 flex-col animate-pulse">
+      <div className="mb-2 flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex gap-1 overflow-hidden pb-0.5">
+            <div className="h-6 w-11 shrink-0 rounded-full border" style={pillStyle} />
+            <div className="h-6 w-14 shrink-0 rounded-full border" style={pillStyle} />
+            <div className="h-6 w-12 shrink-0 rounded-full border" style={pillStyle} />
+          </div>
+        </div>
+        <div className="h-6 w-7 shrink-0 rounded-full border" style={pillStyle} />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {isSmall ? (
+          <div className="space-y-1.5 pr-1">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-lg px-1 py-1">
+                <div className="h-3 w-full rounded" style={lineStyle} />
+                <div className="mt-1 h-3 w-4/5 rounded" style={lineStyle} />
+                <div className="mt-1.5 flex items-center gap-1">
+                  <div className="h-2.5 w-12 rounded" style={blockStyle} />
+                  <div className="h-2.5 w-1 rounded-full" style={blockStyle} />
+                  <div className="h-2.5 w-10 rounded" style={blockStyle} />
+                </div>
+                {index < 3 ? <div className="mt-1.5 h-px" style={dividerStyle} /> : null}
+              </div>
+            ))}
+          </div>
+        ) : isMedium ? (
+          <div className="space-y-2 pr-1">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="rounded-lg px-1 py-1.5">
+                <div className="h-3 w-full rounded" style={lineStyle} />
+                <div className="mt-1 h-3 w-3/4 rounded" style={lineStyle} />
+                <div className="mt-1.5 flex items-center gap-1">
+                  <div className="h-2.5 w-14 rounded" style={blockStyle} />
+                  <div className="h-2.5 w-1 rounded-full" style={blockStyle} />
+                  <div className="h-2.5 w-12 rounded" style={blockStyle} />
+                </div>
+                {index < 4 ? <div className="mt-2 h-px" style={dividerStyle} /> : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2 pr-1">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-xl p-2">
+                <div className="flex gap-3">
+                  <div className="h-20 w-20 shrink-0 rounded-lg" style={blockStyle} />
+                  <div className="min-w-0 flex-1">
+                    <div className="h-3 w-full rounded" style={lineStyle} />
+                    <div className="mt-1 h-3 w-4/5 rounded" style={lineStyle} />
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <div className="h-2.5 w-14 rounded" style={blockStyle} />
+                      <div className="h-2.5 w-1 rounded-full" style={blockStyle} />
+                      <div className="h-2.5 w-12 rounded" style={blockStyle} />
+                    </div>
+                    <div className="mt-2 h-2.5 w-full rounded" style={blockStyle} />
+                    <div className="mt-1 h-2.5 w-11/12 rounded" style={blockStyle} />
+                    <div className="mt-1 h-2.5 w-2/3 rounded" style={blockStyle} />
+                  </div>
+                </div>
+                {index < 2 ? <div className="mt-2 h-px" style={dividerStyle} /> : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!isSmall && !isMedium ? (
+        <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
+          <div className="h-2.5 w-28 rounded" style={blockStyle} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -454,7 +556,7 @@ function getCompactProviderLabel(label: string) {
   return normalized.split(/\s+/)[0] ?? normalized;
 }
 
-function truncateExcerpt(value: string, maxLength = 300) {
+function truncateExcerpt(value: string, maxLength = 420) {
   if (value.length <= maxLength) {
     return value;
   }

@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { ZoneName } from '../zones/zone-types';
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button' | 'map';
+export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'energy-now' | 'button' | 'map';
 export const HOME_WIDGET_ROOM = '__home__';
 export const ENERGY_WIDGET_ROOM = '__energy__';
 
