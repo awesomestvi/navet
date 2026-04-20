@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 
@@ -19,11 +20,20 @@ export function EnergyWidgetShell({
 }: EnergyWidgetShellProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const cardShell = getCardShellSurfaceTokens(theme);
 
   return (
     <section
-      className={`rounded-[28px] border p-5 md:p-6 ${surface.border} ${surface.panel} ${surface.cardShadow} ${className}`}
+      className={`relative overflow-hidden rounded-[28px] border p-5 md:p-6 ${surface.border} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow} ${className}`}
     >
+      {cardShell.sheenOverlayClassName ? (
+        <div
+          className={`pointer-events-none absolute inset-0 ${cardShell.sheenOverlayClassName}`}
+        />
+      ) : null}
+      {surface.lightOverlay ? (
+        <div className={`pointer-events-none absolute inset-0 ${surface.lightOverlay}`} />
+      ) : null}
       <div className="flex items-start justify-between gap-4">
         <div>
           {eyebrow ? (
@@ -39,7 +49,7 @@ export function EnergyWidgetShell({
         </div>
         {action}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="relative mt-5">{children}</div>
     </section>
   );
 }

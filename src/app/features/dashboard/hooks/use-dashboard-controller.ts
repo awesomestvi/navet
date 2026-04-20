@@ -41,12 +41,18 @@ export function useDashboardController(): DashboardController {
     STORAGE_KEYS.allViewGrouping,
     'custom'
   );
+  const [roomOrder, setRoomOrder] = usePersistedState<string[]>(STORAGE_KEYS.roomOrder, []);
 
   const { hiddenEntityIds, hideAutoEntity, showAutoEntity } = useDashboardEntityVisibility();
 
   const allDevices = useDevices();
   const devices = useDashboardDevices(allDevices, hiddenEntityIds);
-  const rooms = useRooms(devices);
+  const discoveredRooms = useRooms(devices);
+  const rooms = useMemo(() => {
+    const preserved = roomOrder.filter((room) => discoveredRooms.includes(room));
+    const additions = discoveredRooms.filter((room) => !preserved.includes(room));
+    return [...preserved, ...additions];
+  }, [discoveredRooms, roomOrder]);
   const { isEditMode, toggleEditMode } = useEditMode();
 
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
@@ -191,6 +197,7 @@ export function useDashboardController(): DashboardController {
     lightRooms,
     onSetAllViewGrouping: setAllViewGrouping,
     onToggleEditMode: () => startTransition(toggleEditMode),
+    onSetRoomOrder: setRoomOrder,
     orderedCardIds,
     rooms,
     setActiveSection,

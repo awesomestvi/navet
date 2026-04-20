@@ -21,7 +21,7 @@ function FramedEntityCardHeader(args: {
         : 'border-white/12 bg-white/6';
 
   return (
-    <div className={`w-80 rounded-2xl border p-4 backdrop-blur-xl ${frameClassName}`}>
+    <div className={`w-80 rounded-3xl border p-4 backdrop-blur-xl ${frameClassName}`}>
       <EntityCardHeader
         title={args.title}
         subtitle={args.subtitle}

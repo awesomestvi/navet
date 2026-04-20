@@ -365,7 +365,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                   iconOnly
                   label={primaryActionLabel}
                   variant="secondary"
-                  size="medium"
+                  size="default"
                   onClick={
                     currentStatus === 'cleaning'
                       ? (onPauseCleaning ?? onStartCleaning)
@@ -553,7 +553,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Button
                     variant="primary"
-                    size="medium"
+                    size="default"
                     leading={
                       currentStatus === 'cleaning' ? (
                         <Pause className="h-4 w-4" />
@@ -573,7 +573,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
 
                   <Button
                     variant="secondary"
-                    size="medium"
+                    size="default"
                     leading={<Home className="h-4 w-4" />}
                     onClick={onReturnHome}
                     className={cn(

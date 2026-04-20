@@ -17,8 +17,8 @@ export function getEditControlLayout(size: CardSize) {
   if (size === 'extra-small') {
     return {
       isCompact: true,
-      topLeftPosition: 'top-3 left-3.5',
-      topRightPosition: 'top-3 right-3.5',
+      topLeftPosition: 'top-3 left-3',
+      topRightPosition: 'top-3 right-3',
       buttonSize: 'h-7 w-7',
       iconSize: 'w-3.5 h-3.5',
     };
@@ -26,8 +26,8 @@ export function getEditControlLayout(size: CardSize) {
 
   return {
     isCompact: true,
-    topLeftPosition: 'top-4 left-4',
-    topRightPosition: 'top-4 right-4',
+    topLeftPosition: 'top-3 left-3',
+    topRightPosition: 'top-3 right-3',
     buttonSize: 'h-8 w-8',
     iconSize: 'w-4 h-4',
   };

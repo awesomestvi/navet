@@ -1,502 +1,249 @@
-# Navet - UI Guidelines
+# Navet UI Guidelines
 
-## Design Philosophy
+This document describes the visual and interaction rules for Navet's shared UI.
 
-Our dashboard follows **Apple's iOS widget design principles** with a focus on:
-- **Clarity**: Clean, legible interface with purposeful use of space
-- **Deference**: Content-first design where UI elements don't compete with information
-- **Depth**: Frosted glass morphism creates visual hierarchy and layering
-- **Consistency**: Unified patterns across all card types and interactions
+Use it together with:
 
-These guidelines are now partially codified in `src/app/components/system/tokens/foundations.ts`.
-When shared primitives need spacing, sizing, typography, radius, icon-size, or focus decisions,
-prefer the foundation tokens before introducing one-off Tailwind values.
+- [README.md](README.md)
+- [FEATURES.md](FEATURES.md)
+- [STORYBOOK_FOUNDATION.md](STORYBOOK_FOUNDATION.md)
 
----
+## Design Goals
 
-## Color System
+Navet's UI should feel:
 
-### Background & Base Colors
-```css
-Primary Background: #0f0f0f (Deep black)
-Surface Layer: rgba(255, 255, 255, 0.05) (Frosted glass base)
-```
+- clear enough for glanceable wall-dashboard use
+- dense enough to fit real smart-home information
+- expressive without relying on expensive visual effects everywhere
+- consistent across dashboard cards, settings dialogs, and section views
 
-### Entity-Specific Color Palette
+## Foundations
 
-#### Lights
-- **Active State**: `bg-gradient-to-br from-orange-400 to-amber-500`
-- **Icon Background**: `bg-orange-500/20` (Active) / `bg-gray-500/20` (Inactive)
-- **Text**: `text-orange-400` (Active) / `text-gray-500` (Inactive)
-- **Dynamic Color Matching**: Cards adapt to actual light color when available
+Shared first-layer foundations live in
+[`src/app/components/system/tokens/foundations.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/tokens/foundations.ts).
 
-#### Climate/HVAC
-- **Heating**: `from-orange-500 to-red-500`
-- **Cooling**: `from-blue-400 to-cyan-500`
-- **Auto**: `from-green-400 to-emerald-500`
-- **Off**: `from-gray-600 to-gray-700`
-- **Icon Background**: `bg-blue-500/20`
+Prefer these shared values for:
 
-#### Media/Music
-- **Primary Accent**: `bg-pink-500` / `text-pink-400`
-- **Icon Background**: `bg-pink-500/20`
-- **Shadow**: `shadow-pink-500/50`
+- spacing
+- typography roles
+- border radii
+- icon sizing
+- stroke widths
+- focus treatment
 
-#### Locks
-- **Locked State**: `bg-red-500/20` / `text-red-400`
-- **Unlocked State**: `bg-green-500/20` / `text-green-400`
+Do not introduce one-off values when an existing foundation token covers the need.
 
-#### Switches
-- **Active**: `bg-orange-500/20` / `text-orange-400`
-- **Inactive**: `bg-gray-500/20` / `text-gray-500`
+## Theme Modes
 
-#### Sensors
-- **Primary**: `bg-blue-500/20` / `text-blue-400`
+Navet supports four themes:
 
-#### Power/Energy
-- **Active**: `bg-green-500/20` / `text-green-400`
+| Theme | Character |
+|---|---|
+| `glass` | layered frosted surfaces and higher-depth treatment |
+| `dark` | restrained dark surfaces with muted gradients |
+| `light` | brighter surfaces with softer borders and shadow |
+| `black` | very dark, high-contrast surfaces |
 
-#### Weather
-- **Primary**: `bg-blue-500/20` / `text-blue-400`
-- **Gradient**: `from-blue-400/20 to-purple-500/20`
+Guidelines:
 
-#### WiFi/Network
-- **Active**: `bg-indigo-500/20` / `text-indigo-400`
+- resolve shared surfaces through theme helpers before writing inline theme branches
+- keep `black` as its own treatment, not just a darker `dark`
+- use readable-text token logic for tinted or accent-heavy surfaces
 
-### Semantic Colors
-```css
-Success: #10b981 (Green)
-Warning: #f59e0b (Amber)
-Error: #ef4444 (Red)
-Info: #3b82f6 (Blue)
+## Color Rules
 
-Text Primary: #ffffff (White)
-Text Secondary: #9ca3af (Gray-400)
-Text Tertiary: #6b7280 (Gray-500)
-Text Disabled: #4b5563 (Gray-600)
-```
+### Semantic color intent
 
----
+- lights: warm or device-color-driven active states
+- climate: mode-based temperature colors
+- media: artwork- or media-accent-aware treatment
+- locks: clear locked/unlocked contrast
+- sensors and power: status-driven accents, not decorative tinting
+
+### Accent system
+
+Navet supports built-in accent choices plus a custom accent.
+
+Accent color affects:
+
+- selected navigation and pills
+- active card states
+- sliders and progress surfaces
+- focused/selected controls
+- appearance previews and related color pickers
+
+Keep accent logic centralized. When adding new accent-sensitive UI, reuse existing token helpers or
+shared theme utilities rather than inventing new accent class combinations inline.
 
 ## Typography
 
-### Font Stack
-```css
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
-```
+Typography should optimize for quick scanning first.
 
-### Type Scale
+Rules:
 
-#### Extra-Small / Small / Medium Cards
-- **Title**: `text-xs font-semibold` (12px, 600 weight)
-- **Subtitle**: `text-[11px]` to `text-xs` with muted treatment depending on density
-- **Body**: `text-[10px]` (10px)
-- **Labels**: `text-[9px]` (9px)
+- titles should be concise and stable across card sizes
+- subtitles and eyebrows should provide context without competing with the main title
+- compact cards should prefer eyebrow-first or tightly structured title blocks when space is limited
+- large cards can add more descriptive secondary text, but should still avoid verbose copy
 
-#### Large Cards
-- **Title**: `text-base font-semibold` (16px, 600 weight)
-- **Subtitle**: `text-sm text-gray-400` (14px)
-- **Body**: `text-sm` (14px)
-- **Labels**: `text-xs` (12px)
+Shared header/title structures should reuse the shared title block and card-header primitives when
+possible.
 
-### Font Weights
-- **Regular**: 400
-- **Medium**: 500
-- **Semibold**: 600
-- **Bold**: 700
+## Spacing and Density
 
----
+Navet uses a 4px-based spacing rhythm.
 
-## Spacing System
+Typical spacing steps:
 
-Based on Tailwind's 4px increment system:
+- `2px`
+- `4px`
+- `8px`
+- `12px`
+- `16px`
+- `20px`
+- `24px`
+- `32px`
 
-```css
-0.5 = 2px   (Micro spacing)
-1 = 4px     (Extra tight)
-2 = 8px     (Tight)
-3 = 12px    (Comfortable)
-4 = 16px    (Default)
-5 = 20px    (Relaxed)
-6 = 24px    (Spacious)
-8 = 32px    (Extra spacious)
-```
+Guidelines:
 
-### Card Padding by Size
-- **Extra-Small**: `px-3.5 pt-3 pb-4` for dense control layouts
-- **Small**: `p-4` (16px)
-- **Medium**: `p-5` (20px)
-- **Large**: `p-6` (24px)
-
-### Component Spacing
-- **Icon to Text**: `gap-2` (8px)
-- **Horizontal Controls**: `gap-2` to `gap-4` (8px - 16px)
-- **Vertical Stacks**: `gap-3` to `gap-4` (12px - 16px)
-- **Section Separation**: `mb-2` to `mb-3` (8px - 12px)
-
----
+- use tighter spacing in compact cards only when legibility is preserved
+- avoid deep nesting with stacked gaps that create accidental whitespace
+- keep settings dialogs roomy enough for touch targets and readability
 
 ## Border Radius
 
-### Hierarchy
-```css
-Cards: rounded-3xl (24px) - Main container radius
-Buttons: rounded-full (9999px) - Circular controls
-Small Elements: rounded-lg (8px) - Input fields, toggles
-Images: rounded-2xl to rounded-3xl (16px - 24px)
-```
+Use radius consistently to communicate hierarchy:
 
----
+- major cards and shells: large rounded corners
+- controls and pills: rounded-full or clearly pill-like treatment
+- inputs and smaller surfaces: medium-to-large rounded corners, depending on context
 
-## Icon System
+Do not mix multiple unrelated radius languages in the same component.
 
-### Sizing Standards (CRITICAL)
+## Icon Rules
 
-#### Extra-Small Cards
-```css
-Container: w-7 h-7 (28px × 28px)
-Icon: w-3.5 h-3.5 (14px × 14px)
-```
+Use `lucide-react` icons unless an established exception already exists.
 
-#### Small Cards
-```css
-Container: w-8 h-8 (32px × 32px)
-Icon: w-4 h-4 (16px × 16px)
-```
+Guidelines:
 
-#### Medium/Large Cards
-```css
-Container: w-10 h-10 (40px × 40px)
-Icon: w-5 h-5 (20px × 20px)
-```
+- icons belong in the card header's leading slot for most entity cards
+- use shared icon-container and icon-pill patterns where they already exist
+- preserve consistent icon sizing across card-size families
+- set `flex-shrink-0` on icon containers in dense layouts
 
-### Icon Library
-- **Primary**: Lucide React (lucide-react)
-- **Style**: Outline icons for consistency
-- **Stroke Width**: Default (2px)
+Compact icon sizing should stay aligned with the shared foundations and card-header primitives.
 
-### Common Icons by Entity Type
-- **Light**: Lightbulb, Power
-- **Climate/HVAC**: Thermometer, Snowflake, Flame, Fan
-- **Lock**: Lock, Unlock
-- **Switch**: Power, Zap
-- **Media**: Music, Play, Pause, SkipForward, SkipBack, Volume2
-- **Sensor**: Activity, Droplets, Wind, Gauge
-- **Cover**: ChevronUp, ChevronDown
-- **Person**: User, UserCircle
-- **Weather**: Cloud, Sun, CloudRain
-- **WiFi**: Wifi, Signal
+## Card Layout Rules
 
-### Icon Placement
-- **Primary Position**: Leading slot in the card header (top-left in current entity cards)
-- **Container**: Circular background with 20% opacity of accent color
-- **Alignment**: Flexbox centered (`flex items-center justify-center`)
-- **Flex Shrink**: Always set `flex-shrink-0` to prevent icon container collapse
+### Shared card expectations
 
-### Compact Card Guidance
-- **Extra-Small** cards should keep to one primary inline control row whenever possible
-- **Extra-Small lights** keep an unlabeled brightness slider visible
-- In **tap toggles** mode, the settings button belongs on the same row as the extra-small light slider, aligned right, with a compact gap between slider and action
-- In **tap opens controls** mode, the extra-small light slider should expand to the full row width instead of reserving space for a hidden action button
-- Avoid duplicate action buttons across header/body rows in compact layouts
+Every card should:
 
----
+- communicate the device or widget identity immediately
+- avoid overflow in all supported sizes
+- degrade gracefully in compact sizes
+- keep primary actions obvious
+- avoid repeating the same control in multiple places
 
-## Glass Morphism Effects
+### Card sizes
 
-### Card Background
-```css
-backdrop-blur-xl
-bg-white/5 to bg-white/10 (5-10% white opacity)
-border border-{color}-700/20 (20% opacity colored border)
-```
+Supported sizes:
 
-### Layering
-```css
-Background: Solid #0f0f0f
-Card Layer: backdrop-blur-xl + gradient overlay
-Content: Fully opaque text and controls
-Floating Elements: Additional backdrop-blur-md
-```
+- `tiny`
+- `extra-small`
+- `small`
+- `medium`
+- `medium-vertical`
+- `large`
+- `extra-large`
 
-### Gradient Overlays
-```css
-Standard: bg-gradient-to-br from-{color}/10 to-transparent
-Hover: Slight increase in opacity
-Active: More pronounced gradient
-```
+Use the shared card-size registry. Do not hardcode parallel pixel maps for preview or overlay
+behavior.
 
----
+### Compact cards
 
-## Interactive States
+Compact cards are the easiest place for UI drift and accidental clutter.
 
-### Buttons & Controls
+Rules:
 
-#### Default
-```css
-bg-white/10
-hover:bg-white/20
-transition-colors duration-200
-```
+- prefer shared compact shells and title patterns
+- show only the one or two controls that justify the size
+- keep dense cards mechanically simple
+- if a control does not fit clearly, move it to the dialog/settings surface instead
 
-#### Active/Selected
-```css
-bg-{accent-color}-500
-shadow-lg shadow-{accent-color}/50
-scale-105 (on interaction)
-```
+## Dialog and form surfaces
 
-#### Disabled
-```css
-opacity-50
-cursor-not-allowed
-pointer-events-none
-```
+Settings and entity dialogs should reuse shared structure before creating new wrappers.
 
-### Cards
+Expected building blocks include:
 
-#### Default
-```css
-backdrop-blur-xl
-border border-{color}-700/20
-transition-all duration-500
-```
+- `DialogShell`
+- shared card-dialog header
+- shared section rows/sections
+- shared tabs and choice pills
+- shared footer/done actions
 
-#### Hover (when clickable)
-```css
-scale-[1.02]
-border-{color}-500/40
-```
+Forms should:
 
-#### Active
-```css
-Enhanced gradient overlay
-Brighter icon colors
-Subtle glow effects
-```
+- keep section labels and helper text aligned
+- avoid mixed control densities in the same section
+- maintain keyboard and touch accessibility
 
----
+## Motion and transitions
 
-## Card Size System
+Motion should support state comprehension, not decorate the interface.
 
-### Four-Tier Sizing
+Guidelines:
 
-#### Extra-Small (col-span-1 row-span-1)
-- **Grid Columns**: 1
-- **Grid Height**: 87px
-- **Use Case**: Dense status or single inline control row
-- **Content Strategy**: Header plus one essential control or metric
-- **Padding**: `px-3.5 pt-3 pb-4`
+- short interactions: use restrained durations
+- state changes: use smoother, slightly longer transitions where the change benefits from it
+- avoid layering multiple expensive effects such as blur, glow, and scale on the same interaction
+- on lower-power paths, prefer reducing effects instead of keeping rich effects with slower timing
 
-#### Small (col-span-1 row-span-2)
-- **Grid Columns**: 1
-- **Grid Height**: `calc(2 × 87px + gap)` → `182px / 186px / 190px` across `mobile / md / lg+`
-- **Use Case**: Standard compact controls
-- **Content Strategy**: Header, primary value/slider, compact action row
-- **Padding**: `p-4`
+## Performance rules
 
-#### Medium (col-span-2 row-span-2)
-- **Grid Columns**: 2
-- **Grid Height**: `calc(2 × 87px + gap)` → `182px / 186px / 190px` across `mobile / md / lg+`
-- **Use Case**: Controls with 1-2 adjustable parameters
-- **Content Strategy**: Same header density as small, more horizontal space
-- **Padding**: `p-5`
+Navet must remain usable on low-power tablets and wall panels.
 
-#### Large (col-span-2 row-span-4)
-- **Grid Columns**: 2
-- **Grid Rows**: 4
-- **Grid Height**: `calc(4 × 87px + 3 × gap)` → `372px / 384px / 396px` across `mobile / md / lg+`
-- **Use Case**: Complex controls with multiple parameters
-- **Content Strategy**: Full information and secondary sections
-- **Padding**: `p-6`
+Be careful with:
 
-### Adaptive Layout Rules
+- large backdrop blurs
+- stacked translucent overlays
+- heavy box shadows
+- complex animated gradients
+- deeply nested layout wrappers
+- large artwork surfaces with extra visual processing
 
-1. **Content Rearrangement**: Elements reorganize based on available space
-2. **Progressive Disclosure**: Advanced features only appear in larger sizes
-3. **No Overflow**: Content never overflows card boundaries
-4. **Intelligent Truncation**: Text truncates with ellipsis (`truncate` class)
-
----
-
-## Animation & Transitions
-
-### Duration Scale
-```css
-Fast: 150ms - Micro-interactions (sliders, toggles)
-Normal: 200-300ms - Button hovers, color changes
-Slow: 500ms - State transitions (on/off), mode changes
-```
-
-### Easing Functions
-```css
-Default: ease (cubic-bezier)
-Smooth: transition-all
-Colors: transition-colors
-Transform: transition-transform
-```
-
-### Animation Patterns
-
-#### State Changes
-```css
-transition-all duration-500
-Smooth color interpolation
-Icon rotation or swap
-Gradient shifts
-```
-
-#### Hover Effects
-```css
-transition-colors duration-200
-scale-[1.02] (cards)
-No scale on small interactive elements
-```
-
-#### Loading States
-```css
-Pulse animation
-Skeleton shimmer
-Opacity fade-ins
-```
-
----
+If a more visually ambitious treatment meaningfully increases blur, overdraw, or animation cost,
+document the tradeoff and provide a reduced-cost fallback.
 
 ## Accessibility
 
-### Color Contrast
-- **Text on Dark Background**: Minimum 4.5:1 ratio
-- **Active States**: 7:1 ratio preferred
-- **Icons**: Ensure visibility with background opacity
+Minimum expectations:
 
-### Touch Targets
-- **Minimum Size**: 44px × 44px (following iOS guidelines)
-- **Comfortable Spacing**: 8px minimum between interactive elements
-- **Hit Area**: Padding ensures easy tapping
+- keep touch targets large enough for tablet use
+- maintain readable contrast in every theme
+- preserve focus visibility for keyboard navigation
+- ensure icon-only actions have accessible names
+- avoid state communication that relies only on color
 
-### Focus States
-```css
-outline-ring/50
-ring-2 ring-offset-2
-Focus visible on keyboard navigation
-```
+## Storybook review expectations
 
-### Screen Reader Support
-- **Semantic HTML**: Proper button, input, and label usage
-- **ARIA Labels**: For icon-only controls
-- **State Announcements**: For toggle and state changes
+When documenting shared UI in Storybook:
 
----
+- verify theme parity across `glass`, `dark`, `light`, and `black`
+- check compact-size behavior for card primitives and patterns
+- validate readable text on tinted and accent-heavy surfaces
+- keep story titles aligned with the current taxonomy
 
-## Responsive Behavior
+## Anti-patterns
 
-### Responsive Breakpoints
-```css
-Mobile: < 768px
-Tablet: 768px - 1279px
-Desktop: 1280px - 1699px
-Large Desktop: 1700px - 2499px
-Ultra-Wide: ≥ 2500px
-```
+Avoid:
 
-### Mobile Optimizations
-- Sidebar hidden; mobile navigation uses the bottom bar
-- Dashboard uses a 2-column grid by default
-- Touch-friendly 44px minimum hit targets
-- Reduced card padding for space efficiency
-- Simplified layouts in small cards
+- raw inline theme branches when shared surface helpers exist
+- new low-level shared UI inside `shared/` by default
+- hardcoded duplicate card-size maps
+- decorative motion that obscures state or hurts performance
+- compact cards that duplicate controls across rows
+- feature-specific dialog shells that bypass shared settings patterns without a strong reason
 
-### Grid Adaptations
-```css
-Mobile: grid-cols-2 + gap-2
-Tablet (md): grid-cols-4 + gap-3
-Desktop (xl): grid-cols-6
-Large Desktop (2xl): grid-cols-8
-Ultra-Wide (4xl): grid-cols-12
-Desktop gap: lg:gap-4
-Auto rows: 87px
-Small cards: 2 row spans
-Medium cards: 2 column spans × 2 row spans
-Large cards: 2 column spans × 4 row spans
-```
-
----
-
-## Component Patterns
-
-### Card Header Structure
-```tsx
-<div className="flex items-start gap-3">
-  <div className="w-8 h-8 rounded-full bg-{color}/20 flex items-center justify-center flex-shrink-0">
-    <Icon className="w-5 h-5 text-{color}" />
-  </div>
-  <div className="min-w-0 flex-1">
-    <h3 className="font-semibold truncate">{name}</h3>
-    <p className="text-xs text-gray-400">{subtitle}</p>
-  </div>
-</div>
-```
-
-### Bottom Action Row
-```tsx
-<div className="mt-auto flex items-center justify-between gap-3">
-  <div className="flex items-center gap-2">
-    {/* left-side primary actions, truncate extras into overflow */}
-  </div>
-  <button>{/* controls/settings opener */}</button>
-</div>
-```
-
-### Edit Controls
-- Remove-entity action lives in the top-left edit slot
-- Resize action lives in the top-right edit slot
-- Both use the same circular sizing tiers and offsets
-
-### Sliders
-```tsx
-<div className="relative h-1 bg-white/20 rounded-full">
-  <div className="absolute h-full bg-{color} rounded-full" style={{ width: `${value}%` }} />
-  <input type="range" className="absolute inset-0 opacity-0 cursor-pointer" />
-</div>
-```
-
----
-
-## Performance Guidelines
-
-1. **Memoization**: All cards use `memo()` to prevent unnecessary re-renders
-2. **Transitions**: GPU-accelerated properties (transform, opacity)
-3. **Images**: Lazy loading with blur-up placeholders
-4. **Background Effects**: Backdrop blur optimized with will-change
-5. **Event Handlers**: Debounced for rapid interactions (sliders)
-
----
-
-## Best Practices
-
-### Do's ✅
-- Use semantic color meanings consistently
-- Maintain icon sizing standards across all cards
-- Implement smooth 500ms transitions for state changes
-- Ensure all interactive elements have visual feedback
-- Test layouts at all three card sizes
-- Use flex-shrink-0 on icons to prevent collapse
-- Truncate long text with ellipsis
-- Implement progressive disclosure for complex controls
-
-### Don'ts ❌
-- Don't mix icon sizes within the same card size
-- Don't create scrollable content within cards
-- Don't use hard-coded colors outside the system
-- Don't forget hover states on interactive elements
-- Don't stack too many controls in small cards
-- Don't use complex animations that hurt performance
-- Don't override card padding inconsistently
-- Don't place icons in inconsistent positions
-
----
-
-## Version History
-- **v1.0** - Initial design system
-- **v1.1** - Standardized icon sizing across all cards
-- **v1.2** - Added adaptive layout guidelines
+Last updated: April 21, 2026

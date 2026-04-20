@@ -22,7 +22,7 @@ function ThemeSurfaceTokensShowcase() {
               return (
                 <article
                   key={`${theme}-${effectsQuality}`}
-                  className={`rounded-2xl border p-4 backdrop-blur-xl ${surface.panel} ${surface.border} ${surface.cardShadow}`}
+                  className={`rounded-3xl border p-4 backdrop-blur-xl ${surface.panel} ${surface.border} ${surface.cardShadow}`}
                 >
                   <p
                     className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}

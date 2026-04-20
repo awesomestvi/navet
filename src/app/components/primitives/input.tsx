@@ -10,10 +10,11 @@ import {
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   leading?: ReactNode;
   trailing?: ReactNode;
   invalid?: boolean;
+  size?: 'default' | 'small';
   variant?: 'default' | 'soft';
   containerClassName?: string;
   inputClassName?: string;
@@ -25,6 +26,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     leading,
     trailing,
     invalid = false,
+    size = 'default',
     variant = 'default',
     containerClassName,
     inputClassName,
@@ -93,10 +95,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className={cn(
           'w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
-          navetSizeTokens.fieldInset,
+          size === 'small' ? 'px-3 py-2' : navetSizeTokens.fieldInset,
           navetTypographyTokens.control,
-          leading ? 'pl-10' : 'pl-4',
-          trailing ? 'pr-10' : 'pr-4',
+          leading ? (size === 'small' ? 'pl-9' : 'pl-10') : size === 'small' ? 'pl-3' : 'pl-4',
+          trailing ? (size === 'small' ? 'pr-9' : 'pr-10') : size === 'small' ? 'pr-3' : 'pr-4',
           variant === 'soft'
             ? softVariantClassName
             : theme === 'light'

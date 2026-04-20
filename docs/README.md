@@ -1,70 +1,74 @@
 # Navet Documentation
 
-Complete documentation for the Navet smart home dashboard.
+This directory is the index for active Navet documentation.
 
-## 🚀 Quick Start
+## Start Here
 
-1. **[Main README](../README.md)** - Start here for project overview
-2. **[Contributing](../CONTRIBUTING.md)** - How to contribute
-3. **[Branding](branding/BRANDING.md)** - Brand identity and usage
-4. **[Logo Showcase](LOGO_SHOWCASE.md)** - Visual brand assets
-5. **[Versioning](VERSIONING.md)** - Beta release and version bump policy
+- [../README.md](../README.md): project overview, setup, commands, and architecture summary
+- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): state-management rules and store/service contracts
+- [../design-system/README.md](../design-system/README.md): design-system scope, shared UI layers, and Storybook workflow
 
-## 📚 Documentation Structure
+## Documentation Map
 
-### User & Deployment
-- **[Main README](../README.md)** - Project overview, features, installation, and usage guide
-- **[Widget System](WIDGETS.md)** - Custom widgets: adding, managing, creating, and API reference
-- **[Docker and Home Assistant Add-on](DOCKER_HOME_ASSISTANT_ADDON.md)** - Standalone Docker and HA add-on deployment
-- **[Versioning](VERSIONING.md)** - Beta release numbering and bump rules
-- **[Roadmap](ROADMAP.md)** - Planned features and shipped history
+### Product and deployment
 
-### Design & Architecture
-- **[Design System](../design-system/README.md)** - Design principles, card sizes, breakpoints, and key files
-- **[Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)** - Internal system entrypoints and the recommended in-repo Storybook path
-- **[UI Guidelines](../design-system/UI-GUIDELINES.md)** - Color system, typography, glass effects, component patterns
-- **[Layout Structure](../design-system/LAYOUT-STRUCTURE.md)** - Sidebar, header, grid, responsive layout
-- **[Features](../design-system/FEATURES.md)** - Auth, theme system, navigation, media/security/entity cards, dashboard builder
-- **[Moodboard](../design-system/MOODBOARD.md)** - Design inspiration and visual direction
-- **[React + Zustand Guide](technical/REACT_ZUSTAND.md)** - Shared state rules, persistence contracts, and controller/store integration patterns
+- [WIDGETS.md](WIDGETS.md): widget types, widget behavior, and extension notes
+- [DOCKER_HOME_ASSISTANT_ADDON.md](DOCKER_HOME_ASSISTANT_ADDON.md): Docker and Home Assistant add-on deployment
+- [VERSIONING.md](VERSIONING.md): release numbering and bump policy
+- [ROADMAP.md](ROADMAP.md): planned work and shipped history
+- [card-properties.md](card-properties.md): card behavior and property reference
 
-### Branding
-- **[Branding Guide](branding/BRANDING.md)** - Brand identity, voice, logo usage guidelines
-- **[Branding Assets](branding/BRANDING_ASSETS.md)** - Logo files quick reference and copy-paste snippets
-- **[Logo Showcase](LOGO_SHOWCASE.md)** - All logo variations with usage examples
-- **[Trademark Policy](branding/TRADEMARK_POLICY.md)** - Navet name and logo usage rules
+### Architecture and implementation
 
-### Legal & Credits
-- **[License](../LICENSE.md)** - AGPL-3.0-only code license
-- **[Terms of Use](TERMS_OF_USE.md)** - License and brand usage summary
-- **[Attributions](ATTRIBUTIONS.md)** - Third-party credits
-- **[Change History](archive/CHANGES.md)** - Major migrations and project history
+- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand-only shared state guidance
+- [../design-system/FEATURES.md](../design-system/FEATURES.md): implementation map of current product areas
+- [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md): visual rules, component patterns, and performance-sensitive UI guidance
+- [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md): Storybook structure and workshop rules
 
-## 🎯 Common Tasks
+### Branding and legal
 
-**Add a new widget** → [Widget System](WIDGETS.md)
+- [branding/BRANDING.md](branding/BRANDING.md): brand identity and usage
+- [branding/BRANDING_ASSETS.md](branding/BRANDING_ASSETS.md): brand assets and references
+- [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md): trademark usage policy
+- [TERMS_OF_USE.md](TERMS_OF_USE.md): code-license and branding summary
+- [ATTRIBUTIONS.md](ATTRIBUTIONS.md): third-party attributions
 
-**Contribute to the project** → [Contributing Guide](../CONTRIBUTING.md)
+### Historical references
 
-**Match CI before a PR** → [Contributing: CI and local checks](../CONTRIBUTING.md#ci-and-local-checks) (Biome, Storybook standards, `typecheck`, `test`, `build`)
+- [archive/CHANGES.md](archive/CHANGES.md): archived migration and change history
 
-**Bump a release version** → [Versioning](VERSIONING.md)
+## Recommended Reading Paths
 
-**Understand the design system** → [Design System](../design-system/README.md)
+### New contributor
 
-**Run the UI workshop** → [Storybook Foundation](../design-system/STORYBOOK_FOUNDATION.md)
-Current workshop coverage includes theme docs, primitives/patterns/shared component layers, app shell, cards (entity + custom), dashboard flows, energy, and settings dialogs. Shared story frame utilities live in `src/app/storybook/story-frames.tsx`.
+1. [../README.md](../README.md)
+2. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
+3. [../design-system/README.md](../design-system/README.md)
+4. [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md)
 
-**Run Navet in Docker or as a Home Assistant add-on** → [Docker and Home Assistant Add-on](DOCKER_HOME_ASSISTANT_ADDON.md)
+### Working on shared UI
 
-**Use Navet branding** → [Branding Guide](branding/BRANDING.md)
+1. [../design-system/README.md](../design-system/README.md)
+2. [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md)
+3. [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md)
 
-**Check the license** → [License](../LICENSE.md), [Terms of Use](TERMS_OF_USE.md), [Trademark Policy](branding/TRADEMARK_POLICY.md)
+### Working on dashboard or state flows
 
-**Learn about project history** → [Change History](archive/CHANGES.md)
+1. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
+2. [../design-system/FEATURES.md](../design-system/FEATURES.md)
+3. [WIDGETS.md](WIDGETS.md)
 
-**Review state and controller contracts** → [React + Zustand Guide](technical/REACT_ZUSTAND.md)
+### Working on deployment
 
----
+1. [../README.md](../README.md)
+2. [DOCKER_HOME_ASSISTANT_ADDON.md](DOCKER_HOME_ASSISTANT_ADDON.md)
+3. [VERSIONING.md](VERSIONING.md)
 
-**Last Updated:** April 15, 2026
+## Maintenance Rules
+
+- Keep active docs aligned with the codebase when architecture, setup, or behavior changes
+- Prefer updating active docs over adding duplicate one-off notes
+- Treat `docs/archive/` as historical material, not the current source of truth
+- When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
+
+Last updated: April 21, 2026

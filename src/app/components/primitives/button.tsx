@@ -15,7 +15,7 @@ import { useTheme } from '@/app/hooks';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'subtle' | 'soft';
-  size?: 'small' | 'medium';
+  size?: 'default' | 'small' | 'compact';
   loading?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -27,7 +27,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
     variant = 'primary',
-    size = 'medium',
+    size = 'default',
     loading = false,
     leading,
     trailing,
@@ -92,16 +92,30 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:opacity-50',
         iconOnly
-          ? size === 'small'
-            ? navetSizeTokens.iconButton.sm
-            : navetSizeTokens.iconButton.md
-          : size === 'small'
-            ? navetSizeTokens.controlHeight.sm
-            : navetSizeTokens.controlHeight.md,
-        iconOnly ? '' : size === 'small' ? 'px-3.5 py-2' : navetSizeTokens.buttonInset,
+          ? size === 'compact'
+            ? 'h-7 w-7'
+            : size === 'small'
+              ? 'h-8 w-8'
+              : navetSizeTokens.iconButton.md
+          : size === 'compact'
+            ? 'min-h-7 px-2 py-1 text-[12px]'
+            : size === 'small'
+              ? 'min-h-8'
+              : navetSizeTokens.controlHeight.md,
+        iconOnly
+          ? ''
+          : size === 'compact'
+            ? ''
+            : size === 'small'
+              ? 'px-3 py-1.5'
+              : navetSizeTokens.buttonInset,
         iconOnly ? '' : navetSpacingTokens.inline.sm,
         iconOnly ? navetRadiusTokens.pill : navetRadiusTokens.action,
-        navetTypographyTokens.control,
+        size === 'compact'
+          ? 'font-medium'
+          : size === 'small'
+            ? 'text-xs font-medium'
+            : navetTypographyTokens.control,
         variantClassName,
         getThemeFocusRingClassName(theme),
         className

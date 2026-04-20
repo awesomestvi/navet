@@ -64,6 +64,12 @@ export const EnergySparkline = memo(function EnergySparkline({
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const axisLineClassName = theme === 'light' ? 'border-slate-300/70' : 'border-white/6';
+  const axisLabelClassName = theme === 'light' ? 'text-slate-500' : 'text-white/35';
+  const tooltipClassName =
+    theme === 'light'
+      ? `border ${tokens.surface.border} ${tokens.surface.panel} shadow-[0_18px_38px_-24px_rgba(15,23,42,0.22)]`
+      : `border ${tokens.surface.border} ${tokens.surface.panel} shadow-2xl`;
   const updateHoverIndex = useCallback(
     (clientX: number, rect: DOMRect) => {
       const relativeX = Math.max(0, Math.min(rect.width, clientX - rect.left));
@@ -182,8 +188,10 @@ export const EnergySparkline = memo(function EnergySparkline({
           style={{ top: `${mark.topPercent}%` }}
         >
           <div className="relative -translate-y-1/2">
-            <div className="border-t border-dashed border-white/6" />
-            <div className="absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-medium text-white/35">
+            <div className={`border-t border-dashed ${axisLineClassName}`} />
+            <div
+              className={`absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-medium ${axisLabelClassName}`}
+            >
               {mark.label}
             </div>
           </div>
@@ -203,9 +211,15 @@ export const EnergySparkline = memo(function EnergySparkline({
               transform: 'translate(-50%, calc(-100% - 10px))',
             }}
           >
-            <div className="w-max max-w-55 rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left shadow-2xl backdrop-blur-md">
-              <div className="text-[11px] text-white/85">{tooltipTimestamp}</div>
-              <div className="mt-1 flex items-center gap-2 text-[11px] text-white/75">
+            <div
+              className={`w-max max-w-55 rounded-xl px-3 py-2 text-left backdrop-blur-md ${tooltipClassName}`}
+            >
+              <div className={`text-[11px] ${tokens.surface.textSecondary}`}>
+                {tooltipTimestamp}
+              </div>
+              <div
+                className={`mt-1 flex items-center gap-2 text-[11px] ${tokens.surface.textPrimary}`}
+              >
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
                 <span>
                   {t('charts.powerSparkline.useLabel', { value: Math.round(activePoint.value) })}

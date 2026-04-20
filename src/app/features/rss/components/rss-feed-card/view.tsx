@@ -1,6 +1,6 @@
 import { MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { InteractivePill } from '@/app/components/primitives';
+import { InteractivePill, RoundControlButton } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { withTintAlpha } from '@/app/components/shared/theme/custom-card-tint-surface';
@@ -49,7 +49,7 @@ interface RSSFeedCardViewProps {
 
 export function RSSFeedCardView({
   inEditMode = false,
-  size: _size,
+  size = 'large',
   onSizeChange: _onSizeChange,
   theme,
   primaryColor,
@@ -74,6 +74,7 @@ export function RSSFeedCardView({
   const { t } = useI18n();
   const cardShell = getCardShellSurfaceTokens(theme);
   const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
+  const chromeSize = size === 'large' ? 'medium' : size;
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
   const dropdownItemClassName = cn(
@@ -108,9 +109,9 @@ export function RSSFeedCardView({
     <div
       className={`
         relative group overflow-hidden
-        h-full w-full rounded-3xl
-        ${hasCustomTint ? '' : `bg-linear-to-br ${colors.rss.gradient}`}
-        ${cardShell.backdropClassName} border ${hasCustomTint ? '' : colors.rss.border}
+        h-full w-full rounded-[28px]
+        ${rssSurface.surface.panel}
+        ${cardShell.backdropClassName} border ${rssSurface.surface.border}
         ${rssSurface.containerShadowClassName}
         transition-all duration-300
         ${!inEditMode ? 'cursor-default' : ''}
@@ -123,7 +124,15 @@ export function RSSFeedCardView({
       ) : null}
       <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
       {!hasCustomTint ? (
-        <div className={`absolute inset-0 bg-linear-to-br ${colors.rss.glow} to-transparent`} />
+        <>
+          <div className={`absolute inset-0 bg-linear-to-br ${colors.rss.gradient} opacity-45`} />
+          <div
+            className={`absolute inset-0 bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
+          />
+          {rssSurface.surface.lightOverlay ? (
+            <div className={`absolute inset-0 ${rssSurface.surface.lightOverlay}`} />
+          ) : null}
+        </>
       ) : null}
 
       {/* Content */}
@@ -175,7 +184,7 @@ export function RSSFeedCardView({
                   <InteractivePill
                     active={activeProviderId === 'all'}
                     size="compact"
-                    className="shrink-0 border-white/8 text-[11px]"
+                    className={`shrink-0 text-[11px] ${rssSurface.surface.border}`}
                     style={getRSSControlPillStyle({
                       accentColor: controlAccentColor,
                       isActive: activeProviderId === 'all',
@@ -195,7 +204,7 @@ export function RSSFeedCardView({
                       key={provider.id}
                       active={activeProviderId === provider.id}
                       size="compact"
-                      className="shrink-0 border-white/8 text-[11px]"
+                      className={`shrink-0 text-[11px] ${rssSurface.surface.border}`}
                       style={getRSSControlPillStyle({
                         accentColor: controlAccentColor,
                         isActive: activeProviderId === provider.id,
@@ -215,22 +224,17 @@ export function RSSFeedCardView({
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <InteractivePill
-                    active
-                    intent="action"
-                    size="compact"
+                  <RoundControlButton
+                    theme={theme}
+                    size={chromeSize === 'small' ? 'small' : 'medium'}
+                    variant="soft"
                     aria-label={t('rss.menu.label')}
-                    className="shrink-0 px-1.5"
-                    style={getRSSOverflowTriggerStyle({
-                      accentColor: controlAccentColor,
-                      textPrimaryColor: rssSurface.textPrimaryColor,
-                      theme,
-                    })}
+                    className="shrink-0"
                     onClick={(event) => event.stopPropagation()}
                     onPointerDown={(event) => event.stopPropagation()}
                   >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </InteractivePill>
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </RoundControlButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
@@ -416,7 +420,9 @@ export function RSSFeedCardView({
             )}
 
             {!isSmall && !isMedium ? (
-              <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
+              <div
+                className={`mt-2 flex items-center border-t pt-1.5 ${rssSurface.surface.border}`}
+              >
                 <div
                   className="min-w-0 truncate text-[10px]"
                   style={{ color: rssSurface.textSecondaryColor }}
@@ -534,7 +540,9 @@ function RSSFeedLoadingSkeleton({
       </div>
 
       {!isSmall && !isMedium ? (
-        <div className="mt-2 flex items-center border-t border-white/8 pt-1.5">
+        <div
+          className={`mt-2 flex items-center border-t pt-1.5 ${theme === 'light' ? 'border-slate-300/80' : theme === 'glass' ? 'border-white/12' : 'border-white/8'}`}
+        >
           <div className="h-2.5 w-28 rounded" style={blockStyle} />
         </div>
       ) : null}
@@ -588,22 +596,5 @@ function getRSSControlPillStyle({
     boxShadow: isActive
       ? `inset 0 1px 0 ${withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.22)}, 0 8px 20px -16px ${withTintAlpha(accentColor, theme === 'light' ? 0.2 : 0.34)}`
       : 'none',
-  };
-}
-
-function getRSSOverflowTriggerStyle({
-  accentColor,
-  textPrimaryColor,
-  theme,
-}: {
-  accentColor: string;
-  textPrimaryColor: string;
-  theme: ThemeType;
-}): CSSProperties {
-  return {
-    color: textPrimaryColor,
-    borderColor: withTintAlpha(accentColor, theme === 'light' ? 0.24 : 0.18),
-    background: `linear-gradient(180deg, ${withTintAlpha(accentColor, theme === 'light' ? 0.1 : 0.22)} 0%, ${withTintAlpha(accentColor, theme === 'light' ? 0.06 : 0.12)} 100%)`,
-    boxShadow: `inset 0 1px 0 ${withTintAlpha(accentColor, theme === 'light' ? 0.14 : 0.18)}, 0 12px 28px -22px ${withTintAlpha(accentColor, theme === 'light' ? 0.16 : 0.34)}`,
   };
 }

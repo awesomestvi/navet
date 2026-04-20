@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: (args) => (
-    <div className="w-56 rounded-2xl bg-sky-700 p-4">
+    <div className="w-56 rounded-[28px] bg-sky-700 p-4">
       <CardMetric {...args} />
     </div>
   ),
@@ -48,7 +48,7 @@ export const Inactive: Story = {
     accentClassName: 'text-sky-600',
   },
   render: (args) => (
-    <div className="w-56 rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="w-56 rounded-[28px] border border-slate-200 bg-white p-4">
       <CardMetric {...args} />
     </div>
   ),

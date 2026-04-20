@@ -66,6 +66,7 @@ export type DashboardController = OnboardingController &
     lightRooms: string[];
     onToggleEditMode: () => void;
     orderedCardIds: string[];
+    onSetRoomOrder: (rooms: string[]) => void;
     onSetAllViewGrouping: (grouping: AllViewGrouping) => void;
     rooms: string[];
     setActiveSection: (section: Section) => void;

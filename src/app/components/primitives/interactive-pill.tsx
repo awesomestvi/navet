@@ -54,10 +54,10 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
           size === 'compact'
             ? 'inline-flex min-h-7 items-center justify-center gap-1.5 px-2 py-1 text-[12px] transition-all disabled:cursor-not-allowed disabled:opacity-50'
             : size === 'small'
-              ? 'inline-flex h-9 items-center justify-center gap-1.5 px-3 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50'
+              ? 'inline-flex h-8 items-center justify-center gap-1 px-2.5 py-1.5 text-xs transition-all disabled:cursor-not-allowed disabled:opacity-50'
               : 'inline-flex h-10 items-center justify-center gap-1.5 px-4 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.pill,
-          navetTypographyTokens.control,
+          size === 'small' ? 'text-xs font-medium' : navetTypographyTokens.control,
           getThemeFocusRingClassName(theme),
           pillStyles.className,
           className
@@ -65,7 +65,13 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
         style={{ ...pillStyles.style, ...style }}
         {...props}
       >
-        {Icon && <Icon className={size === 'compact' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />}
+        {Icon && (
+          <Icon
+            className={
+              size === 'compact' ? 'h-3.5 w-3.5' : size === 'small' ? 'h-3.5 w-3.5' : 'h-4 w-4'
+            }
+          />
+        )}
         {children}
       </button>
     );

@@ -24,7 +24,7 @@ interface HomeAssistantState {
 }
 
 interface HomeAssistantActions {
-  connect: (config: HomeAssistantConfiguration) => Promise<(() => void) | undefined>;
+  connect: (config: HomeAssistantConfiguration) => Promise<void>;
   disconnect: () => void;
   clearError: () => void;
 }
@@ -54,6 +54,20 @@ const ENTITY_DEBOUNCE_MS = 50;
 
 export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) => {
   let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let activeServiceUnsubscribe: (() => void) | null = null;
+
+  const clearEntityDebounce = () => {
+    if (entityDebounceTimer !== null) {
+      clearTimeout(entityDebounceTimer);
+      entityDebounceTimer = null;
+    }
+  };
+
+  const clearServiceSubscriptions = () => {
+    activeServiceUnsubscribe?.();
+    activeServiceUnsubscribe = null;
+    clearEntityDebounce();
+  };
 
   return {
     ...initialState,
@@ -61,12 +75,13 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     connect: async (config: HomeAssistantConfiguration) => {
       set({ connecting: true, error: null });
       useErrorStore.getState().clearError();
+      clearServiceSubscriptions();
 
       try {
         // Subscribe to each typed event — only update the slice of state that changed
         const unsubscribers = [
           homeAssistantService.addListener('entities', (entities) => {
-            if (entityDebounceTimer !== null) clearTimeout(entityDebounceTimer);
+            clearEntityDebounce();
             entityDebounceTimer = setTimeout(() => {
               entityDebounceTimer = null;
               set({ entities });
@@ -90,7 +105,9 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
         ];
         const unsubscribe = () => {
           for (const fn of unsubscribers) fn();
+          clearEntityDebounce();
         };
+        activeServiceUnsubscribe = unsubscribe;
 
         // Authenticate and connect
         await homeAssistantService.authenticate(config);
@@ -108,9 +125,8 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
           connecting: false,
           reconnecting: false,
         });
-
-        return unsubscribe;
       } catch (error) {
+        clearServiceSubscriptions();
         const message =
           error instanceof Error
             ? error.message
@@ -130,6 +146,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
 
     disconnect: () => {
       useErrorStore.getState().clearError();
+      clearServiceSubscriptions();
       homeAssistantService.disconnect();
       set(initialState);
     },

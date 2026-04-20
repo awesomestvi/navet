@@ -51,7 +51,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: (args) => (
-    <div className="h-56 w-64 rounded-2xl bg-slate-900 p-4 text-white">
+    <div className="h-56 w-64 rounded-[28px] bg-slate-900 p-4 text-white">
       <CardMetricActionLayout {...args} />
     </div>
   ),
@@ -62,7 +62,7 @@ export const LargeSpacing: Story = {
     size: 'large',
   },
   render: (args) => (
-    <div className="h-64 w-64 rounded-2xl bg-slate-900 p-4 text-white">
+    <div className="h-64 w-64 rounded-[28px] bg-slate-900 p-4 text-white">
       <CardMetricActionLayout {...args} />
     </div>
   ),

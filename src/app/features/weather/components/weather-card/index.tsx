@@ -65,6 +65,7 @@ export const WeatherCard = memo(function WeatherCard({
   const { t } = useI18n();
   const {
     theme,
+    surface,
     cardShell,
     shell,
     tintColor,
@@ -96,17 +97,16 @@ export const WeatherCard = memo(function WeatherCard({
   const textSecondary = weatherTextTreatment.secondary;
   const shellGlowOpacityClass =
     theme === 'black' ? 'opacity-18' : theme === 'dark' ? 'opacity-28' : 'opacity-55';
+  const weatherOverlayClassName = hasCustomTint
+    ? (tintSurface.overlayClassName ?? 'bg-transparent')
+    : [surface.lightOverlay, shell.overlayClassName].filter(Boolean).join(' ');
 
   return (
     <>
       <CardWrapper
         className={`${cardShell.backdropClassName} ${weatherShellClassName} p-3 ${!isEditMode ? 'cursor-pointer' : ''}`}
         style={weatherTintStyle}
-        lightOverlayClassName={
-          hasCustomTint
-            ? (tintSurface.overlayClassName ?? 'bg-transparent')
-            : shell.overlayClassName || undefined
-        }
+        lightOverlayClassName={weatherOverlayClassName || undefined}
         interactionProps={interaction.cardProps}
       >
         <WeatherBackground
@@ -123,6 +123,21 @@ export const WeatherCard = memo(function WeatherCard({
         ) : (
           <div className={`absolute inset-0 ${shell.glowClassName} ${shellGlowOpacityClass}`} />
         )}
+        {!hasCustomTint ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-[1]"
+            style={{
+              background:
+                theme === 'light'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 32%, rgba(248,250,252,0.14) 100%)'
+                  : theme === 'glass'
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 32%, rgba(255,255,255,0.02) 100%)'
+                    : theme === 'black'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 28%, rgba(0,0,0,0.14) 100%)'
+                      : 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 28%, rgba(2,6,23,0.12) 100%)',
+            }}
+          />
+        ) : null}
 
         <div className="relative z-2 flex h-full flex-col">
           <div

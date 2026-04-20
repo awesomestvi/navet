@@ -21,7 +21,7 @@ class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xs text-white/40">
+        <div className="flex h-full items-center justify-center rounded-[28px] border border-white/10 bg-white/5 text-xs text-white/40">
           Widget failed to load
         </div>
       );
@@ -67,7 +67,7 @@ interface WidgetCardProps {
 }
 
 function WidgetFallback() {
-  return <div className="h-full rounded-2xl border border-white/10 bg-white/5 animate-pulse" />;
+  return <div className="h-full rounded-[28px] border border-white/10 bg-white/5 animate-pulse" />;
 }
 
 export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {

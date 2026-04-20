@@ -269,6 +269,13 @@ export const esMessages = {
   'dashboard.roomNav.groupBy': 'Agrupar por',
   'dashboard.roomNav.add': 'Agregar',
   'dashboard.roomNav.addCard': 'Agregar tarjeta',
+  'dashboard.roomNav.reorder': 'Reordenar',
+  'dashboard.roomNav.reorderDialog.title': 'Reordenar habitaciones',
+  'dashboard.roomNav.reorderDialog.description':
+    'Mueve las habitaciones hacia arriba o hacia abajo para cambiar su orden.',
+  'dashboard.roomNav.reorderDialog.dragRoom': 'Reordenar habitación {room}',
+  'dashboard.roomNav.reorderDialog.moveUp': 'Mover habitación hacia arriba',
+  'dashboard.roomNav.reorderDialog.moveDown': 'Mover habitación hacia abajo',
   'dashboard.roomNav.doneEditing': 'Terminar edición',
   'dashboard.roomNav.customize': 'Personalizar',
   'dashboard.homeOverview.eyebrow': 'Primera vista',

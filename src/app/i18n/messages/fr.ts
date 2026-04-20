@@ -270,6 +270,13 @@ export const frMessages = {
   'dashboard.roomNav.groupBy': 'Grouper par',
   'dashboard.roomNav.add': 'Ajouter',
   'dashboard.roomNav.addCard': 'Ajouter une carte',
+  'dashboard.roomNav.reorder': 'Réorganiser',
+  'dashboard.roomNav.reorderDialog.title': 'Réorganiser les pièces',
+  'dashboard.roomNav.reorderDialog.description':
+    'Déplacez les pièces vers le haut ou vers le bas pour changer leur ordre.',
+  'dashboard.roomNav.reorderDialog.dragRoom': 'Réorganiser la pièce {room}',
+  'dashboard.roomNav.reorderDialog.moveUp': 'Déplacer la pièce vers le haut',
+  'dashboard.roomNav.reorderDialog.moveDown': 'Déplacer la pièce vers le bas',
   'dashboard.roomNav.doneEditing': 'Terminer l’édition',
   'dashboard.roomNav.customize': 'Personnaliser',
   'dashboard.homeOverview.eyebrow': 'Premier regard',

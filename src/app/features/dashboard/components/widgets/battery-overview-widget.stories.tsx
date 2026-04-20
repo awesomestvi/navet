@@ -9,8 +9,16 @@ import { BatterySettingsDialog } from './battery-overview-widget';
 const sampleBatteries: HaBatterySensorRow[] = [
   { id: 'sensor.front_door_battery', name: 'Front Door Sensor', level: 18 },
   { id: 'sensor.kitchen_remote_battery', name: 'Kitchen Remote', level: 42 },
-  { id: 'sensor.living_room_motion_battery', name: 'Living Room Motion', level: 67 },
-  { id: 'sensor.thermostat_battery', name: 'Hall Thermostat', level: 91 },
+  {
+    id: 'sensor.ikea_of_sweden_vallhorn_wireless_motion_sensor_workshop_battery',
+    name: 'Workshop Motion Sensor',
+    level: 67,
+  },
+  {
+    id: 'sensor.ikea_of_sweden_vallhorn_wireless_motion_sensor_bathroom_battery',
+    name: 'Bathroom Motion Sensor',
+    level: 91,
+  },
 ];
 
 function BatterySettingsDialogStory() {

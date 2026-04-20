@@ -1,6 +1,5 @@
-import { Settings2 } from 'lucide-react';
 import { memo, useState } from 'react';
-import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
+import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import {
   type CardSize,
   getCompactCardSize,
@@ -63,6 +62,7 @@ export const CalendarCard = memo(function CalendarCard({
   const isSmall = isCompactCardSize(effectiveSize);
   const isMedium = effectiveSize === 'medium';
   const canOpenSettings = !inEditMode;
+  const chromeSize = effectiveSize === 'small' ? 'small' : 'medium';
   const displayName = name ?? t('calendar.defaultTitle');
 
   return (
@@ -96,21 +96,18 @@ export const CalendarCard = memo(function CalendarCard({
 
         <div className="relative flex h-full flex-col p-3">
           {canOpenSettings ? (
-            <div className="absolute bottom-3 right-3 z-10">
-              <EntityCardHeaderIcon
-                IconComponent={Settings2}
-                isActive={true}
-                size={effectiveSize}
-                tone="indigo"
-                baseColor={tintColor}
-                ariaLabel={t('calendar.settings.title')}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setIsSettingsOpen(true);
-                }}
-              />
-            </div>
+            <CardSettingsActionButton
+              theme={theme}
+              size={chromeSize}
+              variant="soft"
+              className="absolute right-3 top-3 z-10"
+              aria-label={t('calendar.settings.title')}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsSettingsOpen(true);
+              }}
+            />
           ) : null}
 
           {!nextEvent ? (

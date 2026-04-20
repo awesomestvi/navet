@@ -31,10 +31,10 @@ function CardShellSurfaceTokensShowcase() {
         return (
           <article
             key={theme}
-            className={`relative overflow-hidden rounded-2xl border p-4 ${surface.border} ${frameClassName}`}
+            className={`relative overflow-hidden rounded-3xl border p-4 ${surface.border} ${frameClassName}`}
           >
             <div
-              className={`relative overflow-hidden rounded-2xl border p-4 ${previewShellClassName} ${shell.backdropClassName}`}
+              className={`relative overflow-hidden rounded-3xl border p-4 ${previewShellClassName} ${shell.backdropClassName}`}
             >
               {shell.sheenOverlayClassName ? (
                 <div aria-hidden="true" className={shell.sheenOverlayClassName} />

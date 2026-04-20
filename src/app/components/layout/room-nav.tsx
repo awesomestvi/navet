@@ -1,4 +1,29 @@
-import { Check, ChevronDown, Edit3, LayoutGrid, Lightbulb } from 'lucide-react';
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Edit3,
+  GripVertical,
+  LayoutGrid,
+  Lightbulb,
+} from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -8,8 +33,16 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
+import {
+  Button,
+  DialogFooter,
+  DialogShell,
+  settingsDialogContentClass,
+} from '@/app/components/primitives';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import {
@@ -30,6 +63,7 @@ interface RoomNavProps {
   onRoomChange: (room: string) => void;
   allViewGrouping?: AllViewGrouping;
   isEditMode: boolean;
+  onRoomOrderChange?: (rooms: string[]) => void;
   onAllViewGroupingChange?: (grouping: AllViewGrouping) => void;
   onToggleEditMode: () => void;
   onAddEntity?: () => void;
@@ -102,6 +136,7 @@ export const RoomNav = memo(function RoomNav({
   onRoomChange,
   allViewGrouping = 'custom',
   isEditMode,
+  onRoomOrderChange,
   onAllViewGroupingChange,
   onToggleEditMode,
   onAddEntity,
@@ -111,6 +146,7 @@ export const RoomNav = memo(function RoomNav({
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const { stickyMarkerRef, stickyRef, shellRef } = useStickyActivation();
+  const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const visibleRooms = ['All', ...rooms];
   const textSecondary = surface.textSecondary;
   const inactiveBg = surface.subtleBg;
@@ -150,7 +186,10 @@ export const RoomNav = memo(function RoomNav({
     } as CSSProperties;
   }, [theme]);
   const showAllViewGrouping = activeRoom === 'All' && onAllViewGroupingChange;
-  const hasEditMenus = Boolean((isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity));
+  const canReorderRooms = isEditMode && Boolean(onRoomOrderChange) && rooms.length > 1;
+  const hasEditMenus = Boolean(
+    canReorderRooms || (isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity)
+  );
   const lightPillClassName =
     theme === 'light'
       ? 'border-slate-300/80 bg-white/92 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.3)]'
@@ -233,6 +272,20 @@ export const RoomNav = memo(function RoomNav({
                 </DropdownMenu>
               ) : null}
 
+              {canReorderRooms ? (
+                <InteractivePill
+                  onClick={() => setIsReorderDialogOpen(true)}
+                  intent="action"
+                  size="small"
+                  className={actionPillClassName}
+                >
+                  <GripVertical className={`h-4 w-4 ${textSecondary}`} />
+                  <span className={`hidden text-xs font-medium md:inline ${textSecondary}`}>
+                    {t('dashboard.roomNav.reorder')}
+                  </span>
+                </InteractivePill>
+              ) : null}
+
               {isEditMode && onAddEntity ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -267,6 +320,7 @@ export const RoomNav = memo(function RoomNav({
                 onClick={onToggleEditMode}
                 active={isEditMode}
                 intent="action"
+                size="small"
                 className={`room-nav-action-pill flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${
                   isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
                 }`}
@@ -300,7 +354,215 @@ export const RoomNav = memo(function RoomNav({
           </div>
         </div>
       </div>
+      {canReorderRooms ? (
+        <RoomOrderDialog
+          isOpen={isReorderDialogOpen}
+          onOpenChange={setIsReorderDialogOpen}
+          rooms={rooms}
+          onRoomOrderChange={onRoomOrderChange}
+        />
+      ) : null}
     </>
+  );
+});
+
+interface RoomOrderDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  rooms: string[];
+  onRoomOrderChange?: (rooms: string[]) => void;
+}
+
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || toIndex >= items.length) {
+    return items;
+  }
+
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  if (moved === undefined) {
+    return items;
+  }
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+const RoomOrderDialog = memo(function RoomOrderDialog({
+  isOpen,
+  onOpenChange,
+  rooms,
+  onRoomOrderChange,
+}: RoomOrderDialogProps) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const [draftRooms, setDraftRooms] = useState(rooms);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftRooms(rooms);
+    }
+  }, [isOpen, rooms]);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 10,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const moveRoom = (fromIndex: number, direction: -1 | 1) => {
+    setDraftRooms((current) => {
+      return moveItem(current, fromIndex, fromIndex + direction);
+    });
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    setDraftRooms((current) => {
+      const oldIndex = current.indexOf(String(active.id));
+      const newIndex = current.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) {
+        return current;
+      }
+
+      return arrayMove(current, oldIndex, newIndex);
+    });
+  };
+
+  const handleDone = () => {
+    onRoomOrderChange?.(draftRooms);
+    onOpenChange(false);
+  };
+
+  return (
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      contentAriaDescribedBy={undefined}
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      contentClassName={settingsDialogContentClass(surface, {
+        maxWidth: 'sm',
+        height: 'capped',
+        overflow: true,
+        padding: false,
+        animate: true,
+      })}
+    >
+      <div className="max-h-[85vh] overflow-y-auto p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className={`text-xl font-semibold ${surface.textPrimary}`}>
+              {t('dashboard.roomNav.reorderDialog.title')}
+            </h2>
+            <p className={`mt-1 text-sm ${surface.textSecondary}`}>
+              {t('dashboard.roomNav.reorderDialog.description')}
+            </p>
+          </div>
+        </div>
+
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {draftRooms.map((room, index) => (
+                <RoomOrderDialogRow
+                  key={room}
+                  room={room}
+                  index={index}
+                  totalCount={draftRooms.length}
+                  surface={surface}
+                  onMove={moveRoom}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        <DialogFooter>
+          <Button variant="ghost" size="small" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="soft" size="small" onClick={handleDone}>
+            {t('common.done')}
+          </Button>
+        </DialogFooter>
+      </div>
+    </DialogShell>
+  );
+});
+
+interface RoomOrderDialogRowProps {
+  room: string;
+  index: number;
+  totalCount: number;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  onMove: (fromIndex: number, direction: -1 | 1) => void;
+}
+
+const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
+  room,
+  index,
+  totalCount,
+  surface,
+  onMove,
+}: RoomOrderDialogRowProps) {
+  const { t } = useI18n();
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: room,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={getDndTransformStyle(transform, transition)}
+      className={`flex items-center gap-3 rounded-2xl border px-3 py-2 ${surface.border} ${surface.subtleBg}`}
+    >
+      <button
+        type="button"
+        aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
+        className={`flex h-9 w-5 touch-none items-center justify-center rounded-md transition-colors ${surface.textSecondary} ${surface.hoverBg}`}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
+      </button>
+      <span className={`min-w-0 flex-1 truncate text-sm font-medium ${surface.textPrimary}`}>
+        {room}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          size="compact"
+          variant="soft"
+          onClick={() => onMove(index, -1)}
+          disabled={index === 0}
+          aria-label={t('dashboard.roomNav.reorderDialog.moveUp')}
+        >
+          <ArrowUp className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="compact"
+          variant="soft"
+          onClick={() => onMove(index, 1)}
+          disabled={index === totalCount - 1}
+          aria-label={t('dashboard.roomNav.reorderDialog.moveDown')}
+        >
+          <ArrowDown className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
   );
 });
 
@@ -308,7 +570,7 @@ const RoomNavMenuButton = memo(
   forwardRef<HTMLButtonElement, RoomNavMenuButtonProps & ButtonHTMLAttributes<HTMLButtonElement>>(
     function RoomNavMenuButton({ icon: Icon, label, textSecondary, className, ...props }, ref) {
       return (
-        <InteractivePill ref={ref} intent="action" className={className} {...props}>
+        <InteractivePill ref={ref} intent="action" size="small" className={className} {...props}>
           <Icon className={`h-4 w-4 ${textSecondary}`} />
           <span className={`hidden text-xs font-medium md:inline ${textSecondary}`}>{label}</span>
           <ChevronDown className={`h-3.5 w-3.5 ${textSecondary}`} />
@@ -330,6 +592,7 @@ const RoomNavItem = memo(function RoomNavItem({
     <InteractivePill
       active={activeRoom === room}
       onClick={() => onRoomChange(room)}
+      size="small"
       variant="ghost"
       className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
         activeRoom === room ? activeClassName : inactiveClassName

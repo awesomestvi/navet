@@ -1,7 +1,21 @@
-import { ChevronLeft, ChevronRight, Settings2, Shuffle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Settings2, Shuffle } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RoundControlButton } from '@/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import {
+  normalizeCustomCardTint,
+  withTintAlpha,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu';
+import { cn } from '@/app/components/ui/utils';
 import { useAuth } from '@/app/contexts/auth-context';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { useDevices, useI18n, useRooms, useTheme } from '@/app/hooks';
@@ -69,7 +83,7 @@ export function PhotoFrameWidget({
   onShuffleEnabledChange,
   tintColor,
   onTintColorChange,
-  isEditMode = false,
+  isEditMode: _isEditMode = false,
 }: PhotoFrameWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -99,6 +113,40 @@ export function PhotoFrameWidget({
   const currentPhoto = hasCustomPhotos ? null : mockPhotos[safeIndex];
   const currentPhotoUrl = activePhotoUrls[safeIndex];
   const showShuffleControl = photoCount > 1 && !isCompact;
+  const photoFrameConfig = useMemo(
+    () =>
+      onUpdateUrls && onSourceModeChange && onMediaSourceIdChange
+        ? {
+            onUpdateUrls,
+            onSourceModeChange,
+            onMediaSourceIdChange,
+          }
+        : null,
+    [onMediaSourceIdChange, onSourceModeChange, onUpdateUrls]
+  );
+  const canConfigure = photoFrameConfig !== null;
+  const hasMenuActions = showShuffleControl || canConfigure;
+  const chromeSize = size === 'large' ? 'medium' : size;
+  const controlAccentColor = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
+  const dropdownItemClassName = cn(
+    'rounded-xl border border-transparent px-3 py-2 text-sm outline-none transition-colors',
+    'data-[highlighted]:bg-[var(--menu-hover-bg)] data-[highlighted]:border-[var(--menu-hover-border)]',
+    'focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)]'
+  );
+  const dropdownItemHoverStyle = {
+    '--menu-hover-bg':
+      theme === 'light'
+        ? withTintAlpha(controlAccentColor, 0.12)
+        : theme === 'glass'
+          ? withTintAlpha(controlAccentColor, 0.16)
+          : withTintAlpha(controlAccentColor, 0.2),
+    '--menu-hover-border':
+      theme === 'light'
+        ? withTintAlpha(controlAccentColor, 0.24)
+        : theme === 'glass'
+          ? withTintAlpha(controlAccentColor, 0.32)
+          : withTintAlpha(controlAccentColor, 0.38),
+  } as CSSProperties;
   const imageMotionClassName = useMemo(
     () => (hasCustomPhotos ? 'scale-[1.02] transition-transform duration-[1800ms] ease-out' : ''),
     [hasCustomPhotos]
@@ -141,12 +189,6 @@ export function PhotoFrameWidget({
     }
   }, [currentIndex, photoCount]);
 
-  useEffect(() => {
-    if (!isEditMode) {
-      setIsSettingsOpen(false);
-    }
-  }, [isEditMode]);
-
   return (
     <div
       className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10"
@@ -158,6 +200,55 @@ export function PhotoFrameWidget({
       }}
     >
       <div className="relative z-[2] flex h-full flex-col">
+        {hasMenuActions ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <RoundControlButton
+                theme={theme}
+                size={chromeSize === 'small' ? 'small' : 'medium'}
+                variant="soft"
+                aria-label={t('widgets.photoFrame.settings.title')}
+                className="absolute right-3 top-3 z-20 shrink-0"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </RoundControlButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className={cn(getThemeDropdownSurfaceClasses(theme), 'min-w-40 rounded-2xl p-2')}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {showShuffleControl ? (
+                <DropdownMenuItem
+                  className={dropdownItemClassName}
+                  style={dropdownItemHoverStyle}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    jumpToRandomPhoto();
+                  }}
+                >
+                  <Shuffle className="h-4 w-4" />
+                  {t('widgets.photoFrame.shuffle')}
+                </DropdownMenuItem>
+              ) : null}
+              {canConfigure ? (
+                <DropdownMenuItem
+                  className={dropdownItemClassName}
+                  style={dropdownItemHoverStyle}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsSettingsOpen(true);
+                  }}
+                >
+                  <Settings2 className="h-4 w-4" />
+                  {t('widgets.photoFrame.settings.title')}
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
         <div className="relative flex-1 overflow-hidden rounded-[28px] group">
           {hasCustomPhotos ? (
             <img
@@ -170,28 +261,6 @@ export function PhotoFrameWidget({
           )}
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_22%,rgba(0,0,0,0.12)_66%,rgba(2,6,23,0.44)_100%)]" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-
-          {isEditMode && onUpdateUrls && onSourceModeChange && onMediaSourceIdChange && (
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(true)}
-              className={`absolute bottom-4 right-4 z-20 shrink-0 rounded-full border border-white/14 bg-black/28 p-2 text-white/80 backdrop-blur-md transition-opacity hover:opacity-90 ${surface.textMuted}`}
-              aria-label={t('widgets.photoFrame.settings.title')}
-            >
-              <Settings2 className="h-4 w-4" />
-            </button>
-          )}
-
-          {showShuffleControl ? (
-            <button
-              type="button"
-              onClick={jumpToRandomPhoto}
-              className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-black/26 px-3 py-1.5 text-[11px] font-medium text-white/88 backdrop-blur-md transition-opacity hover:opacity-95"
-            >
-              <Shuffle className="h-3.5 w-3.5" />
-              {t('widgets.photoFrame.shuffle')}
-            </button>
-          ) : null}
 
           {/* Navigation Buttons */}
           {!isCompact && (
@@ -218,7 +287,7 @@ export function PhotoFrameWidget({
 
         {/* Thumbnail Dots */}
         {!isCompact && photoCount > 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center gap-2">
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center gap-3">
             {Array.from({ length: photoCount }).map((_, index) => (
               <button
                 type="button"
@@ -236,7 +305,7 @@ export function PhotoFrameWidget({
           </div>
         )}
 
-        {isEditMode && onUpdateUrls && onSourceModeChange && onMediaSourceIdChange && (
+        {canConfigure ? (
           <PhotoFrameSettingsDialog
             isOpen={isSettingsOpen}
             onOpenChange={setIsSettingsOpen}
@@ -245,17 +314,17 @@ export function PhotoFrameWidget({
             roomOptions={roomOptions}
             onRoomChange={onRoomChange}
             sourceMode={resolvedSourceMode}
-            onSourceModeChange={onSourceModeChange}
+            onSourceModeChange={photoFrameConfig.onSourceModeChange}
             photoUrls={photoUrls ?? []}
-            onUpdateUrls={onUpdateUrls}
+            onUpdateUrls={photoFrameConfig.onUpdateUrls}
             mediaSourceId={mediaSourceId}
-            onMediaSourceIdChange={onMediaSourceIdChange}
+            onMediaSourceIdChange={photoFrameConfig.onMediaSourceIdChange}
             shuffleEnabled={shuffleEnabled}
             onShuffleEnabledChange={onShuffleEnabledChange}
             tintColor={tintColor}
             onTintColorChange={onTintColorChange}
           />
-        )}
+        ) : null}
       </div>
     </div>
   );

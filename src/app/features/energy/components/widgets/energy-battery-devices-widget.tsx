@@ -20,6 +20,7 @@ export const EnergyBatteryDevicesWidget = memo(function EnergyBatteryDevicesWidg
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const progressTrackClassName = theme === 'light' ? 'bg-slate-200/80' : surface.subtleBg;
 
   const getLevelColor = (level: number) => {
     if (level <= 20) return '#ef4444';
@@ -57,7 +58,7 @@ export const EnergyBatteryDevicesWidget = memo(function EnergyBatteryDevicesWidg
                   <div className={`truncate text-sm font-semibold ${surface.textPrimary}`}>
                     {device.name}
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-white/8">
+                  <div className={`mt-2 h-2 rounded-full ${progressTrackClassName}`}>
                     <div
                       className="h-2 rounded-full"
                       style={{

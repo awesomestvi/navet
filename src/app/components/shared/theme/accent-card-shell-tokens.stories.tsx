@@ -38,7 +38,7 @@ function AccentCardShellTokensShowcase() {
               return (
                 <article
                   key={`${theme}-${accent}`}
-                  className={`relative overflow-hidden rounded-2xl border p-3 ${shell.containerClassName}`}
+                  className={`relative overflow-hidden rounded-3xl border p-3 ${shell.containerClassName}`}
                 >
                   <div
                     aria-hidden="true"

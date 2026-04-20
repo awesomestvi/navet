@@ -271,6 +271,13 @@ export const deMessages = {
   'dashboard.roomNav.groupBy': 'Gruppieren nach',
   'dashboard.roomNav.add': 'Hinzufügen',
   'dashboard.roomNav.addCard': 'Karte hinzufügen',
+  'dashboard.roomNav.reorder': 'Neu anordnen',
+  'dashboard.roomNav.reorderDialog.title': 'Räume neu anordnen',
+  'dashboard.roomNav.reorderDialog.description':
+    'Verschiebe Räume nach oben oder unten, um ihre Reihenfolge zu ändern.',
+  'dashboard.roomNav.reorderDialog.dragRoom': 'Raum {room} neu anordnen',
+  'dashboard.roomNav.reorderDialog.moveUp': 'Raum nach oben verschieben',
+  'dashboard.roomNav.reorderDialog.moveDown': 'Raum nach unten verschieben',
   'dashboard.roomNav.doneEditing': 'Bearbeitung beenden',
   'dashboard.roomNav.customize': 'Anpassen',
   'dashboard.homeOverview.eyebrow': 'Erster Blick',

@@ -219,10 +219,11 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
           rooms={rooms}
           activeRoom={activeRoom}
           onRoomChange={changeRoom}
-          allViewGrouping={activeRoom === 'All' ? undefined : controller.allViewGrouping}
+          allViewGrouping={activeRoom === 'All' ? controller.allViewGrouping : undefined}
           isEditMode={isEditMode}
+          onRoomOrderChange={controller.onSetRoomOrder}
           onAllViewGroupingChange={
-            activeRoom === 'All' ? undefined : controller.onSetAllViewGrouping
+            activeRoom === 'All' ? controller.onSetAllViewGrouping : undefined
           }
           onToggleEditMode={onToggleEditMode}
           onAddEntity={

@@ -41,6 +41,7 @@ export function HeaderSearchInput({
     <Input
       ref={inputRef}
       type="text"
+      size="small"
       placeholder={placeholder}
       value={query}
       onChange={(event) => onChange(event.target.value)}

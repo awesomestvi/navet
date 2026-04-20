@@ -32,6 +32,10 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const tooltipClassName =
+    theme === 'light'
+      ? `border ${tokens.surface.border} ${tokens.surface.panel} text-slate-900 shadow-[0_18px_38px_-24px_rgba(15,23,42,0.22)]`
+      : `border ${tokens.surface.border} ${tokens.surface.panel} ${tokens.surface.textPrimary} shadow-2xl`;
   const cW = VB_W - PAD.left - PAD.right;
   const cH = VB_H - PAD.top - PAD.bottom;
   const baseline = PAD.top + cH;
@@ -74,9 +78,11 @@ export const EnergyAreaChart = memo(function EnergyAreaChart({
             className="w-full"
             style={{ transform: `translate3d(${tooltipLeftPercent}%, 0, 0)` }}
           >
-            <div className="-translate-x-1/2 w-max max-w-[180px] rounded-xl border border-white/10 bg-neutral-950/92 px-3 py-2 text-left text-[11px] text-white shadow-2xl backdrop-blur-md">
-              <div className="text-white/85">{activePoint.x}</div>
-              <div className="mt-1 text-white/75">
+            <div
+              className={`-translate-x-1/2 w-max max-w-[180px] rounded-xl px-3 py-2 text-left text-[11px] backdrop-blur-md ${tooltipClassName}`}
+            >
+              <div className={tokens.surface.textSecondary}>{activePoint.x}</div>
+              <div className={`mt-1 ${tokens.surface.textPrimary}`}>
                 {activePoint.y}
                 {yUnit}
               </div>

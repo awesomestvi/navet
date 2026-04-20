@@ -22,7 +22,7 @@ function TokenStyleCalculatorsShowcase() {
   return (
     <div className="space-y-6">
       <section
-        className={`rounded-2xl border p-4 backdrop-blur-xl ${defaultSurface.border} ${defaultSurface.panelMuted}`}
+        className={`rounded-3xl border p-4 backdrop-blur-xl ${defaultSurface.border} ${defaultSurface.panelMuted}`}
       >
         <h3 className={`text-sm font-semibold ${defaultSurface.textPrimary}`}>
           Color token helpers
@@ -70,7 +70,7 @@ function TokenStyleCalculatorsShowcase() {
           return (
             <section
               key={theme}
-              className={`rounded-2xl border p-4 backdrop-blur-xl ${frameClassName}`}
+              className={`rounded-3xl border p-4 backdrop-blur-xl ${frameClassName}`}
             >
               <h3
                 className={`text-xs font-semibold uppercase tracking-[0.2em] ${

@@ -22,6 +22,7 @@ interface DialogShellProps {
   onOpenChange: (open: boolean) => void;
   overlayClassName: string;
   contentClassName: string;
+  contentAriaDescribedBy?: string;
   disableOpenAutoFocus?: boolean;
   contentStyle?: CSSProperties;
   contentGlowClassName?: string;
@@ -35,6 +36,7 @@ export function DialogShell({
   onOpenChange,
   overlayClassName,
   contentClassName,
+  contentAriaDescribedBy,
   disableOpenAutoFocus = false,
   contentStyle,
   contentGlowClassName,
@@ -53,6 +55,7 @@ export function DialogShell({
         <Dialog.Content
           className={contentClassName}
           style={contentStyle}
+          aria-describedby={contentAriaDescribedBy}
           onOpenAutoFocus={
             disableOpenAutoFocus
               ? (event) => {

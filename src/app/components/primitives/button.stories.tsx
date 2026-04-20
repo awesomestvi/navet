@@ -9,14 +9,14 @@ const meta = {
   args: {
     children: 'Save changes',
     variant: 'primary',
-    size: 'medium',
+    size: 'default',
     loading: false,
     disabled: false,
   },
   argTypes: {
     size: {
       control: 'select',
-      options: ['small', 'medium'],
+      options: ['compact', 'small', 'default'],
     },
   },
   parameters: {
@@ -37,7 +37,7 @@ const meta = {
           '',
           'Review expectations:',
           '- Verify readable contrast and affordance across active and disabled states.',
-          '- Verify icon-only controls remain hit-target compliant for small and medium sizes.',
+          '- Verify icon-only controls remain hit-target compliant for compact, small, and default sizes.',
         ].join('\n'),
       },
     },
@@ -87,10 +87,13 @@ export const Disabled: Story = {
 export const IconButtons: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
+      <Button iconOnly label="Open settings" variant="subtle" size="compact">
+        <Settings2 className="h-4 w-4" />
+      </Button>
       <Button iconOnly label="Open settings" variant="subtle" size="small">
         <Settings2 className="h-4 w-4" />
       </Button>
-      <Button iconOnly label="Open settings" variant="subtle" size="medium">
+      <Button iconOnly label="Open settings" variant="subtle" size="default">
         <Settings2 className="h-4 w-4" />
       </Button>
     </div>
@@ -100,6 +103,30 @@ export const IconButtons: Story = {
       description: {
         story:
           'Icon-only button usage across supported sizes, including required accessible labeling via the `label` prop.',
+      },
+    },
+  },
+};
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-4">
+      <Button size="compact" variant="secondary">
+        Compact
+      </Button>
+      <Button size="small" variant="secondary">
+        Small
+      </Button>
+      <Button size="default" variant="secondary">
+        Default
+      </Button>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Supported button sizes now mirror `InteractivePill`: `compact`, `small`, and `default`.',
       },
     },
   },

@@ -107,6 +107,7 @@ export const Medium: Story = {
 export const Large: Story = {
   args: {
     size: 'large',
+    sunrise: '08:30',
   },
 };
 

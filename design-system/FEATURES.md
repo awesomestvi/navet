@@ -1,1310 +1,313 @@
-# Navet - Feature Documentation
+# Navet Feature Map
 
-## Overview
+This document is a current implementation map for Navet's major product areas. It is intended to
+help contributors understand where behavior lives and which shared patterns are expected.
 
-This document details the key features and systems implemented in Navet, including authentication, adaptive theming, navigation, and settings.
+## Feature Inventory
 
----
+Current feature folders under
+[`src/app/features/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features):
 
-## Authentication System
+- `auth`
+- `calendar`
+- `climate`
+- `dashboard`
+- `energy`
+- `lighting`
+- `media`
+- `notifications`
+- `person`
+- `rss`
+- `scenes`
+- `security`
+- `sensors`
+- `settings`
+- `vacuum`
+- `weather`
 
-### Login Page
+Cross-feature imports should go through a feature's root `index.ts` when crossing feature
+boundaries where that entrypoint exists. The current intended pattern is feature-root imports,
+but `auth` is still a small exception because it does not yet expose a root entry file.
 
-**Location**: `/src/app/features/auth/login-page.tsx`
+## App Shell
 
-The login page provides a secure authentication interface for connecting to your smart home:
+### Root app composition
 
-#### Features
-- **Smart home URL input** - Connect to local or remote instance
-- **Long-lived access token authentication** - Secure token-based access
-- **Form validation** - Ensures valid URL and token format
-- **Persistent sessions** - Auth state saved to localStorage
-- **Error handling** - Clear feedback for connection issues
+[`src/app/App.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/App.tsx) assembles:
 
-#### Design
-- Full-page centered card design
-- Frosted glass aesthetic matching dashboard
-- iOS-inspired input fields
-- Clear help text with token generation link
-- Smooth transitions and loading states
+- the i18n provider
+- the global error display
+- the PWA update prompt
+- the network status banner
+- the notification toaster
+- the authenticated route split between `LoginPage` and `DashboardPage`
 
-#### Implementation
-```tsx
-// Auth context
-const { login, isAuthenticated, config, user } = useAuth();
+It also syncs:
 
-// Login flow
-await login(url, token);
-```
+- accent CSS variables
+- page zoom CSS/viewport variables
+- reduced-effects flags and theme-related DOM data attributes
 
-### User Management
+## State and data flow
 
-**Component**: `/src/app/components/layout/user-dropdown.tsx`
+### Shared state
 
-#### Features
-- **User profile display** - Shows username and connection info
-- **Avatar** - First letter of username in colored circle
-- **Dropdown menu** - Quick access to user actions
-- **Logout functionality** - Secure session termination
+Navet uses Zustand for all shared reactive state.
 
-#### Design
-- Header-integrated dropdown
-- Smooth animations on open/close
-- Theme-aware styling
-- Clear visual hierarchy
+Current core stores:
 
----
+- `auth-store`
+- `config-store`
+- `home-assistant-store`
+- `settings-store`
+- `theme-store`
+- `navigation-store`
+- `edit-mode-store`
+- `search-store`
+- `error-store`
 
-## Header Architecture
+Selectors live in
+[`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts)
+and should be preferred over full-store subscriptions.
 
-**Location**: `src/app/components/layout/`
+### Home Assistant flow
 
-The header is split into a controller hook and three focused sub-components, keeping orchestration and presentation separate.
+[`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
+emits typed events for:
 
-### `useHeaderController`
+- entities
+- config
+- registries
+- connection
 
-**File**: `use-header-controller.ts`
+The store updates only the affected slice for each event. Avoid catch-all "copy the whole service
+state" sync paths.
 
-Owns all header logic. Responsibilities:
-- **Greeting** — generates a time-of-day greeting key with a 25% chance of casual variants; updates every 30 seconds
-- **Date/time/week** — formatted display values updated on the same 30-second interval
-- **Search** — dispatches queries across all device groups (lights, climate, switches, covers, locks, media_player, person, sensor, vacuum, weather, power)
-- **User identity** — derives first name and avatar URL from the HA `person` entity
+## Dashboard
 
-### `HeaderSearchInput`
+### Ownership
 
-**File**: `header-search-input.tsx`
+The dashboard feature owns:
 
-Stateless search input with a search icon on the left and a clear (×) button on the right. Accepts dynamic accent/hover/background color props so it adapts to all four themes without internal theme branches.
+- card registration
+- entity visibility
+- custom card placement
+- room ordering
+- card ordering
+- dashboard-specific persisted layout state
 
-### `HeaderMobileActions` / `HeaderDesktopActions`
+Important paths:
 
-**File**: `header-actions.tsx`
+- [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx)
+- [`src/app/features/dashboard/hooks/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/hooks)
+- [`src/app/features/dashboard/stores/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/stores)
 
-Splits action buttons by viewport:
-- **Mobile** (`md:hidden`): search icon toggle, notification button with unread badge, user dropdown
-- **Desktop** (hidden below `md`): notification button with unread badge, user dropdown
+### Current behavior
 
-Both variants share the internal `HeaderNotificationButton` component.
+- Home is the main editable dashboard section
+- cards can be added from entity-library and widget flows
+- supported cards can be resized across shared card sizes
+- room grouping modes support custom, room, type, and no-grouping views
+- onboarding can start from all entities, a blank board, or imported config
 
----
+## Settings
 
-## Theme System
+Settings is the control surface for:
 
-### Theme Hook + Store
+- appearance and theme mode
+- accent color
+- visual quality
+- page zoom
+- localization
+- dashboard config import/export
+- onboarding reset
+- interaction preferences such as tap behavior
 
-**Location**: `/src/app/hooks/use-theme.ts`
+Settings UI should reuse shared patterns and primitives before introducing feature-specific shells.
 
-Exposes global theme state including mode, effects quality, and primary color customization through a direct hook API backed by shared client state.
+## Theme and appearance
 
-#### Theme Modes
+Navet supports four themes:
 
-**1. Liquid Glass Theme**
-- Background: deep blue-black stage with luminous blur
-- Cards: translucent frosted panels with brighter borders
-- Text: white primary, softened white secondary
-- Best for: glass-heavy immersive presentation
+- `glass`
+- `dark`
+- `light`
+- `black`
 
-**2. Dark Theme**
-- Background: `#0a0a0a` (deep black)
-- Cards: Dark gray with subtle gradients
-- Text: White primary, gray secondary
-- Best for: Low-light environments, OLED screens
+The current expectation is:
 
-**3. Light Theme**
-- Background: `#f9fafb` (soft gray)
-- Cards: White with subtle shadows
-- Text: Dark gray primary, mid-gray secondary
-- Best for: Bright environments, accessibility
+- shared theme branches resolve through surface/token helpers
+- theme-aware shared controls reuse shared primitives
+- accent/tinted surfaces use readable-text token logic when needed
 
-**4. Black Theme**
-- Background: `#000000` (OLED black)
-- Cards: Near-pure black with stronger contrast treatment
-- Text: Pure white primary, bright accents
-- Best for: Visual accessibility, OLED-friendly contrast
+Key theme helpers live in
+[`src/app/components/shared/theme/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme).
 
-#### Primary Color System
+## Shared UI system
 
-Users can customize the primary color used throughout the interface:
+### Ownership split
 
-| Color  | Hex Code | Usage                          |
-|--------|----------|--------------------------------|
-| Orange | #f97316  | Default, warm, home-like      |
-| Blue   | #3b82f6  | Technology, calm, professional |
-| Green  | #22c55e  | Nature, eco-friendly          |
-| Purple | #a855f7  | Premium, creative             |
-| Pink   | #ec4899  | Playful, modern               |
-| Red    | #ef4444  | Bold, urgent                  |
-| Yellow | #eab308  | Bright, energetic             |
-| Teal   | #14b8a6  | Fresh, balanced               |
-| Custom | User-set | Personalized accent color     |
+- `primitives/`: low-level reusable UI
+- `patterns/`: composed shared structure
+- `system/`: curated export surface
+- `shared/`: app-specific shared UI and compatibility shims
 
-#### Effects Quality System
+This split is documented in:
 
-Navet scales its glass treatment through visual quality tiers instead of forcing the same rendering path on every device:
+- [README.md](README.md)
+- [`src/app/components/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/README.md)
+- [`src/app/components/shared/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/README.md)
 
-- **High** - richest live glass treatment for capable hardware
-- **Medium** - simulated glass with tinted surfaces and reduced live effects
-- **Low** - reduced effects and more contained surfaces for constrained hardware
+### Storybook support
 
-This keeps the same design language while making the UI practical on devices like Raspberry Pi.
+Storybook is the review surface for the system layer, card surfaces, settings flows, and app shell.
 
-Current medium-tier behavior intentionally trims the most expensive visual work instead of just slowing it down:
+Shared story helpers live in
+[`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx)
+and [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts).
 
-- shortens transition and animation durations to reduce time spent on compositor-heavy states
-- caps backdrop blur and suppresses ambient light-bleed overlays to lower overdraw cost
-- removes large outer shadows while preserving the shared theme surfaces and readability layers
+## Card system
 
-#### What Changes with Primary Color
-- Active card states
-- Button backgrounds and borders
-- Navigation indicators
-- Slider handles and progress bars
-- Icon accents
-- Selection indicators
-- Focus states
-- Shared color picker swatches used for custom accents, light colors, and Kelvin presets
+### Size model
 
-#### Dynamic Color Class Safety
+The canonical size registry lives in
+[`src/app/components/shared/card-size-selector.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size-selector.tsx).
 
-`generateThemeColors` builds Tailwind class names dynamically (e.g. `` `from-${color}-900` ``), which Tailwind's content scanner cannot detect. All required class combinations for every accent color and theme are listed as literal strings in `src/app/components/shared/theme/theme-color-safelist.ts`. This file must be kept in sync with `generateThemeColors` whenever new color/shade/opacity combinations are added.
+Supported sizes:
 
-#### Shared Theme Primitives
+- `tiny`
+- `extra-small`
+- `small`
+- `medium`
+- `medium-vertical`
+- `large`
+- `extra-large`
 
-Recent UI cleanup moved repeated theme logic into shared primitives so cross-theme behavior can be changed in one place:
+Preview dimensions, ratios, and drag overlays derive from the shared registry rather than per-card
+hardcoded values.
 
-- **Entity icon pill styles** - centralized under shared theme helpers for all 4 themes
-- **Interactive pills** - canonical selection-pill primitive aligned with the Settings `Theme mode` design, reused for compact option rows across light/dark/black/glass themes
-- **Accent card shell tokens** - centralized accent-surface container, glow, and overlay treatments for themed cards, with distinct light, dark, glass, and black behavior instead of one shared dark fallback
-- **Round control button** - shared circular action control primitive for card actions across lighting, media, HVAC, security, and vacuum cards; supports `neutral`, `soft` (glass/frosted), and `emphasis` variants
-- **Card state surface tokens** - centralized off/inactive card shell, overlay, text, and media-artwork dimming treatment for light, HVAC, switch, and media cards
-- **Theme surface tokens** - still define the shared panel, border, text, and input surfaces used by these primitives
-- **Entity card title block** - centralized title/subtitle ordering so cards can switch between title-first and eyebrow-first header composition without duplicating text layout logic
-- **Tiny action card** - shared compact shell for the smallest interactive cards, including watermark, overlay, eyebrow/title text stack, and bottom action slot
-- **Card dialog pattern primitives** - shared `CardDialogHeader`, `CardDialogSection`, `CardDialogTabList`, `CardDialogTabTrigger`, and `CardDialogChoicePill` unify settings-dialog structure across light, weather, vacuum, calendar, camera, HVAC, and switch cards
-- **Link primitive** - shared inline link component for secondary actions in dense UI (for example, update notifications with external release-note links)
+### Compact-card rules
 
-#### Accent Card Shell Story
+- use shared title/header primitives in dense cards
+- use shared tiny/compact shells where available
+- keep control density intentional
+- do not duplicate the same action in multiple rows of a compact card
 
-**Storybook**: `Theme/Cards/Accent Card Shell`
+## Dialog surfaces
 
-This token story exists to validate the accent-shell surface treatment across all accent families and all four themes.
+Entity settings dialogs should compose from the shared dialog primitives and patterns, including:
 
-- **Dark and Black** - use tint-aware readable text tokens instead of fixed neutral copy colors
-- **Light** - keeps stronger accent separation so cards do not wash back to white
-- **Black** - uses a dedicated black-theme branch instead of reusing the dark-theme gradient path
-
-### Internal Design-System Foundation
-
-**Location**: `/src/app/components/system/`
-
-Navet now has a lightweight in-repo system layer that exposes stable UI exports without introducing a monorepo or package workspace.
-
-#### Structure
-
-- **`src/app/components/primitives/`** - low-level reusable pieces such as pills, dialog shells, header parts, swatches, spinners, and text inputs
-- **`src/app/components/patterns/`** - composed UI sections such as field wrappers, empty states, message bars, and preview cards
-- **`src/app/components/system/`** - curated public export surface for Storybook navigation and cross-app discovery
-- **`tokens/`** - theme surface helpers, accent shell treatments, color helpers, and other shared visual decision utilities
-
-#### Purpose
-
-- gives Storybook a curated set of stable entrypoints for documentation and review today
-- reduces feature-to-feature import drift by exposing stable shared exports in one place
-- keeps implementation ownership in `primitives/`, `patterns/`, theme helpers, and feature files instead of duplicating components
-
-#### Current Rule
-
-Author new shared UI in `src/app/components/primitives/` or `src/app/components/patterns/` first, then re-export stable pieces through `src/app/components/system/`. Do not treat `system/` as a separate package or as the authoring location for new components.
-
-#### Shared Story Utilities
-
-**Location**: `src/app/storybook/`
-
-Cross-feature Storybook helper components live here rather than inside any feature subdirectory.
-
-| File | Exports |
-|---|---|
-| `story-frames.tsx` | `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange`, `getEntityCardStoryFrameClassName` |
-| `story-docs.ts` | Story-specific description strings for all Storybook pages |
-
-All entity-card and settings-dialog story files import frame utilities from `@/app/storybook/story-frames`. Placing these helpers inside a feature directory (e.g. `dashboard/stories/` or `settings/components/`) causes every consumer outside that feature to violate the feature-boundary import rule.
-
----
-
-## Climate System
-
-### HVAC Card Path
-
-**Location**: `/src/app/features/climate/components/hvac-card/`
-
-Navet now uses a single HVAC-based card path for Home Assistant climate entities.
-
-#### Current Behavior
-- **Climate entities render as HVAC cards** - the dashboard card registry maps `climate` devices directly to `HVACCard`
-- **Legacy climate card removed** - there is no parallel `ClimateCard` path to maintain or style separately
-- **Shared interaction model** - climate controls now follow the same card-shell, header icon, action-row, and settings patterns as other modern entity cards
-
-#### Why
-- avoids duplicated climate UI logic
-- keeps climate theming aligned with the HVAC-specific card/controller flow
-- reduces future regressions by centralizing climate behavior in one feature module
-
-#### Implementation Notes
-- Climate entities are registered through the dashboard card registry and rendered via the HVAC feature module
-- Shared HVAC card structure is reused across dashboard sizes instead of maintaining a second climate-specific card implementation
-- HVAC headers now also participate in the shared eyebrow-first header layout used across many compact and mid-sized cards
-- HVAC settings now use the richer immersive temperature surface, shared section rows, and mode-aware readable text tokens so the compact card and settings dialog stay visually aligned
-
----
-
-## Entity Settings Dialog Surfaces
-
-Recent settings work pushes more entity dialogs onto the same shared surface language instead of leaving each feature on one-off form layouts.
-
-#### Current Behavior
-- **Unified header pattern** - all card settings dialogs (light, camera, HVAC, vacuum, weather, calendar, switch) are composed from `CardDialogHeader`, giving a consistent room selector, title, subtitle, and close action
-- **Room eyebrow primitive** - `RoomEyebrow` is a standalone primitive with `visualOnly` + `forceDark` + keyboard focus-ring mirroring; compact `EntityRoomSelector` renders it over a native select overlay for accessible room assignment
-- **Interactive pill tabs** - shared `CardDialogTabList` + `CardDialogTabTrigger` now standardize top-tab behavior in light, switch, HVAC, vacuum, weather, and calendar dialogs
-- **Shared section framing** - `DialogSectionRow` now composes shared `CardDialogSection`, keeping helper text and label spacing consistent
-- **Theme-aware immersive controls** - HVAC and vacuum dialogs use stronger accent surfaces, richer status summaries, and larger control affordances while still staying inside the shared dialog shell
-- **`DialogDoneFooter`** - single combined component (`DialogFooter` + soft, color-aware done button) used across all card settings dialogs; replaces the previous mix of `CustomDialogDoneButton`, `SettingsDialogDoneButton`, and hand-rolled buttons
-- **Soft tone primitives** - `Button variant="soft"` and `Input variant="soft"` use the picker token system for theme- and accent-aware idle surfaces without raw color overrides
-- **Safer dialog focus behavior** - `DialogShell` opts out of Radix open auto-focus to prevent mobile native selects from opening on dialog mount
-- **Sibling controls in settings dialogs** - switch and HVAC settings can render same-device sibling controls (switch/input_boolean/script/button) directly in a dedicated Controls tab
-
-#### Room Assignment Resilience
-- **Entity room overrides** - local room overrides are persisted and used as a fallback when entity/device registry updates fail or are delayed
-- **Device-aware room updates** - room assignment attempts both entity and device registry update paths and falls back safely with clearer error reporting
-
-#### Why
-- keeps user-facing settings consistent across device types
-- reduces one-off dialog styling and repeated section-label markup
-- makes richer controls easier to extend without reworking every feature independently
-
-#### Shared Primitives Involved
-- `DialogShell`, `DialogDoneFooter`, `DialogFooter`
+- `DialogShell`
+- `CardDialogHeader`
+- `CardDialogSection`
+- `CardDialogTabList`
+- `CardDialogTabTrigger`
 - `DialogSectionRow`
-- `RoomEyebrow`, `EntityRoomSelector`
-- `InteractivePill`, `Tabs`, `TabPanel`
-- `Panel`, `Select`, `Button`, `Input`
-- `RotaryKnob`
+- `DialogDoneFooter`
 
----
+This keeps room reassignment, sections, tabs, and action footers aligned across card families.
 
-## Media System
+## Media
 
-### Media Card Path
+### Media players
 
-**Location**: `/src/app/features/media/components/media-card/`
+Media cards are backed by live Home Assistant `media_player` entities and include:
 
-Navet now uses a live Home Assistant-backed media card flow.
+- transport controls
+- metadata
+- artwork-aware layouts
+- volume control
+- remaining-time handling
+- local mute/unmute restoration behavior
 
-#### Current Behavior
-- **Home Assistant media player wiring** - media cards map real `media_player` entities into playback state, volume, local mute/unmute volume restoration, metadata, artwork, and remaining-time UI
-- **Artwork-led layouts** - small, medium, and medium-vertical media cards use artwork-led surfaces rather than a separate album-art tile pattern
-- **Shared transport controls** - previous, play/pause, next, volume, and details actions use the shared round control button primitive
-- **Unified inactive treatment** - both `off` and `idle` HA states render the same inactive card shell (gradient background, inactive border, no active overlay); TV devices treat only `off` as inactive since `idle` means the TV is on but not casting
-- **Top-left playback indicator** - the visualizer animates while media is playing, and remaining time appears beside it only during active playback
+### TV treatment
 
-#### Notes
-- Remaining time is shown only when Home Assistant playback is active
-- Artwork is rendered only when the entity exposes artwork; Navet no longer injects a default placeholder image
-- Cached artwork from a previous session does not affect inactive shell styling — `isOff` always takes priority over `hasArtwork` for the card background, border, and overlay
-- Artwork load errors permanently suppress that URL for the current track; the failed URL is cleared only when `media_content_id` or the entity picture changes (no retry loop)
-- Production artwork color extraction uses the Navet Home Assistant proxy path instead of direct cross-origin image reads
-- The media dialog and card views share the same transport/action visual language
-- Volume sliders use a small circular thumb (10 px, `h-2.5 w-2.5`) positioned at the fill percentage; color is driven by the album artwork palette
-- Media card headers now use the same shared eyebrow-first title treatment as other feature cards, aligning subtitle/type placement across the dashboard
+TV-class media entities use a dedicated TV layout with:
 
-### TV Card
+- D-pad navigation cluster
+- source selection
+- volume and channel actions
+- remote-profile-based command mapping
 
-**Location**: `src/app/features/media/components/media/media-tv-view.tsx`
-**Remote commands**: `src/app/features/media/tv-remote-commands.ts`
+The TV card is a specialized path inside the media feature, not a separate global card family.
 
-TV media player entities (those with `device_class: tv`) render `MediaTvView` instead of the standard music player layout. The TV card has its own visual language and interaction model.
+## Climate
 
-#### Layout
+Climate entities render through the HVAC card path. Navet should not reintroduce a parallel legacy
+climate-card implementation.
 
-The TV card places a D-pad navigation cluster in the top-right corner and fills the remaining area with playback and navigation controls. Layout density scales with card size:
+Climate/HVAC work should stay inside the climate feature and reuse shared card/state/dialog
+patterns rather than forking presentation logic.
 
-| Card size | D-pad density | D-pad size |
-|---|---|---|
-| `small` (compact) | compact | 104 × 104 px |
-| `medium` | compact | 104 × 104 px |
-| `medium-vertical` | comfortable | 176 × 176 px |
-| `large` / `extra-large` | spacious | 212 × 212 px |
+## Weather and calendar
 
-The bottom of the card contains:
-- **Volume buttons** — step −10 / mute / +10
-- **Channel buttons** — channel down / channel up (requires `remoteAvailable`)
-- **Quick action row** — menu, home, back, play/pause on the left; source dropdown and settings button on the right
+### Weather
 
-#### Power toggle
+- Home Assistant weather entities render as live weather cards
+- card settings support room reassignment
+- weather visuals should still respect low-power rendering constraints
 
-Clicking the card shell toggles TV power (`on` / `off`) via `homeAssistantService.updateMediaPlayerPower`. This replaces the open-dialog behaviour used by music player cards. The settings gear button in the quick action row still opens the standard media dialog.
+### Calendar
 
-#### Source display
+- Home Assistant calendar entities render as live calendar cards
+- cards support source selection and week/month display modes
+- event details remain part of the calendar feature path
 
-For TV entities, the currently active source label is resolved in priority order: `app_name` → `media_title` → `media_channel` → `media_series_title` → `source` attribute → prop fallbacks. The source label is shown in a pill dropdown; selecting an item calls `media_player.select_source`.
+## Security, locks, lights, energy, and notifications
 
-#### Remote profile system
+### Security
 
-Remote commands are dispatched to the paired `remote.*` entity (derived by replacing `media_player.` with `remote.`). Navet selects a command profile based on the entity ID and friendly name:
+- security section centers on camera-oriented content
+- section-level customization uses the shared section shell pattern
 
-| Profile | Detection | Example commands |
-|---|---|---|
-| `samsung` | entity ID or friendly name contains `"samsung"` | `KEY_UP`, `KEY_HOME`, `KEY_RETURN`, `KEY_CHUP` |
-| `default` | all other remotes | `up`, `home`, `back`, `channel_up` |
+### Locks and lights
 
-If no `remote.*` entity is present, D-pad and channel buttons are disabled (`remoteAvailable = false`).
+- each section exposes domain-focused grids
+- shared edit/customize affordances should be reused instead of per-section reinvention
 
-#### Shell styling
+### Energy
 
-An active TV card (state is not `off`) uses a fuchsia / violet gradient shell:
+Energy owns:
 
-- **glass / dark**: `from-fuchsia-500/12 via-violet-500/10 to-white/6` with a `fuchsia-400/20` border
-- **light**: `from-violet-50 via-fuchsia-50 to-white` with a `fuchsia-200/80` border
-- **contrast**: `from-fuchsia-950/45 via-black to-black` with a `fuchsia-500/35` border
+- energy widgets
+- energy charts
+- energy-specific UI shells and services
 
-A radial glow overlay (`fuchsia` top-right, `violet` bottom-left) is composited over the shell when the TV is active.
+This feature has its own components, hooks, stores, and data layer.
 
-### Media Dialog Architecture
+### Notifications
 
-**Location**: `src/app/features/media/components/media/`
+Notifications feature work includes:
 
-The media dialog follows the same split pattern as other complex dialogs:
+- Home Assistant persistent notifications
+- repair/issues surfaces
+- update actions and update-related content
 
-| File | Role |
-|---|---|
-| `media-dialog.tsx` | Entry point — mounts the controller hook, renders the content shell |
-| `media-dialog-content.tsx` | `DialogShell` wrapper; assembles sections in order (header → artwork → playback → volume → up-next → grouping); applies artwork-palette gradient backdrop |
-| `media-dialog-sections.tsx` | All section components: `MediaDialogHeader`, `MediaDialogArtwork`, `MediaDialogPlaybackControls`, `MediaDialogVolumeControl`, `MediaDialogUpNext`, `MediaDialogGrouping`, `GroupingChip` |
-| `use-media-dialog-controller.ts` | Derives all styling (artwork palette, gradient, button variants) and formatted time strings; returns a single controller object |
-| `media-dialog.types.ts` | Shared prop types |
+## Controller decomposition rules
 
-Playback controls (shuffle, previous, play/pause, next, repeat) use the shared `RoundControlButton` primitive. Volume uses a slim slider with artwork-palette-driven fill color.
+Feature controllers should stay orchestration-focused.
 
-### Card Size Registry
+Expected supporting split:
 
-**Location**: `src/app/components/shared/card-size-selector.tsx`
+- sync hooks for entity/service synchronization
+- action hooks for side effects and domain actions
+- display hooks/helpers for presentational shaping
 
-The card size system uses a single source of truth. The `sizes[]` array stores the canonical metadata for all seven sizes:
+Avoid long controller hooks that accumulate sync logic, state derivation, and event handling in one
+place.
 
-| Size | `cols` | `rows` | Label |
-|---|---|---|---|
-| `tiny` | 0.5 | 0.5 | Tiny |
-| `extra-small` | 1 | 0.5 | Extra-Small |
-| `small` | 1 | 1 | Small |
-| `medium` | 2 | 1 | Medium |
-| `medium-vertical` | 1 | 2 | Medium Vertical |
-| `large` | 2 | 2 | Large |
-| `extra-large` | 3 | 2 | Extra-Large |
+## Performance-sensitive areas
 
-Visual previews (size picker glyphs, add-card dialog rectangles) and drag-overlay Tailwind classes are all derived from `cols × rows` — there are no separate hardcoded pixel maps. Key exports:
+Contributors should be careful when changing:
 
-- `getCardSizeRatio(size)` — returns `{ cols, rows }` for computing proportional pixel dimensions
-- `cardSizeOverlayClass` — `Record<CardSize, string>` of Tailwind `w-[…] h-[…]` classes for the drag overlay
-- `getCardSpanClass(size)` — CSS grid span classes (the internal grid doubles logical columns)
-- `isCompactCardSize`, `isTinyCardSize`, `isExtraSmallCardSize` — type guard helpers
+- heavy glass effects
+- chart rendering
+- offscreen dashboard behavior
+- card layout density in compact sizes
+- artwork and media color extraction paths
+- large entity-picker and dashboard grid flows
 
-### Compact Card Sizing
+Visual changes that increase blur, overdraw, nesting, or animation cost should be evaluated with
+low-power dashboards in mind.
 
-Navet includes a `tiny` card size for ultra-dense tiles.
-
-- `tiny` maps to a `0.5 × 0.5` micro tile in the size picker
-- Intended for compact action/status cards rather than detail-heavy layouts
-- Shared compact presentation primitives keep tiny variants visually aligned instead of each feature building a different smallest-card treatment
-
-Compact switch, lock, and scene-style cards adopt the shared `tiny-action-card` shell and eyebrow-first header ordering for consistency at small sizes.
-
-### Media Section Layout
-
-**Location**: `src/app/components/layout/sections.tsx`
-
-The `/media` section groups devices into labeled sub-sections by entity type instead of rendering a single flat grid.
-
-| Sub-section | Criteria |
-|---|---|
-| Players & speakers | Entity type is `player`, `speaker`, `receiver`, or `soundbar` |
-| TVs | Entity type is `tv` |
-| Other groups | All remaining types, each forming their own labeled sub-section |
-
-Card sizes in the media section are stored under `STORAGE_KEYS.mediaSectionCardSizes` (`ha-dashboard-media-section-card-sizes`) separately from the main `cardSizes` key, so media card size preferences don't affect other sections.
-
-### Section Customize Shell
-
-**Location**: `src/app/components/layout/section-customize-shell.tsx`
-
-A thin wrapper exposing an edit-mode toggle to device sections. The Lights, Media, Security, and Locks sections are each wrapped in `SectionCustomizeShell`, which shows an edit-mode button and passes `isEditMode` into the section's `EntityGrid`. The section-level shell replaces the previous pattern of each section managing its own edit toggle.
-
-### Controller Composition Pattern
-
-Across dashboard, lighting, media, climate, and settings features, card/section controllers now follow a composition-first pattern:
-
-- **Controller hook**: owns orchestration only (wiring dependencies, returning final view state)
-- **Sync hooks**: handle entity or service synchronization (`use-*-entity-sync`, `use-*-runtime-state`, `use-*-on-state-sync`)
-- **Action hooks**: encapsulate business actions and side effects (`use-*-actions`, `use-*-toggle-action`)
-- **Display derivation hooks**: compute presentational values and labels (`use-*-display-fields`, `use-*-display`)
-
-This reduces controller churn, keeps hook responsibilities explicit, and makes feature behavior easier to test in isolation.
-
-### Shared i18n Function Typing
-
-Translator function typing is now standardized via exported i18n types rather than repeated local callback signatures.
-
-- Shared translator types are exported from `src/app/i18n/i18n-provider.tsx` and re-exported through `src/app/i18n/index.ts` and `src/app/hooks/index.ts`.
-- Feature hooks requiring translation callbacks consume the shared type directly.
-- This prevents drift between strict `TranslationKey`-based translators and looser `string` callback declarations.
-
-### Store Mutation Contract
-
-Dashboard/config import and feature-level restore flows rely on explicit store action methods rather than direct external `store.setState(...)` mutation.
-
-- Import/apply flows should call domain actions (`apply...`, `replace...`) exposed by each store.
-- Direct external `setState` usage should remain internal to the store implementation unless an intentional store-internal sync mechanism requires it.
-
----
-
-## Navigation System
-
-### Navigation Hook + Store
-
-**Location**: `/src/app/hooks/use-navigation.ts`
-
-Manages section navigation state across desktop and mobile layouts through a direct hook API backed by shared client state. Each section maps to a dedicated URL path; the active section is derived from `window.location.pathname` on load rather than persisted to localStorage.
-
-#### Sections
-
-| Section  | URL Path    | Description                    | Icon      | Status    |
-|----------|-------------|--------------------------------|-----------|-----------|
-| Home     | `/`         | Main dashboard with all cards  | Home      | Active    |
-| Energy   | `/energy`   | Energy section and charts      | Zap       | Active    |
-| Security | `/security` | Security cameras and monitoring | Video     | Active |
-| Tasks    | `/tasks`    | Automations and routines       | Clipboard | Placeholder |
-| Locks    | `/locks`    | Smart lock controls            | Lock      | Active    |
-| Lights   | `/lights`   | Lighting control center        | Lightbulb | Active    |
-| Media    | `/media`    | Media player management        | Tv        | Active    |
-| Settings | `/settings` | App settings and preferences   | Settings  | Active    |
-
-#### Desktop Sidebar
-
-**Component**: `/src/app/components/layout/sidebar.tsx`
-
-- **Position**: Fixed left, full height
-- **Width**: 64px (16 Tailwind units)
-- **Layout**: Vertical icon stack
-- **Icons**: 40px × 40px touch targets
-- **Active state**: Accent-color driven border and glow/shadow treatment (theme-aware for light vs dark/glass/black)
-- **Home icon**: Orange square at top (logo)
-
-#### Mobile Bottom Navigation
-
-- **Position**: Fixed bottom, full width
-- **Height**: Auto with safe area padding
-- **Layout**: 6 icons in horizontal row
-- **Icons**: compact iOS-style icon + label tabs
-- **Active state**: theme-aware shared pill treatment
-- **Inactive state**: transparent/ghost buttons; only the selected item carries the pill
-- **Scroll behavior**: slides down and hides on downward scroll, returns when the user is near the top
-- **Sections shown**: Home, Energy, Security, Lights, Media, Settings
-
-#### URL Routing
-
-Sections are URL-addressable. `setActiveSection` calls `history.pushState` and scrolls to the top; browser back/forward updates the Zustand store via a `popstate` listener. The active section is not persisted to localStorage — the URL is the sole source of truth.
-
-Path helpers live in `src/app/navigation/sections.ts`:
-- `sectionToPath(section)` — returns the URL path for a section
-- `pathToSection(pathname)` — parses a URL pathname back to a `Section`
-
-The PWA workbox config (`navigateFallback: '/index.html'`) and Vite's default SPA mode both serve `index.html` for deep-linked section URLs in production and development respectively.
-
-#### Implementation
-```tsx
-const { activeSection, setActiveSection } = useNavigation();
-
-// Navigate to section (also pushes URL and scrolls to top)
-setActiveSection('lights');
-```
-
----
-
-## Security System
-
-### Camera Card
-
-**Location**: `src/app/features/security/components/camera-card/`
-
-A full-featured camera card for Home Assistant `camera` entities. Follows the container/view pattern — all HA integration lives in the container and the view is purely presentational.
-
-#### Architecture
-
-| File | Role |
-|---|---|
-| `index.tsx` | Public export |
-| `container.tsx` | HA state, sibling entity discovery, service calls |
-| `view.tsx` | Presentational — snapshot image, overlay buttons |
-| `camera-settings-dialog.tsx` | Settings modal with auto-discovered sibling controls |
-| `types.ts` | `CameraCardProps` interface |
-
-#### Features
-
-- **Live snapshot** — displays `entity_picture` from the live HA entity state, resolved to an absolute URL using the stored HA connection URL
-- **Snapshot refresh** — cache-busting `_t` query parameter incremented on each manual refresh, triggering a new fetch without a page reload
-- **Power toggle** — calls `homeAssistantService.updateCamera(id, 'on'|'off')` based on current entity state
-- **Card resizing** — `CardSizeSelector` in the top-right corner; all standard sizes supported
-- **Unavailable state** — shows a camera icon and "Unavailable" / "No signal" label when the entity is unavailable or has no snapshot URL
-
-#### Settings Dialog
-
-Opened via the settings button in the card's bottom overlay. Automatically discovers sibling entities from the same Home Assistant device (matching `device_id` in the entity registry) and renders the appropriate control for each domain:
-
-| Domain | Control | HA Service |
-|---|---|---|
-| `switch.*` | Toggle switch row | `switch.turn_on` / `switch.turn_off` |
-| `select.*` | Option pill grid | `select.select_option` |
-| `number.*` | Range slider | `number.set_value` |
-
-Room reassignment is available directly in the dialog header via `EntityRoomSelector`.
-
-#### Usage
-
-```tsx
-<CameraCard
-  id="camera.front_door"
-  name="Front Door"
-  room="Entrance"
-  size="medium"
-  onSizeChange={updateCardSize}
-  isEditMode={false}
-/>
-```
-
-#### Registration
-
-- Registered in `src/app/hooks/use-ha-devices.ts` under the `cameras` device type
-- Registered in `src/app/features/dashboard/utils/card-renderer.tsx`
-- Rendered by `SecuritySection` via `src/app/components/layout/sections.tsx`
-
----
-
-## Onboarding Flow
-
-### Arrival Reveal Animation
-
-**Location**: `src/app/features/dashboard/components/dashboard-arrival-reveal.view.tsx` + `use-dashboard-arrival-reveal.ts`
-
-A full-screen animated overlay shown on first load. Follows the hook/view split pattern — all state and theming logic lives in `useDashboardArrivalReveal`, the view is purely presentational.
-
-#### Phases
-
-| Phase | Duration | Description |
-|---|---|---|
-| `baking` | 3.2 s | Orbiting accent dots + pulsing glow + animated logo; communicates that the dashboard is loading |
-| `revealed` | — | Ambient background layers + expanding ring borders; heading and call-to-action float directly on the backdrop with no card chrome |
-| `exiting` | 900 ms | Fade-out; `onDone` is called when the animation clears |
-
-#### Implementation Notes
-- CSS keyframes are scoped to the component via a `<style>` tag injected into the view
-- `useDashboardArrivalReveal` derives all color and copy values from the active theme; the view receives a single controller object
-- The `revealed` phase shows an ambient background (`RevealBackground`) with a radial gradient wash, masked grid, pulsing halo, and floating accent blobs — all gated on effects quality so low-power devices skip the heavier layers
-- The reveal panel itself has no card chrome (no background fill, border, shadow, or backdrop blur); content floats directly on the backdrop matching the `baking` stage aesthetic
-- I18n keys are namespaced under `dashboard.arrival.*`
-
-### Onboarding Wizard
-
-**Location**: `src/app/features/dashboard/components/dashboard-onboarding-dialog/`
-
-| File | Role |
-|---|---|
-| `index.tsx` | Public export |
-| `onboarding-shell.tsx` | Full-screen backdrop + centered modal container |
-| `onboarding-steps.tsx` | Step UI components (`RouteStep`, `LocalizationStep`, `ThemeStep`, `StepActions`) |
-| `use-dashboard-onboarding-controller.ts` | Wizard orchestration hook |
-
-#### Steps
-
-1. **Route** — choose between *All Entities* (auto-populate), *Blank Dashboard*, or *Import Config* (file picker)
-2. **Localization** — language, time format (12/24 h), temperature unit (°C/°F)
-3. **Theme** — theme mode + accent color with live preview via the shared `ThemeAppearancePicker`
-
-#### Controller Responsibilities
-- Manages step progression and back/continue navigation
-- Handles file import with loading state
-- Previews theme/accent changes during step 3 and applies them on finish
-- Prevents body scroll while the dialog is open
-
----
-
-## Dashboard Builder
-
-**Location**: `src/app/features/dashboard/components/home-dashboard-overview.tsx`
-
-The Dashboard Builder (Home dashboard section) lets users compose their Home screen from the full device and widget library. It supports two layout modes and full drag-and-drop card ordering.
-
-### Layout Modes
-
-| Mode | Description |
-|---|---|
-| `flow` | All cards in a single responsive masonry grid — the simplest layout |
-| `sectioned` | Cards organised into named sections (rows and column groups) |
-
-Switching to `sectioned` mode auto-creates the first section if none exist. Sections can be renamed inline, removed individually, split into column arrangements via "Add column", stacked vertically within the same column block via "Add below", and resized horizontally via − + controls in the section header.
-
-### Section Stacking
-
-Sections in the same column slot are grouped into vertical stacks by `buildSectionStacks` (in `home-dashboard-overview.tsx`). A stack is formed when two sections share the same `x` coordinate and `span` value across consecutive `y` rows.
-
-- **Add below** — creates a new section stacked directly below the selected section, inheriting its column span
-- **Drag to reorder** — in edit mode, each section exposes a drag handle (grip icon); dragging it over an "Add section" drop zone repositions the section in the layout via `moveSectionBelow` in `layout-engine.ts`. Drop zones are rendered between sections and highlight when a section drag is active.
-- All sections in a stack share the same column width; resizing one resizes the entire stack column — stacked descendants are updated automatically
-- `insertSectionBelow` in `layout-engine.ts` computes the updated layout coordinates; `compactStackGaps` closes gaps left after a section is moved or removed
-
-### Portrait Mode Layout
-
-On portrait-orientation viewports (height > 1.15× width), the Home canvas automatically caps its effective column count and reflows sections into narrower portrait stacks via `buildPortraitStackRows`.
-
-- **`useHomeLayoutViewport`** — hook that tracks both `effectiveCols` (breakpoint cols capped for portrait) and `isPortrait`; listens to `window` and `visualViewport` resize events
-- **Portrait max cols** — `4` on viewports narrower than `1280 px` (`PORTRAIT_HOME_MAX_COLS`), `6` on wider portrait screens (`PORTRAIT_HOME_RELAXED_COLS`)
-- **Lane count** — portrait layout splits each row into 2 lanes (or 3 when `sectionGridCols ≥ 6`) so sections stack two-per-row instead of side-by-side; computed by `getPortraitLaneCount`
-- Viewport dimensions are read from CSS custom properties (`--navet-visible-viewport-width/height`, `--navet-viewport-width`) when set, falling back to `visualViewport` / `innerWidth/Height`
-
-### Floating Library Panel
-
-The card library is a draggable floating panel (`useLibraryPanel`) that overlays the canvas in edit mode.
-
-- **Position** — defaults to the top-right of the viewport; freely repositioned by dragging the grip handle
-- **Collapse to dock** — collapses to a slim tab pinned to the right edge; expands on click
-- **Search** — filters the available card list (up to 5 results) by name, room, entity type, or entity ID
-- **Add card** — places the card into the first available section (sectioned mode) or the flow canvas
-- **Drag to place** — cards can be dragged from the library panel directly onto a canvas drop zone
-
-### Section Layout Engine
-
-Top-level sections in `sectioned` mode are positioned on a **12-column grid** defined in `src/app/features/dashboard/utils/layout-engine.ts`.
-
-| Constant | Value | Meaning |
-|---|---|---|
-| `SECTION_LAYOUT_COLUMNS` | `12` | Total grid columns |
-| `SECTION_MAX_PER_ROW` | `4` | Maximum sections in one row |
-| `SECTION_MIN_WIDTH` | `1` | Minimum stored width for a section in base-12 units |
-
-Each section is stored as a `SectionLayoutItem` with `x`, `y`, `w`, and `h` coordinates. The layout engine functions (`insertSectionRow`, `insertSectionBelow`, `removeSectionFromLayout`, `rebalanceRow`, `compactRows`) mutate these coordinates and are called by `useHomeDashboardLayout`.
-
-**Section resizing** operates in rendered-column units (matching the current breakpoint column count) and translates back to base-12 storage units. Minimum section width is content-aware — a section containing medium or large cards cannot be shrunk below 2 rendered columns. When one section grows, its row neighbor shrinks to compensate. All sections stacked below the resized column are updated together. The resize action is exposed as `resizeSection(sectionId, newW, minWidthsBySection?)` from `useHomeDashboardLayout` and triggered by − + buttons in each section's header (shown only when `rowSiblingCount > 1`).
-
-`buildSectionStacks` (in `home-dashboard-overview.tsx`) groups the flat section list into a `rowStacks` structure for rendering — each row is an array of stacks, each stack an array of sections sharing the same column slot.
-
-### Component Architecture
-
-The overview has been split into focused files to keep each file under the 150-line controller limit:
-
-| File | Role |
-|---|---|
-| `home-dashboard-overview.tsx` | Root component — wires drag context, `DragOverlay`, and renders `HomeDashboardOverview` |
-| `home-dashboard-overview-content.tsx` | Re-exports for `CardGrid`, `EmptyCanvas`, `FlowCanvas`, `HomePresentation`, `SectionCanvasGrid`; owns `ModeChip` |
-| `home-dashboard-overview-card-grid.tsx` | `CardGrid` (with auto-scaling ResizeObserver logic), `FlowCanvas`, `EmptyCanvas`, sortable card wrappers |
-| `home-dashboard-overview-sections.tsx` | `SectionCanvasGrid`, `SectionCanvas`, `HomePresentation`, `HomePresentationSection`, `SectionInsertDropZone` |
-| `home-dashboard-overview.shared.ts` | Shared prop types, `useHomeLayoutViewport` hook |
-
-`CardGrid` uses a `ResizeObserver` to detect container width and applies a proportional `scale()` transform when the natural card grid would overflow, keeping cards readable on small or narrow screens without reflow.
-
-The drag overlay sizing (`cardSizeOverlayClass`) is exported from `src/app/components/shared/card-size-selector.tsx` — not defined inline — so it stays consistent with the card size registry.
-
-### Hook Architecture
-
-| Hook | Location | Responsibility |
-|---|---|---|
-| `useHomeDashboardEditor` | `hooks/use-home-dashboard-editor.ts` | Card map construction, library card list, `sectionCards` (HomeEditorSection[]), flow card list, library search/filtering, summary stats |
-| `useDashboardDragState` | `hooks/use-dashboard-drag-state.ts` | dnd-kit sensors, active drag card/size, `handleDragOver`, `handleDragEnd`, drop-meta resolution |
-| `useLibraryPanel` | `hooks/use-library-panel.ts` | Floating panel position, drag-to-reposition, visibility/collapse toggles, resize-responsive repositioning |
-| `useHomeDashboardLayout` | `hooks/use-home-dashboard-layout.ts` | Persisted layout state — card IDs, section assignments, layout mode, hero visibility; exposes `addSection`, `addColumnSection`, `addSectionBelow`, `removeSection`, `renameSection`, `resizeSection`, `addCard`, `removeCard`, `moveCard`, `setMode` |
-
-### Summary Stats
-
-The editor header displays four live counters supplied by `useHomeDashboardEditor`:
-
-| Stat | Description |
-|---|---|
-| Cards | Entities and widgets currently placed on the Home canvas |
-| Available | Cards in the library not yet placed on the canvas |
-| Widgets | Total custom widgets (RSS, Photo, Note, Battery, Button) |
-| Hidden | Entity IDs hidden from all dashboard views |
-
-The **Photo frame** widget supports custom image URLs and Home Assistant media sources (`media_source/browse_media` and `media_source/resolve_media` over the active connection). Configuration controls are available in dashboard edit mode.
-
-### Hero Section Toggle
-
-A toggle in the edit toolbar shows or hides the Hero section at the top of the Home view. Cards with `hero` size degrade to `large` when the hero section is hidden.
-
-### Room View
-
-When a user selects a named room (any room other than Home), the `DashboardSectionRouter` renders a `RoomOverviewPanel` above the device grid for that room. The overview panel provides a summary view of the room's entities before the full `DeviceGrid`.
-
-### Persistence
-
-The Home layout is persisted to `STORAGE_KEYS.homeDashboardLayout` (`ha-dashboard-home-layout`) via the `useHomeDashboardLayout` hook using Zustand `persist` middleware.
-
----
-
-## Settings Section
-
-### Settings Page
-
-**Location**: `src/app/features/settings/components/settings-section.tsx`
-
-Appearance items are implemented in a dedicated file (`settings-appearance-content.tsx`) and composed into the settings section, keeping each item self-contained:
-
-Full-page settings interface with card-based organization. Appearance section items are each implemented as named components in `settings-appearance-content.tsx` (`AppearanceThemeAccentItem`, `AppearanceEffectsQualityItem`, `AppearancePageZoomItem`, `AppearanceAmbienceItem`, `AppearanceWallpaperItem`).
-
-#### Sections
-
-**1. Appearance**
-- **Theme Mode Selection**: 2 × 2 grid of theme option cards
-- **Primary Color Picker**: 8 built-in accent circles plus a custom accent swatch
-- **Visual quality**: choose between High, Medium, and Low glass rendering; shows the recommended tier for the current device based on an automatic benchmark run at first load
-- **Built-in wallpapers**: 11 bundled SVG scenes (Serene Dawn, Citrus Courtyard, Petal Horizon, Sky Bloom, Starfield Nocturne, Aurora Veil, Rainforest Canopy, Ember Loft, Slate Passage, Coastal Haze, Night Lounge) shown as compact circle swatches; custom image upload still available alongside them
-- **Localized theme picker copy**: theme names and descriptions resolve through the shared i18n dictionaries
-- **Light card ambience**: global visual toggle between ambient bleed and contained light-card rendering
-- **Theme-aware ambience preview**: the ambience preview uses the shared preview-frame primitive, and the shared `Live Preview` header localizes with the active language
-- **Shared color picker primitive**: custom accents, light colors, and Kelvin swatches reuse the same base control with size variants
-- **Brightness presets**: light cards use a compact 3-preset set (`Bright`, `Dim`, `Night`) that fits inline without an overflow menu
-- **Kelvin slider auto-reset**: tapping the Kelvin swatch on a light card replaces the brightness slider with the color temperature slider; it reverts automatically after 3 seconds of inactivity or when the user taps outside the card — `isKelvinMode` state is owned by the `LightCard` index component and passed down to all size variants
-- **Page zoom**: preset options are `[50, 67, 75, 80, 90, 100]`%; stored values are snapped to the nearest valid option via `normalizePageZoom`; a **Reset** button appears inline beside the − / + controls whenever the active zoom is not 100%
-- **Layout**: Left-aligned text, right-aligned selection indicator
-
-**2. Localization**
-- **Language selection**: persisted app language for interface and locale-aware formatting
-- **Localized theme picker copy**: shared theme labels and descriptions follow the selected locale
-- **Onboarding step**: localization is its own first-run step before appearance, covering language, time format, and temperature unit
-
-**3. Interaction**
-- **Interaction mode**: choose between tap toggles and tap opens controls
-- **Interaction preview**: compact live preview sits beside the interaction toggle for faster comparison
-
-**4. Dashboard**
-- **Entity restore action**: add all removed entities back to the dashboard
-- **Onboarding reset**: restart the first-launch dashboard choice
-- **Search behavior**: dashboard search accepts friendly names, rooms, and Home Assistant entity-id/domain queries such as `light.` and `sensor.`
-
-**5. System**
-- **Connection Status**: Shows Home Assistant URL
-- **Visual design**: Code-style display in subtle container
-
-**6. Project**
-- **Version Information**: Current app version
-- **Build Date**: Last build timestamp
-- **Layout**: Two-column key-value pairs
-
-#### Design Specifications
-
-**Header**
-- Title: text-xl, semibold
-- Subtitle: text-sm, muted color
-- Spacing: 24px margin bottom
-
-**Section Cards**
-- Border radius: 24px (rounded-2xl)
-- Border: Theme-aware with 10% opacity
-- Padding: 16px (p-4)
-- Gap between sections: 16px (space-y-4)
-
-**Theme Selection**
-- Grid: 2 columns on medium+ screens
-- Preview: 190px miniature card stage matching the light-card skeleton
-- Button padding: 16px (p-4)
-- Border: primary-color border when selected
-- Background: shared settings surface styling with theme-aware preview scenes
-
-**Color Selection**
-- Layout: Horizontal flexbox
-- Circle size: 40px × 40px (w-10 h-10)
-- Gap: 10px (gap-2.5)
-- Selection indicator: 2px ring with 2px offset
-- Hover effect: Scale 1.1
-
----
-
-## Empty States
-
-### Empty State Component
-
-**Location**: `/src/app/components/patterns/dashboard-empty-state.tsx`
-
-Beautiful placeholder screens for sections without data.
-
-#### Features
-- **Large icon**: 64px × 64px in muted circle
-- **Clear title**: Explains what's missing
-- **Helpful description**: Guides user on next steps
-- **Theme-aware**: Adapts to current theme mode
-- **Centered layout**: Vertically and horizontally centered
-
-#### Props
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `icon` | `LucideIcon` | Yes | Icon displayed in the empty state |
-| `title` | `string` | Yes | Primary heading |
-| `description` | `string` | Yes | Supporting text |
-| `actionIcon` | `LucideIcon` | No | Icon for the optional action button |
-| `actionLabel` | `string` | No | Label for the optional action button |
-| `onAction` | `() => void` | No | Callback for the optional action button |
-
-#### Usage Pattern
-```tsx
-<DashboardEmptyState
-  icon={Video}
-  title="No Security Cameras"
-  description="You don't have any security cameras configured yet."
-  className="w-full max-w-md"
-/>
-```
-
-#### Sections with Empty States
-- Security: "No Security Cameras"
-- Tasks: "No Tasks"
-- Locks: "No Smart Locks"
-- Lights: "No Lights"
-- Media: "No Media Players"
-
-### Inline Empty State Component
-
-**Location**: `/src/app/components/patterns/inline-empty-state.tsx`
-
-Compact inline empty state for use inside panels and dialogs where the full-page centered treatment is too heavy.
-
-#### Props
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `title` | `string` | Yes | Primary heading |
-| `description` | `string` | Yes | Supporting text |
-| `surface` | `ReturnType<typeof getThemeSurfaceTokens>` | Yes | Theme surface tokens |
-| `accentColor` | `string` | No | Accent color for gradient tint (default `#9fb0ff`) |
-| `icon` | `LucideIcon` | No | Icon (default `Wand2`) |
-| `actionLabel` | `string` | No | Label for optional action button |
-| `onAction` | `() => void` | No | Callback for optional action button |
-| `actionIcon` | `LucideIcon` | No | Icon for optional action button |
-| `className` | `string` | No | Extra class names |
-| `children` | `ReactNode` | No | Additional content below the action |
-
-#### Used by
-- `NotificationEmptyState` — empty notifications panel
-- `AddEntityDialog` — no matching entities in search
-
----
-
-## Responsive Behavior
-
-### Desktop (≥ 1280px)
-- Sidebar always visible on left
-- Settings: Maximum width 896px (max-w-2xl), centered
-- Grid: 6 columns at `xl`, growing to 8 columns at `2xl`
-- Navigation: Sidebar icons only
-
-### Tablet (768px - 1279px)
-- Sidebar visible on left
-- Grid: 4 columns
-- Navigation: Sidebar remains primary
-
-### Mobile (< 768px)
-- No sidebar
-- Compact iOS-style bottom navigation bar with icon + label tabs for 6 sections including Mock and Settings
-- Grid: 2 columns
-- Settings: Full width with mobile padding
-- Dashboard header compacts greeting, search, notifications, and avatar into one top row
-- Room navigation spacing is reduced so content starts higher on the screen
-
----
-
-## User Experience Flows
-
-### First-Time User Flow
-1. **Login Page** → Enter Home Assistant URL and token
-2. **Onboarding Dialog** → Choose start with all entities, a blank dashboard, or import a YAML config file
-3. **Dashboard** → See current entities and rooms
-4. **Explore Sections** → Navigate to different sections via sidebar/bottom nav
-5. **Customize Appearance** → Go to Settings → adjust theme, accent color, visual quality, and light-card ambience
-6. **Edit Cards** → Enter edit mode from Customize to add/remove entities, reorder cards, and resize cards
-
-### Settings Customization Flow
-1. Navigate to Settings section
-2. Select Appearance card
-3. Choose theme mode (Liquid Glass/Dark/Light/Black)
-4. Select a built-in accent color or choose a custom accent
-5. Set visual quality to High, Medium, or Low when needed
-6. Changes apply immediately across entire app
-7. Theme persists across sessions
-
-### Authentication Flow
-1. **Logged Out** → Show login page
-2. **Enter Credentials** → Validate URL format
-3. **Submit** → Attempt connection to Home Assistant
-4. **Success** → Store auth in localStorage, redirect to dashboard
-5. **Error** → Show error message, keep on login page
-
-### Logout Flow
-1. Click user avatar in header
-2. Select "Logout" from dropdown (or go to Settings)
-3. Confirm logout in browser dialog
-4. Clear localStorage
-5. Redirect to login page
-
----
-
-## Technical Implementation
-
-### State Management
-
-All shared state is Zustand. Auth and config are stores, not React Context providers.
-
-**Auth store** (`src/app/stores/auth-store.ts`)
-```tsx
-interface AuthState {
-  isAuthenticated: boolean;
-  config: SessionConfig | null;
-  login: (url: string, token: string) => Promise<boolean>;
-  logout: () => void;
-}
-```
-
-**Theme store** (`src/app/stores/theme-store.ts`)
-```tsx
-interface ThemeState {
-  theme: 'glass' | 'dark' | 'light' | 'black';
-  primaryColor: PrimaryColor;
-  customPrimaryColor: string | null;
-  wallpaper: string | null;
-}
-```
-
-**Navigation store** (`src/app/stores/navigation-store.ts`)
-```tsx
-interface NavigationState {
-  currentRoom: string;
-  activeSection: Section;
-}
-```
-
-Access these through their hook wrappers: `useAuth()`, `useTheme()`, `useNavigation()`. See
-`src/app/stores/selectors.ts` for optimized per-field selectors.
-
-### Local Storage
-
-**Keys Used**
-- `ha_auth_config` — Auth config and token (`STORAGE_KEYS.authConfig`)
-- `ha-dashboard-config` — HA connection config (`STORAGE_KEYS.haConfig`)
-- `ha-dashboard-theme` — Theme mode and primary color (Zustand persist)
-- `ha-dashboard-settings` — User preferences (Zustand persist)
-- `ha-dashboard-navigation` — Active section and current room (Zustand persist)
-- `navet-dashboard-entities` — Hidden entity ids and onboarding state (Zustand persist)
-- `ha-dashboard-card-sizes` — Per-card size overrides
-- `ha-dashboard-card-orders` — Card ordering per room
-- `ha-dashboard-room-order` — Custom room sort order
-- `ha-dashboard-home-layout` — Home screen layout: card IDs, section assignments, layout mode (`flow`/`sectioned`), hero visibility
-
-Restarting onboarding should always return the user to Home / All before reopening the wizard.
-
-### CSS Variables
-
-Theme system uses CSS custom properties defined in `/src/styles/theme.css`:
-- Spacing tokens
-- Color tokens
-- Typography scale
-- Border radius values
-- Shadow definitions
-
----
-
-## Accessibility
-
-### Keyboard Navigation
-- All sections accessible via Tab key
-- Settings: Tab through theme options and color buttons
-- Dropdown: Arrow keys to navigate menu items
-- Login form: Standard form tab order
-
-### Screen Readers
-- Semantic HTML structure
-- ARIA labels on icon-only buttons
-- Form labels properly associated
-- Section headings for navigation
-
-### Visual Accessibility
-- Liquid Glass and Black theme options
-- Minimum 44px touch targets
-- Clear focus indicators
-- Sufficient color contrast ratios
-- Text sizing options via browser
-
----
-
-## Performance Considerations
-
-### Theme Switching
-- Instant theme application (no reload)
-- CSS variables for dynamic color changes
-- Memoized components prevent unnecessary re-renders
-
-### Dashboard Layout
-- Rooms display in their natural Home Assistant area order; drag-and-drop room reordering has been removed
-- Cards are ordered via the card ordering store
-- `contain: layout style` on card wrappers reduces cross-card style recalculation during scroll
-
-### Edit Mode Performance
-- Toggling edit mode is wrapped in `startTransition` — marks the 100+ card re-renders and ~200 new DOM node insertions as non-urgent, keeping the UI responsive on low-end hardware (RPi) while React processes the batch in the background
-
-### HA Entity Update Performance
-- `deviceIdentityKey` — a stable string of `id:room` pairs gates `buildOrders` recreation in `useCardOrdering`; HA state-only updates (temperature, brightness) never trigger a card ordering rebuild
-- `useDeviceMap` reference stabilization — unchanged device objects reuse their old reference; when no devices changed, the same Map instance is returned, collapsing the cascade of re-renders
-- `RoomSection` custom memo comparator — only checks devices belonging to the current section, so sections with no changes skip re-rendering entirely when another section's device updates
-- Edit-mode action handlers use a single stable `useCallback` per action type shared across all cards via event delegation, rather than per-card closures
-
-### Low-Power Mode CSS
-- The `[data-effects-quality="low"] *` universal selector strips `backdrop-filter`, `-webkit-backdrop-filter`, and `will-change` from the entire subtree in one rule, avoiding per-component media query checks on RPi-class hardware
-
-### Navigation
-- Section-based code splitting (future enhancement)
-- Lazy loading of section components
-- Navigation state persists across renders
-
-### Authentication
-- Token stored securely in localStorage
-- Session validation on app load
-- Graceful handling of expired tokens
-
----
-
-## Future Enhancements
-
-### Shipped since initial docs
-- [x] Card ordering store (drag-and-drop for both cards and rooms has been removed)
-- [x] Export/import dashboard YAML config
-- [x] PWA installation support
-- [x] Security section: full camera card with snapshot display, power toggle, refresh, and sibling entity settings dialog
-- [x] Dashboard Builder: flow and sectioned layout modes, floating card library panel, drag-and-drop from library to canvas
-- [x] Section resize with snap widths: ← → controls in section headers snap column widths to multiples of 3 (out of 12); neighbor section compensates automatically; controls hidden on single-column rows
-- [x] Energy dashboard: live HA data, statistics, setup panel, device tracking, SVG chart primitives
-
-### Planned
-- [ ] Custom theme builder with color wheel
-- [ ] Light/dark theme auto-switching based on time
-- [ ] Per-section customization
-- [ ] User profile editing
-- [ ] Multiple dashboard layouts
-
-### Under Consideration (v2.0)
-- [ ] Multi-user support with different profiles
-- [ ] Advanced accessibility settings
-- [ ] Gesture navigation for mobile
-- [ ] Section reordering
-- [ ] Custom section creation
-- [ ] Widget marketplace
-
----
-
-## Best Practices
-
-### When Adding New Sections
-1. Add the section to `src/app/navigation/sections.ts` and the exported navigation hook API
-2. Create the section component in `src/app/features/<name>/`
-3. Register in `src/app/features/dashboard/components/dashboard-section-router.tsx` using `lazy()`
-4. Add icon to the sidebar (`src/app/components/layout/sidebar.tsx`) and mobile bottom nav if appropriate
-5. Use `DeviceSectionLayout` in `src/app/components/layout/sections.tsx` for sections that follow the standard device-list pattern (empty state → entity grid). Pass `devices`, `rawDevices`, `emptyIcon`, and the four label strings; the component owns the empty/grid branching logic
-6. Implement an empty state if no data is available, with the primary recovery action visible when possible
-7. Test at all breakpoints
-
-### When Adding Theme-Dependent Styling
-1. Use the theme hook to get current theme
-2. Define color variations for all four themes
-3. Use primary color for active/selected states
-4. Test in all theme modes, including Liquid Glass and Black
-5. Ensure sufficient contrast in all modes
-
-### When Modifying Authentication
-1. Update AuthContext interface
-2. Handle loading and error states
-3. Persist to localStorage if needed
-4. Test logout flow thoroughly
-5. Consider security implications
-
----
-
-**Last Updated**: April 15, 2026
-**Version**: 1.8
-**Status**: Living Document
-
----
-
----
-
-## Energy Dashboard
-
-**Location**: `src/app/features/energy/`
-
-A dedicated full-page section for monitoring home load, grid dependency, individual device energy, and bathroom/toilet demand. Connects to the Home Assistant energy domain via `useEnergyDashboard`.
-
-### Section Layout
-
-The energy section is structured using `EnergySectionBand` — a shared layout primitive that renders a labeled eyebrow, heading, optional description, and child content for each content band on the page.
-
-The section hero includes an `overviewHighlights` aside panel with four live stat tiles:
-
-| Stat | Value |
-|---|---|
-| Current power | Live home load in W |
-| Today | Today's kWh consumption |
-| Grid import | Today's grid import kWh |
-| Cost today | Today's estimated cost |
-
-This aside is shown alongside the hero when the energy dashboard is configured. Battery devices are rendered in a dedicated band when any HA battery-class sensors are available (`showBatteryDevices`).
-
-### Setup and Configuration
-
-`EnergySetupPanel` (`components/energy-setup-panel.tsx`) — an inline form that maps HA sensor entity IDs to each energy source:
-
-- **Auto-detect** — calls `energy/get_prefs` over WebSocket to read the user's HA Energy dashboard configuration and pre-fills all source fields. Uses `homeAssistantService.getConnection()` directly (not the Zustand-stored connection, which loses prototype methods after state diffing). The button is disabled when not connected to HA.
-- **Source fields** — solar power/energy, battery SoC/power, grid import/export power and energy, home load power. Each field has a native `<datalist>` autocomplete populated from live sensor entity IDs.
-- **Devices section** — auto-detected individual device monitors (from `device_consumption` in HA Energy prefs) are shown as editable rows. Each device shows its name, cumulative kWh entity ID, and an optional live power sensor input. Devices can be removed individually.
-- **Save** — persists to `energy-dashboard-store` via `setSourceConfig`. The store uses Zustand `persist` middleware.
-
-### Data Layer
-
-**`useEnergyHaData`** (`hooks/use-energy-ha-data.ts`) — assembles `EnergyOverview` from live HA entity states. Falls back to mock data when no config is saved.
-
-- Reads entity states via `useHomeAssistant(homeAssistantSelectors.entities)` (minimal selector).
-- Home load is derived as `solar + gridImport − gridExport` when no dedicated load sensor is configured.
-- `getInferredHomeLoadPowerSensor` — when no explicit home load power entity is configured, scans all `sensor.*` entities with `device_class: power` and `unit_of_measurement: W`, scoring candidates by name heuristics (`instantaneous_demand`, `home load`, `demand`, etc.) and penalising solar/battery/grid/charger entities. The top-scoring candidate is used as the live W source and its entity ID is returned as `currentLoadStatisticId` for sparkline history.
-- `buildConsumers` no longer falls back to the raw entity state for daily energy — falling back produced a misleading lifetime cumulative kWh. When no daily statistic is available, device energy shows `0` instead.
-- `liveStats` array is conditionally built — solar/battery/grid stats are only included when the corresponding entity IDs are configured, so unconfigured sources are never shown.
-- Module-level helpers: `buildLiveStats`, `buildFlow`, `buildConsumers`, `getConfiguredDevicePowerW`, `getInferredHomeLoadPowerSensor`. All pure functions called inside `useMemo`.
-
-**`useEnergyStatisticsToday`** (`hooks/use-energy-statistics-today.ts`) — polls `recorder/statistics_during_period` with `period: 'day'` and `types: ['change']` to get today's kWh delta for all configured energy entities. Refreshes every 5 minutes. Returns a `Record<entityId, kWh>` map. Silently fails — the dashboard remains usable without statistics.
-
-**`useEnergyDashboard`** (`hooks/use-energy-dashboard.ts`) — orchestrating hook consumed by `EnergySection`. Derived values computed with `useMemo`:
-
-- `bathroomToiletConsumers` — consumers filtered by `bathroom_heater` / `toilet_heater` / `floor_heating` category
-- `bathroomToiletTodayKWh` / `bathroomToiletPowerW` — summed totals for the focus-zones widget
-- `topDeviceTotals` — top 8 consumers (sorted by `energyKWh` desc in `buildConsumers`)
-- `gridAllocation` — distributes today's grid import kWh proportionally across tracked devices; adds an "Untracked / shared loads" remainder entry
-- `batteryDevices` — all HA battery-class sensors, sorted by level asc (for the battery overview widget)
-- `periodTotals` — multi-period statistics from `useEnergyStatisticsPeriods`
-
-### Widgets
-
-Memoized widget components, each receiving only its required props from `EnergySection`:
-
-| Widget | Key props | Description |
-|---|---|---|
-| `EnergyStatusWidget` | `liveStats`, `importTodayKWh?`, `solarTodayKWh?` | Live stat cards grid; shows a "Today" panel with grid import kWh and solar kWh when those props are provided (only passed when `isConfigured`) |
-| `EnergyNowWidget` | `currentLoadW`, `gridImportW`, `trend`, `accentColor` | Live load reading in W with a 24-hour sparkline; tick labels use a capped count so the row stays readable at any width |
-| `EnergyDeviceTotalsWidget` | `consumers` | Top devices ranked by today's kWh; shows live W alongside kWh when a power sensor is configured; each device renders a 24-hour `DeviceHistorySparkline` sub-component; shows empty state when no devices are tracked |
-| `EnergyFocusZonesWidget` | `todayKWh`, `currentPowerW`, `consumers` | Bathroom and toilet energy focus — today's kWh total, live W, and per-device breakdown |
-| `EnergyGridAllocationWidget` | `importTodayKWh`, `allocation` | Grid import split across individual devices + untracked remainder |
-| `EnergyStorageWidget` | `batteryPercent`, `solarW`, `currentLoadW`, `importW`, `hasBattery?`, `hasSolar?` | Semi-circle gauges for battery reserve and solar coverage; quality bar for grid dependency. Gauges hidden when the corresponding source is not configured |
-
-Widget visibility is toggled via filter pills in the section header; state persists in `energy-dashboard-store`.
-
-### HA API Calls
-
-| Call | Hook / Service | Purpose |
-|---|---|---|
-| `energy/get_prefs` | `energy-ha-service.ts` | Auto-detect source and device entity IDs from HA Energy config |
-| `recorder/statistics_during_period` | `energy-statistics-service.ts` | Today's kWh delta per entity (period: day, types: change) |
-
-### Chart Primitives
-
-All charts are custom SVG — zero bundle cost, full theme control, Raspberry Pi-safe. Located in `src/app/features/energy/components/charts/`.
-
-`EnergySparkline` supports interactive hover: mouse position maps to the nearest data point, showing a dashed crosshair line and a tooltip with the formatted timestamp and wattage. The tooltip is horizontally clamped (18–82% of width) to stay within the component bounds. Data points accept optional `timestampMs`, `endTimestampMs`, `minValue`, and `maxValue` fields for richer tooltip content.
-
-**`EnergyGauge`** (`energy-gauge.tsx`)
-- Semi-circle arc gauge using `stroke-dasharray` trick
-- Arc: center `(100, 100)`, radius 78, `viewBox="0 0 200 115"` (crops below center line)
-- `SEMI_CIRC = Math.PI * R`; `filled = (value/100) * SEMI_CIRC`
-- Props: `value` (0–100), `color`, `label`, `sublabel`
-
-**`EnergyBarChart`** (`energy-bar-chart.tsx`)
-- Vertical gradient bars, `viewBox="0 0 400 160"`
-- Per-bar `linearGradient` in `<defs>`; diagonal stripe `<pattern>` overlay for alert bars
-- Alert indicator: SVG polygon triangle + vertical line + dot
-- Props: `data: EnergyBarDatum[]`, `color`, `alertColor`
-
-**`EnergyAreaChart`** (`energy-area-chart.tsx`)
-- Step-style area + line, `viewBox="0 0 400 140"`, `PAD = { top:10, right:6, bottom:26, left:36 }`
-- Grid lines at `yTicks`; y-axis labels with `yUnit` suffix; x-axis labels
-- `useId()` for gradient ID uniqueness across multiple instances
-- Props: `data: EnergyAreaPoint[]`, `yMax`, `yTicks`, `yUnit`, `color`
-
-**`EnergyQualityBar`** (`energy-quality-bar.tsx`)
-- Horizontal segmented bar (44 segments default)
-- `STOP_COLORS` scale from red → green; active segments at `opacity 0.88`, inactive at `0.10`
-- Props: `value` (0–100), `label`, `badLabel`, `goodLabel`, `segments`
-
-**`EnergySparkline`** (`energy-sparkline.tsx`)
-- Compact smooth curve for real-time power trace; no axes, no labels
-- Catmull-Rom → cubic bezier conversion for smooth interpolation
-- `preserveAspectRatio="none"` — fills any container aspect ratio
-- Live endpoint dot at the last data point
-- Props: `data: EnergySparklinePoint[]`, `color`, `height`
-
-### Data Constants
-
-`src/app/features/energy/data/energy-constants.ts` — module-level constants extracted from render paths:
-
-- `FLOW_TO_NODE_ID` — maps flow tone strings to HA node IDs
-- `FLOW_TONE_GRADIENT` — CSS gradient strings per flow tone
-- `HEATING_CATEGORIES: ReadonlySet<EnergyConsumerCategory>` — O(1) `.has()` lookups for heating appliance filtering
-
----
-
-## Shared Hooks
-
-### `useHaCommandQueue`
-
-`src/app/hooks/use-ha-command-queue.ts`
-
-Debounces async HA service calls with in-flight request tracking. Used by the light card controller for brightness and color temperature slider interactions.
-
-- Queues the latest value and flushes after a configurable debounce window (default 75 ms)
-- If a request is already in flight, re-flushes automatically once it resolves
-- Exposes `cancel()` to drop a pending value (e.g. a color change cancels a queued temp sync)
-- Manages its own cleanup on unmount
-
----
-
-### `useHomeDashboardEditor`
-
-`src/app/features/dashboard/hooks/use-home-dashboard-editor.ts`
-
-Controller hook for the Dashboard Builder edit canvas. Accepts the current `deviceMap`, `allCustomCards`, `homeLayout`, and `cardSizes` and returns everything the `HomeDashboardOverview` component needs to render and interact with the editor.
-
-**Returns**:
-- `allCards` — unified `Map<id, DeviceWithType | CustomCard>` combining devices and widgets
-- `flowCards` — IDs of cards not assigned to any section (used in `flow` mode and as overflow in `sectioned` mode)
-- `sectionCards` — sections as `HomeEditorSection[]` (id, title, span, x, y, cardIds), consumed by `buildSectionStacks` in the render layer
-- `activeDragCard` / `setActiveDragCard` — active drag overlay state
-- `activeDragSize` — resolved size of the card currently being dragged (for the `DragOverlay`)
-- `sensors` — pre-configured dnd-kit sensors (pointer with 8px activation threshold + keyboard)
-- `handleDragEnd` — resolves drop target and calls `addHomeCard` / `moveHomeCard` as appropriate
-- `libraryCards` — available (unplaced) cards for the floating library panel
-- `filteredLibraryCards` — library cards filtered by search query, capped at 5
-- `libraryQuery` / `setLibraryQuery` — search input state
-- `handleAddFromLibrary` — places a library card onto the canvas
-- `summaryItems` — `{ label, value }[]` for the four stats in the editor header
-
----
-
-### `useLibraryPanel`
-
-`src/app/features/dashboard/hooks/use-library-panel.ts`
-
-Manages all state and behaviour for the floating card library panel in the Dashboard Builder.
-
-**Returns**:
-- `libraryPanelRef` — `RefObject<HTMLDivElement>` attached to the panel element (needed for drag offset calculation)
-- `isLibraryVisible` / `isLibraryCollapsed` — controls which panel state is rendered
-- `libraryPosition` — `{ x, y }` pixel position; updated on drag and on window resize
-- `handleStartLibraryDrag` — `PointerEvent` handler that attaches `pointermove`/`pointerup` listeners for free-drag repositioning
-- `toggleLibraryVisibility` — shows or hides the panel, resetting the collapsed state
-- `expandLibrary` — shows the full panel and snaps it to the default right-side position
-- `collapseLibraryToDock` — collapses the panel to a slim dock tab on the right edge
+Last updated: April 21, 2026

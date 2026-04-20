@@ -19,7 +19,9 @@ import {
   CustomCardTintPicker,
   CustomScrollbar,
 } from '@/app/components/shared/device-editor';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { EnergySparkline } from '@/app/features/energy/components/charts/energy-sparkline';
 import { useEnergyDashboard } from '@/app/features/energy/hooks/use-energy-dashboard';
@@ -292,9 +294,12 @@ export function EnergyNowSettingsDialog({
                                     : surface.subtleFill,
                                 }}
                               >
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                                <div
+                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${surface.borderClassName}`}
+                                  style={{ background: surface.subtleFill }}
+                                >
                                   <Bolt
-                                    className={`h-4 w-4 ${isSelected ? 'text-emerald-400' : 'text-white/60'}`}
+                                    className={`h-4 w-4 ${isSelected ? (theme === 'light' ? 'text-emerald-600' : 'text-emerald-400') : theme === 'light' ? 'text-slate-500' : 'text-white/60'}`}
                                   />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -356,8 +361,10 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
 }: EnergyNowDashboardCardViewProps) {
   const { theme } = useTheme();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
+  const cardShell = getCardShellSurfaceTokens(theme);
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
+  const baseSurface = getThemeSurfaceTokens(theme);
   const headerSize: CardSize = isSmall ? 'small' : size;
   const tickIndexes = isSmall
     ? [0, trend.length - 1]
@@ -380,15 +387,20 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
 
   return (
     <div
-      className="relative h-full overflow-hidden rounded-[28px] border border-white/10"
+      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
       style={frameStyle}
     >
-      <div className="absolute inset-px overflow-hidden rounded-[26px]">
+      <div
+        className={`absolute inset-px overflow-hidden rounded-[26px] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+      >
         {surface.glowStyle ? (
           <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
         ) : null}
         {surface.overlayClassName ? (
           <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
+        ) : null}
+        {baseSurface.lightOverlay ? (
+          <div className={`pointer-events-none absolute inset-0 ${baseSurface.lightOverlay}`} />
         ) : null}
         <div
           className="absolute inset-0"
@@ -396,8 +408,8 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
             ...surface.panelStyle,
             background:
               theme === 'light'
-                ? 'linear-gradient(180deg, rgba(22,22,24,0.98) 0%, rgba(12,12,14,0.98) 100%)'
-                : `radial-gradient(circle at 50% 100%, ${accentColor}20 0%, transparent 52%), linear-gradient(180deg, rgba(20,20,22,0.98) 0%, rgba(10,10,12,0.98) 100%)`,
+                ? `radial-gradient(circle at 50% 100%, ${accentColor}16 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 100%)`
+                : `radial-gradient(circle at 50% 100%, ${accentColor}18 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
           }}
         />
 
@@ -422,8 +434,8 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
           style={{
             background:
               theme === 'light'
-                ? 'linear-gradient(90deg, rgba(12,12,14,0.98) 0%, rgba(12,12,14,0.72) 42%, rgba(12,12,14,0) 100%)'
-                : 'linear-gradient(90deg, rgba(10,10,12,0.98) 0%, rgba(10,10,12,0.74) 42%, rgba(10,10,12,0) 100%)',
+                ? 'linear-gradient(90deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
+                : 'linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
           }}
         />
 
@@ -432,8 +444,8 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
           style={{
             background:
               theme === 'light'
-                ? 'linear-gradient(270deg, rgba(12,12,14,0.98) 0%, rgba(12,12,14,0.72) 42%, rgba(12,12,14,0) 100%)'
-                : 'linear-gradient(270deg, rgba(10,10,12,0.98) 0%, rgba(10,10,12,0.74) 42%, rgba(10,10,12,0) 100%)',
+                ? 'linear-gradient(270deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
+                : 'linear-gradient(270deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
           }}
         />
 
@@ -441,13 +453,17 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
           className={`pointer-events-none absolute inset-x-0 bottom-0 ${isSmall ? 'top-16' : 'top-20'}`}
           style={{
             background: isSmall
-              ? 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.1) 32%, rgba(0,0,0,0.74) 100%)'
-              : 'linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.04) 34%, rgba(0,0,0,0.84) 100%)',
+              ? theme === 'light'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 32%, rgba(248,250,252,0.48) 100%)'
+                : 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.1) 32%, rgba(0,0,0,0.74) 100%)'
+              : theme === 'light'
+                ? 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 34%, rgba(248,250,252,0.58) 100%)'
+                : 'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.03) 34%, rgba(0,0,0,0.64) 100%)',
           }}
         />
 
         <div
-          className={`pointer-events-none absolute inset-x-0 border-t border-dashed border-white/65 ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
+          className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
         />
 
         <div className="pointer-events-none relative z-10 flex h-full flex-col p-4">
@@ -462,8 +478,8 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
                 layout="eyebrow-first"
                 className="mb-0"
                 marginBottomClassName="mb-0"
-                titleClassName="text-white"
-                subtitleClassName="text-white/52"
+                titleClassName={baseSurface.textPrimary}
+                subtitleClassName={baseSurface.textMuted}
                 leading={
                   <EntityCardHeaderIcon
                     IconComponent={Bolt}
@@ -479,10 +495,10 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
               label={`${todayUsageKWh.toFixed(1)} kWh`}
               size={isSmall ? 'sm' : isMedium ? 'lg' : 'xl'}
               isActive
-              accentClassName="text-white"
+              accentClassName={baseSurface.textPrimary}
               theme={theme}
               className="shrink-0 text-right"
-              labelClassName="text-emerald-400"
+              labelClassName={theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'}
               valueStyle={{
                 fontSize: isSmall ? '1.25rem' : isMedium ? '1.45rem' : '1.7rem',
                 lineHeight: 1,
@@ -492,7 +508,9 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
           </div>
 
           <div className="mt-auto">
-            <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-white/55">
+            <div
+              className={`mt-3 flex items-center justify-between gap-2 text-[11px] ${baseSurface.textMuted}`}
+            >
               {trendTicks.map((point, index) => (
                 <div
                   key={`${point.label || 'tick'}-${index}`}
@@ -523,7 +541,7 @@ function EnergyNowStatusWidget({ message }: { message: string }) {
 
   return (
     <div
-      className="relative h-full overflow-hidden rounded-[28px] border border-white/10"
+      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
       style={frameStyle}
     >
       <div

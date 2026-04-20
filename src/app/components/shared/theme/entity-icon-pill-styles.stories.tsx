@@ -12,7 +12,7 @@ function EntityIconPillStylesShowcase() {
       {THEMES.map((theme) => (
         <section
           key={theme}
-          className={`rounded-2xl border p-4 ${getThemeSurfaceTokens(theme).border} ${getThemeSurfaceTokens(theme).panelMuted}`}
+          className={`rounded-3xl border p-4 ${getThemeSurfaceTokens(theme).border} ${getThemeSurfaceTokens(theme).panelMuted}`}
         >
           <p
             className={`text-xs font-semibold uppercase tracking-[0.2em] ${getThemeSurfaceTokens(theme).textMuted}`}

@@ -139,7 +139,7 @@ function DecoratedDialogStory() {
         </div>
         <DialogFooter>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="medium" className={`${surface.textSecondary}`}>
+            <Button variant="ghost" size="default" className={`${surface.textSecondary}`}>
               Secondary action
             </Button>
             <DialogDoneButton

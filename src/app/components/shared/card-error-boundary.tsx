@@ -29,7 +29,7 @@ class CardErrorBoundaryBase extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex h-full w-full items-center justify-center rounded-3xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs text-white/30">{this.props.fallbackMessage}</p>
         </div>
       );

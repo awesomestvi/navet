@@ -14,11 +14,13 @@ import {
 import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
   normalizeCustomCardTint,
 } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -223,6 +225,8 @@ export const MapWidget = memo(function MapWidget({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
+  const baseSurface = getThemeSurfaceTokens(theme);
+  const cardShell = getCardShellSurfaceTokens(theme);
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
   const tileUrl = getTileUrl(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -237,6 +241,10 @@ export const MapWidget = memo(function MapWidget({
     }),
     [surface.panelStyle]
   );
+  const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
+  const emptyStateIconClassName = theme === 'light' ? 'text-slate-400' : baseSurface.textMuted;
+  const attributionClassName = `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textMuted}`;
+  const settingsButtonClassName = `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textSecondary}`;
 
   const markers = useHomeAssistant(selectMapMarkersFromHa, mapMarkersEqual);
 
@@ -251,15 +259,24 @@ export const MapWidget = memo(function MapWidget({
 
   return (
     <div
-      className="relative h-full overflow-hidden rounded-[28px] border border-white/10"
+      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
       style={mapFrameStyle}
     >
-      <div className="absolute inset-px z-2 overflow-hidden rounded-[26px] bg-zinc-900">
+      <div
+        className={`absolute inset-px z-2 overflow-hidden rounded-[26px] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+        style={mapInnerStyle}
+      >
+        {surface.glowStyle ? (
+          <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+        ) : null}
         {markers.length === 0 ? (
-          /* Empty state — same full-bleed shell */
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-900">
-            <MapPin className="h-8 w-8 text-zinc-500" />
-            <span className="text-xs text-zinc-500">{t('widgets.map.noTrackers')}</span>
+          <div
+            className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
+          >
+            <MapPin className={`h-8 w-8 ${emptyStateIconClassName}`} />
+            <span className={`text-xs ${baseSurface.textMuted}`}>
+              {t('widgets.map.noTrackers')}
+            </span>
           </div>
         ) : (
           <MapContainer
@@ -309,24 +326,47 @@ export const MapWidget = memo(function MapWidget({
             ))}
           </MapContainer>
         )}
+        {markers.length > 0 && surface.overlayClassName ? (
+          <div
+            className={`pointer-events-none absolute inset-0 z-[350] ${surface.overlayClassName}`}
+          />
+        ) : null}
+        {markers.length > 0 && baseSurface.lightOverlay ? (
+          <div
+            className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
+          />
+        ) : null}
+        {markers.length > 0 ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-[352]"
+            style={{
+              background:
+                theme === 'light'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 18%, rgba(255,255,255,0.03) 45%, rgba(248,250,252,0.12) 100%)'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 18%, rgba(255,255,255,0.015) 45%, rgba(2,6,16,0.10) 100%)',
+            }}
+          />
+        ) : null}
 
         {isSmallCard ? (
-          <div className="pointer-events-auto absolute bottom-2 left-2 z-450 max-w-24 rounded-[12px] rounded-bl-[20px] border border-white/10 bg-black/60 px-1.5 py-1 text-[8px] leading-[1.05] text-white/70 backdrop-blur-md">
+          <div
+            className={`pointer-events-auto absolute bottom-2 left-2 z-[450] max-w-24 rounded-[12px] rounded-bl-[20px] border px-1.5 py-1 text-[8px] leading-[1.05] ${attributionClassName}`}
+          >
             <a
               href="https://www.openstreetmap.org/copyright"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white/90"
+              className={baseSurface.textSecondary}
             >
               OpenStreetMap
             </a>{' '}
             contributors
-            <span className="mx-1 text-white/35">|</span>
+            <span className={`mx-1 ${baseSurface.textMuted}`}>|</span>
             <a
               href="https://carto.com/attributions"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white/90"
+              className={baseSurface.textSecondary}
             >
               CARTO
             </a>
@@ -338,7 +378,7 @@ export const MapWidget = memo(function MapWidget({
         <button
           type="button"
           onClick={() => setIsSettingsOpen(true)}
-          className={`absolute bottom-4 right-4 z-500 shrink-0 rounded-full border border-white/14 bg-black/28 p-2 text-white/80 backdrop-blur-md transition-opacity hover:opacity-90 ${surface.textMuted}`}
+          className={`absolute bottom-4 right-4 z-500 shrink-0 rounded-full border p-2 transition-opacity hover:opacity-90 ${settingsButtonClassName}`}
           aria-label={t('widgets.map.title')}
         >
           <Settings2 className="h-4 w-4" />
@@ -356,23 +396,41 @@ export const MapWidget = memo(function MapWidget({
         .dashboard-map-widget,
         .dashboard-map-widget.leaflet-container {
           border-radius: inherit;
-          background: #0a0a0a;
+          background: transparent;
+        }
+
+        .dashboard-map-widget .leaflet-tile-pane {
+          opacity: ${theme === 'light' ? '0.94' : '0.9'};
+          filter: ${
+            theme === 'light'
+              ? 'saturate(0.88) contrast(0.94) brightness(1.03)'
+              : 'saturate(0.82) contrast(0.94) brightness(0.94)'
+          };
         }
 
         .dashboard-map-widget .leaflet-control-attribution {
           margin: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 12px 12px 12px 20px;
-          background: rgba(0, 0, 0, 0.58);
-          color: rgba(255, 255, 255, 0.72);
           padding: 3px 8px;
           font-size: 10px;
           line-height: 1.15;
-          backdrop-filter: blur(10px);
         }
 
         .dashboard-map-widget .leaflet-control-attribution a {
           color: inherit;
+        }
+
+        .dashboard-map-widget .leaflet-popup-content-wrapper,
+        .dashboard-map-widget .leaflet-popup-tip {
+          background: ${theme === 'light' ? 'rgba(255,255,255,0.94)' : 'rgba(11,18,32,0.88)'};
+          color: ${theme === 'light' ? 'rgb(15 23 42)' : 'rgba(255,255,255,0.92)'};
+          border: 1px solid ${theme === 'light' ? 'rgba(148,163,184,0.28)' : 'rgba(255,255,255,0.14)'};
+          box-shadow: ${
+            theme === 'light'
+              ? '0 20px 36px -24px rgba(15,23,42,0.22)'
+              : '0 18px 34px -24px rgba(2,8,20,0.72)'
+          };
+          backdrop-filter: blur(16px);
         }
       `}</style>
     </div>

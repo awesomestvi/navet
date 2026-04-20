@@ -23,7 +23,7 @@ function FramedEntityCardTitleBlock({
   const subtitleClassName = theme === 'light' ? 'text-slate-500' : 'text-white/60';
 
   return (
-    <div className={`w-72 rounded-2xl border p-4 backdrop-blur-xl ${frameClassName}`}>
+    <div className={`w-72 rounded-3xl border p-4 backdrop-blur-xl ${frameClassName}`}>
       <EntityCardTitleBlock
         title={title}
         subtitle={subtitle}

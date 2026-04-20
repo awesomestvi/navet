@@ -267,6 +267,13 @@ export const svMessages = {
   'dashboard.roomNav.groupBy': 'Gruppera efter',
   'dashboard.roomNav.add': 'Lägg till',
   'dashboard.roomNav.addCard': 'Lägg till kort',
+  'dashboard.roomNav.reorder': 'Ordna om',
+  'dashboard.roomNav.reorderDialog.title': 'Ordna om rum',
+  'dashboard.roomNav.reorderDialog.description':
+    'Flytta rum upp eller ned för att ändra ordningen.',
+  'dashboard.roomNav.reorderDialog.dragRoom': 'Ordna om rum {room}',
+  'dashboard.roomNav.reorderDialog.moveUp': 'Flytta rum upp',
+  'dashboard.roomNav.reorderDialog.moveDown': 'Flytta rum ned',
   'dashboard.roomNav.doneEditing': 'Klar med redigering',
   'dashboard.roomNav.customize': 'Anpassa',
   'dashboard.homeOverview.eyebrow': 'Första blick',
