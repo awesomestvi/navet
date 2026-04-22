@@ -14,6 +14,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   ArrowDown,
   ArrowUp,
@@ -23,6 +24,7 @@ import {
   GripVertical,
   LayoutGrid,
   Lightbulb,
+  Trash2,
 } from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
@@ -54,11 +56,15 @@ import {
 } from '@/app/components/ui/dropdown-menu';
 import { cn } from '@/app/components/ui/utils';
 import type { AllViewGrouping } from '@/app/features/dashboard';
-import { useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 interface RoomNavProps {
   rooms?: string[];
+  roomHiddenItemCounts?: Map<string, number>;
+  roomItemCounts?: Map<string, number>;
   activeRoom: string;
   onRoomChange: (room: string) => void;
   allViewGrouping?: AllViewGrouping;
@@ -132,6 +138,8 @@ function useStickyActivation() {
 
 export const RoomNav = memo(function RoomNav({
   rooms = [],
+  roomHiddenItemCounts = new Map(),
+  roomItemCounts = new Map(),
   activeRoom,
   onRoomChange,
   allViewGrouping = 'custom',
@@ -144,10 +152,18 @@ export const RoomNav = memo(function RoomNav({
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
+  const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const surface = getThemeSurfaceTokens(theme);
   const { stickyMarkerRef, stickyRef, shellRef } = useStickyActivation();
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
-  const visibleRooms = ['All', ...rooms];
+  const manageableRooms = useMemo(() => {
+    const areaNames = areas.map((area) => area.name).filter((name) => name && name !== 'All');
+    const orderedKnownRooms = rooms.filter((room) => areaNames.includes(room));
+    const unorderedAreaRooms = areaNames.filter((room) => !orderedKnownRooms.includes(room));
+    const navetOnlyRooms = rooms.filter((room) => room !== 'All' && !areaNames.includes(room));
+    return [...new Set([...orderedKnownRooms, ...unorderedAreaRooms, ...navetOnlyRooms])];
+  }, [areas, rooms]);
+  const visibleRooms = useMemo(() => ['All', ...rooms], [rooms]);
   const textSecondary = surface.textSecondary;
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
@@ -186,7 +202,7 @@ export const RoomNav = memo(function RoomNav({
     } as CSSProperties;
   }, [theme]);
   const showAllViewGrouping = activeRoom === 'All' && onAllViewGroupingChange;
-  const canReorderRooms = isEditMode && Boolean(onRoomOrderChange) && rooms.length > 1;
+  const canReorderRooms = isEditMode && Boolean(onRoomOrderChange) && manageableRooms.length > 0;
   const hasEditMenus = Boolean(
     canReorderRooms || (isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity)
   );
@@ -358,7 +374,10 @@ export const RoomNav = memo(function RoomNav({
         <RoomOrderDialog
           isOpen={isReorderDialogOpen}
           onOpenChange={setIsReorderDialogOpen}
-          rooms={rooms}
+          rooms={manageableRooms}
+          areas={areas}
+          roomHiddenItemCounts={roomHiddenItemCounts}
+          roomEntityCounts={roomItemCounts}
           onRoomOrderChange={onRoomOrderChange}
         />
       ) : null}
@@ -370,6 +389,9 @@ interface RoomOrderDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   rooms: string[];
+  areas: Array<{ area_id: string; name: string }>;
+  roomHiddenItemCounts: Map<string, number>;
+  roomEntityCounts: Map<string, number>;
   onRoomOrderChange?: (rooms: string[]) => void;
 }
 
@@ -391,18 +413,31 @@ const RoomOrderDialog = memo(function RoomOrderDialog({
   isOpen,
   onOpenChange,
   rooms,
+  areas,
+  roomHiddenItemCounts,
+  roomEntityCounts,
   onRoomOrderChange,
 }: RoomOrderDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const separatorClassName =
+    theme === 'light' ? 'bg-slate-300/90' : theme === 'black' ? 'bg-white/28' : 'bg-white/14';
   const [draftRooms, setDraftRooms] = useState(rooms);
+  const [roomPendingDelete, setRoomPendingDelete] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setDraftRooms(rooms);
+      setRoomPendingDelete(null);
+      setIsSaving(false);
     }
   }, [isOpen, rooms]);
+
+  const areaIdByName = useMemo(() => {
+    return new Map(areas.map((area) => [area.name, area.area_id]));
+  }, [areas]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -443,6 +478,28 @@ const RoomOrderDialog = memo(function RoomOrderDialog({
     });
   };
 
+  const handleDeleteRoom = async () => {
+    if (!roomPendingDelete) {
+      return;
+    }
+
+    const areaId = areaIdByName.get(roomPendingDelete);
+    if (!areaId) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await homeAssistantService.deleteArea(areaId);
+      const nextRooms = draftRooms.filter((room) => room !== roomPendingDelete);
+      setDraftRooms(nextRooms);
+      onRoomOrderChange?.(nextRooms);
+      setRoomPendingDelete(null);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDone = () => {
     onRoomOrderChange?.(draftRooms);
     onOpenChange(false);
@@ -465,26 +522,32 @@ const RoomOrderDialog = memo(function RoomOrderDialog({
       <div className="max-h-[85vh] overflow-y-auto p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className={`text-xl font-semibold ${surface.textPrimary}`}>
+            <Dialog.Title className={`text-xl font-semibold ${surface.textPrimary}`}>
               {t('dashboard.roomNav.reorderDialog.title')}
-            </h2>
-            <p className={`mt-1 text-sm ${surface.textSecondary}`}>
+            </Dialog.Title>
+            <Dialog.Description className={`mt-1 text-sm ${surface.textSecondary}`}>
               {t('dashboard.roomNav.reorderDialog.description')}
-            </p>
+            </Dialog.Description>
           </div>
         </div>
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
+            <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
               {draftRooms.map((room, index) => (
                 <RoomOrderDialogRow
                   key={room}
                   room={room}
                   index={index}
                   totalCount={draftRooms.length}
+                  isLast={index === draftRooms.length - 1}
                   surface={surface}
+                  separatorClassName={separatorClassName}
+                  entityCount={roomEntityCounts.get(room) ?? 0}
+                  hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
                   onMove={moveRoom}
+                  onDelete={() => setRoomPendingDelete(room)}
+                  deleteDisabled={isSaving}
                 />
               ))}
             </div>
@@ -492,14 +555,61 @@ const RoomOrderDialog = memo(function RoomOrderDialog({
         </DndContext>
 
         <DialogFooter>
-          <Button variant="ghost" size="small" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="soft" size="small" onClick={handleDone}>
+          <Button variant="soft" size="small" onClick={handleDone} disabled={isSaving}>
             {t('common.done')}
           </Button>
         </DialogFooter>
       </div>
+
+      <DialogShell
+        isOpen={roomPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRoomPendingDelete(null);
+          }
+        }}
+        contentAriaDescribedBy={undefined}
+        overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+        contentClassName={settingsDialogContentClass(surface, {
+          maxWidth: 'sm',
+          overflow: false,
+          padding: false,
+          animate: true,
+        })}
+      >
+        <div className="p-6">
+          <div className="space-y-2">
+            <Dialog.Title className={`text-lg font-semibold ${surface.textPrimary}`}>
+              {t('dashboard.roomNav.reorderDialog.deleteTitle')}
+            </Dialog.Title>
+            <Dialog.Description className={`text-sm ${surface.textSecondary}`}>
+              {t('dashboard.roomNav.reorderDialog.deleteDescription', {
+                room: roomPendingDelete ?? '',
+              })}
+            </Dialog.Description>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => setRoomPendingDelete(null)}
+              disabled={isSaving}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="soft"
+              size="small"
+              onClick={() => void handleDeleteRoom()}
+              loading={isSaving}
+              className="text-red-500"
+            >
+              {t('dashboard.roomNav.reorderDialog.deleteAction')}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogShell>
     </DialogShell>
   );
 });
@@ -508,18 +618,31 @@ interface RoomOrderDialogRowProps {
   room: string;
   index: number;
   totalCount: number;
+  isLast: boolean;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  separatorClassName: string;
+  entityCount: number;
+  hiddenCount: number;
   onMove: (fromIndex: number, direction: -1 | 1) => void;
+  onDelete: () => void;
+  deleteDisabled: boolean;
 }
 
 const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
   room,
   index,
   totalCount,
+  isLast,
   surface,
+  separatorClassName,
+  entityCount,
+  hiddenCount,
   onMove,
+  onDelete,
+  deleteDisabled,
 }: RoomOrderDialogRowProps) {
   const { t } = useI18n();
+  const visibleCount = Math.max(0, entityCount - hiddenCount);
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: room,
   });
@@ -528,38 +651,64 @@ const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
     <div
       ref={setNodeRef}
       style={getDndTransformStyle(transform, transition)}
-      className={`flex items-center gap-3 rounded-2xl border px-3 py-2 ${surface.border} ${surface.subtleBg}`}
+      className={`flex items-center gap-2 px-3 py-2.5 ${surface.panel} ${
+        isLast ? '' : `border-b ${surface.border}`
+      }`}
     >
       <button
         type="button"
         aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
-        className={`flex h-9 w-5 touch-none items-center justify-center rounded-md transition-colors ${surface.textSecondary} ${surface.hoverBg}`}
+        className={`flex h-8 w-8 touch-none items-center justify-center rounded-full transition-colors ${surface.textSecondary} ${surface.hoverBg}`}
         {...attributes}
         {...listeners}
       >
         <GripVertical className="h-4 w-4" aria-hidden="true" />
       </button>
-      <span className={`min-w-0 flex-1 truncate text-sm font-medium ${surface.textPrimary}`}>
-        {room}
-      </span>
-      <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>{room}</div>
+        <div className={`truncate text-xs ${surface.textMuted}`}>
+          {t(
+            visibleCount <= 1
+              ? 'dashboard.roomNav.reorderDialog.itemCount.one'
+              : 'dashboard.roomNav.reorderDialog.itemCount.other',
+            { count: visibleCount }
+          )}
+          {hiddenCount > 0
+            ? ` · ${t('dashboard.roomNav.reorderDialog.hiddenCount', { count: hiddenCount })}`
+            : ''}
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
         <Button
           size="compact"
-          variant="soft"
+          variant="secondary"
           onClick={() => onMove(index, -1)}
           disabled={index === 0}
           aria-label={t('dashboard.roomNav.reorderDialog.moveUp')}
+          className="h-8 w-8"
         >
           <ArrowUp className="h-3.5 w-3.5" />
         </Button>
         <Button
           size="compact"
-          variant="soft"
+          variant="secondary"
           onClick={() => onMove(index, 1)}
           disabled={index === totalCount - 1}
           aria-label={t('dashboard.roomNav.reorderDialog.moveDown')}
+          className="h-8 w-8"
         >
           <ArrowDown className="h-3.5 w-3.5" />
+        </Button>
+        <div aria-hidden="true" className={`mx-1 h-5 w-px rounded-full ${separatorClassName}`} />
+        <Button
+          size="compact"
+          variant="soft"
+          onClick={onDelete}
+          disabled={deleteDisabled}
+          aria-label={t('dashboard.roomNav.reorderDialog.deleteRoom', { room })}
+          className="h-8 w-8 border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/12"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>

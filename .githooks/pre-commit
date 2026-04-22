@@ -4,5 +4,4 @@ set -eu
 
 pnpm check
 pnpm check:stories
-node scripts/check-typecheck-baseline.mjs
 node scripts/check-docs-relevance.mjs

@@ -5,7 +5,6 @@ export const STORAGE_KEYS = {
   mediaSectionCardSizes: 'ha-dashboard-media-section-card-sizes',
   cardOrders: 'ha-dashboard-card-orders',
   roomOrder: 'ha-dashboard-room-order',
-  entityRoomOverrides: 'ha-dashboard-entity-room-overrides',
   allViewGrouping: 'ha-dashboard-all-view-grouping',
   switchCardMetricPreferences: 'ha-dashboard-switch-card-metrics',
   switchCardIcons: 'ha-dashboard-switch-card-icons',

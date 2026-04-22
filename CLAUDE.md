@@ -13,6 +13,7 @@ Connects to Home Assistant over WebSocket.
 - Keep the summary line under 72 characters
 - Do not use generic or free-form commit messages
 - Do not add bullet-point bodies unless the change genuinely requires explanation beyond the summary line
+- Do not use `git commit --no-verify` unless the user explicitly approves skipping hooks for that commit
 
 ---
 
@@ -26,6 +27,7 @@ pnpm format       # Biome format (auto-fix)
 
 **Do not run `pnpm build` unless explicitly asked.**
 **Do not run `pnpm typecheck` or `pnpm check` yourself** — ask the user to run them and report back.
+If a commit or hook is blocked by TypeScript errors, fix the type errors instead of updating or relying on a typecheck baseline.
 
 ---
 

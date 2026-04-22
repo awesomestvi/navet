@@ -125,15 +125,10 @@ export function getName(entity: HassEntity): string {
 export function resolveEntityRoom(
   entityId: string,
   entity: HassEntity,
-  roomOverride: string | null | undefined,
   areaMap: Map<string, string>,
   entityRegistryMap: Map<string, { area_id?: string | null; device_id?: string | null }>,
   deviceRegistryMap: Map<string, { area_id?: string | null }>
 ): string {
-  if (roomOverride) {
-    return areaMap.get(roomOverride) ?? roomOverride;
-  }
-
   const entityEntry = entityRegistryMap.get(entityId);
   const deviceEntry = entityEntry?.device_id
     ? deviceRegistryMap.get(entityEntry.device_id)

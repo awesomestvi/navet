@@ -1,7 +1,6 @@
 import type { Connection, HassEntity } from 'home-assistant-js-websocket';
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { shallow } from 'zustand/shallow';
-import { STORAGE_KEYS } from '../constants/storage-keys';
 import { normalizeMediaPlaybackState } from '../features/media';
 import { normalizeVacuumStatus } from '../features/vacuum';
 import { useI18n } from '../i18n';
@@ -48,7 +47,6 @@ import {
   resolveEntityRoom,
 } from './ha-entity-utils';
 import { useHomeAssistant } from './use-home-assistant';
-import { usePersistedState } from './use-persisted-state';
 
 type WeatherForecastEntry = Record<string, unknown>;
 
@@ -194,10 +192,6 @@ export const useHADevices = (): DeviceCollection => {
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
-  const [entityRoomOverrides] = usePersistedState<Record<string, string>>(
-    STORAGE_KEYS.entityRoomOverrides,
-    {}
-  );
   const primaryWeatherEntityId = useMemo(() => {
     if (!entities) {
       return null;
@@ -338,14 +332,7 @@ export const useHADevices = (): DeviceCollection => {
     const deviceIdsWithPrimaryCards = new Set<string>();
 
     const getRoom = (entityId: string, entity: HassEntity) =>
-      resolveEntityRoom(
-        entityId,
-        entity,
-        entityRoomOverrides[entityId],
-        areaMap,
-        entityRegistryMap,
-        deviceRegistryMap
-      );
+      resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
     const shouldSuppressForVacuumDevice = (entityId: string) => {
       const deviceId = entityRegistryMap.get(entityId)?.device_id;
       return deviceId ? deviceIdsWithVacuumEntity.has(deviceId) : false;
@@ -1153,9 +1140,7 @@ export const useHADevices = (): DeviceCollection => {
     }
 
     if (calendarSources.length > 0) {
-      const aggregatedCalendarId = 'calendar.navet_overview';
       const roomSet = new Set(calendarSources.map((source) => source.room).filter(Boolean));
-      const aggregatedCalendarRoomOverride = entityRoomOverrides[aggregatedCalendarId];
       const fallbackEventColors = [
         'bg-blue-500',
         'bg-purple-500',
@@ -1182,14 +1167,9 @@ export const useHADevices = (): DeviceCollection => {
         .slice(0, 12);
 
       calendars.push({
-        id: aggregatedCalendarId,
+        id: 'calendar.navet_overview',
         name: t('calendar.defaultTitle'),
-        room:
-          (aggregatedCalendarRoomOverride
-            ? (areaMap.get(aggregatedCalendarRoomOverride) ?? aggregatedCalendarRoomOverride)
-            : null) ??
-          singleRoom ??
-          UNKNOWN_ROOM_LABEL,
+        room: singleRoom ?? UNKNOWN_ROOM_LABEL,
         size: 'medium',
         sourceIds: calendarSources.map((source) => source.id),
         sources: calendarSources,
@@ -1221,7 +1201,6 @@ export const useHADevices = (): DeviceCollection => {
     deferredCalendarEvents,
     deferredWeatherForecasts,
     deviceRegistry,
-    entityRoomOverrides,
     entities,
     entityRegistry,
     locale,

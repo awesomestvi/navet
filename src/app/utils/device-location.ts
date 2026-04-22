@@ -1,7 +1,7 @@
 import type { Device, DeviceCollection, DeviceWithType } from '@/app/types/device.types';
 
 type LocatableDevice = Device | DeviceWithType;
-export const UNKNOWN_ROOM_LABEL = 'Unknown Room';
+export const UNKNOWN_ROOM_LABEL = 'Unassigned';
 
 export function getDeviceRoom(device: LocatableDevice): string | null {
   if ('room' in device && typeof device.room === 'string' && device.room.length > 0) {

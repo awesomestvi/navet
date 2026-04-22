@@ -88,10 +88,10 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
           ? 'grid min-w-0 items-stretch gap-0.75 rounded-[18px] border p-0.75'
           : 'grid min-w-0 items-stretch gap-2 rounded-[24px] border p-2.5'
       : isSmall
-        ? 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[22px] p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible'
+        ? 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[22px] p-1.5 md:flex-wrap md:overflow-visible'
         : isCompact
-          ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border rounded-[18px] p-0.75 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible'
-          : 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[24px] p-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible';
+          ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border rounded-[18px] p-0.75 md:flex-wrap md:overflow-visible'
+          : 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[24px] p-2.5 md:flex-wrap md:overflow-visible';
 
   return (
     <div
@@ -101,10 +101,10 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
       className={cn(
         variant === 'default'
           ? isCompact
-            ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border px-1 py-0.75 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-1.5 md:py-1 rounded-[18px] md:rounded-[20px]'
+            ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border px-1 py-0.75 md:flex-wrap md:overflow-visible md:px-1.5 md:py-1 rounded-[18px] md:rounded-[20px]'
             : isSmall
-              ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-2.5 md:py-2 rounded-[22px] md:rounded-[24px]'
-              : 'flex min-w-0 items-center gap-2 overflow-x-auto border px-3 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:px-4 md:py-3 rounded-[24px] md:rounded-[28px]'
+              ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border px-2 py-1.5 md:flex-wrap md:overflow-visible md:px-2.5 md:py-2 rounded-[22px] md:rounded-[24px]'
+              : 'flex min-w-0 items-center gap-2 overflow-x-auto border px-3 py-2.5 md:flex-wrap md:overflow-visible md:px-4 md:py-3 rounded-[24px] md:rounded-[28px]'
           : compactShellClassName,
         surface.borderStrong,
         surface.panel,

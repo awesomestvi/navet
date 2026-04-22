@@ -13,6 +13,7 @@ import {
 } from '@/app/hooks';
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { DeviceCollection } from '@/app/types/device.types';
 import type { AllViewGrouping } from '../all-view-grid';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useCardOrdering } from './use-card-ordering';
@@ -34,6 +35,7 @@ export function useDashboardController(): DashboardController {
   const { t } = useI18n();
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
+  const areas = useHomeAssistant(homeAssistantSelectors.areas);
   /** Avoid subscribing to the full entities map — only hydration matters for room edge cases. */
   const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
@@ -48,11 +50,55 @@ export function useDashboardController(): DashboardController {
   const allDevices = useDevices();
   const devices = useDashboardDevices(allDevices, hiddenEntityIds);
   const discoveredRooms = useRooms(devices);
+  const countItemsByRoom = useCallback((collection: DeviceCollection) => {
+    const counts = new Map<string, number>();
+    const deviceGroups = Object.values(collection) as Array<Array<{ room: string }>>;
+
+    deviceGroups.forEach((group) => {
+      group.forEach((device) => {
+        const room = device.room;
+        if (!room || room === 'All') {
+          return;
+        }
+
+        counts.set(room, (counts.get(room) ?? 0) + 1);
+      });
+    });
+
+    return counts;
+  }, []);
+  const roomItemCounts = useMemo(
+    () => countItemsByRoom(allDevices),
+    [allDevices, countItemsByRoom]
+  );
+  const visibleRoomItemCounts = useMemo(
+    () => countItemsByRoom(devices),
+    [countItemsByRoom, devices]
+  );
+  const roomHiddenItemCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    roomItemCounts.forEach((totalCount, room) => {
+      const visibleCount = visibleRoomItemCounts.get(room) ?? 0;
+      const hiddenCount = Math.max(0, totalCount - visibleCount);
+      if (hiddenCount > 0) {
+        counts.set(room, hiddenCount);
+      }
+    });
+    return counts;
+  }, [roomItemCounts, visibleRoomItemCounts]);
+  const areaRooms = useMemo(
+    () => areas.map((area) => area.name).filter((name) => name && name !== 'All'),
+    [areas]
+  );
+  const availableRooms = useMemo(() => {
+    const discoveredOnlyRooms = discoveredRooms.filter((room) => !areaRooms.includes(room));
+    return [...new Set([...discoveredRooms, ...discoveredOnlyRooms])];
+  }, [areaRooms, discoveredRooms]);
   const rooms = useMemo(() => {
-    const preserved = roomOrder.filter((room) => discoveredRooms.includes(room));
-    const additions = discoveredRooms.filter((room) => !preserved.includes(room));
+    const preserved = roomOrder.filter((room) => availableRooms.includes(room));
+    const additions = availableRooms.filter((room) => !preserved.includes(room));
     return [...preserved, ...additions];
-  }, [discoveredRooms, roomOrder]);
+  }, [availableRooms, roomOrder]);
   const { isEditMode, toggleEditMode } = useEditMode();
 
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
@@ -199,6 +245,8 @@ export function useDashboardController(): DashboardController {
     onToggleEditMode: () => startTransition(toggleEditMode),
     onSetRoomOrder: setRoomOrder,
     orderedCardIds,
+    roomHiddenItemCounts,
+    roomItemCounts,
     rooms,
     setActiveSection,
     updateCardSize,

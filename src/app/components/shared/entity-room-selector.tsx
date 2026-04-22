@@ -6,14 +6,7 @@ import { shallow } from 'zustand/shallow';
 import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import {
-  useEntityRoomRegistryContext,
-  useHomeAssistant,
-  useI18n,
-  usePersistedState,
-  useTheme,
-} from '@/app/hooks';
+import { useEntityRoomRegistryContext, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
@@ -28,6 +21,8 @@ interface EntityRoomSelectorProps {
   compactContentClassName?: string;
   compactContentStyle?: CSSProperties;
 }
+
+const CREATE_ROOM_VALUE = '__create_room__';
 
 export const EntityRoomSelector = memo(function EntityRoomSelector({
   entityId,
@@ -47,10 +42,6 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
   const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);
-  const [roomOverrides, setRoomOverrides] = usePersistedState<Record<string, string>>(
-    STORAGE_KEYS.entityRoomOverrides,
-    {}
-  );
   const resolvedLabel = label ?? t('common.room');
 
   const sortedAreas = useMemo(
@@ -58,11 +49,6 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     [areas]
   );
   const selectedAreaId = useMemo(() => {
-    const overrideAreaId = roomOverrides[entityId];
-    if (overrideAreaId) {
-      return overrideAreaId;
-    }
-
     const entityEntry = roomRegistry.entry;
     if (!entityEntry) {
       return '';
@@ -77,7 +63,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     }
 
     return roomRegistry.deviceAreaId ?? '';
-  }, [entityId, roomRegistry.deviceAreaId, roomRegistry.entry, roomOverrides]);
+  }, [roomRegistry.deviceAreaId, roomRegistry.entry]);
   const entityEntry = roomRegistry.entry;
   const selectedAreaLabel = useMemo(() => {
     if (!selectedAreaId) {
@@ -91,36 +77,48 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`
     : `h-10 rounded-xl px-3 py-0 pr-8 text-sm leading-none ${surface.textPrimary}`;
   const handleChange = async (nextValue: string) => {
+    if (nextValue === CREATE_ROOM_VALUE) {
+      const roomName = window.prompt(t('entityRoomSelector.createPrompt'));
+      if (!roomName) {
+        return;
+      }
+
+      const trimmedRoomName = roomName.trim();
+      if (!trimmedRoomName) {
+        toast.error(t('entityRoomSelector.createInvalid'));
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        const createdArea = await homeAssistantService.createArea(trimmedRoomName);
+        await homeAssistantService.updateEntityArea(entityId, createdArea.area_id, {
+          deviceId: entityEntry?.device_id,
+          entityAreaId: entityEntry?.area_id,
+        });
+        toast.success(t('entityRoomSelector.movedTo', { room: createdArea.name }));
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : t('entityRoomSelector.updateFailed');
+        toast.error(message);
+      } finally {
+        setIsSaving(false);
+      }
+
+      return;
+    }
+
     const nextAreaId = nextValue || null;
     const nextRoomName =
       sortedAreas.find((area) => area.area_id === nextAreaId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
-      if (!entityEntry) {
-        setRoomOverrides((current) => {
-          const next = { ...current };
-          if (nextAreaId) {
-            next[entityId] = nextAreaId;
-          } else {
-            delete next[entityId];
-          }
-          return next;
-        });
-      } else {
-        await homeAssistantService.updateEntityArea(entityId, nextAreaId, {
-          deviceId: entityEntry.device_id,
-          entityAreaId: entityEntry.area_id,
-        });
-        setRoomOverrides((current) => {
-          if (!(entityId in current)) {
-            return current;
-          }
-
-          const next = { ...current };
-          delete next[entityId];
-          return next;
-        });
-      }
+      await homeAssistantService.updateEntityArea(entityId, nextAreaId, {
+        deviceId: entityEntry?.device_id,
+        entityAreaId: entityEntry?.area_id,
+      });
 
       toast.success(t('entityRoomSelector.movedTo', { room: nextRoomName }));
     } catch (error) {
@@ -159,6 +157,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                   {area.name}
                 </option>
               ))}
+              <option value={CREATE_ROOM_VALUE}>{t('entityRoomSelector.createAction')}</option>
             </select>
             <RoomEyebrow
               room={selectedAreaLabel}
@@ -189,6 +188,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                   {area.name}
                 </option>
               ))}
+              <option value={CREATE_ROOM_VALUE}>{t('entityRoomSelector.createAction')}</option>
             </Select>
             {isSaving ? (
               <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">

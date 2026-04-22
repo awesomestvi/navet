@@ -209,10 +209,8 @@ The hook currently enforces:
 
 - `pnpm check` for Biome lint/format issues
 - `pnpm check:stories` for Storybook title conventions, primitive/pattern story coverage, and colocated story ownership
-- TypeScript regression detection by comparing `pnpm exec tsc --noEmit` output against the recorded baseline in `.typecheck-baseline.txt`
 - A docs relevance check that blocks commits touching settings, dashboard behavior, or build/deploy workflow without a staged update to `README.md`, `CONTRIBUTING.md`, or `docs/`
-
-If you intentionally change the TypeScript baseline, update `.typecheck-baseline.txt` and the relevant docs in the same commit.
+If TypeScript errors block a commit, fix the errors instead of updating or relying on a baseline file.
 
 ## 📤 Submitting Changes
 

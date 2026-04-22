@@ -1,5 +1,6 @@
 import { Image as ImageIcon, Minus, Plus, Upload, X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { Button } from '@/app/components/primitives/button';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { useI18n } from '@/app/hooks';
@@ -272,6 +273,8 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
     wallpaper,
   } = controller;
   const builtInWallpapers = theme === 'light' ? LIGHT_THEME_WALLPAPERS : DEFAULT_THEME_WALLPAPERS;
+  const wallpaperInputRef = useRef<HTMLInputElement | null>(null);
+  const openWallpaperPicker = () => wallpaperInputRef.current?.click();
 
   return (
     <SettingsItem
@@ -303,50 +306,53 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
             <button
               type="button"
               onClick={handleRemoveWallpaper}
+              aria-label="Remove wallpaper"
               className={`absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full ${styles.floatingButtonBg} ${styles.floatingButtonText} shadow-lg transition-all hover:scale-110`}
             >
               <X className="h-3.5 w-3.5" />
             </button>
 
-            <label
-              className={`mt-3 flex h-14 cursor-pointer items-center justify-center gap-3 rounded-[18px] border-2 border-dashed md:mt-4 md:h-16 md:rounded-[20px] ${styles.lineColor} transition-colors ${styles.hoverBg}`}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={openWallpaperPicker}
+              className={`mt-3 h-14 w-full rounded-[18px] border-2 border-dashed md:mt-4 md:h-16 md:rounded-[20px] ${styles.lineColor} ${styles.hoverBg} ${styles.textColor}`}
             >
               <Upload className={`h-4 w-4 ${styles.mutedColor}`} />
-              <div className="text-center">
-                <p className={`text-sm font-medium ${styles.textColor}`}>
+              <span className="text-center">
+                <span className={`block text-sm font-medium ${styles.textColor}`}>
                   {t('settings.appearance.wallpaper.replace')}
-                </p>
-                <p className={`text-[11px] ${styles.subtleColor}`}>
+                </span>
+                <span className={`mt-0.5 block text-xs ${styles.subtleColor}`}>
                   {t('settings.appearance.wallpaper.fileHint')}
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleWallpaperUpload}
-                className="hidden"
-              />
-            </label>
+                </span>
+              </span>
+            </Button>
           </div>
         ) : (
-          <label
-            className={`flex h-28 max-w-2xl cursor-pointer flex-col items-center justify-center rounded-[20px] border-2 border-dashed text-center transition-colors md:h-36 md:rounded-3xl ${styles.lineColor} ${styles.hoverBg}`}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={openWallpaperPicker}
+            className={`flex h-28 w-full max-w-2xl flex-col items-center justify-center rounded-[20px] border-2 border-dashed text-center transition-colors md:h-36 md:rounded-3xl ${styles.lineColor} ${styles.hoverBg} ${styles.textColor}`}
           >
             <ImageIcon className={`mb-2 h-8 w-8 md:mb-3 md:h-9 md:w-9 ${styles.mutedColor}`} />
             <span className={`text-sm font-medium ${styles.textColor}`}>
               {t('settings.appearance.wallpaper.upload')}
             </span>
-            <span className={`mt-1 text-[11px] ${styles.subtleColor}`}>
+            <span className={`mt-1 text-xs ${styles.subtleColor}`}>
               {t('settings.appearance.wallpaper.fileHint')}
             </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleWallpaperUpload}
-              className="hidden"
-            />
-          </label>
+          </Button>
         )}
+
+        <input
+          ref={wallpaperInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleWallpaperUpload}
+          className="hidden"
+        />
 
         <div className="max-w-5xl">
           <div className="flex flex-wrap gap-3">

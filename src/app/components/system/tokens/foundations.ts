@@ -49,13 +49,13 @@ export const navetSizeTokens = {
 
 export const navetTypographyTokens = {
   body: 'text-sm leading-6',
-  helper: 'text-xs',
+  helper: 'text-xs leading-5',
   label: 'text-sm font-medium',
   control: 'text-sm font-medium',
-  caption: 'text-[11px]',
-  dense: 'text-[11px] leading-5',
-  eyebrow: 'text-[11px] font-semibold uppercase tracking-[0.18em]',
-  titleSm: 'text-xs font-semibold',
+  caption: 'text-xs leading-4',
+  dense: 'text-xs leading-5',
+  eyebrow: 'text-xs font-semibold uppercase tracking-[0.16em]',
+  titleSm: 'text-sm font-semibold',
   titleMd: 'text-base font-semibold',
   sectionHeading: 'text-lg font-semibold',
   featureHeading: 'text-xl font-semibold tracking-tight',

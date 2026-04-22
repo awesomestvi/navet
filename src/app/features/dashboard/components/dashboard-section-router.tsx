@@ -217,6 +217,8 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
       <div {...sectionStackProps}>
         <RoomNav
           rooms={rooms}
+          roomHiddenItemCounts={controller.roomHiddenItemCounts}
+          roomItemCounts={controller.roomItemCounts}
           activeRoom={activeRoom}
           onRoomChange={changeRoom}
           allViewGrouping={activeRoom === 'All' ? controller.allViewGrouping : undefined}

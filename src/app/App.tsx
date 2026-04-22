@@ -43,8 +43,8 @@ function AppContent() {
   );
 
   const syncRootScaleVars = useCallback(() => {
-    document.documentElement.style.setProperty('--font-size', '16px');
-  }, []);
+    document.documentElement.style.setProperty('--font-size', `${16 * pageZoomScale}px`);
+  }, [pageZoomScale]);
 
   const syncZoomEnvironment = useCallback(() => {
     syncRootScaleVars();
@@ -97,15 +97,13 @@ function AppContent() {
   }, [reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
-    document.documentElement.style.zoom = String(pageZoomScale);
     syncZoomEnvironment();
 
     return () => {
-      document.documentElement.style.zoom = '';
       document.documentElement.style.removeProperty('--font-size');
       clearViewportCssVars();
     };
-  }, [pageZoomScale, syncZoomEnvironment]);
+  }, [syncZoomEnvironment]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

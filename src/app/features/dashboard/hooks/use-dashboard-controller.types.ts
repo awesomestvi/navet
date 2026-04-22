@@ -68,6 +68,8 @@ export type DashboardController = OnboardingController &
     orderedCardIds: string[];
     onSetRoomOrder: (rooms: string[]) => void;
     onSetAllViewGrouping: (grouping: AllViewGrouping) => void;
+    roomHiddenItemCounts: Map<string, number>;
+    roomItemCounts: Map<string, number>;
     rooms: string[];
     setActiveSection: (section: Section) => void;
     updateCardSize: ReturnType<typeof useCardState>['updateCardSize'];

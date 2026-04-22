@@ -487,6 +487,54 @@ class HomeAssistantService {
     await this.loadRegistries();
   }
 
+  async createArea(name: string): Promise<HomeAssistantAreaRegistryEntry> {
+    if (!this.connection) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('Room name is required');
+    }
+
+    const existingArea = this.areas.find(
+      (area) => area.name.localeCompare(trimmedName, undefined, { sensitivity: 'accent' }) === 0
+    );
+    if (existingArea) {
+      return existingArea;
+    }
+
+    let createdArea: HomeAssistantAreaRegistryEntry;
+    try {
+      createdArea = (await this.connection.sendMessagePromise({
+        type: 'config/area_registry/create',
+        name: trimmedName,
+      })) as HomeAssistantAreaRegistryEntry;
+    } catch (error) {
+      throw new Error(`area registry create failed: ${this.getUnknownErrorMessage(error)}`);
+    }
+
+    await this.loadRegistries();
+    return createdArea;
+  }
+
+  async deleteArea(areaId: string): Promise<void> {
+    if (!this.connection) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    try {
+      await this.connection.sendMessagePromise({
+        type: 'config/area_registry/delete',
+        area_id: areaId,
+      });
+    } catch (error) {
+      throw new Error(`area registry delete failed: ${this.getUnknownErrorMessage(error)}`);
+    }
+
+    await this.loadRegistries();
+  }
+
   private getUnknownErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message.trim().length > 0) {
       return error.message;

@@ -21,7 +21,7 @@ function FontsStory() {
       previewTitle="Reference usage"
       preview={
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className={`rounded-[24px] border p-5 ${surface.border} ${surface.panelMuted}`}>
+          <section className={`rounded-3xl border p-5 ${surface.border} ${surface.panelMuted}`}>
             <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>font-sans</p>
             <h3 className={`mt-2 ${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
               Primary UI copy
@@ -56,7 +56,7 @@ function FontsStory() {
             </div>
           </section>
 
-          <section className={`rounded-[24px] border p-5 ${surface.border} ${surface.panelMuted}`}>
+          <section className={`rounded-3xl border p-5 ${surface.border} ${surface.panelMuted}`}>
             <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>font-mono</p>
             <h3 className={`mt-2 ${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
               Technical values
