@@ -166,9 +166,7 @@ function NotificationSection({
   return (
     <section className={className}>
       <div className="mb-2 px-1">
-        <h4
-          className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-        >
+        <h4 className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
           {title}
         </h4>
       </div>

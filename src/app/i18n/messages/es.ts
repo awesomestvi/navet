@@ -71,11 +71,6 @@ export const esMessages = {
   'settings.appearance.wallpaper.title': 'Fondo',
   'settings.appearance.wallpaper.description':
     'Agrega una imagen de fondo que combine con el acento y el tema activos.',
-  'settings.appearance.pageZoom.title': 'Zoom de página',
-  'settings.appearance.pageZoom.description':
-    'Escala toda la interfaz para que quepa más en pantalla. 100 % mantiene el diseño predeterminado.',
-  'settings.appearance.pageZoom.decreaseAria': 'Disminuir zoom de pagina',
-  'settings.appearance.pageZoom.increaseAria': 'Aumentar zoom de pagina',
   'settings.appearance.wallpaper.previewAlt': 'Vista previa del fondo',
   'settings.appearance.wallpaper.optionAria': 'Fondo {id}',
   'settings.appearance.wallpaper.replace': 'Reemplazar fondo',

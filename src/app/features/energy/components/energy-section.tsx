@@ -33,9 +33,7 @@ function EnergySectionBand({
   return (
     <section className="space-y-4">
       <div>
-        <div
-          className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-        >
+        <div className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}>
           {t('energy.band.eyebrow')}
         </div>
         <h2
@@ -171,7 +169,7 @@ export const EnergySection = memo(function EnergySection() {
                 className={`rounded-3xl border px-4 py-3 ${surface.border} ${surface.panelMuted}`}
               >
                 <div
-                  className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+                  className={`text-xs font-semibold uppercase tracking-[0.14em] ${surface.textMuted}`}
                 >
                   {item.label}
                 </div>

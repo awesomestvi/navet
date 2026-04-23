@@ -138,7 +138,7 @@ export const LockCard = memo(function LockCard({
   if (isTiny) {
     return (
       <div
-        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
+        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${cardShell.rootFrameClassName} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
         style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
       >
         <div
@@ -168,8 +168,8 @@ export const LockCard = memo(function LockCard({
               title={name}
               subtitle={statusLabel}
               layout="eyebrow-first"
-              titleClassName="mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight"
-              subtitleClassName={`truncate text-[10px] font-medium tracking-normal ${stateIconClassName}`}
+              titleClassName="mt-1 line-clamp-2 text-xs font-semibold leading-tight"
+              subtitleClassName={`truncate text-xs font-medium tracking-normal ${stateIconClassName}`}
               titleStyle={{ color: tinyTextTokens.titleColor }}
               subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
             />
@@ -189,7 +189,7 @@ export const LockCard = memo(function LockCard({
     );
   }
 
-  const compactRootClassName = `relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${theme !== 'dark' ? 'border' : ''} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`;
+  const compactRootClassName = `relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${cardShell.rootFrameClassName} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`;
   const topNameClassName = `${securitySurface.primaryTextClassName} truncate font-semibold tracking-[-0.02em]`;
   const overlayTintClassName =
     theme === 'light' ? 'bg-white/22' : theme === 'glass' ? 'bg-white/[0.03]' : 'bg-black/10';
@@ -219,7 +219,7 @@ export const LockCard = memo(function LockCard({
         ) : null}
 
         <div className="relative flex h-full flex-col justify-between gap-3">
-          <p className={`${topNameClassName} text-[12px]`}>{name}</p>
+          <p className={`${topNameClassName} text-xs`}>{name}</p>
 
           <SlideAction
             actionLabel={swipeLabel}
@@ -255,14 +255,14 @@ export const LockCard = memo(function LockCard({
       ) : null}
 
       <div className="relative flex h-full flex-col">
-        <div className="flex flex-col items-center gap-0.5 text-center">
+        <div className="flex flex-col items-center gap-1 text-center">
           <p className={`${topNameClassName} max-w-full text-[15px] leading-tight`}>{name}</p>
-          <p className={`text-[9px] font-medium uppercase tracking-[0.22em] ${stateIconClassName}`}>
+          <p className={`text-xs font-medium uppercase tracking-[0.18em] ${stateIconClassName}`}>
             {statusLabel}
           </p>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-1.5">
+        <div className="flex flex-1 items-center justify-center py-2">
           <div
             className={`relative flex h-16 w-16 items-center justify-center rounded-full border ${heroPlateClassName}`}
           >

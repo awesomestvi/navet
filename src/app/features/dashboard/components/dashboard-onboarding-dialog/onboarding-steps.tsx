@@ -49,7 +49,7 @@ export function RouteStep({
   t: TranslateFn;
 }) {
   return (
-    <div className="mt-6 grid gap-3 sm:mt-8 sm:gap-4 md:grid-cols-3">
+    <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 md:grid-cols-3">
       <button
         type="button"
         onClick={onChooseAll}
@@ -65,7 +65,7 @@ export function RouteStep({
         <h3 className={`mt-4 text-base font-semibold sm:mt-5 sm:text-lg ${textColor}`}>
           {t('dashboard.onboarding.route.all.title')}
         </h3>
-        <p className={`mt-1.5 text-[13px] leading-relaxed sm:mt-2 sm:text-sm ${mutedColor}`}>
+        <p className={`mt-2 text-sm leading-relaxed sm:mt-2.5 ${mutedColor}`}>
           {t('dashboard.onboarding.route.all.body')}
         </p>
       </button>
@@ -85,7 +85,7 @@ export function RouteStep({
         <h3 className={`mt-4 text-base font-semibold sm:mt-5 sm:text-lg ${textColor}`}>
           {t('dashboard.onboarding.route.blank.title')}
         </h3>
-        <p className={`mt-1.5 text-[13px] leading-relaxed sm:mt-2 sm:text-sm ${mutedColor}`}>
+        <p className={`mt-2 text-sm leading-relaxed sm:mt-2.5 ${mutedColor}`}>
           {t('dashboard.onboarding.route.blank.body')}
         </p>
       </button>
@@ -111,7 +111,7 @@ export function RouteStep({
               ? t('dashboard.onboarding.route.import.importing')
               : t('dashboard.onboarding.route.import.title')}
         </h3>
-        <p className={`mt-1.5 text-[13px] leading-relaxed sm:mt-2 sm:text-sm ${mutedColor}`}>
+        <p className={`mt-2 text-sm leading-relaxed sm:mt-2.5 ${mutedColor}`}>
           {isClosing
             ? t('dashboard.onboarding.route.import.closingBody')
             : t('dashboard.onboarding.route.import.body')}
@@ -162,7 +162,7 @@ export function LocalizationStep({
           <SlidersHorizontal className="h-5 w-5" style={{ color: accentColor }} />
         </div>
         <div className="min-w-0">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${mutedColor}`}>
+          <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${mutedColor}`}>
             {t('dashboard.onboarding.localization.stepLabel')}
           </p>
           <p className={`mt-1 text-sm font-semibold ${textColor}`}>{routeLabel}</p>
@@ -228,12 +228,12 @@ export function LocalizationStep({
             <p className={`text-sm font-semibold ${textColor}`}>
               {t('settings.localization.timeFormat.title')}
             </p>
-            <p className={`mt-0.5 text-xs leading-relaxed ${mutedColor}`}>
+            <p className={`mt-1 text-xs leading-relaxed ${mutedColor}`}>
               {t('settings.localization.timeFormat.description')}
             </p>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2.5">
             {[
               {
                 value: false,
@@ -282,12 +282,12 @@ export function LocalizationStep({
             <p className={`text-sm font-semibold ${textColor}`}>
               {t('settings.localization.temperatureUnit.title')}
             </p>
-            <p className={`mt-0.5 text-xs leading-relaxed ${mutedColor}`}>
+            <p className={`mt-1 text-xs leading-relaxed ${mutedColor}`}>
               {t('settings.localization.temperatureUnit.description')}
             </p>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2.5">
             {[
               {
                 value: 'celsius' as const,
@@ -378,7 +378,7 @@ export function ThemeStep({
           <Palette className="h-5 w-5" style={{ color: accentColor }} />
         </div>
         <div className="min-w-0">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${mutedColor}`}>
+          <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${mutedColor}`}>
             {t('dashboard.onboarding.theme.stepLabel')}
           </p>
           <p className={`text-sm font-semibold ${textColor}`}>{routeLabel}</p>
@@ -512,7 +512,7 @@ export function StepActions({
         type="button"
         onClick={onBack}
         disabled={isClosing}
-        className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-[13px] font-medium sm:px-5 sm:py-3 sm:text-sm ${borderColor} ${textColor}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium sm:px-5 sm:py-3 ${borderColor} ${textColor}`}
       >
         <ArrowLeft className="h-4 w-4" />
         {t('dashboard.onboarding.back')}
@@ -521,7 +521,7 @@ export function StepActions({
         type="button"
         onClick={onContinue}
         disabled={isClosing}
-        className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-[13px] font-semibold text-white transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98] sm:px-6 sm:py-3 sm:text-sm"
+        className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98] sm:px-6 sm:py-3"
         style={{
           background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
           boxShadow: `0 18px 40px ${accentColor}40`,

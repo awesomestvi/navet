@@ -32,9 +32,7 @@ function CompactMetaRow({
       className={`flex items-center justify-between gap-3 rounded-[16px] px-3 py-2.5 ${styles.softBg}`}
     >
       <div className="min-w-0">
-        <div className={`text-[11px] uppercase tracking-[0.16em] ${styles.subtleColor}`}>
-          {label}
-        </div>
+        <div className={`text-xs uppercase tracking-[0.16em] ${styles.subtleColor}`}>{label}</div>
         <div className={`mt-1 text-sm font-semibold ${styles.textColor}`}>{value}</div>
       </div>
     </div>

@@ -88,9 +88,9 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
           ? 'grid min-w-0 items-stretch gap-0.75 rounded-[18px] border p-0.75'
           : 'grid min-w-0 items-stretch gap-2 rounded-[24px] border p-2.5'
       : isSmall
-        ? 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[22px] p-1.5 md:flex-wrap md:overflow-visible'
+        ? 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[22px] p-2 md:flex-wrap md:overflow-visible'
         : isCompact
-          ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border rounded-[18px] p-0.75 md:flex-wrap md:overflow-visible'
+          ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border rounded-[18px] p-1 md:flex-wrap md:overflow-visible'
           : 'flex min-w-0 items-center gap-2 overflow-x-auto border rounded-[24px] p-2.5 md:flex-wrap md:overflow-visible';
 
   return (
@@ -101,7 +101,7 @@ export const TabList = forwardRef<HTMLDivElement, TabListProps>(function TabList
       className={cn(
         variant === 'default'
           ? isCompact
-            ? 'flex min-w-0 items-center gap-0.75 overflow-x-auto border px-1 py-0.75 md:flex-wrap md:overflow-visible md:px-1.5 md:py-1 rounded-[18px] md:rounded-[20px]'
+            ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border rounded-[18px] px-1.5 py-1 md:flex-wrap md:overflow-visible md:rounded-[20px] md:px-2 md:py-1.5'
             : isSmall
               ? 'flex min-w-0 items-center gap-1.5 overflow-x-auto border px-2 py-1.5 md:flex-wrap md:overflow-visible md:px-2.5 md:py-2 rounded-[22px] md:rounded-[24px]'
               : 'flex min-w-0 items-center gap-2 overflow-x-auto border px-3 py-2.5 md:flex-wrap md:overflow-visible md:px-4 md:py-3 rounded-[24px] md:rounded-[28px]'
@@ -148,7 +148,7 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
     size === 'small'
       ? 'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-3.5'
       : size === 'compact'
-        ? 'inline-flex min-h-7 shrink-0 items-center justify-center gap-1 rounded-full border px-2 text-[12px] font-medium transition-[background-color,border-color,box-shadow,color] md:min-h-7 md:px-2.5'
+        ? 'inline-flex min-h-8 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-xs font-medium transition-[background-color,border-color,box-shadow,color] md:min-h-8 md:px-4'
         : 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-4';
 
   return (

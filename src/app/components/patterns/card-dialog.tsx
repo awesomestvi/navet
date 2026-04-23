@@ -3,6 +3,7 @@ import { type LucideIcon, X } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode } from 'react';
 import { Button, InteractivePill } from '@/app/components/primitives';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
+import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
 
@@ -77,7 +78,9 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           {title}
         </Dialog.Title>
         {description ? (
-          <Dialog.Description className="mt-1 truncate text-sm text-white/70">
+          <Dialog.Description
+            className={cn('mt-1 truncate', navetTypographyTokens.body, 'text-white/82')}
+          >
             {description}
           </Dialog.Description>
         ) : null}
@@ -89,7 +92,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
         <Dialog.Close asChild>
           <button
             type="button"
-            className="shrink-0 rounded-lg border border-white/10 bg-white/6 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="shrink-0 rounded-lg border border-white/12 bg-white/8 p-2 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
             aria-label={t('common.close')}
           >
             <X className="h-5 w-5" />
@@ -114,7 +117,7 @@ export const CardDialogSection = memo(function CardDialogSection({
         <div className={cn('mb-1 text-sm font-medium text-white', labelClassName)}>{label}</div>
       ) : null}
       {helperText ? (
-        <p className={cn('mb-3 text-sm leading-5 text-white/70', helperTextClassName)}>
+        <p className={cn('mb-3', navetTypographyTokens.body, 'text-white/82', helperTextClassName)}>
           {helperText}
         </p>
       ) : null}
@@ -144,7 +147,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
     <InteractivePill
       active={active}
       size="compact"
-      className={cn('min-h-8 px-3 text-[11px]', className)}
+      className={cn('min-h-8 px-3 text-xs', className)}
       icon={icon}
       onClick={onClick}
     >

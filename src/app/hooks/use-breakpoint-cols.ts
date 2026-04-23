@@ -1,6 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useSettingsStore } from '@/app/stores';
-import { settingsSelectors } from '@/app/stores/selectors';
 import { getLogicalViewportWidth } from '@/app/utils/viewport';
 import { useViewportResize } from './use-viewport-resize';
 
@@ -22,15 +20,12 @@ const FOUR_XL_BREAKPOINT = 2500;
  * | 4xl          | 2500px+  | 12      |
  */
 export function useBreakpointCols(): number {
-  const pageZoomScale = useSettingsStore(settingsSelectors.pageZoomScale);
-  const [logicalViewportWidth, setLogicalViewportWidth] = useState(() =>
-    getLogicalViewportWidth(pageZoomScale)
-  );
+  const [logicalViewportWidth, setLogicalViewportWidth] = useState(() => getLogicalViewportWidth());
 
   const syncLogicalViewportWidth = useCallback(() => {
-    const nextWidth = getLogicalViewportWidth(pageZoomScale);
+    const nextWidth = getLogicalViewportWidth();
     setLogicalViewportWidth((previous) => (previous === nextWidth ? previous : nextWidth));
-  }, [pageZoomScale]);
+  }, []);
 
   useViewportResize(syncLogicalViewportWidth);
 

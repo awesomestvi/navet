@@ -173,7 +173,7 @@ export const Sidebar = memo(function Sidebar() {
           ) : null}
 
           <div
-            className={`relative flex min-h-12.25 items-stretch justify-around px-1 py-1 ${
+            className={`relative flex min-h-12.25 items-stretch justify-around px-1.5 py-1.5 ${
               isGlass ? surface.panelMuted : surface.shellPanel
             }`}
           >
@@ -189,7 +189,7 @@ export const Sidebar = memo(function Sidebar() {
                   aria-current={activeSection === item.section ? 'page' : undefined}
                   active={activeSection === item.section}
                   variant="ghost"
-                  className={`flex h-12.25 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.75 rounded-3xl px-1 py-1 transition-colors ${
+                  className={`flex h-12.25 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-3xl px-1.5 py-1.5 transition-colors ${
                     activeSection === item.section ? '' : inactiveColor
                   }`}
                 >

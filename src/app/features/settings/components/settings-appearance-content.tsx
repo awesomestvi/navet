@@ -1,15 +1,10 @@
-import { Image as ImageIcon, Minus, Plus, Upload, X } from 'lucide-react';
+import { Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import { Button } from '@/app/components/primitives/button';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
 import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { useI18n } from '@/app/hooks';
-import {
-  type EffectsQuality,
-  normalizePageZoom,
-  PAGE_ZOOM_OPTIONS,
-  type PageZoom,
-} from '@/app/stores/settings-store';
+import type { EffectsQuality } from '@/app/stores/settings-store';
 import { detectDeviceTier } from '@/app/utils/detect-device-tier';
 import { getLegacyReducedEffectsFlags } from '@/app/utils/effects-quality';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
@@ -126,89 +121,6 @@ export function AppearanceEffectsQualityItem({
           {t('settings.system.effectsQuality.recommended')}:{' '}
           {qualityOptions.find((option) => option.value === detectedTier)?.label}
         </p>
-      </div>
-    </SettingsItem>
-  );
-}
-
-export function AppearancePageZoomItem({ controller }: { controller: SettingsSectionController }) {
-  const { t } = useI18n();
-  const { pageZoom, styles, updateSettings } = controller;
-  const pageZoomOptions: readonly PageZoom[] = PAGE_ZOOM_OPTIONS;
-  const normalizedPageZoom = normalizePageZoom(pageZoom);
-  const currentPageZoomIndex = pageZoomOptions.indexOf(normalizedPageZoom);
-  const canDecreasePageZoom = currentPageZoomIndex > 0;
-  const canIncreasePageZoom =
-    currentPageZoomIndex >= 0 && currentPageZoomIndex < pageZoomOptions.length - 1;
-  const hasCustomPageZoom = normalizedPageZoom !== 100;
-
-  const decreasePageZoom = () => {
-    if (!canDecreasePageZoom) {
-      return;
-    }
-
-    updateSettings({ pageZoom: pageZoomOptions[currentPageZoomIndex - 1] });
-  };
-
-  const increasePageZoom = () => {
-    if (!canIncreasePageZoom) {
-      return;
-    }
-
-    updateSettings({ pageZoom: pageZoomOptions[currentPageZoomIndex + 1] });
-  };
-
-  return (
-    <SettingsItem
-      title={t('settings.appearance.pageZoom.title')}
-      description={t('settings.appearance.pageZoom.description')}
-      styles={styles}
-    >
-      <div
-        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 ${styles.borderColor} ${styles.softBg}`}
-      >
-        {hasCustomPageZoom ? (
-          <>
-            <button
-              type="button"
-              onClick={() => updateSettings({ pageZoom: 100 })}
-              className={`inline-flex h-9 items-center rounded-full px-3 text-sm font-medium transition-all ${styles.softBg} ${styles.chipTextColor}`}
-              aria-label={t('common.reset')}
-            >
-              {t('common.reset')}
-            </button>
-            <div className={`h-6 w-px ${styles.borderColor}`} />
-          </>
-        ) : null}
-        <button
-          type="button"
-          onClick={decreasePageZoom}
-          disabled={!canDecreasePageZoom}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
-            canDecreasePageZoom
-              ? `${styles.softBg} ${styles.chipTextColor}`
-              : 'cursor-not-allowed opacity-40'
-          }`}
-          aria-label={t('settings.appearance.pageZoom.decreaseAria')}
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-        <div className={`min-w-18 text-center text-sm font-medium ${styles.textColor}`}>
-          {normalizedPageZoom}%
-        </div>
-        <button
-          type="button"
-          onClick={increasePageZoom}
-          disabled={!canIncreasePageZoom}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
-            canIncreasePageZoom
-              ? `${styles.softBg} ${styles.chipTextColor}`
-              : 'cursor-not-allowed opacity-40'
-          }`}
-          aria-label={t('settings.appearance.pageZoom.increaseAria')}
-        >
-          <Plus className="h-4 w-4" />
-        </button>
       </div>
     </SettingsItem>
   );

@@ -161,7 +161,7 @@ These rules apply to all code written for this project. Follow them before writi
 const connected = useHomeAssistant(homeAssistantSelectors.connected);
 
 // Good — one subscription for a related group
-const { disableAnimations, effectsQuality, pageZoom } = useSettingsStore(
+const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsStore(
   settingsSelectors.displaySettings
 );
 

@@ -24,7 +24,7 @@ export function CalendarDateDisplay({
       <div className={`mt-2 text-xs font-medium uppercase tracking-[0.28em] ${textSecondary}`}>
         {monthLabel}
       </div>
-      <div className={`mt-3 text-[11px] font-medium ${textSecondary}`}>{temperatureLabel}</div>
+      <div className={`mt-3 text-xs font-medium ${textSecondary}`}>{temperatureLabel}</div>
     </div>
   );
 }

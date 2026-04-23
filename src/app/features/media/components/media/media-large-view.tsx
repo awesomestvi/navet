@@ -7,6 +7,8 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import { isMediaPlayerProxyUrl } from '@/app/utils/home-assistant-url';
+import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
+import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
@@ -18,8 +20,8 @@ interface MediaLargeViewProps {
   onArtworkError?: (imageUrl?: string | null) => void;
   title: string;
   artist: string;
-  playerName: string;
-  room: string;
+  entityName: string;
+  entityTypeKey: MediaEntityTypeKey;
   isActive: boolean;
   isPlaying: boolean;
   volume: number;
@@ -43,8 +45,8 @@ export function MediaLargeView({
   onArtworkError,
   title,
   artist,
-  playerName,
-  room,
+  entityName,
+  entityTypeKey,
   isActive,
   isPlaying,
   volume,
@@ -73,7 +75,6 @@ export function MediaLargeView({
   const subtitleTone = stateSurface.secondaryTextClassName;
   const displayVolume = Math.max(0, Math.min(100, isMuted ? 0 : volume));
   const elapsedLabel = formatMediaTime(Math.max(0, elapsedSeconds));
-  const remainingLabel = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('large');
@@ -185,21 +186,14 @@ export function MediaLargeView({
       <div className="relative z-1 flex h-full min-h-0 flex-col p-3">
         <div className="flex min-h-0 flex-1 flex-col justify-end">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div
-                className={`truncate text-[10px] tracking-normal ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {playerName}
-              </div>
-              <div
-                className={`truncate text-xs ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {room || t('media.room')}
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
+            <MediaEntityHeader
+              entityName={entityName}
+              entityType={t(entityTypeKey)}
+              size="large"
+              isActive={isActive}
+              accentColor={palette.highlight}
+            />
+            <div className="flex shrink-0 items-center gap-2.5 self-start">
               <MediaVisualizerButton
                 isPlaying={isPlaying}
                 onClick={(event) => {
@@ -209,7 +203,6 @@ export function MediaLargeView({
                 className={iconTone}
                 style={{ color: textTokens.titleColor }}
               />
-              <span className={`text-[11px] ${subtitleTone}`}>-{remainingLabel}</span>
             </div>
           </div>
 

@@ -259,11 +259,11 @@ export const MapWidget = memo(function MapWidget({
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
+      className={`relative h-full overflow-hidden rounded-[28px] ${surface.outerFrameClassName}`}
       style={mapFrameStyle}
     >
       <div
-        className={`absolute inset-px z-2 overflow-hidden rounded-[26px] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+        className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
         style={mapInnerStyle}
       >
         {surface.glowStyle ? (

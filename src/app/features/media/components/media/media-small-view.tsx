@@ -8,9 +8,10 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import { isMediaPlayerProxyUrl } from '@/app/utils/home-assistant-url';
+import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
+import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { MediaMarqueeText } from './media-marquee-text';
-import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
@@ -19,16 +20,14 @@ interface MediaSmallViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
-  playerName: string;
-  room: string;
+  entityName: string;
+  entityTypeKey: MediaEntityTypeKey;
   title: string;
   artist: string;
   isActive: boolean;
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
-  elapsedSeconds: number;
-  durationSeconds: number;
   theme: ThemeType;
   onToggleMute: () => void;
   onPrevious: () => void;
@@ -44,16 +43,14 @@ export function MediaSmallView({
   entityId,
   artwork,
   onArtworkError,
-  playerName,
-  room,
+  entityName,
+  entityTypeKey,
   title,
   artist,
   isActive,
   isPlaying,
   volume,
   isMuted,
-  elapsedSeconds,
-  durationSeconds,
   theme,
   onToggleMute,
   onPrevious,
@@ -89,7 +86,6 @@ export function MediaSmallView({
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
@@ -235,21 +231,14 @@ export function MediaSmallView({
 
       <div className="relative flex h-full flex-col p-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div
-              className={`truncate text-[10px] tracking-normal ${subtitleTone}`}
-              style={{ color: textTokens.subtitleColor }}
-            >
-              {playerName}
-            </div>
-            <div
-              className={`truncate text-xs ${subtitleTone}`}
-              style={{ color: textTokens.subtitleColor }}
-            >
-              {room || t('media.room')}
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
+          <MediaEntityHeader
+            entityName={entityName}
+            entityType={t(entityTypeKey)}
+            size="small"
+            isActive={isActive}
+            accentColor={palette.highlight}
+          />
+          <div className="flex shrink-0 items-center gap-2.5 self-start">
             <MediaVisualizerButton
               isPlaying={isPlaying}
               onClick={(event) => {
@@ -259,9 +248,6 @@ export function MediaSmallView({
               className={iconTone}
               style={{ color: textTokens.titleColor }}
             />
-            {isPlaying && durationSeconds > 0 && (
-              <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
-            )}
           </div>
         </div>
 
@@ -290,7 +276,7 @@ export function MediaSmallView({
                 event.stopPropagation();
                 onTogglePlay();
               }}
-              className="h-10.5 w-10.5 border backdrop-blur-xl transition-colors"
+              className="h-10 w-10 border backdrop-blur-xl transition-colors"
               iconClassName="!text-white/90"
               style={subduedFallback ? undefined : playButtonStyle}
             >

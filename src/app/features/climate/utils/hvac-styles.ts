@@ -29,7 +29,7 @@ export const getHVACBorderColor = (mode: HVACMode | string, isOn: boolean): stri
 };
 
 export const getHVACIconColor = (mode: HVACMode | string, isOn: boolean): string => {
-  if (!isOn) return 'text-gray-500';
+  if (!isOn) return 'text-gray-300';
   switch (mode) {
     case 'cool':
       return 'text-blue-400';
@@ -38,7 +38,7 @@ export const getHVACIconColor = (mode: HVACMode | string, isOn: boolean): string
     case 'fan':
       return 'text-green-400';
     default:
-      return 'text-gray-500';
+      return 'text-gray-300';
   }
 };
 
@@ -71,12 +71,12 @@ export const getHVACModeButtonColor = (
       case 'fan':
         return '!border-0 shadow-none bg-gradient-to-br from-green-400 to-green-600 text-white';
       default:
-        return theme === 'light' ? 'bg-gray-100 text-gray-500' : 'bg-white/10 text-gray-300';
+        return theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-white/10 text-gray-200';
     }
   }
   return theme === 'light'
-    ? 'bg-gray-900/10 text-gray-500 hover:bg-gray-900/20'
-    : 'bg-white/10 text-gray-300 hover:bg-white/20';
+    ? 'bg-gray-900/10 text-gray-700 hover:bg-gray-900/20'
+    : 'bg-white/10 text-gray-200 hover:bg-white/20';
 };
 
 export const getHVACGaugeColor = (

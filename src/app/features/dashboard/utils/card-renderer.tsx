@@ -82,7 +82,7 @@ function EntityAvailabilityFrame({
           isEditMode ? 'bottom-3 left-3' : 'left-3 top-3'
         }`}
       >
-        <div className="inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-white/92 uppercase backdrop-blur-md">
+        <div className="inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-xs font-semibold tracking-[0.06em] text-white/92 uppercase backdrop-blur-md">
           {t('camera.status.unavailable')}
         </div>
       </div>

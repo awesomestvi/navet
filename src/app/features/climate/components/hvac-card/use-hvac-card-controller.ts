@@ -189,7 +189,7 @@ export function useHVACCardController({
     theme === 'light'
       ? isOn
         ? 'text-gray-900'
-        : 'text-gray-500'
+        : 'text-gray-300'
       : isOn
         ? 'text-white'
         : 'text-gray-300';

@@ -258,11 +258,8 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   };
 
   return (
-    <div
-      className="relative h-full overflow-hidden rounded-[28px] border border-white/10"
-      style={frameStyle}
-    >
-      <div className="absolute inset-px overflow-hidden rounded-[26px]" style={surface.panelStyle}>
+    <div className="relative h-full overflow-hidden rounded-[28px]" style={frameStyle}>
+      <div className="absolute inset-0 overflow-hidden rounded-[28px]" style={surface.panelStyle}>
         {surface.glowStyle ? (
           <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
         ) : null}

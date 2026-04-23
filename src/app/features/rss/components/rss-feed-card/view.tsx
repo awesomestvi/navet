@@ -111,7 +111,7 @@ export function RSSFeedCardView({
         relative group overflow-hidden
         h-full w-full rounded-[28px]
         ${rssSurface.surface.panel}
-        ${cardShell.backdropClassName} border ${rssSurface.surface.border}
+        ${cardShell.backdropClassName}
         ${rssSurface.containerShadowClassName}
         transition-all duration-300
         ${!inEditMode ? 'cursor-default' : ''}

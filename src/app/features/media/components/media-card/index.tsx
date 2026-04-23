@@ -9,6 +9,7 @@ import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
 import { MediaMediumView } from '../media/media-medium-view';
 import { MediaSmallView } from '../media/media-small-view';
 import { MediaTvView } from '../media/media-tv-view';
+import { getMediaEntityTypeKey } from './get-media-entity-type-key';
 import { useMediaCardController } from './use-media-card-controller';
 
 const MediaDialog = lazy(async () => {
@@ -70,6 +71,7 @@ export const MediaCard = memo(function MediaCard({
   simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme, colors } = useTheme();
+  const mediaEntityTypeKey = getMediaEntityTypeKey(entityType, deviceClass);
   const cardShell = getCardShellSurfaceTokens(theme);
   const surface = getThemeSurfaceTokens(theme);
   const mediaSize = getCompactCardSize(size);
@@ -112,6 +114,7 @@ export const MediaCard = memo(function MediaCard({
     volume,
   } = useMediaCardController({
     entityId: id,
+    entityName: name,
     deviceClass,
     entityPicture,
     artworkKey: [entityPicture, title, artist].filter(Boolean).join('::'),
@@ -201,7 +204,7 @@ export const MediaCard = memo(function MediaCard({
     <>
       <div
         {...interactiveShellProps}
-        className={`relative h-full rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName} overflow-hidden ${
+        className={`relative h-full rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName} overflow-hidden ${
           isEditMode ? '' : 'cursor-pointer'
         }`}
       >
@@ -237,7 +240,8 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              playerName={entityType || name}
+              entityName={name}
+              entityTypeKey={mediaEntityTypeKey}
               room={room}
               title={displayTitle}
               artist={displayArtist}
@@ -262,7 +266,8 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              playerName={entityType || name}
+              entityName={name}
+              entityTypeKey={mediaEntityTypeKey}
               room={room}
               title={displayTitle}
               artist={displayArtist}
@@ -287,7 +292,8 @@ export const MediaCard = memo(function MediaCard({
               entityId={id}
               artwork={resolvedAlbumArt}
               onArtworkError={handleArtworkError}
-              playerName={entityType || name}
+              entityName={name}
+              entityTypeKey={mediaEntityTypeKey}
               room={room}
               title={displayTitle}
               artist={displayArtist}
@@ -314,7 +320,8 @@ export const MediaCard = memo(function MediaCard({
               onArtworkError={handleArtworkError}
               title={displayTitle}
               artist={displayArtist}
-              playerName={entityType || name}
+              entityName={name}
+              entityTypeKey={mediaEntityTypeKey}
               room={room}
               isActive={!isOff}
               isPlaying={isPlaying}

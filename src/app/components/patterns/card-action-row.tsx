@@ -11,6 +11,7 @@ import {
 import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import { navetSpacingTokens } from '../system/tokens';
 
 type CardActionRowSize = 'small' | 'default' | 'medium' | 'large';
 type CardActionRowResolvedSize = 'small' | 'default';
@@ -68,7 +69,8 @@ export function CardActionRow({
   overflowItems = [],
 }: CardActionRowProps) {
   const resolvedSize = resolveCardActionRowSize(size);
-  const gapClass = resolvedSize === 'small' ? 'gap-1' : 'gap-2';
+  const gapClass =
+    resolvedSize === 'small' ? navetSpacingTokens.inline.xs : navetSpacingTokens.inline.sm;
 
   return (
     <div className={`flex items-center ${gapClass}`}>

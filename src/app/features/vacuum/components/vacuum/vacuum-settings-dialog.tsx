@@ -92,9 +92,9 @@ function MetricCard({
       className={cn('rounded-2xl border border-white/10 bg-white/6 p-3', className)}
       style={style}
     >
-      <div className="flex items-center gap-2 text-white/55">
+      <div className="flex items-center gap-2 text-white/72">
         <Icon className="h-4 w-4" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-[0.14em]">{label}</span>
       </div>
       <div className="mt-2 text-base font-semibold text-white">{value}</div>
     </div>
@@ -124,7 +124,7 @@ function SelectablePill({
       style={style}
     >
       <div className="text-sm font-semibold">{label}</div>
-      {description ? <div className="mt-1 text-xs text-white/55">{description}</div> : null}
+      {description ? <div className="mt-1 text-sm text-white/72">{description}</div> : null}
     </InteractivePill>
   );
 }
@@ -354,7 +354,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                   <div className="mt-3 text-2xl font-semibold text-white">
                     {plannerSummaryLabel}
                   </div>
-                  <div className="mt-1 text-sm text-white/60">
+                  <div className="mt-1 text-sm text-white/76">
                     {plannerView === 'all'
                       ? `${roomTargets.length || 1} ${t('vacuum.plan.rooms')} · ${selectedFanSpeed}`
                       : `${t('vacuum.settings.cleaningMode')} · ${t(`vacuum.mode.${selectedCleaningMode}`)}`}
@@ -435,7 +435,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                           <div className="text-base font-semibold text-white">
                             {t('vacuum.plan.wholeHome')}
                           </div>
-                          <div className="mt-1 text-sm text-white/60">
+                          <div className="mt-1 text-sm text-white/76">
                             {roomTargets.length > 0
                               ? `${roomTargets.length} ${t('vacuum.plan.rooms')}`
                               : t('vacuum.plan.mapHint')}
@@ -472,7 +472,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                       </div>
                     ) : (
                       <Panel
-                        className="border-dashed border-white/10 bg-white/4 text-sm text-white/55"
+                        className="border-dashed border-white/10 bg-white/4 text-sm text-white/72"
                         style={sectionStyle}
                       >
                         {t('vacuum.plan.mapHint')}
@@ -507,7 +507,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                       </div>
                     ) : (
                       <Panel
-                        className="border-dashed border-white/10 bg-white/4 text-sm text-white/55"
+                        className="border-dashed border-white/10 bg-white/4 text-sm text-white/72"
                         style={sectionStyle}
                       >
                         {t('vacuum.plan.mapHint')}

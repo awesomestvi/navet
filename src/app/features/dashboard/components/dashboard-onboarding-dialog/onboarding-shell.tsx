@@ -76,7 +76,7 @@ export function OnboardingShell({
             <img src="./logo.svg" alt="" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
           <p
-            className={`text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.24em] ${mutedColor}`}
+            className={`text-xs font-semibold uppercase tracking-[0.18em] sm:tracking-[0.24em] ${mutedColor}`}
           >
             {welcomeLabel}
           </p>
@@ -85,11 +85,7 @@ export function OnboardingShell({
           >
             {title}
           </h2>
-          <p
-            className={`mt-2 max-w-2xl text-[13px] leading-relaxed sm:mt-3 sm:text-sm ${mutedColor}`}
-          >
-            {body}
-          </p>
+          <p className={`mt-2 max-w-2xl text-sm leading-relaxed sm:mt-3 ${mutedColor}`}>{body}</p>
         </div>
 
         {children}

@@ -60,7 +60,7 @@ export const EnergyBarChart = memo(function EnergyBarChart({
             style={{ transform: `translate3d(${tooltipLeftPercent}%, 0, 0)` }}
           >
             <div
-              className={`-translate-x-1/2 w-max max-w-[180px] rounded-xl px-3 py-2 text-left text-[11px] backdrop-blur-md ${tooltipClassName}`}
+              className={`-translate-x-1/2 w-max max-w-[180px] rounded-xl px-3 py-2 text-left text-xs backdrop-blur-md ${tooltipClassName}`}
             >
               <div className={tokens.surface.textSecondary}>{activeBar.label}</div>
               <div className={`mt-1 ${tokens.surface.textPrimary}`}>

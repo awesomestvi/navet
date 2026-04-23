@@ -38,11 +38,11 @@ export const CardContentLayout = memo(function CardContentLayout({
   const justifyClass = layout === 'end' ? 'justify-end' : 'justify-between';
 
   return (
-    <div className={`flex-1 flex flex-col ${justifyClass} gap-1.5`}>
+    <div className={`flex-1 flex flex-col ${justifyClass} gap-2`}>
       {/* Primary value and caption section */}
       <div>
         <div
-          className={`text-3xl font-bold ${primaryValueColor} leading-none transition-colors duration-500 mb-1`}
+          className={`mb-1.5 text-3xl font-bold ${primaryValueColor} leading-none transition-colors duration-500`}
         >
           {primaryValue}
         </div>

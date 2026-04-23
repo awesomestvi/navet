@@ -45,7 +45,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   presetOverflow,
 }: LightCardActionRowProps) {
   const { theme } = useTheme();
-  const gapClass = size === 'small' ? 'gap-1' : 'gap-2';
+  const gapClass = size === 'small' ? 'gap-1.5' : 'gap-2.5';
   const leftControls = (
     <div className={`flex min-w-0 items-center ${gapClass}`}>
       {supportsColorTemperature && (

@@ -68,7 +68,7 @@ export function NotificationItem({
     <div
       className={`group relative p-4 transition-all ${surface.hoverClassName} ${!notification.read ? surface.unreadItemClassName : ''}`}
     >
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         {/* Icon */}
         <div
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border ${iconToneClassName}`}
@@ -78,8 +78,8 @@ export function NotificationItem({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="mb-1.5 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               {!notification.read && (
                 <span
                   className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -94,7 +94,7 @@ export function NotificationItem({
               {formatTimestamp(notification.timestamp)}
             </span>
           </div>
-          <div className={`mb-2 space-y-2 text-xs leading-relaxed ${surface.textSecondary}`}>
+          <div className={`mb-3 space-y-2.5 text-sm leading-relaxed ${surface.textSecondary}`}>
             {renderNotificationMarkdown(
               notification.message,
               config?.url,
@@ -104,8 +104,8 @@ export function NotificationItem({
           {notification.source === 'update' &&
           notification.isBusy &&
           !notification.requiresRestart ? (
-            <div className="mt-2 space-y-2">
-              <div className={`text-[11px] font-medium ${surface.textSecondary}`}>
+            <div className="mt-3 space-y-2.5">
+              <div className={`text-xs font-medium ${surface.textSecondary}`}>
                 {notification.statusLabel}
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
@@ -119,13 +119,13 @@ export function NotificationItem({
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
               {(notification.source === 'update' || !notification.read) && (
                 <InteractivePill
                   onClick={() => void onPrimaryAction(notification.id)}
                   active={notification.source === 'update'}
                   intent="action"
-                  className="h-7 shrink-0 whitespace-nowrap rounded-full px-2.5 text-[11px] font-medium"
+                  className="h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-xs font-medium"
                 >
                   {primaryActionLabel}
                 </InteractivePill>
@@ -133,7 +133,7 @@ export function NotificationItem({
               <InteractivePill
                 onClick={() => void onDelete(notification.id)}
                 intent="action"
-                className="h-7 shrink-0 whitespace-nowrap rounded-full px-2.5 text-[11px] font-medium"
+                className="h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-xs font-medium"
               >
                 {secondaryActionLabel}
               </InteractivePill>

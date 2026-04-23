@@ -37,8 +37,8 @@ export function useCalendarTheme(theme: ThemeType, baseColor?: string | null): C
   const dividerColor = theme === 'light' ? 'bg-gray-200' : 'bg-white/12';
   const hoverBg = theme === 'light' ? 'hover:bg-gray-100/80' : 'hover:bg-white/5';
   const hoverText = '';
-  const dotColor = theme === 'light' ? 'text-gray-300' : 'text-white/40';
-  const moreEventsColor = theme === 'light' ? 'text-gray-500' : 'text-white/60';
+  const dotColor = theme === 'light' ? 'text-slate-400' : 'text-white/72';
+  const moreEventsColor = theme === 'light' ? 'text-slate-600' : 'text-white/78';
 
   return {
     textPrimary,

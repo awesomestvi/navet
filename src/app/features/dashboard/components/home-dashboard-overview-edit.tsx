@@ -147,7 +147,7 @@ export default function HomeDashboardOverviewEdit({
           surface={surface}
           eyebrow={
             <div
-              className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}
+              className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}
             >
               {t('dashboard.homePersonal.eyebrow')}
             </div>
@@ -352,7 +352,7 @@ export default function HomeDashboardOverviewEdit({
               cardSizeOverlayClass[activeDragSize]
             }`}
           >
-            <GripVertical className="h-5 w-5 text-white/60" />
+            <GripVertical className="h-5 w-5 text-white/76" />
           </div>
         ) : null}
       </DragOverlay>

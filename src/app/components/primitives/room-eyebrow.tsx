@@ -29,8 +29,8 @@ export function RoomEyebrow({
 }: RoomEyebrowProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const textClassName = forceDark ? 'text-white/52' : surface.textMuted;
-  const sharedClassName = `inline-flex items-center gap-1 rounded-full px-0 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] ${textClassName} ${className}`;
+  const textClassName = forceDark ? 'text-white/72' : surface.textMuted;
+  const sharedClassName = `inline-flex items-center gap-1.5 rounded-full px-0 py-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${textClassName} ${className}`;
   const content = (
     <>
       {room}

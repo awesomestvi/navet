@@ -189,7 +189,7 @@ export const VacuumCard = memo(function VacuumCard({
   return (
     <div className="h-full w-full relative">
       <div
-        className={`relative h-full bg-gradient-to-br ${cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${cardColors.border} overflow-hidden ${stateSurface.containerClassName}`}
+        className={`relative h-full bg-gradient-to-br ${cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${cardColors.border} overflow-hidden ${stateSurface.containerClassName}`}
       >
         {isActive && (
           <div

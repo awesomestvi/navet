@@ -46,16 +46,14 @@ export function CalendarEventItem({
         <div
           className={`min-w-0 font-semibold ${
             isInteractive ? `${hoverText} transition-colors` : ''
-          } ${isCompact ? 'line-clamp-2 text-[11px] leading-3.5' : 'text-sm leading-4.5'}`}
+          } ${isCompact ? 'line-clamp-2 text-xs leading-4' : 'text-sm leading-4.5'}`}
           style={{ color: textPrimary }}
         >
           {event.title}
         </div>
 
         <div
-          className={`mt-0.5 flex flex-col ${
-            isCompact ? 'gap-0.5 text-[10px]' : 'gap-0.5 text-[11px]'
-          }`}
+          className={`mt-0.5 flex flex-col ${isCompact ? 'gap-1 text-xs' : 'gap-1 text-xs'}`}
           style={{ color: textSecondary }}
         >
           <span className="inline-flex items-center gap-1">

@@ -191,11 +191,10 @@ export function PhotoFrameWidget({
 
   return (
     <div
-      className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10"
+      className="relative flex h-full flex-col overflow-hidden rounded-[28px]"
       style={{
         ...surface.panelStyle,
         background: 'transparent',
-        borderColor: 'transparent',
         boxShadow: 'none',
       }}
     >

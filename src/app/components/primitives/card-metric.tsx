@@ -48,10 +48,10 @@ export function CardMetric({
   labelStyle,
   className = '',
 }: CardMetricProps) {
-  const inactiveClassName = theme === 'light' ? 'text-slate-400' : 'text-white/40';
+  const inactiveClassName = theme === 'light' ? 'text-slate-500' : 'text-white/72';
   const valueClassName = `${sizeTokens[size]} ${isActive ? accentClassName : inactiveClassName}`;
   const resolvedLabelClassName =
-    labelClassName ?? (theme === 'light' ? 'text-slate-500' : 'text-white/50');
+    labelClassName ?? (theme === 'light' ? 'text-slate-600' : 'text-white/76');
 
   return (
     <div className={className}>

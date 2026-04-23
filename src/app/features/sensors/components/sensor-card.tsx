@@ -60,7 +60,7 @@ export const SensorCard = memo(function SensorCard({
     theme === 'light' ? 'text-teal-700' : isGlass ? 'text-teal-200' : 'text-teal-400';
   return (
     <div
-      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} overflow-hidden ${shell.containerClassName}`}
+      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} overflow-hidden ${shell.containerClassName}`}
     >
       <div className={`absolute inset-0 ${shell.glowClassName}`}></div>
 

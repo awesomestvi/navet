@@ -65,9 +65,7 @@ export function ColumnCanvas({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="min-w-0">
-          <div
-            className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-          >
+          <div className={`text-xs font-semibold uppercase tracking-[0.14em] ${surface.textMuted}`}>
             {columnTitle}
           </div>
         </div>

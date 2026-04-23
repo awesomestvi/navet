@@ -206,7 +206,7 @@ export const HVACGauge = memo(function HVACGauge({
         : 'text-gray-300'
       : isOn
         ? 'text-white'
-        : 'text-gray-500';
+        : 'text-gray-300';
   const currentTempColor = surface.textSubtle;
   const tickColor = theme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
   const arcBgStroke = theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.05)';

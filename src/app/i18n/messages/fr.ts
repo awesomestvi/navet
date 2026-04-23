@@ -72,11 +72,6 @@ export const frMessages = {
   'settings.appearance.wallpaper.title': 'Fond d’écran',
   'settings.appearance.wallpaper.description':
     'Ajoutez une image de fond qui se mélange avec l’accent et le thème actifs.',
-  'settings.appearance.pageZoom.title': 'Zoom de page',
-  'settings.appearance.pageZoom.description':
-    'Mettez l’interface entière à l’échelle pour faire tenir davantage de contenu à l’écran. 100 % conserve la mise en page par défaut.',
-  'settings.appearance.pageZoom.decreaseAria': 'Diminuer le zoom de la page',
-  'settings.appearance.pageZoom.increaseAria': 'Augmenter le zoom de la page',
   'settings.appearance.wallpaper.previewAlt': 'Aperçu du fond d’écran',
   'settings.appearance.wallpaper.optionAria': 'Fond d ecran {id}',
   'settings.appearance.wallpaper.replace': 'Remplacer le fond',

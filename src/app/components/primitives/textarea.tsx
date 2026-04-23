@@ -55,12 +55,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
           navetSizeTokens.fieldInset,
           navetTypographyTokens.control,
           theme === 'light'
-            ? 'border-gray-200 bg-gray-100 text-gray-900 placeholder-gray-400'
+            ? 'border-gray-200 bg-gray-100 text-gray-900 placeholder-slate-500'
             : theme === 'black'
-              ? 'border-white/16 bg-black text-white placeholder-gray-400'
+              ? 'border-white/16 bg-black text-white placeholder-zinc-300'
               : theme === 'glass'
-                ? 'border-white/16 bg-white/8 text-white placeholder-white/40'
-                : 'border-zinc-800 bg-zinc-900 text-white placeholder-gray-500',
+                ? 'border-white/16 bg-white/8 text-white placeholder-white/72'
+                : 'border-zinc-800 bg-zinc-900 text-white placeholder-zinc-400',
           textareaClassName
         )}
         style={{

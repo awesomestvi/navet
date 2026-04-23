@@ -5,12 +5,7 @@ import { useLightPresetStore } from '@/app/features/lighting';
 import { resolveAppLanguage } from '@/app/i18n/config';
 import { isSection } from '@/app/navigation/sections';
 import { useNavigationStore } from '@/app/stores/navigation-store';
-import {
-  defaultSettings,
-  normalizePageZoom,
-  PAGE_ZOOM_OPTIONS,
-  useSettingsStore,
-} from '@/app/stores/settings-store';
+import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
 import { getLegacyReducedEffectsFlags, resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { storage } from '@/app/utils/storage';
@@ -103,8 +98,6 @@ const buildExportedSettings = (
     disableAnimations: undefined,
     lowPowerMode: undefined,
     effectsQuality: effectsQuality !== defaultSettings.effectsQuality ? effectsQuality : undefined,
-    pageZoom:
-      settingsState.pageZoom !== defaultSettings.pageZoom ? settingsState.pageZoom : undefined,
     entityInteractionMode:
       settingsState.entityInteractionMode !== defaultSettings.entityInteractionMode
         ? settingsState.entityInteractionMode
@@ -254,11 +247,6 @@ export const importDashboardConfig = (value: unknown) => {
         : defaultSettings.compactMode,
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
-    pageZoom:
-      typeof settings.pageZoom === 'number' &&
-      PAGE_ZOOM_OPTIONS.includes(settings.pageZoom as (typeof PAGE_ZOOM_OPTIONS)[number])
-        ? normalizePageZoom(settings.pageZoom)
-        : defaultSettings.pageZoom,
     entityInteractionMode:
       settings.entityInteractionMode === 'control-first' ||
       settings.entityInteractionMode === 'toggle-first'

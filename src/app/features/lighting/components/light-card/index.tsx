@@ -151,7 +151,7 @@ export const LightCard = memo(function LightCard({
         <div
           ref={cardRef}
           {...controller.cardInteraction.cardProps}
-          className={`relative z-10 h-full w-full overflow-hidden rounded-3xl ${theme !== 'dark' ? 'border' : ''} ${controller.padding} transition-all duration-500 ${surfaceTokens.cardClassName} ${!isEditMode ? 'cursor-pointer' : ''}`}
+          className={`relative z-10 h-full w-full overflow-hidden rounded-3xl ${cardShell.rootFrameClassName} ${controller.padding} transition-all duration-500 ${surfaceTokens.cardClassName} ${!isEditMode ? 'cursor-pointer' : ''}`}
           style={surfaceTokens.cardStyle}
         >
           {surfaceTokens.activeGlowClassName ? (

@@ -100,9 +100,7 @@ export function SettingsHero({ navItems, styles }: SettingsHeroProps) {
       accentColor={styles.accentColor}
       surface={surface}
       eyebrow={
-        <p
-          className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${styles.subtleColor}`}
-        >
+        <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${styles.subtleColor}`}>
           {t('settings.hero.eyebrow')}
         </p>
       }
@@ -114,7 +112,7 @@ export function SettingsHero({ navItems, styles }: SettingsHeroProps) {
             <a
               key={id}
               href={`#${id}`}
-              className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors md:px-4 ${styles.borderColor} ${styles.chipBg} ${styles.chipHoverBg} ${styles.mutedColor}`}
+              className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors md:px-4 ${styles.borderColor} ${styles.chipBg} ${styles.chipHoverBg} ${styles.mutedColor}`}
             >
               <Icon className="h-3.5 w-3.5" />
               <span>{label}</span>

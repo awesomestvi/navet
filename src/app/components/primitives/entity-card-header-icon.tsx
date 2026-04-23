@@ -45,7 +45,7 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     size === 'large' || size === 'extra-large'
       ? 'text-sm'
       : size === 'tiny'
-        ? 'text-[10px]'
+        ? 'text-xs'
         : size === 'extra-small'
           ? 'text-xs'
           : 'text-sm';

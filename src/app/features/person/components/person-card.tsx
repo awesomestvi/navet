@@ -92,13 +92,13 @@ export const PersonCard = memo(function PersonCard({
   const hasPortrait = Boolean(resolvedEntityPicture);
   const isTiny = size === 'tiny';
   const isExtraSmall = size === 'extra-small';
-  const nameTextClassName = isTiny ? 'text-[11px]' : isExtraSmall ? 'text-xs' : 'text-sm';
-  const eyebrowTextClassName = isTiny ? 'text-[9px]' : 'text-[10px]';
-  const pillTextClassName = isTiny ? 'text-[9px]' : 'text-[10px]';
+  const nameTextClassName = isTiny ? 'text-xs' : isExtraSmall ? 'text-sm' : 'text-sm';
+  const eyebrowTextClassName = 'text-xs';
+  const pillTextClassName = 'text-xs';
 
   return (
     <div
-      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${theme !== 'dark' ? 'border' : ''} ${cardColors.border} overflow-hidden ${surface.containerShadowClassName}`}
+      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${cardShell.rootFrameClassName} ${cardColors.border} overflow-hidden ${surface.containerShadowClassName}`}
     >
       {hasPortrait ? (
         <ImageWithFallback
@@ -129,7 +129,7 @@ export const PersonCard = memo(function PersonCard({
       <div className={`relative flex h-full items-end ${padding}`}>
         <div className="min-w-0 max-w-full">
           <div
-            className={`truncate text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] ${eyebrowTextClassName}`}
+            className={`truncate text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] ${eyebrowTextClassName}`}
           >
             {detailLabel ?? presenceLabel}
           </div>
@@ -141,14 +141,14 @@ export const PersonCard = memo(function PersonCard({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {detailLabel && detailLabel !== presenceLabel ? (
               <div
-                className={`max-w-[11rem] truncate rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/78 backdrop-blur-sm ${pillTextClassName}`}
+                className={`max-w-[11rem] truncate rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/88 backdrop-blur-sm ${pillTextClassName}`}
               >
                 {detailLabel}
               </div>
             ) : null}
             {batteryLevel !== null ? (
               <div
-                className={`inline-flex items-center rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/78 backdrop-blur-sm ${pillTextClassName}`}
+                className={`inline-flex items-center rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/88 backdrop-blur-sm ${pillTextClassName}`}
               >
                 {t('vacuum.settings.battery')}: {batteryLevel}%
               </div>

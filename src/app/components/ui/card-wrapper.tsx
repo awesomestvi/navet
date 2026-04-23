@@ -63,7 +63,7 @@ export const CardWrapper = memo(function CardWrapper({
           onClick(e);
         }
       }}
-      className={`relative h-full rounded-3xl overflow-hidden transition-all duration-500 ${theme !== 'dark' ? 'border' : ''} ${onClick && !isDisabled ? 'cursor-pointer' : ''} ${showShadow ? surface.cardShadow : ''} ${interactionClassName || ''} ${className}`}
+      className={`relative h-full rounded-3xl overflow-hidden transition-all duration-500 ${cardShell.rootFrameClassName} ${onClick && !isDisabled ? 'cursor-pointer' : ''} ${showShadow ? surface.cardShadow : ''} ${interactionClassName || ''} ${className}`}
       style={style}
       {...restInteractionProps}
     >

@@ -134,15 +134,15 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           : 'bg-[linear-gradient(180deg,rgba(34,26,32,0.94),rgba(18,18,22,0.98))]';
   const quietPillClass = isOn
     ? theme === 'light'
-      ? 'bg-gray-100 text-gray-600'
+      ? 'bg-gray-100 text-gray-700'
       : theme === 'black'
-        ? 'bg-white/10 text-gray-300'
-        : 'bg-white/10 text-gray-300'
+        ? 'bg-white/10 text-gray-200'
+        : 'bg-white/10 text-gray-200'
     : theme === 'light'
-      ? 'bg-gray-200/80 text-gray-500'
+      ? 'bg-gray-200/80 text-gray-600'
       : theme === 'black'
-        ? 'bg-white/6 text-gray-300'
-        : 'bg-white/5 text-gray-500';
+        ? 'bg-white/6 text-gray-200'
+        : 'bg-white/5 text-gray-300';
   const sliderTrackClassName = theme === 'light' ? 'bg-gray-300/90' : 'bg-white/12';
   const thumbClassName =
     theme === 'black'
@@ -288,7 +288,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
                           event.stopPropagation();
                           setBrightness(nextBrightness);
                         }}
-                        className={`flex ${actionSizes.button} items-center justify-center rounded-full border text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 ${
+                        className={`flex ${actionSizes.button} items-center justify-center rounded-full border text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${
                           isSelected ? controlStyles.selectedText : controlStyles.softButton
                         }`}
                         style={
@@ -342,7 +342,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
         <div className="mt-4 space-y-2">
           <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
             <div
-              className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
+              className={`flex items-center gap-1.5 text-xs font-semibold ${surface.textSecondary}`}
             >
               <Hand className="h-3 w-3" />
               <span>{t('interactionPreview.cardTitle')}</span>
@@ -357,7 +357,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
           >
             <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
               <div
-                className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
+                className={`flex items-center gap-1.5 text-xs font-semibold ${surface.textSecondary}`}
               >
                 <Lightbulb className="h-3 w-3" />
                 <span>{t('interactionPreview.iconTitle')}</span>
@@ -370,7 +370,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
             {showsTrailingButton ? (
               <div className={`rounded-2xl px-3 py-2.5 ${quietPillClass}`}>
                 <div
-                  className={`flex items-center gap-1.5 text-[11px] font-semibold ${surface.textSecondary}`}
+                  className={`flex items-center gap-1.5 text-xs font-semibold ${surface.textSecondary}`}
                 >
                   <Settings2 className="h-3 w-3" />
                   <span>{t('interactionPreview.trailingButtonTitle')}</span>

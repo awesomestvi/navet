@@ -6,9 +6,10 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
+import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
-import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
@@ -17,16 +18,14 @@ interface MediaMediumVerticalViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
-  playerName: string;
-  room: string;
+  entityName: string;
+  entityTypeKey: MediaEntityTypeKey;
   title: string;
   artist: string;
   isActive: boolean;
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
-  elapsedSeconds: number;
-  durationSeconds: number;
   theme: ThemeType;
   onOpenDialog?: () => void;
   onToggleMute: () => void;
@@ -42,16 +41,14 @@ export function MediaMediumVerticalView({
   entityId,
   artwork,
   onArtworkError,
-  playerName,
-  room,
+  entityName,
+  entityTypeKey,
   title,
   artist,
   isActive,
   isPlaying,
   volume,
   isMuted,
-  elapsedSeconds,
-  durationSeconds,
   theme,
   onOpenDialog,
   onToggleMute,
@@ -75,7 +72,6 @@ export function MediaMediumVerticalView({
   });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
   const subduedFallback = !artwork;
@@ -148,21 +144,14 @@ export function MediaMediumVerticalView({
 
         <div className="flex min-h-0 flex-1 flex-col p-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div
-                className={`truncate text-[10px] tracking-normal ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {playerName}
-              </div>
-              <div
-                className={`truncate text-xs ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {room || t('media.room')}
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
+            <MediaEntityHeader
+              entityName={entityName}
+              entityType={t(entityTypeKey)}
+              size="medium-vertical"
+              isActive={isActive}
+              accentColor={palette.highlight}
+            />
+            <div className="flex shrink-0 items-center gap-3 self-start">
               <MediaVisualizerButton
                 isPlaying={isPlaying}
                 onClick={(event) => {
@@ -172,9 +161,6 @@ export function MediaMediumVerticalView({
                 className={iconTone}
                 style={{ color: textTokens.titleColor }}
               />
-              {isPlaying && durationSeconds > 0 && (
-                <span className={`text-xs ${subtitleTone}`}>{displayRemaining}</span>
-              )}
             </div>
           </div>
 
@@ -203,7 +189,7 @@ export function MediaMediumVerticalView({
                   event.stopPropagation();
                   onTogglePlay();
                 }}
-                className="h-10.5 w-10.5 border backdrop-blur-xl transition-colors"
+                className="h-10 w-10 border backdrop-blur-xl transition-colors"
                 iconClassName="!text-white/90"
                 style={subduedFallback ? undefined : playButtonStyle}
               >

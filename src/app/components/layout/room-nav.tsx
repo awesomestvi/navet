@@ -216,7 +216,7 @@ export const RoomNav = memo(function RoomNav({
     theme === 'light'
       ? 'room-nav-item-active text-slate-950 shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)]'
       : 'room-nav-item-active text-white';
-  const actionPillClassName = `flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${inactiveBg} ${lightPillClassName} ${hoverBg}`;
+  const actionPillClassName = `flex items-center gap-2 rounded-[22px] px-3 py-2 text-xs md:gap-2.5 md:px-3.5 md:py-2 md:text-sm transition-colors ${inactiveBg} ${lightPillClassName} ${hoverBg}`;
   const dropdownItemClassName = `rounded-xl px-3 py-2 ${surface.textPrimary} ${hoverBg}`;
   const allViewGroupingOptions: Array<{ label: string; value: AllViewGrouping }> = [
     { label: t('dashboard.roomNav.grouping.custom'), value: 'custom' },
@@ -236,9 +236,9 @@ export const RoomNav = memo(function RoomNav({
       />
       <div ref={stickyRef} className="sticky top-0 z-30" style={{ top: stickyOffset }}>
         <div ref={shellRef} className="room-nav-shell" data-theme={theme} style={stickyShellStyle}>
-          <div className="flex items-center gap-1 md:gap-1.5">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-1 min-w-max md:gap-1.5">
+              <div className="flex min-w-max items-center gap-1.5 md:gap-2">
                 {visibleRooms.map((room) => (
                   <RoomNavItem
                     key={room}
@@ -253,7 +253,7 @@ export const RoomNav = memo(function RoomNav({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0 pl-1 md:gap-1.5 md:pl-1.5">
+            <div className="flex shrink-0 items-center gap-1.5 pl-1.5 md:gap-2 md:pl-2">
               {isEditMode && showAllViewGrouping ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -337,7 +337,7 @@ export const RoomNav = memo(function RoomNav({
                 active={isEditMode}
                 intent="action"
                 size="small"
-                className={`room-nav-action-pill flex items-center gap-1.5 rounded-[22px] px-2.5 py-1.5 text-xs md:gap-2 md:px-3 md:py-2 md:text-sm transition-colors ${
+                className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-xs md:gap-2.5 md:px-3.5 md:py-2 md:text-sm transition-colors ${
                   isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
                 }`}
                 style={
@@ -743,7 +743,7 @@ const RoomNavItem = memo(function RoomNavItem({
       onClick={() => onRoomChange(room)}
       size="small"
       variant="ghost"
-      className={`room-nav-item px-2.5 md:px-3 py-1.5 md:py-2 rounded-[22px] text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+      className={`room-nav-item rounded-[22px] px-3 py-2 text-xs font-medium whitespace-nowrap shrink-0 transition-colors md:px-3.5 md:py-2 md:text-sm ${
         activeRoom === room ? activeClassName : inactiveClassName
       }`}
     >

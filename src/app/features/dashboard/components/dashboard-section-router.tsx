@@ -91,7 +91,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div
-                      className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+                      className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
                     >
                       {t('energy.band.eyebrow')}
                     </div>

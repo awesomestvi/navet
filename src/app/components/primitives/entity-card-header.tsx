@@ -73,7 +73,7 @@ export function EntityCardHeader({
         ? 'gap-2'
         : 'gap-2';
   const subtitleClassBase =
-    layout === 'eyebrow-first' ? 'truncate text-[10px] tracking-normal' : 'truncate text-[10px]';
+    layout === 'eyebrow-first' ? 'truncate text-xs tracking-normal' : 'truncate text-xs';
   const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';
 
   return (

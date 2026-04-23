@@ -66,7 +66,7 @@ export const SceneCard = memo(function SceneCard({
   if (isTiny) {
     return (
       <div
-        className={`relative h-full w-full overflow-hidden rounded-[26px] border px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+        className={`relative h-full w-full overflow-hidden rounded-[26px] px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
       >
         <div
           className="absolute inset-0"
@@ -98,8 +98,8 @@ export const SceneCard = memo(function SceneCard({
               title={name}
               subtitle={t('deviceType.scene')}
               layout="eyebrow-first"
-              titleClassName={`mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight ${surface.textPrimary}`}
-              subtitleClassName={`truncate text-[10px] tracking-normal ${surface.textMuted}`}
+              titleClassName={`mt-0.5 line-clamp-2 text-xs font-semibold leading-tight ${surface.textPrimary}`}
+              subtitleClassName={`truncate text-xs tracking-normal ${surface.textMuted}`}
               titleStyle={{ color: tinyTextTokens.titleColor }}
               subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
             />
@@ -120,7 +120,7 @@ export const SceneCard = memo(function SceneCard({
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-3xl border p-3 ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`}
+      className={`relative h-full overflow-hidden rounded-3xl p-3 ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`}
     >
       <div
         className="absolute inset-0"

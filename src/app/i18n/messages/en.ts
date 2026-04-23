@@ -68,11 +68,6 @@ export const enMessages = {
   'settings.appearance.wallpaper.title': 'Wallpaper',
   'settings.appearance.wallpaper.description':
     'Add a background image that blends with the active accent and theme.',
-  'settings.appearance.pageZoom.title': 'Page zoom',
-  'settings.appearance.pageZoom.description':
-    'Scale the full interface to fit more on screen. 100% keeps the default layout.',
-  'settings.appearance.pageZoom.decreaseAria': 'Decrease page zoom',
-  'settings.appearance.pageZoom.increaseAria': 'Increase page zoom',
   'settings.appearance.wallpaper.previewAlt': 'Wallpaper preview',
   'settings.appearance.wallpaper.optionAria': 'Wallpaper {id}',
   'settings.appearance.wallpaper.replace': 'Replace wallpaper',

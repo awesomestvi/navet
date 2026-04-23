@@ -155,7 +155,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'feeds'}
                 size="compact"
                 icon={Sliders}
-                className="min-h-8 px-3 text-[11px]"
+                className="min-h-8 px-3 text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'feeds',
@@ -170,7 +170,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'setup'}
                 size="compact"
                 icon={Plus}
-                className="min-h-8 px-3 text-[11px]"
+                className="min-h-8 px-3 text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'setup',
@@ -185,7 +185,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'card'}
                 size="compact"
                 icon={Palette}
-                className="min-h-8 px-3 text-[11px]"
+                className="min-h-8 px-3 text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'card',
@@ -292,7 +292,7 @@ export function RSSFeedSettingsDialog({
                       onClick={() => onArticleCountChange(count)}
                       active={articleCount === count}
                       size="compact"
-                      className="min-h-8 px-3 text-[11px]"
+                      className="min-h-8 px-3 text-xs"
                       style={getRSSDialogPillStyle({
                         accentColor: activeAccentColor,
                         isActive: articleCount === count,

@@ -93,28 +93,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:opacity-50',
         iconOnly
           ? size === 'compact'
-            ? 'h-7 w-7'
+            ? 'h-8 w-8'
             : size === 'small'
               ? 'h-8 w-8'
               : navetSizeTokens.iconButton.md
           : size === 'compact'
-            ? 'min-h-7 px-2 py-1 text-[12px]'
+            ? 'min-h-8 px-3.5 py-2'
             : size === 'small'
-              ? 'min-h-8'
+              ? 'min-h-9'
               : navetSizeTokens.controlHeight.md,
         iconOnly
           ? ''
           : size === 'compact'
             ? ''
             : size === 'small'
-              ? 'px-3 py-1.5'
+              ? 'px-3.5 py-2'
               : navetSizeTokens.buttonInset,
         iconOnly ? '' : navetSpacingTokens.inline.sm,
         iconOnly ? navetRadiusTokens.pill : navetRadiusTokens.action,
         size === 'compact'
-          ? 'font-medium'
+          ? 'text-xs font-medium'
           : size === 'small'
-            ? 'text-xs font-medium'
+            ? navetTypographyTokens.control
             : navetTypographyTokens.control,
         variantClassName,
         getThemeFocusRingClassName(theme),

@@ -31,12 +31,12 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   const colorClassName =
     appearance === 'subtle'
       ? theme === 'light'
-        ? 'text-gray-600 hover:text-gray-900'
+        ? 'text-slate-700 hover:text-slate-900'
         : theme === 'black'
-          ? 'text-gray-300 hover:text-white'
-          : 'text-white/70 hover:text-white'
+          ? 'text-zinc-300 hover:text-white'
+          : 'text-white/80 hover:text-white'
       : theme === 'light'
-        ? 'text-gray-900 hover:text-gray-950'
+        ? 'text-slate-900 hover:text-slate-950'
         : 'text-white hover:text-white';
 
   return (
@@ -46,7 +46,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
       target={target}
       rel={isExternal ? (rel ?? 'noreferrer') : rel}
       className={cn(
-        size === 'small' ? 'text-[11px] font-medium' : navetTypographyTokens.control,
+        size === 'small' ? 'text-xs font-medium' : navetTypographyTokens.control,
         'inline-flex items-center gap-1 underline decoration-current/25 underline-offset-4 transition-[color,opacity,text-decoration-color] hover:decoration-current/50',
         getThemeFocusRingClassName(theme),
         colorClassName,

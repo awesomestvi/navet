@@ -38,7 +38,7 @@ export function EnergyWidgetShell({
         <div>
           {eyebrow ? (
             <div
-              className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+              className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
             >
               {eyebrow}
             </div>

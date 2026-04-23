@@ -339,11 +339,11 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
+      className={`relative h-full overflow-hidden rounded-[28px] ${surface.outerFrameClassName}`}
       style={frameStyle}
     >
       <div
-        className={`absolute inset-px overflow-hidden rounded-[26px] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+        className={`${surface.innerFrameClassName} overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
         style={surface.panelStyle}
       >
         {surface.glowStyle ? (

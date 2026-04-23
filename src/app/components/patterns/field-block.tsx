@@ -32,15 +32,15 @@ export function FieldBlock({
   const { theme } = useTheme();
 
   const labelTone =
-    theme === 'light' ? 'text-gray-900' : theme === 'black' ? 'text-white' : 'text-white';
+    theme === 'light' ? 'text-slate-900' : theme === 'black' ? 'text-white' : 'text-white';
   const hintTone =
     theme === 'light'
-      ? 'text-gray-500'
+      ? 'text-slate-600'
       : theme === 'black'
-        ? 'text-gray-300'
+        ? 'text-zinc-300'
         : theme === 'glass'
-          ? 'text-white/58'
-          : 'text-gray-500';
+          ? 'text-white/72'
+          : 'text-zinc-400';
 
   return (
     <div className={cn(navetSpacingTokens.stack.sm, className)}>

@@ -214,7 +214,9 @@ export function EnergySetupPanel({ initialConfig, onSave, onCancel }: EnergySetu
           <>
             {t(meta.labelKey)}
             {meta.section === 'advanced' ? (
-              <span className={`ml-2 text-[10px] uppercase tracking-[0.14em] ${surface.textMuted}`}>
+              <span
+                className={`ml-2 text-xs font-semibold uppercase tracking-[0.12em] ${surface.textMuted}`}
+              >
                 {t('energy.setup.optional')}
               </span>
             ) : null}

@@ -108,7 +108,7 @@ export function CoverCardView({
   return (
     <div
       {...cardProps}
-      className={`relative h-full bg-linear-to-br ${closedColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${theme !== 'dark' ? 'border' : ''} ${clampedPosition > 50 ? openColors.border : closedColors.border} overflow-hidden ${securitySurface.containerShadowClassName}`}
+      className={`relative h-full bg-linear-to-br ${closedColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${clampedPosition > 50 ? openColors.border : closedColors.border} overflow-hidden ${securitySurface.containerShadowClassName}`}
     >
       {/* Open-state fill — grows from the bottom as position increases */}
       <div
@@ -506,7 +506,7 @@ function CoverActionRow({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const gap = size === 'small' ? 'gap-1' : 'gap-2';
+  const gap = size === 'small' ? 'gap-1.5' : 'gap-2.5';
 
   return (
     <CardActionRow
@@ -635,7 +635,7 @@ function CoverWindowVisualization({
         </div>
 
         {/* Position badge */}
-        <div className="absolute bottom-2 right-2 rounded-full bg-black/44 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+        <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
           {position}%
         </div>
       </div>
@@ -664,7 +664,7 @@ function CoverPresetChips({
 }) {
   const isLight = theme === 'light';
   return (
-    <div className="flex gap-1.5">
+    <div className="flex gap-2">
       {([0, 25, 50, 75, 100] as const).map((preset) => {
         const isActive = Math.abs(position - preset) < 8;
         return (
@@ -675,14 +675,14 @@ function CoverPresetChips({
               e.stopPropagation();
               onSetPosition(preset);
             }}
-            className={`flex-1 rounded-xl py-1.5 text-xs font-medium transition-colors ${
+            className={`flex-1 rounded-xl px-2 py-2 text-xs font-medium transition-colors ${
               isActive
                 ? isLight
                   ? 'bg-indigo-100 text-indigo-700'
                   : 'bg-indigo-500/28 text-indigo-300'
                 : isLight
                   ? 'bg-white/60 text-slate-500 hover:bg-white/80 hover:text-slate-700'
-                  : 'bg-white/8 text-white/50 hover:bg-white/12 hover:text-white/70'
+                  : 'bg-white/8 text-white/72 hover:bg-white/12 hover:text-white/88'
             }`}
           >
             {preset}

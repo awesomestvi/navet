@@ -192,7 +192,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
                 <div className={`text-sm font-semibold ${surface.textPrimary}`}>
                   {selectedSize.label}
                 </div>
-                <div className={`mt-0.5 text-[11px] ${surface.textSecondary}`}>
+                <div className={`mt-1 text-xs ${surface.textSecondary}`}>
                   {selectedSize.description} • {selectedSize.dimensions}
                 </div>
               </div>

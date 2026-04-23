@@ -187,7 +187,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                 </DialogSectionRow>
               ) : (
                 <DialogSectionRow label="Controls">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
                     No extra controls available
                   </div>
                 </DialogSectionRow>
@@ -258,7 +258,7 @@ function ClimateSiblingControlRow({
     >
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium text-white">{label}</span>
-        <span className="block text-xs text-white/55">{typeLabel}</span>
+        <span className="block text-xs text-white/72">{typeLabel}</span>
       </span>
       {isToggle ? (
         <div
@@ -269,7 +269,7 @@ function ClimateSiblingControlRow({
           />
         </div>
       ) : (
-        <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-[11px] font-medium text-white/80">
+        <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-xs font-medium text-white/88">
           Run
         </span>
       )}

@@ -387,11 +387,11 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
+      className={`relative h-full overflow-hidden rounded-[28px] ${surface.outerFrameClassName}`}
       style={frameStyle}
     >
       <div
-        className={`absolute inset-px overflow-hidden rounded-[26px] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+        className={`${surface.innerFrameClassName} overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
       >
         {surface.glowStyle ? (
           <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
@@ -541,11 +541,11 @@ function EnergyNowStatusWidget({ message }: { message: string }) {
 
   return (
     <div
-      className={`relative h-full overflow-hidden rounded-[28px] border ${surface.borderClassName}`}
+      className={`relative h-full overflow-hidden rounded-[28px] ${surface.outerFrameClassName}`}
       style={frameStyle}
     >
       <div
-        className="absolute inset-px flex flex-col justify-between overflow-hidden rounded-[26px] p-4"
+        className={`${surface.innerFrameClassName} flex flex-col justify-between overflow-hidden p-4`}
         style={surface.panelStyle}
       >
         {surface.glowStyle ? <div className="absolute inset-0" style={surface.glowStyle} /> : null}

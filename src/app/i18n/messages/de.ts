@@ -72,11 +72,6 @@ export const deMessages = {
   'settings.appearance.wallpaper.title': 'Hintergrundbild',
   'settings.appearance.wallpaper.description':
     'Füge ein Hintergrundbild hinzu, das mit aktivem Akzent und Thema zusammenarbeitet.',
-  'settings.appearance.pageZoom.title': 'Seitenzoom',
-  'settings.appearance.pageZoom.description':
-    'Skaliere die gesamte Oberfläche, damit mehr auf den Bildschirm passt. 100 % behält das Standardlayout bei.',
-  'settings.appearance.pageZoom.decreaseAria': 'Seitenzoom verkleinern',
-  'settings.appearance.pageZoom.increaseAria': 'Seitenzoom vergrossern',
   'settings.appearance.wallpaper.previewAlt': 'Hintergrund-Vorschau',
   'settings.appearance.wallpaper.optionAria': 'Hintergrund {id}',
   'settings.appearance.wallpaper.replace': 'Hintergrund ersetzen',

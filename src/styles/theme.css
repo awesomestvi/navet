@@ -1,7 +1,6 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-size: 16px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
@@ -144,7 +143,7 @@
    */
 
   html {
-    font-size: var(--font-size);
+    font-size: 16px;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }

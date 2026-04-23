@@ -1,5 +1,6 @@
 export interface UseMediaCardControllerParams {
   entityId: string;
+  entityName: string;
   deviceClass?: string;
   entityPicture?: string;
   artworkKey?: string;

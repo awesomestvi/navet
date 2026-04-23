@@ -4,7 +4,6 @@ import type { SettingsSectionController } from '../hooks/use-settings-section-co
 import {
   AppearanceAmbienceItem,
   AppearanceEffectsQualityItem,
-  AppearancePageZoomItem,
   AppearanceThemeAccentItem,
   AppearanceWallpaperItem,
 } from './settings-appearance-content';
@@ -28,7 +27,6 @@ export function SettingsAppearanceSection({ controller }: SettingsAppearanceSect
     >
       <AppearanceThemeAccentItem controller={controller} />
       <AppearanceEffectsQualityItem controller={controller} />
-      <AppearancePageZoomItem controller={controller} />
       <AppearanceAmbienceItem controller={controller} />
       <AppearanceWallpaperItem controller={controller} />
     </SettingsSectionShell>

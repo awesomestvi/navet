@@ -3,7 +3,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 
 const LIST_HEIGHT = 360;
-const ROW_HEIGHT = 76;
+const ROW_HEIGHT = 84;
 const OVERSCAN = 1;
 
 export type DashboardLibraryCard = {
@@ -30,10 +30,10 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
       type="button"
       data-library-interactive="true"
       onClick={onAdd}
-      className={`group flex w-full cursor-pointer items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition-colors ${surface.border} ${surface.panelMuted} ${surface.hoverBg}`}
+      className={`group flex w-full cursor-pointer items-center gap-3.5 rounded-[18px] border px-3.5 py-3 text-left transition-colors ${surface.border} ${surface.panelMuted} ${surface.hoverBg}`}
     >
       <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
         style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
       >
         {IconComponent ? (
@@ -44,18 +44,18 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className={`truncate text-sm font-semibold ${surface.textPrimary}`}>{card.title}</div>
-        <div className={`mt-0.5 truncate text-[11px] ${surface.textSecondary}`}>
+        <div className={`mt-1.5 truncate text-xs ${surface.textSecondary}`}>
           {card.meta} <span aria-hidden="true">•</span> {card.subtitle}
         </div>
       </div>
       <div
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
         style={{
           borderColor: 'rgba(255,255,255,0.08)',
           backgroundColor: 'rgba(255,255,255,0.04)',
         }}
       >
-        <Plus className={`h-3 w-3 ${surface.textMuted}`} />
+        <Plus className={`h-3.5 w-3.5 ${surface.textMuted}`} />
       </div>
     </button>
   );
@@ -114,7 +114,7 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
       {cards.length > 0 ? (
         <div className="relative" style={{ height: totalHeight }}>
           <div
-            className="absolute inset-x-0 top-0 flex flex-col gap-2"
+            className="absolute inset-x-0 top-0 flex flex-col gap-2.5"
             style={{ transform: `translateY(${topOffset}px)` }}
           >
             {virtualCards.map((card) => (

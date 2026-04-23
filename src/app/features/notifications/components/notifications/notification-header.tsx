@@ -31,14 +31,14 @@ export function NotificationHeader({
     <>
       {/* Header */}
       <div className={`flex items-center justify-between border-b p-4 ${surface.borderClassName}`}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Bell className={`h-4 w-4 ${surface.textSecondary}`} />
           <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>
             {t('notifications.title')}
           </h3>
           {unreadCount > 0 && (
             <span
-              className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
+              className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
               style={{ backgroundColor: getColorValue(primaryColor) }}
             >
               {unreadCount}
@@ -56,14 +56,16 @@ export function NotificationHeader({
 
       {/* Actions */}
       {hasNotifications && (
-        <div className={`flex items-center gap-2 border-b p-2 ${surface.borderClassName}`}>
+        <div
+          className={`flex items-center gap-2.5 border-b px-3 py-2.5 ${surface.borderClassName}`}
+        >
           {unreadCount > 0 && onMarkAllAsRead && (
             <Button
               onClick={onMarkAllAsRead}
               variant="secondary"
               size="small"
               leading={<Check className="h-3.5 w-3.5" />}
-              className="min-h-8 justify-start rounded-full px-2 text-xs"
+              className="min-h-8 justify-start rounded-full px-3 text-xs"
             >
               {t('notifications.header.markAllRead')}
             </Button>
@@ -73,7 +75,7 @@ export function NotificationHeader({
             variant="secondary"
             size="small"
             leading={<Trash2 className="h-3.5 w-3.5" />}
-            className="min-h-8 justify-start rounded-full px-2 text-xs"
+            className="min-h-8 justify-start rounded-full px-3 text-xs"
           >
             {t('notifications.header.clearAll')}
           </Button>

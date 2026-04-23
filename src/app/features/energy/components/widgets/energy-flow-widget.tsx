@@ -34,7 +34,9 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
+                <div
+                  className={`text-xs font-semibold uppercase tracking-[0.14em] ${surface.textMuted}`}
+                >
                   {item.direction === 'sink'
                     ? t('energy.widgets.flow.direction.usage')
                     : item.direction === 'storage'
@@ -46,7 +48,7 @@ export const EnergyFlowWidget = memo(function EnergyFlowWidget({
                 </div>
               </div>
               <span
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${surface.border} ${surface.textSecondary}`}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${surface.border} ${surface.textSecondary}`}
               >
                 {item.direction === 'sink'
                   ? t('energy.widgets.flow.directionLabel.sink')

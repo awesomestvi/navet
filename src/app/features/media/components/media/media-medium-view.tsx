@@ -6,7 +6,9 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
+import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
@@ -16,8 +18,8 @@ interface MediaMediumViewProps {
   entityId: string;
   artwork?: string | null;
   onArtworkError?: (imageUrl?: string | null) => void;
-  playerName: string;
-  room: string;
+  entityName: string;
+  entityTypeKey: MediaEntityTypeKey;
   title: string;
   artist: string;
   isActive: boolean;
@@ -41,8 +43,8 @@ export function MediaMediumView({
   entityId,
   artwork,
   onArtworkError,
-  playerName,
-  room,
+  entityName,
+  entityTypeKey,
   title,
   artist,
   isActive,
@@ -72,7 +74,8 @@ export function MediaMediumView({
   });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
+  const elapsedLabel = formatMediaTime(Math.max(0, elapsedSeconds));
+  const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
   const subduedFallback = !artwork;
@@ -117,21 +120,14 @@ export function MediaMediumView({
 
         <div className="flex min-w-0 flex-col pl-2 pr-3 py-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div
-                className={`truncate text-[10px] tracking-normal ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {playerName}
-              </div>
-              <div
-                className={`truncate text-xs ${subtitleTone}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {room || t('media.room')}
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
+            <MediaEntityHeader
+              entityName={entityName}
+              entityType={t(entityTypeKey)}
+              size="medium"
+              isActive={isActive}
+              accentColor={palette.highlight}
+            />
+            <div className="flex shrink-0 items-center gap-2.5 self-start">
               <MediaVisualizerButton
                 isPlaying={isPlaying}
                 onClick={(event) => {
@@ -141,9 +137,6 @@ export function MediaMediumView({
                 className={iconTone}
                 style={{ color: textTokens.titleColor }}
               />
-              {isPlaying && durationSeconds > 0 && (
-                <span className={`text-[11px] ${subtitleTone}`}>{displayRemaining}</span>
-              )}
             </div>
           </div>
 
@@ -172,7 +165,7 @@ export function MediaMediumView({
                   event.stopPropagation();
                   onTogglePlay();
                 }}
-                className="h-11.5 w-11.5 border backdrop-blur-xl transition-colors"
+                className="h-10 w-10 border backdrop-blur-xl transition-colors"
                 iconClassName="!text-white/90"
                 style={subduedFallback ? undefined : playButtonStyle}
               >
@@ -185,7 +178,30 @@ export function MediaMediumView({
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-2.5">
+            <div className="relative">
+              <div
+                className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+                style={trackBaseStyle}
+              />
+              <div
+                className="absolute left-0 top-1/2 h-px -translate-y-1/2"
+                style={{
+                  ...trackFillStyle,
+                  width:
+                    durationSeconds > 0
+                      ? `${Math.max(0, Math.min(100, (elapsedSeconds / durationSeconds) * 100))}%`
+                      : '0%',
+                }}
+              />
+            </div>
+            <div className={`mt-1.5 flex items-center justify-between text-[11px] ${subtitleTone}`}>
+              <span>{elapsedLabel}</span>
+              <span>{durationLabel}</span>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
             <RoundControlButton
               theme={theme}
               size="small"

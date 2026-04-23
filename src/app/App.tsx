@@ -29,10 +29,9 @@ function AppContent() {
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
   const { accentColor } = useTheme();
-  const { disableAnimations, lowPowerMode, effectsQuality, pageZoom } = useSettingsStore(
+  const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
-  const pageZoomScale = pageZoom / 100;
   const resolvedEffectsQuality = resolveEffectsQuality(
     effectsQuality,
     disableAnimations || lowPowerMode
@@ -42,16 +41,11 @@ function AppContent() {
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
 
-  const syncRootScaleVars = useCallback(() => {
-    document.documentElement.style.setProperty('--font-size', `${16 * pageZoomScale}px`);
-  }, [pageZoomScale]);
+  const syncViewportEnvironment = useCallback(() => {
+    syncViewportCssVars();
+  }, []);
 
-  const syncZoomEnvironment = useCallback(() => {
-    syncRootScaleVars();
-    syncViewportCssVars(pageZoomScale);
-  }, [pageZoomScale, syncRootScaleVars]);
-
-  useViewportResize(syncZoomEnvironment);
+  useViewportResize(syncViewportEnvironment);
 
   const retryConnect = useCallback(() => {
     const configToUse = authConfig || haConfig;
@@ -97,13 +91,12 @@ function AppContent() {
   }, [reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
-    syncZoomEnvironment();
+    syncViewportEnvironment();
 
     return () => {
-      document.documentElement.style.removeProperty('--font-size');
       clearViewportCssVars();
     };
-  }, [syncZoomEnvironment]);
+  }, [syncViewportEnvironment]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

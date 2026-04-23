@@ -29,6 +29,6 @@ export function getPersonCardSurfaceTokens(
           ? 'from-sky-500/30 via-slate-900 to-slate-950'
           : 'from-slate-500/25 via-slate-900 to-slate-950',
     fallbackIconClassName:
-      theme === 'light' ? 'text-slate-500' : isHome ? 'text-white/70' : 'text-white/55',
+      theme === 'light' ? 'text-slate-600' : isHome ? 'text-white/82' : 'text-white/76',
   };
 }

@@ -128,7 +128,7 @@ export function ThemeAppearancePicker({
             </div>
             {manualThemeLocked ? (
               <span
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${pickerTokens.optionBorderClassName} ${pickerTokens.mutedClassName}`}
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${pickerTokens.optionBorderClassName} ${pickerTokens.mutedClassName}`}
               >
                 {t('settings.appearance.systemTheme.auto')}
               </span>

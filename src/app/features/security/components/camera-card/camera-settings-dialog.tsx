@@ -44,7 +44,7 @@ function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string;
       onClick={handleToggle}
       className="flex w-full items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 py-3 transition-colors hover:bg-white/10"
     >
-      <span className="text-sm text-white/80">{label}</span>
+      <span className="text-sm text-white/88">{label}</span>
       <div
         className={`relative h-6 w-11 rounded-full transition-colors duration-200 ${
           isOn ? 'bg-blue-500' : 'bg-white/20'
@@ -85,7 +85,7 @@ function SelectRow({
 
   return (
     <div className="space-y-2">
-      <p className="px-1 text-xs text-white/50">{label}</p>
+      <p className="px-1 text-xs text-white/76">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
@@ -95,7 +95,7 @@ function SelectRow({
             className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
               option === current
                 ? 'bg-blue-500 text-white'
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                : 'bg-white/10 text-white/82 hover:bg-white/20'
             }`}
           >
             {option}
@@ -136,7 +136,7 @@ function NumberRow({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-white/50">{label}</p>
+        <p className="text-xs text-white/76">{label}</p>
         <span className="text-xs font-semibold text-white">{value}</span>
       </div>
       <input
@@ -243,7 +243,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               )}
             </div>
           ) : (
-            <p className="text-center text-sm text-white/40">{t('camera.settings.noControls')}</p>
+            <p className="text-center text-sm text-white/76">{t('camera.settings.noControls')}</p>
           )}
 
           <DialogDoneFooter label={t('common.done')} />

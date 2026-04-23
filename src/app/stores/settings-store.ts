@@ -7,36 +7,6 @@ import { storage } from '@/app/utils/storage';
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
 export type WeatherForecastMode = 'weekly' | 'hourly';
-export const PAGE_ZOOM_OPTIONS = [50, 67, 75, 80, 90, 100] as const;
-export type PageZoom = (typeof PAGE_ZOOM_OPTIONS)[number];
-
-export function normalizePageZoom(value: unknown): PageZoom {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return 100;
-  }
-
-  if (PAGE_ZOOM_OPTIONS.includes(value as PageZoom)) {
-    return value as PageZoom;
-  }
-
-  return PAGE_ZOOM_OPTIONS.reduce(
-    (closest, option) => {
-      const optionDistance = Math.abs(option - value);
-      const closestDistance = Math.abs(closest - value);
-
-      if (optionDistance < closestDistance) {
-        return option;
-      }
-
-      if (optionDistance === closestDistance && option < closest) {
-        return option;
-      }
-
-      return closest;
-    },
-    PAGE_ZOOM_OPTIONS[PAGE_ZOOM_OPTIONS.length - 1]
-  );
-}
 
 export interface UserSettings {
   username: string;
@@ -51,7 +21,6 @@ export interface UserSettings {
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
-  pageZoom: PageZoom;
   entityInteractionMode: EntityInteractionMode;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
@@ -76,7 +45,6 @@ export const defaultSettings: UserSettings = {
   disableAnimations: false,
   lowPowerMode: false,
   effectsQuality: 'high',
-  pageZoom: 100,
   entityInteractionMode: 'toggle-first',
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
@@ -100,19 +68,8 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       ...defaultSettings,
       effectsQuality: getInitialEffectsQuality(),
-      updateSettings: (newSettings) =>
-        set((state) => ({
-          ...state,
-          ...newSettings,
-          ...(newSettings.pageZoom !== undefined
-            ? { pageZoom: normalizePageZoom(newSettings.pageZoom) }
-            : {}),
-        })),
-      applyImportedSettings: (importedSettings) =>
-        set(() => ({
-          ...importedSettings,
-          pageZoom: normalizePageZoom(importedSettings.pageZoom),
-        })),
+      updateSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
+      applyImportedSettings: (importedSettings) => set(() => ({ ...importedSettings })),
       resetSettings: () => set(defaultSettings),
     }),
     {
@@ -123,7 +80,6 @@ export const useSettingsStore = create<SettingsState>()(
         return {
           ...current,
           ...next,
-          pageZoom: normalizePageZoom(next.pageZoom ?? current.pageZoom),
         };
       },
     }

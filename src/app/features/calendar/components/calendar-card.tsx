@@ -72,7 +72,7 @@ export const CalendarCard = memo(function CalendarCard({
           relative group overflow-hidden
           h-full w-full rounded-3xl
           ${hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}
-          ${cardShell.backdropClassName} border ${hasCustomTint ? '' : colors.calendar.border}
+          ${cardShell.backdropClassName}
           ${theme === 'light' ? 'shadow-lg' : 'shadow-lg hover:shadow-xl'}
           transition-all duration-300
           ${!inEditMode ? 'cursor-pointer' : ''}

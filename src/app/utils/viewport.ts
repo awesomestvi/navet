@@ -26,14 +26,14 @@ export function getVisibleViewportSize() {
   return { width, height };
 }
 
-export function getLogicalViewportWidth(pageZoomScale = 1) {
+export function getLogicalViewportWidth() {
   if (typeof window === 'undefined') {
     return 0;
   }
 
   const cssVisibleViewportWidth = readCssViewportVar('--navet-visible-viewport-width');
   if (cssVisibleViewportWidth > 0) {
-    return cssVisibleViewportWidth / pageZoomScale;
+    return cssVisibleViewportWidth;
   }
 
   const cssViewportWidth = readCssViewportVar('--navet-viewport-width');
@@ -42,10 +42,10 @@ export function getLogicalViewportWidth(pageZoomScale = 1) {
   }
 
   const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
-  return visibleViewportWidth / pageZoomScale;
+  return visibleViewportWidth;
 }
 
-export function syncViewportCssVars(pageZoomScale: number) {
+export function syncViewportCssVars() {
   if (typeof window === 'undefined') {
     return;
   }
@@ -54,13 +54,11 @@ export function syncViewportCssVars(pageZoomScale: number) {
   const visibleViewportHeight = window.visualViewport?.height ?? window.innerHeight;
   const layoutViewportWidth = Math.max(window.innerWidth, visibleViewportWidth);
   const layoutViewportHeight = Math.max(window.innerHeight, visibleViewportHeight);
-  const logicalViewportWidth = layoutViewportWidth / pageZoomScale;
-  const logicalViewportHeight = layoutViewportHeight / pageZoomScale;
 
-  document.documentElement.style.setProperty('--navet-viewport-width', `${logicalViewportWidth}px`);
+  document.documentElement.style.setProperty('--navet-viewport-width', `${layoutViewportWidth}px`);
   document.documentElement.style.setProperty(
     '--navet-viewport-height',
-    `${logicalViewportHeight}px`
+    `${layoutViewportHeight}px`
   );
   document.documentElement.style.setProperty(
     '--navet-visible-viewport-width',

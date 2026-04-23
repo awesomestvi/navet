@@ -155,7 +155,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                   label={metricSectionTitle}
                   helperText={metricSectionDescription}
                   labelClassName="mb-1 text-white"
-                  helperTextClassName="mb-3 text-white/70"
+                  helperTextClassName="mb-3 text-white/78"
                 >
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                     {availableMetrics.map((metric) => {
@@ -258,7 +258,7 @@ function SwitchControlRow({
     >
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium text-white">{label}</span>
-        <span className="block text-xs text-white/55">{typeLabel}</span>
+        <span className="block text-xs text-white/72">{typeLabel}</span>
       </span>
       <div
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${

@@ -64,20 +64,20 @@ export function SlideAction({
           knobSize: 28,
           padding: 4,
           railClassName: 'h-11 rounded-[24px]',
-          labelClassName: 'text-[10.5px] leading-[1.1] tracking-[0.01em]',
+          labelClassName: 'text-xs leading-[1.15] tracking-[0.01em]',
         }
       : {
           knobSize: 38,
           padding: 4,
           railClassName: 'h-12 rounded-[26px]',
-          labelClassName: 'text-[11.5px] leading-[1.1] tracking-[0.01em]',
+          labelClassName: 'text-xs leading-[1.15] tracking-[0.01em]',
         };
 
   const trackSurfaceClassName =
     theme === 'light'
       ? 'border-black/8 bg-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]'
       : 'border-white/10 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]';
-  const labelColorClassName = theme === 'light' ? 'text-black/60' : 'text-white/58';
+  const labelColorClassName = theme === 'light' ? 'text-slate-700' : 'text-white/78';
   const thumbClassName =
     theme === 'light'
       ? 'bg-white text-zinc-950 shadow-[0_12px_24px_-16px_rgba(15,23,42,0.45)]'
@@ -230,7 +230,7 @@ export function SlideAction({
       aria-disabled={disabled || isCompleting}
       aria-label={ariaLabel}
       className={`relative block w-full overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
-        disabled || isCompleting ? 'cursor-default opacity-70' : 'cursor-ew-resize'
+        disabled || isCompleting ? 'cursor-default opacity-85' : 'cursor-ew-resize'
       } select-none touch-none`}
       style={slideActionStyle}
       data-card-interactive="true"

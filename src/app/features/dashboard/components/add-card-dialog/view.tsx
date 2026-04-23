@@ -106,9 +106,7 @@ export function AddCardDialogView({
         <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-5 pb-4 pt-5 backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <div
-                className={`mb-2 text-[11px] font-medium tracking-[0.16em] ${surface.textMuted}`}
-              >
+              <div className={`mb-2 text-xs font-medium tracking-[0.14em] ${surface.textMuted}`}>
                 {cardsTabActive
                   ? t('dashboard.addCard.header.library')
                   : t('dashboard.addCard.header.widgets')}

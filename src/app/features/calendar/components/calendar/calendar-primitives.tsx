@@ -38,19 +38,19 @@ export function CalendarDateRail({
       }`}
     >
       <div
-        className={`${isCompact ? 'text-[9px]' : 'text-[10px]'} uppercase tracking-[0.14em]`}
+        className={`${isCompact ? 'text-xs' : 'text-xs'} uppercase tracking-[0.14em]`}
         style={{ color: textPrimary }}
       >
         {weekdayShort}
       </div>
       <div
-        className={`${isCompact ? 'text-[13px]' : 'text-[15px]'} font-semibold leading-none`}
+        className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold leading-none`}
         style={{ color: textPrimary }}
       >
         {dayNumber}
       </div>
       <div
-        className={`${isCompact ? 'mt-0 text-[9px]' : 'mt-0.5 text-[10px]'} uppercase tracking-[0.14em]`}
+        className={`${isCompact ? 'mt-0 text-xs' : 'mt-0.5 text-xs'} uppercase tracking-[0.14em]`}
         style={{ color: textSecondary }}
       >
         {monthShort.toUpperCase()}

@@ -65,7 +65,7 @@ const TV_DPAD_LAYOUT_DEFAULT = {
   centerClassName: 'h-9 w-9',
   crosshairMarginPx: 32,
   edgeIconClassName: 'h-4 w-4',
-  centerOkTextClassName: '!text-[11px] !font-semibold',
+  centerOkTextClassName: '!text-xs !font-semibold',
 } as const;
 
 /** Larger D-pad for large / extra-large TV tiles */
@@ -378,7 +378,7 @@ export function MediaTvView({
           style={panelStyle}
         >
           <span
-            className="min-w-0 truncate text-[11px] font-medium"
+            className="min-w-0 truncate text-xs font-medium"
             style={{ color: tvTextTokens.titleColor }}
           >
             {sourceLabel}

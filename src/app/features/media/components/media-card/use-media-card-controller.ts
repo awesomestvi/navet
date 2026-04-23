@@ -40,6 +40,7 @@ function selectUndefinedEntity() {
 
 export function useMediaCardController({
   entityId,
+  entityName,
   deviceClass,
   entityPicture,
   artworkKey,
@@ -193,6 +194,7 @@ export function useMediaCardController({
     liveAttrs,
     entityPicture,
     artworkKey,
+    entityName,
     initialTitle,
     initialArtist,
     nothingPlayingLabel: t('media.nothingPlaying'),

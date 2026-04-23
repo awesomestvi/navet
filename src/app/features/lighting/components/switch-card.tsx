@@ -86,7 +86,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         >
           {controller.isOn ? (
@@ -121,8 +121,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                 title={props.name}
                 subtitle={controller.entityType}
                 layout="eyebrow-first"
-                titleClassName={`mt-0.5 line-clamp-2 text-[10px] font-semibold leading-tight ${stateSurface.primaryTextClassName}`}
-                subtitleClassName={`truncate text-[10px] tracking-normal ${stateSurface.mutedTextClassName}`}
+                titleClassName={`mt-1 line-clamp-2 text-xs font-semibold leading-tight ${stateSurface.primaryTextClassName}`}
+                subtitleClassName={`truncate text-xs tracking-normal ${stateSurface.mutedTextClassName}`}
                 titleStyle={{ color: tinyTextTokens.titleColor }}
                 subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
               />
@@ -141,7 +141,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       <>
         <div
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br p-3 transition-all duration-500 ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br p-3 transition-all duration-500 ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         >
           {controller.isOn ? (
@@ -202,7 +202,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
     <>
       <div
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${controller.theme !== 'dark' ? 'border' : ''} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} p-3 ${stateSurface.containerClassName}`}
+        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} p-3 ${stateSurface.containerClassName}`}
         style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
       >
         {controller.isOn && (
@@ -235,8 +235,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             layout="eyebrow-first"
             size={controller.isExtraSmall ? 'extra-small' : 'small'}
             tone={controller.isOn ? 'primary' : 'neutral'}
-            titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left ${controller.isExtraSmall ? 'text-[11px]' : ''}`}
-            subtitleClassName={`${stateSurface.mutedTextClassName} text-left ${controller.isExtraSmall ? 'text-[9px]' : ''}`}
+            titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left ${controller.isExtraSmall ? 'text-xs' : ''}`}
+            subtitleClassName={`${stateSurface.mutedTextClassName} text-left ${controller.isExtraSmall ? 'text-xs' : ''}`}
             className={`${controller.isExtraSmall ? 'mb-1.5' : 'mb-2'}`}
             leading={
               <EntityCardHeaderIcon
@@ -273,7 +273,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                     className={`flex min-w-0 flex-col ${i === controller.selectedMetrics.length - 1 && controller.showSettingsButton && !controller.isExtraSmall ? 'pr-10' : ''}`}
                   >
                     <span
-                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-start ${controller.isExtraSmall ? 'gap-1 text-[9px] leading-[1.05]' : 'gap-1 text-[10px] leading-[1.1]'}`}
+                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-start ${controller.isExtraSmall ? 'gap-1.5 text-xs leading-tight' : 'gap-1.5 text-xs leading-tight'}`}
                       style={{ color: metricTextTokens.subtitleColor }}
                     >
                       {controller.renderMetricIcon(
@@ -285,7 +285,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                       </span>
                     </span>
                     <span
-                      className={`${stateSurface.primaryTextClassName} ${controller.isExtraSmall ? 'mt-0.5 pl-3.5 text-[10px]' : 'mt-0.5 pl-4 text-xs'} font-medium`}
+                      className={`${stateSurface.primaryTextClassName} ${controller.isExtraSmall ? 'mt-1 pl-4 text-xs' : 'mt-1 pl-4 text-sm'} font-medium`}
                       style={{ color: metricTextTokens.titleColor }}
                     >
                       {controller.formatMetricValue(metric)}

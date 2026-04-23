@@ -61,7 +61,7 @@ needed. Avoid subscribing to the full store object — this re-renders on every 
 const connected = useHomeAssistant(homeAssistantSelectors.connected);
 
 // Good — one subscription for a group of related display settings
-const { disableAnimations, effectsQuality, pageZoom } = useSettingsStore(
+const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsStore(
   settingsSelectors.displaySettings
 );
 
@@ -336,4 +336,3 @@ border-box, so light cards in bleed mode use `contain: layout style` only.
 (for example brightness preset buttons), a single `useCallback`-memoized handler can be
 passed to all buttons via `data-*` attributes and `e.currentTarget`. This produces one
 function allocation instead of N closures per render.
-

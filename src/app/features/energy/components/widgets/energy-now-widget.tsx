@@ -55,7 +55,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
               </div>
             </div>
             <span
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${surface.border} ${surface.textSecondary}`}
+              className={`rounded-full border px-2.5 py-1 text-xs font-medium ${surface.border} ${surface.textSecondary}`}
             >
               {t('energy.widgets.now.liveBadge')}
             </span>
@@ -82,7 +82,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
           </div>
 
           <div
-            className={`mt-4 flex items-center justify-between gap-3 overflow-hidden text-[11px] ${surface.textMuted}`}
+            className={`mt-4 flex items-center justify-between gap-3 overflow-hidden text-xs ${surface.textMuted}`}
           >
             {trendTicks.map((point, index) => (
               <div
@@ -126,7 +126,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
                 </div>
               </div>
               <div
-                className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                className="rounded-full px-2.5 py-1 text-xs font-medium"
                 style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
               >
                 kWh

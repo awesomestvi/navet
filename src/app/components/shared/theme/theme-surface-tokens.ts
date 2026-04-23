@@ -78,8 +78,8 @@ export function getThemeSurfaceTokens(
       divider: 'divide-white/10',
       textPrimary: 'text-white',
       textSecondary: 'text-gray-300',
-      textSubtle: 'text-gray-300',
-      textMuted: 'text-gray-300',
+      textSubtle: 'text-zinc-300',
+      textMuted: 'text-zinc-300',
       iconBg: 'bg-zinc-900',
       subtleBg: 'bg-black',
       hoverBg: 'hover:bg-zinc-900',
@@ -117,9 +117,9 @@ export function getThemeSurfaceTokens(
       borderStrong: isHigh ? 'border-white/28' : 'border-white/18',
       divider: isHigh ? 'divide-white/12' : 'divide-white/10',
       textPrimary: 'text-white',
-      textSecondary: isHigh ? 'text-white/82' : 'text-white/76',
-      textSubtle: isHigh ? 'text-white/72' : 'text-white/68',
-      textMuted: isHigh ? 'text-white/58' : 'text-white/64',
+      textSecondary: isHigh ? 'text-white/88' : 'text-white/84',
+      textSubtle: isHigh ? 'text-white/80' : 'text-white/76',
+      textMuted: isHigh ? 'text-white/78' : 'text-white/76',
       iconBg: isHigh
         ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06)_55%,rgba(255,255,255,0.03)_100%)]'
         : 'bg-white/10',
@@ -130,7 +130,7 @@ export function getThemeSurfaceTokens(
       inputBg: isHigh
         ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04)_55%,rgba(255,255,255,0.02)_100%)]'
         : 'bg-white/8',
-      placeholder: 'placeholder-white/40',
+      placeholder: 'placeholder-white/58',
       cardShadow: isHigh
         ? 'shadow-[0_32px_84px_-44px_rgba(2,8,20,0.9),0_10px_20px_-16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.24),inset_0_-18px_34px_rgba(255,255,255,0.04)]'
         : isMedium
@@ -160,8 +160,8 @@ export function getThemeSurfaceTokens(
     divider: 'divide-zinc-800',
     textPrimary: 'text-white',
     textSecondary: 'text-gray-300',
-    textSubtle: 'text-gray-300',
-    textMuted: 'text-gray-500',
+    textSubtle: 'text-zinc-300',
+    textMuted: 'text-zinc-400',
     iconBg: 'bg-zinc-800',
     subtleBg: 'bg-zinc-900',
     hoverBg: 'hover:bg-zinc-800',

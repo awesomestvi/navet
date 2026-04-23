@@ -51,7 +51,7 @@ export function getRSSFeedCardSurfaceTokens(
     dividerClassName:
       theme === 'light' ? 'bg-gray-200/90' : theme === 'glass' ? 'bg-white/12' : 'bg-white/8',
     hoverClassName: '',
-    dotClassName: theme === 'light' ? 'text-gray-300' : 'text-white/40',
+    dotClassName: theme === 'light' ? 'text-gray-400' : 'text-white/65',
     excerptClassName: '',
     excerptColor: textTokens.subtitleColor,
     readMoreClassName: '',

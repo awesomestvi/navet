@@ -13,6 +13,8 @@ export interface DashboardWidgetSurfaceTokens {
   textSecondary: string;
   textMuted: string;
   borderClassName: string;
+  outerFrameClassName: string;
+  innerFrameClassName: string;
   dividerClassName: string;
   subtleFill: string;
   dialogBackdrop: string;
@@ -26,16 +28,19 @@ export function getDashboardWidgetSurfaceTokens(
   const cardShell = getCardShellSurfaceTokens(theme);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasTintSurface = Boolean(tintSurface.panelStyle);
+  const outerBorderColorClassName = theme === 'light' ? 'border-gray-200/50' : surface.border;
 
   return {
-    panelClassName: `${hasTintSurface ? '' : theme === 'light' ? 'bg-white/70' : theme === 'black' ? 'bg-black/50' : surface.panel} ${cardShell.backdropClassName} relative overflow-hidden rounded-2xl p-4 border ${theme === 'light' ? 'border-gray-200/50' : surface.border}`,
+    panelClassName: `${hasTintSurface ? '' : theme === 'light' ? 'bg-white/70' : theme === 'black' ? 'bg-black/50' : surface.panel} ${cardShell.backdropClassName} relative overflow-hidden rounded-2xl p-4 border ${outerBorderColorClassName}`,
     panelStyle: tintSurface.panelStyle,
     glowStyle: tintSurface.glowStyle,
     overlayClassName: tintSurface.overlayClassName,
     textPrimary: surface.textPrimary,
     textSecondary: surface.textSecondary,
     textMuted: surface.textMuted,
-    borderClassName: theme === 'light' ? 'border-gray-200/50' : surface.border,
+    borderClassName: outerBorderColorClassName,
+    outerFrameClassName: '',
+    innerFrameClassName: 'absolute inset-0 rounded-[28px]',
     dividerClassName: theme === 'light' ? 'border-gray-200' : surface.border,
     dialogBackdrop: surface.dialogBackdrop,
     subtleFill:

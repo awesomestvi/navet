@@ -45,7 +45,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         <div
           className={`rounded-[20px] border px-4 py-3.5 md:rounded-[24px] md:px-5 md:py-4 ${styles.borderColor} ${styles.softBg}`}
         >
-          <p className={`text-[11px] uppercase tracking-[0.18em] ${styles.subtleColor}`}>
+          <p className={`text-xs uppercase tracking-[0.18em] ${styles.subtleColor}`}>
             {t('settings.system.connection.connectedTo')}
           </p>
           <p className={`mt-2 break-all font-mono text-sm ${styles.textColor}`}>

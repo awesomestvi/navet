@@ -30,7 +30,7 @@ export function CalendarSmallView({
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto scrollbar-hide pr-1">
         {dayGroups.map((group) => (
           <div key={group.key}>
-            <div className="mb-1 px-1 text-[10px] font-medium" style={{ color: textSecondary }}>
+            <div className="mb-1 px-1 text-xs font-medium" style={{ color: textSecondary }}>
               {formatCalendarGroupLabel(group.date, locale)}
             </div>
             <div className="space-y-1">
