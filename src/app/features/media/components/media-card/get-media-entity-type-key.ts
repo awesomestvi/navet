@@ -41,13 +41,15 @@ export function getMediaEntityTypeKey(
   deviceClass?: string
 ): MediaEntityTypeKey {
   const normalizedDeviceClass = normalizeMediaEntityType(deviceClass);
-  if (normalizedDeviceClass in MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE) {
-    return MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE[normalizedDeviceClass]!;
+  const deviceClassKey = MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE[normalizedDeviceClass];
+  if (deviceClassKey) {
+    return deviceClassKey;
   }
 
   const normalizedEntityType = normalizeMediaEntityType(entityType);
-  if (normalizedEntityType in MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE) {
-    return MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE[normalizedEntityType]!;
+  const entityTypeKey = MEDIA_ENTITY_TYPE_KEY_BY_NORMALIZED_VALUE[normalizedEntityType];
+  if (entityTypeKey) {
+    return entityTypeKey;
   }
 
   return 'media.type.player';

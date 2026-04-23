@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
@@ -65,6 +66,7 @@ export const LightCard = memo(function LightCard({
     size,
     isEditMode,
   });
+  const cardShell = getCardShellSurfaceTokens(theme);
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
   const showAmbientLightBleed = ambientLightBleed && resolvedEffectsQuality === 'high';
   const surfaceTokens = getLightCardSurfaceTokens({

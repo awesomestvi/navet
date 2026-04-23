@@ -1,0 +1,1 @@
+pnpm check && pnpm check:stories && pnpm typecheck && pnpm test

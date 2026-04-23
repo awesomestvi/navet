@@ -49,7 +49,7 @@ interface MediaCardProps {
 export const MediaCard = memo(function MediaCard({
   id,
   name,
-  room,
+  room: _room,
   title,
   artist,
   entityType,
@@ -242,15 +242,12 @@ export const MediaCard = memo(function MediaCard({
               onArtworkError={handleArtworkError}
               entityName={name}
               entityTypeKey={mediaEntityTypeKey}
-              room={room}
               title={displayTitle}
               artist={displayArtist}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
               isMuted={isMuted}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
               theme={theme}
               onToggleMute={toggleMute}
               onPrevious={handlePrevious}
@@ -268,7 +265,6 @@ export const MediaCard = memo(function MediaCard({
               onArtworkError={handleArtworkError}
               entityName={name}
               entityTypeKey={mediaEntityTypeKey}
-              room={room}
               title={displayTitle}
               artist={displayArtist}
               isActive={!isOff}
@@ -294,15 +290,12 @@ export const MediaCard = memo(function MediaCard({
               onArtworkError={handleArtworkError}
               entityName={name}
               entityTypeKey={mediaEntityTypeKey}
-              room={room}
               title={displayTitle}
               artist={displayArtist}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
               isMuted={isMuted}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
               theme={theme}
               onOpenDialog={openDialog}
               onToggleMute={toggleMute}
@@ -322,7 +315,6 @@ export const MediaCard = memo(function MediaCard({
               artist={displayArtist}
               entityName={name}
               entityTypeKey={mediaEntityTypeKey}
-              room={room}
               isActive={!isOff}
               isPlaying={isPlaying}
               volume={volume}
