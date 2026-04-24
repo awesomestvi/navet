@@ -30,7 +30,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   onTintColorChange,
 }: RSSFeedCardProps) {
   const { theme, colors, primaryColor } = useTheme();
-  const { t, formatRelativeTime } = useI18n();
+  const { t } = useI18n();
   const allDevices = useDevices();
   const rooms = useRooms(allDevices);
   const isSmall = isCompactCardSize(size);
@@ -40,7 +40,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   const [activeProviderId, setActiveProviderId] = useState<'all' | string>('all');
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [, setSecondsUntilRefresh] = useState(RSS_REFRESH_INTERVAL_SECONDS);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const {
     providers,
     selectedProviders,
@@ -89,12 +88,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   }, [providerSelectionKey]);
 
   useEffect(() => {
-    if (!isLoading && !error) {
-      setLastUpdatedAt(new Date());
-    }
-  }, [error, isLoading]);
-
-  useEffect(() => {
     void providerSelectionKey;
     setSecondsUntilRefresh(RSS_REFRESH_INTERVAL_SECONDS);
 
@@ -126,29 +119,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   }, [activeProviderId, items, selectedProviders]);
 
   const filteredLatestArticle = filteredItems[0] ?? null;
-  const lastUpdatedLabel = useMemo(() => {
-    if (!lastUpdatedAt) {
-      return t('rss.recently');
-    }
-
-    const diffMinutes = Math.max(0, Math.round((Date.now() - lastUpdatedAt.getTime()) / 60000));
-
-    if (diffMinutes < 1) {
-      return t('rss.recently');
-    }
-
-    if (diffMinutes < 60) {
-      return formatRelativeTime(-diffMinutes, 'minute');
-    }
-
-    const diffHours = Math.round(diffMinutes / 60);
-    if (diffHours < 24) {
-      return formatRelativeTime(-diffHours, 'hour');
-    }
-
-    const diffDays = Math.round(diffHours / 24);
-    return formatRelativeTime(-diffDays, 'day');
-  }, [formatRelativeTime, lastUpdatedAt, t]);
 
   const handleRefetch = () => {
     setRefreshNonce((value) => value + 1);
@@ -192,7 +162,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         hasSelectedProviders={selectedProviderIds.length > 0}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRefetch={handleRefetch}
-        lastUpdatedLabel={lastUpdatedLabel}
       />
       {isSettingsOpen ? (
         <RSSFeedSettingsDialog

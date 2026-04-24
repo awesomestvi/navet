@@ -46,7 +46,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
       target={target}
       rel={isExternal ? (rel ?? 'noreferrer') : rel}
       className={cn(
-        size === 'small' ? 'text-xs font-medium' : navetTypographyTokens.control,
+        navetTypographyTokens.control,
         'inline-flex items-center gap-1 underline decoration-current/25 underline-offset-4 transition-[color,opacity,text-decoration-color] hover:decoration-current/50',
         getThemeFocusRingClassName(theme),
         colorClassName,

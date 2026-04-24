@@ -194,7 +194,7 @@ export const Sidebar = memo(function Sidebar() {
                   }`}
                 >
                   <item.icon className="h-[1.2rem] w-[1.2rem] shrink-0" />
-                  <span className="max-w-full truncate text-[0.64rem] font-medium leading-none tracking-[-0.01em]">
+                  <span className="max-w-full truncate text-xs font-medium leading-tight tracking-[-0.01em]">
                     {item.label}
                   </span>
                 </InteractivePill>

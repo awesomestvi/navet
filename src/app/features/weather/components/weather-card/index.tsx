@@ -183,7 +183,7 @@ export const WeatherCard = memo(function WeatherCard({
                 style={{ color: textPrimary }}
               />
               <div
-                className="mt-1 text-xs font-medium leading-tight"
+                className="mt-1 text-sm font-medium leading-tight"
                 style={{ color: textSecondary, textShadow: weatherTextTreatment.textShadow }}
               >
                 {summaryLabel}
@@ -197,7 +197,7 @@ export const WeatherCard = memo(function WeatherCard({
                 <div className="mt-auto flex w-full items-start justify-between">
                   {visibleForecast.map((day) => (
                     <div key={day.day} className="min-w-0 text-center">
-                      <div className="mb-1 text-xs" style={{ color: textSecondary }}>
+                      <div className="mb-1 text-sm" style={{ color: textSecondary }}>
                         {day.day}
                       </div>
                       <WeatherIcon
@@ -207,7 +207,7 @@ export const WeatherCard = memo(function WeatherCard({
                       />
                       {showHourlyForecast ? (
                         <div
-                          className="text-xs font-medium leading-none"
+                          className="text-sm font-medium leading-none"
                           style={{
                             color: textPrimary,
                             textShadow: weatherTextTreatment.textShadow,
@@ -216,7 +216,7 @@ export const WeatherCard = memo(function WeatherCard({
                           {day.high}°
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center gap-1.5 text-xs leading-none">
+                        <div className="flex items-center justify-center gap-1.5 text-sm leading-none">
                           <span
                             className="font-medium"
                             style={{
@@ -252,14 +252,14 @@ export const WeatherCard = memo(function WeatherCard({
                     {temperature}°C
                   </div>
                   <div
-                    className="mb-0.5 text-xs"
+                    className="mb-0.5 text-sm"
                     style={{ color: textSecondary, textShadow: weatherTextTreatment.textShadow }}
                   >
                     H:{highTemp}° L:{lowTemp}°
                   </div>
                   {rainForecast ? (
                     <div
-                      className="text-xs"
+                      className="text-sm"
                       style={{
                         color: textSecondary,
                         textShadow: weatherTextTreatment.textShadow,
@@ -316,7 +316,7 @@ export const WeatherCard = memo(function WeatherCard({
               <div className="my-8 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <Sunrise className="h-4 w-4" style={{ color: textSecondary }} />
-                  <span className="text-xs font-medium" style={{ color: textPrimary }}>
+                  <span className="text-sm font-medium" style={{ color: textPrimary }}>
                     {sunrise}
                   </span>
                 </div>
@@ -327,7 +327,7 @@ export const WeatherCard = memo(function WeatherCard({
                   />
                 </div>
                 <div
-                  className="mx-2 text-xs"
+                  className="mx-2 text-sm"
                   style={{ color: textSecondary, textShadow: weatherTextTreatment.textShadow }}
                 >
                   {daylight}
@@ -341,7 +341,7 @@ export const WeatherCard = memo(function WeatherCard({
                 <div className="flex items-center gap-2">
                   <Sunset className="h-4 w-4" style={{ color: textSecondary }} />
                   <span
-                    className="text-xs font-medium"
+                    className="text-sm font-medium"
                     style={{ color: textPrimary, textShadow: weatherTextTreatment.textShadow }}
                   >
                     {sunset}
@@ -354,7 +354,7 @@ export const WeatherCard = memo(function WeatherCard({
                   {visibleForecast.map((day) => (
                     <div key={day.day} className="min-w-0 text-center">
                       <div
-                        className="mb-2 text-xs"
+                        className="mb-2 text-sm"
                         style={{
                           color: textSecondary,
                           textShadow: weatherTextTreatment.textShadow,
@@ -369,7 +369,7 @@ export const WeatherCard = memo(function WeatherCard({
                       />
                       {showHourlyForecast ? (
                         <div
-                          className="text-xs font-medium"
+                          className="text-sm font-medium"
                           style={{
                             color: textPrimary,
                             textShadow: weatherTextTreatment.textShadow,
@@ -380,7 +380,7 @@ export const WeatherCard = memo(function WeatherCard({
                       ) : (
                         <>
                           <div
-                            className="mb-1 text-xs font-medium"
+                            className="mb-1 text-sm font-medium"
                             style={{
                               color: textPrimary,
                               textShadow: weatherTextTreatment.textShadow,
@@ -389,7 +389,7 @@ export const WeatherCard = memo(function WeatherCard({
                             {day.high}°
                           </div>
                           <div
-                            className="text-xs"
+                            className="text-sm"
                             style={{
                               color: textSecondary,
                               textShadow: weatherTextTreatment.textShadow,

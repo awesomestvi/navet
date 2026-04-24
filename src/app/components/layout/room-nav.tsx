@@ -216,7 +216,7 @@ export const RoomNav = memo(function RoomNav({
     theme === 'light'
       ? 'room-nav-item-active text-slate-950 shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)]'
       : 'room-nav-item-active text-white';
-  const actionPillClassName = `flex items-center gap-2 rounded-[22px] px-3 py-2 text-xs md:gap-2.5 md:px-3.5 md:py-2 md:text-sm transition-colors ${inactiveBg} ${lightPillClassName} ${hoverBg}`;
+  const actionPillClassName = `flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${inactiveBg} ${lightPillClassName} ${hoverBg}`;
   const dropdownItemClassName = `rounded-xl px-3 py-2 ${surface.textPrimary} ${hoverBg}`;
   const allViewGroupingOptions: Array<{ label: string; value: AllViewGrouping }> = [
     { label: t('dashboard.roomNav.grouping.custom'), value: 'custom' },
@@ -269,7 +269,7 @@ export const RoomNav = memo(function RoomNav({
                     sideOffset={8}
                     className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
                   >
-                    <DropdownMenuLabel className={`px-3 py-2 text-xs font-medium ${textSecondary}`}>
+                    <DropdownMenuLabel className={`px-3 py-2 text-sm font-medium ${textSecondary}`}>
                       {t('dashboard.roomNav.groupBy')}
                     </DropdownMenuLabel>
                     {allViewGroupingOptions.map((option) => (
@@ -296,7 +296,7 @@ export const RoomNav = memo(function RoomNav({
                   className={actionPillClassName}
                 >
                   <GripVertical className={`h-4 w-4 ${textSecondary}`} />
-                  <span className={`hidden text-xs font-medium md:inline ${textSecondary}`}>
+                  <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
                     {t('dashboard.roomNav.reorder')}
                   </span>
                 </InteractivePill>
@@ -337,7 +337,7 @@ export const RoomNav = memo(function RoomNav({
                 active={isEditMode}
                 intent="action"
                 size="small"
-                className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-xs md:gap-2.5 md:px-3.5 md:py-2 md:text-sm transition-colors ${
+                className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
                   isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
                 }`}
                 style={
@@ -353,14 +353,14 @@ export const RoomNav = memo(function RoomNav({
                 {isEditMode ? (
                   <>
                     <Check className="h-4 w-4 text-white" />
-                    <span className="hidden text-xs font-medium text-white md:inline">
+                    <span className="hidden text-sm font-medium text-white md:inline">
                       {t('dashboard.roomNav.doneEditing')}
                     </span>
                   </>
                 ) : (
                   <>
                     <Edit3 className={`h-4 w-4 ${textSecondary}`} />
-                    <span className={`hidden text-xs font-medium md:inline ${textSecondary}`}>
+                    <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
                       {t('dashboard.roomNav.customize')}
                     </span>
                   </>
@@ -721,7 +721,7 @@ const RoomNavMenuButton = memo(
       return (
         <InteractivePill ref={ref} intent="action" size="small" className={className} {...props}>
           <Icon className={`h-4 w-4 ${textSecondary}`} />
-          <span className={`hidden text-xs font-medium md:inline ${textSecondary}`}>{label}</span>
+          <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>{label}</span>
           <ChevronDown className={`h-3.5 w-3.5 ${textSecondary}`} />
         </InteractivePill>
       );
@@ -743,7 +743,7 @@ const RoomNavItem = memo(function RoomNavItem({
       onClick={() => onRoomChange(room)}
       size="small"
       variant="ghost"
-      className={`room-nav-item rounded-[22px] px-3 py-2 text-xs font-medium whitespace-nowrap shrink-0 transition-colors md:px-3.5 md:py-2 md:text-sm ${
+      className={`room-nav-item rounded-[22px] px-3 py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-colors md:px-3.5 md:py-2 ${
         activeRoom === room ? activeClassName : inactiveClassName
       }`}
     >

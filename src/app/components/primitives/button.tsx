@@ -112,7 +112,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         iconOnly ? '' : navetSpacingTokens.inline.sm,
         iconOnly ? navetRadiusTokens.pill : navetRadiusTokens.action,
         size === 'compact'
-          ? 'text-xs font-medium'
+          ? navetTypographyTokens.control
           : size === 'small'
             ? navetTypographyTokens.control
             : navetTypographyTokens.control,

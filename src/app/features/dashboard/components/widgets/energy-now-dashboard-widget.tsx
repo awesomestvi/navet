@@ -273,7 +273,7 @@ export function EnergyNowSettingsDialog({
                     {groupedOptions.map((group) => (
                       <div key={group.key} className="space-y-2">
                         <div
-                          className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+                          className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
                         >
                           {group.label}
                         </div>
@@ -509,7 +509,7 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
 
           <div className="mt-auto">
             <div
-              className={`mt-3 flex items-center justify-between gap-2 text-[11px] ${baseSurface.textMuted}`}
+              className={`mt-3 flex items-center justify-between gap-2 text-xs ${baseSurface.textMuted}`}
             >
               {trendTicks.map((point, index) => (
                 <div
@@ -555,7 +555,7 @@ function EnergyNowStatusWidget({ message }: { message: string }) {
         <div className="relative z-10 flex items-start justify-between gap-3">
           <div>
             <div
-              className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+              className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
             >
               {t('energy.widgets.now.eyebrow')}
             </div>

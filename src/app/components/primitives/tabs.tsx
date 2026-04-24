@@ -148,7 +148,7 @@ export const TabTrigger = forwardRef<HTMLButtonElement, TabTriggerProps>(functio
     size === 'small'
       ? 'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-3.5'
       : size === 'compact'
-        ? 'inline-flex min-h-8 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-xs font-medium transition-[background-color,border-color,box-shadow,color] md:min-h-8 md:px-4'
+        ? 'inline-flex min-h-8 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:min-h-8 md:px-4'
         : 'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,box-shadow,color] md:px-4';
 
   return (

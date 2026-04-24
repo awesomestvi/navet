@@ -238,7 +238,7 @@ export function MediaLargeView({
                 }}
               />
             </div>
-            <div className={`mt-1.5 flex items-center justify-between text-[11px] ${subtitleTone}`}>
+            <div className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}>
               <span>{elapsedLabel}</span>
               <span>{durationLabel}</span>
             </div>

@@ -44,7 +44,6 @@ interface RSSFeedCardViewProps {
   hasSelectedProviders: boolean;
   onOpenSettings: () => void;
   onRefetch: () => void;
-  lastUpdatedLabel: string;
 }
 
 export function RSSFeedCardView({
@@ -69,7 +68,6 @@ export function RSSFeedCardView({
   hasSelectedProviders,
   onOpenSettings,
   onRefetch,
-  lastUpdatedLabel,
 }: RSSFeedCardViewProps) {
   const { t } = useI18n();
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -184,7 +182,7 @@ export function RSSFeedCardView({
                   <InteractivePill
                     active={activeProviderId === 'all'}
                     size="compact"
-                    className={`shrink-0 text-[11px] ${rssSurface.surface.border}`}
+                    className={`shrink-0 text-xs ${rssSurface.surface.border}`}
                     style={getRSSControlPillStyle({
                       accentColor: controlAccentColor,
                       isActive: activeProviderId === 'all',
@@ -204,7 +202,7 @@ export function RSSFeedCardView({
                       key={provider.id}
                       active={activeProviderId === provider.id}
                       size="compact"
-                      className={`shrink-0 text-[11px] ${rssSurface.surface.border}`}
+                      className={`shrink-0 text-xs ${rssSurface.surface.border}`}
                       style={getRSSControlPillStyle({
                         accentColor: controlAccentColor,
                         isActive: activeProviderId === provider.id,
@@ -291,12 +289,12 @@ export function RSSFeedCardView({
                       }}
                     >
                       <h3
-                        className="text-left text-[10px] font-semibold leading-[1.3] line-clamp-2"
+                        className="text-left text-xs font-semibold leading-[1.35] line-clamp-2"
                         style={{ color: rssSurface.textPrimaryColor }}
                       >
                         {item.title}
                       </h3>
-                      <div className="mt-0.5 flex items-center gap-1 text-[10px] leading-none">
+                      <div className="mt-0.5 flex items-center gap-1 text-xs leading-none">
                         <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
                         <span className={rssSurface.dotClassName}>•</span>
                         <span style={{ color: rssSurface.textSecondaryColor }}>{item.timeAgo}</span>
@@ -332,12 +330,12 @@ export function RSSFeedCardView({
                       }}
                     >
                       <h3
-                        className="mb-0.5 text-left text-[10px] font-semibold leading-[1.3] line-clamp-2 transition-colors"
+                        className="mb-0.5 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
                         style={{ color: rssSurface.textPrimaryColor }}
                       >
                         {item.title}
                       </h3>
-                      <div className="flex items-center gap-1 text-[10px] leading-none">
+                      <div className="flex items-center gap-1 text-xs leading-none">
                         <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
                         <span className={rssSurface.dotClassName}>•</span>
                         <span style={{ color: rssSurface.textSecondaryColor }}>{item.timeAgo}</span>
@@ -387,12 +385,12 @@ export function RSSFeedCardView({
                           )}
                           <div className="min-w-0 flex-1 text-left">
                             <h3
-                              className="mb-0.5 text-left text-[10px] font-semibold leading-[1.3] line-clamp-2 transition-colors"
+                              className="mb-0.5 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
                               style={{ color: rssSurface.textPrimaryColor }}
                             >
                               {item.title}
                             </h3>
-                            <div className="mb-0.5 flex items-center gap-1 text-[10px] leading-none">
+                            <div className="mb-0.5 flex items-center gap-1 text-xs leading-none">
                               <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
                               <span className={rssSurface.dotClassName}>•</span>
                               <span style={{ color: rssSurface.textSecondaryColor }}>
@@ -401,7 +399,7 @@ export function RSSFeedCardView({
                             </div>
                             {item.excerpt ? (
                               <p
-                                className={`text-left text-[10px] whitespace-normal wrap-break-word leading-[1.4] ${rssSurface.excerptClassName}`}
+                                className={`text-left text-xs whitespace-normal wrap-break-word leading-[1.45] ${rssSurface.excerptClassName}`}
                                 style={{ color: rssSurface.excerptColor }}
                               >
                                 {truncateExcerpt(item.excerpt)}
@@ -418,25 +416,6 @@ export function RSSFeedCardView({
                 </div>
               </div>
             )}
-
-            {!isSmall && !isMedium ? (
-              <div
-                className={`mt-2 flex items-center border-t pt-1.5 ${rssSurface.surface.border}`}
-              >
-                <div
-                  className="min-w-0 truncate text-[10px]"
-                  style={{ color: rssSurface.textSecondaryColor }}
-                >
-                  {t('rss.lastUpdated')}
-                  <span
-                    className="ml-1.5 text-[10px] font-medium"
-                    style={{ color: rssSurface.textPrimaryColor }}
-                  >
-                    {lastUpdatedLabel}
-                  </span>
-                </div>
-              </div>
-            ) : null}
           </>
         )}
       </div>
@@ -538,14 +517,6 @@ function RSSFeedLoadingSkeleton({
           </div>
         )}
       </div>
-
-      {!isSmall && !isMedium ? (
-        <div
-          className={`mt-2 flex items-center border-t pt-1.5 ${theme === 'light' ? 'border-slate-300/80' : theme === 'glass' ? 'border-white/12' : 'border-white/8'}`}
-        >
-          <div className="h-2.5 w-28 rounded" style={blockStyle} />
-        </div>
-      ) : null}
     </div>
   );
 }

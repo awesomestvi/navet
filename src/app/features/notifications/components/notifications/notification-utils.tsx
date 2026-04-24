@@ -187,7 +187,7 @@ export function renderNotificationMarkdown(
                 const headingClassName =
                   hashes.length <= 2
                     ? 'text-sm font-semibold text-inherit'
-                    : 'text-[13px] font-semibold text-inherit';
+                    : 'text-sm font-semibold text-inherit';
 
                 return (
                   <p className={headingClassName}>

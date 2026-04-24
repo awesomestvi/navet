@@ -350,7 +350,7 @@ export const MapWidget = memo(function MapWidget({
 
         {isSmallCard ? (
           <div
-            className={`pointer-events-auto absolute bottom-2 left-2 z-[450] max-w-24 rounded-[12px] rounded-bl-[20px] border px-1.5 py-1 text-[8px] leading-[1.05] ${attributionClassName}`}
+            className={`pointer-events-auto absolute bottom-2 left-2 z-[450] max-w-28 rounded-[12px] rounded-bl-[20px] border px-2 py-1.5 text-xs leading-tight ${attributionClassName}`}
           >
             <a
               href="https://www.openstreetmap.org/copyright"

@@ -181,7 +181,7 @@ export function LocalizationStep({
             <p className={`text-sm font-semibold ${textColor}`}>
               {t('settings.localization.language.title')}
             </p>
-            <p className={`mt-1 text-xs leading-relaxed ${mutedColor}`}>
+            <p className={`mt-1 text-sm leading-relaxed ${mutedColor}`}>
               {t('settings.localization.language.description')}
             </p>
           </div>
@@ -228,7 +228,7 @@ export function LocalizationStep({
             <p className={`text-sm font-semibold ${textColor}`}>
               {t('settings.localization.timeFormat.title')}
             </p>
-            <p className={`mt-1 text-xs leading-relaxed ${mutedColor}`}>
+            <p className={`mt-1 text-sm leading-relaxed ${mutedColor}`}>
               {t('settings.localization.timeFormat.description')}
             </p>
           </div>
@@ -282,7 +282,7 @@ export function LocalizationStep({
             <p className={`text-sm font-semibold ${textColor}`}>
               {t('settings.localization.temperatureUnit.title')}
             </p>
-            <p className={`mt-1 text-xs leading-relaxed ${mutedColor}`}>
+            <p className={`mt-1 text-sm leading-relaxed ${mutedColor}`}>
               {t('settings.localization.temperatureUnit.description')}
             </p>
           </div>
@@ -388,7 +388,7 @@ export function ThemeStep({
       <section className={sectionCardClassName}>
         <div>
           <p className={`text-sm font-semibold ${textColor}`}>{t('themePicker.themeMode')}</p>
-          <p className={`mt-0.5 text-xs leading-relaxed ${mutedColor}`}>
+          <p className={`mt-0.5 text-sm leading-relaxed ${mutedColor}`}>
             {t('themePicker.manualThemeEnabledHelp')}
           </p>
         </div>
@@ -427,7 +427,7 @@ export function ThemeStep({
           })}
         </div>
 
-        <p className={`mt-3 text-xs leading-relaxed ${mutedColor}`}>
+        <p className={`mt-3 text-sm leading-relaxed ${mutedColor}`}>
           {t(
             THEME_OPTIONS.find((option) => option.value === selectedTheme)?.descriptionKey ??
               'themeOption.dark.description'
@@ -438,7 +438,7 @@ export function ThemeStep({
       <section className={sectionCardClassName}>
         <div>
           <p className={`text-sm font-semibold ${textColor}`}>{t('themePicker.accentColor')}</p>
-          <p className={`mt-0.5 text-xs leading-relaxed ${mutedColor}`}>
+          <p className={`mt-0.5 text-sm leading-relaxed ${mutedColor}`}>
             {t('themePicker.accentHelp')}
           </p>
         </div>

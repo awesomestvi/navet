@@ -260,7 +260,7 @@ export function MediaSmallView({
             />
             <MediaMarqueeText
               text={artist}
-              className={`mt-0.5 text-[10px] ${subtitleTone}`}
+              className={`mt-0.5 text-xs ${subtitleTone}`}
               threshold={24}
               style={{ color: textTokens.subtitleColor }}
             />

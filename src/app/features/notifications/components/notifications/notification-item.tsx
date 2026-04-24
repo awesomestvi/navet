@@ -105,7 +105,7 @@ export function NotificationItem({
           notification.isBusy &&
           !notification.requiresRestart ? (
             <div className="mt-3 space-y-2.5">
-              <div className={`text-xs font-medium ${surface.textSecondary}`}>
+              <div className={`text-sm font-medium ${surface.textSecondary}`}>
                 {notification.statusLabel}
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">

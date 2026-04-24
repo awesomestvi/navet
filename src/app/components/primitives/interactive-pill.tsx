@@ -57,9 +57,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
               ? 'inline-flex min-h-9 items-center justify-center gap-2 px-3.5 py-2 transition-all disabled:cursor-not-allowed disabled:opacity-50'
               : 'inline-flex h-10 items-center justify-center gap-1.5 px-4 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.pill,
-          size === 'compact' || size === 'small'
-            ? 'text-xs font-medium'
-            : navetTypographyTokens.control,
+          navetTypographyTokens.control,
           getThemeFocusRingClassName(theme),
           pillStyles.className,
           className

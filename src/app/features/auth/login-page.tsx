@@ -196,13 +196,13 @@ export function LoginPage() {
 
           {/* Help Text */}
           <div className={`mt-6 pt-6 border-t ${border}`}>
-            <p className={`text-xs ${textMuted} text-center leading-relaxed`}>{t('login.help')}</p>
+            <p className={`text-sm ${textMuted} text-center leading-relaxed`}>{t('login.help')}</p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="mt-6 text-center">
-          <p className={`text-xs ${textMuted}`}>{t('login.footer')}</p>
+          <p className={`text-sm ${textMuted}`}>{t('login.footer')}</p>
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
             <span>{t('settings.dashboard.entityVisibility.restartOnboarding')}</span>
           </button>
         </div>
-        <p className={`mt-3 text-xs leading-relaxed ${styles.subtleColor}`}>
+        <p className={`mt-3 text-sm leading-relaxed ${styles.subtleColor}`}>
           {t('settings.dashboard.entityVisibility.hiddenSummary', {
             count: hiddenEntityIds.length,
           })}

@@ -305,7 +305,7 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
                 {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
               </span>
               {isConfigured && data.entityId ? (
-                <span className={`max-w-48 truncate text-[11px] ${surface.textMuted}`}>
+                <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
                   {data.entityId}
                 </span>
               ) : null}

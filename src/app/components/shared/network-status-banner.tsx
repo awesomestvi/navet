@@ -73,7 +73,7 @@ export function NetworkStatusBanner({
         </div>
         <div className="min-w-0">
           <p className={`text-sm font-semibold ${surface.textPrimary}`}>{title}</p>
-          <p className={`mt-1 text-xs leading-relaxed ${surface.textSecondary}`}>{description}</p>
+          <p className={`mt-1 text-sm leading-relaxed ${surface.textSecondary}`}>{description}</p>
         </div>
       </div>
     </div>

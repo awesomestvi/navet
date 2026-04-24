@@ -65,7 +65,7 @@ export function ThemeAppearancePicker({
             <p className={`text-sm font-semibold ${pickerTokens.textClassName}`}>
               {t('settings.appearance.systemTheme.title')}
             </p>
-            <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+            <p className={`mt-1 text-sm leading-relaxed ${pickerTokens.mutedClassName}`}>
               {t('themePicker.systemModeHelp')}
             </p>
 
@@ -120,7 +120,7 @@ export function ThemeAppearancePicker({
               <p className={`text-sm font-semibold ${pickerTokens.textClassName}`}>
                 {t('themePicker.themeMode')}
               </p>
-              <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+              <p className={`mt-1 text-sm leading-relaxed ${pickerTokens.mutedClassName}`}>
                 {manualThemeLocked
                   ? t('themePicker.manualThemeDisabledHelp')
                   : t('themePicker.manualThemeEnabledHelp')}
@@ -158,7 +158,7 @@ export function ThemeAppearancePicker({
             })}
           </div>
 
-          <p className={`mt-3 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+          <p className={`mt-3 text-sm leading-relaxed ${pickerTokens.mutedClassName}`}>
             {t(
               themeOptions.find((option) => option.value === selectedTheme)?.descriptionKey ??
                 'themeOption.dark.description'
@@ -170,7 +170,7 @@ export function ThemeAppearancePicker({
           <p className={`text-sm font-semibold ${pickerTokens.textClassName}`}>
             {t('themePicker.accentColor')}
           </p>
-          <p className={`mt-1 text-xs leading-relaxed ${pickerTokens.mutedClassName}`}>
+          <p className={`mt-1 text-sm leading-relaxed ${pickerTokens.mutedClassName}`}>
             {t('themePicker.accentHelp')}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2.5">

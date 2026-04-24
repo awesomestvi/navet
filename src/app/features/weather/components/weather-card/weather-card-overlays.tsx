@@ -748,8 +748,8 @@ export function WeatherBackground({
       light: 'bg-[linear-gradient(120deg,#ea6d61_0%,#ef8758_48%,#f4a54d_100%)]',
       glass:
         'bg-[linear-gradient(120deg,rgba(234,109,97,0.42)_0%,rgba(239,135,88,0.34)_48%,rgba(244,165,77,0.28)_100%)]',
-      dark: 'bg-[linear-gradient(120deg,#7a3c36_0%,#8b4b36_48%,#9a6330_100%)]',
-      black: 'bg-[linear-gradient(120deg,#341916_0%,#40211b_48%,#4d2f17_100%)]',
+      dark: 'bg-[linear-gradient(120deg,#9f462e_0%,#bc6429_48%,#dd8f27_100%)]',
+      black: 'bg-[linear-gradient(120deg,#532116_0%,#723115_48%,#a35218_100%)]',
     });
     const sunClassName = pickThemeValue(theme, {
       light: isLarge ? 'right-[-8%] top-[-10%] h-56 w-56' : 'right-[-18%] top-[-28%] h-40 w-40',
@@ -757,30 +757,44 @@ export function WeatherBackground({
         ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-70'
         : 'right-[-18%] top-[-28%] h-40 w-40 opacity-70',
       dark: isLarge
+        ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-84'
+        : 'right-[-18%] top-[-28%] h-40 w-40 opacity-84',
+      black: isLarge
         ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-72'
         : 'right-[-18%] top-[-28%] h-40 w-40 opacity-72',
-      black: isLarge
-        ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-58'
-        : 'right-[-18%] top-[-28%] h-40 w-40 opacity-58',
     });
+    const sunnyThemeSurfaceClassName =
+      theme === 'glass'
+        ? themeSurfaceClassName
+        : theme === 'black'
+          ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012)_28%,rgba(0,0,0,0.08)_100%)]'
+          : theme === 'dark'
+            ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015)_28%,rgba(2,6,23,0.04)_100%)]'
+            : themeSurfaceClassName;
+    const sunnyDarkThemeScrim =
+      theme === 'black' ? (
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.18)_100%)]" />
+      ) : theme === 'dark' ? (
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.05),rgba(2,6,23,0.14)_100%)]" />
+      ) : null;
     return (
       <>
         <div className={`absolute inset-0 ${baseGradient}`} />
-        <div className={`absolute rounded-full bg-[#ffd364]/90 ${sunClassName}`} />
+        <div className={`absolute rounded-full bg-[#ffd364]/95 ${sunClassName}`} />
         <div
-          className={`absolute rounded-full border border-[#ffd975]/38 ${
+          className={`absolute rounded-full border border-[#ffd975]/48 ${
             isLarge ? 'right-[-2%] top-[-4%] h-44 w-44' : 'right-[-10%] top-[-18%] h-32 w-32'
           }`}
         />
         <div
-          className={`absolute rounded-full border border-[#ffd975]/22 ${
+          className={`absolute rounded-full border border-[#ffd975]/28 ${
             isLarge ? 'right-[-12%] top-[-14%] h-64 w-64' : 'right-[-22%] top-[-34%] h-48 w-48'
           }`}
         />
-        {themeSurfaceClassName ? (
-          <div className={`absolute inset-0 ${themeSurfaceClassName}`} />
+        {sunnyThemeSurfaceClassName ? (
+          <div className={`absolute inset-0 ${sunnyThemeSurfaceClassName}`} />
         ) : null}
-        {darkThemeScrim}
+        {sunnyDarkThemeScrim}
       </>
     );
   }
