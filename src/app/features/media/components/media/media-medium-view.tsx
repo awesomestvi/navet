@@ -79,6 +79,10 @@ export function MediaMediumView({
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
   const subduedFallback = !artwork;
+  const fallbackTitleColor =
+    theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
+  const fallbackSubtitleColor =
+    theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
     borderColor: withAlpha(palette.highlight, 0.14),
@@ -145,13 +149,13 @@ export function MediaMediumView({
               <MediaMarqueeText
                 text={title}
                 className={`text-sm font-semibold ${iconTone}`}
-                style={{ color: textTokens.titleColor }}
+                style={{ color: fallbackTitleColor }}
               />
               <MediaMarqueeText
                 text={artist}
                 className={`mt-0.5 text-xs ${subtitleTone}`}
                 threshold={24}
-                style={{ color: textTokens.subtitleColor }}
+                style={{ color: fallbackSubtitleColor }}
               />
             </div>
 
@@ -201,7 +205,7 @@ export function MediaMediumView({
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-1.5">
             <RoundControlButton
               theme={theme}
               size="small"

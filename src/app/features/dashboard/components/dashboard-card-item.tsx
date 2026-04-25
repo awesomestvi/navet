@@ -180,7 +180,7 @@ function getAllowedSizes(
     case 'persons':
       return ['tiny', 'extra-small', 'small'];
     case 'locks':
-      return ['tiny', 'extra-small', 'small'];
+      return ['extra-small', 'small'];
     case 'scenes':
       return ['tiny', 'extra-small', 'small', 'medium'];
     default:

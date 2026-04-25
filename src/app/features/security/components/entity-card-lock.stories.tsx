@@ -52,7 +52,7 @@ const meta = {
     },
     size: {
       control: 'inline-radio',
-      options: ['tiny', 'extra-small', 'small'],
+      options: ['extra-small', 'small'],
     },
   },
   args: {
@@ -83,32 +83,24 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   args: {
-    size: 'tiny',
+    size: 'extra-small',
     initialState: true,
     id: 'lock.front_door',
     name: 'Front Door',
   },
   play: async ({ canvas, userEvent, step }) => {
-    const actionButton = canvas.getByRole('button', { name: /unlock/i });
+    const actionButton = canvas.getByRole('button', { name: /slide to unlock/i });
 
     await step('shows the lock as locked initially', async () => {
       await expect(canvas.getByText(/locked/i)).toBeInTheDocument();
     });
 
     await step('toggles to unlocked when pressed', async () => {
-      await userEvent.click(actionButton);
+      actionButton.focus();
+      await userEvent.keyboard('[Space]');
       await expect(canvas.getByText(/unlocked/i)).toBeInTheDocument();
-      await expect(canvas.getByRole('button', { name: /lock/i })).toBeInTheDocument();
+      await expect(canvas.getByRole('button', { name: /slide to lock/i })).toBeInTheDocument();
     });
-  },
-};
-
-export const Tiny: Story = {
-  args: {
-    size: 'tiny',
-    initialState: true,
-    id: 'lock.front_door',
-    name: 'Front Door',
   },
 };
 
@@ -125,6 +117,24 @@ export const Small: Story = {
   args: {
     size: 'small',
     initialState: true,
+    id: 'lock.front_door',
+    name: 'Front Door',
+  },
+};
+
+export const ExtraSmallUnlocked: Story = {
+  args: {
+    size: 'extra-small',
+    initialState: false,
+    id: 'lock.front_door',
+    name: 'Front Door',
+  },
+};
+
+export const SmallUnlocked: Story = {
+  args: {
+    size: 'small',
+    initialState: false,
     id: 'lock.front_door',
     name: 'Front Door',
   },

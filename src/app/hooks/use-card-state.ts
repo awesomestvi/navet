@@ -5,7 +5,7 @@ import type { DeviceCollection } from '../types/device.types';
 import { storage } from '../utils/storage';
 
 const CALENDAR_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
-const LOCK_ALLOWED_SIZES: CardSize[] = ['tiny', 'extra-small', 'small'];
+const LOCK_ALLOWED_SIZES: CardSize[] = ['extra-small', 'small'];
 
 function normalizeCardSize(id: string, size: CardSize, devices: DeviceCollection): CardSize {
   const isCalendarCard = devices.calendars.some((device) => device.id === id);

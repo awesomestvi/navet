@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, MoreHorizontal, Settings2, Shuffle } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RoundControlButton } from '@/app/components/primitives';
+import { BaseCard, RoundControlButton } from '@/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import {
   normalizeCustomCardTint,
@@ -190,13 +190,17 @@ export function PhotoFrameWidget({
   }, [currentIndex, photoCount]);
 
   return (
-    <div
-      className="relative flex h-full flex-col overflow-hidden rounded-[28px]"
+    <BaseCard
+      size={size}
+      fullBleed
       style={{
         ...surface.panelStyle,
         background: 'transparent',
         boxShadow: 'none',
       }}
+      frameClassName="overflow-hidden"
+      disableDefaultSheen
+      contentClassName="h-full"
     >
       <div className="relative z-[2] flex h-full flex-col">
         {hasMenuActions ? (
@@ -325,6 +329,6 @@ export function PhotoFrameWidget({
           />
         ) : null}
       </div>
-    </div>
+    </BaseCard>
   );
 }

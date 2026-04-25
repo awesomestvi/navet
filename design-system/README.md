@@ -48,9 +48,11 @@ Examples:
 - buttons
 - inputs
 - selectors
+- card shells
 - dialog shells
 - pills
 - card header parts
+- compact body text
 - loading and status elements
 
 Use `primitives/` when:

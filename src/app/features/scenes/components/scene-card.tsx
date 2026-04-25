@@ -1,5 +1,6 @@
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { memo, useState } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
@@ -65,18 +66,25 @@ export const SceneCard = memo(function SceneCard({
 
   if (isTiny) {
     return (
-      <div
-        className={`relative h-full w-full overflow-hidden rounded-[26px] px-3 py-2.5 transition-opacity ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow} ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+      <BaseCard
+        size="tiny"
+        className={`transition-opacity ${isEditMode || isActivating ? 'cursor-default opacity-75' : 'cursor-pointer'}`}
+        disableDefaultSheen
+        overlay={
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 18% 12%, ${accentColor}28, transparent 34%), linear-gradient(155deg, transparent 24%, ${accentColor}14 100%)`,
+              }}
+            />
+            {cardShell.sheenOverlayClassName ? (
+              <div className={cardShell.sheenOverlayClassName} />
+            ) : null}
+          </>
+        }
+        contentClassName="h-full"
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(circle at 18% 12%, ${accentColor}28, transparent 34%), linear-gradient(155deg, transparent 24%, ${accentColor}14 100%)`,
-          }}
-        />
-        {cardShell.sheenOverlayClassName ? (
-          <div className={cardShell.sheenOverlayClassName} />
-        ) : null}
         {isActivating ? (
           <TinyCardWatermark
             IconComponent={Loader2}
@@ -114,23 +122,29 @@ export const SceneCard = memo(function SceneCard({
           disabled={isEditMode || isActivating}
           aria-label={isActivating ? t('scene.activating') : t('scene.activate')}
         />
-      </div>
+      </BaseCard>
     );
   }
 
   return (
-    <div
-      className={`relative h-full overflow-hidden rounded-3xl p-3 ${cardShell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`}
+    <BaseCard
+      size={size}
+      disableDefaultSheen
+      overlay={
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(circle at 14% 10%, ${accentColor}28, transparent 36%), linear-gradient(155deg, transparent 28%, ${accentColor}14 100%)`,
+            }}
+          />
+          {cardShell.sheenOverlayClassName ? (
+            <div className={cardShell.sheenOverlayClassName} />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
     >
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(circle at 14% 10%, ${accentColor}28, transparent 36%), linear-gradient(155deg, transparent 28%, ${accentColor}14 100%)`,
-        }}
-      />
-
-      {cardShell.sheenOverlayClassName ? <div className={cardShell.sheenOverlayClassName} /> : null}
-
       <div className="relative flex h-full flex-col">
         <EntityCardHeader
           title={name}
@@ -178,6 +192,6 @@ export const SceneCard = memo(function SceneCard({
           </div>
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 });

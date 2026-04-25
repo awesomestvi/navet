@@ -49,6 +49,7 @@ export const navetSizeTokens = {
 
 export const navetTypographyTokens = {
   body: 'text-sm leading-6',
+  bodyCompact: 'text-sm leading-[21px]',
   helper: 'text-sm leading-5',
   compactHelper: 'text-xs leading-5',
   label: 'text-sm font-medium',

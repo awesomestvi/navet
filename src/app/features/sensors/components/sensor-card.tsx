@@ -1,5 +1,6 @@
 import { Gauge, TrendingDown, TrendingUp } from 'lucide-react';
 import { memo } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
@@ -48,7 +49,6 @@ export const SensorCard = memo(function SensorCard({
 
   // Size-specific styling
   const isSmall = isCompactCardSize(size);
-  const padding = 'p-3';
 
   const IconComponent =
     icon === 'trend-up' ? TrendingUp : icon === 'trend-down' ? TrendingDown : Gauge;
@@ -59,13 +59,20 @@ export const SensorCard = memo(function SensorCard({
   const accentColor =
     theme === 'light' ? 'text-teal-700' : isGlass ? 'text-teal-200' : 'text-teal-400';
   return (
-    <div
-      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} overflow-hidden ${shell.containerClassName}`}
+    <BaseCard
+      size={size}
+      frameClassName={`${cardShell.rootFrameClassName} ${shell.containerClassName}`}
+      disableDefaultSheen
+      overlay={
+        <>
+          <div className={`absolute inset-0 ${shell.glowClassName}`} />
+          {shell.overlayClassName ? (
+            <div className={`absolute inset-0 ${shell.overlayClassName}`} />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
     >
-      <div className={`absolute inset-0 ${shell.glowClassName}`}></div>
-
-      {shell.overlayClassName && <div className={`absolute inset-0 ${shell.overlayClassName}`} />}
-
       <div className="relative h-full flex flex-col">
         <EntityCardHeader
           title={name}
@@ -96,6 +103,6 @@ export const SensorCard = memo(function SensorCard({
           </div>
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 });

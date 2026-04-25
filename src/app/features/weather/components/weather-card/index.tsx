@@ -104,7 +104,7 @@ export const WeatherCard = memo(function WeatherCard({
   return (
     <>
       <CardWrapper
-        className={`${cardShell.backdropClassName} ${weatherShellClassName} p-3 ${!isEditMode ? 'cursor-pointer' : ''}`}
+        className={`${cardShell.backdropClassName} ${weatherShellClassName} ${!isEditMode ? 'cursor-pointer' : ''}`}
         style={weatherTintStyle}
         lightOverlayClassName={weatherOverlayClassName || undefined}
         interactionProps={interaction.cardProps}
@@ -139,7 +139,7 @@ export const WeatherCard = memo(function WeatherCard({
           />
         ) : null}
 
-        <div className="relative z-2 flex h-full flex-col">
+        <div className="relative z-2 flex h-full flex-col p-3">
           <div
             className={`flex items-start justify-between gap-3 ${isMedium || isSmall ? 'mb-2' : 'mb-3'}`}
           >

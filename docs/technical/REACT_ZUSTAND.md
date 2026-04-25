@@ -92,8 +92,8 @@ inline sync/action/display blocks.
 
 When adding or revising dense card variants:
 
-- Reuse shared presentational primitives such as the entity title block and tiny action-card shell
-- Prefer passing feature data into a shared compact shell over building new one-off tiny layouts
+- Reuse shared presentational primitives such as the entity title block and shared `BaseCard` shell
+- Prefer passing feature data into a shared card shell over building new one-off compact layouts
 - Keep title/subtitle ordering explicit through the shared title block (`title-first` vs `eyebrow-first`) so compact cards stay visually consistent across domains
 
 This keeps tiny, extra-small, and other compressed card variants aligned while still letting

@@ -1,4 +1,5 @@
 import { lazy, memo, Suspense } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, getCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
@@ -139,7 +140,6 @@ export const MediaCard = memo(function MediaCard({
   const isLarge = mediaSize === 'large';
   const isTv = deviceClass?.toLowerCase() === 'tv';
   const tvRemoteAvailable = simulateTvRemote === true ? true : remoteAvailable;
-  const padding = 'p-3';
   const isLight = theme === 'light';
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
@@ -202,17 +202,23 @@ export const MediaCard = memo(function MediaCard({
 
   return (
     <>
-      <div
+      <BaseCard
+        size={size}
         {...interactiveShellProps}
-        className={`relative h-full rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName} overflow-hidden ${
-          isEditMode ? '' : 'cursor-pointer'
-        }`}
+        interactive={!isEditMode}
+        className={`${isEditMode ? '' : 'cursor-pointer'}`}
+        frameClassName={`${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName}`}
+        disableDefaultSheen
+        overlay={
+          <>
+            {shellOverlayClassName ? (
+              <div className={`absolute inset-0 ${shellOverlayClassName}`} />
+            ) : null}
+            {tvOnGlowClassName ? <div className={`absolute inset-0 ${tvOnGlowClassName}`} /> : null}
+          </>
+        }
+        contentClassName="h-full"
       >
-        {shellOverlayClassName && (
-          <div className={`absolute inset-0 ${shellOverlayClassName}`}></div>
-        )}
-        {tvOnGlowClassName && <div className={`absolute inset-0 ${tvOnGlowClassName}`}></div>}
-
         <div className="relative h-full flex flex-col">
           {isTv ? (
             <MediaTvView
@@ -333,7 +339,7 @@ export const MediaCard = memo(function MediaCard({
             />
           ) : null}
         </div>
-      </div>
+      </BaseCard>
 
       {isOpen && (
         <Suspense fallback={null}>

@@ -2,6 +2,7 @@ import { Search, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
+  BaseCard,
   Button,
   customCardDialogShellProps,
   DialogShell,
@@ -249,79 +250,80 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   };
 
   const isConfigured = Boolean(data.service);
-  const frameStyle = {
-    borderColor:
-      typeof surface.panelStyle?.borderColor === 'string'
-        ? surface.panelStyle.borderColor
-        : undefined,
-    boxShadow: surface.panelStyle?.boxShadow,
-  };
 
   return (
-    <div className="relative h-full overflow-hidden rounded-[28px]" style={frameStyle}>
-      <div className="absolute inset-0 overflow-hidden rounded-[28px]" style={surface.panelStyle}>
-        {surface.glowStyle ? (
-          <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
-        ) : null}
-        {surface.overlayClassName ? (
-          <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
-        ) : null}
-
-        <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
-          {(isEditMode || !isConfigured) && onUpdate && (
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(true)}
-              className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
-              aria-label={t('widgets.button.configure')}
-            >
-              <Settings2 className="h-4 w-4" />
-            </button>
-          )}
-
+    <BaseCard
+      size="medium"
+      fullBleed
+      style={surface.panelStyle}
+      frameClassName="overflow-hidden"
+      disableDefaultSheen
+      overlay={
+        <>
+          {surface.glowStyle ? (
+            <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+          ) : null}
+          {surface.overlayClassName ? (
+            <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
+    >
+      <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
+        {(isEditMode || !isConfigured) && onUpdate && (
           <button
             type="button"
-            onClick={handleTap}
-            disabled={isEditMode || !isConfigured}
-            aria-label={
-              data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))
-            }
-            className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
-            style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
+            onClick={() => setIsSettingsOpen(true)}
+            className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
+            aria-label={t('widgets.button.configure')}
           >
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
-              style={{
-                backgroundColor: isConfigured ? `${accentHex}22` : surface.subtleFill,
-                color: isConfigured ? accentHex : undefined,
-              }}
-            >
-              <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span
-                className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
-              >
-                {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
-              </span>
-              {isConfigured && data.entityId ? (
-                <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
-                  {data.entityId}
-                </span>
-              ) : null}
-            </div>
+            <Settings2 className="h-4 w-4" />
           </button>
+        )}
 
-          {onUpdate && (
-            <ButtonSettingsDialog
-              isOpen={isSettingsOpen}
-              onOpenChange={setIsSettingsOpen}
-              data={data}
-              onSave={onUpdate}
-            />
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={handleTap}
+          disabled={isEditMode || !isConfigured}
+          aria-label={
+            data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))
+          }
+          className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
+          style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
+        >
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+            style={{
+              backgroundColor: isConfigured ? `${accentHex}22` : surface.subtleFill,
+              color: isConfigured ? accentHex : undefined,
+            }}
+          >
+            <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <span
+              className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
+            >
+              {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
+            </span>
+            {isConfigured && data.entityId ? (
+              <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
+                {data.entityId}
+              </span>
+            ) : null}
+          </div>
+        </button>
+
+        {onUpdate && (
+          <ButtonSettingsDialog
+            isOpen={isSettingsOpen}
+            onOpenChange={setIsSettingsOpen}
+            data={data}
+            onSave={onUpdate}
+          />
+        )}
       </div>
-    </div>
+    </BaseCard>
   );
 }

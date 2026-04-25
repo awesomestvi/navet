@@ -1,25 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import { EntityCardTitleBlock } from './entity-card-title-block';
+import { BodyText } from './body-text';
 
 const meta = {
-  title: 'Components/Primitives/Cards/Entity Card Title Block',
-  component: EntityCardTitleBlock,
+  title: 'Components/Primitives/Body Text',
+  component: BodyText,
   tags: ['autodocs'],
   args: {
-    title: 'Kitchen scene',
-    subtitle: 'Living room',
-    layout: 'title-first',
+    children: 'Compact supporting copy for cards, dialogs, and settings rows.',
+    tone: 'default',
   },
   parameters: {
     docs: {
       description: {
         component:
-          'Shared title-and-subtitle block used in compact cards when full header chrome is not needed.',
+          'Shared body-text primitive for compact supporting copy with theme-aware tone handling.',
       },
     },
   },
-} satisfies Meta<typeof EntityCardTitleBlock>;
+} satisfies Meta<typeof BodyText>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -38,12 +37,11 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const TitleFirst: Story = {};
-
-export const EyebrowFirst: Story = {
-  args: {
-    layout: 'eyebrow-first',
-  },
+export const Default: Story = {};
+export const Muted: Story = { args: { tone: 'muted' } };
+export const Subtle: Story = { args: { tone: 'subtle' } };
+export const Danger: Story = {
+  args: { tone: 'danger', children: 'Connection failed. Check your Home Assistant URL.' },
 };
 
 export const Docs: Story = {

@@ -44,14 +44,14 @@ function FramedEntityCardHeader(args: {
 }
 
 const meta = {
-  title: 'Components/Primitives/Cards/Entity Card Header',
+  title: 'Components/Primitives/Cards/Entity/Header',
   component: FramedEntityCardHeader,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Composable entity-card header pattern combining leading icon, title block, and trailing controls. This story highlights layout and size behavior.',
+          'Composable entity-card header pattern combining leading icon, title block, and trailing controls. This story reflects the shared 12px title, 11px subtitle, and 32px text-stack height baseline across card sizes.',
       },
     },
   },
@@ -59,7 +59,7 @@ const meta = {
     title: 'Living room strip',
     subtitle: 'Brightness 54%',
     size: 'medium',
-    layout: 'title-first',
+    layout: 'eyebrow-first',
     align: 'start',
   },
 } satisfies Meta<typeof FramedEntityCardHeader>;
@@ -80,7 +80,11 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    subtitle: 'Light',
+  },
+};
 
 export const EyebrowLayout: Story = {
   args: {

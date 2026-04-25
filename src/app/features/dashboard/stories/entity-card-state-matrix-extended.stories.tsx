@@ -298,7 +298,7 @@ function StateMatrixExtendedPage() {
           id="lock.front_door"
           name="Front Door"
           initialState
-          size="tiny"
+          size="extra-small"
           isEditMode={false}
         />
       </CardSection>

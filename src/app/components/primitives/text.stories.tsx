@@ -14,7 +14,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Status: proposed. Minimal body-text primitive for future cleanup of repeated helper and supporting copy.',
+          'Status: proposed. Narrow typography primitive for body copy, helper text, and compact supporting labels.',
       },
     },
   },

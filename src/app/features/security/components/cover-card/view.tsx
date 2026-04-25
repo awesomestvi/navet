@@ -3,6 +3,7 @@ import * as Slider from '@radix-ui/react-slider';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { CardActionRow } from '@/app/components/patterns/card-action-row';
+import { BaseCard } from '@/app/components/primitives';
 import { CardMetric } from '@/app/components/primitives/card-metric';
 import { CardMetricActionLayout } from '@/app/components/primitives/card-metric-action-layout';
 import { DialogShell } from '@/app/components/primitives/dialog-shell';
@@ -10,11 +11,7 @@ import { EntityCardHeader } from '@/app/components/primitives/entity-card-header
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
-import {
-  type CardSize,
-  getStandardCardPadding,
-  isCompactCardSize,
-} from '@/app/components/shared/card-size-selector';
+import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { DialogHeader } from '@/app/components/shared/device-editor';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
@@ -96,7 +93,6 @@ export function CoverCardView({
   const { t } = useI18n();
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const padding = getStandardCardPadding(size);
   const clampedPosition = Math.max(0, Math.min(100, position));
 
   const surface = getThemeSurfaceTokens(theme);
@@ -106,23 +102,25 @@ export function CoverCardView({
   const DeviceIcon = deviceClassConfig[deviceClass].icon;
 
   return (
-    <div
+    <BaseCard
+      size={size}
       {...cardProps}
-      className={`relative h-full bg-linear-to-br ${closedColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${clampedPosition > 50 ? openColors.border : closedColors.border} overflow-hidden ${securitySurface.containerShadowClassName}`}
+      frameClassName={`bg-linear-to-br ${closedColors.gradient} ${cardShell.rootFrameClassName} ${clampedPosition > 50 ? openColors.border : closedColors.border} ${securitySurface.containerShadowClassName}`}
+      disableDefaultSheen
+      overlay={
+        <>
+          <div
+            className={`absolute inset-x-0 bottom-0 bg-linear-to-br ${openColors.gradient} transition-[height] duration-100 ease-out`}
+            style={{ height: `${clampedPosition}%` }}
+          />
+          <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />
+          {securitySurface.overlayClassName ? (
+            <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
     >
-      {/* Open-state fill — grows from the bottom as position increases */}
-      <div
-        className={`absolute inset-x-0 bottom-0 bg-linear-to-br ${openColors.gradient} transition-[height] duration-100 ease-out`}
-        style={{ height: `${clampedPosition}%` }}
-      />
-
-      {/* Accent glow */}
-      <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />
-
-      {securitySurface.overlayClassName && (
-        <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-      )}
-
       <div className="relative flex h-full flex-col">
         {isSmall ? (
           <CompactCoverLayout
@@ -246,7 +244,7 @@ export function CoverCardView({
           </div>
         </DialogShell>
       ) : null}
-    </div>
+    </BaseCard>
   );
 }
 

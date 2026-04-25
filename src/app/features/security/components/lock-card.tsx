@@ -1,16 +1,14 @@
 import { CarFront, Lock, Unlock } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
-import { SlideAction } from '@/app/components/primitives';
-import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
 import {
-  type CardSize,
-  isExtraSmallCardSize,
-  isTinyCardSize,
-} from '@/app/components/shared/card-size-selector';
-import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
+  BaseCard,
+  EntityCardHeader,
+  EntityCardHeaderIcon,
+  SlideAction,
+} from '@/app/components/primitives';
+import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
-import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -25,11 +23,11 @@ interface LockCardProps {
   isEditMode?: boolean;
 }
 
-const LOCK_CARD_ALLOWED_SIZES: CardSize[] = ['tiny', 'extra-small', 'small'];
+const LOCK_CARD_ALLOWED_SIZES: CardSize[] = ['extra-small', 'small'];
 
-function resolveLockCardSize(size: CardSize): Extract<CardSize, 'tiny' | 'extra-small' | 'small'> {
+function resolveLockCardSize(size: CardSize): Extract<CardSize, 'extra-small' | 'small'> {
   if (LOCK_CARD_ALLOWED_SIZES.includes(size)) {
-    return size as Extract<CardSize, 'tiny' | 'extra-small' | 'small'>;
+    return size as Extract<CardSize, 'extra-small' | 'small'>;
   }
 
   return 'small';
@@ -83,13 +81,11 @@ export const LockCard = memo(function LockCard({
   const securitySurface = getSecurityCardSurfaceTokens(theme);
   const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
   const resolvedSize = resolveLockCardSize(size);
-  const isTiny = isTinyCardSize(resolvedSize);
   const isExtraSmall = isExtraSmallCardSize(resolvedSize);
   const isVehicleLock = isVehicleLockEntity(id, name, liveAttributes);
   const IconComponent = isVehicleLock ? CarFront : isLocked ? Lock : Unlock;
   const completionIcon = isVehicleLock ? CarFront : isLocked ? Unlock : Lock;
   const statusLabel = isLocked ? t('security.locked') : t('security.unlocked');
-  const nextActionLabel = isLocked ? t('security.action.unlock') : t('security.action.lock');
   const swipeLabel = isLocked ? t('security.slideToUnlock') : t('security.slideToLock');
   const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
   const stateIconClassName =
@@ -104,11 +100,6 @@ export const LockCard = memo(function LockCard({
         : isLocked
           ? 'text-green-300'
           : 'text-red-300';
-  const tinyTextTokens = getCardReadableTextTokens({
-    theme,
-    tone: isLocked ? 'primary' : 'red',
-    accentColor,
-  });
   const activeBaseColor = isLocked ? accentColor : '#ef4444';
   const blackActiveSurface =
     theme === 'black'
@@ -135,61 +126,6 @@ export const LockCard = memo(function LockCard({
     });
   };
 
-  if (isTiny) {
-    return (
-      <div
-        className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 ${cardShell.rootFrameClassName} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`}
-        style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
-      >
-        <div
-          className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
-        />
-        {isLocked && blackActiveSurface?.innerOverlayClassName ? (
-          <div
-            className={blackActiveSurface.innerOverlayClassName}
-            style={blackActiveSurface.innerOverlayStyle}
-          />
-        ) : null}
-        {securitySurface.overlayClassName ? (
-          <div className={`absolute inset-0 ${securitySurface.overlayClassName}`} />
-        ) : null}
-        {isLocked && blackActiveSurface?.shineOverlayClassName ? (
-          <div className={blackActiveSurface.shineOverlayClassName} />
-        ) : null}
-        <TinyCardWatermark
-          IconComponent={IconComponent}
-          color={tinyTextTokens.titleColor}
-          className={isPendingAction ? 'opacity-22' : 'opacity-14'}
-        />
-
-        <div className="relative flex h-full w-full flex-col justify-between text-left">
-          <div className="min-w-0 w-full pt-1">
-            <EntityCardTitleBlock
-              title={name}
-              subtitle={statusLabel}
-              layout="eyebrow-first"
-              titleClassName="mt-1 line-clamp-2 text-xs font-semibold leading-tight"
-              subtitleClassName={`truncate text-xs font-medium tracking-normal ${stateIconClassName}`}
-              titleStyle={{ color: tinyTextTokens.titleColor }}
-              subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
-            />
-          </div>
-          <span />
-        </div>
-
-        {!isEditMode && !isPendingAction ? (
-          <button
-            type="button"
-            className="absolute inset-0"
-            onClick={handleToggleLock}
-            aria-label={nextActionLabel}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
-  const compactRootClassName = `relative h-full overflow-hidden rounded-3xl bg-linear-to-br ${cardShell.rootFrameClassName} ${cardShell.backdropClassName} transition-all duration-500 ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName} ${isPendingAction ? 'opacity-80' : ''}`;
   const topNameClassName = `${securitySurface.primaryTextClassName} truncate font-semibold tracking-[-0.02em]`;
   const overlayTintClassName =
     theme === 'light' ? 'bg-white/22' : theme === 'glass' ? 'bg-white/[0.03]' : 'bg-black/10';
@@ -197,29 +133,62 @@ export const LockCard = memo(function LockCard({
     theme === 'light'
       ? 'border-black/8 bg-white/56 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.36)]'
       : 'border-white/10 bg-black/18 shadow-[0_18px_36px_-24px_rgba(0,0,0,0.66)]';
+  const headerTone = isLocked ? 'primary' : 'red';
+  const headerLeading = (
+    <EntityCardHeaderIcon
+      IconComponent={IconComponent}
+      isActive
+      size={resolvedSize}
+      tone={headerTone}
+      baseColor={activeBaseColor}
+    />
+  );
+  const headerTitleClassName = isLocked
+    ? `${securitySurface.primaryTextClassName} tracking-[-0.02em]`
+    : `${theme === 'light' ? 'text-red-950' : 'text-white'} tracking-[-0.02em]`;
+  const headerSubtitleClassName = isLocked
+    ? stateIconClassName
+    : `${theme === 'light' ? 'text-red-700' : 'text-red-200'} font-semibold uppercase tracking-[0.16em]`;
 
   if (isExtraSmall) {
     return (
-      <div
-        className={`${compactRootClassName} px-3 py-3`}
+      <BaseCard
+        size="extra-small"
+        className={`${isPendingAction ? 'opacity-80' : ''}`}
+        frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
         style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+        disableDefaultSheen
+        overlay={
+          <>
+            <div
+              className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+            />
+            {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+              <div
+                className={blackActiveSurface.innerOverlayClassName}
+                style={blackActiveSurface.innerOverlayStyle}
+              />
+            ) : null}
+            <div className={`absolute inset-0 ${overlayTintClassName}`} />
+            {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+              <div className={blackActiveSurface.shineOverlayClassName} />
+            ) : null}
+          </>
+        }
       >
-        <div
-          className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
-        />
-        {isLocked && blackActiveSurface?.innerOverlayClassName ? (
-          <div
-            className={blackActiveSurface.innerOverlayClassName}
-            style={blackActiveSurface.innerOverlayStyle}
+        <div className="relative flex h-full min-h-0 flex-col justify-between gap-1.5">
+          <EntityCardHeader
+            title={name}
+            subtitle={statusLabel}
+            layout="eyebrow-first"
+            size="extra-small"
+            tone={headerTone}
+            accentColor={activeBaseColor}
+            leading={headerLeading}
+            titleClassName={`${headerTitleClassName} text-[12px]`}
+            subtitleClassName={headerSubtitleClassName}
+            marginBottomClassName="mb-0"
           />
-        ) : null}
-        <div className={`absolute inset-0 ${overlayTintClassName}`} />
-        {isLocked && blackActiveSurface?.shineOverlayClassName ? (
-          <div className={blackActiveSurface.shineOverlayClassName} />
-        ) : null}
-
-        <div className="relative flex h-full flex-col justify-between gap-3">
-          <p className={`${topNameClassName} text-xs`}>{name}</p>
 
           <SlideAction
             actionLabel={swipeLabel}
@@ -231,38 +200,50 @@ export const LockCard = memo(function LockCard({
             theme={theme}
           />
         </div>
-      </div>
+      </BaseCard>
     );
   }
 
   return (
-    <div
-      className={`${compactRootClassName} p-3`}
+    <BaseCard
+      size="small"
+      className={`${isPendingAction ? 'opacity-80' : ''}`}
+      frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
       style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+      disableDefaultSheen
+      overlay={
+        <>
+          <div
+            className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+          />
+          {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+            <div
+              className={blackActiveSurface.innerOverlayClassName}
+              style={blackActiveSurface.innerOverlayStyle}
+            />
+          ) : null}
+          <div className={`absolute inset-0 ${overlayTintClassName}`} />
+          {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+            <div className={blackActiveSurface.shineOverlayClassName} />
+          ) : null}
+        </>
+      }
     >
-      <div
-        className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
-      />
-      {isLocked && blackActiveSurface?.innerOverlayClassName ? (
-        <div
-          className={blackActiveSurface.innerOverlayClassName}
-          style={blackActiveSurface.innerOverlayStyle}
+      <div className="relative flex h-full min-h-0 flex-col">
+        <EntityCardHeader
+          title={name}
+          subtitle={statusLabel}
+          layout="eyebrow-first"
+          size="small"
+          tone={headerTone}
+          accentColor={activeBaseColor}
+          leading={headerLeading}
+          titleClassName={`${topNameClassName} ${headerTitleClassName}`}
+          subtitleClassName={headerSubtitleClassName}
+          className="mb-1.5"
         />
-      ) : null}
-      <div className={`absolute inset-0 ${overlayTintClassName}`} />
-      {isLocked && blackActiveSurface?.shineOverlayClassName ? (
-        <div className={blackActiveSurface.shineOverlayClassName} />
-      ) : null}
 
-      <div className="relative flex h-full flex-col">
-        <div className="flex flex-col items-center gap-1 text-center">
-          <p className={`${topNameClassName} max-w-full text-[15px] leading-tight`}>{name}</p>
-          <p className={`text-xs font-medium uppercase tracking-[0.18em] ${stateIconClassName}`}>
-            {statusLabel}
-          </p>
-        </div>
-
-        <div className="flex flex-1 items-center justify-center py-2">
+        <div className="flex min-h-0 flex-1 items-center justify-center pt-2 pb-4">
           <div
             className={`relative flex h-16 w-16 items-center justify-center rounded-full border ${heroPlateClassName}`}
           >
@@ -279,7 +260,7 @@ export const LockCard = memo(function LockCard({
           </div>
         </div>
 
-        <div className="mt-auto pt-1">
+        <div className="mt-auto pt-1.5">
           <SlideAction
             actionLabel={swipeLabel}
             ariaLabel={swipeLabel}
@@ -291,6 +272,6 @@ export const LockCard = memo(function LockCard({
           />
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 });

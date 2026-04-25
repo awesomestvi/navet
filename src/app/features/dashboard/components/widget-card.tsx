@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Component, lazy, Suspense } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import type { RSSCardData } from '@/app/features/rss';
 import { RSSFeedCard } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -21,9 +22,9 @@ class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full items-center justify-center rounded-[28px] bg-white/5 text-xs text-white/40">
-          Widget failed to load
-        </div>
+        <BaseCard size="medium" className="bg-white/5 text-xs text-white/40">
+          <div className="flex h-full items-center justify-center">Widget failed to load</div>
+        </BaseCard>
       );
     }
     return this.props.children;
@@ -67,7 +68,11 @@ interface WidgetCardProps {
 }
 
 function WidgetFallback() {
-  return <div className="h-full rounded-[28px] bg-white/5 animate-pulse" />;
+  return (
+    <BaseCard size="medium" className="animate-pulse bg-white/5">
+      <span />
+    </BaseCard>
+  );
 }
 
 export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {

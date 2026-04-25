@@ -33,7 +33,7 @@ See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and version bump
 - Four theme modes: `glass`, `dark`, `light`, and `black` (`Black` in the UI)
 - Accent color system with built-in accents and custom accent selection
 - Adaptive visual-quality tiers for lower-power devices
-- Shared card primitives, dialog patterns, and surface tokens documented in Storybook
+- Shared card-shell primitives, body text, dialog patterns, and surface tokens documented in Storybook
 - PWA shell with install prompt, update prompt, and offline app-shell support
 
 ### Widgets and specialized views

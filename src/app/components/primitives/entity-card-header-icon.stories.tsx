@@ -4,7 +4,7 @@ import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
 const meta = {
-  title: 'Components/Primitives/Cards/Entity Card Header Icon',
+  title: 'Components/Primitives/Cards/Entity/Header Icon',
   component: EntityCardHeaderIcon,
   tags: ['autodocs'],
   parameters: {

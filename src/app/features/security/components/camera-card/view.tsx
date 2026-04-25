@@ -1,4 +1,5 @@
 import { Camera, RefreshCw, Settings2 } from 'lucide-react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
@@ -71,25 +72,31 @@ export function CameraCardView({
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
 
   return (
-    <div className="relative h-full overflow-hidden rounded-3xl bg-zinc-900" data-entity-id={id}>
-      {/* Snapshot image */}
-      {snapshotUrl && !isUnavailable ? (
-        <img
-          src={snapshotUrl}
-          alt={name}
-          className="absolute inset-0 h-full w-full object-cover"
-          draggable={false}
-        />
-      ) : (
-        /* Unavailable / no image placeholder */
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <Camera className="h-8 w-8 text-zinc-500" />
-          <span className="text-xs text-zinc-500">
-            {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-          </span>
-        </div>
-      )}
-
+    <BaseCard
+      size={size}
+      fullBleed
+      frameClassName="bg-zinc-900"
+      data-entity-id={id}
+      disableDefaultSheen
+      overlay={
+        snapshotUrl && !isUnavailable ? (
+          <img
+            src={snapshotUrl}
+            alt={name}
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <Camera className="h-8 w-8 text-zinc-500" />
+            <span className="text-xs text-zinc-500">
+              {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
+            </span>
+          </div>
+        )
+      }
+      contentClassName="h-full"
+    >
       {/* Refresh button (top-left, only when live and not in edit mode) */}
       {isRunning && !isEditMode && (
         <button
@@ -161,6 +168,6 @@ export function CameraCardView({
           )}
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 }

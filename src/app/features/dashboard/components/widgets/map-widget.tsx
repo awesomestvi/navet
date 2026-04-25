@@ -11,7 +11,7 @@ import {
   TileLayer,
   useMap,
 } from 'react-leaflet';
-import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
+import { BaseCard, customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
@@ -258,9 +258,13 @@ export const MapWidget = memo(function MapWidget({
   }, [isEditMode]);
 
   return (
-    <div
-      className={`relative h-full overflow-hidden rounded-[28px] ${surface.outerFrameClassName}`}
+    <BaseCard
+      size={size}
+      fullBleed
+      frameClassName={surface.outerFrameClassName}
       style={mapFrameStyle}
+      disableDefaultSheen
+      contentClassName="h-full"
     >
       <div
         className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
@@ -433,6 +437,6 @@ export const MapWidget = memo(function MapWidget({
           backdrop-filter: blur(16px);
         }
       `}</style>
-    </div>
+    </BaseCard>
   );
 });

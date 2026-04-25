@@ -79,6 +79,10 @@ export function MediaLargeView({
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('large');
   const subduedFallback = !artwork && !isActive;
+  const fallbackTitleColor =
+    theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
+  const fallbackSubtitleColor =
+    theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
   const shouldRenderDecorativeArtworkLayers =
     artwork !== null &&
     artwork !== undefined &&
@@ -209,13 +213,13 @@ export function MediaLargeView({
           <div className="mt-3 min-w-0">
             <div
               className={`truncate text-sm font-semibold ${iconTone}`}
-              style={{ color: textTokens.titleColor }}
+              style={{ color: fallbackTitleColor }}
             >
               {title}
             </div>
             <div
               className={`truncate text-xs ${subtitleTone}`}
-              style={{ color: textTokens.subtitleColor }}
+              style={{ color: fallbackSubtitleColor }}
             >
               {artist}
             </div>

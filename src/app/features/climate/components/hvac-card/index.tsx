@@ -1,6 +1,6 @@
 import { Flame, Snowflake, Thermometer, Wind } from 'lucide-react';
 import { memo } from 'react';
-import { CardActionRow } from '@/app/components/patterns/card-action-row';
+import { CardActionRow, CardActionRowGroup } from '@/app/components/patterns/card-action-row';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
@@ -124,7 +124,17 @@ export const HVACCard = memo(function HVACCard({
     <>
       <CardWrapper
         interactionProps={controller.cardInteraction.cardProps}
-        className={`bg-gradient-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} p-3 ${stateSurface.containerClassName}`}
+        isActive={controller.isOn}
+        activeColor={
+          controller.visualMode === 'heat'
+            ? '#f97316'
+            : controller.visualMode === 'cool'
+              ? '#06b6d4'
+              : controller.visualMode === 'fan' || controller.visualMode === 'fan_only'
+                ? '#3b82f6'
+                : accentColor
+        }
+        className={`bg-gradient-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
         style={stateSurfaceStyle.cardStyle}
         lightOverlayClassName={controller.lightOverlay}
         showShadow={controller.isOn && controller.theme !== 'light'}
@@ -152,7 +162,7 @@ export const HVACCard = memo(function HVACCard({
           <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
         )}
 
-        <div className="relative z-[2] h-full flex flex-col">
+        <div className="relative z-[2] h-full flex flex-col p-3">
           <EntityCardHeader
             title={name}
             subtitle={t('climate.subtitle')}
@@ -175,7 +185,7 @@ export const HVACCard = memo(function HVACCard({
 
           <div className="flex-1">
             {controller.isSmall ? (
-              <div className="relative flex h-full flex-col gap-2">
+              <div className="relative flex h-full flex-col gap-1.5">
                 <HVACGauge
                   id={id}
                   mode={controller.visualMode}
@@ -210,7 +220,7 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="small"
                     leftContent={
-                      <div className="relative z-[3] flex items-center gap-1">
+                      <div className="relative z-[3]">
                         <HVACTempControls
                           targetTemp={controller.targetTemp}
                           onTempChange={controller.setTargetTemp}
@@ -270,19 +280,21 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="medium"
                     leftContent={
-                      <div className="relative z-[3] flex items-center gap-2">
-                        <HVACTempControls
-                          targetTemp={controller.targetTemp}
-                          onTempChange={controller.setTargetTemp}
-                          isOn={controller.isOn}
-                          size="medium"
-                        />
-                        <HVACModeControls
-                          mode={controller.visualMode}
-                          isOn={controller.isOn}
-                          onModeChange={controller.setMode}
-                          size="medium"
-                        />
+                      <div className="relative z-[3]">
+                        <CardActionRowGroup>
+                          <HVACTempControls
+                            targetTemp={controller.targetTemp}
+                            onTempChange={controller.setTargetTemp}
+                            isOn={controller.isOn}
+                            size="medium"
+                          />
+                          <HVACModeControls
+                            mode={controller.visualMode}
+                            isOn={controller.isOn}
+                            onModeChange={controller.setMode}
+                            size="medium"
+                          />
+                        </CardActionRowGroup>
                       </div>
                     }
                     rightContent={
@@ -330,7 +342,7 @@ export const HVACCard = memo(function HVACCard({
                   </div>
 
                   <div className="mt-auto">
-                    <div className="mb-4 flex max-w-[72%] items-center gap-2">
+                    <div className="mb-4 flex max-w-[72%] items-center gap-1.5">
                       {temperaturePresets.map((preset) => {
                         const isSelected = Math.abs(controller.targetTemp - preset) < 0.05;
 
@@ -367,19 +379,21 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="medium"
                     leftContent={
-                      <div className="relative z-[3] flex items-center gap-2">
-                        <HVACTempControls
-                          targetTemp={controller.targetTemp}
-                          onTempChange={controller.setTargetTemp}
-                          isOn={controller.isOn}
-                          size="medium"
-                        />
-                        <HVACModeControls
-                          mode={controller.visualMode}
-                          isOn={controller.isOn}
-                          onModeChange={controller.setMode}
-                          size="medium"
-                        />
+                      <div className="relative z-[3]">
+                        <CardActionRowGroup>
+                          <HVACTempControls
+                            targetTemp={controller.targetTemp}
+                            onTempChange={controller.setTargetTemp}
+                            isOn={controller.isOn}
+                            size="medium"
+                          />
+                          <HVACModeControls
+                            mode={controller.visualMode}
+                            isOn={controller.isOn}
+                            onModeChange={controller.setMode}
+                            size="medium"
+                          />
+                        </CardActionRowGroup>
                       </div>
                     }
                     rightContent={

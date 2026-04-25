@@ -1,11 +1,11 @@
 import { memo, useState } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import {
   type CardSize,
   getCompactCardSize,
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
-import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { useI18n, useTheme } from '@/app/hooks';
 import { CalendarEventDialog } from './calendar/calendar-event-dialog';
@@ -38,7 +38,6 @@ export const CalendarCard = memo(function CalendarCard({
 }: CalendarCardProps) {
   const { t } = useI18n();
   const { theme, colors } = useTheme();
-  const cardShell = getCardShellSurfaceTokens(theme);
   const effectiveSize = getCompactCardSize(size);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -67,40 +66,45 @@ export const CalendarCard = memo(function CalendarCard({
 
   return (
     <>
-      <div
+      <BaseCard
+        size={effectiveSize}
+        interactive={!inEditMode}
         className={`
-          relative group overflow-hidden
-          h-full w-full rounded-3xl
-          ${hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}
-          ${cardShell.backdropClassName}
+          group transition-all duration-300
           ${theme === 'light' ? 'shadow-lg' : 'shadow-lg hover:shadow-xl'}
-          transition-all duration-300
           ${!inEditMode ? 'cursor-pointer' : ''}
         `}
+        frameClassName={hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}
         style={tintSurface.panelStyle}
+        disableDefaultSheen
+        disableDefaultLightOverlay
+        overlay={
+          <>
+            <div className={`absolute inset-0 rounded-[inherit] ${overlayBg}`} />
+            {tintSurface.glowStyle ? (
+              <div className="absolute inset-0 rounded-[inherit]" style={tintSurface.glowStyle} />
+            ) : null}
+            {tintSurface.overlayClassName ? (
+              <div
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] ${tintSurface.overlayClassName}`}
+              />
+            ) : null}
+            {!hasCustomTint ? (
+              <div
+                className={`absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent`}
+              />
+            ) : null}
+          </>
+        }
+        contentClassName="h-full"
       >
-        <div className={`absolute inset-0 rounded-[inherit] ${overlayBg}`} />
-        {tintSurface.glowStyle ? (
-          <div className="absolute inset-0 rounded-[inherit]" style={tintSurface.glowStyle} />
-        ) : null}
-        {tintSurface.overlayClassName ? (
-          <div
-            className={`pointer-events-none absolute inset-0 rounded-[inherit] ${tintSurface.overlayClassName}`}
-          />
-        ) : null}
-        {!hasCustomTint ? (
-          <div
-            className={`absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent`}
-          />
-        ) : null}
-
-        <div className="relative flex h-full flex-col p-3">
+        <div className="relative flex h-full flex-col">
           {canOpenSettings ? (
             <CardSettingsActionButton
               theme={theme}
               size={chromeSize}
               variant="soft"
-              className="absolute right-3 top-3 z-10"
+              className="absolute right-0 top-0 z-10"
               aria-label={t('calendar.settings.title')}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
@@ -148,7 +152,7 @@ export const CalendarCard = memo(function CalendarCard({
             />
           )}
         </div>
-      </div>
+      </BaseCard>
 
       {isSettingsOpen ? (
         <CalendarSettingsDialog

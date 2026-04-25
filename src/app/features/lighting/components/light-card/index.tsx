@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useTheme } from '@/app/hooks';
@@ -72,6 +73,8 @@ export const LightCard = memo(function LightCard({
   const surfaceTokens = getLightCardSurfaceTokens({
     isOn: controller.isOn,
     selectedColor: controller.selectedColor,
+    customColor: controller.customColor,
+    currentColor: controller.currentColor,
     theme,
     lightColors: colors.switch.on,
     accentColor,
@@ -136,7 +139,7 @@ export const LightCard = memo(function LightCard({
 
   return (
     <>
-      <div className="relative h-full w-full overflow-visible">
+      <div ref={cardRef} className="relative h-full w-full overflow-visible">
         {controller.isOn && showAmbientLightBleed && (
           <div
             data-ambient-light-bleed="true"
@@ -150,27 +153,37 @@ export const LightCard = memo(function LightCard({
           />
         )}
 
-        <div
-          ref={cardRef}
+        <BaseCard
+          size={size}
           {...controller.cardInteraction.cardProps}
-          className={`relative z-10 h-full w-full overflow-hidden rounded-3xl ${cardShell.rootFrameClassName} ${controller.padding} transition-all duration-500 ${surfaceTokens.cardClassName} ${!isEditMode ? 'cursor-pointer' : ''}`}
+          interactive={!isEditMode}
+          isActive={controller.isOn && theme !== 'black'}
+          activeColor={surfaceTokens.glowColor}
+          className={`relative z-10 transition-all duration-500 ${!isEditMode ? 'cursor-pointer' : ''}`}
+          frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
           style={surfaceTokens.cardStyle}
+          disableDefaultSheen
+          overlay={
+            <>
+              {surfaceTokens.activeGlowClassName ? (
+                <div
+                  className={surfaceTokens.activeGlowClassName}
+                  style={surfaceTokens.activeGlowStyle}
+                />
+              ) : null}
+              {surfaceTokens.innerOverlayClassName ? (
+                <div
+                  className={surfaceTokens.innerOverlayClassName}
+                  style={surfaceTokens.innerOverlayStyle}
+                />
+              ) : null}
+              {surfaceTokens.shineOverlayClassName ? (
+                <div className={surfaceTokens.shineOverlayClassName} />
+              ) : null}
+            </>
+          }
+          contentClassName="h-full"
         >
-          {surfaceTokens.activeGlowClassName ? (
-            <div className={surfaceTokens.activeGlowClassName} />
-          ) : null}
-
-          {surfaceTokens.innerOverlayClassName ? (
-            <div
-              className={surfaceTokens.innerOverlayClassName}
-              style={surfaceTokens.innerOverlayStyle}
-            />
-          ) : null}
-
-          {surfaceTokens.shineOverlayClassName ? (
-            <div className={surfaceTokens.shineOverlayClassName} />
-          ) : null}
-
           <div className="relative h-full flex flex-col">
             {isSmall ? (
               <LightCardSmall
@@ -256,7 +269,7 @@ export const LightCard = memo(function LightCard({
               />
             )}
           </div>
-        </div>
+        </BaseCard>
       </div>
 
       {controller.isOpen ? (

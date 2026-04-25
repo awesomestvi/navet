@@ -147,7 +147,7 @@ Key theme helpers live in
 
 ### Ownership split
 
-- `primitives/`: low-level reusable UI
+- `primitives/`: low-level reusable UI such as shared buttons, card shells, header parts, and compact text
 - `patterns/`: composed shared structure
 - `system/`: curated export surface
 - `shared/`: app-specific shared UI and compatibility shims
@@ -189,7 +189,7 @@ hardcoded values.
 ### Compact-card rules
 
 - use shared title/header primitives in dense cards
-- use shared tiny/compact shells where available
+- use shared `BaseCard`-style shells where available
 - keep control density intentional
 - do not duplicate the same action in multiple rows of a compact card
 

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { EntityCardTitleBlock } from '@/app/components/primitives/entity-card-title-block';
@@ -84,30 +85,40 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   if (isTiny) {
     return (
       <>
-        <div
+        <BaseCard
+          size="tiny"
           {...controller.cardInteraction.cardProps}
-          className={`relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[26px] bg-linear-to-br px-3 py-2.5 transition-all duration-500 ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          interactive={!props.isEditMode}
+          className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
+          disableDefaultSheen
+          disableDefaultLightOverlay
+          overlay={
+            <>
+              {controller.isOn ? (
+                <div
+                  className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
+                />
+              ) : null}
+              {tintGlow}
+              {lightOverlay}
+              {blackActiveSurface?.innerOverlayClassName ? (
+                <div
+                  className={blackActiveSurface.innerOverlayClassName}
+                  style={blackActiveSurface.innerOverlayStyle}
+                />
+              ) : null}
+              {sheenOverlay}
+              {blackActiveSurface?.shineOverlayClassName ? (
+                <div className={blackActiveSurface.shineOverlayClassName} />
+              ) : null}
+              {stateOverlay}
+              {tintOverlay}
+            </>
+          }
+          contentClassName="h-full"
         >
-          {controller.isOn ? (
-            <div
-              className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
-            />
-          ) : null}
-          {tintGlow}
-          {lightOverlay}
-          {blackActiveSurface?.innerOverlayClassName ? (
-            <div
-              className={blackActiveSurface.innerOverlayClassName}
-              style={blackActiveSurface.innerOverlayStyle}
-            />
-          ) : null}
-          {sheenOverlay}
-          {blackActiveSurface?.shineOverlayClassName ? (
-            <div className={blackActiveSurface.shineOverlayClassName} />
-          ) : null}
-          {stateOverlay}
-          {tintOverlay}
           <TinyCardWatermark
             IconComponent={controller.HeaderIconComponent}
             iconText={controller.headerIconText}
@@ -129,7 +140,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             </div>
             <span />
           </div>
-        </div>
+        </BaseCard>
 
         {controlsDialog}
       </>
@@ -139,32 +150,40 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
   if (controller.isExtraSmall) {
     return (
       <>
-        <div
+        <BaseCard
+          size="extra-small"
           {...controller.cardInteraction.cardProps}
-          className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br p-3 transition-all duration-500 ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} ${stateSurface.containerClassName} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          interactive={!props.isEditMode}
+          className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
+          disableDefaultSheen
+          disableDefaultLightOverlay
+          overlay={
+            <>
+              {controller.isOn ? (
+                <div
+                  className={`absolute inset-0 bg-linear-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 transition-all duration-500`}
+                />
+              ) : null}
+              {tintGlow}
+              {lightOverlay}
+              {blackActiveSurface?.innerOverlayClassName ? (
+                <div
+                  className={blackActiveSurface.innerOverlayClassName}
+                  style={blackActiveSurface.innerOverlayStyle}
+                />
+              ) : null}
+              {sheenOverlay}
+              {blackActiveSurface?.shineOverlayClassName ? (
+                <div className={blackActiveSurface.shineOverlayClassName} />
+              ) : null}
+              {stateOverlay}
+              {tintOverlay}
+            </>
+          }
+          contentClassName="h-full"
         >
-          {controller.isOn ? (
-            <div
-              className={`absolute inset-0 bg-linear-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 transition-all duration-500`}
-            />
-          ) : null}
-
-          {tintGlow}
-          {lightOverlay}
-          {blackActiveSurface?.innerOverlayClassName ? (
-            <div
-              className={blackActiveSurface.innerOverlayClassName}
-              style={blackActiveSurface.innerOverlayStyle}
-            />
-          ) : null}
-          {sheenOverlay}
-          {blackActiveSurface?.shineOverlayClassName ? (
-            <div className={blackActiveSurface.shineOverlayClassName} />
-          ) : null}
-          {stateOverlay}
-          {tintOverlay}
-
           <div className="relative flex h-full items-center">
             <EntityCardHeader
               title={props.name}
@@ -191,7 +210,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               }
             />
           </div>
-        </div>
+        </BaseCard>
 
         {controlsDialog}
       </>
@@ -200,34 +219,40 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
 
   return (
     <>
-      <div
+      <BaseCard
+        size={controller.isExtraSmall ? 'extra-small' : 'small'}
         {...controller.cardInteraction.cardProps}
-        className={`relative h-full w-full overflow-hidden rounded-3xl bg-linear-to-br ${cardShell.rootFrameClassName} ${controller.cardColors.gradient} ${cardShell.backdropClassName} ${controller.cardColors.border} transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''} p-3 ${stateSurface.containerClassName}`}
+        interactive={!props.isEditMode}
+        className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+        frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
         style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
+        disableDefaultSheen
+        disableDefaultLightOverlay
+        overlay={
+          <>
+            {controller.isOn && (
+              <div
+                className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
+              />
+            )}
+            {tintGlow}
+            {controller.theme === 'light' && <div className="absolute inset-0 bg-white/60" />}
+            {blackActiveSurface?.innerOverlayClassName ? (
+              <div
+                className={blackActiveSurface.innerOverlayClassName}
+                style={blackActiveSurface.innerOverlayStyle}
+              />
+            ) : null}
+            {sheenOverlay}
+            {blackActiveSurface?.shineOverlayClassName ? (
+              <div className={blackActiveSurface.shineOverlayClassName} />
+            ) : null}
+            {stateOverlay}
+            {tintOverlay}
+          </>
+        }
+        contentClassName="h-full"
       >
-        {controller.isOn && (
-          <div
-            className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
-          />
-        )}
-
-        {tintGlow}
-        {controller.theme === 'light' && <div className="absolute inset-0 bg-white/60" />}
-        {blackActiveSurface?.innerOverlayClassName ? (
-          <div
-            className={blackActiveSurface.innerOverlayClassName}
-            style={blackActiveSurface.innerOverlayStyle}
-          />
-        ) : null}
-
-        {sheenOverlay}
-        {blackActiveSurface?.shineOverlayClassName ? (
-          <div className={blackActiveSurface.shineOverlayClassName} />
-        ) : null}
-
-        {stateOverlay}
-        {tintOverlay}
-
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
             title={props.name}
@@ -235,8 +260,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             layout="eyebrow-first"
             size={controller.isExtraSmall ? 'extra-small' : 'small'}
             tone={controller.isOn ? 'primary' : 'neutral'}
-            titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left ${controller.isExtraSmall ? 'text-xs' : ''}`}
-            subtitleClassName={`${stateSurface.mutedTextClassName} text-left ${controller.isExtraSmall ? 'text-xs' : ''}`}
+            titleClassName={`${stateSurface.primaryTextClassName} transition-colors duration-500 text-left`}
+            subtitleClassName={`${stateSurface.mutedTextClassName} text-left`}
             className={`${controller.isExtraSmall ? 'mb-1.5' : 'mb-2'}`}
             leading={
               <EntityCardHeaderIcon
@@ -273,7 +298,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                     className={`flex min-w-0 flex-col ${i === controller.selectedMetrics.length - 1 && controller.showSettingsButton && !controller.isExtraSmall ? 'pr-10' : ''}`}
                   >
                     <span
-                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-start ${controller.isExtraSmall ? 'gap-1.5 text-xs leading-tight' : 'gap-1.5 text-xs leading-tight'}`}
+                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-start gap-1.5 text-[12px] leading-tight`}
                       style={{ color: metricTextTokens.subtitleColor }}
                     >
                       {controller.renderMetricIcon(
@@ -285,7 +310,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
                       </span>
                     </span>
                     <span
-                      className={`${stateSurface.primaryTextClassName} ${controller.isExtraSmall ? 'mt-1 pl-4 text-xs' : 'mt-1 pl-4 text-sm'} font-medium`}
+                      className={`${stateSurface.primaryTextClassName} mt-0.5 pl-[18px] text-[12px] font-medium`}
                       style={{ color: metricTextTokens.titleColor }}
                     >
                       {controller.formatMetricValue(metric)}
@@ -296,7 +321,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             )}
           </div>
         </div>
-      </div>
+      </BaseCard>
 
       {controlsDialog}
     </>

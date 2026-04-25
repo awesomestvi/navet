@@ -4,7 +4,7 @@ This folder has three distinct roles:
 
 - `primitives/`
   Low-level reusable UI building blocks with one clear responsibility.
-  Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`.
+  Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`, `BaseCard`, `BodyText`.
   New shared UI should start here when it is generic, behavior-light, and reusable across features.
 
 - `patterns/`

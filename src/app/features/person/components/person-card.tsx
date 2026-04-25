@@ -1,6 +1,7 @@
 import { User } from 'lucide-react';
 import { memo } from 'react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, getStandardCardPadding } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useAuth } from '@/app/contexts/auth-context';
@@ -97,35 +98,40 @@ export const PersonCard = memo(function PersonCard({
   const pillTextClassName = 'text-xs';
 
   return (
-    <div
-      className={`relative h-full ${cardShell.backdropClassName} rounded-3xl ${cardShell.rootFrameClassName} ${cardColors.border} overflow-hidden ${surface.containerShadowClassName}`}
-    >
-      {hasPortrait ? (
-        <ImageWithFallback
-          src={resolvedEntityPicture}
-          alt={name}
-          className="absolute inset-0 h-full w-full object-cover"
-          draggable={false}
-        />
-      ) : (
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${surface.fallbackBackgroundClassName}`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_55%)]" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-full border border-white/12 bg-black/10 p-4 backdrop-blur-sm">
-              <User className={`h-7 w-7 ${surface.fallbackIconClassName}`} />
+    <BaseCard
+      size={size}
+      frameClassName={`${cardShell.rootFrameClassName} ${cardColors.border} ${surface.containerShadowClassName}`}
+      disableDefaultSheen
+      overlay={
+        <>
+          {hasPortrait ? (
+            <ImageWithFallback
+              src={resolvedEntityPicture}
+              alt={name}
+              className="absolute inset-0 h-full w-full object-cover"
+              draggable={false}
+            />
+          ) : (
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${surface.fallbackBackgroundClassName}`}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_55%)]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="rounded-full border border-white/12 bg-black/10 p-4 backdrop-blur-sm">
+                  <User className={`h-7 w-7 ${surface.fallbackIconClassName}`} />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      <div className={`absolute inset-0 bg-gradient-to-t ${cardColors.glow} to-transparent`} />
-      <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/88 via-black/38 to-transparent" />
-      {surface.overlayClassName && (
-        <div className={`absolute inset-0 ${surface.overlayClassName}`} />
-      )}
-
+          )}
+          <div className={`absolute inset-0 bg-gradient-to-t ${cardColors.glow} to-transparent`} />
+          <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/88 via-black/38 to-transparent" />
+          {surface.overlayClassName ? (
+            <div className={`absolute inset-0 ${surface.overlayClassName}`} />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
+    >
       <div className={`relative flex h-full items-end ${padding}`}>
         <div className="min-w-0 max-w-full">
           <div
@@ -156,6 +162,6 @@ export const PersonCard = memo(function PersonCard({
           </div>
         </div>
       </div>
-    </div>
+    </BaseCard>
   );
 });

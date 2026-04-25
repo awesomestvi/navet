@@ -40,7 +40,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
     >
       <div className="space-y-3">
         <div
-          className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}
+          className={`rounded-3xl border p-3 ${surface.border} ${surface.panelMuted}`}
           style={{
             background: `linear-gradient(180deg, ${accentColor}16 0%, transparent 38%), linear-gradient(180deg, transparent 0%, ${accentColor}08 100%)`,
           }}
@@ -96,7 +96,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}>
+          <div className={`rounded-3xl border p-3 ${surface.border} ${surface.panelMuted}`}>
             <div className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
               {t('energy.stats.gridImport')}
             </div>
@@ -111,7 +111,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
           </div>
 
           <div
-            className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}
+            className={`rounded-3xl border p-3 ${surface.border} ${surface.panelMuted}`}
             style={{
               background: `linear-gradient(180deg, ${accentColor}12, transparent 48%)`,
             }}

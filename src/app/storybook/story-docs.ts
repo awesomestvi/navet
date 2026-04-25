@@ -164,6 +164,39 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the value remains readable from normal dashboard viewing distance.',
     ]
   ),
+  'Components/Primitives/Body Text': doc(
+    'Shared body-text primitive for compact supporting copy and lower-emphasis labels.',
+    [
+      'The baseline paragraph-style text treatment for dense UI surfaces.',
+      'How supporting copy reads when placed beside cards, dialogs, or settings rows.',
+    ],
+    [
+      'Use this story when repeated helper copy needs a shared typography primitive.',
+      'Prefer this over ad-hoc text classes when the same tone treatment is reused across features.',
+    ],
+    [
+      'Check tone contrast, line-height, and scanability.',
+      'Check that the text still reads well on tinted or glass surfaces.',
+    ]
+  ),
+  'Components/Primitives/Cards/BaseCard': doc(
+    'Shared entity-card shell primitive that brings together theme-aware surface tokens, header composition, size-aware spacing, and reusable footer action layouts.',
+    [
+      'The default neutral card surface across dark, light, glass, and black themes.',
+      'How readable text adapts from the resolved card surface instead of hard-coded per-card text choices.',
+      'Reusable footer compositions for action rows and settings-only rows across the full CardSize union.',
+    ],
+    [
+      'Use this as the starting shell before building a new entity-card layout in a feature.',
+      'Prefer composing feature-specific content into BaseCard instead of cloning switch-card shell markup.',
+      'Keep new card header and footer conventions here so cards do not drift apart by domain.',
+    ],
+    [
+      'Check the dark default against the switch-card inactive baseline.',
+      'Check header and footer rhythm across tiny, extra-small, and larger dashboard sizes.',
+      'Check tinted surfaces keep title and supporting text readable without local text-color overrides.',
+    ]
+  ),
   'Components/Primitives/Checkbox': doc(
     'Shared checkbox primitive for boolean selection in dialogs, forms, and settings sections.',
     [

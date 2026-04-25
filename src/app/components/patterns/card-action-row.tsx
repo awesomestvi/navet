@@ -61,6 +61,12 @@ function getActionButtonSize(size: CardActionRowResolvedSize) {
   };
 }
 
+export function CardActionRowGroup({ children }: { children: ReactNode }) {
+  return (
+    <div className={`flex min-w-0 items-center ${navetSpacingTokens.inline.xs}`}>{children}</div>
+  );
+}
+
 export function CardActionRow({
   theme,
   size = 'default',
@@ -69,8 +75,7 @@ export function CardActionRow({
   overflowItems = [],
 }: CardActionRowProps) {
   const resolvedSize = resolveCardActionRowSize(size);
-  const gapClass =
-    resolvedSize === 'small' ? navetSpacingTokens.inline.xs : navetSpacingTokens.inline.sm;
+  const gapClass = navetSpacingTokens.inline.xs;
 
   return (
     <div className={`flex items-center ${gapClass}`}>

@@ -1,5 +1,6 @@
 import { Gauge } from 'lucide-react';
 import { memo } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
@@ -54,8 +55,6 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   // Size-specific styling with intelligent layout adaptation
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const padding = 'p-3';
-
   const colors = theme === 'light' ? lightColorMap[accentColor] : darkColorMap[accentColor];
   const shell = getAccentCardShellTokens(theme, accentColor);
   const textPrimary = surface.textPrimary;
@@ -69,14 +68,31 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
 
   return (
     <div className="h-full w-full relative">
-      <button
-        type="button"
+      <BaseCard
+        size={size}
+        interactive
+        role="button"
+        tabIndex={0}
         onClick={() => setIsSettingsOpen(true)}
-        className={`relative h-full w-full ${cardShell.backdropClassName} rounded-3xl ${padding} overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform text-left ${shell.containerClassName}`}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsSettingsOpen(true);
+          }
+        }}
+        className="cursor-pointer text-left transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        frameClassName={`${cardShell.rootFrameClassName} ${shell.containerClassName}`}
+        disableDefaultSheen
+        overlay={
+          <>
+            <div className={`absolute inset-0 ${shell.glowClassName}`} />
+            {shell.overlayClassName ? (
+              <div className={`absolute inset-0 ${shell.overlayClassName}`} />
+            ) : null}
+          </>
+        }
+        contentClassName="h-full"
       >
-        <div className={`absolute inset-0 ${shell.glowClassName}`}></div>
-        {shell.overlayClassName && <div className={`absolute inset-0 ${shell.overlayClassName}`} />}
-
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
             title={name}
@@ -113,7 +129,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
             )}
           </div>
         </div>
-      </button>
+      </BaseCard>
 
       {isSettingsOpen ? (
         <SensorGroupSettingsDialog

@@ -39,7 +39,7 @@ function ThemeAppearancePickerStory() {
 }
 
 const meta = {
-  title: 'Theme/Appearance Picker',
+  title: 'Pages/Dashboard/Appearance Picker',
   component: ThemeAppearancePickerStory,
   tags: ['autodocs'],
   parameters: {

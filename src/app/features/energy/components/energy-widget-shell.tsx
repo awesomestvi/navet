@@ -24,7 +24,7 @@ export function EnergyWidgetShell({
 
   return (
     <section
-      className={`relative overflow-hidden rounded-[28px] border p-5 md:p-6 ${surface.border} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow} ${className}`}
+      className={`relative overflow-hidden rounded-[28px] border p-3 ${surface.border} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow} ${className}`}
     >
       {cardShell.sheenOverlayClassName ? (
         <div

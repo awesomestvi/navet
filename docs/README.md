@@ -71,4 +71,4 @@ This directory is the index for active Navet documentation.
 - Treat `docs/archive/` as historical material, not the current source of truth
 - When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
 
-Last updated: April 21, 2026
+Last updated: April 26, 2026

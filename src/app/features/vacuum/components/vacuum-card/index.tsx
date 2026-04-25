@@ -1,5 +1,6 @@
 import { Bot } from 'lucide-react';
 import { memo } from 'react';
+import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
@@ -184,23 +185,27 @@ export const VacuumCard = memo(function VacuumCard({
 
   const isSmall = isCompactCardSize(resolvedSize);
   const isMedium = resolvedSize === 'medium';
-  const padding = 'p-3';
 
   return (
     <div className="h-full w-full relative">
-      <div
-        className={`relative h-full bg-gradient-to-br ${cardColors.gradient} ${cardShell.backdropClassName} rounded-3xl ${padding} ${cardShell.rootFrameClassName} ${cardColors.border} overflow-hidden ${stateSurface.containerClassName}`}
+      <BaseCard
+        size={resolvedSize}
+        frameClassName={`${cardShell.rootFrameClassName} bg-gradient-to-br ${cardColors.gradient} ${cardColors.border} ${stateSurface.containerClassName}`}
+        disableDefaultSheen
+        overlay={
+          <>
+            {isActive ? (
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent`}
+              />
+            ) : null}
+            {stateSurface.overlayClassName ? (
+              <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
+            ) : null}
+          </>
+        }
+        contentClassName="h-full"
       >
-        {isActive && (
-          <div
-            className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent`}
-          ></div>
-        )}
-
-        {stateSurface.overlayClassName && (
-          <div className={`absolute inset-0 ${stateSurface.overlayClassName}`} />
-        )}
-
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
             title={liveName}
@@ -285,7 +290,7 @@ export const VacuumCard = memo(function VacuumCard({
             </div>
           </div>
         </div>
-      </div>
+      </BaseCard>
 
       {isDialogOpen ? (
         <VacuumSettingsDialog

@@ -303,8 +303,8 @@ export function MediaTvView({
   const isMediumVerticalTv = size === 'medium-vertical';
   const tvDpadLayout = getTvDpadLayout(size);
   const [dpadOpen, setDpadOpen] = useState(false);
-  /** Tight gaps: small card and medium-vertical (match small control rhythm) */
-  const tvControlClusterGap = isSmallTvCard || isMediumVerticalTv ? 'gap-1' : 'gap-2';
+  /** 6px standard gap between TV control buttons */
+  const tvControlClusterGap = 'gap-1.5';
   const tvSectionStackGap = isSmallTvCard || isMediumVerticalTv ? 'gap-2' : 'gap-3';
   const tvIconClass = isSmallTvCard ? 'h-3 w-3' : 'h-3.5 w-3.5';
   const tvCardActionRowSize = isSmallTvCard ? 'small' : 'medium';
@@ -372,8 +372,8 @@ export function MediaTvView({
         <button
           type="button"
           onClick={(event) => event.stopPropagation()}
-          className={`flex min-w-0 max-w-32 items-center rounded-full border backdrop-blur-xl ${
-            isSmallTvCard ? 'h-8 gap-1 px-2.5' : 'gap-1.5 px-3 py-1.5'
+          className={`flex h-8 min-w-0 max-w-32 items-center rounded-full border backdrop-blur-xl ${
+            isSmallTvCard ? 'gap-1 px-2.5' : 'gap-1.5 px-3'
           }`}
           style={panelStyle}
         >

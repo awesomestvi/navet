@@ -1,8 +1,7 @@
 import { MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { InteractivePill, RoundControlButton } from '@/app/components/primitives';
+import { BaseCard, InteractivePill, RoundControlButton } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { withTintAlpha } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import {
@@ -70,7 +69,6 @@ export function RSSFeedCardView({
   onRefetch,
 }: RSSFeedCardViewProps) {
   const { t } = useI18n();
-  const cardShell = getCardShellSurfaceTokens(theme);
   const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
   const chromeSize = size === 'large' ? 'medium' : size;
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
@@ -104,37 +102,41 @@ export function RSSFeedCardView({
         : t('rss.empty.noArticles');
 
   return (
-    <div
+    <BaseCard
+      size={size}
       className={`
-        relative group overflow-hidden
-        h-full w-full rounded-[28px]
-        ${rssSurface.surface.panel}
-        ${cardShell.backdropClassName}
+        group transition-all duration-300
         ${rssSurface.containerShadowClassName}
-        transition-all duration-300
         ${!inEditMode ? 'cursor-default' : ''}
       `}
+      frameClassName={rssSurface.surface.panel}
       style={rssSurface.cardStyle}
-    >
-      {/* Glass overlay */}
-      {rssSurface.glowStyle ? (
-        <div className="absolute inset-0" style={rssSurface.glowStyle} />
-      ) : null}
-      <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
-      {!hasCustomTint ? (
+      disableDefaultSheen
+      disableDefaultLightOverlay
+      overlay={
         <>
-          <div className={`absolute inset-0 bg-linear-to-br ${colors.rss.gradient} opacity-45`} />
-          <div
-            className={`absolute inset-0 bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
-          />
-          {rssSurface.surface.lightOverlay ? (
-            <div className={`absolute inset-0 ${rssSurface.surface.lightOverlay}`} />
+          {rssSurface.glowStyle ? (
+            <div className="absolute inset-0" style={rssSurface.glowStyle} />
+          ) : null}
+          <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
+          {!hasCustomTint ? (
+            <>
+              <div
+                className={`absolute inset-0 bg-linear-to-br ${colors.rss.gradient} opacity-45`}
+              />
+              <div
+                className={`absolute inset-0 bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
+              />
+              {rssSurface.surface.lightOverlay ? (
+                <div className={`absolute inset-0 ${rssSurface.surface.lightOverlay}`} />
+              ) : null}
+            </>
           ) : null}
         </>
-      ) : null}
-
-      {/* Content */}
-      <div className="relative flex h-full flex-col p-3">
+      }
+      contentClassName="h-full"
+    >
+      <div className="relative flex h-full flex-col">
         {isEmpty ? (
           <div className="flex flex-1 flex-col justify-center text-left">
             <p
@@ -419,7 +421,7 @@ export function RSSFeedCardView({
           </>
         )}
       </div>
-    </div>
+    </BaseCard>
   );
 }
 
