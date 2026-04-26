@@ -1,0 +1,32 @@
+/**
+ * Home Assistant media player feature flags
+ * @see https://developers.home-assistant.io/docs/core/entity/media-player/#supported_features
+ */
+export const MEDIA_PLAYER_FEATURES = {
+  PAUSE: 1,
+  SEEK: 2,
+  VOLUME_SET: 4,
+  VOLUME_MUTE: 8,
+  PREVIOUS_TRACK: 16,
+  NEXT_TRACK: 32,
+  TURN_ON: 128,
+  TURN_OFF: 256,
+  PLAY_MEDIA: 512,
+  VOLUME_STEP: 1024,
+  SELECT_SOURCE: 2048,
+  STOP: 4096,
+  CLEAR_PLAYLIST: 8192,
+  PLAY: 16384,
+  SHUFFLE_SET: 32768,
+  SELECT_SOUND_MODE: 65536,
+  BROWSE_MEDIA: 131072,
+  REPEAT_SET: 262144,
+  GROUPING: 524288,
+} as const;
+
+/**
+ * Check if a media player supports grouping
+ */
+export function hasMediaPlayerGroupingSupport(supportedFeatures: number): boolean {
+  return (supportedFeatures & MEDIA_PLAYER_FEATURES.GROUPING) === MEDIA_PLAYER_FEATURES.GROUPING;
+}

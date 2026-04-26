@@ -55,7 +55,8 @@ function normalizeWallpaperPath(wallpaper: string | null | undefined) {
       ) {
         return `.${resolved.pathname}`;
       }
-    } catch {
+    } catch (error) {
+      console.error('[ThemeStore] Wallpaper URL resolution failed:', error);
       return trimmed;
     }
   }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useDevices, useI18n, usePersistedState } from '@/app/hooks';
 import type { CalendarEvent } from './types';
@@ -15,10 +15,12 @@ const SOURCE_COLOR_CLASSES = [
   'bg-orange-500',
   'bg-indigo-500',
 ] as const;
+const CALENDAR_TIME_WINDOW_REFRESH_MS = 60 * 1000;
 
 export function useCalendarCardSources(cardId?: string, fallbackEvents: CalendarEvent[] = []) {
   const { t } = useI18n();
   const devices = useDevices();
+  const [timeWindowTick, setTimeWindowTick] = useState(() => Date.now());
   const [calendarSources, setCalendarSources] = usePersistedState<PersistedCalendarSources>(
     STORAGE_KEYS.calendarCardSources,
     {}
@@ -29,6 +31,16 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
   );
   const [calendarTintColors, setCalendarTintColors] =
     usePersistedState<PersistedCalendarTintColors>(STORAGE_KEYS.calendarCardTintColors, {});
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setTimeWindowTick(Date.now());
+    }, CALENDAR_TIME_WINDOW_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, []);
 
   const availableCalendars = useMemo(
     () =>
@@ -91,7 +103,7 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
       return fallbackEvents;
     }
 
-    const now = new Date();
+    const now = new Date(timeWindowTick);
     const endDate = new Date(now);
     endDate.setDate(now.getDate() + (viewMode === 'week' ? 7 : 31));
 
@@ -120,7 +132,7 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
         return leftKey.localeCompare(rightKey);
       })
       .slice(0, viewMode === 'week' ? 7 : 12);
-  }, [availableCalendars, cardId, fallbackEvents, selectedCalendarIds, viewMode]);
+  }, [availableCalendars, cardId, fallbackEvents, selectedCalendarIds, timeWindowTick, viewMode]);
 
   const selectedCalendarLabel = useMemo(() => {
     const matchedCalendars = availableCalendars.filter((calendar) =>

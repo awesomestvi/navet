@@ -144,7 +144,6 @@ export const MediaCard = memo(function MediaCard({
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
   const isActiveTv = isTv && !isOff;
-  const inactiveShellBg = `bg-gradient-to-br ${colors.media.off.gradient}`;
   const inactiveShellBorder = colors.media.off.border;
   const cardBorder = hasArtwork ? 'border-transparent' : surface.border;
   const cardShadow = '';
@@ -163,7 +162,7 @@ export const MediaCard = memo(function MediaCard({
         ? 'border-fuchsia-500/35'
         : 'border-fuchsia-500/25';
   const shellBg = isOff
-    ? inactiveShellBg
+    ? ''
     : isActiveTv
       ? activeTvShellBg
       : hasArtwork
@@ -173,10 +172,10 @@ export const MediaCard = memo(function MediaCard({
             ? 'bg-white'
             : 'bg-zinc-950'
         : isLight
-          ? 'bg-white'
+          ? ''
           : isGlass
-            ? 'bg-white/8'
-            : 'bg-zinc-900';
+            ? ''
+            : '';
   const shellBorder = isOff ? inactiveShellBorder : isActiveTv ? activeTvShellBorder : cardBorder;
   const shellBlur = hasArtwork && !isOff ? '' : cardShell.backdropClassName;
   const shellOverlayClassName = isOff ? null : stateSurface.overlayClassName;

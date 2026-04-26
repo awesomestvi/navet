@@ -1,9 +1,11 @@
 import { Check, Palette, Plus, Sliders, Trash2 } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
+import { toast } from 'sonner';
 import { CardDialogHeader, CardDialogTabList } from '@/app/components/patterns';
 import {
+  Button,
   customCardDialogShellProps,
-  DialogDoneFooter,
+  DialogFooter,
   DialogShell,
   Input,
   InteractivePill,
@@ -83,6 +85,7 @@ export function RSSFeedSettingsDialog({
   const [providerName, setProviderName] = useState('');
   const [providerUrl, setProviderUrl] = useState('');
   const [activeTab, setActiveTab] = useState(hasProviders ? 'feeds' : 'setup');
+  const hasProviderDraft = providerName.trim().length > 0 || providerUrl.trim().length > 0;
   const canAddProvider = providerName.trim().length > 0 && providerUrl.trim().length > 0;
   const dialogShell = customCardDialogShellProps(surface, tintSurface, {
     maxWidth: 'lg',
@@ -109,19 +112,48 @@ export function RSSFeedSettingsDialog({
     );
   };
 
-  const handleAddProvider = () => {
+  const finalizePendingProvider = () => {
+    if (!hasProviderDraft) {
+      return true;
+    }
+
+    if (!canAddProvider) {
+      setActiveTab('setup');
+      toast.error(t('rss.feedback.finishAddingFeed'));
+      return false;
+    }
+
     const wasAdded = onAddProvider(providerName, providerUrl);
     if (wasAdded) {
       setProviderName('');
       setProviderUrl('');
       setActiveTab('feeds');
     }
+
+    return wasAdded;
   };
+
+  const handleAddProvider = () => {
+    void finalizePendingProvider();
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      onOpenChange(true);
+      return;
+    }
+
+    if (finalizePendingProvider()) {
+      onOpenChange(false);
+    }
+  };
+
+  const doneLabel = canAddProvider ? t('rss.settings.addFeedAndClose') : t('common.done');
 
   return (
     <DialogShell
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       disableOpenAutoFocus
       overlayClassName={surface.dialogBackdrop}
       contentClassName={dialogShell.contentClassName}
@@ -319,7 +351,11 @@ export function RSSFeedSettingsDialog({
             </TabPanel>
           </Tabs>
 
-          <DialogDoneFooter label={t('common.done')} />
+          <DialogFooter>
+            <Button variant="soft" size="small" onClick={() => handleOpenChange(false)}>
+              {doneLabel}
+            </Button>
+          </DialogFooter>
         </div>
       </CustomScrollbar>
     </DialogShell>

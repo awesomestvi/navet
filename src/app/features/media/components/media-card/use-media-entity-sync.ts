@@ -1,4 +1,5 @@
 import { type Dispatch, type SetStateAction, useEffect } from 'react';
+import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import { normalizeMediaPlaybackState } from '@/app/features/media';
 
 function areStringArraysEqual(a: string[], b: string[]) {
@@ -87,7 +88,7 @@ export function useMediaEntitySync({
           )
         : [];
       const resolvedGroupMembers = nextGroupMembers.length > 0 ? nextGroupMembers : [entityId];
-      const nextSupportsGrouping = (nextSupportedFeatures & 524288) === 524288;
+      const nextSupportsGrouping = hasMediaPlayerGroupingSupport(nextSupportedFeatures);
 
       setState((currentState) => (currentState === nextState ? currentState : nextState));
       setElapsedSeconds((currentElapsedSeconds) =>

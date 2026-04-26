@@ -1,10 +1,14 @@
 import type { Connection, HassEntity } from 'home-assistant-js-websocket';
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { shallow } from 'zustand/shallow';
-import { normalizeMediaPlaybackState } from '../features/media';
-import { normalizeVacuumStatus } from '../features/vacuum';
 import { useI18n } from '../i18n';
-import type { HomeAssistantEntityRegistryEntry } from '../services/home-assistant.service';
 import { homeAssistantSelectors, settingsSelectors } from '../stores/selectors';
 import { useSettingsStore } from '../stores/settings-store';
 import type {
@@ -27,23 +31,26 @@ import type {
 import { UNKNOWN_ROOM_LABEL } from '../utils/device-location';
 import { haEntityStructureEqual } from '../utils/ha-entity-structure-equal';
 import {
-  brightnessToPercent,
-  formatCalendarTime,
-  formatClock,
-  formatDaylight,
-  formatEntityType,
-  formatMediaEntityType,
+  mapCalendarSources,
+  mapCameraDevice,
+  mapClimateDevice,
+  mapCoverDevice,
+  mapLightDevice,
+  mapLockDevice,
+  mapMediaDevice,
+  mapPersonDevice,
+  mapSceneDevice,
+  mapSwitchDevice,
+  mapVacuumDevice,
+  mapWeatherDevice,
+} from './ha-device-mappers';
+import {
   getMetricLabel,
   getName,
   helperLabelForDomain,
-  inferCalendarEventType,
   inferMetricIcon,
-  isAllDayCalendarValue,
-  normalizeKelvin,
   normalizeMetric,
-  parseCalendarDate,
   parseNumberish,
-  parseRoundedNumberish,
   resolveEntityRoom,
 } from './ha-entity-utils';
 import { useHomeAssistant } from './use-home-assistant';
@@ -88,10 +95,8 @@ type CalendarEventsServiceEnvelope = CalendarEventsServicePayload & {
   result?: CalendarEventsServicePayload;
 };
 
-function formatWeatherValue(value: number): string {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
-}
-
+const WEATHER_REFRESH_MS = 15 * 60 * 1000;
+const CALENDAR_REFRESH_MS = 5 * 60 * 1000;
 async function fetchWeatherForecast(
   connection: Connection,
   entityId: string,
@@ -138,15 +143,17 @@ function getEntityObjectId(entityId: string): string {
   return separatorIndex === -1 ? entityId : entityId.slice(separatorIndex + 1);
 }
 
-function getEntityCategory(entityEntry?: HomeAssistantEntityRegistryEntry): string | null {
-  const raw = (entityEntry as Record<string, unknown> | undefined)?.entity_category;
-  return typeof raw === 'string' ? raw : null;
+function getEntityCategory(
+  entityEntry: { entity_category?: unknown } | undefined
+): 'config' | 'diagnostic' | null {
+  const raw = entityEntry?.entity_category;
+  return typeof raw === 'string' ? (raw as 'config' | 'diagnostic') : null;
 }
 
 function getSwitchPrimarySortKey(
   entityId: string,
   entity: HassEntity,
-  entityEntry?: HomeAssistantEntityRegistryEntry
+  entityEntry?: { entity_category?: unknown }
 ): [number, number, string] {
   const entityCategory = getEntityCategory(entityEntry);
   const categoryPenalty =
@@ -186,8 +193,6 @@ export const useHADevices = (): DeviceCollection => {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const config = useHomeAssistant(homeAssistantSelectors.config);
   const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry, shallow);
-  // Structural equality: DeviceCollection only rebuilds when entities are added/removed,
-  // not on every state change. Per-card subscriptions handle live state updates.
   const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
   const { locale, t } = useI18n();
@@ -199,6 +204,13 @@ export const useHADevices = (): DeviceCollection => {
 
     return Object.keys(entities).find((entityId) => entityId.startsWith('weather.')) ?? null;
   }, [entities]);
+  const liveWeatherEntity = useHomeAssistant(
+    useCallback(
+      (state) =>
+        primaryWeatherEntityId ? (state.entities?.[primaryWeatherEntityId] ?? null) : null,
+      [primaryWeatherEntityId]
+    )
+  );
   const calendarEntityIds = useMemo(() => {
     if (!entities) {
       return [];
@@ -208,6 +220,16 @@ export const useHADevices = (): DeviceCollection => {
       .filter((entityId) => entityId.startsWith('calendar.'))
       .sort((left, right) => left.localeCompare(right));
   }, [entities]);
+  const liveCalendarEntities = useHomeAssistant(
+    useCallback(
+      (state) =>
+        Object.fromEntries(
+          calendarEntityIds.map((entityId) => [entityId, state.entities?.[entityId] ?? null])
+        ),
+      [calendarEntityIds]
+    ),
+    shallow
+  );
   const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
   const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
   const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
@@ -221,28 +243,47 @@ export const useHADevices = (): DeviceCollection => {
       return;
     }
 
+    const activeConnection = connection;
+    const weatherEntityId = primaryWeatherEntityId;
     let cancelled = false;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-    void Promise.all([
-      fetchWeatherForecast(connection, primaryWeatherEntityId, 'daily').catch(() => []),
-      fetchWeatherForecast(connection, primaryWeatherEntityId, 'hourly').catch(() => []),
-    ]).then(([daily, hourly]) => {
+    const scheduleRefresh = () => {
+      refreshTimer = setTimeout(() => {
+        void refreshForecasts();
+      }, WEATHER_REFRESH_MS);
+    };
+
+    async function refreshForecasts() {
+      const [daily, hourly] = await Promise.all([
+        fetchWeatherForecast(activeConnection, weatherEntityId, 'daily').catch(() => []),
+        fetchWeatherForecast(activeConnection, weatherEntityId, 'hourly').catch(() => []),
+      ]);
       if (cancelled) {
         return;
       }
 
       startTransition(() => {
         setWeatherForecasts({
-          [primaryWeatherEntityId]: {
+          [weatherEntityId]: {
             daily,
             hourly,
           },
         });
       });
-    });
+
+      if (!cancelled) {
+        scheduleRefresh();
+      }
+    }
+
+    void refreshForecasts();
 
     return () => {
       cancelled = true;
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
     };
   }, [connection, primaryWeatherEntityId]);
 
@@ -254,14 +295,23 @@ export const useHADevices = (): DeviceCollection => {
       return;
     }
 
+    const activeConnection = connection;
     let cancelled = false;
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-    void Promise.all(
-      calendarEntityIds.map(async (entityId) => {
-        const events = await fetchCalendarEvents(connection, entityId).catch(() => []);
-        return [entityId, events] as const;
-      })
-    ).then((entries) => {
+    const scheduleRefresh = () => {
+      refreshTimer = setTimeout(() => {
+        void refreshEvents();
+      }, CALENDAR_REFRESH_MS);
+    };
+
+    async function refreshEvents() {
+      const entries = await Promise.all(
+        calendarEntityIds.map(async (entityId) => {
+          const events = await fetchCalendarEvents(activeConnection, entityId).catch(() => []);
+          return [entityId, events] as const;
+        })
+      );
       if (cancelled) {
         return;
       }
@@ -269,10 +319,19 @@ export const useHADevices = (): DeviceCollection => {
       startTransition(() => {
         setCalendarEvents(Object.fromEntries(entries));
       });
-    });
+
+      if (!cancelled) {
+        scheduleRefresh();
+      }
+    }
+
+    void refreshEvents();
 
     return () => {
       cancelled = true;
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
     };
   }, [calendarEntityIds, connection]);
 
@@ -298,14 +357,10 @@ export const useHADevices = (): DeviceCollection => {
       };
     }
 
-    const hourlyForecastLabelFormatter = new Intl.DateTimeFormat(locale, { hour: 'numeric' });
-    const weeklyForecastLabelFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-
     const sunEntity = entities['sun.sun'];
-    const sunEntitySunrise = sunEntity?.attributes?.next_rising;
-    const sunEntitySunset = sunEntity?.attributes?.next_setting;
+    const weatherEntity =
+      liveWeatherEntity ?? (primaryWeatherEntityId ? entities[primaryWeatherEntityId] : null);
 
-    // Process entities into device collections
     const lights: LightDevice[] = [];
     const switches: SwitchDevice[] = [];
     const helpers: HelperDevice[] = [];
@@ -352,7 +407,6 @@ export const useHADevices = (): DeviceCollection => {
       return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
     };
 
-    // Pre-pass: collect power/config metrics for switch devices
     for (const [entityId, entity] of entityEntries) {
       const domain = getDomain(entityId);
       if (domain === 'vacuum') {
@@ -399,14 +453,14 @@ export const useHADevices = (): DeviceCollection => {
             : '';
         const normalizedMetric = normalizeMetric(deviceClass, friendlyName, rawValue, unit);
         if (normalizedMetric) {
-          const nextMetric: DeviceMetric = {
+          const nextMetric = {
             ...normalizedMetric,
             icon: inferMetricIcon(
               deviceClass,
               `${entityId} ${friendlyName} ${entity.attributes?.friendly_name ?? ''}`,
               unit
             ),
-            category: 'measurement',
+            category: 'measurement' as const,
           };
           const existingIndex = metricState.findIndex(
             (metric) => metric.label === nextMetric.label
@@ -453,7 +507,7 @@ export const useHADevices = (): DeviceCollection => {
           value: parsedValue,
           unit,
           icon: inferMetricIcon(null, `${entityId} ${label}`, unit),
-          category: 'configuration',
+          category: 'configuration' as const,
         };
         const existingIndex = metricState.findIndex((metric) => metric.label === nextMetric.label);
         if (existingIndex === -1) {
@@ -487,7 +541,6 @@ export const useHADevices = (): DeviceCollection => {
       }
     }
 
-    // Pre-pass: choose one primary switch card entity per HA device.
     for (const [entityId, entity] of entityEntries) {
       if (getDomain(entityId) !== 'switch') {
         continue;
@@ -523,7 +576,6 @@ export const useHADevices = (): DeviceCollection => {
       }
     }
 
-    // Process each entity based on domain
     for (const [entityId, entity] of entityEntries) {
       const domain = getDomain(entityId);
       const name = getName(entity);
@@ -531,15 +583,7 @@ export const useHADevices = (): DeviceCollection => {
 
       switch (domain) {
         case 'light':
-          lights.push({
-            id: entityId,
-            name,
-            room,
-            size: 'small',
-            state: entity.state === 'on',
-            brightness: brightnessToPercent(entityId, entity),
-            temp: normalizeKelvin(entity),
-          });
+          lights.push(mapLightDevice(entityId, entity, name, room));
           break;
 
         case 'switch': {
@@ -567,34 +611,18 @@ export const useHADevices = (): DeviceCollection => {
           const deviceMetrics = entityEntry?.device_id
             ? switchMetricsByDeviceId.get(entityEntry.device_id)
             : undefined;
-          const powerMetric = deviceMetrics?.find((metric) => metric.label === 'Power');
-          const voltageMetric = deviceMetrics?.find((metric) => metric.label === 'Voltage');
-          const energyMetric = deviceMetrics?.find((metric) => metric.label === 'Energy');
-          switches.push({
-            id: entityId,
+          const mapped = mapSwitchDevice(
+            entityId,
+            entity,
             name,
             room,
-            size: 'small',
-            state: entity.state === 'on',
-            entityType: formatEntityType(
-              entity.attributes?.device_class,
-              t('lighting.type.switch'),
-              t
-            ),
-            power:
-              parseNumberish(entity.attributes?.power) ??
-              parseNumberish(entity.attributes?.current_power_w) ??
-              (typeof powerMetric?.value === 'number' ? powerMetric.value : undefined),
-            voltage:
-              parseNumberish(entity.attributes?.voltage) ??
-              parseNumberish(entity.attributes?.current_voltage) ??
-              (typeof voltageMetric?.value === 'number' ? voltageMetric.value : undefined),
-            energy:
-              parseNumberish(entity.attributes?.energy) ??
-              parseNumberish(entity.attributes?.energy_today) ??
-              (typeof energyMetric?.value === 'number' ? energyMetric.value : undefined),
-            metrics: deviceMetrics,
-          });
+            t,
+            entityEntry,
+            deviceMetrics
+          );
+          if (mapped) {
+            switches.push(mapped);
+          }
           break;
         }
 
@@ -671,176 +699,31 @@ export const useHADevices = (): DeviceCollection => {
           break;
 
         case 'climate':
-          climate.push({
-            id: entityId,
-            name,
-            room,
-            size: 'medium',
-            temperature: parseFloat(entity.attributes?.temperature) || 0,
-            currentTemperature:
-              parseNumberish(entity.attributes?.current_temperature) ??
-              (parseFloat(entity.attributes?.temperature ?? '0') || 0),
-            mode:
-              (typeof entity.state === 'string' && entity.state) ||
-              (typeof entity.attributes?.hvac_mode === 'string' && entity.attributes.hvac_mode) ||
-              'off',
-            action:
-              (typeof entity.attributes?.hvac_action === 'string' &&
-                entity.attributes.hvac_action) ||
-              undefined,
-          });
+          climate.push(mapClimateDevice(entityId, entity, name, room));
           break;
 
         case 'media_player': {
-          const supportedFeatures = parseNumberish(entity.attributes?.supported_features) ?? 0;
-          const mediaDeviceClass =
-            typeof entity.attributes?.device_class === 'string'
-              ? entity.attributes.device_class
-              : undefined;
-          const mediaEntityType = formatMediaEntityType(mediaDeviceClass, t);
-          const entityPicture =
-            (typeof entity.attributes?.entity_picture === 'string' &&
-              entity.attributes.entity_picture) ||
-            (typeof entity.attributes?.entity_picture_local === 'string' &&
-              entity.attributes.entity_picture_local) ||
-            (typeof entity.attributes?.media_image_url === 'string' &&
-              entity.attributes.media_image_url) ||
-            undefined;
-          const normalizedState: MediaDevice['state'] = normalizeMediaPlaybackState(
-            entity.state,
-            mediaDeviceClass
-          );
-          const mediaTitle =
-            (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
-            (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
-            (typeof entity.attributes?.media_channel === 'string' &&
-              entity.attributes.media_channel) ||
-            (typeof entity.attributes?.media_series_title === 'string' &&
-              entity.attributes.media_series_title) ||
-            t('media.nothingPlaying');
-          const mediaArtist =
-            (typeof entity.attributes?.media_artist === 'string' &&
-              entity.attributes.media_artist) ||
-            (typeof entity.attributes?.media_album_name === 'string' &&
-              entity.attributes.media_album_name) ||
-            (typeof entity.attributes?.media_series_title === 'string' &&
-              entity.attributes.media_series_title) ||
-            (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
-            (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
-            t('media.nothingPlayingDescription');
-          const mediaSource =
-            typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined;
-          const mediaSourceList = Array.isArray(entity.attributes?.source_list)
-            ? entity.attributes.source_list.filter(
-                (value): value is string => typeof value === 'string' && value.trim().length > 0
-              )
-            : [];
-          const volumeLevel = parseNumberish(entity.attributes?.volume_level);
-          const mediaPosition = parseNumberish(entity.attributes?.media_position);
-          const mediaDuration = parseNumberish(entity.attributes?.media_duration);
-          const positionUpdatedAt =
-            typeof entity.attributes?.media_position_updated_at === 'string'
-              ? entity.attributes.media_position_updated_at
-              : undefined;
-          const groupMembers = Array.isArray(entity.attributes?.group_members)
-            ? entity.attributes.group_members.filter(
-                (value): value is string => typeof value === 'string' && value.length > 0
-              )
-            : [];
-
-          media.push({
-            id: entityId,
-            name,
-            room,
-            size: 'medium',
-            title: mediaTitle,
-            artist: mediaArtist,
-            entityType: mediaEntityType,
-            deviceClass: mediaDeviceClass,
-            source: mediaSource,
-            sourceList: mediaSourceList,
-            entityPicture,
-            state: normalizedState,
-            volume:
-              typeof volumeLevel === 'number'
-                ? Math.max(0, Math.min(100, Math.round(volumeLevel * 100)))
-                : 0,
-            isMuted: entity.attributes?.is_volume_muted === true,
-            elapsedSeconds:
-              typeof mediaPosition === 'number'
-                ? Math.max(0, Math.floor(mediaPosition))
-                : undefined,
-            durationSeconds:
-              typeof mediaDuration === 'number'
-                ? Math.max(0, Math.floor(mediaDuration))
-                : undefined,
-            positionUpdatedAt,
-            supportsGrouping: (supportedFeatures & 524288) === 524288,
-            groupMembers,
-          });
+          const mapped = mapMediaDevice(entityId, entity, name, room, t);
+          media.push(mapped);
           break;
         }
 
         case 'person': {
-          const personState = typeof entity.state === 'string' ? entity.state : 'not_home';
-          const personLocation =
-            personState === 'home'
-              ? t('person.home')
-              : personState === 'not_home'
-                ? t('person.away')
-                : personState
-                    .split('_')
-                    .map((segment) =>
-                      segment.length > 0
-                        ? `${segment[0]?.toUpperCase() ?? ''}${segment.slice(1)}`
-                        : segment
-                    )
-                    .join(' ');
-
-          persons.push({
-            id: entityId,
-            name,
-            room,
-            size: 'small',
-            location: personLocation,
-            state: personState === 'home' ? 'home' : 'away',
-            entityPicture:
-              (typeof entity.attributes?.entity_picture === 'string' &&
-                entity.attributes.entity_picture) ||
-              (typeof entity.attributes?.entity_picture_local === 'string' &&
-                entity.attributes.entity_picture_local) ||
-              undefined,
-          });
+          const mapped = mapPersonDevice(entityId, entity, name, room, t);
+          persons.push(mapped);
           break;
         }
 
         case 'cover':
-          covers.push({
-            id: entityId,
-            name,
-            room,
-            size: 'medium',
-            position: entity.attributes?.current_position || 0,
-          });
+          covers.push(mapCoverDevice(entityId, entity, name, room));
           break;
 
         case 'lock':
-          locks.push({
-            id: entityId,
-            name,
-            room,
-            size: 'small',
-            state: entity.state === 'locked',
-          });
+          locks.push(mapLockDevice(entityId, entity, name, room));
           break;
 
         case 'scene':
-          scenes.push({
-            id: entityId,
-            name,
-            room,
-            size: 'small',
-          });
+          scenes.push(mapSceneDevice(entityId, entity, name, room));
           break;
 
         case 'camera':
@@ -848,148 +731,28 @@ export const useHADevices = (): DeviceCollection => {
             break;
           }
 
-          cameras.push({
-            id: entityId,
-            name,
-            room,
-            size: 'medium',
-            entityPicture:
-              typeof entity.attributes?.entity_picture === 'string'
-                ? entity.attributes.entity_picture
-                : undefined,
-            state: entity.state,
-          });
+          cameras.push(mapCameraDevice(entityId, entity, name, room));
           break;
 
         case 'vacuum': {
-          const batteryLevel = parseNumberish(entity.attributes?.battery_level);
-          const cleanedAreaValue =
-            parseNumberish(entity.attributes?.cleaned_area) ??
-            parseNumberish(entity.attributes?.cleaned_area_today) ??
-            parseNumberish(entity.attributes?.last_cleaned_area);
-          const cleaningTimeMinutes =
-            parseNumberish(entity.attributes?.cleaning_time) ??
-            parseNumberish(entity.attributes?.clean_time) ??
-            parseNumberish(entity.attributes?.cleaning_duration);
-
-          const normalizedStatus: VacuumDevice['status'] = normalizeVacuumStatus(entity.state);
-
-          vacuums.push({
-            id: entityId,
-            name,
-            room,
-            size: 'medium',
-            status: normalizedStatus,
-            battery:
-              typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : 0,
-            cleanedArea:
-              typeof cleanedAreaValue === 'number'
-                ? `${cleanedAreaValue.toFixed(cleanedAreaValue >= 10 ? 0 : 1)} m²`
-                : undefined,
-            cleaningTime:
-              typeof cleaningTimeMinutes === 'number'
-                ? `${Math.max(0, Math.round(cleaningTimeMinutes))} min`
-                : undefined,
-          });
+          const mapped = mapVacuumDevice(entityId, entity, name, room);
+          vacuums.push(mapped);
           break;
         }
 
         case 'calendar': {
-          const rawEvents = deferredCalendarEvents[entityId] ?? [];
-          const fallbackTitle =
-            typeof entity.attributes?.message === 'string' ? entity.attributes.message : '';
-          const fallbackLocation =
-            typeof entity.attributes?.location === 'string'
-              ? entity.attributes.location
-              : undefined;
-          const fallbackEvents =
-            fallbackTitle.length > 0
-              ? [
-                  {
-                    id: `${entityId}-current`,
-                    title: fallbackTitle,
-                    start: entity.attributes?.start_time,
-                    end: entity.attributes?.end_time,
-                    location: fallbackLocation,
-                  },
-                ]
-              : [];
-
-          const colors = [
-            'bg-blue-500',
-            'bg-purple-500',
-            'bg-green-500',
-            'bg-orange-500',
-            'bg-indigo-500',
-          ] as const;
-
-          const events = (rawEvents.length > 0 ? rawEvents : fallbackEvents)
-            .map((rawEvent, index) => {
-              const eventRecord = rawEvent as Record<string, unknown>;
-              const title =
-                typeof eventRecord.title === 'string'
-                  ? eventRecord.title
-                  : typeof eventRecord.summary === 'string'
-                    ? eventRecord.summary
-                    : typeof eventRecord.message === 'string'
-                      ? eventRecord.message
-                      : t('calendar.fallbackEvent', { count: index + 1 });
-              const location =
-                typeof eventRecord.location === 'string' ? eventRecord.location : undefined;
-              const description =
-                typeof eventRecord.description === 'string'
-                  ? eventRecord.description
-                  : typeof eventRecord.notes === 'string'
-                    ? eventRecord.notes
-                    : typeof eventRecord.message === 'string'
-                      ? eventRecord.message
-                      : undefined;
-              const startDate = parseCalendarDate(eventRecord.start ?? eventRecord.start_time);
-              const endDate = parseCalendarDate(eventRecord.end ?? eventRecord.end_time);
-              const isAllDay = isAllDayCalendarValue(eventRecord.start ?? eventRecord.start_time);
-              const startTime = formatCalendarTime(startDate, locale);
-              const endTime = formatCalendarTime(endDate, locale);
-              const attendees = Array.isArray(eventRecord.attendees)
-                ? eventRecord.attendees.length
-                : typeof eventRecord.attendees === 'number'
-                  ? eventRecord.attendees
-                  : undefined;
-
-              return {
-                id:
-                  (typeof eventRecord.uid === 'string' && eventRecord.uid) ||
-                  (typeof eventRecord.id === 'string' && eventRecord.id) ||
-                  `${entityId}-${index}`,
-                title,
-                startTime,
-                endTime,
-                timeDisplay: startTime,
-                isAllDay,
-                location,
-                description,
-                type: inferCalendarEventType(title, location),
-                color: colors[index % colors.length],
-                attendees,
-                sortKey: startDate?.toISOString(),
-                sourceId: entityId,
-                sourceName: name,
-                startDate,
-              };
-            })
-            .sort((left, right) => {
-              const leftTime = left.startDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
-              const rightTime = right.startDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
-              return leftTime - rightTime;
-            })
-            .slice(0, 5)
-            .map(({ startDate: _startDate, ...event }) => event);
-
-          calendarSources.push({
-            id: entityId,
+          const sources = mapCalendarSources(
+            entityId,
+            liveCalendarEntities[entityId] ?? entity,
             name,
             room,
-            events,
-          });
+            {
+              calendarEvents: deferredCalendarEvents,
+              locale,
+              t,
+            }
+          );
+          calendarSources.push(...sources);
           break;
         }
 
@@ -998,142 +761,15 @@ export const useHADevices = (): DeviceCollection => {
             break;
           }
 
-          const storedForecasts = deferredWeatherForecasts[entityId];
-          const fallbackDailyForecast = Array.isArray(entity.attributes?.forecast)
-            ? (entity.attributes.forecast as WeatherForecastEntry[])
-            : [];
-          const dailyForecastSource =
-            storedForecasts?.daily && storedForecasts.daily.length > 0
-              ? storedForecasts.daily
-              : fallbackDailyForecast;
-          const hourlyForecastSource =
-            storedForecasts?.hourly && storedForecasts.hourly.length > 0
-              ? storedForecasts.hourly
-              : [];
-          const selectedForecastSource =
-            weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0
-              ? hourlyForecastSource
-              : dailyForecastSource;
-          const effectiveForecastMode =
-            weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0
-              ? 'hourly'
-              : 'weekly';
-
-          const forecast = selectedForecastSource
-            .slice(0, 7)
-            .map((entry: Record<string, unknown>, index) => {
-              const forecastDate =
-                typeof entry.datetime === 'string'
-                  ? new Date(entry.datetime)
-                  : typeof entry.datetime === 'number'
-                    ? new Date(entry.datetime)
-                    : null;
-              const dayLabel =
-                forecastDate && !Number.isNaN(forecastDate.getTime())
-                  ? effectiveForecastMode === 'hourly'
-                    ? hourlyForecastLabelFormatter.format(forecastDate)
-                    : index === 0
-                      ? t('weather.today')
-                      : weeklyForecastLabelFormatter.format(forecastDate)
-                  : effectiveForecastMode === 'hourly'
-                    ? `+${index + 1}h`
-                    : index === 0
-                      ? t('weather.today')
-                      : t('weather.dayFallback', { day: index + 1 });
-              const forecastTemperature =
-                parseRoundedNumberish(entry.temperature) ??
-                parseRoundedNumberish(entry.native_temperature) ??
-                0;
-
-              return {
-                day: dayLabel,
-                condition: (typeof entry.condition === 'string' && entry.condition) || entity.state,
-                high: forecastTemperature,
-                low:
-                  effectiveForecastMode === 'hourly'
-                    ? forecastTemperature
-                    : (parseRoundedNumberish(entry.templow) ?? 0),
-              };
-            });
-
-          const highTemp =
-            parseRoundedNumberish(dailyForecastSource[0]?.temperature) ??
-            parseRoundedNumberish(entity.attributes?.temperature) ??
-            parseRoundedNumberish(entity.attributes?.native_temperature) ??
-            0;
-          const lowTemp = parseRoundedNumberish(dailyForecastSource[0]?.templow) ?? highTemp;
-          const precipitationUnit =
-            (typeof entity.attributes?.precipitation_unit === 'string' &&
-              entity.attributes.precipitation_unit) ||
-            '%';
-          const precipitationValue =
-            parseNumberish(entity.attributes?.precipitation_probability) ??
-            parseNumberish(entity.attributes?.precipitation) ??
-            0;
-          const tomorrowForecast = dailyForecastSource[1] as Record<string, unknown> | undefined;
-          const tomorrowPrecipitationProbability = tomorrowForecast
-            ? parseNumberish(tomorrowForecast.precipitation_probability)
-            : null;
-          const tomorrowPrecipitationAmount = tomorrowForecast
-            ? parseNumberish(tomorrowForecast.precipitation)
-            : null;
-
-          const sunriseSource = sunEntitySunrise ?? entity.attributes?.sunrise;
-          const sunsetSource = sunEntitySunset ?? entity.attributes?.sunset;
-          const weatherLocation =
-            (typeof entity.attributes?.location === 'string' && entity.attributes.location) ||
-            (typeof entity.attributes?.city === 'string' && entity.attributes.city) ||
-            (typeof entity.attributes?.place === 'string' && entity.attributes.place) ||
-            (config &&
-            typeof config === 'object' &&
-            'location_name' in config &&
-            typeof config.location_name === 'string'
-              ? config.location_name
-              : undefined) ||
-            room ||
-            name;
-
-          weather.push({
-            id: entityId,
-            name,
-            room,
-            size: 'large',
-            location: weatherLocation,
-            temperature:
-              parseRoundedNumberish(entity.attributes?.temperature) ??
-              parseRoundedNumberish(entity.attributes?.native_temperature) ??
-              0,
-            condition: entity.state,
-            humidity: parseNumberish(entity.attributes?.humidity) ?? 0,
-            windSpeed:
-              parseNumberish(entity.attributes?.wind_speed) ??
-              parseNumberish(entity.attributes?.native_wind_speed) ??
-              0,
-            pressure:
-              parseNumberish(entity.attributes?.pressure) ??
-              parseNumberish(entity.attributes?.native_pressure) ??
-              0,
-            precipitation: precipitationValue,
-            precipitationUnit,
-            sunrise: formatClock(sunriseSource, locale),
-            sunset: formatClock(sunsetSource, locale),
-            daylight: formatDaylight(sunriseSource, sunsetSource),
-            rainForecast:
-              tomorrowPrecipitationProbability !== null
-                ? t('weather.rainTomorrow', {
-                    chance: Math.round(tomorrowPrecipitationProbability),
-                  })
-                : tomorrowPrecipitationAmount !== null
-                  ? t('weather.precipitationTomorrow', {
-                      amount: formatWeatherValue(tomorrowPrecipitationAmount),
-                      unit: precipitationUnit,
-                    })
-                  : '',
-            highTemp,
-            lowTemp,
-            forecastMode: effectiveForecastMode,
-            forecast,
+          const mapped = mapWeatherDevice(entityId, weatherEntity ?? entity, name, room, {
+            sunEntity,
+            config,
+            weatherForecastMode,
+            storedForecasts: deferredWeatherForecasts[entityId],
+            locale,
+            t,
           });
+          weather.push(mapped);
           break;
         }
       }
@@ -1203,6 +839,8 @@ export const useHADevices = (): DeviceCollection => {
     deviceRegistry,
     entities,
     entityRegistry,
+    liveCalendarEntities,
+    liveWeatherEntity,
     locale,
     primaryWeatherEntityId,
     t,

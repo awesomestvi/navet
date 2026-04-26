@@ -682,6 +682,7 @@ export const svMessages = {
   'rss.settings.savedDirectFeeds': 'Sparade direkta floden',
   'rss.settings.emptyState': 'Inga RSS-kallor annu. Lagg till ett direktflode for att komma igang.',
   'rss.settings.addFeed': 'Lagg till flode',
+  'rss.settings.addFeedAndClose': 'Lagg till flode och stang',
   'rss.settings.addFeedDescription':
     'Lagg till en anpassad RSS-URL och valj den automatiskt for det har kortet.',
   'rss.settings.providerName': 'Källnamn',
@@ -695,6 +696,7 @@ export const svMessages = {
   'rss.feedback.clearedSource.other': 'Rensade {count} Home Assistant-källor',
   'rss.feedback.invalidUrl': 'Ange en giltig feed-URL',
   'rss.feedback.addNameAndUrl': 'Lägg till ett namn och en feed-URL',
+  'rss.feedback.finishAddingFeed': 'Slutfor det har flodet eller rensa falten innan du stanger',
   'rss.feedback.addedProvider': 'Lade till {name}',
   'rss.feedback.removedProvider': 'Tog bort {name}',
   'rss.recently': 'Nyligen',
@@ -933,6 +935,7 @@ export const svMessages = {
   'widgets.energyNow.settings.group.home': 'Hem',
   'widgets.energyNow.settings.group.sources': 'Källor',
   'widgets.energyNow.settings.group.devices': 'Enheter',
+  'widgets.energyNow.empty.sparkline': 'Inte tillräckligt med data för att visa sparkline ännu.',
   'widgets.button.title': 'Åtgärdsknapp',
   'widgets.button.labelPlaceholder': 'Knappetikett',
   'widgets.button.servicePlaceholder': 't.ex. scene.turn_on',

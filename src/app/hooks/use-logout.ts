@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { useAuth } from '@/app/contexts/auth-context';
 import { useI18n } from '@/app/i18n';
+import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 
 export function useLogout() {

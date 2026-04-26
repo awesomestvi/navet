@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { shallow } from 'zustand/shallow';
-import { useAuth } from '@/app/contexts/auth-context';
+import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import {
@@ -102,7 +103,7 @@ export function useMediaCardController({
       : true;
   const resolvedInitialSupportsGrouping =
     typeof resolvedInitialSupportedFeatures === 'number'
-      ? (resolvedInitialSupportedFeatures & 524288) === 524288
+      ? hasMediaPlayerGroupingSupport(resolvedInitialSupportedFeatures)
       : initialSupportsGrouping;
   const resolvedInitialGroupMembersFromEntity = Array.isArray(liveAttrs?.group_members)
     ? liveAttrs.group_members.filter(

@@ -57,6 +57,10 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           borderAlphaHex: controller.tintColor ? '33' : '47',
         })
       : null;
+  const activeShellBackgroundClassName = controller.isOn
+    ? `bg-linear-to-br ${controller.cardColors.gradient}`
+    : '';
+  const frameClassName = `${cardShell.rootFrameClassName} ${activeShellBackgroundClassName} ${controller.cardColors.border} ${stateSurface.containerClassName}`;
 
   const controlsDialog =
     controller.hasControlsDialog && controller.isDialogOpen ? (
@@ -90,7 +94,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           {...controller.cardInteraction.cardProps}
           interactive={!props.isEditMode}
           className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-          frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
+          frameClassName={frameClassName}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
           disableDefaultSheen
           disableDefaultLightOverlay
@@ -155,7 +159,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           {...controller.cardInteraction.cardProps}
           interactive={!props.isEditMode}
           className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-          frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
+          frameClassName={frameClassName}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
           disableDefaultSheen
           disableDefaultLightOverlay
@@ -224,7 +228,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         {...controller.cardInteraction.cardProps}
         interactive={!props.isEditMode}
         className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
-        frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${controller.cardColors.gradient} ${controller.cardColors.border} ${stateSurface.containerClassName}`}
+        frameClassName={frameClassName}
         style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         disableDefaultSheen
         disableDefaultLightOverlay

@@ -70,7 +70,8 @@ export function useOnboardingController({
         window.setTimeout(() => {
           window.location.reload();
         }, 600);
-      } catch {
+      } catch (error) {
+        console.error('[OnboardingController] Config import failed:', error);
         toast.error(t('dashboard.feedback.configImportFailed'));
       }
     },
@@ -86,7 +87,8 @@ export function useOnboardingController({
         setDashboardArrivalVariant('import');
         setOnboardingTransition('import');
         toast.success(t('dashboard.feedback.configRestored'));
-      } catch {
+      } catch (error) {
+        console.error('[OnboardingController] Config import failed:', error);
         toast.error(t('dashboard.feedback.configImportFailed'));
       }
     },

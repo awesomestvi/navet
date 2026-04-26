@@ -179,9 +179,12 @@ export const VacuumCard = memo(function VacuumCard({
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const { t } = useI18n();
-  const isActive = currentStatus !== 'idle';
+  const isActive =
+    currentStatus === 'cleaning' || currentStatus === 'returning' || currentStatus === 'paused';
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const cardColors = colors.vacuum[getVacuumThemeStatus(currentStatus)];
+  const activeShellBackgroundClassName = isActive ? `bg-gradient-to-br ${cardColors.gradient}` : '';
+  const frameClassName = `${cardShell.rootFrameClassName} ${activeShellBackgroundClassName} ${cardColors.border} ${stateSurface.containerClassName}`;
 
   const isSmall = isCompactCardSize(resolvedSize);
   const isMedium = resolvedSize === 'medium';
@@ -190,7 +193,7 @@ export const VacuumCard = memo(function VacuumCard({
     <div className="h-full w-full relative">
       <BaseCard
         size={resolvedSize}
-        frameClassName={`${cardShell.rootFrameClassName} bg-gradient-to-br ${cardColors.gradient} ${cardColors.border} ${stateSurface.containerClassName}`}
+        frameClassName={frameClassName}
         disableDefaultSheen
         overlay={
           <>

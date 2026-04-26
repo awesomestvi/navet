@@ -77,7 +77,8 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
     }
 
     return `${HOME_ASSISTANT_PROXY_PATH}${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
-  } catch {
+  } catch (error) {
+    console.error('[HomeAssistantURL] URL resolution failed:', error);
     return resourceUrl;
   }
 }

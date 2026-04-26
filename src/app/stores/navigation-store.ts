@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { pathToSection, type Section, sectionToPath } from '../navigation/sections';
 
+let navigationStoreCleanup: (() => void) | null = null;
+
 interface NavigationState {
   currentRoom: string;
   activeSection: Section;
@@ -43,9 +45,20 @@ export const useNavigationStore = create<NavigationState>()(
   )
 );
 
-// Sync Zustand with browser back/forward navigation
-if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
+export function startNavigationStoreSync() {
+  if (typeof window === 'undefined' || navigationStoreCleanup) {
+    return navigationStoreCleanup ?? (() => {});
+  }
+
+  const handlePopState = () => {
     useNavigationStore.setState({ activeSection: pathToSection(window.location.pathname) });
-  });
+  };
+
+  window.addEventListener('popstate', handlePopState);
+  navigationStoreCleanup = () => {
+    window.removeEventListener('popstate', handlePopState);
+    navigationStoreCleanup = null;
+  };
+
+  return navigationStoreCleanup;
 }

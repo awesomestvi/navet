@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getEnergyStatisticsToday } from '../services/energy-statistics-service';
 import type { EnergySourceConfig } from '../types/energy.types';
 
@@ -15,6 +17,7 @@ export function useEnergyStatisticsToday(
 ): Record<string, number> {
   const [todayKWh, setTodayKWh] = useState<Record<string, number>>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connection = useHomeAssistant(homeAssistantSelectors.connection);
 
   useEffect(() => {
     if (!sourceConfig) {
@@ -31,13 +34,14 @@ export function useEnergyStatisticsToday(
     if (entityIds.length === 0) return;
 
     async function fetchStats() {
-      const connection = homeAssistantService.getConnection();
-      if (!connection) return;
+      const activeConnection = connection ?? homeAssistantService.getConnection();
+      if (!activeConnection) return;
       try {
-        const result = await getEnergyStatisticsToday(connection, entityIds);
+        const result = await getEnergyStatisticsToday(activeConnection, entityIds);
         setTodayKWh(result);
-      } catch {
-        // silently fail — dashboard remains useful without today stats
+      } catch (error) {
+        console.error('[EnergyStatisticsToday] Failed to fetch today stats:', error);
+        // Dashboard remains useful without today stats
       }
     }
 
@@ -47,7 +51,7 @@ export function useEnergyStatisticsToday(
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sourceConfig]);
+  }, [connection, sourceConfig]);
 
   return todayKWh;
 }

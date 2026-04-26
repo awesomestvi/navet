@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 import { ColorInputSwatch, Input } from '@/app/components/primitives';
 import { themeColorValues } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { generateThemeColors, type ThemeType, useTheme } from '@/app/hooks/use-theme';
+import type { ThemeType } from '@/app/hooks/use-theme';
+import { useTheme } from '@/app/hooks/use-theme';
+import { generateThemeColors } from '@/app/hooks/use-theme-colors';
 import { navetSemanticColorTokens, navetTypographyTokens } from './foundations';
 
 const THEME_COLUMNS: ThemeType[] = ['light', 'dark', 'glass', 'black'];

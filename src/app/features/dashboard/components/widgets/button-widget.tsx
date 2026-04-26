@@ -92,7 +92,8 @@ function ButtonSettingsDialog({
           return;
         }
         parsedServiceData = parsed as Record<string, unknown>;
-      } catch {
+      } catch (error) {
+        console.error('[ButtonWidget] Failed to parse service data JSON:', error);
         toast.error(t('widgets.button.invalidServiceData'));
         return;
       }
@@ -244,7 +245,8 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
         data.serviceData ?? {},
         data.entityId ? { entity_id: data.entityId } : undefined
       );
-    } catch {
+    } catch (error) {
+      console.error('[ButtonWidget] Service call failed:', error);
       toast.error(t('widgets.button.callFailed', { service: data.service }));
     }
   };

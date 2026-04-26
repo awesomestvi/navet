@@ -691,6 +691,7 @@ export const frMessages = {
   'rss.settings.emptyState':
     'Aucune source RSS pour le moment. Ajoutez un flux direct pour commencer.',
   'rss.settings.addFeed': 'Ajouter un flux',
+  'rss.settings.addFeedAndClose': 'Ajouter le flux et fermer',
   'rss.settings.addFeedDescription':
     'Ajoutez une URL RSS personnalisee et selectionnez-la automatiquement pour cette carte.',
   'rss.settings.providerName': 'Nom du fournisseur',
@@ -704,6 +705,7 @@ export const frMessages = {
   'rss.feedback.clearedSource.other': '{count} sources Home Assistant effacees',
   'rss.feedback.invalidUrl': 'Entrez une URL de flux valide',
   'rss.feedback.addNameAndUrl': 'Ajoutez un nom et une URL de flux',
+  'rss.feedback.finishAddingFeed': 'Terminez ce flux ou videz les champs avant de fermer',
   'rss.feedback.addedProvider': '{name} ajouté',
   'rss.feedback.removedProvider': '{name} supprimé',
   'rss.recently': 'Recemment',
@@ -944,6 +946,8 @@ export const frMessages = {
   'widgets.energyNow.settings.group.home': 'Maison',
   'widgets.energyNow.settings.group.sources': 'Sources',
   'widgets.energyNow.settings.group.devices': 'Appareils',
+  'widgets.energyNow.empty.sparkline':
+    'Pas encore assez de données pour afficher la courbe sparkline.',
   'widgets.button.title': "Bouton d'action",
   'widgets.button.labelPlaceholder': 'Libellé du bouton',
   'widgets.button.servicePlaceholder': 'ex. scene.turn_on',

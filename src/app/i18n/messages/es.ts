@@ -688,6 +688,7 @@ export const esMessages = {
   'rss.settings.savedDirectFeeds': 'Fuentes directas guardadas',
   'rss.settings.emptyState': 'Aun no hay fuentes RSS. Agrega una fuente directa para comenzar.',
   'rss.settings.addFeed': 'Agregar fuente',
+  'rss.settings.addFeedAndClose': 'Agregar fuente y cerrar',
   'rss.settings.addFeedDescription':
     'Agrega una URL RSS personalizada y seleccionala automaticamente para esta tarjeta.',
   'rss.settings.providerName': 'Nombre del proveedor',
@@ -701,6 +702,8 @@ export const esMessages = {
   'rss.feedback.clearedSource.other': 'Se limpiaron {count} fuentes de Home Assistant',
   'rss.feedback.invalidUrl': 'Introduce una URL de fuente válida',
   'rss.feedback.addNameAndUrl': 'Agrega un nombre y una URL de fuente',
+  'rss.feedback.finishAddingFeed':
+    'Termina de agregar esta fuente o limpia los campos antes de cerrar',
   'rss.feedback.addedProvider': 'Se agregó {name}',
   'rss.feedback.removedProvider': 'Se eliminó {name}',
   'rss.recently': 'Recientemente',
@@ -941,6 +944,8 @@ export const esMessages = {
   'widgets.energyNow.settings.group.home': 'Hogar',
   'widgets.energyNow.settings.group.sources': 'Fuentes',
   'widgets.energyNow.settings.group.devices': 'Dispositivos',
+  'widgets.energyNow.empty.sparkline':
+    'Todavía no hay suficientes datos para mostrar la línea sparkline.',
   'widgets.button.title': 'Botón de acción',
   'widgets.button.labelPlaceholder': 'Etiqueta del botón',
   'widgets.button.servicePlaceholder': 'ej. scene.turn_on',

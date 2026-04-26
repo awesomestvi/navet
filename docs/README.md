@@ -75,4 +75,4 @@ This directory is the index for active Navet documentation.
 - When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
 - When shared test harnesses, store-reset behavior, or service stubs change, update the testing references in the active docs
 
-Last updated: April 26, 2026
+Last updated: April 27, 2026

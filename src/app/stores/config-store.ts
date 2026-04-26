@@ -21,7 +21,8 @@ export interface ConfigState {
 const initialConfig = (() => {
   try {
     return readInitialSessionConfig(STORAGE_KEYS.haConfig);
-  } catch {
+  } catch (error) {
+    console.error('[ConfigStore] Failed to read initial config:', error);
     return null;
   }
 })();
@@ -35,7 +36,8 @@ export const useConfigStore = create<ConfigState>()((set) => ({
       const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
       try {
         new URL(cleanUrl);
-      } catch {
+      } catch (error) {
+        console.error('[ConfigStore] Invalid URL format:', error);
         return false;
       }
       const response = await fetch(`${cleanUrl}/api/`, {
@@ -47,7 +49,8 @@ export const useConfigStore = create<ConfigState>()((set) => ({
         mode: 'cors',
       });
       return response.ok;
-    } catch {
+    } catch (error) {
+      console.error('[ConfigStore] Connection test failed:', error);
       return false;
     }
   },
@@ -58,7 +61,8 @@ export const useConfigStore = create<ConfigState>()((set) => ({
       set({ config: configToSave, isConfigured: true });
       writeStoredSessionConfig(STORAGE_KEYS.haConfig, configToSave);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('[ConfigStore] Failed to save config:', error);
       return false;
     }
   },

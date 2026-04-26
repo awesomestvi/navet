@@ -676,6 +676,7 @@ export const enMessages = {
   'rss.settings.savedDirectFeeds': 'Saved direct feeds',
   'rss.settings.emptyState': 'No RSS sources yet. Add a direct feed to get started.',
   'rss.settings.addFeed': 'Add feed',
+  'rss.settings.addFeedAndClose': 'Add feed and close',
   'rss.settings.addFeedDescription':
     'Add a custom RSS URL and select it automatically for this card.',
   'rss.settings.providerName': 'Provider name',
@@ -689,6 +690,7 @@ export const enMessages = {
   'rss.feedback.clearedSource.other': 'Cleared {count} Home Assistant sources',
   'rss.feedback.invalidUrl': 'Enter a valid feed URL',
   'rss.feedback.addNameAndUrl': 'Add a name and feed URL',
+  'rss.feedback.finishAddingFeed': 'Finish adding this feed or clear the fields before closing',
   'rss.feedback.addedProvider': 'Added {name}',
   'rss.feedback.removedProvider': 'Removed {name}',
   'rss.recently': 'Recently',
@@ -926,6 +928,7 @@ export const enMessages = {
   'widgets.energyNow.settings.group.home': 'Home',
   'widgets.energyNow.settings.group.sources': 'Sources',
   'widgets.energyNow.settings.group.devices': 'Devices',
+  'widgets.energyNow.empty.sparkline': 'Not enough data to show sparkline yet.',
   'widgets.button.title': 'Action Button',
   'widgets.button.labelPlaceholder': 'Button label',
   'widgets.button.servicePlaceholder': 'e.g. scene.turn_on',

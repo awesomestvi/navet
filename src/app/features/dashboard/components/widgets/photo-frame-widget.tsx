@@ -16,9 +16,9 @@ import {
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
 import { cn } from '@/app/components/ui/utils';
-import { useAuth } from '@/app/contexts/auth-context';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { useDevices, useI18n, useRooms, useTheme } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';

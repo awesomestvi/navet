@@ -23,6 +23,7 @@ interface WeatherCardProps {
   daylight: string;
   rainForecast: string;
   forecast: ForecastDay[];
+  forecastMode: WeatherForecastMode;
   highTemp: number;
   lowTemp: number;
   size: CardSize;
@@ -36,8 +37,10 @@ interface WeatherCardProps {
 Current settings exposed in [weather settings dialog](/Users/vishal/Development/Github/Navet/Navet/src/app/features/weather/components/weather-card/weather-settings-dialog.tsx):
 
 - Room assignment via `EntityRoomSelector`
+- Forecast mode toggle (`hourly` / `weekly`)
+- Custom tint selection for supported cards
 
-No weather-specific display settings are exposed in the UI yet.
+Weather card behavior also respects the persisted global weather forecast mode from settings.
 
 ### Home Assistant Weather State Fields
 

@@ -100,7 +100,8 @@ export function useSettingsSectionActions({
       window.setTimeout(() => {
         window.location.reload();
       }, 600);
-    } catch {
+    } catch (error) {
+      console.error('[SettingsSectionActions] Config import failed:', error);
       toast.error(t('settings.feedback.configImportFailed'));
     } finally {
       event.target.value = '';

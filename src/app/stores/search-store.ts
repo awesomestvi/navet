@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { storage } from '@/app/utils/storage';
 
 const LEGACY_SEARCH_STORAGE_KEY = 'ha-dashboard-search';
+let searchStoreInitialized = false;
 
 interface SearchState {
   searchQuery: string;
@@ -29,5 +30,12 @@ export const useSearchStore = create<SearchState>()((set) => ({
   clearSearch: () => set({ searchQuery: '', filteredDeviceIds: [] }),
 }));
 
-storage.remove(LEGACY_SEARCH_STORAGE_KEY);
-useSearchStore.setState({ searchQuery: '', filteredDeviceIds: [] });
+export function initializeSearchStore() {
+  if (searchStoreInitialized) {
+    return;
+  }
+
+  searchStoreInitialized = true;
+  storage.remove(LEGACY_SEARCH_STORAGE_KEY);
+  useSearchStore.getState().clearSearch();
+}

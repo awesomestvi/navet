@@ -4,8 +4,8 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, getStandardCardPadding } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { useAuth } from '@/app/contexts/auth-context';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { getPersonCardSurfaceTokens } from './person-card-surface-tokens';
 

@@ -16,6 +16,7 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 - Battery Overview
 - Energy Now
 - Button
+- Map
 
 ### Core Behavior
 
@@ -36,6 +37,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - `battery`: `small`, `medium`, `large`
 - `energy-now`: `small`, `medium`, `large`
 - `button`: `tiny`, `extra-small`, `small`
+- `map`: `small`, `medium`, `large`
 
 ## Add and Manage Widgets
 
@@ -72,6 +74,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - Button: action label/icon/service/entity/service-data configuration.
 - Battery Overview: read-only overview of battery entities.
 - Energy Now: full-bleed live usage chart with current power overlaid on top, plus a settings dialog for choosing configured energy sources or matching energy-usage sensors/entities.
+- Map: live person and `device_tracker` markers from Home Assistant, plus tint configuration.
 
 ## Architecture and File Map
 
@@ -94,6 +97,8 @@ These files define widget type ids, labels, defaults, and supported sizes.
 - `src/app/features/dashboard/components/widgets/note-widget.tsx`
 - `src/app/features/dashboard/components/widgets/photo-frame-widget.tsx`
 - `src/app/features/dashboard/components/widgets/battery-overview-widget.tsx`
+- `src/app/features/dashboard/components/widgets/energy-now-dashboard-widget.tsx`
+- `src/app/features/dashboard/components/widgets/map-widget.tsx`
 - RSS widget component lives in `src/app/features/rss/components/rss-feed-card/`
 
 ### Widget Store

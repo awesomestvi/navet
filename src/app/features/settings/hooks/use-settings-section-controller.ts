@@ -1,10 +1,10 @@
 import { useShallow } from 'zustand/react/shallow';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
-import { useAuth } from '@/app/contexts/auth-context';
-import { useConfig } from '@/app/contexts/config-context';
 import { useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { useI18n, useTheme } from '@/app/hooks';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
+import { useAuth } from '@/app/stores/auth-store';
+import { useConfig } from '@/app/stores/config-store';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { authSelectors, configSelectors } from '@/app/stores/selectors';
 import { useThemeStore } from '@/app/stores/theme-store';

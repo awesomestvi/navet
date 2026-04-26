@@ -26,6 +26,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const hasSparklineData = trend.length >= 2;
   const maxTickCount = 6;
   const tickStep = Math.max(1, Math.floor((trend.length - 1) / Math.max(1, maxTickCount - 1)));
   const trendTicks = trend.filter(
@@ -68,31 +69,41 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
           </div>
 
           <div className="mt-5">
-            <EnergySparkline
-              data={trend.map((point) => ({
-                value: point.value,
-                timestampMs: point.timestampMs,
-                endTimestampMs: point.endTimestampMs,
-                minValue: point.minValue,
-                maxValue: point.maxValue,
-              }))}
-              accentColor={accentColor}
-              height={118}
-            />
+            {hasSparklineData ? (
+              <EnergySparkline
+                data={trend.map((point) => ({
+                  value: point.value,
+                  timestampMs: point.timestampMs,
+                  endTimestampMs: point.endTimestampMs,
+                  minValue: point.minValue,
+                  maxValue: point.maxValue,
+                }))}
+                accentColor={accentColor}
+                height={118}
+              />
+            ) : (
+              <div
+                className={`flex h-[118px] items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm ${surface.border} ${surface.textMuted}`}
+              >
+                Not enough data to show sparkline yet.
+              </div>
+            )}
           </div>
 
-          <div
-            className={`mt-4 flex items-center justify-between gap-3 overflow-hidden text-xs ${surface.textMuted}`}
-          >
-            {trendTicks.map((point, index) => (
-              <div
-                key={`${point.label || 'tick'}-${index}`}
-                className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
-              >
-                {point.label}
-              </div>
-            ))}
-          </div>
+          {hasSparklineData ? (
+            <div
+              className={`mt-4 flex items-center justify-between gap-3 overflow-hidden text-xs ${surface.textMuted}`}
+            >
+              {trendTicks.map((point, index) => (
+                <div
+                  key={`${point.label || 'tick'}-${index}`}
+                  className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
+                >
+                  {point.label}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

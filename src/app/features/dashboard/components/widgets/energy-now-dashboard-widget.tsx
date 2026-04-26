@@ -365,11 +365,13 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
   tintColor,
 }: EnergyNowDashboardCardViewProps) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const stateSurface = getCardStateSurfaceTokens(theme, false);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
+  const hasSparklineData = trend.length >= 2;
   const headerSize: CardSize = isSmall ? 'small' : size;
   const tickIndexes = isSmall
     ? [0, trend.length - 1]
@@ -414,19 +416,29 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
       />
 
       <div className={`absolute inset-x-0 ${isSmall ? 'bottom-0 top-16' : 'bottom-0 top-20'}`}>
-        <EnergySparkline
-          data={trend.map((point) => ({
-            value: point.value,
-            timestampMs: point.timestampMs,
-            endTimestampMs: point.endTimestampMs,
-            minValue: point.minValue,
-            maxValue: point.maxValue,
-          }))}
-          accentColor={accentColor}
-          height={isSmall ? 126 : isMedium ? 152 : 176}
-          className="h-full w-full opacity-95"
-          padX={0}
-        />
+        {hasSparklineData ? (
+          <EnergySparkline
+            data={trend.map((point) => ({
+              value: point.value,
+              timestampMs: point.timestampMs,
+              endTimestampMs: point.endTimestampMs,
+              minValue: point.minValue,
+              maxValue: point.maxValue,
+            }))}
+            accentColor={accentColor}
+            height={isSmall ? 126 : isMedium ? 152 : 176}
+            className="h-full w-full opacity-95"
+            padX={0}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center px-4">
+            <div
+              className={`rounded-2xl border border-dashed px-4 py-3 text-center text-sm ${surface.border} ${surface.textMuted}`}
+            >
+              {t('widgets.energyNow.empty.sparkline')}
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -462,9 +474,11 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
         }}
       />
 
-      <div
-        className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
-      />
+      {hasSparklineData ? (
+        <div
+          className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
+        />
+      ) : null}
 
       <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
         <div className="flex items-start justify-between gap-4">
@@ -507,20 +521,22 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
           />
         </div>
 
-        <div className="mt-auto">
-          <div
-            className={`mt-3 flex items-center justify-between gap-2 text-xs ${surface.textMuted}`}
-          >
-            {trendTicks.map((point, index) => (
-              <div
-                key={`${point.label || 'tick'}-${index}`}
-                className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
-              >
-                {point.label}
-              </div>
-            ))}
+        {hasSparklineData ? (
+          <div className="mt-auto">
+            <div
+              className={`mt-3 flex items-center justify-between gap-2 text-xs ${surface.textMuted}`}
+            >
+              {trendTicks.map((point, index) => (
+                <div
+                  key={`${point.label || 'tick'}-${index}`}
+                  className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
+                >
+                  {point.label}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </BaseCard>
   );

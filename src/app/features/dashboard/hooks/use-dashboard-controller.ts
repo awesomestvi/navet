@@ -1,4 +1,5 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
   useCardState,
@@ -13,18 +14,20 @@ import {
 } from '@/app/hooks';
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import type { DeviceCollection } from '@/app/types/device.types';
+import type { DeviceWithType } from '@/app/types/device.types';
 import type { AllViewGrouping } from '../all-view-grid';
-import { useCustomCardsStore } from '../stores/custom-cards-store';
+import { HOME_WIDGET_ROOM, useCustomCardsStore } from '../stores/custom-cards-store';
+import { useAvailableRooms } from './use-available-rooms';
 import { useCardOrdering } from './use-card-ordering';
 import { useCardZones } from './use-card-zones';
-import { useCustomCards } from './use-custom-cards';
 import { useDashboardCardActions } from './use-dashboard-card-actions';
 import type { DashboardController } from './use-dashboard-controller.types';
 import { useDashboardDerivedState } from './use-dashboard-derived-state';
 import { useDashboardDevicesLoaded } from './use-dashboard-devices-loaded';
 import { useDashboardDialogs } from './use-dashboard-dialogs';
 import { useDashboardEntityVisibility } from './use-dashboard-entity-visibility';
+import { useDashboardRoomCounts } from './use-dashboard-room-counts';
+import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
 import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
@@ -36,7 +39,6 @@ export function useDashboardController(): DashboardController {
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  /** Avoid subscribing to the full entities map — only hydration matters for room edge cases. */
   const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
@@ -50,81 +52,44 @@ export function useDashboardController(): DashboardController {
   const allDevices = useDevices();
   const devices = useDashboardDevices(allDevices, hiddenEntityIds);
   const discoveredRooms = useRooms(devices);
-  const countItemsByRoom = useCallback((collection: DeviceCollection) => {
-    const counts = new Map<string, number>();
-    const deviceGroups = Object.values(collection) as Array<Array<{ room: string }>>;
 
-    deviceGroups.forEach((group) => {
-      group.forEach((device) => {
-        const room = device.room;
-        if (!room || room === 'All') {
-          return;
-        }
+  const { roomItemCounts, roomHiddenItemCounts } = useDashboardRoomCounts(allDevices, devices);
 
-        counts.set(room, (counts.get(room) ?? 0) + 1);
-      });
-    });
-
-    return counts;
-  }, []);
-  const roomItemCounts = useMemo(
-    () => countItemsByRoom(allDevices),
-    [allDevices, countItemsByRoom]
-  );
-  const visibleRoomItemCounts = useMemo(
-    () => countItemsByRoom(devices),
-    [countItemsByRoom, devices]
-  );
-  const roomHiddenItemCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    roomItemCounts.forEach((totalCount, room) => {
-      const visibleCount = visibleRoomItemCounts.get(room) ?? 0;
-      const hiddenCount = Math.max(0, totalCount - visibleCount);
-      if (hiddenCount > 0) {
-        counts.set(room, hiddenCount);
-      }
-    });
-    return counts;
-  }, [roomItemCounts, visibleRoomItemCounts]);
-  const areaRooms = useMemo(
-    () => areas.map((area) => area.name).filter((name) => name && name !== 'All'),
-    [areas]
-  );
-  const availableRooms = useMemo(() => {
-    const discoveredOnlyRooms = discoveredRooms.filter((room) => !areaRooms.includes(room));
-    return [...new Set([...discoveredRooms, ...discoveredOnlyRooms])];
-  }, [areaRooms, discoveredRooms]);
-  const rooms = useMemo(() => {
-    const preserved = roomOrder.filter((room) => availableRooms.includes(room));
-    const additions = availableRooms.filter((room) => !preserved.includes(room));
-    return [...preserved, ...additions];
-  }, [availableRooms, roomOrder]);
-  const { isEditMode, toggleEditMode } = useEditMode();
-
-  useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
-
-  useEditModeBeforeUnload(isEditMode);
+  const { availableRooms } = useAvailableRooms(areas, discoveredRooms);
+  const rooms = usePersistedRoomOrder(availableRooms, roomOrder);
 
   const { activeRoom, changeRoom } = useRoomNavigation('All');
-  const previousRoomsRef = useRef<string[]>(rooms);
-  const { addCard, removeCard, updateCard, getCardsForRoom } = useCustomCards();
+
+  useDashboardRoomNavigation(activeRoom, rooms, changeRoom, hassEntitiesHydrated, devicesLoaded);
+  useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
+
+  const { isEditMode, toggleEditMode } = useEditMode();
+  useEditModeBeforeUnload(isEditMode);
+
   const dialogs = useDashboardDialogs();
-  const allCustomCards = getCardsForRoom('All');
+  const allCards = useCustomCardsStore((state) => state.cards);
+  const allCustomCards = useMemo(
+    () => allCards.filter((card) => card.room === 'All' || card.room === HOME_WIDGET_ROOM),
+    [allCards]
+  );
+  const customCards = useMemo(
+    () => allCards.filter((card) => card.room === activeRoom || card.room === 'All'),
+    [allCards, activeRoom]
+  );
   const { cardSizes, updateCardSize } = useCardState(devices);
   const { cardOrders } = useCardOrdering(devices, rooms, allCustomCards);
   const { cardZones, updateCardZone } = useCardZones();
   const { deviceMap } = useDeviceMap(devices);
   const { deviceMap: availableDeviceMap } = useDeviceMap(allDevices);
-  const homeLayoutValidIds = useMemo(
-    () => [...availableDeviceMap.keys(), ...allCustomCards.map((card) => card.id)],
-    [availableDeviceMap, allCustomCards]
-  );
+
+  const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
   const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
   const homeLayoutHydrated = useHomeLayoutHydrated({
     cardIds: homeLayoutController.layout.cardIds,
     availableDeviceMap,
     allCustomCards,
   });
+
   const { addableEntityIds, allEntityIds, lightDeviceMap, lightRooms, orderedCardIds } =
     useDashboardDerivedState({
       activeRoom,
@@ -135,49 +100,16 @@ export function useDashboardController(): DashboardController {
       rooms,
     });
 
-  useEffect(() => {
-    if (activeRoom === 'All' || rooms.includes(activeRoom)) {
-      previousRoomsRef.current = rooms;
-      return;
-    }
-
-    if (rooms.length === 0) {
-      // Before HA entities hydrate, `rooms` is empty — do not wipe persisted `currentRoom`.
-      if (!hassEntitiesHydrated || !devicesLoaded) {
-        return;
-      }
-      changeRoom('All');
-      previousRoomsRef.current = rooms;
-      return;
-    }
-
-    const previousRooms = previousRoomsRef.current;
-    const removedRoomIndex = previousRooms.indexOf(activeRoom);
-    const nextRoom =
-      (removedRoomIndex >= 0
-        ? (previousRooms
-            .slice(removedRoomIndex + 1)
-            .find((room) => room !== activeRoom && rooms.includes(room)) ??
-          previousRooms
-            .slice(0, removedRoomIndex)
-            .reverse()
-            .find((room) => room !== activeRoom && rooms.includes(room)))
-        : undefined) ??
-      rooms[0] ??
-      'All';
-
-    changeRoom(nextRoom);
-    previousRoomsRef.current = rooms;
-  }, [activeRoom, changeRoom, devicesLoaded, hassEntitiesHydrated, rooms]);
-  const resetDashboard = useCallback(() => {
-    homeLayoutController.resetLayout();
-    useCustomCardsStore.getState().replaceCards([]);
-  }, [homeLayoutController]);
-
+  const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
 
-  const customCards = getCardsForRoom(activeRoom);
-
+  const { addCard, removeCard, updateCard } = useCustomCardsStore(
+    useShallow((state) => ({
+      addCard: state.addCard,
+      removeCard: state.removeCard,
+      updateCard: state.updateCard,
+    }))
+  );
   const {
     handleAddCard,
     handleAddLibraryCard,
@@ -251,11 +183,34 @@ export function useDashboardController(): DashboardController {
     setActiveSection,
     updateCardSize,
     updateCardZone,
-    // Onboarding
     ...onboarding,
-    // Dialogs
     ...dialogs,
   };
+}
+
+function usePersistedRoomOrder(availableRooms: string[], roomOrder: string[]) {
+  return useMemo(() => {
+    const preserved = roomOrder.filter((room) => availableRooms.includes(room));
+    const additions = availableRooms.filter((room) => !preserved.includes(room));
+    return [...preserved, ...additions];
+  }, [availableRooms, roomOrder]);
+}
+
+function useHomeLayoutValidIds(
+  availableDeviceMap: Map<string, DeviceWithType>,
+  allCustomCards: Array<{ id: string }>
+) {
+  return useMemo(
+    () => [...availableDeviceMap.keys(), ...allCustomCards.map((card) => card.id)],
+    [availableDeviceMap, allCustomCards]
+  );
+}
+
+function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashboardLayout>) {
+  return useCallback(() => {
+    homeLayoutController.resetLayout();
+    useCustomCardsStore.getState().replaceCards([]);
+  }, [homeLayoutController]);
 }
 
 export type { DashboardController } from './use-dashboard-controller.types';

@@ -45,7 +45,7 @@ but `auth` is still a small exception because it does not yet expose a root entr
 It also syncs:
 
 - accent CSS variables
-- page zoom CSS/viewport variables
+- viewport CSS variables
 - reduced-effects flags and theme-related DOM data attributes
 
 ## State and data flow
@@ -120,8 +120,8 @@ Settings is the control surface for:
 
 - appearance and theme mode
 - accent color
-- visual quality
-- page zoom
+- visual quality and low-power behavior
+- ambience and wallpaper
 - localization
 - dashboard config import/export
 - onboarding reset

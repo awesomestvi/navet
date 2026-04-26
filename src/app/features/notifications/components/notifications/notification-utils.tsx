@@ -72,7 +72,8 @@ function resolveNotificationAssetUrl(url: string, hassUrl?: string): string {
 
   try {
     return new URL(url, hassUrl).toString();
-  } catch {
+  } catch (error) {
+    console.error('[NotificationUtils] Failed to resolve notification URL:', error);
     return url;
   }
 }

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import type { TranslateFn } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 
@@ -29,7 +30,7 @@ export function useMediaGrouping({
             entity.entity_id.startsWith('media_player.') &&
             entity.entity_id !== entityId &&
             typeof entity.attributes?.supported_features === 'number' &&
-            (entity.attributes.supported_features & 524288) === 524288
+            hasMediaPlayerGroupingSupport(entity.attributes.supported_features)
         )
         .map((entity) => ({
           id: entity.entity_id,

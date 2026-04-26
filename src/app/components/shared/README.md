@@ -31,7 +31,7 @@ behavior.
   Shared UI, but directly coupled to Home Assistant area/entity registries and update flows.
 
 - `error-display.tsx`
-  Bound to app error context and global recovery behavior.
+  Bound to the global error store and app-level recovery behavior.
 
 - `network-status-banner.tsx`
   Bound to app connectivity state and app-shell placement.

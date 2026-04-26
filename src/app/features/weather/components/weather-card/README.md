@@ -8,9 +8,17 @@ The weather card is a single adaptive component that renders different informati
 
 ```text
 weather-card/
-├── index.tsx        # Main weather card implementation
-├── weather-icon.tsx # Shared condition icon mapping
-└── README.md        # This file
+├── index.tsx                # Main weather card implementation
+├── weather-card-overlays.tsx # Background compositor and weather tint layers
+├── passage-wave-overlay.tsx # Shared wave overlay used by multiple variants
+├── rain-overlay.tsx         # Deterministic rain and storm drops
+├── snowflake-overlay.tsx    # Deterministic snowflakes
+├── storm-lightning-overlay.tsx # Lightning burst for storms
+├── fog-overlay.tsx          # Fog layer overlay
+├── wind-overlay.tsx         # Wind streak overlay
+├── weather-card-utils.ts    # Background and text treatment helpers
+├── weather-icon.tsx         # Shared condition icon mapping
+└── README.md                # This file
 ```
 
 ## Card Sizes
@@ -65,6 +73,7 @@ interface WeatherCardProps {
 - Uses the same compact header + forecast strip layout for both `small` and `medium`
 - Includes handcrafted dynamic weather illustration variants for:
   sunny day, moony/clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
+- The overlay atoms are split by weather effect; `weather-card-overlays.tsx` now only composes them
 
 ## Maintenance Notes
 

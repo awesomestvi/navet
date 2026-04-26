@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { FieldBlock } from '@/app/components/patterns';
 import { Button, Input } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useAuth } from '@/app/contexts/auth-context';
-import { useConfig } from '@/app/contexts/config-context';
 import { useI18n, useTheme } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
+import { useConfig } from '@/app/stores/config-store';
 import { authSelectors, configSelectors } from '@/app/stores/selectors';
 
 export function LoginPage() {
@@ -39,7 +39,8 @@ export function LoginPage() {
     // Basic URL validation
     try {
       new URL(url);
-    } catch {
+    } catch (error) {
+      console.error('[LoginPage] Invalid URL format:', error);
       setError(t('login.errors.urlInvalid'));
       return;
     }

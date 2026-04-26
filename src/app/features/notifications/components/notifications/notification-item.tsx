@@ -1,8 +1,8 @@
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { Link } from '@/app/components/primitives/link';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { useAuth } from '@/app/contexts/auth-context';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import {

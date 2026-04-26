@@ -4,14 +4,16 @@ import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
-import { useAuth } from './contexts/auth-context';
-import { useConfig } from './contexts/config-context';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
 import { useHomeAssistant, useTheme } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { useSettingsStore } from './stores';
+import { useAuth } from './stores/auth-store';
+import { useConfig } from './stores/config-store';
+import { startNavigationStoreSync } from './stores/navigation-store';
+import { initializeSearchStore } from './stores/search-store';
 import {
   authSelectors,
   configSelectors,
@@ -65,8 +67,6 @@ function AppContent() {
       void connect({
         hassUrl: configToUse.url,
         token: configToUse.token,
-      }).catch(() => {
-        /* Error surfaced via `useErrorStore` from `homeAssistantStore.connect` */
       });
     }
   }, [isAuthenticated, authConfig, haConfig, connected, connecting, connect]);
@@ -97,6 +97,11 @@ function AppContent() {
       clearViewportCssVars();
     };
   }, [syncViewportEnvironment]);
+
+  useEffect(() => {
+    initializeSearchStore();
+    return startNavigationStoreSync();
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

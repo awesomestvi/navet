@@ -689,6 +689,7 @@ export const deMessages = {
   'rss.settings.emptyState':
     'Noch keine RSS-Quellen. Fugen Sie einen direkten Feed hinzu, um zu starten.',
   'rss.settings.addFeed': 'Feed hinzufugen',
+  'rss.settings.addFeedAndClose': 'Feed hinzufugen und schliessen',
   'rss.settings.addFeedDescription':
     'Fugen Sie eine benutzerdefinierte RSS-URL hinzu und wahlen Sie sie automatisch fur diese Karte aus.',
   'rss.settings.providerName': 'Anbietername',
@@ -702,6 +703,8 @@ export const deMessages = {
   'rss.feedback.clearedSource.other': '{count} Home-Assistant-Quellen entfernt',
   'rss.feedback.invalidUrl': 'Geben Sie eine gültige Feed-URL ein',
   'rss.feedback.addNameAndUrl': 'Fügen Sie einen Namen und eine Feed-URL hinzu',
+  'rss.feedback.finishAddingFeed':
+    'Schliessen Sie diesen Feed ab oder leeren Sie die Felder, bevor Sie schliessen',
   'rss.feedback.addedProvider': '{name} hinzugefügt',
   'rss.feedback.removedProvider': '{name} entfernt',
   'rss.recently': 'Vor kurzem',
@@ -943,6 +946,8 @@ export const deMessages = {
   'widgets.energyNow.settings.group.home': 'Zuhause',
   'widgets.energyNow.settings.group.sources': 'Quellen',
   'widgets.energyNow.settings.group.devices': 'Geräte',
+  'widgets.energyNow.empty.sparkline':
+    'Noch nicht genügend Daten vorhanden, um die Sparkline anzuzeigen.',
   'widgets.button.title': 'Aktionsschaltfläche',
   'widgets.button.labelPlaceholder': 'Schaltflächenbeschriftung',
   'widgets.button.servicePlaceholder': 'z.B. scene.turn_on',

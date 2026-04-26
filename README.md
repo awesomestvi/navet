@@ -97,7 +97,7 @@ Cross-feature UI lives under [`src/app/components/`](/Users/vishal/Development/G
 - Home Assistant data flows through
   [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
   and into the store via typed events
-- React Context is reserved for infrastructure concerns such as i18n and compatibility layers
+- React Context is reserved for infrastructure concerns such as i18n
 
 See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the state-management contract.
 
@@ -105,7 +105,7 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 
 | File | Role |
 |---|---|
-| [`src/app/App.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/App.tsx) | Root provider tree, PWA/update shell, global DOM sync |
+| [`src/app/App.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/App.tsx) | Root app shell, HA connection bootstrap, PWA/update shell, global DOM sync |
 | [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts) | Shared selectors for minimal store subscriptions |
 | [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx) | Dashboard card registry |
 | [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |

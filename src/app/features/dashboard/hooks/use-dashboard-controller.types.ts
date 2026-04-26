@@ -7,7 +7,6 @@ import type { CustomCard } from '../stores/custom-cards-store';
 import type { ZoneName } from '../zones/zone-types';
 import type { useCardOrdering } from './use-card-ordering';
 import type { useCardZones } from './use-card-zones';
-import type { useCustomCards } from './use-custom-cards';
 import type { DashboardDialogs } from './use-dashboard-dialogs';
 import type { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import type { OnboardingController } from './use-onboarding-controller';
@@ -17,11 +16,7 @@ export type DashboardController = OnboardingController &
     activeRoom: string;
     activeSection: Section;
     addableEntityIds: string[];
-    allCustomCards: ReturnType<typeof useCustomCards>['getCardsForRoom'] extends (
-      room: string
-    ) => infer T
-      ? T
-      : never;
+    allCustomCards: CustomCard[];
     allEntityIds: string[];
     allViewGrouping: AllViewGrouping;
     availableDeviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
@@ -29,11 +24,7 @@ export type DashboardController = OnboardingController &
     cardSizes: ReturnType<typeof useCardState>['cardSizes'];
     cardZones: ReturnType<typeof useCardZones>['cardZones'];
     changeRoom: (room: string) => void;
-    customCards: ReturnType<typeof useCustomCards>['getCardsForRoom'] extends (
-      room: string
-    ) => infer T
-      ? T
-      : never;
+    customCards: CustomCard[];
     deviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
     connecting: boolean;
     devicesLoaded: boolean;

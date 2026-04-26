@@ -43,6 +43,7 @@ export interface HomeAssistantEntityRegistryEntry {
   device_id?: string | null;
   name?: string | null;
   original_name?: string | null;
+  entity_category?: 'config' | 'diagnostic' | null;
 }
 
 export interface HomeAssistantMediaSourceItem {
@@ -250,10 +251,16 @@ class HomeAssistantService {
       this.deviceRegistry = devices;
       this.entityRegistry = entities;
       this.notifyListeners('registries', { areas, devices, entities });
-    } catch {
+    } catch (error) {
+      console.error('[HomeAssistantService] Failed to load registries:', error);
       this.areas = [];
       this.deviceRegistry = [];
       this.entityRegistry = [];
+      this.notifyListeners('registries', {
+        areas: [],
+        devices: [],
+        entities: [],
+      });
     } finally {
       this.registryLoadInProgress = false;
       if (this.pendingRegistryLoad) {
@@ -559,7 +566,8 @@ class HomeAssistantService {
 
       try {
         return JSON.stringify(error);
-      } catch {
+      } catch (stringifyError) {
+        console.error('[HomeAssistantService] Failed to stringify error:', stringifyError);
         return 'unknown error';
       }
     }

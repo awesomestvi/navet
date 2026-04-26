@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/app/contexts/auth-context';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import { resolveArtworkPalette } from './media-artwork-palette';
 

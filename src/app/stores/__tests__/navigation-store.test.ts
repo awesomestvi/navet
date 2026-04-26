@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAppStores } from '@/test/store-reset';
-import { useNavigationStore } from '../navigation-store';
+import { startNavigationStoreSync, useNavigationStore } from '../navigation-store';
 
 describe('useNavigationStore', () => {
   beforeEach(async () => {
@@ -36,9 +36,11 @@ describe('useNavigationStore', () => {
   });
 
   it('syncs activeSection from browser navigation events', () => {
+    const stopSync = startNavigationStoreSync();
     history.pushState({}, '', '/settings');
     window.dispatchEvent(new PopStateEvent('popstate'));
 
     expect(useNavigationStore.getState().activeSection).toBe('settings');
+    stopSync();
   });
 });

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
 
 const REFRESH_MS = 5 * 60 * 1000;
+const FALLBACK_POINT_COUNT = 12;
 
 function formatBucketLabel(timestampMs: number, index: number, total: number) {
   if (index === total - 1) {
@@ -17,41 +20,40 @@ function formatBucketLabel(timestampMs: number, index: number, total: number) {
     .padStart(2, '0')}`;
 }
 
+function buildFallbackPoints(currentLoadW: number): EnergySeriesPoint[] {
+  return Array.from({ length: FALLBACK_POINT_COUNT }, (_, index) => ({
+    label: index === FALLBACK_POINT_COUNT - 1 ? 'Now' : '',
+    value: Math.round(currentLoadW),
+  }));
+}
+
 export function useEnergyLoadHistory(
   entityId: string | undefined,
   fallbackCurrentLoadW: number
 ): EnergySeriesPoint[] {
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connection = useHomeAssistant(homeAssistantSelectors.connection);
 
   useEffect(() => {
     if (!entityId) {
-      setPoints(
-        Array.from({ length: 12 }, (_, index) => ({
-          label: index === 11 ? 'Now' : '',
-          value: Math.round(fallbackCurrentLoadW),
-        }))
-      );
+      setPoints(buildFallbackPoints(fallbackCurrentLoadW));
       return;
     }
 
     const resolvedEntityId = entityId;
 
     async function fetchHistory() {
-      const connection = homeAssistantService.getConnection();
-      if (!connection) {
+      const activeConnection = connection ?? homeAssistantService.getConnection();
+      if (!activeConnection) {
+        setPoints(buildFallbackPoints(fallbackCurrentLoadW));
         return;
       }
 
       try {
-        const stats = await getPowerStatisticsHistory(connection, resolvedEntityId);
+        const stats = await getPowerStatisticsHistory(activeConnection, resolvedEntityId);
         if (stats.length === 0) {
-          setPoints([
-            {
-              label: 'Now',
-              value: Math.round(fallbackCurrentLoadW),
-            },
-          ]);
+          setPoints(buildFallbackPoints(fallbackCurrentLoadW));
           return;
         }
 
@@ -65,13 +67,9 @@ export function useEnergyLoadHistory(
             maxValue: Math.round(entry.max),
           }))
         );
-      } catch {
-        setPoints([
-          {
-            label: 'Now',
-            value: Math.round(fallbackCurrentLoadW),
-          },
-        ]);
+      } catch (error) {
+        console.error('[EnergyLoadHistory] Failed to fetch history:', error);
+        setPoints(buildFallbackPoints(fallbackCurrentLoadW));
       }
     }
 
@@ -83,7 +81,7 @@ export function useEnergyLoadHistory(
         clearInterval(timerRef.current);
       }
     };
-  }, [entityId, fallbackCurrentLoadW]);
+  }, [connection, entityId, fallbackCurrentLoadW]);
 
   return points;
 }

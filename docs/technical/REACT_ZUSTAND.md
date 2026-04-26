@@ -5,8 +5,8 @@ Current state-management guidance for Navet.
 ## Summary
 
 Navet uses **Zustand exclusively** for all shared client state. React Context is reserved only
-for cross-cutting infrastructure concerns that have no reactive state of their own (i18n provider,
-loading orchestration). Auth, config, and the global app error overlay are Zustand stores.
+for cross-cutting infrastructure concerns that have no reactive state of their own. Auth, config,
+and the global app error overlay are Zustand stores.
 
 ---
 
@@ -30,11 +30,9 @@ All shared, reactive state lives here. Stores self-initialize — no provider wr
 
 ### React Context
 
-Only used for providers that have no reactive state:
+Only used for providers that have no reactive state of their own:
 
 - `I18nProvider` (`src/app/i18n/`) — locale loading and translation function
-- `AuthProvider` and `ConfigProvider` (`src/app/contexts/`) — identity pass-throughs to preserve import
-  compatibility. They contain no state — all logic is in the stores.
 
 ---
 
@@ -116,8 +114,7 @@ For import/restore/config-apply flows, mutate stores through explicit action met
 `replace...`) rather than calling external `store.setState(...)` from feature or utility modules.
 
 `setState` is allowed inside the store implementation itself when needed for store-internal sync
-mechanics, but external callers should use store actions.
-  for store-owned domains
+mechanics, but external callers should use store actions for store-owned domains.
 
 ### Persistence pattern
 

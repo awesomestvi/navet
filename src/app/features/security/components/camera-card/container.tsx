@@ -1,8 +1,8 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { shallow } from 'zustand/shallow';
-import { useAuth } from '@/app/contexts/auth-context';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { CameraSettingsDialog } from './camera-settings-dialog';

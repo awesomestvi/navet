@@ -180,7 +180,8 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
           onAddProvider={(name, feedUrl) => {
             try {
               new URL(feedUrl);
-            } catch {
+            } catch (error) {
+              console.error('[RSSFeedCard] Invalid feed URL:', error);
               toast.error(t('rss.feedback.invalidUrl'));
               return false;
             }

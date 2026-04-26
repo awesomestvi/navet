@@ -72,7 +72,8 @@ export function useNotificationActions({
           await homeAssistantService.callService('persistent_notification', 'dismiss', {
             notification_id: notification.notificationId,
           });
-        } catch {
+        } catch (error) {
+          console.error('[NotificationActions] Failed to dismiss notification:', error);
           // Keep the item hidden locally even if HA rejects or delays dismissal.
         }
       }

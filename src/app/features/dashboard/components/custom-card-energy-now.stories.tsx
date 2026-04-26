@@ -6,6 +6,7 @@ import { EnergyNowDashboardCardView } from './widgets/energy-now-dashboard-widge
 
 type EnergyNowStoryArgs = {
   size: Extract<CardSize, 'small' | 'medium' | 'large'>;
+  trend?: Array<{ label: string; value: number; secondaryValue?: number }>;
 };
 
 const overview = getMockEnergyOverview('live');
@@ -16,14 +17,14 @@ const storyTrend = [
   { label: 'Now', value: 11.7, secondaryValue: 7.8 },
 ];
 
-function EnergyNowStoryFrame({ size }: EnergyNowStoryArgs) {
+function EnergyNowStoryFrame({ size, trend = storyTrend }: EnergyNowStoryArgs) {
   return (
     <div className={cardSizeOverlayClass[size]}>
       <EnergyNowDashboardCardView
         title="Energy today"
         currentLoadW={overview.totals.currentLoadW}
         todayUsageKWh={56.5}
-        trend={storyTrend}
+        trend={trend}
         accentColor="#22d3ee"
         size={size}
       />
@@ -82,5 +83,12 @@ export const Medium: Story = {
 export const Large: Story = {
   args: {
     size: 'large',
+  },
+};
+
+export const EmptyState: Story = {
+  args: {
+    size: 'medium',
+    trend: [{ label: 'Now', value: 11.7, secondaryValue: 7.8 }],
   },
 };
