@@ -8,6 +8,7 @@ export interface RSSItem {
   url: string;
   excerpt?: string;
   imageUrl?: string;
+  publishedAtMs?: number;
 }
 
 export type RSSProviderType = 'url' | 'home-assistant-feedreader';

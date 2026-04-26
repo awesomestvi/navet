@@ -9,7 +9,12 @@ import {
   CardDialogTabList,
   CardDialogTabTrigger,
 } from '@/app/components/patterns';
-import { CardMetric, customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
+import {
+  BaseCard,
+  CardMetric,
+  customCardDialogShellProps,
+  DialogShell,
+} from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
@@ -19,7 +24,9 @@ import {
   CustomCardTintPicker,
   CustomScrollbar,
 } from '@/app/components/shared/device-editor';
+import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { EnergySparkline } from '@/app/features/energy/components/charts/energy-sparkline';
 import { useEnergyDashboard } from '@/app/features/energy/hooks/use-energy-dashboard';
@@ -27,7 +34,6 @@ import { useEnergyLoadHistory } from '@/app/features/energy/hooks/use-energy-loa
 import type { EnergySeriesPoint } from '@/app/features/energy/types/energy.types';
 import { useDevices, useHomeAssistant, useI18n, useRooms, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { DashboardCustomCardShell } from './dashboard-custom-card-shell';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 interface EnergyNowDashboardWidgetProps {
@@ -359,6 +365,9 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
   tintColor,
 }: EnergyNowDashboardCardViewProps) {
   const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const stateSurface = getCardStateSurfaceTokens(theme, false);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
   const headerSize: CardSize = isSmall ? 'small' : size;
@@ -375,160 +384,177 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
   const trendTicks = trend.filter((_, index) => tickIndexes.includes(index));
 
   return (
-    <DashboardCustomCardShell theme={theme} size={size} tintColor={tintColor}>
-      {({ baseSurface, stateSurface }) => (
+    <BaseCard
+      size={size}
+      fullBleed
+      className="transition-all duration-500"
+      frameClassName="overflow-hidden"
+      overlay={
         <>
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                theme === 'light'
-                  ? `radial-gradient(circle at 50% 100%, ${accentColor}16 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 100%)`
-                  : `radial-gradient(circle at 50% 100%, ${accentColor}18 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
-            }}
-          />
-
-          <div className={`absolute inset-x-0 ${isSmall ? 'bottom-0 top-16' : 'bottom-0 top-20'}`}>
-            <EnergySparkline
-              data={trend.map((point) => ({
-                value: point.value,
-                timestampMs: point.timestampMs,
-                endTimestampMs: point.endTimestampMs,
-                minValue: point.minValue,
-                maxValue: point.maxValue,
-              }))}
-              accentColor={accentColor}
-              height={isSmall ? 126 : isMedium ? 152 : 176}
-              className="h-full w-full opacity-95"
-              padX={0}
+          {tintSurface.glowStyle ? (
+            <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
+          ) : null}
+          {tintSurface.overlayClassName ? (
+            <div
+              className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`}
             />
-          </div>
-
-          <div
-            className={`pointer-events-none absolute bottom-0 left-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
-            style={{
-              background:
-                theme === 'light'
-                  ? 'linear-gradient(90deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
-                  : 'linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
-            }}
-          />
-
-          <div
-            className={`pointer-events-none absolute bottom-0 right-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
-            style={{
-              background:
-                theme === 'light'
-                  ? 'linear-gradient(270deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
-                  : 'linear-gradient(270deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
-            }}
-          />
-
-          <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 ${isSmall ? 'top-16' : 'top-20'}`}
-            style={{
-              background: isSmall
-                ? theme === 'light'
-                  ? 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 32%, rgba(248,250,252,0.48) 100%)'
-                  : 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.1) 32%, rgba(0,0,0,0.74) 100%)'
-                : theme === 'light'
-                  ? 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 34%, rgba(248,250,252,0.58) 100%)'
-                  : 'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.03) 34%, rgba(0,0,0,0.64) 100%)',
-            }}
-          />
-
-          <div
-            className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
-          />
-
-          <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
-            <div className="flex items-start justify-between gap-4">
-              {isSmall ? (
-                <div />
-              ) : (
-                <EntityCardHeader
-                  title={title}
-                  subtitle="Energy"
-                  size={headerSize}
-                  layout="eyebrow-first"
-                  className="mb-0"
-                  marginBottomClassName="mb-0"
-                  titleClassName={stateSurface.primaryTextClassName}
-                  subtitleClassName={stateSurface.mutedTextClassName}
-                  leading={
-                    <EntityCardHeaderIcon
-                      IconComponent={Bolt}
-                      isActive
-                      size={headerSize}
-                      baseColor={accentColor}
-                    />
-                  }
-                />
-              )}
-              <CardMetric
-                value={`${Math.round(currentLoadW)}W`}
-                label={`${todayUsageKWh.toFixed(1)} kWh`}
-                size={isSmall ? 'sm' : isMedium ? 'lg' : 'xl'}
-                isActive
-                accentClassName={stateSurface.primaryTextClassName}
-                theme={theme}
-                className="shrink-0 text-right"
-                labelClassName={theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'}
-                valueStyle={{
-                  fontSize: isSmall ? '1.25rem' : isMedium ? '1.45rem' : '1.7rem',
-                  lineHeight: 1,
-                  letterSpacing: '-0.03em',
-                }}
-              />
-            </div>
-
-            <div className="mt-auto">
-              <div
-                className={`mt-3 flex items-center justify-between gap-2 text-xs ${baseSurface.textMuted}`}
-              >
-                {trendTicks.map((point, index) => (
-                  <div
-                    key={`${point.label || 'tick'}-${index}`}
-                    className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
-                  >
-                    {point.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          ) : null}
         </>
-      )}
-    </DashboardCustomCardShell>
+      }
+      contentClassName="h-full"
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            theme === 'light'
+              ? `radial-gradient(circle at 50% 100%, ${accentColor}16 0%, transparent 55%), linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 100%)`
+              : `radial-gradient(circle at 50% 100%, ${accentColor}18 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
+        }}
+      />
+
+      <div className={`absolute inset-x-0 ${isSmall ? 'bottom-0 top-16' : 'bottom-0 top-20'}`}>
+        <EnergySparkline
+          data={trend.map((point) => ({
+            value: point.value,
+            timestampMs: point.timestampMs,
+            endTimestampMs: point.endTimestampMs,
+            minValue: point.minValue,
+            maxValue: point.maxValue,
+          }))}
+          accentColor={accentColor}
+          height={isSmall ? 126 : isMedium ? 152 : 176}
+          className="h-full w-full opacity-95"
+          padX={0}
+        />
+      </div>
+
+      <div
+        className={`pointer-events-none absolute bottom-0 left-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
+        style={{
+          background:
+            theme === 'light'
+              ? 'linear-gradient(90deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
+              : 'linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
+        }}
+      />
+
+      <div
+        className={`pointer-events-none absolute bottom-0 right-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
+        style={{
+          background:
+            theme === 'light'
+              ? 'linear-gradient(270deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.14) 42%, rgba(255,255,255,0) 100%)'
+              : 'linear-gradient(270deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 42%, rgba(255,255,255,0) 100%)',
+        }}
+      />
+
+      <div
+        className={`pointer-events-none absolute inset-x-0 bottom-0 ${isSmall ? 'top-16' : 'top-20'}`}
+        style={{
+          background: isSmall
+            ? theme === 'light'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 32%, rgba(248,250,252,0.48) 100%)'
+              : 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.1) 32%, rgba(0,0,0,0.74) 100%)'
+            : theme === 'light'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 34%, rgba(248,250,252,0.58) 100%)'
+              : 'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.03) 34%, rgba(0,0,0,0.64) 100%)',
+        }}
+      />
+
+      <div
+        className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
+      />
+
+      <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
+        <div className="flex items-start justify-between gap-4">
+          {isSmall ? (
+            <div />
+          ) : (
+            <EntityCardHeader
+              title={title}
+              subtitle="Energy"
+              size={headerSize}
+              layout="eyebrow-first"
+              className="mb-0"
+              marginBottomClassName="mb-0"
+              titleClassName={stateSurface.primaryTextClassName}
+              subtitleClassName={stateSurface.mutedTextClassName}
+              leading={
+                <EntityCardHeaderIcon
+                  IconComponent={Bolt}
+                  isActive
+                  size={headerSize}
+                  baseColor={accentColor}
+                />
+              }
+            />
+          )}
+          <CardMetric
+            value={`${Math.round(currentLoadW)}W`}
+            label={`${todayUsageKWh.toFixed(1)} kWh`}
+            size={isSmall ? 'sm' : isMedium ? 'lg' : 'xl'}
+            isActive
+            accentClassName={surface.textPrimary}
+            theme={theme}
+            className="shrink-0 text-right"
+            labelClassName={theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'}
+            valueStyle={{
+              fontSize: isSmall ? '1.25rem' : isMedium ? '1.45rem' : '1.7rem',
+              lineHeight: 1,
+              letterSpacing: '-0.03em',
+            }}
+          />
+        </div>
+
+        <div className="mt-auto">
+          <div
+            className={`mt-3 flex items-center justify-between gap-2 text-xs ${surface.textMuted}`}
+          >
+            {trendTicks.map((point, index) => (
+              <div
+                key={`${point.label || 'tick'}-${index}`}
+                className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
+              >
+                {point.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </BaseCard>
   );
 });
 
 function EnergyNowStatusWidget({ message }: { message: string }) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const surface = getThemeSurfaceTokens(theme);
+  const stateSurface = getCardStateSurfaceTokens(theme, false);
   return (
-    <DashboardCustomCardShell theme={theme} size="medium">
-      {({ stateSurface }) => (
-        <div className="relative z-10 flex h-full flex-col justify-between p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div
-                className={`text-xs font-semibold uppercase tracking-[0.16em] ${stateSurface.mutedTextClassName}`}
-              >
-                {t('energy.widgets.now.eyebrow')}
-              </div>
-              <div className={`mt-1 text-sm font-semibold ${stateSurface.primaryTextClassName}`}>
-                {t('energy.widgets.now.title')}
-              </div>
+    <BaseCard
+      size="medium"
+      fullBleed
+      className="transition-all duration-500"
+      contentClassName="h-full"
+    >
+      <div className="relative z-10 flex h-full flex-col justify-between p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div
+              className={`text-xs font-semibold uppercase tracking-[0.16em] ${stateSurface.mutedTextClassName}`}
+            >
+              {t('energy.widgets.now.eyebrow')}
             </div>
-            <Bolt className={`h-4 w-4 ${stateSurface.mutedTextClassName}`} />
+            <div className={`mt-1 text-sm font-semibold ${stateSurface.primaryTextClassName}`}>
+              {t('energy.widgets.now.title')}
+            </div>
           </div>
-          <div className={`relative z-10 text-sm ${stateSurface.secondaryTextClassName}`}>
-            {message}
-          </div>
+          <Bolt className={`h-4 w-4 ${stateSurface.mutedTextClassName}`} />
         </div>
-      )}
-    </DashboardCustomCardShell>
+        <div className={`relative z-10 text-sm ${surface.textSecondary}`}>{message}</div>
+      </div>
+    </BaseCard>
   );
 }
 

@@ -7,6 +7,7 @@ This directory is the index for active Navet documentation.
 - [../README.md](../README.md): project overview, setup, commands, and architecture summary
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): state-management rules and store/service contracts
 - [../design-system/README.md](../design-system/README.md): design-system scope, shared UI layers, and Storybook workflow
+- [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared unit-test helpers, browser mocks, and HA service stubs
 
 ## Documentation Map
 
@@ -21,6 +22,7 @@ This directory is the index for active Navet documentation.
 ### Architecture and implementation
 
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand-only shared state guidance
+- [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared test harness for Vitest-based unit coverage
 - [../design-system/FEATURES.md](../design-system/FEATURES.md): implementation map of current product areas
 - [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md): visual rules, component patterns, and performance-sensitive UI guidance
 - [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md): Storybook structure and workshop rules
@@ -55,8 +57,9 @@ This directory is the index for active Navet documentation.
 ### Working on dashboard or state flows
 
 1. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
-2. [../design-system/FEATURES.md](../design-system/FEATURES.md)
-3. [WIDGETS.md](WIDGETS.md)
+2. [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test)
+3. [../design-system/FEATURES.md](../design-system/FEATURES.md)
+4. [WIDGETS.md](WIDGETS.md)
 
 ### Working on deployment
 
@@ -70,5 +73,6 @@ This directory is the index for active Navet documentation.
 - Prefer updating active docs over adding duplicate one-off notes
 - Treat `docs/archive/` as historical material, not the current source of truth
 - When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
+- When shared test harnesses, store-reset behavior, or service stubs change, update the testing references in the active docs
 
 Last updated: April 26, 2026

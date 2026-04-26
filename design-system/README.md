@@ -28,6 +28,8 @@ Use these docs when you are:
 3. `system/` is a curated export layer, not the authoring location for new components.
 4. Performance matters. Visual richness cannot make the app unusable on wall panels or tablets.
 5. Storybook is the workshop. Stable shared UI should be reviewed there, not only in app pages.
+6. Unit tests cover logic seams. Shared utilities, store behavior, and controller logic should be
+   verified in Vitest rather than only through visual review.
 
 ## Documentation Set
 
@@ -193,6 +195,28 @@ Storybook covers:
 Cross-feature story utilities live in
 [`src/app/storybook/`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook).
 Import frame helpers from `@/app/storybook/story-frames`.
+
+## Testing Shared UI Logic
+
+Storybook remains the primary review surface for visual behavior, but shared UI logic should use
+the Vitest harness when it includes non-trivial state, timing, store subscriptions, or browser
+integration.
+
+Shared unit-test support lives in:
+
+- [`src/setupTests.ts`](/Users/vishal/Development/Github/Navet/Navet/src/setupTests.ts)
+- [`src/test/render.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/test/render.tsx)
+- [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
+- [`src/test/store-reset.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/store-reset.ts)
+
+Use unit tests for:
+
+- token and helper logic with meaningful branching
+- shared hooks that depend on timers, viewport/media-query state, or persisted browser state
+- controller logic that composes store selectors and action handlers
+
+Do not default to broad snapshot coverage for thin visual wrappers that are already exercised in
+Storybook.
 
 ## Current Storybook Taxonomy
 

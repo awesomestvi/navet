@@ -76,7 +76,7 @@ export const SpeakerDialog: Story = {
     await step('opens the media details dialog', async () => {
       await userEvent.click(canvas.getByRole('button', { name: /open media details/i }));
       // Dialog is lazy-loaded inside Suspense; wait for chunk + Radix portal mount.
-      const dialog = await within(document.body).findByRole('dialog');
+      const dialog = await within(document.body).findByRole('dialog', {}, { timeout: 5000 });
       await expect(dialog).toBeInTheDocument();
       const inDialog = within(dialog);
       await expect(

@@ -1,12 +1,11 @@
 import { Check } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Text, Textarea } from '@/app/components/primitives';
+import { BaseCard, Button, Text, Textarea } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getGradientColors } from '@/app/utils/color-utils';
-import { DashboardCustomCardShell } from './dashboard-custom-card-shell';
 
 interface NoteWidgetProps {
   size?: CardSize;
@@ -123,7 +122,12 @@ export function NoteWidget({
   };
 
   return (
-    <DashboardCustomCardShell theme={theme} size="large" tintColor={_tintColor}>
+    <BaseCard
+      size="large"
+      fullBleed
+      className="transition-all duration-500"
+      contentClassName="h-full"
+    >
       <div className="relative flex h-full flex-col">
         <div className={noteCardClassName} style={noteCardStyle}>
           <div
@@ -182,6 +186,6 @@ export function NoteWidget({
           )}
         </div>
       </div>
-    </DashboardCustomCardShell>
+    </BaseCard>
   );
 }

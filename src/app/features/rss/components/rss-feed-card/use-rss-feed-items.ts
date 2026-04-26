@@ -97,10 +97,12 @@ const toRSSItem = ({
   formatRelativeTime: (value: number, unit: Intl.RelativeTimeFormatUnit) => string;
 }): RSSItem => {
   const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : null;
-  const hasValidPublishedAt = publishedAt && !Number.isNaN(publishedAt.getTime());
-  const timeAgo = hasValidPublishedAt
-    ? formatRelativeFromNow(publishedAt, formatRelativeTime)
-    : fallbackRecentLabel;
+  const publishedAtMs = publishedAt?.getTime();
+  const hasValidPublishedAt = typeof publishedAtMs === 'number' && !Number.isNaN(publishedAtMs);
+  let timeAgo = fallbackRecentLabel;
+  if (hasValidPublishedAt && publishedAt) {
+    timeAgo = formatRelativeFromNow(publishedAt, formatRelativeTime);
+  }
 
   return {
     id,
@@ -110,6 +112,7 @@ const toRSSItem = ({
     url: link,
     excerpt: excerpt ? stripHtml(excerpt) : undefined,
     imageUrl,
+    publishedAtMs: hasValidPublishedAt ? publishedAtMs : undefined,
   };
 };
 
@@ -292,6 +295,23 @@ const dedupeItems = (items: RSSItem[]): RSSItem[] =>
       allItems.findIndex((candidate) => candidate.url === item.url) === index
   );
 
+const sortItemsByPublishedAt = (items: RSSItem[]): RSSItem[] =>
+  [...items].sort((left, right) => {
+    if (typeof left.publishedAtMs === 'number' && typeof right.publishedAtMs === 'number') {
+      return right.publishedAtMs - left.publishedAtMs;
+    }
+
+    if (typeof left.publishedAtMs === 'number') {
+      return -1;
+    }
+
+    if (typeof right.publishedAtMs === 'number') {
+      return 1;
+    }
+
+    return 0;
+  });
+
 export function useRSSFeedItems(
   providers: RSSProvider[],
   entities: HassEntities | null,
@@ -350,8 +370,10 @@ export function useRSSFeedItems(
           return;
         }
 
-        const nextItems = dedupeItems(
-          results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+        const nextItems = sortItemsByPublishedAt(
+          dedupeItems(
+            results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+          )
         ).slice(0, limit);
 
         const failedResults = results.filter((result) => result.status === 'rejected');

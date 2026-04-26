@@ -7,6 +7,7 @@ import {
   CardDialogTabTrigger,
 } from '@/app/components/patterns';
 import {
+  BaseCard,
   Button,
   customCardDialogShellProps,
   DialogDoneFooter,
@@ -23,6 +24,7 @@ import {
   normalizeCustomCardTint,
 } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { useDevices, useHomeAssistant, useI18n, useRooms, useTheme } from '@/app/hooks';
 import type { HaBatterySensorRow } from '@/app/hooks/ha-battery-sensor-rows';
@@ -30,7 +32,6 @@ import {
   haBatterySensorRowsEqual,
   selectBatterySensorRowsFromHa,
 } from '@/app/hooks/ha-battery-sensor-rows';
-import { DashboardCustomCardShell } from './dashboard-custom-card-shell';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 export interface BatteryOverviewWidgetData {
@@ -282,6 +283,8 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
+  const surface = getThemeSurfaceTokens(theme);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const devices = useDevices();
   const rooms = useRooms(devices);
   const batteries = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
@@ -302,6 +305,13 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
 
   const isCompact = isCompactCardSize(size);
   const accentHex = getThemeColorValue(primaryColor);
+  const subtleFill =
+    tintSurface.subtleFill ??
+    (theme === 'light'
+      ? '#f3f4f6'
+      : theme === 'black'
+        ? 'rgba(255,255,255,0.05)'
+        : 'rgba(255,255,255,0.08)');
 
   const getLevelColor = (level: number) => {
     if (level <= 20) return '#ef4444';
@@ -328,83 +338,95 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
 
   return (
     <div className="h-full">
-      <DashboardCustomCardShell theme={theme} size={size} tintColor={tintColor}>
-        {({ stateSurface, subtleFill }) => (
-          <div className="relative flex h-full min-w-0 flex-col p-3">
-            {onUpdate ? (
-              <CardSettingsActionButton
-                theme={theme}
-                size={chromeSize === 'small' ? 'small' : 'medium'}
-                variant="soft"
-                className="absolute right-3 top-3 z-[3]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setIsSettingsOpen(true);
-                }}
-                aria-label={t('widgets.battery.settings.title')}
+      <BaseCard
+        size={size}
+        fullBleed
+        className="transition-all duration-500"
+        frameClassName="overflow-hidden"
+        overlay={
+          <>
+            {tintSurface.glowStyle ? (
+              <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
+            ) : null}
+            {tintSurface.overlayClassName ? (
+              <div
+                className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`}
               />
             ) : null}
-            <EntityCardHeader
-              title={t('widgets.battery.title')}
-              subtitle="Custom"
-              layout="eyebrow-first"
-              size={chromeSize}
-              titleClassName={stateSurface.primaryTextClassName}
-              subtitleClassName={stateSurface.mutedTextClassName}
-              leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />}
+          </>
+        }
+        contentClassName="h-full"
+      >
+        <div className="relative flex h-full min-w-0 flex-col p-3">
+          {onUpdate ? (
+            <CardSettingsActionButton
+              theme={theme}
+              size={chromeSize === 'small' ? 'small' : 'medium'}
+              variant="soft"
+              className="absolute right-3 top-3 z-[3]"
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsSettingsOpen(true);
+              }}
+              aria-label={t('widgets.battery.settings.title')}
             />
-            {filteredBatteries.length === 0 ? (
-              <div
-                className={`flex flex-1 items-center justify-center text-sm ${stateSurface.mutedTextClassName}`}
-              >
-                {emptyStateLabel}
-              </div>
-            ) : (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-                <ul className="mt-auto min-w-0 space-y-1.5">
-                  {filteredBatteries.map((device) => (
-                    <li key={device.id} className="flex min-w-0 items-center gap-2">
-                      {device.level <= 20 ? (
-                        <BatteryLow className="h-3.5 w-3.5 shrink-0 text-red-400" />
-                      ) : (
-                        <Battery
-                          className="h-3.5 w-3.5 shrink-0"
-                          style={{ color: getLevelColor(device.level) }}
-                        />
-                      )}
-                      <span
-                        className={`min-w-0 flex-1 truncate text-xs ${stateSurface.secondaryTextClassName}`}
-                      >
-                        {device.name}
-                      </span>
-                      {!isCompact && (
-                        <div
-                          className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
-                          style={{ background: subtleFill }}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${device.level}%`,
-                              backgroundColor: getLevelColor(device.level),
-                            }}
-                          />
-                        </div>
-                      )}
-                      <span
-                        className="w-10 shrink-0 text-right text-xs font-medium tabular-nums"
+          ) : null}
+          <EntityCardHeader
+            title={t('widgets.battery.title')}
+            subtitle="Custom"
+            layout="eyebrow-first"
+            size={chromeSize}
+            titleClassName={surface.textPrimary}
+            subtitleClassName={surface.textMuted}
+            leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />}
+          />
+          {filteredBatteries.length === 0 ? (
+            <div className={`flex flex-1 items-center justify-center text-sm ${surface.textMuted}`}>
+              {emptyStateLabel}
+            </div>
+          ) : (
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+              <ul className="mt-auto min-w-0 space-y-1.5">
+                {filteredBatteries.map((device) => (
+                  <li key={device.id} className="flex min-w-0 items-center gap-2">
+                    {device.level <= 20 ? (
+                      <BatteryLow className="h-3.5 w-3.5 shrink-0 text-red-400" />
+                    ) : (
+                      <Battery
+                        className="h-3.5 w-3.5 shrink-0"
                         style={{ color: getLevelColor(device.level) }}
+                      />
+                    )}
+                    <span className={`min-w-0 flex-1 truncate text-xs ${surface.textSecondary}`}>
+                      {device.name}
+                    </span>
+                    {!isCompact && (
+                      <div
+                        className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
+                        style={{ background: subtleFill }}
                       >
-                        {device.level}%
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </DashboardCustomCardShell>
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${device.level}%`,
+                            backgroundColor: getLevelColor(device.level),
+                          }}
+                        />
+                      </div>
+                    )}
+                    <span
+                      className="w-10 shrink-0 text-right text-xs font-medium tabular-nums"
+                      style={{ color: getLevelColor(device.level) }}
+                    >
+                      {device.level}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </BaseCard>
       <BatterySettingsDialog
         batteries={batteries}
         isOpen={isSettingsOpen}

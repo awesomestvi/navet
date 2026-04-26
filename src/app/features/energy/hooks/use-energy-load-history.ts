@@ -44,11 +44,7 @@ export function useEnergyLoadHistory(
       }
 
       try {
-        const stats = await getPowerStatisticsHistory(
-          connection,
-          resolvedEntityId,
-          new Date(Date.now() - 24 * 60 * 60 * 1000)
-        );
+        const stats = await getPowerStatisticsHistory(connection, resolvedEntityId);
         if (stats.length === 0) {
           setPoints([
             {

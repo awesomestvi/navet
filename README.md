@@ -1,6 +1,6 @@
 # Navet
 
-Navet is a smart home dashboard PWA built with React 18, TypeScript, Zustand, and Tailwind CSS 4.
+Navet is a smart home dashboard PWA built with React 19, TypeScript, Zustand, and Tailwind CSS 4.
 It connects directly to Home Assistant over WebSocket and is designed to run well on both desktop
 machines and lower-power wall panels.
 
@@ -47,7 +47,7 @@ See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and version bump
 
 | Layer | Tooling |
 |---|---|
-| App | React 18 |
+| App | React 19 |
 | Language | TypeScript |
 | State | Zustand |
 | Styling | Tailwind CSS 4 |
@@ -185,6 +185,34 @@ Storybook is the main review surface for:
 
 See [design-system/STORYBOOK_FOUNDATION.md](design-system/STORYBOOK_FOUNDATION.md).
 
+### Unit tests
+
+Navet uses Vitest for focused unit coverage of shared utilities, Zustand stores, browser-dependent
+hooks, and selected feature controllers. The repo also includes shared test helpers so new tests
+can mount hooks with i18n, reset singleton stores deterministically, and stub Home Assistant
+service events without bespoke setup in every file.
+
+Current shared test support lives in:
+
+- [`src/setupTests.ts`](/Users/vishal/Development/Github/Navet/Navet/src/setupTests.ts)
+- [`src/test/render.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/test/render.tsx)
+- [`src/test/store-reset.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/store-reset.ts)
+- [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
+- [`src/test/factories/home-assistant-service-stub.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/factories/home-assistant-service-stub.ts)
+
+Use:
+
+```bash
+pnpm test
+pnpm test:coverage
+```
+
+Scope guidance:
+
+- Prefer unit tests for shared logic, persistence, selector-heavy hooks, and controller seams
+- Prefer Storybook for visual review of shared UI, cards, dialogs, and layout flows
+- Avoid broad snapshot-heavy component testing for thin presentational wrappers
+
 ### Production preview
 
 Use the preview flow when you need production-style runtime config or media/proxy behavior:
@@ -250,6 +278,7 @@ Useful entry points:
 - [docs/WIDGETS.md](docs/WIDGETS.md)
 - [docs/DOCKER_HOME_ASSISTANT_ADDON.md](docs/DOCKER_HOME_ASSISTANT_ADDON.md)
 - [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md)
+- [src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test)
 - [design-system/README.md](design-system/README.md)
 - [design-system/FEATURES.md](design-system/FEATURES.md)
 - [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)

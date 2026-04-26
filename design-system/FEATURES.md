@@ -70,6 +70,10 @@ Selectors live in
 [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts)
 and should be preferred over full-store subscriptions.
 
+Shared unit-test support for stores, hooks, and controller seams lives in
+[`src/test/`](/Users/vishal/Development/Github/Navet/Navet/src/test). Reuse those helpers before
+introducing feature-local test scaffolding.
+
 ### Home Assistant flow
 
 [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
@@ -165,6 +169,22 @@ Storybook is the review surface for the system layer, card surfaces, settings fl
 Shared story helpers live in
 [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx)
 and [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts).
+
+### Unit-test support
+
+Vitest is the preferred path for:
+
+- shared utility logic
+- persisted store behavior
+- browser-dependent hooks
+- controller composition that would be hard to validate from stories alone
+
+The current shared harness provides:
+
+- provider-wrapped hook rendering
+- deterministic store resets between tests
+- browser API shims
+- Home Assistant service stubs for typed event flows
 
 ## Card system
 

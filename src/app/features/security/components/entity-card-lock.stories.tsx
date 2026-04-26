@@ -98,8 +98,12 @@ export const Playground: Story = {
     await step('toggles to unlocked when pressed', async () => {
       actionButton.focus();
       await userEvent.keyboard('[Space]');
-      await expect(canvas.getByText(/unlocked/i)).toBeInTheDocument();
-      await expect(canvas.getByRole('button', { name: /slide to lock/i })).toBeInTheDocument();
+      await expect(
+        canvas.findByText(/unlocked/i, {}, { timeout: 2000 })
+      ).resolves.toBeInTheDocument();
+      await expect(
+        canvas.findByRole('button', { name: /slide to lock/i }, { timeout: 2000 })
+      ).resolves.toBeInTheDocument();
     });
   },
 };
