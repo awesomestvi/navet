@@ -21,10 +21,36 @@ interface PersonCardProps {
   isEditMode: boolean;
 }
 
+function normalizePersonDetailCandidate(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  const normalized = trimmed.toLowerCase();
+  if (
+    normalized === 'unknown' ||
+    normalized === 'unavailable' ||
+    normalized === 'unassigned' ||
+    normalized === 'none' ||
+    normalized === 'null' ||
+    normalized === 'n/a'
+  ) {
+    return null;
+  }
+
+  return trimmed;
+}
+
 function getFirstString(...values: Array<string | null | undefined>): string | null {
   for (const value of values) {
-    if (typeof value === 'string' && value.trim().length > 0) {
-      return value.trim();
+    const normalizedValue = normalizePersonDetailCandidate(value);
+    if (normalizedValue) {
+      return normalizedValue;
     }
   }
 
@@ -100,6 +126,7 @@ export const PersonCard = memo(function PersonCard({
   return (
     <BaseCard
       size={size}
+      fullBleed
       frameClassName={`${cardShell.rootFrameClassName} ${cardColors.border} ${surface.containerShadowClassName}`}
       disableDefaultSheen
       overlay={
@@ -137,7 +164,7 @@ export const PersonCard = memo(function PersonCard({
           <div
             className={`truncate text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] ${eyebrowTextClassName}`}
           >
-            {detailLabel ?? presenceLabel}
+            {presenceLabel}
           </div>
           <div
             className={`mt-0.5 truncate font-semibold leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] ${nameTextClassName}`}

@@ -23,6 +23,27 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;
 }
 
+const BUTTON_SIZE_CLASS_NAMES = {
+  default: {
+    iconOnly: navetSizeTokens.iconButton.md,
+    frame: 'h-10',
+    inset: 'px-4',
+    text: navetTypographyTokens.control,
+  },
+  small: {
+    iconOnly: navetSizeTokens.iconButton.sm,
+    frame: 'h-9',
+    inset: 'px-3.5',
+    text: navetTypographyTokens.control,
+  },
+  compact: {
+    iconOnly: 'h-8 w-8',
+    frame: 'h-8',
+    inset: 'px-3',
+    text: navetTypographyTokens.dense,
+  },
+} as const;
+
 // Status: in-progress. Canonical action button for form and dialog actions.
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
@@ -44,6 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const { theme, accentColor, primaryColor } = useTheme();
   const isDisabled = disabled || loading;
   const iconContent = leading ?? children;
+  const sizeClassName = BUTTON_SIZE_CLASS_NAMES[size];
 
   const pickerTokens =
     variant === 'soft'
@@ -91,31 +113,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       title={iconOnly ? label : props.title}
       className={cn(
         'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:opacity-50',
-        iconOnly
-          ? size === 'compact'
-            ? 'h-8 w-8'
-            : size === 'small'
-              ? 'h-8 w-8'
-              : navetSizeTokens.iconButton.md
-          : size === 'compact'
-            ? 'min-h-8 px-3.5 py-2'
-            : size === 'small'
-              ? 'min-h-9'
-              : navetSizeTokens.controlHeight.md,
-        iconOnly
-          ? ''
-          : size === 'compact'
-            ? ''
-            : size === 'small'
-              ? 'px-3.5 py-2'
-              : navetSizeTokens.buttonInset,
+        iconOnly ? sizeClassName.iconOnly : sizeClassName.frame,
+        iconOnly ? '' : sizeClassName.inset,
         iconOnly ? '' : navetSpacingTokens.inline.sm,
         iconOnly ? navetRadiusTokens.pill : navetRadiusTokens.action,
-        size === 'compact'
-          ? navetTypographyTokens.control
-          : size === 'small'
-            ? navetTypographyTokens.control
-            : navetTypographyTokens.control,
+        sizeClassName.text,
         variantClassName,
         getThemeFocusRingClassName(theme),
         className

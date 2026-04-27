@@ -120,11 +120,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 
   const filteredLatestArticle = filteredItems[0] ?? null;
 
-  const handleRefetch = () => {
-    setRefreshNonce((value) => value + 1);
-    setSecondsUntilRefresh(RSS_REFRESH_INTERVAL_SECONDS);
-  };
-
   const handleArticleClick = (url: string) => {
     if (!inEditMode) {
       window.open(url, '_blank');
@@ -161,7 +156,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         hasConfiguredProviders={providers.length > 0}
         hasSelectedProviders={selectedProviderIds.length > 0}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onRefetch={handleRefetch}
       />
       {isSettingsOpen ? (
         <RSSFeedSettingsDialog

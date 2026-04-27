@@ -239,7 +239,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
         {activeRoom === 'All' ? (
           <RenderProfiler id="HomeDashboardOverview">
             <HomeDashboardOverview
-              deviceMap={deviceMap}
+              deviceMap={controller.availableDeviceMap}
               cardSizes={cardSizes}
               updateCardSize={updateCardSize}
               isEditMode={isEditMode}

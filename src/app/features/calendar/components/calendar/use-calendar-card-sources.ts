@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useDevices, useI18n, usePersistedState } from '@/app/hooks';
+import {
+  getCalendarEventSortValue,
+  isCalendarEventVisibleInWindow,
+} from './calendar-event-visibility';
 import type { CalendarEvent } from './types';
 
 type PersistedCalendarSources = Record<string, string[]>;
@@ -114,21 +118,10 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
           color: calendar.color,
         }))
       )
-      .filter((event) => {
-        if (!event.sortKey) {
-          return true;
-        }
-
-        const eventDate = new Date(event.sortKey);
-        if (Number.isNaN(eventDate.getTime())) {
-          return true;
-        }
-
-        return eventDate >= now && eventDate <= endDate;
-      })
+      .filter((event) => isCalendarEventVisibleInWindow(event, now, endDate))
       .sort((left, right) => {
-        const leftKey = left.sortKey ?? left.startTime;
-        const rightKey = right.sortKey ?? right.startTime;
+        const leftKey = getCalendarEventSortValue(left);
+        const rightKey = getCalendarEventSortValue(right);
         return leftKey.localeCompare(rightKey);
       })
       .slice(0, viewMode === 'week' ? 7 : 12);

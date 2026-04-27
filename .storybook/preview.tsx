@@ -37,12 +37,22 @@ const TOOLBAR_CANVAS_BACKGROUNDS = {
   'canvas-black': CANVAS_BACKGROUNDS.black,
 } as const;
 
+const CARD_SIZE_TOOLBAR_ITEMS = [
+  { value: 'tiny', title: 'Tiny (64×64)' },
+  { value: 'extraSmall', title: 'Extra Small (96×96)' },
+  { value: 'small', title: 'Small (128×128)' },
+  { value: 'medium', title: 'Medium (192×192)' },
+  { value: 'large', title: 'Large (256×256)' },
+  { value: 'extraLarge', title: 'Extra Large (320×320)' },
+];
+
 interface StorybookEnvironmentProps {
   children: ReactNode;
   canvasBackgroundName?: keyof typeof TOOLBAR_CANVAS_BACKGROUNDS;
   isDocs?: boolean;
   theme: ThemeMode;
   primaryColor: Exclude<PrimaryColor, 'custom'>;
+  cardSize?: string;
 }
 
 function StorybookEnvironment({
@@ -51,6 +61,7 @@ function StorybookEnvironment({
   isDocs = false,
   theme,
   primaryColor,
+  cardSize,
 }: StorybookEnvironmentProps) {
   useEffect(() => {
     const accentColor = PRIMARY_COLOR_VALUES[primaryColor];
@@ -121,7 +132,7 @@ function StorybookEnvironment({
         document.documentElement.style.zoom = '';
       }
     };
-  }, [primaryColor, theme]);
+  }, [primaryColor, theme, cardSize]);
 
   return (
     <I18nProvider>
@@ -174,6 +185,82 @@ const preview: Preview = {
         disable: true,
       },
     },
+    viewport: {
+      viewports: {
+        iphone14: {
+          name: 'iPhone 14',
+          styles: {
+            width: '390px',
+            height: '844px',
+          },
+        },
+        iphone14plus: {
+          name: 'iPhone 14 Plus',
+          styles: {
+            width: '428px',
+            height: '926px',
+          },
+        },
+        pixel7: {
+          name: 'Pixel 7',
+          styles: {
+            width: '412px',
+            height: '915px',
+          },
+        },
+        ipadMini: {
+          name: 'iPad Mini',
+          styles: {
+            width: '768px',
+            height: '1024px',
+          },
+        },
+        ipadPro: {
+          name: 'iPad Pro',
+          styles: {
+            width: '1024px',
+            height: '1366px',
+          },
+        },
+        raspberryPi7inch: {
+          name: 'Raspberry Pi 7" Touch',
+          styles: {
+            width: '1024px',
+            height: '600px',
+          },
+        },
+        wallDisplay10inch: {
+          name: 'Wall Display 10"',
+          styles: {
+            width: '1280px',
+            height: '800px',
+          },
+        },
+        desktop1080p: {
+          name: 'Desktop 1080p',
+          styles: {
+            width: '1920px',
+            height: '1080px',
+          },
+        },
+        desktop1440p: {
+          name: 'Desktop 1440p',
+          styles: {
+            width: '2560px',
+            height: '1440px',
+          },
+        },
+      },
+    },
+    touchSimulator: {
+      enabled: true,
+      touchEnabled: true,
+      mouseEnabled: false,
+      showMultiTouch: true,
+      enableTouchEvents: true,
+    },
+    // Per-story touch simulation override
+    // Use in stories: MyStory.parameters = { touchSimulator: { enabled: false } }
   },
   globalTypes: {
     theme: {
@@ -212,18 +299,43 @@ const preview: Preview = {
         ],
       },
     },
+    cardSize: {
+      name: 'Card Size',
+      description: 'Dashboard card footprint preset',
+      defaultValue: 'medium',
+      toolbar: {
+        title: 'Card size options',
+        icon: 'crop',
+        dynamicTitle: true,
+        items: CARD_SIZE_TOOLBAR_ITEMS,
+      },
+    },
   },
   decorators: [
-    (Story, context) => (
-      <StorybookEnvironment
-        canvasBackgroundName={context.globals.backgrounds?.name}
-        isDocs={context.viewMode === 'docs'}
-        theme={context.globals.theme as ThemeMode}
-        primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
-      >
-        <Story />
-      </StorybookEnvironment>
-    ),
+    (Story, context) => {
+      const touchEnabled = context.parameters.touchSimulator?.enabled !== false;
+      
+      useEffect(() => {
+        if (!touchEnabled) {
+          document.documentElement.dataset.touchSimulatorDisabled = 'true';
+          return () => {
+            delete document.documentElement.dataset.touchSimulatorDisabled;
+          };
+        }
+      }, [touchEnabled]);
+
+      return (
+        <StorybookEnvironment
+          canvasBackgroundName={context.globals.backgrounds?.name}
+          isDocs={context.viewMode === 'docs'}
+          theme={context.globals.theme as ThemeMode}
+          primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
+          cardSize={context.globals.cardSize}
+        >
+          <Story />
+        </StorybookEnvironment>
+      );
+    },
   ],
 };
 

@@ -197,6 +197,7 @@ export const useHADevices = (): DeviceCollection => {
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
+  const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const primaryWeatherEntityId = useMemo(() => {
     if (!entities) {
       return null;
@@ -750,6 +751,7 @@ export const useHADevices = (): DeviceCollection => {
               calendarEvents: deferredCalendarEvents,
               locale,
               t,
+              use24HourTime,
             }
           );
           calendarSources.push(...sources);
@@ -768,6 +770,7 @@ export const useHADevices = (): DeviceCollection => {
             storedForecasts: deferredWeatherForecasts[entityId],
             locale,
             t,
+            use24HourTime,
           });
           weather.push(mapped);
           break;
@@ -845,5 +848,6 @@ export const useHADevices = (): DeviceCollection => {
     primaryWeatherEntityId,
     t,
     weatherForecastMode,
+    use24HourTime,
   ]);
 };

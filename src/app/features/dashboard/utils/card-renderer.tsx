@@ -77,11 +77,7 @@ function EntityAvailabilityFrame({
       {!isEditMode ? (
         <div className="pointer-events-auto absolute inset-0 z-20 rounded-[inherit]" />
       ) : null}
-      <div
-        className={`pointer-events-none absolute z-30 ${
-          isEditMode ? 'bottom-3 left-3' : 'left-3 top-3'
-        }`}
-      >
+      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
         <div className="inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-xs font-semibold tracking-[0.06em] text-white/92 uppercase backdrop-blur-md">
           {t('camera.status.unavailable')}
         </div>

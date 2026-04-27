@@ -25,6 +25,7 @@ import {
   formatEntityType,
   formatMediaEntityType,
   inferCalendarEventType,
+  isAllDayCalendarValue,
   normalizeKelvin,
   parseCalendarDate,
   parseNumberish,
@@ -37,6 +38,7 @@ type CalendarServiceEvent = Record<string, unknown>;
 interface MapperContext {
   locale: string;
   t: TranslateFn;
+  use24HourTime: boolean;
 }
 
 interface WeatherContext extends MapperContext {
@@ -386,7 +388,8 @@ export function mapWeatherDevice(
   room: string,
   context: WeatherContext
 ): WeatherDevice {
-  const { sunEntity, config, weatherForecastMode, storedForecasts, locale, t } = context;
+  const { sunEntity, config, weatherForecastMode, storedForecasts, locale, t, use24HourTime } =
+    context;
 
   const sunEntitySunrise = sunEntity?.attributes?.next_rising;
   const sunEntitySunset = sunEntity?.attributes?.next_setting;
@@ -506,8 +509,8 @@ export function mapWeatherDevice(
       0,
     precipitation: precipitationValue,
     precipitationUnit,
-    sunrise: formatClock(sunriseSource, locale),
-    sunset: formatClock(sunsetSource, locale),
+    sunrise: formatClock(sunriseSource, locale, use24HourTime),
+    sunset: formatClock(sunsetSource, locale, use24HourTime),
     daylight: formatDaylight(sunriseSource, sunsetSource),
     rainForecast:
       tomorrowPrecipitationProbability !== null
@@ -534,7 +537,7 @@ export function mapCalendarSources(
   room: string,
   context: CalendarContext
 ): NonNullable<CalendarDevice['sources']> {
-  const { calendarEvents, locale, t } = context;
+  const { calendarEvents, locale, t, use24HourTime } = context;
   const rawEvents = calendarEvents[entityId] ?? [];
   const fallbackTitle =
     typeof entity.attributes?.message === 'string' ? entity.attributes.message : '';
@@ -584,8 +587,8 @@ export function mapCalendarSources(
       const startDate = parseCalendarDate(eventRecord.start ?? eventRecord.start_time);
       const endDate = parseCalendarDate(eventRecord.end ?? eventRecord.end_time);
       const isAllDay = isAllDayCalendarValue(eventRecord.start ?? eventRecord.start_time);
-      const startTime = formatCalendarTime(startDate, locale);
-      const endTime = formatCalendarTime(endDate, locale);
+      const startTime = formatCalendarTime(startDate, locale, use24HourTime);
+      const endTime = formatCalendarTime(endDate, locale, use24HourTime);
       const attendees = Array.isArray(eventRecord.attendees)
         ? eventRecord.attendees.length
         : typeof eventRecord.attendees === 'number'
@@ -601,6 +604,8 @@ export function mapCalendarSources(
         startTime,
         endTime,
         timeDisplay: startTime,
+        startDateTime: startDate?.toISOString(),
+        endDateTime: endDate?.toISOString(),
         isAllDay,
         location,
         description,
@@ -633,9 +638,4 @@ export function mapCalendarSources(
 
 function formatWeatherValue(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
-}
-
-function isAllDayCalendarValue(value: unknown): boolean {
-  if (typeof value !== 'string') return false;
-  return value.length === 10 && value.endsWith('T00:00:00');
 }

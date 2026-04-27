@@ -2,9 +2,8 @@ import { lazy, memo, Suspense, useMemo } from 'react';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { DeviceWithType } from '@/app/types/device.types';
-import type { CustomCard } from '../stores/custom-cards-store';
 import {
+  buildHomeOverviewCollections,
   type HomeDashboardOverviewProps,
   useHomeLayoutViewport,
 } from './home-dashboard-overview.shared';
@@ -39,56 +38,15 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const { theme, accentColor } = useTheme();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
-  const { allCards, flowCards, sectionCards } = useMemo(() => {
-    const cards = new Map<string, DeviceWithType | CustomCard>();
-    for (const [id, device] of deviceMap) {
-      cards.set(id, device);
-    }
-
-    for (const card of allCustomCards) {
-      cards.set(card.id, card);
-    }
-
-    const sectionIdSet = new Set(homeLayout.sections.map((section) => section.id));
-    const selectedIds = homeLayout.cardIds.filter((id) => cards.has(id));
-    const groupedCards = new Map<string, string[]>();
-
-    for (const id of selectedIds) {
-      const sectionId = homeLayout.cardSectionAssignments[id];
-      if (!sectionId || !sectionIdSet.has(sectionId)) {
-        continue;
-      }
-
-      const existing = groupedCards.get(sectionId);
-      if (existing) {
-        existing.push(id);
-      } else {
-        groupedCards.set(sectionId, [id]);
-      }
-    }
-
-    return {
-      allCards: cards,
-      flowCards:
-        homeLayout.mode !== 'sectioned'
-          ? selectedIds
-          : selectedIds.filter((id) => {
-              const assignedSectionId = homeLayout.cardSectionAssignments[id];
-              return !assignedSectionId || !sectionIdSet.has(assignedSectionId);
-            }),
-      sectionCards: homeLayout.sections.map((section) => ({
-        ...section,
-        cardIds: groupedCards.get(section.id) ?? [],
-      })),
-    };
-  }, [
-    allCustomCards,
-    deviceMap,
-    homeLayout.cardIds,
-    homeLayout.cardSectionAssignments,
-    homeLayout.mode,
-    homeLayout.sections,
-  ]);
+  const { allCards, flowCards, sectionCards } = useMemo(
+    () =>
+      buildHomeOverviewCollections({
+        deviceMap,
+        allCustomCards,
+        homeLayout,
+      }),
+    [allCustomCards, deviceMap, homeLayout]
+  );
 
   if (!isEditMode) {
     return (

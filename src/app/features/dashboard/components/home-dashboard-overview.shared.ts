@@ -203,6 +203,58 @@ export function areCardIdsStable(
   );
 }
 
+export function buildHomeOverviewCollections({
+  deviceMap,
+  allCustomCards,
+  homeLayout,
+}: {
+  deviceMap: Map<string, DeviceWithType>;
+  allCustomCards: CustomCard[];
+  homeLayout: HomeDashboardLayoutState;
+}) {
+  const cards = new Map<string, DeviceWithType | CustomCard>();
+  for (const [id, device] of deviceMap) {
+    cards.set(id, device);
+  }
+
+  for (const card of allCustomCards) {
+    cards.set(card.id, card);
+  }
+
+  const sectionIdSet = new Set(homeLayout.sections.map((section) => section.id));
+  const selectedIds = homeLayout.cardIds.filter((id) => cards.has(id));
+  const groupedCards = new Map<string, string[]>();
+
+  for (const id of selectedIds) {
+    const sectionId = homeLayout.cardSectionAssignments[id];
+    if (!sectionId || !sectionIdSet.has(sectionId)) {
+      continue;
+    }
+
+    const existing = groupedCards.get(sectionId);
+    if (existing) {
+      existing.push(id);
+    } else {
+      groupedCards.set(sectionId, [id]);
+    }
+  }
+
+  return {
+    allCards: cards,
+    flowCards:
+      homeLayout.mode !== 'sectioned'
+        ? selectedIds
+        : selectedIds.filter((id) => {
+            const assignedSectionId = homeLayout.cardSectionAssignments[id];
+            return !assignedSectionId || !sectionIdSet.has(assignedSectionId);
+          }),
+    sectionCards: homeLayout.sections.map((section) => ({
+      ...section,
+      cardIds: groupedCards.get(section.id) ?? [],
+    })),
+  };
+}
+
 export function getRenderedSectionColumnStart(
   x: number,
   span: HomeDashboardSectionSpan,

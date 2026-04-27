@@ -1,16 +1,8 @@
-import { MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { BaseCard, InteractivePill, RoundControlButton } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { withTintAlpha } from '@/app/components/shared/theme/custom-card-tint-surface';
-import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/app/components/ui/dropdown-menu';
-import { cn } from '@/app/components/ui/utils';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
 import { getRSSFeedCardSurfaceTokens } from './surface-tokens';
 import type { RSSItem, RSSProvider } from './types';
@@ -42,7 +34,6 @@ interface RSSFeedCardViewProps {
   hasConfiguredProviders: boolean;
   hasSelectedProviders: boolean;
   onOpenSettings: () => void;
-  onRefetch: () => void;
 }
 
 export function RSSFeedCardView({
@@ -66,32 +57,12 @@ export function RSSFeedCardView({
   hasConfiguredProviders,
   hasSelectedProviders,
   onOpenSettings,
-  onRefetch,
 }: RSSFeedCardViewProps) {
   const { t } = useI18n();
   const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
   const chromeSize = size === 'large' ? 'medium' : size;
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
-  const dropdownItemClassName = cn(
-    'rounded-xl border border-transparent px-3 py-2 text-sm outline-none transition-colors',
-    'data-[highlighted]:bg-[var(--menu-hover-bg)] data-[highlighted]:border-[var(--menu-hover-border)]',
-    'focus:bg-[var(--menu-hover-bg)] focus:border-[var(--menu-hover-border)]'
-  );
-  const dropdownItemHoverStyle = {
-    '--menu-hover-bg':
-      theme === 'light'
-        ? withTintAlpha(controlAccentColor, 0.12)
-        : theme === 'glass'
-          ? withTintAlpha(controlAccentColor, 0.16)
-          : withTintAlpha(controlAccentColor, 0.2),
-    '--menu-hover-border':
-      theme === 'light'
-        ? withTintAlpha(controlAccentColor, 0.24)
-        : theme === 'glass'
-          ? withTintAlpha(controlAccentColor, 0.32)
-          : withTintAlpha(controlAccentColor, 0.38),
-  } as CSSProperties;
   const isEmpty = !latestArticle && !isLoading;
   const emptyMessage = !hasConfiguredProviders
     ? t('rss.empty.noProviders')
@@ -222,49 +193,20 @@ export function RSSFeedCardView({
                   ))}
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <RoundControlButton
-                    theme={theme}
-                    size={chromeSize === 'small' ? 'small' : 'medium'}
-                    variant="soft"
-                    aria-label={t('rss.menu.label')}
-                    className="shrink-0"
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) => event.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </RoundControlButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className={cn(getThemeDropdownSurfaceClasses(theme), 'min-w-40 rounded-2xl p-2')}
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <DropdownMenuItem
-                    className={dropdownItemClassName}
-                    style={dropdownItemHoverStyle}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onRefetch();
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    {t('rss.refreshNow')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className={dropdownItemClassName}
-                    style={dropdownItemHoverStyle}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onOpenSettings();
-                    }}
-                  >
-                    <Settings2 className="h-4 w-4" />
-                    {t('rss.configureProviders')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <RoundControlButton
+                theme={theme}
+                size={chromeSize === 'small' ? 'small' : 'medium'}
+                variant="soft"
+                aria-label={t('rss.configureProviders')}
+                className="shrink-0"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenSettings();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </RoundControlButton>
             </div>
 
             {isSmall && latestArticle ? (
@@ -387,21 +329,31 @@ export function RSSFeedCardView({
                           )}
                           <div className="min-w-0 flex-1 text-left">
                             <h3
-                              className="mb-0.5 text-left text-sm font-semibold leading-tight line-clamp-2 transition-colors"
+                              className="mb-1.5 text-left text-sm font-semibold leading-[1.3] line-clamp-2 transition-colors"
                               style={{ color: rssSurface.textPrimaryColor }}
                             >
                               {item.title}
                             </h3>
-                            <div className="mb-0.5 flex items-center gap-1 text-xs leading-none">
-                              <span style={{ color: rssSurface.sourceColor }}>{item.source}</span>
-                              <span className={rssSurface.dotClassName}>•</span>
-                              <span style={{ color: rssSurface.textSecondaryColor }}>
+                            <div className="mb-2 flex items-center gap-1.5 text-[11px] leading-none">
+                              <span
+                                className="font-medium"
+                                style={{ color: rssSurface.metadataSourceColor }}
+                              >
+                                {item.source}
+                              </span>
+                              <span
+                                className={rssSurface.dotClassName}
+                                style={{ color: rssSurface.metadataTimeColor }}
+                              >
+                                •
+                              </span>
+                              <span style={{ color: rssSurface.metadataTimeColor }}>
                                 {item.timeAgo}
                               </span>
                             </div>
                             {item.excerpt ? (
                               <p
-                                className={`text-left text-xs whitespace-normal wrap-break-word leading-[1.45] ${rssSurface.excerptClassName}`}
+                                className={`line-clamp-4 text-left text-xs whitespace-normal wrap-break-word leading-[1.5] ${rssSurface.excerptClassName}`}
                                 style={{ color: rssSurface.excerptColor }}
                               >
                                 {truncateExcerpt(item.excerpt)}

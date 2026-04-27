@@ -16,6 +16,16 @@ Current release channel: `0.1.0-beta.2`
 
 See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and version bump rules.
 
+### Testing
+
+Navet uses Vitest for unit testing with co-located test files in `__tests__/` directories. Test
+coverage includes:
+
+- shared utilities and entity mappers
+- Zustand store behavior
+- controller hooks and dashboard actions
+- calendar and feature-specific logic
+
 ## Highlights
 
 ### Dashboard and device support
@@ -38,7 +48,7 @@ See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and version bump
 
 ### Widgets and specialized views
 
-- Custom widgets including RSS feed, photo frame, quick note, battery overview, and button widgets
+- Custom widgets including RSS feed, photo frame, quick note, battery overview, button, and map widgets
 - Dedicated section views for energy, lights, locks, media, and security
 - Live Home Assistant notification surfaces for persistent notifications, repair issues, and updates
 - Artwork-led media cards and TV-specific media layouts
@@ -109,7 +119,10 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 | [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts) | Shared selectors for minimal store subscriptions |
 | [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx) | Dashboard card registry |
 | [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |
+| [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts) | Story-specific documentation strings |
 | [`src/app/components/shared/theme/theme-surface-tokens.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme/theme-surface-tokens.ts) | Shared theme/surface decisions |
+| [`src/app/hooks/use-ha-devices.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-ha-devices.ts) | HA entity to device type mapping |
+| [`src/app/hooks/ha-entity-utils.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/ha-entity-utils.ts) | Entity transformation utilities |
 
 ## Setup
 

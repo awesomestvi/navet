@@ -74,6 +74,7 @@ Examples:
 - empty states
 - preview cards
 - action rows
+- selectable checkbox rows
 
 Use `patterns/` when reuse comes from intent and structure, not just visual similarity.
 
@@ -166,9 +167,10 @@ shells:
 - `CardDialogTabTrigger`
 - `DialogSectionRow`
 - `DialogDoneFooter`
+- `SelectableCheckboxRow`
 
-This keeps room assignment, controls tabs, helper text spacing, and close/done affordances aligned
-across light, HVAC, weather, calendar, vacuum, camera, and switch flows.
+This keeps room assignment, controls tabs, helper text spacing, selection rows, and close/done
+affordances aligned across light, HVAC, weather, calendar, vacuum, camera, and switch flows.
 
 ## Storybook Workflow
 
@@ -255,4 +257,4 @@ Before landing shared UI changes:
 - Does Storybook need to be updated to document the change?
 - Does the change affect card sizing, dialog composition, or stable exports?
 
-Last updated: April 21, 2026
+Last updated: April 27, 2026

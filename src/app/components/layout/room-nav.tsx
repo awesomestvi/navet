@@ -680,33 +680,34 @@ const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
       </div>
       <div className="flex items-center gap-1">
         <Button
+          iconOnly
           size="compact"
           variant="secondary"
           onClick={() => onMove(index, -1)}
           disabled={index === 0}
-          aria-label={t('dashboard.roomNav.reorderDialog.moveUp')}
-          className="h-8 w-8"
+          label={t('dashboard.roomNav.reorderDialog.moveUp')}
         >
           <ArrowUp className="h-3.5 w-3.5" />
         </Button>
         <Button
+          iconOnly
           size="compact"
           variant="secondary"
           onClick={() => onMove(index, 1)}
           disabled={index === totalCount - 1}
-          aria-label={t('dashboard.roomNav.reorderDialog.moveDown')}
-          className="h-8 w-8"
+          label={t('dashboard.roomNav.reorderDialog.moveDown')}
         >
           <ArrowDown className="h-3.5 w-3.5" />
         </Button>
         <div aria-hidden="true" className={`mx-1 h-5 w-px rounded-full ${separatorClassName}`} />
         <Button
+          iconOnly
           size="compact"
           variant="soft"
           onClick={onDelete}
           disabled={deleteDisabled}
-          aria-label={t('dashboard.roomNav.reorderDialog.deleteRoom', { room })}
-          className="h-8 w-8 border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/12"
+          label={t('dashboard.roomNav.reorderDialog.deleteRoom', { room })}
+          className="border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/12"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -743,7 +744,7 @@ const RoomNavItem = memo(function RoomNavItem({
       onClick={() => onRoomChange(room)}
       size="small"
       variant="ghost"
-      className={`room-nav-item rounded-[22px] px-3 py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-colors md:px-3.5 md:py-2 ${
+      className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${
         activeRoom === room ? activeClassName : inactiveClassName
       }`}
     >

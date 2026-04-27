@@ -77,3 +77,17 @@ export const Large: Story = {
     size: 'large',
   },
 };
+
+export const LargeLightTint: Story = {
+  args: {
+    size: 'large',
+    tintColor: '#f59e0b',
+  },
+};
+
+export const LargeDarkTint: Story = {
+  args: {
+    size: 'large',
+    tintColor: '#1d4ed8',
+  },
+};

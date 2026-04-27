@@ -1,4 +1,4 @@
-import { Check, Palette, Sliders } from 'lucide-react';
+import { Palette, Sliders } from 'lucide-react';
 import { useState } from 'react';
 import {
   CardDialogChoicePill,
@@ -6,6 +6,7 @@ import {
   CardDialogSection,
   CardDialogTabList,
   CardDialogTabTrigger,
+  SelectableCheckboxRow,
 } from '@/app/components/patterns';
 import {
   customCardDialogShellProps,
@@ -143,56 +144,29 @@ export function CalendarSettingsDialog({
                     const isSelected = selectedCalendarIds.includes(calendar.id);
 
                     return (
-                      <button
-                        type="button"
+                      <SelectableCheckboxRow
                         key={calendar.id}
-                        onClick={() => {
+                        checked={isSelected}
+                        onCheckedChange={() => {
                           onSelectedCalendarIdsChange(
                             isSelected
                               ? selectedCalendarIds.filter((id) => id !== calendar.id)
                               : [...selectedCalendarIds, calendar.id]
                           );
                         }}
-                        className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${surface.border} ${surface.hoverBg}`}
-                        style={
-                          isSelected
-                            ? {
-                                backgroundColor:
-                                  theme === 'light'
-                                    ? `${activeAccentColor}0d`
-                                    : `${activeAccentColor}16`,
-                                borderColor: `${activeAccentColor}4d`,
-                              }
-                            : sectionStyle
-                        }
-                      >
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <div className={`h-5 w-1 shrink-0 rounded-full ${calendar.color}`} />
-                          <span className={`truncate text-sm font-medium ${surface.textPrimary}`}>
-                            {calendar.name}
-                          </span>
-                        </div>
-
-                        <div
-                          className={`ml-4 flex h-5 w-5 items-center justify-center rounded border transition-colors ${surface.textPrimary}`}
-                          style={
-                            isSelected
-                              ? {
-                                  backgroundColor: activeAccentColor,
-                                  borderColor: activeAccentColor,
-                                }
-                              : {
-                                  borderColor:
-                                    theme === 'light'
-                                      ? 'rgba(15, 23, 42, 0.16)'
-                                      : 'rgba(255, 255, 255, 0.18)',
-                                  backgroundColor: 'transparent',
-                                }
-                          }
-                        >
-                          {isSelected && <Check className="h-3.5 w-3.5" />}
-                        </div>
-                      </button>
+                        label={calendar.name}
+                        leading={<div className={`h-5 w-1 rounded-full ${calendar.color}`} />}
+                        rowClassName={`items-center ${surface.hoverBg}`}
+                        labelClassName={`truncate ${surface.textPrimary}`}
+                        checkboxPaletteColor={activeAccentColor}
+                        style={sectionStyle}
+                        selectedStyle={{
+                          backgroundColor:
+                            theme === 'light' ? `${activeAccentColor}0d` : `${activeAccentColor}16`,
+                          borderColor: `${activeAccentColor}4d`,
+                        }}
+                        unselectedStyle={sectionStyle}
+                      />
                     );
                   })}
                 </div>

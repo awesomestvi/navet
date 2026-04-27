@@ -4,6 +4,8 @@ export interface CalendarEvent {
   startTime: string;
   endTime: string;
   timeDisplay: string;
+  startDateTime?: string;
+  endDateTime?: string;
   isAllDay?: boolean;
   location?: string;
   description?: string;

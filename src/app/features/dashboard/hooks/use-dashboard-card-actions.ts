@@ -10,8 +10,6 @@ interface UseDashboardCardActionsParams {
   activeRoom: string;
   activeSection: string;
   isEditMode: boolean;
-  deviceMap: Map<string, unknown>;
-  availableDeviceMap: Map<string, unknown>;
   addCard: (type: CardType, size: CardSize, room: string) => CustomCard;
   removeCard: (cardId: string) => void;
   updateCard: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
@@ -33,8 +31,6 @@ export function useDashboardCardActions({
   activeRoom,
   activeSection,
   isEditMode,
-  deviceMap,
-  availableDeviceMap,
   addCard,
   removeCard,
   updateCard,
@@ -105,10 +101,6 @@ export function useDashboardCardActions({
         return;
       }
 
-      if (availableDeviceMap.has(cardId) && !deviceMap.has(cardId)) {
-        showAutoEntity(cardId);
-      }
-
       if (homeLayoutController.layout.mode !== 'sectioned') {
         homeLayoutController.addCard(cardId);
       } else {
@@ -126,17 +118,7 @@ export function useDashboardCardActions({
 
       toast.success(t('dashboard.feedback.cardAddedToHome'));
     },
-    [
-      activeRoom,
-      activeSection,
-      addCardTargetSectionId,
-      availableDeviceMap,
-      deviceMap,
-      homeLayoutController,
-      isEditMode,
-      showAutoEntity,
-      t,
-    ]
+    [activeRoom, activeSection, addCardTargetSectionId, homeLayoutController, isEditMode, t]
   );
 
   const handleAddEntity = useCallback(

@@ -1,7 +1,11 @@
-import { Check, Palette, Plus, Sliders, Trash2 } from 'lucide-react';
+import { Palette, Plus, Sliders, Trash2 } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
 import { toast } from 'sonner';
-import { CardDialogHeader, CardDialogTabList } from '@/app/components/patterns';
+import {
+  CardDialogHeader,
+  CardDialogTabList,
+  SelectableCheckboxRow,
+} from '@/app/components/patterns';
 import {
   Button,
   customCardDialogShellProps,
@@ -187,7 +191,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'feeds'}
                 size="compact"
                 icon={Sliders}
-                className="min-h-8 px-3 text-xs"
+                className="text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'feeds',
@@ -202,7 +206,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'setup'}
                 size="compact"
                 icon={Plus}
-                className="min-h-8 px-3 text-xs"
+                className="text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'setup',
@@ -217,7 +221,7 @@ export function RSSFeedSettingsDialog({
                 active={activeTab === 'card'}
                 size="compact"
                 icon={Palette}
-                className="min-h-8 px-3 text-xs"
+                className="text-xs"
                 style={getRSSDialogPillStyle({
                   accentColor: activeAccentColor,
                   isActive: activeTab === 'card',
@@ -324,7 +328,7 @@ export function RSSFeedSettingsDialog({
                       onClick={() => onArticleCountChange(count)}
                       active={articleCount === count}
                       size="compact"
-                      className="min-h-8 px-3 text-xs"
+                      className="text-xs"
                       style={getRSSDialogPillStyle({
                         accentColor: activeAccentColor,
                         isActive: articleCount === count,
@@ -402,47 +406,20 @@ function RSSProviderGroup({
           } satisfies CSSProperties;
 
           return (
-            <div
+            <SelectableCheckboxRow
               key={provider.id}
-              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${surface.border}`}
-              style={rowStyle}
-            >
-              <button
-                type="button"
-                onClick={() => onToggleProvider(provider.id)}
-                className="min-w-0 flex flex-1 items-center gap-3 text-left"
-              >
-                <div
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                    !isSelected ? `${surface.border} bg-transparent` : ''
-                  }`}
-                  style={
-                    isSelected
-                      ? {
-                          borderColor: accentColorValue,
-                          backgroundColor: accentColorValue,
-                          color: '#ffffff',
-                        }
-                      : {
-                          borderColor: withTintAlpha(accentColorValue, 0.34),
-                          color: textSecondaryColor,
-                        }
-                  }
-                >
-                  {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium" style={{ color: textPrimaryColor }}>
-                    {provider.name}
-                  </div>
-                  <div className="mt-0.5 truncate text-xs" style={{ color: textSecondaryColor }}>
-                    {secondaryLabel}
-                  </div>
-                </div>
-              </button>
-
-              {isRemovable ? (
-                <div className="shrink-0">
+              checked={isSelected}
+              onCheckedChange={() => onToggleProvider(provider.id)}
+              label={<span style={{ color: textPrimaryColor }}>{provider.name}</span>}
+              description={<span style={{ color: textSecondaryColor }}>{secondaryLabel}</span>}
+              rowClassName={`items-center px-4 ${surface.border}`}
+              labelClassName="truncate"
+              descriptionClassName="truncate"
+              checkboxPaletteColor={accentColorValue}
+              selectedStyle={rowStyle}
+              unselectedStyle={rowStyle}
+              action={
+                isRemovable ? (
                   <InteractivePill
                     active={false}
                     intent="action"
@@ -461,9 +438,9 @@ function RSSProviderGroup({
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </InteractivePill>
-                </div>
-              ) : null}
-            </div>
+                ) : null
+              }
+            />
           );
         })}
       </div>

@@ -110,23 +110,36 @@ export const IconButtons: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <Button size="compact" variant="secondary">
-        Compact
-      </Button>
-      <Button size="small" variant="secondary">
-        Small
-      </Button>
-      <Button size="default" variant="secondary">
-        Default
-      </Button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <Button size="compact" variant="secondary">
+          Compact
+        </Button>
+        <Button size="small" variant="secondary">
+          Small
+        </Button>
+        <Button size="default" variant="secondary">
+          Default
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button iconOnly label="Compact settings" variant="subtle" size="compact">
+          <Settings2 className="h-4 w-4" />
+        </Button>
+        <Button iconOnly label="Small settings" variant="subtle" size="small">
+          <Settings2 className="h-4 w-4" />
+        </Button>
+        <Button iconOnly label="Default settings" variant="subtle" size="default">
+          <Settings2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Supported button sizes now mirror `InteractivePill`: `compact`, `small`, and `default`.',
+          'Side-by-side comparison for text and icon-only buttons. `default` stays unchanged, `small` is the comfortable reduced tier, and `compact` is the dense tier for tight control rows.',
       },
     },
   },

@@ -1,6 +1,6 @@
 # Navet
 
-Navet is a smart home dashboard PWA built on React 18 + TypeScript 5 + Zustand + Tailwind CSS 4.
+Navet is a smart home dashboard PWA built on React 19 + TypeScript 5 + Zustand + Tailwind CSS 4.
 Connects to Home Assistant over WebSocket.
 
 ---
@@ -35,7 +35,7 @@ If a commit or hook is blocked by TypeScript errors, fix the type errors instead
 
 | Layer | Tool |
 |---|---|
-| Framework | React 18, TypeScript 5 (strict) |
+| Framework | React 19, TypeScript 5 (strict) |
 | Build | Vite 6, pnpm |
 | Styling | Tailwind CSS 4, Radix UI |
 | State | Zustand (all shared state) |
@@ -48,7 +48,7 @@ If a commit or hook is blocked by TypeScript errors, fix the type errors instead
 
 ```
 src/app/
-  features/        # 16 domain modules — each owns its hooks, stores, components
+  features/        # 16+ domain modules — each owns its hooks, stores, components
   components/
     ui/            # Radix UI wrappers (buttons, dialogs, selects …)
     layout/        # Header, sidebar, navigation
@@ -64,6 +64,7 @@ src/app/
   utils/           # Pure helpers (storage, effects-quality, colors, dashboard-config)
   i18n/            # Translation files (en, sv, de, fr, es)
   navigation/      # Section type and helpers
+  storybook/       # Shared Storybook utilities (story-frames, story-docs)
 ```
 
 ---
@@ -114,10 +115,11 @@ These rules apply to all code written for this project. Follow them before writi
 1. Check whether an existing component, hook, utility, or pattern should be reused.
 2. **Before building any new UI element, scan `src/app/components/primitives/` first.** If a primitive already covers the use case (button, slider, dialog shell, round control, card header, etc.), use it — do not re-implement it inline or in a feature folder.
 3. **Before adding a new Storybook story file, check whether a story for that component already exists** — run `glob src/app/**/*.stories.*` or search for the component name. Add to an existing story file rather than creating a duplicate.
-4. If creating something new, make it reusable if that is realistically beneficial.
-5. Explain any architectural decision that affects maintainability or performance.
-6. Flag any tradeoff where visual richness may hurt performance on low-power devices.
-7. Do not produce shortcut code that solves the immediate task but worsens the codebase.
+4. **Before writing new UI logic, check if unit tests already exist** — look for `__tests__/` directories next to the source. Extend existing tests before adding duplicate coverage.
+5. If creating something new, make it reusable if that is realistically beneficial.
+6. Explain any architectural decision that affects maintainability or performance.
+7. Flag any tradeoff where visual richness may hurt performance on low-power devices.
+8. Do not produce shortcut code that solves the immediate task but worsens the codebase.
 
 ### Before Finalizing Code
 
@@ -153,6 +155,7 @@ These rules apply to all code written for this project. Follow them before writi
 | `edit-mode-store` | Dashboard edit mode toggle |
 | `search-store` | Search query and filtered device ids |
 | `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
+| `dashboard-layout-store` | Dashboard card ordering, room ordering, visibility, custom cards (persisted) |
 
 ### Selector Usage
 
@@ -241,11 +244,15 @@ copy all service state on every event.
 | [src/app/features/dashboard/hooks/use-dashboard-controller.ts](src/app/features/dashboard/hooks/use-dashboard-controller.ts) | Dashboard coordinator hook |
 | [src/app/features/dashboard/utils/card-renderer.tsx](src/app/features/dashboard/utils/card-renderer.tsx) | Dashboard card registry |
 | [src/app/components/shared/theme/theme-surface-tokens.ts](src/app/components/shared/theme/theme-surface-tokens.ts) | Shared surface theme tokens |
-| [src/app/hooks/use-device-map.ts](src/app/hooks/use-device-map.ts) | Typed device map from raw HA entities |
+| [src/app/hooks/use-ha-devices.ts](src/app/hooks/use-ha-devices.ts) | HA entity to device type mapping |
+| [src/app/hooks/ha-entity-utils.ts](src/app/hooks/ha-entity-utils.ts) | Entity transformation utilities |
+| [src/app/hooks/ha-device-mappers.ts](src/app/hooks/ha-device-mappers.ts) | Device mapper registry |
 | [src/app/stores/selectors.ts](src/app/stores/selectors.ts) | Typed selectors for all stores |
 | [src/app/storybook/story-frames.tsx](src/app/storybook/story-frames.tsx) | Shared Storybook frame utilities — `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange` |
+| [src/app/storybook/story-docs.ts](src/app/storybook/story-docs.ts) | Story-specific documentation strings |
 | [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) | State management decision guide |
 | [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md) | Color system, typography, card sizes, glass effects |
+| [design-system/FEATURES.md](design-system/FEATURES.md) | Feature map with test locations |
 
 ---
 
@@ -284,3 +291,4 @@ copy all service state on every event.
 - Do not re-implement a UI element that already exists in `src/app/components/primitives/` — always check primitives before writing new UI.
 - Do not create a new `*.stories.*` file for a component that already has one — extend the existing story file instead.
 - Do not place Storybook frame or utility components (e.g. `EntityCardStoryFrame`, `SettingsDialogStoryFrame`) inside feature or dashboard subdirectories — they belong in `src/app/storybook/story-frames.tsx`.
+- Do not skip unit tests for shared utilities, entity mappers, or controller logic — check for existing `__tests__/` directories first.

@@ -212,6 +212,21 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the hit target still feels comfortable on touch-first devices.',
     ]
   ),
+  'Components/Patterns/Selectable Checkbox Row': doc(
+    'Shared dialog selection-row pattern that combines the checkbox primitive with consistent row spacing, text hierarchy, and optional leading, trailing, or action content.',
+    [
+      'The standard full-row checkbox selector used in settings dialogs and card configuration lists.',
+      'How checked and unchecked rows behave when labels, descriptions, metrics, or extra actions are present.',
+    ],
+    [
+      'Use this story before hand-rolling another selectable row in a feature dialog.',
+      'Keep feature-specific tinting and metadata inside this shared row instead of duplicating checkbox row markup per card type.',
+    ],
+    [
+      'Check that the whole row remains easy to click while the checkbox still reads clearly as the selection affordance.',
+      'Check that long labels, trailing values, and secondary actions stay aligned without collapsing the row structure.',
+    ]
+  ),
   'Components/Primitives/Color Input Swatch': doc(
     'Compact swatch control used when color selection needs a visual chip rather than a full picker.',
     [
@@ -1253,6 +1268,603 @@ const STORY_DOCS: Record<string, string> = {
   ),
 };
 
+// ---------------------------------------------------------------------------
+// Additional story documentation entries
+// ---------------------------------------------------------------------------
+
+const ADDITIONAL_STORY_DOCS: Record<string, string> = {
+  // UI Components (Radix wrappers)
+  'Components/Primitives/Alert Dialog': doc(
+    'Confirmation dialog primitive for high-consequence actions that should interrupt the current flow.',
+    [
+      'The blocking dialog treatment used for destructive or confirmation-heavy actions.',
+      'How emphasis, copy, and action hierarchy communicate caution.',
+    ],
+    [
+      'Use this story when a flow needs confirmation strong enough to block until the user decides.',
+      'Keep destructive confirmation behavior here rather than styling custom modal warnings per feature.',
+    ],
+    [
+      'Check danger emphasis, action ordering, and readability.',
+      'Check that the dialog is reserved for truly consequential actions.',
+    ]
+  ),
+  'Components/Primitives/Avatar': doc(
+    'Shared avatar primitive for user identity and profile-adjacent surfaces.',
+    [
+      'The image, fallback, and sizing treatment used for user presence in the app shell.',
+      'How compact identity surfaces fit into the broader shared component language.',
+    ],
+    [
+      'Use this story when changing account-presence visuals or fallback behavior.',
+      'Keep avatar styling consistent here so identity surfaces do not drift across menus and headers.',
+    ],
+    [
+      'Check image cropping, fallback clarity, and size balance.',
+      'Check that avatars remain distinct from generic circular action buttons.',
+    ]
+  ),
+  'Components/Primitives/Dropdown Menu': doc(
+    'Shared dropdown-menu wrapper for contextual action lists anchored to a trigger.',
+    [
+      'The menu shell used for compact contextual actions rather than full dialogs.',
+      'How trigger, menu items, and separators are presented in shared UI.',
+    ],
+    [
+      'Use this story when a small set of anchored actions belongs in a menu instead of inline buttons.',
+      'Keep contextual action menus consistent here rather than styling them in each feature.',
+    ],
+    [
+      'Check trigger clarity, menu hierarchy, and item spacing.',
+      'Check that destructive or high-impact actions are still appropriately differentiated.',
+    ]
+  ),
+  'Components/Primitives/Label': doc(
+    'Shared label primitive for field titles and accessible control labeling.',
+    [
+      'The baseline text treatment for form labels and control captions.',
+      'How labels fit into shared fields without each form inventing its own styling.',
+    ],
+    [
+      'Use this story when adjusting field-label typography or spacing.',
+      'Keep shared label behavior here so forms stay consistent across dialogs and settings.',
+    ],
+    [
+      'Check readability, spacing from controls, and visual hierarchy.',
+      'Check that labels remain clear even in dense settings layouts.',
+    ]
+  ),
+  'Components/Primitives/Toast': doc(
+    'Transient feedback surface for short non-blocking messages triggered by user actions.',
+    [
+      'How brief success or status messages are presented outside the main layout flow.',
+      'The shared toast behavior used for ephemeral confirmation and feedback.',
+    ],
+    [
+      'Use this story when changing the presentation of temporary feedback that should not block interaction.',
+      'Keep one toast language here instead of spawning feature-specific transient banners.',
+    ],
+    [
+      'Check message readability, timing, and visual intrusion.',
+      'Check that important feedback stays noticeable without feeling noisy.',
+    ]
+  ),
+  'Components/UI/Sonner': doc(
+    'Toast notification system integration using Sonner for ephemeral feedback messages.',
+    [
+      'The toast container and presentation layer for action feedback.',
+      'How transient messages are styled and positioned in the app.',
+    ],
+    [
+      'Use this story when adjusting toast styling, duration, or positioning.',
+      'Keep toast behavior consistent across all user actions that need feedback.',
+    ],
+    [
+      'Check toast visibility against different backgrounds.',
+      'Check that toasts are noticeable without blocking the underlying interaction.',
+    ]
+  ),
+  'Components/UI/Card Wrapper': doc(
+    'Radix-based card wrapper primitive for consistent card surface treatment.',
+    [
+      'The base card container with theme-aware surface styling.',
+      'How card wrappers integrate with the broader design system tokens.',
+    ],
+    [
+      'Use this story when changing the base card surface or border treatment.',
+      'Keep card wrapper styling aligned with theme surface tokens.',
+    ],
+    [
+      'Check card surface clarity across all theme modes.',
+      'Check that the wrapper provides consistent padding and border radius.',
+    ]
+  ),
+  // Energy charts
+  'Cards/Charts/Energy Area Chart': doc(
+    'Stacked area chart for visualizing energy consumption or production over time.',
+    [
+      'The multi-series area chart treatment for energy data.',
+      'How stacked values and time-based trends are presented.',
+    ],
+    [
+      'Use this story when changing energy chart styling, stacking behavior, or time scale.',
+      'Keep chart styling consistent across all energy visualization components.',
+    ],
+    [
+      'Check series differentiation and legend clarity.',
+      'Check that the chart remains readable with many data points.',
+    ]
+  ),
+  'Cards/Charts/Energy Bar Chart': doc(
+    'Bar chart for comparing energy values across categories or time periods.',
+    [
+      'The categorical comparison treatment for energy data.',
+      'How bar height and color communicate relative values.',
+    ],
+    [
+      'Use this story when changing bar chart density, spacing, or value labels.',
+      'Keep bar chart styling aligned with other energy visualization components.',
+    ],
+    [
+      'Check bar spacing and value label readability.',
+      'Check that the chart works well with both few and many categories.',
+    ]
+  ),
+  'Cards/Charts/Energy Gauge': doc(
+    'Gauge visualization for showing current energy usage as a proportion of capacity.',
+    [
+      'The radial gauge treatment for at-a-glance energy status.',
+      'How fill level and color zones communicate usage intensity.',
+    ],
+    [
+      'Use this story when changing gauge styling, zones, or threshold indicators.',
+      'Keep gauge design consistent with the broader energy visualization language.',
+    ],
+    [
+      'Check gauge readability and zone clarity.',
+      'Check that the gauge communicates status quickly without precise reading.',
+    ]
+  ),
+  'Cards/Charts/Energy Quality Bar': doc(
+    'Horizontal bar showing energy quality metrics such as efficiency or power factor.',
+    [
+      'The linear progress-style treatment for energy quality indicators.',
+      'How fill level and color communicate quality status.',
+    ],
+    [
+      'Use this story when changing quality bar styling or threshold markers.',
+      'Keep quality bar design aligned with other energy metrics.',
+    ],
+    [
+      'Check bar fill clarity and label positioning.',
+      'Check that quality status is immediately understandable.',
+    ]
+  ),
+  'Cards/Charts/Energy Sparkline': doc(
+    'Compact line chart for showing energy trend in a small footprint.',
+    [
+      'The minimal line chart treatment for trend visualization.',
+      'How sparklines provide context without dominating the card.',
+    ],
+    [
+      'Use this story when changing sparkline styling or trend emphasis.',
+      'Keep sparkline design consistent across all compact energy displays.',
+    ],
+    [
+      'Check trend line visibility and smoothness.',
+      'Check that the sparkline works well as a background element.',
+    ]
+  ),
+  'Cards/Widgets/Energy Widget Shell': doc(
+    'Container shell for energy dashboard widgets with consistent framing.',
+    [
+      'The widget container treatment for energy dashboard components.',
+      'How widget shells provide consistent spacing and surface styling.',
+    ],
+    [
+      'Use this story when changing widget shell padding, border, or surface treatment.',
+      'Keep widget shell styling consistent across all energy dashboard widgets.',
+    ],
+    [
+      'Check shell surface clarity and content spacing.',
+      'Check that the shell works well with different widget content types.',
+    ]
+  ),
+  'Cards/Widgets/Energy Consumers': doc(
+    'Widget showing energy consumption breakdown by device or category.',
+    [
+      'The consumption list treatment for device-level energy data.',
+      'How individual consumers are ranked and presented.',
+    ],
+    [
+      'Use this story when changing consumer list density or ranking behavior.',
+      'Keep consumer widget styling aligned with other energy widgets.',
+    ],
+    [
+      'Check consumer name truncation and value alignment.',
+      'Check that high-consumption devices are easy to identify.',
+    ]
+  ),
+  'Cards/Widgets/Energy Flow': doc(
+    'Widget visualizing energy flow between grid, solar, battery, and home.',
+    [
+      'The flow diagram treatment for energy distribution.',
+      'How direction and magnitude of energy flow are communicated.',
+    ],
+    [
+      'Use this story when changing flow visualization or animation behavior.',
+      'Keep flow widget design consistent with the energy dashboard language.',
+    ],
+    [
+      'Check flow direction clarity and value readability.',
+      'Check that the flow diagram is understandable at a glance.',
+    ]
+  ),
+  // Dashboard widgets
+  'Cards/Widgets/Battery Overview Widget': doc(
+    'Dashboard widget for quick battery status overview across multiple devices.',
+    [
+      'The compact battery summary treatment for dashboard placement.',
+      'How multiple battery levels are aggregated into one widget.',
+    ],
+    [
+      'Use this story when changing battery widget density or aggregation logic.',
+      'Keep battery widget styling aligned with other dashboard widgets.',
+    ],
+    [
+      'Check battery level visibility and low-battery emphasis.',
+      'Check that the widget remains compact while showing multiple devices.',
+    ]
+  ),
+  'Cards/Widgets/Energy Now Dashboard Widget': doc(
+    'Dashboard widget showing current real-time energy usage or production.',
+    [
+      'The instant energy readout treatment for dashboard placement.',
+      'How live power values are presented with minimal latency.',
+    ],
+    [
+      'Use this story when changing energy widget value formatting or update behavior.',
+      'Keep energy widget styling consistent with other dashboard widgets.',
+    ],
+    [
+      'Check value readability and unit clarity.',
+      'Check that the widget updates smoothly without flickering.',
+    ]
+  ),
+  'Cards/Widgets/Photo Frame Settings': doc(
+    'Settings dialog for configuring the photo frame widget source and behavior.',
+    [
+      'The configuration surface for photo widget customization.',
+      'How image source and display options are organized.',
+    ],
+    [
+      'Use this story when changing photo widget settings structure.',
+      'Keep photo settings aligned with other widget configuration dialogs.',
+    ],
+    [
+      'Check source selection clarity and option grouping.',
+      'Check that settings are easy to understand without technical jargon.',
+    ]
+  ),
+  // Lighting
+  'Cards/Entity/Script': doc(
+    'Entity card for script execution with trigger-oriented interaction.',
+    [
+      'The script card treatment for action-oriented entities.',
+      'How script cards differ from continuous device control cards.',
+    ],
+    [
+      'Use this story when changing script card emphasis or trigger behavior.',
+      'Keep script card design distinct from stateful device cards.',
+    ],
+    [
+      'Check that the card reads as an action trigger.',
+      'Check that execution feedback is clear without being disruptive.',
+    ]
+  ),
+  'Cards/Entity/Switch': doc(
+    'Entity card for binary switch devices with simple on-off control.',
+    [
+      'The switch card treatment for binary device control.',
+      'How on-off state is communicated without extra chrome.',
+    ],
+    [
+      'Use this story when changing switch card layout or interaction.',
+      'Keep switch card design consistent with other entity cards.',
+    ],
+    [
+      'Check that on-off state is immediately obvious.',
+      'Check that the card works well at all supported sizes.',
+    ]
+  ),
+  'Cards/Dialogs/Switch': doc(
+    'Settings dialog for configuring the switch card appearance and behavior.',
+    [
+      'The configuration surface for switch card customization.',
+      'How switch-specific options are organized in the dialog.',
+    ],
+    [
+      'Use this story when changing switch card settings structure.',
+      'Keep switch settings aligned with other card configuration dialogs.',
+    ],
+    [
+      'Check option grouping and label clarity.',
+      'Check that settings are easy to understand and modify.',
+    ]
+  ),
+  'Cards/Dialogs/Light': doc(
+    'Settings dialog for configuring the light card appearance and behavior.',
+    [
+      'The configuration surface for light card customization.',
+      'How light-specific options such as color mode and brightness are organized.',
+    ],
+    [
+      'Use this story when changing light card settings structure.',
+      'Keep light settings aligned with other card configuration dialogs.',
+    ],
+    [
+      'Check option grouping and control clarity.',
+      'Check that advanced options do not overwhelm basic setup.',
+    ]
+  ),
+  // Media
+  'Cards/Entity/Media': doc(
+    'Entity card for media playback with transport controls and progress.',
+    [
+      'The media card treatment for playback control and status.',
+      'How transport controls and progress are integrated into the card.',
+    ],
+    [
+      'Use this story when changing media card layout or control placement.',
+      'Keep media card design consistent with other entity cards.',
+    ],
+    [
+      'Check playback state clarity and control accessibility.',
+      'Check that progress is visible without dominating the card.',
+    ]
+  ),
+  // Notifications
+  'App Shell/Notifications/Panel': doc(
+    'Notification panel for reviewing recent alerts and system messages.',
+    [
+      'The notification list treatment for alert review.',
+      'How notifications are grouped and prioritized.',
+    ],
+    [
+      'Use this story when changing notification panel layout or filtering.',
+      'Keep notification panel design aligned with the app shell.',
+    ],
+    [
+      'Check notification scanability and action clarity.',
+      'Check that the panel handles many notifications without becoming overwhelming.',
+    ]
+  ),
+  // Settings sections
+  'Settings/Appearance Section': doc(
+    'Settings section for theme, accent color, and visual appearance configuration.',
+    [
+      'The appearance settings treatment for theme customization.',
+      'How theme options and accent colors are organized.',
+    ],
+    [
+      'Use this story when changing appearance settings layout or options.',
+      'Keep appearance settings aligned with other settings sections.',
+    ],
+    [
+      'Check option clarity and preview visibility.',
+      'Check that theme changes are immediately apparent.',
+    ]
+  ),
+  'Settings/Dashboard Section': doc(
+    'Settings section for dashboard behavior and layout preferences.',
+    [
+      'The dashboard settings treatment for layout and behavior options.',
+      'How dashboard-specific preferences are organized.',
+    ],
+    [
+      'Use this story when changing dashboard settings structure.',
+      'Keep dashboard settings aligned with other settings sections.',
+    ],
+    [
+      'Check setting clarity and option grouping.',
+      'Check that dashboard changes are easy to preview.',
+    ]
+  ),
+  'Settings/Interaction Section': doc(
+    'Settings section for interaction preferences such as animations and haptics.',
+    [
+      'The interaction settings treatment for behavior customization.',
+      'How animation and feedback options are organized.',
+    ],
+    [
+      'Use this story when changing interaction settings or options.',
+      'Keep interaction settings aligned with other settings sections.',
+    ],
+    [
+      'Check option clarity and immediate feedback.',
+      'Check that interaction changes are easy to understand.',
+    ]
+  ),
+  'Settings/Localization Section': doc(
+    'Settings section for language and regional preferences.',
+    [
+      'The localization settings treatment for language selection.',
+      'How regional options such as time format and units are organized.',
+    ],
+    [
+      'Use this story when changing localization settings or language options.',
+      'Keep localization settings aligned with other settings sections.',
+    ],
+    [
+      'Check language selector clarity and option completeness.',
+      'Check that regional changes are applied consistently.',
+    ]
+  ),
+  'Settings/Project Section': doc(
+    'Settings section for project-level configuration and metadata.',
+    [
+      'The project settings treatment for instance-specific configuration.',
+      'How project name, URL, and connection settings are organized.',
+    ],
+    [
+      'Use this story when changing project settings structure.',
+      'Keep project settings aligned with other settings sections.',
+    ],
+    [
+      'Check field clarity and validation feedback.',
+      'Check that connection settings are easy to configure.',
+    ]
+  ),
+  'Settings/Section': doc(
+    'Base settings section container for consistent section framing.',
+    [
+      'The section container treatment for settings organization.',
+      'How sections provide consistent spacing and grouping.',
+    ],
+    [
+      'Use this story when changing settings section container styling.',
+      'Keep section container consistent across all settings pages.',
+    ],
+    [
+      'Check section spacing and header clarity.',
+      'Check that sections provide clear visual separation.',
+    ]
+  ),
+  'Settings/System Section': doc(
+    'Settings section for system-level preferences and advanced options.',
+    [
+      'The system settings treatment for advanced configuration.',
+      'How system-level options are organized and presented.',
+    ],
+    [
+      'Use this story when changing system settings structure.',
+      'Keep system settings aligned with other settings sections.',
+    ],
+    [
+      'Check option grouping and warning clarity.',
+      'Check that advanced options are clearly marked.',
+    ]
+  ),
+  // Dashboard
+  'Dashboard/Add Card Dialog': doc(
+    'Dialog for adding new cards to the dashboard with category browsing.',
+    [
+      'The add card dialog treatment for card selection.',
+      'How card categories and options are organized.',
+    ],
+    [
+      'Use this story when changing add card dialog layout or filtering.',
+      'Keep add card dialog aligned with other dashboard dialogs.',
+    ],
+    [
+      'Check card option scanability and category clarity.',
+      'Check that the dialog handles many card types without becoming overwhelming.',
+    ]
+  ),
+  'Dashboard/Edit Actions': doc(
+    'Dashboard edit mode action cluster for layout manipulation.',
+    [
+      'The edit actions treatment for dashboard customization.',
+      'How layout controls are organized in edit mode.',
+    ],
+    [
+      'Use this story when changing edit mode action layout.',
+      'Keep edit actions aligned with dashboard edit mode design.',
+    ],
+    [
+      'Check action clarity and discoverability.',
+      'Check that edit mode controls are distinct from normal dashboard content.',
+    ]
+  ),
+  'Dashboard/Hero Section': doc(
+    'Dashboard hero section for prominent content placement.',
+    [
+      'The hero section treatment for featured dashboard content.',
+      'How hero sections provide visual hierarchy.',
+    ],
+    [
+      'Use this story when changing hero section layout or styling.',
+      'Keep hero section design aligned with dashboard language.',
+    ],
+    [
+      'Check hero prominence and content framing.',
+      'Check that hero sections work well with different content types.',
+    ]
+  ),
+  'Dashboard/Onboarding Dialog': doc(
+    'Onboarding dialog for first-time dashboard setup.',
+    [
+      'The onboarding dialog treatment for initial configuration.',
+      'How setup steps are organized and presented.',
+    ],
+    [
+      'Use this story when changing onboarding flow or step content.',
+      'Keep onboarding dialog aligned with other dashboard dialogs.',
+    ],
+    [
+      'Check step clarity and progress indication.',
+      'Check that onboarding is easy to complete without being tedious.',
+    ]
+  ),
+  'Dashboard/State Matrix': doc(
+    'Matrix view of all card states for regression testing.',
+    [
+      'The state matrix treatment for visual regression testing.',
+      'How card states are organized for comparison.',
+    ],
+    [
+      'Use this story for visual regression testing after card changes.',
+      'Keep state matrix updated with new card types and states.',
+    ],
+    [
+      'Check state differentiation and matrix organization.',
+      'Check that all card states are clearly visible.',
+    ]
+  ),
+  'Dashboard/Extended State Matrix': doc(
+    'Extended matrix view for comprehensive card state testing.',
+    [
+      'The extended matrix treatment for broader regression testing.',
+      'How additional card variants and edge cases are included.',
+    ],
+    [
+      'Use this story for comprehensive visual regression testing.',
+      'Keep extended matrix updated with new card families.',
+    ],
+    ['Check matrix completeness and state coverage.', 'Check that edge cases are represented.']
+  ),
+  'Dashboard/Card Catalog': doc(
+    'Catalog view of all available card types in the dashboard.',
+    [
+      'The card catalog treatment for card type inventory.',
+      'How card types are organized and presented.',
+    ],
+    [
+      'Use this story for card type reference and documentation.',
+      'Keep card catalog updated with new card types.',
+    ],
+    [
+      'Check card type organization and description clarity.',
+      'Check that all card types are represented.',
+    ]
+  ),
+  'Dashboard/All Sizes': doc(
+    'Size comparison view showing cards at all supported sizes.',
+    [
+      'The size comparison treatment for card size reference.',
+      'How card sizes are organized for comparison.',
+    ],
+    [
+      'Use this story for card size reference and spacing validation.',
+      'Keep size comparison updated with new card types.',
+    ],
+    [
+      'Check size differentiation and spacing consistency.',
+      'Check that all sizes are usable and well-proportioned.',
+    ]
+  ),
+};
+
 export function getStoryDocsDescription(title: string) {
-  return STORY_DOCS[title] ?? '';
+  return STORY_DOCS[title] ?? ADDITIONAL_STORY_DOCS[title] ?? '';
 }

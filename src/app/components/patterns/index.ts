@@ -15,4 +15,8 @@ export {
   SettingsLivePreviewFrame,
   type SettingsLivePreviewFrameProps,
 } from './interaction-preview-card';
+export {
+  SelectableCheckboxRow,
+  type SelectableCheckboxRowProps,
+} from './selectable-checkbox-row';
 export { TableCellContent, type TableCellContentProps } from './table-cell-content';

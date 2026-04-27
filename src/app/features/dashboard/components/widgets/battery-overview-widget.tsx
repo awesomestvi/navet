@@ -1,10 +1,11 @@
-import { Battery, BatteryLow, Check, Palette, Sliders } from 'lucide-react';
+import { Battery, BatteryLow, Palette, Sliders } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
   CardDialogHeader,
   CardDialogSection,
   CardDialogTabList,
   CardDialogTabTrigger,
+  SelectableCheckboxRow,
 } from '@/app/components/patterns';
 import {
   BaseCard,
@@ -208,42 +209,30 @@ export function BatterySettingsDialog({
                         const isChecked = selectedIdSet.has(battery.id);
                         return (
                           <li key={battery.id} className="w-full min-w-0 max-w-full">
-                            <button
-                              type="button"
-                              onClick={() => handleToggle(battery.id)}
-                              className={`flex w-full min-w-0 max-w-full items-start gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-left transition-colors ${surface.borderClassName} ${surface.textPrimary}`}
-                              style={{ background: surface.subtleFill }}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border transition-colors ${
-                                  isChecked
-                                    ? 'border-transparent text-white'
-                                    : surface.borderClassName
-                                }`}
-                                style={isChecked ? { backgroundColor: accentHex } : undefined}
-                              >
-                                {isChecked ? (
-                                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                                ) : null}
-                              </span>
-                              <div className="min-w-0 flex-1 overflow-hidden">
-                                <div
-                                  className="block truncate text-sm font-medium"
-                                  title={battery.name}
-                                >
+                            <SelectableCheckboxRow
+                              checked={isChecked}
+                              onCheckedChange={() => handleToggle(battery.id)}
+                              label={
+                                <span className="block truncate" title={battery.name}>
                                   {battery.name}
+                                </span>
+                              }
+                              description={battery.id}
+                              trailing={
+                                <div className="text-sm font-semibold tabular-nums">
+                                  {battery.level}%
                                 </div>
-                                <div
-                                  className={`mt-0.5 whitespace-normal break-all text-xs ${surface.textMuted}`}
-                                >
-                                  {battery.id}
-                                </div>
-                              </div>
-                              <div className="shrink-0 text-sm font-semibold tabular-nums">
-                                {battery.level}%
-                              </div>
-                            </button>
+                              }
+                              rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.borderClassName} ${surface.textPrimary}`}
+                              labelClassName="truncate"
+                              descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
+                              checkboxPaletteColor={accentHex}
+                              style={{ background: surface.subtleFill }}
+                              selectedStyle={{
+                                background: surface.subtleFill,
+                                borderColor: `${accentHex}4d`,
+                              }}
+                            />
                           </li>
                         );
                       })}

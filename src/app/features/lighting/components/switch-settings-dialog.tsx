@@ -1,9 +1,10 @@
-import { Check, Palette, Sliders, ToggleLeft } from 'lucide-react';
+import { Palette, Sliders, ToggleLeft } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import {
   CardDialogHeader,
   CardDialogTabList,
   CardDialogTabTrigger,
+  SelectableCheckboxRow,
 } from '@/app/components/patterns';
 import { DialogDoneFooter, DialogShell } from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
@@ -162,38 +163,27 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                       const isSelected = selectedMetricLabels.includes(metric.label);
 
                       return (
-                        <button
-                          type="button"
+                        <SelectableCheckboxRow
                           key={`dialog-${metric.label}`}
-                          onClick={() => onMetricToggle(metric.label)}
-                          aria-pressed={isSelected}
-                          className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition-colors ${
-                            isSelected
-                              ? 'border-white/25 bg-white/14'
-                              : 'border-transparent bg-white/5 hover:bg-white/10'
-                          }`}
-                        >
-                          <div className="flex min-w-0 items-start gap-3">
-                            <span
-                              aria-hidden="true"
-                              className={`mt-0.5 flex h-4 w-4 items-center justify-center rounded-lg border transition-colors ${
-                                isSelected
-                                  ? 'border-white/40 bg-white/18 text-white'
-                                  : 'border-white/24 text-transparent'
-                              }`}
-                            >
-                              <Check className="h-3 w-3" strokeWidth={3} />
+                          checked={isSelected}
+                          onCheckedChange={() => onMetricToggle(metric.label)}
+                          label={
+                            <span className="block text-xs leading-5 text-white/80">
+                              {getMetricLabel(metric)}
                             </span>
-                            <span className="min-w-0 text-left">
-                              <span className="block text-xs leading-5 text-white/80">
-                                {getMetricLabel(metric)}
-                              </span>
-                              <span className="block text-xs leading-5 font-medium text-white">
-                                {formatMetricValue(metric) ?? '--'}
-                              </span>
+                          }
+                          description={
+                            <span className="block text-xs leading-5 font-medium text-white">
+                              {formatMetricValue(metric) ?? '--'}
                             </span>
-                          </div>
-                        </button>
+                          }
+                          rowClassName="border-transparent bg-white/5 hover:bg-white/10"
+                          selectedClassName="border-white/25 bg-white/14"
+                          labelClassName="text-white/80"
+                          descriptionClassName="text-white"
+                          checkboxAppearance="secondary"
+                          checkboxPaletteColor="#ffffff"
+                        />
                       );
                     })}
                   </div>

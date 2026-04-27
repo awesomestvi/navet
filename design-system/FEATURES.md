@@ -178,6 +178,8 @@ Vitest is the preferred path for:
 - persisted store behavior
 - browser-dependent hooks
 - controller composition that would be hard to validate from stories alone
+- entity mapping and transformation utilities
+- dashboard card action handlers
 
 The current shared harness provides:
 
@@ -185,6 +187,12 @@ The current shared harness provides:
 - deterministic store resets between tests
 - browser API shims
 - Home Assistant service stubs for typed event flows
+
+Test files are co-located with their source in `__tests__/` subdirectories:
+
+- `src/app/hooks/__tests__/` — shared hook and utility tests
+- `src/app/features/dashboard/hooks/__tests__/` — dashboard controller tests
+- `src/app/features/calendar/components/__tests__/` — calendar feature tests
 
 ## Card system
 
@@ -224,8 +232,10 @@ Entity settings dialogs should compose from the shared dialog primitives and pat
 - `CardDialogTabTrigger`
 - `DialogSectionRow`
 - `DialogDoneFooter`
+- `SelectableCheckboxRow`
 
-This keeps room reassignment, sections, tabs, and action footers aligned across card families.
+This keeps room reassignment, sections, tabs, selection rows, and action footers aligned across card
+families.
 
 ## Media
 
@@ -330,4 +340,4 @@ Contributors should be careful when changing:
 Visual changes that increase blur, overdraw, nesting, or animation cost should be evaluated with
 low-power dashboards in mind.
 
-Last updated: April 21, 2026
+Last updated: April 27, 2026

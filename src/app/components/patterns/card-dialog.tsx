@@ -147,7 +147,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
     <InteractivePill
       active={active}
       size="compact"
-      className={cn('min-h-8 px-3 text-xs', className)}
+      className={cn('text-xs', className)}
       icon={icon}
       onClick={onClick}
     >

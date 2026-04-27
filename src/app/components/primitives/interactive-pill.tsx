@@ -22,6 +22,24 @@ interface InteractivePillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: InteractivePillVariant;
 }
 
+const INTERACTIVE_PILL_SIZE_CLASS_NAMES = {
+  default: {
+    frame: 'h-10 gap-1.5 px-4',
+    icon: 'h-4 w-4',
+    text: navetTypographyTokens.control,
+  },
+  small: {
+    frame: 'h-9 gap-1.5 px-3.5',
+    icon: 'h-4 w-4',
+    text: navetTypographyTokens.control,
+  },
+  compact: {
+    frame: 'h-8 gap-1 px-3',
+    icon: 'h-3.5 w-3.5',
+    text: navetTypographyTokens.dense,
+  },
+} as const;
+
 export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProps>(
   function InteractivePill(
     {
@@ -38,6 +56,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
     ref
   ) {
     const { theme, primaryColor } = useTheme();
+    const sizeClassName = INTERACTIVE_PILL_SIZE_CLASS_NAMES[size];
     const pillStyles = getInteractivePillStyles({
       intent,
       isActive: active,
@@ -51,13 +70,10 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
         ref={ref}
         type="button"
         className={cn(
-          size === 'compact'
-            ? 'inline-flex min-h-8 items-center justify-center gap-2 px-3.5 py-2 transition-all disabled:cursor-not-allowed disabled:opacity-50'
-            : size === 'small'
-              ? 'inline-flex min-h-9 items-center justify-center gap-2 px-3.5 py-2 transition-all disabled:cursor-not-allowed disabled:opacity-50'
-              : 'inline-flex h-10 items-center justify-center gap-1.5 px-4 py-2 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50',
+          'inline-flex items-center justify-center transition-all disabled:cursor-not-allowed disabled:opacity-50',
+          sizeClassName.frame,
           navetRadiusTokens.pill,
-          navetTypographyTokens.control,
+          sizeClassName.text,
           getThemeFocusRingClassName(theme),
           pillStyles.className,
           className
@@ -65,7 +81,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
         style={{ ...pillStyles.style, ...style }}
         {...props}
       >
-        {Icon && <Icon className={size === 'default' ? 'h-4 w-4' : 'h-3.5 w-3.5'} />}
+        {Icon && <Icon className={sizeClassName.icon} />}
         {children}
       </button>
     );

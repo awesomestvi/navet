@@ -180,7 +180,44 @@ export const GroupedRowWithIcons: Story = {
     docs: {
       description: {
         story:
-          'Grouped rows using the `icon` prop. The icon is sized automatically based on the `size` prop — `h-4 w-4` for default/small, `h-3.5 w-3.5` for compact.',
+          'Grouped rows using the `icon` prop. `default`, `small`, and `compact` now form a clear density ladder, with `compact` tightening both icon size and horizontal spacing.',
+      },
+    },
+  },
+};
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <InteractivePill size="compact" active>
+          Compact
+        </InteractivePill>
+        <InteractivePill size="small" active>
+          Small
+        </InteractivePill>
+        <InteractivePill size="default" active>
+          Default
+        </InteractivePill>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <InteractivePill size="compact" icon={Sliders} active>
+          Controls
+        </InteractivePill>
+        <InteractivePill size="small" icon={Palette} active>
+          Theme
+        </InteractivePill>
+        <InteractivePill size="default" icon={Star} active>
+          Presets
+        </InteractivePill>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Direct size comparison for text-only and icon pills so dense layouts can be checked quickly in Storybook.',
       },
     },
   },

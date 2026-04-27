@@ -52,8 +52,19 @@ export function getRSSFeedCardSurfaceTokens(
       theme === 'light' ? 'bg-gray-200/90' : theme === 'glass' ? 'bg-white/12' : 'bg-white/8',
     hoverClassName: '',
     dotClassName: theme === 'light' ? 'text-gray-400' : 'text-white/65',
+    metadataSourceColor:
+      theme === 'light'
+        ? withTintAlpha(accentColor.strong, 0.8)
+        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.78 : 0.82),
+    metadataTimeColor:
+      theme === 'light'
+        ? withTintAlpha(textTokens.subtitleColor, 0.72)
+        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.62 : 0.7),
     excerptClassName: '',
-    excerptColor: textTokens.subtitleColor,
+    excerptColor:
+      theme === 'light'
+        ? withTintAlpha(textTokens.subtitleColor, 0.82)
+        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.72 : 0.78),
     readMoreClassName: '',
     readMoreColor: textTokens.subtitleColor,
     iconWrapClassName: '',

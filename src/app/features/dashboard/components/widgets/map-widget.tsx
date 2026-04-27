@@ -22,7 +22,10 @@ import {
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { authSelectors } from '@/app/stores/selectors';
+import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 // ── types ──────────────────────────────────────────────────────────────────
@@ -51,11 +54,50 @@ interface MapSettingsDialogProps {
   onTintColorChange?: (color: string) => void;
 }
 
+function normalizeMarkerName(value: string | undefined) {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+function getFirstName(value: string | undefined) {
+  const normalized = normalizeMarkerName(value);
+  return normalized.split(/\s+/)[0] ?? '';
+}
+
+function readEntityPicture(attributes: Record<string, unknown>) {
+  return (
+    (typeof attributes.entity_picture === 'string' && attributes.entity_picture) ||
+    (typeof attributes.entity_picture_local === 'string' && attributes.entity_picture_local) ||
+    undefined
+  );
+}
+
 // ── selector ───────────────────────────────────────────────────────────────
 
 export function selectMapMarkersFromHa(store: HomeAssistantStore): MapMarker[] {
   const { entities } = store;
   if (!entities) return [];
+
+  const personPicturesByName = new Map<string, string>();
+  const personPicturesByFirstName = new Map<string, string>();
+
+  for (const [id, entity] of Object.entries(entities)) {
+    if (!id.startsWith('person.')) continue;
+
+    const attrs = entity.attributes as Record<string, unknown>;
+    const entityPicture = readEntityPicture(attrs);
+    const friendlyName =
+      typeof attrs.friendly_name === 'string' ? attrs.friendly_name : id.replace(/_/g, ' ');
+    const normalizedName = normalizeMarkerName(friendlyName);
+    const firstName = getFirstName(friendlyName);
+
+    if (entityPicture && normalizedName) {
+      personPicturesByName.set(normalizedName, entityPicture);
+    }
+
+    if (entityPicture && firstName && !personPicturesByFirstName.has(firstName)) {
+      personPicturesByFirstName.set(firstName, entityPicture);
+    }
+  }
 
   const markers: MapMarker[] = [];
   for (const [id, entity] of Object.entries(entities)) {
@@ -67,12 +109,19 @@ export function selectMapMarkersFromHa(store: HomeAssistantStore): MapMarker[] {
     const lon = attrs?.longitude;
     if (typeof lat !== 'number' || typeof lon !== 'number') continue;
 
+    const markerName = (attrs.friendly_name as string | undefined) ?? id.replace(/_/g, ' ');
+    const normalizedMarkerName = normalizeMarkerName(markerName);
+    const markerFirstName = getFirstName(markerName);
+    const fallbackPicture =
+      personPicturesByName.get(normalizedMarkerName) ??
+      personPicturesByFirstName.get(markerFirstName);
+
     markers.push({
       id,
-      name: (attrs.friendly_name as string | undefined) ?? id.replace(/_/g, ' '),
+      name: markerName,
       latitude: lat,
       longitude: lon,
-      entityPicture: attrs.entity_picture as string | undefined,
+      entityPicture: readEntityPicture(attrs) ?? fallbackPicture,
       state: entity.state,
       gpsAccuracy: attrs.gps_accuracy as number | undefined,
     });
@@ -224,6 +273,7 @@ export const MapWidget = memo(function MapWidget({
 }: MapWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const authConfig = useAuth(authSelectors.config);
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const baseSurface = getThemeSurfaceTokens(theme);
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -243,10 +293,27 @@ export const MapWidget = memo(function MapWidget({
   );
   const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
   const emptyStateIconClassName = theme === 'light' ? 'text-slate-400' : baseSurface.textMuted;
-  const attributionClassName = `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textMuted}`;
+  const attributionClassName =
+    theme === 'light'
+      ? `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textMuted}`
+      : theme === 'glass'
+        ? 'border-white/10 bg-slate-950/68 text-white/60 backdrop-blur-xl'
+        : theme === 'black'
+          ? 'border-white/8 bg-black/72 text-zinc-500'
+          : 'border-zinc-800 bg-zinc-950/78 text-zinc-500';
   const settingsButtonClassName = `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textSecondary}`;
 
   const markers = useHomeAssistant(selectMapMarkersFromHa, mapMarkersEqual);
+  const resolvedMarkers = useMemo(
+    () =>
+      markers.map((marker) => ({
+        ...marker,
+        entityPicture: marker.entityPicture
+          ? (resolveHomeAssistantProxyUrl(marker.entityPicture, authConfig?.url) ?? undefined)
+          : undefined,
+      })),
+    [authConfig?.url, markers]
+  );
 
   // Stable default center (BoundsFitter overrides on mount)
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
@@ -273,7 +340,7 @@ export const MapWidget = memo(function MapWidget({
         {surface.glowStyle ? (
           <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
         ) : null}
-        {markers.length === 0 ? (
+        {resolvedMarkers.length === 0 ? (
           <div
             className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
           >
@@ -294,8 +361,8 @@ export const MapWidget = memo(function MapWidget({
           >
             <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} />
             {!isSmallCard ? <AttributionControl prefix={false} position="bottomleft" /> : null}
-            <BoundsFitter markers={markers} />
-            {markers.map((marker) => (
+            <BoundsFitter markers={resolvedMarkers} />
+            {resolvedMarkers.map((marker) => (
               <Marker
                 key={marker.id}
                 position={[marker.latitude, marker.longitude]}
@@ -330,17 +397,17 @@ export const MapWidget = memo(function MapWidget({
             ))}
           </MapContainer>
         )}
-        {markers.length > 0 && surface.overlayClassName ? (
+        {resolvedMarkers.length > 0 && surface.overlayClassName ? (
           <div
             className={`pointer-events-none absolute inset-0 z-[350] ${surface.overlayClassName}`}
           />
         ) : null}
-        {markers.length > 0 && baseSurface.lightOverlay ? (
+        {resolvedMarkers.length > 0 && baseSurface.lightOverlay ? (
           <div
             className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
           />
         ) : null}
-        {markers.length > 0 ? (
+        {resolvedMarkers.length > 0 ? (
           <div
             className="pointer-events-none absolute inset-0 z-[352]"
             style={{
@@ -418,6 +485,34 @@ export const MapWidget = memo(function MapWidget({
           padding: 3px 8px;
           font-size: 10px;
           line-height: 1.15;
+          background: ${
+            theme === 'light'
+              ? 'rgba(255,255,255,0.9)'
+              : theme === 'glass'
+                ? 'rgba(2, 6, 16, 0.68)'
+                : theme === 'black'
+                  ? 'rgba(0, 0, 0, 0.72)'
+                  : 'rgba(9, 9, 11, 0.78)'
+          };
+          color: ${
+            theme === 'light'
+              ? 'rgb(100 116 139)'
+              : theme === 'glass'
+                ? 'rgba(255,255,255,0.6)'
+                : theme === 'black'
+                  ? 'rgb(113 113 122)'
+                  : 'rgb(113 113 122)'
+          };
+          border: 1px solid ${
+            theme === 'light'
+              ? 'rgba(203,213,225,0.8)'
+              : theme === 'glass'
+                ? 'rgba(255,255,255,0.1)'
+                : theme === 'black'
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(39,39,42,1)'
+          };
+          backdrop-filter: ${theme === 'light' ? 'none' : 'blur(16px)'};
         }
 
         .dashboard-map-widget .leaflet-control-attribution a {

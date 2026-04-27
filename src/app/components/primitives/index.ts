@@ -10,7 +10,7 @@ export { BodyText, type BodyTextProps } from './body-text';
 export { Button, type ButtonProps } from './button';
 export { CardMetric } from './card-metric';
 export { CardMetricActionLayout } from './card-metric-action-layout';
-export { Checkbox } from './checkbox';
+export { Checkbox, type CheckboxProps } from './checkbox';
 export { ColorInputSwatch, type ColorInputSwatchProps } from './color-input-swatch';
 export { Combobox, type ComboboxProps } from './combobox';
 export {

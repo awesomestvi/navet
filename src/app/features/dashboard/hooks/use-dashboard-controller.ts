@@ -121,8 +121,6 @@ export function useDashboardController(): DashboardController {
     activeRoom,
     activeSection,
     isEditMode,
-    deviceMap,
-    availableDeviceMap,
     addCard,
     removeCard,
     updateCard,
