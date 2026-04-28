@@ -6,8 +6,10 @@ import type { ThemeType } from '@/app/hooks';
  * Navet foundation tokens
  *
  * These are the first shared layout/interaction decisions that primitives should
- * align to before introducing more component variants. They intentionally stay
- * small and class-oriented so they fit the existing Tailwind-first codebase.
+ * align to before introducing more component variants. Navet is platform-neutral:
+ * these tokens are the design-system foundation rather than iOS points, Android dp,
+ * or any other platform-specific authoring unit. They intentionally stay small and
+ * class-oriented so they fit the existing Tailwind-first codebase.
  */
 
 export const navetSpacingTokens = {
@@ -30,6 +32,13 @@ export const navetSpacingTokens = {
     lg: 'p-5',
     xl: 'p-6',
   },
+} as const;
+
+export const navetFoundationMetaTokens = {
+  unit: 'px',
+  baseUnitPx: 4,
+  principle:
+    'Use semantic tokens in components. Use primitive tokens only when defining semantic tokens.',
 } as const;
 
 export const navetSizeTokens = {
@@ -96,6 +105,15 @@ export const navetFocusTokens = {
   base: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
   light: 'focus-visible:ring-gray-400 focus-visible:ring-offset-white',
   dark: 'focus-visible:ring-white/30 focus-visible:ring-offset-transparent',
+} as const;
+
+export const navetAccessibilityTokens = {
+  minimumTouchTargetPx: 44,
+  preferredTouchTargetPx: 48,
+  focusRingWidthPx: 2,
+  focusRingOffsetPx: 2,
+  minimumBodyFontSizePx: 14,
+  reducedMotionFallback: true,
 } as const;
 
 export function getThemeFocusRingClassName(theme: ThemeType) {

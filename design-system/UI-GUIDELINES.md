@@ -22,6 +22,9 @@ Navet's UI should feel:
 Shared first-layer foundations live in
 [`src/app/components/system/tokens/foundations.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/tokens/foundations.ts).
 
+Navet is platform-neutral. iOS `pt`, Android `dp`, CSS px, and desktop logical px are
+implementation units, not the design-system foundation.
+
 Prefer these shared values for:
 
 - spacing
@@ -81,6 +84,8 @@ Typography should optimize for quick scanning first.
 
 Rules:
 
+- keep the current role-based token model instead of introducing platform-specific type scales
+- keep `14px` as the minimum body text floor for readable product UI
 - titles should be concise and stable across card sizes
 - subtitles and eyebrows should provide context without competing with the main title
 - compact cards should prefer eyebrow-first or tightly structured title blocks when space is limited
@@ -95,7 +100,6 @@ Navet uses a 4px-based spacing rhythm.
 
 Typical spacing steps:
 
-- `2px`
 - `4px`
 - `8px`
 - `12px`
@@ -106,9 +110,44 @@ Typical spacing steps:
 
 Guidelines:
 
+- use semantic spacing tokens as the authoring layer rather than raw platform units
 - use tighter spacing in compact cards only when legibility is preserved
 - avoid deep nesting with stacked gaps that create accidental whitespace
 - keep settings dialogs roomy enough for touch targets and readability
+
+### Density policy
+
+Navet uses three density tiers from the shared token layer:
+
+- `compact`: dense desktop or keyboard/mouse-heavy surfaces
+- `comfortable`: default product density for mixed-input tablets, laptops, and general dashboard use
+- `touch`: touch-first wall panels, phones, kiosks, and coarse-pointer surfaces
+
+Target sizes:
+
+- `compact`: `36px`
+- `comfortable`: `44px`
+- `touch`: `48px`
+
+Rules:
+
+- default to `comfortable`
+- use `touch` for coarse-pointer contexts
+- do not default to `compact` on touch-first or mixed-input screens
+- touch inputs may exceed `48px` when readability or editing comfort benefits from it
+
+### Width vs input capability
+
+Width and input capability are separate adaptation axes.
+
+- width controls layout, grid structure, and how much content can be visible at once
+- input capability controls target size, spacing comfort, and reliance on hover
+
+Content policy:
+
+- narrow widths: stack content and reduce simultaneous controls
+- medium widths: balanced overview plus controls
+- wide widths: denser monitoring, editing, and multi-panel layouts
 
 ## Border Radius
 
@@ -143,6 +182,7 @@ Every card should:
 - avoid overflow in all supported sizes
 - degrade gracefully in compact sizes
 - keep primary actions obvious
+- keep primary actions visible without hover in touch-first contexts
 - avoid repeating the same control in multiple places
 
 ### Card sizes
@@ -159,6 +199,9 @@ Supported sizes:
 
 Use the shared card-size registry. Do not hardcode parallel pixel maps for preview or overlay
 behavior.
+
+Layout should scale from shared grid helpers and card-size registries, not platform-specific widget
+dimensions.
 
 ### Compact cards
 
@@ -188,6 +231,7 @@ Forms should:
 - keep section labels and helper text aligned
 - avoid mixed control densities in the same section
 - maintain keyboard and touch accessibility
+- derive control sizing from shared control tokens instead of bespoke per-component target sizes
 
 ## Motion and transitions
 
@@ -199,6 +243,7 @@ Guidelines:
 - state changes: use smoother, slightly longer transitions where the change benefits from it
 - avoid layering multiple expensive effects such as blur, glow, and scale on the same interaction
 - on lower-power paths, prefer reducing effects instead of keeping rich effects with slower timing
+- when density increases, visual complexity should usually decrease rather than increase
 
 ## Performance rules
 
@@ -220,7 +265,7 @@ document the tradeoff and provide a reduced-cost fallback.
 
 Minimum expectations:
 
-- keep touch targets large enough for tablet use
+- keep touch targets aligned with density guidance for the current input context
 - maintain readable contrast in every theme
 - preserve focus visibility for keyboard navigation
 - ensure icon-only actions have accessible names
@@ -239,6 +284,7 @@ When documenting shared UI in Storybook:
 
 Avoid:
 
+- importing iOS widget sizes or Apple points into shared Navet layout decisions
 - raw inline theme branches when shared surface helpers exist
 - new low-level shared UI inside `shared/` by default
 - hardcoded duplicate card-size maps
@@ -246,4 +292,4 @@ Avoid:
 - compact cards that duplicate controls across rows
 - feature-specific dialog shells that bypass shared settings patterns without a strong reason
 
-Last updated: April 21, 2026
+Last updated: April 28, 2026

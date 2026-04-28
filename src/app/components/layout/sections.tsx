@@ -2,8 +2,8 @@ import { Clipboard, Lightbulb, Lock, type LucideIcon, Tv, Video } from 'lucide-r
 import { type CSSProperties, memo, type ReactNode, useMemo } from 'react';
 import { DashboardEmptyState } from '@/app/components/patterns';
 import {
-  CARD_GRID_ROW_CLASS,
   type CardSize,
+  getCardGridAutoRowsStyle,
   getCardSpanClass,
   getDashboardGridColumnCount,
 } from '@/app/components/shared/card-size-selector';
@@ -315,9 +315,10 @@ const EntityGrid = memo(function EntityGrid({
         {headerAction}
       </div>
       <div
-        className={`grid w-full ${CARD_GRID_ROW_CLASS} grid-flow-row-dense gap-2 md:gap-3 lg:gap-4`}
+        className="grid w-full grid-flow-row-dense gap-2 md:gap-3 lg:gap-4"
         style={
           {
+            ...getCardGridAutoRowsStyle(breakpointCols),
             gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
           } as CSSProperties
         }

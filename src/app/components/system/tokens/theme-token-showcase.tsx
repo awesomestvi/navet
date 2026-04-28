@@ -3,7 +3,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useTheme } from '@/app/hooks';
 import { navetRadiusTokens, navetSpacingTokens, navetTypographyTokens } from './foundations';
 
-type TokenPrimitive = string | number;
+type TokenPrimitive = string | number | boolean;
 type TokenTree = {
   [key: string]: TokenPrimitive | TokenTree;
 };
@@ -12,11 +12,11 @@ function flattenTokens(tokens: TokenTree, prefix = ''): Array<[string, TokenPrim
   return Object.entries(tokens).flatMap(([key, value]) => {
     const fullKey = prefix ? `${prefix}.${key}` : key;
 
-    if (typeof value === 'string' || typeof value === 'number') {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       return [[fullKey, value]];
     }
 
-    return flattenTokens(value, fullKey);
+    return flattenTokens(value as TokenTree, fullKey);
   });
 }
 

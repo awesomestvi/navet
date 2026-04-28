@@ -1,6 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/app/components/primitives/button';
+import {
+  getDialogHeightClassName,
+  getDialogMaxWidthClassName,
+  navetControlTokens,
+  navetRadiusTokens,
+  navetTypographyTokens,
+} from '@/app/components/system/tokens';
 
 function getDialogPanelSurfaceClassName(className: string): string {
   return className
@@ -109,7 +116,7 @@ export function DialogDoneButton({ label, className, style }: DialogDoneButtonPr
         type="button"
         className={
           className ??
-          'rounded-xl px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90'
+          `${navetRadiusTokens.action} px-4 py-2 ${navetTypographyTokens.control} text-white transition-opacity hover:opacity-90`
         }
         style={style}
       >
@@ -141,7 +148,7 @@ export function SettingsDialogDoneButton({
       label={label}
       className={
         className ??
-        `rounded-xl px-4 py-2 text-sm font-medium ${surface.textPrimary} ${surface.subtleBg} ${surface.hoverBg}`
+        `${navetRadiusTokens.action} px-4 py-2 ${navetTypographyTokens.control} ${surface.textPrimary} ${surface.subtleBg} ${surface.hoverBg}`
       }
       style={style}
     />
@@ -182,8 +189,8 @@ export function settingsDialogContentClass(
     animate = false,
   } = options ?? {};
 
-  const maxWidthClass =
-    maxWidth === 'sm' ? 'max-w-sm' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-md';
+  const maxWidthClass = getDialogMaxWidthClassName(maxWidth);
+  const heightClassName = getDialogHeightClassName(height);
   const panelClassName = getDialogPanelSurfaceClassName(surface.panel);
 
   const parts = [
@@ -191,9 +198,9 @@ export function settingsDialogContentClass(
     `w-[90vw] ${maxWidthClass}`,
     '-translate-x-1/2 -translate-y-1/2',
     overflow ? 'overflow-hidden' : '',
-    'rounded-3xl border shadow-2xl backdrop-blur-xl',
-    height === 'tall' ? 'h-[85vh]' : height === 'capped' ? 'max-h-[85vh]' : '',
-    padding ? 'p-6' : '',
+    `${navetControlTokens.dialog.radiusClassName} border shadow-2xl backdrop-blur-xl`,
+    heightClassName,
+    padding ? navetControlTokens.dialog.bodyPaddingClassName : '',
     animate ? 'animate-in fade-in zoom-in duration-200' : '',
     panelClassName,
     surface.border,
@@ -272,8 +279,8 @@ export function customCardDialogShellProps(
     };
   }
 
-  const maxWidthClass =
-    maxWidth === 'sm' ? 'max-w-sm' : maxWidth === 'lg' ? 'max-w-lg' : 'max-w-md';
+  const maxWidthClass = getDialogMaxWidthClassName(maxWidth);
+  const heightClassName = getDialogHeightClassName(height);
   const panelClassName = getDialogPanelSurfaceClassName(surface.panel);
 
   return {
@@ -285,9 +292,9 @@ export function customCardDialogShellProps(
             `w-[90vw] ${maxWidthClass}`,
             '-translate-x-1/2 -translate-y-1/2',
             overflow ? 'overflow-hidden' : '',
-            'rounded-3xl border shadow-2xl backdrop-blur-xl',
-            height === 'tall' ? 'h-[85vh]' : height === 'capped' ? 'max-h-[85vh]' : '',
-            padding ? 'p-6' : '',
+            `${navetControlTokens.dialog.radiusClassName} border shadow-2xl backdrop-blur-xl`,
+            heightClassName,
+            padding ? navetControlTokens.dialog.bodyPaddingClassName : '',
             animate ? 'animate-in fade-in zoom-in duration-200' : '',
             panelClassName,
             surface.border,

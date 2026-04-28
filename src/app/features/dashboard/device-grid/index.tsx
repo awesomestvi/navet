@@ -1,7 +1,7 @@
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
 import {
-  CARD_GRID_ROW_CLASS,
   type CardSize,
+  getCardGridAutoRowsStyle,
   getDashboardGridColumnCount,
 } from '@/app/components/shared/card-size-selector';
 import { useSearch } from '@/app/hooks';
@@ -82,9 +82,10 @@ export const DeviceGrid = memo(function DeviceGrid({
 
   const gridContent = (
     <div
-      className={`grid w-full grid-flow-row-dense gap-3 ${CARD_GRID_ROW_CLASS} md:gap-3 lg:gap-4`}
+      className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
       style={
         {
+          ...getCardGridAutoRowsStyle(breakpointCols),
           gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
         } as CSSProperties
       }

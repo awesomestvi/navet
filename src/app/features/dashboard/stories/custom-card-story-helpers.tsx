@@ -1,4 +1,4 @@
-import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
+import { type CardSize, getCardSizeOverlayStyle } from '@/app/components/shared/card-size-selector';
 import { WidgetCard } from '@/app/features/dashboard/components/widget-card';
 import type { CustomCard } from '@/app/features/dashboard/stores/custom-cards-store';
 
@@ -27,7 +27,7 @@ export function CustomWidgetStoryFrame({
   const safeCard = card ?? buildCustomCard('button', 'medium');
 
   return (
-    <div className={cardSizeOverlayClass[safeCard.size]}>
+    <div style={getCardSizeOverlayStyle(safeCard.size)}>
       <WidgetCard card={safeCard} isEditMode={isEditMode} />
     </div>
   );

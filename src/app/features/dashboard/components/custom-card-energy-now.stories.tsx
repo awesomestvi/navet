@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
+import { type CardSize, getCardSizeOverlayStyle } from '@/app/components/shared/card-size-selector';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { getMockEnergyOverview } from '../../energy/data/mock-energy-dashboard';
 import { EnergyNowDashboardCardView } from './widgets/energy-now-dashboard-widget';
@@ -19,7 +19,7 @@ const storyTrend = [
 
 function EnergyNowStoryFrame({ size, trend = storyTrend }: EnergyNowStoryArgs) {
   return (
-    <div className={cardSizeOverlayClass[size]}>
+    <div style={getCardSizeOverlayStyle(size)}>
       <EnergyNowDashboardCardView
         title="Energy today"
         currentLoadW={overview.totals.currentLoadW}

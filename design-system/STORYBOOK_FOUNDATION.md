@@ -42,7 +42,7 @@ Aggregate stories with no single component owner (catalog, all-sizes, state matr
 
 Cross-feature story helper components (frame wrappers, noop callbacks, demo containers) live in `src/app/storybook/`:
 
-- **`src/app/storybook/story-frames.tsx`** — `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange`, `getEntityCardStoryFrameClassName`
+- **`src/app/storybook/story-frames.tsx`** — `EntityCardStoryFrame`, `SettingsDialogStoryFrame`, `noopCardSizeChange`, `getEntityCardStoryFrameStyle`
 - **`src/app/storybook/story-docs.ts`** — story-specific documentation strings for all Storybook pages
 
 Import story utilities from `@/app/storybook/story-frames` in entity-card and settings-dialog stories. Do not place these helpers inside feature or dashboard subdirectories — that breaks the feature boundary rule (consumers outside the feature importing through an internal path).

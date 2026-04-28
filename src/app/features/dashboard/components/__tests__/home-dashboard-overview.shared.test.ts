@@ -1,9 +1,17 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import {
+  getDashboardCardFootprint,
+  PHONE_SMALL_CARD_TARGET_WIDTH_PX,
+} from '@/app/components/shared/card-size-selector';
 import { useDashboardDevices } from '@/app/hooks/use-dashboard-devices';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
 import type { HomeDashboardLayoutState } from '../../hooks/use-home-dashboard-layout';
-import { buildHomeOverviewCollections } from '../home-dashboard-overview.shared';
+import {
+  buildHomeOverviewCollections,
+  getCardGridGapPx,
+  getCardGridTargetWidth,
+} from '../home-dashboard-overview.shared';
 
 const baseDevices: DeviceCollection = {
   lights: [],
@@ -94,5 +102,21 @@ describe('home dashboard overview collections', () => {
     expect(collections.allCards.has('missing.entity')).toBe(false);
     expect(collections.flowCards).toEqual([]);
     expect(collections.sectionCards[0]?.cardIds).toEqual(['calendar.kitchen']);
+  });
+
+  it('keeps the phone small tile aligned to the 168 logical px target footprint', () => {
+    expect(getDashboardCardFootprint('small', 2)).toEqual({
+      widthPx: PHONE_SMALL_CARD_TARGET_WIDTH_PX,
+      heightPx: PHONE_SMALL_CARD_TARGET_WIDTH_PX,
+    });
+  });
+
+  it('derives phone grid target widths from the shared footprint metrics', () => {
+    const gridGapPx = getCardGridGapPx(2);
+
+    expect(getCardGridTargetWidth(4, gridGapPx)).toEqual({
+      microCardMinWidth: 80,
+      targetGridWidth: 344,
+    });
   });
 });

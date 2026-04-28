@@ -17,6 +17,10 @@ import {
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import {
+  getBaseCardGapClassName,
+  getBaseCardRadiusClassName,
+} from '@/app/components/system/tokens';
 import { useTheme } from '@/app/hooks';
 import { getGradientColors } from '@/app/utils/color-utils';
 
@@ -84,30 +88,6 @@ interface BaseCardSurfaceTokens {
   borderClassName: string;
   backgroundClassName: string;
   readableBackgroundColor: string;
-}
-
-function getBaseCardRadius(size: CardSize) {
-  if (size === 'tiny') {
-    return 'rounded-[26px]';
-  }
-
-  if (size === 'large' || size === 'extra-large') {
-    return 'rounded-[32px]';
-  }
-
-  return 'rounded-3xl';
-}
-
-function getBaseCardGap(size: CardSize) {
-  if (size === 'tiny') {
-    return 'gap-2';
-  }
-
-  if (size === 'extra-small' || size === 'small') {
-    return 'gap-2.5';
-  }
-
-  return 'gap-3';
 }
 
 function getBaseCardSurfaceTokens({
@@ -213,6 +193,7 @@ export function BaseCard({
   const surface = getThemeSurfaceTokens(theme);
   const shell = getCardShellSurfaceTokens(theme);
   const resolvedSurface = getBaseCardSurfaceTokens({ theme, surfaceVariant, surface });
+  const baseCardRadiusClassName = getBaseCardRadiusClassName(size);
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const resolvedHeaderTone = headerTone ?? tone;
@@ -304,7 +285,7 @@ export function BaseCard({
   };
   const hasContent = children !== null && children !== undefined && children !== false;
   const paddingClassName = fullBleed ? '' : getStandardCardPadding(size);
-  const gapClassName = fullBleed ? '' : getBaseCardGap(size);
+  const gapClassName = fullBleed ? '' : getBaseCardGapClassName(size);
   const contentContainerClassName = fullBleed ? 'h-full' : `min-h-0 flex-1 ${contentClassName}`;
   const hasCustomFrameBackground =
     frameClassName.includes('bg-') ||
@@ -348,7 +329,7 @@ export function BaseCard({
     <div
       {...props}
       style={mergedStyle}
-      className={`relative flex h-full w-full flex-col overflow-hidden ${getBaseCardRadius(size)} ${paddingClassName} ${gapClassName} ${resolvedSurface.borderClassName} ${surfaceBackgroundClassName} ${shell.backdropClassName} ${backgroundClassName} ${frameClassName} ${interactive ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative flex h-full w-full flex-col overflow-hidden ${baseCardRadiusClassName} ${paddingClassName} ${gapClassName} ${resolvedSurface.borderClassName} ${surfaceBackgroundClassName} ${shell.backdropClassName} ${backgroundClassName} ${frameClassName} ${interactive ? 'cursor-pointer' : ''} ${className}`}
     >
       {activeStateUnderlay}
       {underlay}

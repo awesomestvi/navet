@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
+import { type CardSize, getCardSizeOverlayStyle } from '@/app/components/shared/card-size-selector';
 
 // ---------------------------------------------------------------------------
 // EntityCardStoryFrame
@@ -10,21 +10,27 @@ import { type CardSize, cardSizeOverlayClass } from '@/app/components/shared/car
 export function EntityCardStoryFrame({
   children,
   className,
+  style,
   size = 'medium',
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   size?: CardSize;
 }) {
-  return <div className={className ?? getEntityCardStoryFrameClassName(size)}>{children}</div>;
+  return (
+    <div className={className} style={{ ...getEntityCardStoryFrameStyle(size), ...style }}>
+      {children}
+    </div>
+  );
 }
 
 export function noopCardSizeChange() {
   return;
 }
 
-export function getEntityCardStoryFrameClassName(size: CardSize) {
-  return cardSizeOverlayClass[size];
+export function getEntityCardStoryFrameStyle(size: CardSize) {
+  return getCardSizeOverlayStyle(size);
 }
 
 // ---------------------------------------------------------------------------

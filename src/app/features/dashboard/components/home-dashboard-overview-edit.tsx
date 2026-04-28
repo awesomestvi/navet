@@ -2,7 +2,7 @@ import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
 import { Columns2, GripVertical, LayoutPanelTop, LayoutTemplate, Plus, Rows3 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useCallback, useDeferredValue } from 'react';
-import { cardSizeOverlayClass } from '@/app/components/shared/card-size-selector';
+import { getCardSizeOverlayStyle } from '@/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { type DragMeta, useHomeDashboardEditor } from '../hooks/use-home-dashboard-editor';
@@ -348,9 +348,8 @@ export default function HomeDashboardOverviewEdit({
           </div>
         ) : activeDragCard && activeDragSize ? (
           <div
-            className={`flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl ${
-              cardSizeOverlayClass[activeDragSize]
-            }`}
+            className="flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl"
+            style={getCardSizeOverlayStyle(activeDragSize)}
           >
             <GripVertical className="h-5 w-5 text-white/76" />
           </div>

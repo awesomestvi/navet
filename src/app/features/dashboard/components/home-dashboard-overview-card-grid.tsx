@@ -12,8 +12,8 @@ import {
   useState,
 } from 'react';
 import {
-  CARD_GRID_ROW_CLASS,
   type CardSize,
+  getCardGridAutoRowsStyle,
   getCardSpanClass,
 } from '@/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -266,9 +266,10 @@ export const CardGrid = memo(function CardGrid({
       ({
         '--home-card-cols': renderedGridCols,
         '--home-card-min': `${microCardMinWidth}px`,
+        ...getCardGridAutoRowsStyle(breakpointCols),
         gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
       }) as CSSProperties,
-    [microCardMinWidth, renderedGridCols]
+    [breakpointCols, microCardMinWidth, renderedGridCols]
   );
   const addCardSlotStyle = useMemo(
     () =>
@@ -304,7 +305,7 @@ export const CardGrid = memo(function CardGrid({
         style={innerContainerStyle}
       >
         <div
-          className={`grid w-full ${CARD_GRID_ROW_CLASS} gap-3.5 md:gap-3 lg:gap-4 ${
+          className={`grid w-full gap-3.5 md:gap-3 lg:gap-4 ${
             hasInlineAddCardSlot ? 'grid-flow-row' : 'grid-flow-row-dense'
           }`}
           style={gridStyle}

@@ -1,5 +1,9 @@
 import { useCallback, useState } from 'react';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getDashboardCardGridGapPx,
+  getDashboardCardGridMetrics,
+} from '@/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
@@ -109,7 +113,6 @@ export const NOOP_REMOVE_FROM_LAYOUT = () => {};
 
 const PORTRAIT_HOME_MAX_COLS = 4;
 const PORTRAIT_HOME_RELAXED_COLS = 6;
-const MIN_HOME_CARD_TRACK_WIDTH = 176;
 
 export function isCustomCard(entry: DeviceWithType | CustomCard): entry is CustomCard {
   return 'createdAt' in entry;
@@ -129,15 +132,7 @@ export function getStoredSectionSpan(item: { span?: number; w?: number }) {
 }
 
 export function getCardGridGapPx(cols: number) {
-  if (cols >= 6) {
-    return 16;
-  }
-
-  if (cols >= 4) {
-    return 12;
-  }
-
-  return 8;
+  return getDashboardCardGridGapPx(cols);
 }
 
 export function getStackMinSpan<T extends { cardIds: string[] }>(
@@ -347,12 +342,13 @@ export function getPortraitLaneCount(sectionGridCols: number) {
 }
 
 export function getCardGridTargetWidth(renderedGridCols: number, gridGapPx: number) {
-  const compactTrackWidth = renderedGridCols <= 4 ? 168 : MIN_HOME_CARD_TRACK_WIDTH;
-  const microCardMinWidth = Math.max(80, Math.round((compactTrackWidth - gridGapPx) / 2));
+  const logicalColumns = Math.max(1, Math.ceil(renderedGridCols / 2));
+  const { microCardMinWidthPx } = getDashboardCardGridMetrics(logicalColumns);
+
   return {
-    microCardMinWidth,
+    microCardMinWidth: microCardMinWidthPx,
     targetGridWidth:
-      renderedGridCols * microCardMinWidth + Math.max(0, renderedGridCols - 1) * gridGapPx,
+      renderedGridCols * microCardMinWidthPx + Math.max(0, renderedGridCols - 1) * gridGapPx,
   };
 }
 

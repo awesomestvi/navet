@@ -8,7 +8,16 @@ import { getThemeColorValue } from './theme/theme-colors';
 import { getThemeSurfaceTokens } from './theme/theme-surface-tokens';
 
 export type { CardSize } from './card-size';
-export { CARD_GRID_ROW_CLASS, getStandardCardPadding } from './card-size';
+export {
+  getCardGridAutoRowsStyle,
+  getCardSizeOverlayStyle,
+  getDashboardCardFootprint,
+  getDashboardCardGridGapPx,
+  getDashboardCardGridMetrics,
+  getStandardCardPadding,
+  PHONE_SMALL_CARD_TARGET_HEIGHT_PX,
+  PHONE_SMALL_CARD_TARGET_WIDTH_PX,
+} from './card-size';
 
 interface CardSizeSelectorProps {
   currentSize: CardSize;
@@ -342,16 +351,6 @@ export function getDashboardGridColumnCount(logicalColumns: number): number {
 export function getCardSizeRatio(size: CardSize): { cols: number; rows: number } {
   return sizes.find((s) => s.value === size) ?? { cols: 1, rows: 1 };
 }
-
-export const cardSizeOverlayClass: Record<CardSize, string> = {
-  tiny: 'w-[87px] h-[87px]',
-  'extra-small': 'w-[190px] h-[87px]',
-  small: 'w-[190px] h-[190px]',
-  medium: 'w-[396px] h-[190px]',
-  'medium-vertical': 'w-[190px] h-[396px]',
-  large: 'w-[396px] h-[396px]',
-  'extra-large': 'w-[602px] h-[396px]',
-};
 
 export function getCompactCardSize(size: CardSize): Exclude<CardSize, 'tiny' | 'extra-small'> {
   if (size === 'tiny' || size === 'extra-small') {

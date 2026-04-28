@@ -138,6 +138,25 @@ Current responsive strategy:
 - Room navigation remains horizontally scrollable across sizes
 - Dashboard sections scale through shared card-size and grid helpers rather than bespoke per-breakpoint card dimensions
 
+Navet should not treat "phone", "tablet", and "desktop" as fixed layout identities that also define
+interaction size. Width and input capability are separate concerns:
+
+- width determines column count, layout structure, and how much content appears at once
+- input capability determines control density, target sizes, and whether hover can be treated as a
+  secondary affordance
+
+Current logical dashboard column breakpoints:
+
+- `<768px`: `2` columns
+- `768px+`: `4` columns
+- `1280px+`: `6` columns
+- `1700px+`: `8` columns
+- `2500px+`: `12` columns
+
+Phone card footprint comparisons should use logical viewport px, not screenshot pixels. For
+example, a phone `small` tile targeted at `168px` logical width will appear around `504px` in a
+`3x` device screenshot.
+
 ## Performance Notes
 
 Layout and shell changes must remain safe for lower-power devices.

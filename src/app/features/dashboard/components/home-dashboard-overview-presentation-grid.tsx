@@ -1,5 +1,8 @@
 import { type CSSProperties, memo, useEffect, useMemo, useRef, useState } from 'react';
-import { CARD_GRID_ROW_CLASS, type CardSize } from '@/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardGridAutoRowsStyle,
+} from '@/app/components/shared/card-size-selector';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
@@ -137,9 +140,10 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
       ({
         '--home-card-cols': renderedGridCols,
         '--home-card-min': `${microCardMinWidth}px`,
+        ...getCardGridAutoRowsStyle(breakpointCols),
         gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
       }) as CSSProperties,
-    [microCardMinWidth, renderedGridCols]
+    [breakpointCols, microCardMinWidth, renderedGridCols]
   );
 
   const visibleCount = useProgressiveBatching(cardIds.length, false);
@@ -158,10 +162,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
         className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
         style={innerContainerStyle}
       >
-        <div
-          className={`grid w-full ${CARD_GRID_ROW_CLASS} gap-3.5 md:gap-3 lg:gap-4`}
-          style={gridStyle}
-        >
+        <div className="grid w-full gap-3.5 md:gap-3 lg:gap-4" style={gridStyle}>
           {visibleCardIds.map((cardId) => {
             const entry = allCards.get(cardId);
             if (!entry) {

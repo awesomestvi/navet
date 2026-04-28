@@ -3,8 +3,8 @@ import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/th
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   getControlFocusStyles,
+  getInputSizeTokens,
   navetRadiusTokens,
-  navetSizeTokens,
   navetTypographyTokens,
 } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
@@ -65,6 +65,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         : theme === 'glass'
           ? 'text-white/72'
           : 'text-zinc-400';
+  const sizeTokens = getInputSizeTokens(size);
 
   return (
     <div className={cn('relative', containerClassName)}>
@@ -95,10 +96,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className={cn(
           'w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
-          size === 'small' ? 'px-3 py-2' : navetSizeTokens.fieldInset,
+          sizeTokens.insetClassName,
           navetTypographyTokens.control,
-          leading ? (size === 'small' ? 'pl-9' : 'pl-10') : size === 'small' ? 'pl-3' : 'pl-4',
-          trailing ? (size === 'small' ? 'pr-9' : 'pr-10') : size === 'small' ? 'pr-3' : 'pr-4',
+          leading ? sizeTokens.leadingPaddingClassName : sizeTokens.idlePaddingClassName,
+          trailing ? sizeTokens.trailingPaddingClassName : sizeTokens.idlePaddingClassName,
           variant === 'soft'
             ? softVariantClassName
             : theme === 'light'

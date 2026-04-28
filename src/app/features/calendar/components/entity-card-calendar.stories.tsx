@@ -2,10 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { CalendarCard } from '@/app/features/calendar';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
-import {
-  EntityCardStoryFrame,
-  getEntityCardStoryFrameClassName,
-} from '@/app/storybook/story-frames';
+import { EntityCardStoryFrame, getEntityCardStoryFrameStyle } from '@/app/storybook/story-frames';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
   const date = new Date();
@@ -18,7 +15,8 @@ function CalendarCardStory(args: Omit<ComponentProps<typeof CalendarCard>, 'onSi
   return (
     <EntityCardStoryFrame
       size={args.size ?? 'medium'}
-      className={`${getEntityCardStoryFrameClassName(args.size ?? 'medium')} overflow-hidden rounded-3xl`}
+      className="overflow-hidden rounded-3xl"
+      style={getEntityCardStoryFrameStyle(args.size ?? 'medium')}
     >
       <CalendarCard {...args} onSizeChange={() => undefined} />
     </EntityCardStoryFrame>

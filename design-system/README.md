@@ -96,6 +96,10 @@ Use `system/` to re-export mature shared pieces. Do not author new components th
 The shared first-layer foundations live in
 [`src/app/components/system/tokens/foundations.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/tokens/foundations.ts).
 
+Navet's design system is platform-neutral. Do not use iOS `pt`, Android `dp`, or desktop logical px
+as the design-system foundation. Those are implementation units. Navet's foundation is the shared
+token layer plus the current responsive helpers.
+
 This file is the common source for:
 
 - spacing scales
@@ -108,6 +112,34 @@ This file is the common source for:
 
 When a primitive needs one of these decisions, prefer the foundation tokens instead of introducing
 one-off Tailwind values.
+
+Current policy:
+
+- `4px` is the base rhythm for shared spacing and sizing
+- semantic tokens are the authoring layer for components
+- primitive tokens should mainly be used to define higher-level semantic tokens
+
+## Density and Adaptation
+
+Navet adapts across width and input capability rather than inheriting a single platform's sizing
+system.
+
+Default policy:
+
+- `comfortable` is the default density for general product surfaces
+- `touch` is for touch-first, coarse-pointer, kiosk-style, and wall-panel contexts
+- `compact` is reserved for desktop or keyboard/mouse-heavy surfaces where denser UI materially
+  improves scanning or editing
+
+Do not default to `compact` on mixed-input devices. If a screen may be tapped regularly, prefer
+`comfortable` unless there is a strong product reason to go larger.
+
+Responsive policy:
+
+- width determines layout structure, column count, and how much content can appear at once
+- input capability determines control targets, spacing comfort, and hover assumptions
+- hover may supplement discoverability on fine-pointer screens, but primary actions must remain
+  visible and obvious without hover on coarse-pointer screens
 
 ## Themes and Surface Rules
 
@@ -154,6 +186,7 @@ Rules:
 - reuse shared title/header primitives for compact cards
 - use shared off/inactive card-state styling instead of per-feature opacity tricks
 - keep compact layouts lean and avoid duplicate controls across rows
+- do not map card behavior to imported iOS widget dimensions or platform-specific shell sizes
 
 ## Dialog and Settings Patterns
 
