@@ -107,6 +107,7 @@ export const WeatherCard = memo(function WeatherCard({
         className={`${cardShell.backdropClassName} ${weatherShellClassName} ${!isEditMode ? 'cursor-pointer' : ''}`}
         style={weatherTintStyle}
         lightOverlayClassName={weatherOverlayClassName || undefined}
+        showShadow={false}
         interactionProps={interaction.cardProps}
       >
         <WeatherBackground

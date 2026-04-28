@@ -13,6 +13,19 @@ export type PrimaryColor =
   | 'teal'
   | 'custom';
 
+const LEGACY_ADAPTIVE_WALLPAPER_MAP: Record<string, string> = {
+  'preset:soft-dark-gradient': './wallpapers/soft-dark-gradient.svg',
+  'preset:frosted-glass-abstract': './wallpapers/frosted-glass-abstract.svg',
+  'preset:blurred-forest-mood': './wallpapers/blurred-forest-mood.svg',
+  'preset:luxury-living-room-ambient': './wallpapers/luxury-living-room-ambient.svg',
+  'preset:matte-concrete-texture': './wallpapers/matte-concrete-texture.svg',
+  'preset:muted-nebula-space': './wallpapers/muted-nebula-space.svg',
+  'preset:scandinavian-warm-neutral': './wallpapers/scandinavian-warm-neutral.svg',
+  'preset:subtle-smart-grid': './wallpapers/subtle-smart-grid.svg',
+  'preset:pure-oled-black-luxury': './wallpapers/pure-oled-black-luxury.svg',
+  'preset:dynamic-sunrise-gradient': './wallpapers/dynamic-sunrise-gradient.svg',
+};
+
 interface ThemeState {
   theme: ThemeMode;
   followSystemTheme: boolean;
@@ -40,6 +53,11 @@ function normalizeWallpaperPath(wallpaper: string | null | undefined) {
   const trimmed = wallpaper.trim();
   if (!trimmed) {
     return null;
+  }
+
+  const legacyAdaptiveWallpaper = LEGACY_ADAPTIVE_WALLPAPER_MAP[trimmed];
+  if (legacyAdaptiveWallpaper) {
+    return legacyAdaptiveWallpaper;
   }
 
   if (trimmed.startsWith('/wallpapers/')) {

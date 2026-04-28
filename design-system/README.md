@@ -10,6 +10,7 @@ shared UI layer backed by:
 - curated exports in `src/app/components/system/`
 - shared visual decisions in theme/token helpers
 - Storybook as the review and documentation surface
+- component layers: `primitives/`, `patterns/`, `system/`, `shared/`, `layout/`, `ui/`, `figma/`
 
 ## Scope
 
@@ -290,4 +291,4 @@ Before landing shared UI changes:
 - Does Storybook need to be updated to document the change?
 - Does the change affect card sizing, dialog composition, or stable exports?
 
-Last updated: April 27, 2026
+Last updated: April 29, 2026

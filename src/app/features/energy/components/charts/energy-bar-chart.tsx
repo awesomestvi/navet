@@ -129,7 +129,7 @@ export const EnergyBarChart = memo(function EnergyBarChart({
           const cx = x + barW / 2;
 
           return (
-            <g key={d.label}>
+            <g key={`${d.label || 'bar'}-${i}`}>
               <rect
                 x={x}
                 y={y}

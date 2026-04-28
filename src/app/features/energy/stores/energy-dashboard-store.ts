@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { EnergyRange, EnergySourceConfig, EnergyWidgetId } from '../types/energy.types';
+import { normalizeEnergyRange } from '../utils/build-energy-dashboard-model';
 
 interface EnergyDashboardState {
   range: EnergyRange;
@@ -28,14 +29,24 @@ const defaultWidgets: EnergyWidgetId[] = [
   'insights',
 ];
 
+function normalizePersistedRange(range: unknown): EnergyRange {
+  return normalizeEnergyRange(
+    range === 'now' || range === 'today' || range === 'week' || range === 'month'
+      ? range
+      : range === 'live' || range === 'day'
+        ? range
+        : 'today'
+  );
+}
+
 export const useEnergyDashboardStore = create<EnergyDashboardState>()(
   persist(
     (set) => ({
-      range: 'day',
+      range: 'today',
       selectedNodeId: null,
       visibleWidgets: defaultWidgets,
       sourceConfig: null,
-      setRange: (range) => set({ range }),
+      setRange: (range) => set({ range: normalizePersistedRange(range) }),
       setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
       setVisibleWidgets: (visibleWidgets) => set({ visibleWidgets }),
       toggleWidgetVisibility: (widgetId) =>
@@ -59,7 +70,7 @@ export const useEnergyDashboardStore = create<EnergyDashboardState>()(
         const next = (persisted as Partial<EnergyDashboardState> | null) ?? {};
         return {
           ...current,
-          range: next.range ?? current.range,
+          range: normalizePersistedRange(next.range ?? current.range),
           visibleWidgets:
             Array.isArray(next.visibleWidgets) && next.visibleWidgets.length > 0
               ? next.visibleWidgets

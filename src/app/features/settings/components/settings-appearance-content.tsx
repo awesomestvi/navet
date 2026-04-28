@@ -10,21 +10,17 @@ import { getLegacyReducedEffectsFlags } from '@/app/utils/effects-quality';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsItem } from './settings-section-shell';
 
-const LIGHT_THEME_WALLPAPERS = [
-  { id: 'serene-dawn', src: './wallpapers/serene-dawn.svg' },
-  { id: 'citrus-courtyard', src: './wallpapers/citrus-courtyard.svg' },
-  { id: 'petal-horizon', src: './wallpapers/petal-horizon.svg' },
-  { id: 'sky-bloom', src: './wallpapers/sky-bloom.svg' },
-] as const;
-
-const DEFAULT_THEME_WALLPAPERS = [
-  { id: 'starfield-nocturne', src: './wallpapers/starfield-nocturne.svg' },
-  { id: 'aurora-veil', src: './wallpapers/aurora-veil.svg' },
-  { id: 'rainforest-canopy', src: './wallpapers/rainforest-canopy.svg' },
-  { id: 'ember-loft', src: './wallpapers/ember-loft.svg' },
-  { id: 'slate-passage', src: './wallpapers/slate-passage.svg' },
-  { id: 'coastal-haze', src: './wallpapers/coastal-haze.svg' },
-  { id: 'night-lounge', src: './wallpapers/night-lounge.svg' },
+const BUILT_IN_WALLPAPERS = [
+  { id: 'soft-dark-gradient', src: './wallpapers/soft-dark-gradient.svg' },
+  { id: 'frosted-glass-abstract', src: './wallpapers/frosted-glass-abstract.svg' },
+  { id: 'blurred-forest-mood', src: './wallpapers/blurred-forest-mood.svg' },
+  { id: 'luxury-living-room-ambient', src: './wallpapers/luxury-living-room-ambient.svg' },
+  { id: 'matte-concrete-texture', src: './wallpapers/matte-concrete-texture.svg' },
+  { id: 'muted-nebula-space', src: './wallpapers/muted-nebula-space.svg' },
+  { id: 'scandinavian-warm-neutral', src: './wallpapers/scandinavian-warm-neutral.svg' },
+  { id: 'subtle-smart-grid', src: './wallpapers/subtle-smart-grid.svg' },
+  { id: 'pure-oled-black-luxury', src: './wallpapers/pure-oled-black-luxury.svg' },
+  { id: 'dynamic-sunrise-gradient', src: './wallpapers/dynamic-sunrise-gradient.svg' },
 ] as const;
 
 export function AppearanceThemeAccentItem({
@@ -176,15 +172,8 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
 
 export function AppearanceWallpaperItem({ controller }: { controller: SettingsSectionController }) {
   const { t } = useI18n();
-  const {
-    handleRemoveWallpaper,
-    handleSelectWallpaper,
-    handleWallpaperUpload,
-    styles,
-    theme,
-    wallpaper,
-  } = controller;
-  const builtInWallpapers = theme === 'light' ? LIGHT_THEME_WALLPAPERS : DEFAULT_THEME_WALLPAPERS;
+  const { handleRemoveWallpaper, handleSelectWallpaper, handleWallpaperUpload, styles, wallpaper } =
+    controller;
   const wallpaperInputRef = useRef<HTMLInputElement | null>(null);
   const openWallpaperPicker = () => wallpaperInputRef.current?.click();
 
@@ -228,10 +217,10 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
               type="button"
               variant="secondary"
               onClick={openWallpaperPicker}
+              leading={<Upload className={`h-4 w-4 ${styles.mutedColor}`} />}
               className={`mt-3 h-14 w-full rounded-[18px] border-2 border-dashed md:mt-4 md:h-16 md:rounded-[20px] ${styles.lineColor} ${styles.hoverBg} ${styles.textColor}`}
             >
-              <Upload className={`h-4 w-4 ${styles.mutedColor}`} />
-              <span className="text-center">
+              <span className="flex flex-col text-center">
                 <span className={`block text-sm font-medium ${styles.textColor}`}>
                   {t('settings.appearance.wallpaper.replace')}
                 </span>
@@ -246,14 +235,16 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
             type="button"
             variant="ghost"
             onClick={openWallpaperPicker}
-            className={`flex h-28 w-full max-w-2xl flex-col items-center justify-center rounded-[20px] border-2 border-dashed text-center transition-colors md:h-36 md:rounded-3xl ${styles.lineColor} ${styles.hoverBg} ${styles.textColor}`}
+            leading={<ImageIcon className={`h-8 w-8 md:h-9 md:w-9 ${styles.mutedColor}`} />}
+            className={`h-28 w-full max-w-2xl flex-col gap-0 rounded-[20px] border-2 border-dashed text-center transition-colors md:h-36 md:rounded-3xl ${styles.lineColor} ${styles.hoverBg} ${styles.textColor}`}
           >
-            <ImageIcon className={`mb-2 h-8 w-8 md:mb-3 md:h-9 md:w-9 ${styles.mutedColor}`} />
-            <span className={`text-sm font-medium ${styles.textColor}`}>
-              {t('settings.appearance.wallpaper.upload')}
-            </span>
-            <span className={`mt-1 text-xs ${styles.subtleColor}`}>
-              {t('settings.appearance.wallpaper.fileHint')}
+            <span className="flex flex-col items-center text-center">
+              <span className={`mt-2 text-sm font-medium md:mt-3 ${styles.textColor}`}>
+                {t('settings.appearance.wallpaper.upload')}
+              </span>
+              <span className={`mt-1 text-xs ${styles.subtleColor}`}>
+                {t('settings.appearance.wallpaper.fileHint')}
+              </span>
             </span>
           </Button>
         )}
@@ -268,7 +259,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
 
         <div className="max-w-5xl">
           <div className="flex flex-wrap gap-3">
-            {builtInWallpapers.map((option) => {
+            {BUILT_IN_WALLPAPERS.map((option) => {
               const isSelected = wallpaper === option.src;
 
               return (

@@ -98,8 +98,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           navetRadiusTokens.field,
           sizeTokens.insetClassName,
           navetTypographyTokens.control,
-          leading ? sizeTokens.leadingPaddingClassName : sizeTokens.idlePaddingClassName,
-          trailing ? sizeTokens.trailingPaddingClassName : sizeTokens.idlePaddingClassName,
+          leading ? sizeTokens.leadingPaddingClassName : sizeTokens.idlePaddingLeftClassName,
+          trailing ? sizeTokens.trailingPaddingClassName : sizeTokens.idlePaddingRightClassName,
           variant === 'soft'
             ? softVariantClassName
             : theme === 'light'

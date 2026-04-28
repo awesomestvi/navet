@@ -17,6 +17,7 @@ Current feature folders under
 - `media`
 - `notifications`
 - `person`
+- `power`
 - `rss`
 - `scenes`
 - `security`
@@ -42,6 +43,15 @@ but `auth` is still a small exception because it does not yet expose a root entr
 - the notification toaster
 - the authenticated route split between `LoginPage` and `DashboardPage`
 
+Component layers under [`src/app/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components):
+
+- `primitives/` for low-level reusable UI
+- `patterns/` for composed shared structures
+- `system/` for curated public exports
+- `shared/` for app-specific shared UI and compatibility shims
+- `layout/` and `ui/` for shell-level and wrapper components
+- `figma/` for design integration components
+
 It also syncs:
 
 - accent CSS variables
@@ -58,13 +68,13 @@ Current core stores:
 
 - `auth-store`
 - `config-store`
+- `edit-mode-store`
+- `error-store`
 - `home-assistant-store`
+- `navigation-store`
+- `search-store`
 - `settings-store`
 - `theme-store`
-- `navigation-store`
-- `edit-mode-store`
-- `search-store`
-- `error-store`
 
 Selectors live in
 [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts)
@@ -133,10 +143,10 @@ Settings UI should reuse shared patterns and primitives before introducing featu
 
 Navet supports four themes:
 
-- `glass`
+- `glass` (default)
 - `dark`
 - `light`
-- `black`
+- `black` (labelled "Black" in the UI)
 
 The current expectation is:
 
@@ -161,6 +171,7 @@ This split is documented in:
 - [README.md](README.md)
 - [`src/app/components/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/README.md)
 - [`src/app/components/shared/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/README.md)
+- [`src/app/components/system/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/README.md)
 
 ### Storybook support
 
@@ -340,4 +351,4 @@ Contributors should be careful when changing:
 Visual changes that increase blur, overdraw, nesting, or animation cost should be evaluated with
 low-power dashboards in mind.
 
-Last updated: April 27, 2026
+Last updated: April 29, 2026

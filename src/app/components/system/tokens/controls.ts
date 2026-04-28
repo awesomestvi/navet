@@ -120,9 +120,11 @@ export const navetControlTokens = {
         density: 'compact' as const,
         heightPx: navetDensityTokens.compact.controlHeightPx,
         insetClassName: 'px-3 py-2',
-        leadingPaddingClassName: 'pl-9',
-        trailingPaddingClassName: 'pr-9',
+        leadingPaddingClassName: 'pl-10',
+        trailingPaddingClassName: 'pr-10',
         idlePaddingClassName: 'px-3',
+        idlePaddingLeftClassName: 'pl-3',
+        idlePaddingRightClassName: 'pr-3',
       },
       default: {
         density: 'comfortable' as const,
@@ -131,6 +133,8 @@ export const navetControlTokens = {
         leadingPaddingClassName: 'pl-10',
         trailingPaddingClassName: 'pr-10',
         idlePaddingClassName: 'px-4',
+        idlePaddingLeftClassName: 'pl-4',
+        idlePaddingRightClassName: 'pr-4',
       },
     },
     densitySizes: {

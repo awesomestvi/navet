@@ -24,7 +24,7 @@ describe('system tokens', () => {
     expect(getButtonSizeTokens('default').heightPx).toBe(40);
     expect(getButtonSizeTokens('small').iconOnlyClassName).toBe('h-9 w-9');
     expect(getInputSizeTokens('default').heightPx).toBe(44);
-    expect(getInputSizeTokens('small').leadingPaddingClassName).toBe('pl-9');
+    expect(getInputSizeTokens('small').leadingPaddingClassName).toBe('pl-10');
   });
 
   it('maps dialog helper options to shared class names', () => {

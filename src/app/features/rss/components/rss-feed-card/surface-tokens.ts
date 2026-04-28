@@ -43,7 +43,7 @@ export function getRSSFeedCardSurfaceTokens(
     glowStyle: tintSurface.glowStyle,
     textPrimaryColor: textTokens.titleColor,
     textSecondaryColor: textTokens.subtitleColor,
-    containerShadowClassName: theme === 'light' ? 'shadow-lg' : 'shadow-lg hover:shadow-xl',
+    containerShadowClassName: '',
     overlayClassName:
       tintSurface.overlayClassName ??
       (theme === 'light' ? '' : theme === 'glass' ? 'bg-white/[0.03] backdrop-blur-sm' : ''),

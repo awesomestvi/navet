@@ -7,7 +7,12 @@ import {
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { useEnergyDashboardStore } from '../stores/energy-dashboard-store';
-import type { EnergySeriesPoint, EnergySourceConfig } from '../types/energy.types';
+import type {
+  EnergyDashboardNode,
+  EnergySeriesPoint,
+  EnergySourceConfig,
+} from '../types/energy.types';
+import { buildEnergyDashboardModel } from '../utils/build-energy-dashboard-model';
 import { useEnergyHaData } from './use-energy-ha-data';
 import { useEnergyLoadHistory } from './use-energy-load-history';
 import { useEnergyStatisticsPeriods } from './use-energy-statistics-periods';
@@ -79,11 +84,6 @@ export function useEnergyDashboard() {
     [recentLoadTrend, periodTotals.today]
   );
 
-  const selectedNode = useMemo(
-    () => overview.nodes.find((node) => node.id === selectedNodeId) ?? overview.nodes[0] ?? null,
-    [overview.nodes, selectedNodeId]
-  );
-
   const heatingConsumers = useMemo(
     () => overview.topConsumers.filter((consumer) => HEATING_CATEGORIES.has(consumer.category)),
     [overview.topConsumers]
@@ -149,12 +149,30 @@ export function useEnergyDashboard() {
 
   const visibleWidgetSet = useMemo(() => new Set(visibleWidgets), [visibleWidgets]);
 
+  const dashboard = useMemo(
+    () =>
+      buildEnergyDashboardModel({
+        overview,
+        range,
+        trend: recentLoadTrend,
+        periodTotals,
+        sourceConfig,
+      }),
+    [overview, periodTotals, range, recentLoadTrend, sourceConfig]
+  );
+
+  const selectedNode = useMemo<EnergyDashboardNode | null>(
+    () => dashboard.nodes.find((node) => node.id === selectedNodeId) ?? dashboard.nodes[0] ?? null,
+    [dashboard.nodes, selectedNodeId]
+  );
+
   function handleSaveConfig(config: EnergySourceConfig) {
     setSourceConfig(config);
     setShowSetup(false);
   }
 
   return {
+    dashboard,
     overview,
     range,
     setRange,

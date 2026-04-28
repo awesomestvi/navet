@@ -122,7 +122,7 @@ export function MediaMediumView({
       <div className="relative z-[1] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
         <div />
 
-        <div className="flex min-w-0 flex-col pl-2 pr-3 py-3">
+        <div className="flex min-w-0 flex-col pl-3 pr-3 py-3">
           <div className="flex items-start justify-between gap-3">
             <MediaEntityHeader
               entityName={entityName}
@@ -144,137 +144,139 @@ export function MediaMediumView({
             </div>
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-5">
-            <div className="min-w-0">
-              <MediaMarqueeText
-                text={title}
-                className={`text-sm font-semibold ${iconTone}`}
-                style={{ color: fallbackTitleColor }}
-              />
-              <MediaMarqueeText
-                text={artist}
-                className={`mt-0.5 text-xs ${subtitleTone}`}
-                threshold={24}
-                style={{ color: fallbackSubtitleColor }}
-              />
+          <div className="mt-auto flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <MediaMarqueeText
+                  text={title}
+                  className={`text-sm font-semibold ${iconTone}`}
+                  style={{ color: fallbackTitleColor }}
+                />
+                <MediaMarqueeText
+                  text={artist}
+                  className={`mt-0.5 text-xs ${subtitleTone}`}
+                  threshold={24}
+                  style={{ color: fallbackSubtitleColor }}
+                />
+              </div>
+
+              <div className="relative">
+                <RoundControlButton
+                  theme={theme}
+                  size="small"
+                  variant="neutral"
+                  aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTogglePlay();
+                  }}
+                  className="h-9 w-9 border backdrop-blur-xl transition-colors"
+                  iconClassName="!text-white/90"
+                  style={subduedFallback ? undefined : playButtonStyle}
+                >
+                  {isPlaying ? (
+                    <Pause className={primaryControlSizes.icon} fill="currentColor" />
+                  ) : (
+                    <Play className={primaryControlSizes.icon} fill="currentColor" />
+                  )}
+                </RoundControlButton>
+              </div>
             </div>
 
-            <div className="relative">
+            <div>
+              <div className="relative">
+                <div
+                  className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+                  style={trackBaseStyle}
+                />
+                <div
+                  className="absolute left-0 top-1/2 h-px -translate-y-1/2"
+                  style={{
+                    ...trackFillStyle,
+                    width:
+                      durationSeconds > 0
+                        ? `${Math.max(0, Math.min(100, (elapsedSeconds / durationSeconds) * 100))}%`
+                        : '0%',
+                  }}
+                />
+              </div>
+              <div className={`mt-1 flex items-center justify-between text-xs ${subtitleTone}`}>
+                <span>{elapsedLabel}</span>
+                <span>{durationLabel}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
               <RoundControlButton
                 theme={theme}
-                size="medium"
+                size="small"
                 variant="neutral"
-                aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+                aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onTogglePlay();
+                  onToggleMute();
                 }}
-                className="h-10 w-10 border backdrop-blur-xl transition-colors"
+                className="h-8 w-8 border backdrop-blur-xl transition-colors"
                 iconClassName="!text-white/90"
-                style={subduedFallback ? undefined : playButtonStyle}
+                style={neutralButtonStyle}
               >
-                {isPlaying ? (
-                  <Pause className={primaryControlSizes.icon} fill="currentColor" />
+                {isMuted ? (
+                  <VolumeX className={controlSizes.icon} />
                 ) : (
-                  <Play className={primaryControlSizes.icon} fill="currentColor" />
+                  <Volume2 className={controlSizes.icon} />
                 )}
               </RoundControlButton>
-            </div>
-          </div>
 
-          <div className="mt-2.5">
-            <div className="relative">
-              <div
-                className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
-                style={trackBaseStyle}
-              />
-              <div
-                className="absolute left-0 top-1/2 h-px -translate-y-1/2"
-                style={{
-                  ...trackFillStyle,
-                  width:
-                    durationSeconds > 0
-                      ? `${Math.max(0, Math.min(100, (elapsedSeconds / durationSeconds) * 100))}%`
-                      : '0%',
+              <div className="relative flex-1 px-1">
+                <Slider
+                  value={displayVolume}
+                  ariaLabel={t('media.volume')}
+                  onValueChange={onVolumeChange}
+                  onInteractionStart={onVolumeInteractionStart}
+                  onInteractionEnd={onVolumeInteractionEnd}
+                  rootClassName="relative flex h-5 w-full items-center touch-none select-none"
+                  trackClassName="relative h-[3px] grow rounded-full"
+                  rangeClassName="absolute h-full rounded-full"
+                  thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
+                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                  trackStyle={trackBaseStyle}
+                  rangeStyle={trackFillStyle}
+                  thumbStyle={trackThumbStyle}
+                />
+              </div>
+
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={t('media.previousTrack')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPrevious();
                 }}
-              />
+                className="h-8 w-8 border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
+                style={neutralButtonStyle}
+              >
+                <SkipBack className={controlSizes.icon} />
+              </RoundControlButton>
+
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={t('media.nextTrack')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onNext();
+                }}
+                className="h-8 w-8 border backdrop-blur-xl transition-colors"
+                iconClassName="!text-white/90"
+                style={neutralButtonStyle}
+              >
+                <SkipForward className={controlSizes.icon} />
+              </RoundControlButton>
             </div>
-            <div className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}>
-              <span>{elapsedLabel}</span>
-              <span>{durationLabel}</span>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-1.5">
-            <RoundControlButton
-              theme={theme}
-              size="small"
-              variant="neutral"
-              aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggleMute();
-              }}
-              className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
-              style={neutralButtonStyle}
-            >
-              {isMuted ? (
-                <VolumeX className={controlSizes.icon} />
-              ) : (
-                <Volume2 className={controlSizes.icon} />
-              )}
-            </RoundControlButton>
-
-            <div className="relative flex-1">
-              <Slider
-                value={displayVolume}
-                ariaLabel={t('media.volume')}
-                onValueChange={onVolumeChange}
-                onInteractionStart={onVolumeInteractionStart}
-                onInteractionEnd={onVolumeInteractionEnd}
-                rootClassName="relative flex h-6 w-full items-center touch-none select-none"
-                trackClassName="relative h-[3px] grow rounded-full"
-                rangeClassName="absolute h-full rounded-full"
-                thumbClassName="block h-4 w-4 rounded-full outline-none"
-                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                trackStyle={trackBaseStyle}
-                rangeStyle={trackFillStyle}
-                thumbStyle={trackThumbStyle}
-              />
-            </div>
-
-            <RoundControlButton
-              theme={theme}
-              size="small"
-              variant="neutral"
-              aria-label={t('media.previousTrack')}
-              onClick={(event) => {
-                event.stopPropagation();
-                onPrevious();
-              }}
-              className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
-              style={neutralButtonStyle}
-            >
-              <SkipBack className={controlSizes.icon} />
-            </RoundControlButton>
-
-            <RoundControlButton
-              theme={theme}
-              size="small"
-              variant="neutral"
-              aria-label={t('media.nextTrack')}
-              onClick={(event) => {
-                event.stopPropagation();
-                onNext();
-              }}
-              className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
-              style={neutralButtonStyle}
-            >
-              <SkipForward className={controlSizes.icon} />
-            </RoundControlButton>
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ export {
   CardDialogTabTrigger,
 } from '@/app/components/patterns';
 export {
+  Badge,
   Button,
   Checkbox,
   ColorInputSwatch,
@@ -34,6 +35,7 @@ export {
   RoundControlButton,
   Select,
   SettingsDialogDoneButton,
+  Stepper,
   Switch,
   settingsDialogContentClass,
   TabList,

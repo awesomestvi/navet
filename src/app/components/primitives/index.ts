@@ -1,3 +1,4 @@
+export { Badge, type BadgeProps } from './badge';
 export {
   BaseCard,
   type BaseCardActionRowConfig,
@@ -41,6 +42,7 @@ export { RoundControlButton } from './round-control-button';
 export { Select, type SelectProps } from './select';
 export { SlideAction, type SlideActionProps } from './slide-action';
 export { Slider } from './slider';
+export { Stepper, type StepperItem, type StepperProps } from './stepper';
 export { Switch, type SwitchProps } from './switch';
 export { TabList, TabPanel, Tabs, type TabsProps, TabTrigger } from './tabs';
 export { Tag, type TagProps } from './tag';

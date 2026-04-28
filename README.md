@@ -58,14 +58,14 @@ coverage includes:
 | Layer | Tooling |
 |---|---|
 | App | React 19 |
-| Language | TypeScript |
-| State | Zustand |
-| Styling | Tailwind CSS 4 |
+| Language | TypeScript 6 |
+| State | Zustand 5 |
+| Styling | Tailwind CSS 4.2 |
 | UI primitives | Radix UI |
-| Build | Vite |
+| Build | Vite 8 |
 | Smart home integration | `home-assistant-js-websocket` |
-| Testing | Vitest |
-| Formatting and linting | Biome |
+| Testing | Vitest 4 |
+| Formatting and linting | Biome 2 |
 | Workshop | Storybook |
 
 ## Architecture
@@ -84,6 +84,7 @@ Current feature folders include:
 - `media`
 - `notifications`
 - `person`
+- `power`
 - `rss`
 - `scenes`
 - `security`
@@ -99,11 +100,14 @@ Cross-feature UI lives under [`src/app/components/`](/Users/vishal/Development/G
 - `system/` for the curated public export surface used by Storybook and cross-app discovery
 - `shared/` for app-specific shared UI and compatibility shims
 - `layout/` and `ui/` for shell-level and wrapper components
+- `figma/` for design integration components
 
 ### State and services
 
 - All shared reactive state lives in Zustand stores under
   [`src/app/stores/`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores)
+- Current stores: `auth-store`, `config-store`, `edit-mode-store`, `error-store`,
+  `home-assistant-store`, `navigation-store`, `search-store`, `settings-store`, `theme-store`
 - Home Assistant data flows through
   [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
   and into the store via typed events

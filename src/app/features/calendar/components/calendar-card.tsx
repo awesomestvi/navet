@@ -71,7 +71,6 @@ export const CalendarCard = memo(function CalendarCard({
         interactive={!inEditMode}
         className={`
           group transition-all duration-300
-          ${theme === 'light' ? 'shadow-lg' : 'shadow-lg hover:shadow-xl'}
           ${!inEditMode ? 'cursor-pointer' : ''}
         `}
         frameClassName={hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}

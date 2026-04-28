@@ -1,6 +1,6 @@
 # Navet
 
-Navet is a smart home dashboard PWA built on React 19 + TypeScript 5 + Zustand + Tailwind CSS 4.
+Navet is a smart home dashboard PWA built on React 19 + TypeScript 6 + Zustand 5 + Tailwind CSS 4.2.
 Connects to Home Assistant over WebSocket.
 
 ---
@@ -35,12 +35,12 @@ If a commit or hook is blocked by TypeScript errors, fix the type errors instead
 
 | Layer | Tool |
 |---|---|
-| Framework | React 19, TypeScript 5 (strict) |
-| Build | Vite 6, pnpm |
-| Styling | Tailwind CSS 4, Radix UI |
-| State | Zustand (all shared state) |
+| Framework | React 19, TypeScript 6 (strict) |
+| Build | Vite 8, pnpm |
+| Styling | Tailwind CSS 4.2, Radix UI |
+| State | Zustand 5 (all shared state) |
 | HA Integration | home-assistant-js-websocket |
-| Linting / Format | Biome |
+| Linting / Format | Biome 2 |
 
 ---
 
@@ -48,7 +48,7 @@ If a commit or hook is blocked by TypeScript errors, fix the type errors instead
 
 ```
 src/app/
-  features/        # 16+ domain modules — each owns its hooks, stores, components
+  features/        # 17+ domain modules — each owns its hooks, stores, components
   components/
     ui/            # Radix UI wrappers (buttons, dialogs, selects …)
     layout/        # Header, sidebar, navigation
@@ -56,6 +56,7 @@ src/app/
     patterns/      # Composed shared UI structures
     system/        # Curated public surface for Storybook and cross-app discovery
     shared/        # App-specific shared UI + compatibility shims
+    figma/         # Design integration components
   stores/          # All Zustand stores (auth, config, HA, settings, theme, navigation …)
   contexts/        # React Context — infrastructure only (i18n, loading, error boundary)
   services/        # HomeAssistantService — WebSocket + HA API
@@ -155,7 +156,6 @@ These rules apply to all code written for this project. Follow them before writi
 | `edit-mode-store` | Dashboard edit mode toggle |
 | `search-store` | Search query and filtered device ids |
 | `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
-| `dashboard-layout-store` | Dashboard card ordering, room ordering, visibility, custom cards (persisted) |
 
 ### Selector Usage
 

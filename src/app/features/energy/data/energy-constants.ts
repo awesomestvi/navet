@@ -1,4 +1,10 @@
-import type { EnergyConsumerCategory, EnergyFlowDatum } from '../types/energy.types';
+import { themeColorValues } from '@/app/components/shared/theme/theme-colors';
+import type {
+  EnergyConsumerCategory,
+  EnergyFlowDatum,
+  EnergyFlowSourceType,
+  EnergyNodeId,
+} from '../types/energy.types';
 
 export const FLOW_TO_NODE_ID: Record<string, string> = {
   battery: 'battery-pack',
@@ -31,3 +37,21 @@ export const HEATING_CATEGORIES: ReadonlySet<EnergyConsumerCategory> = new Set([
   'floor_heating',
   'hvac',
 ]);
+
+export const ENERGY_SOURCE_ACCENTS: Record<EnergyFlowSourceType, string> = {
+  solar: themeColorValues.yellow,
+  grid: themeColorValues.blue,
+  battery: themeColorValues.teal,
+  gas: themeColorValues.red,
+  renewable: themeColorValues.green,
+  home: themeColorValues.purple,
+};
+
+export const ENERGY_NODE_LAYOUT: Record<EnergyNodeId, { x: number; y: number }> = {
+  home: { x: 45, y: 50 },
+  renewable: { x: 15, y: 16 },
+  solar: { x: 15, y: 33 },
+  grid: { x: 13, y: 50 },
+  battery: { x: 15, y: 67 },
+  gas: { x: 15, y: 84 },
+};

@@ -83,4 +83,4 @@ This directory is the index for active Navet documentation.
 - When shared test harnesses, store-reset behavior, or service stubs change, update the testing references in the active docs
 - When new primitives, patterns, or test directories are added, update FEATURES.md and README.md
 
-Last updated: April 27, 2026
+Last updated: April 29, 2026
