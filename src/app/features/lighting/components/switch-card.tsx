@@ -131,7 +131,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           />
 
           <div className="relative flex h-full w-full flex-col justify-between text-left">
-            <div className="min-w-0 w-full pt-1">
+            <div className="min-w-0 w-full">
               <EntityCardTitleBlock
                 title={props.name}
                 subtitle={controller.entityType}
@@ -186,9 +186,9 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               {tintOverlay}
             </>
           }
-          contentClassName="h-full"
+          contentClassName="flex items-center"
         >
-          <div className="relative flex h-full items-center">
+          <div className="relative w-full">
             <EntityCardHeader
               title={props.name}
               subtitle={controller.entityType}

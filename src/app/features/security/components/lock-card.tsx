@@ -6,7 +6,7 @@ import {
   EntityCardHeaderIcon,
   SlideAction,
 } from '@/app/components/primitives';
-import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
@@ -23,13 +23,7 @@ interface LockCardProps {
   isEditMode?: boolean;
 }
 
-const LOCK_CARD_ALLOWED_SIZES: CardSize[] = ['extra-small', 'small'];
-
-function resolveLockCardSize(size: CardSize): Extract<CardSize, 'extra-small' | 'small'> {
-  if (LOCK_CARD_ALLOWED_SIZES.includes(size)) {
-    return size as Extract<CardSize, 'extra-small' | 'small'>;
-  }
-
+function resolveLockCardSize(_size: CardSize): 'small' {
   return 'small';
 }
 
@@ -81,7 +75,6 @@ export const LockCard = memo(function LockCard({
   const securitySurface = getSecurityCardSurfaceTokens(theme);
   const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
   const resolvedSize = resolveLockCardSize(size);
-  const isExtraSmall = isExtraSmallCardSize(resolvedSize);
   const isVehicleLock = isVehicleLockEntity(id, name, liveAttributes);
   const IconComponent = isVehicleLock ? CarFront : isLocked ? Lock : Unlock;
   const completionIcon = isVehicleLock ? CarFront : isLocked ? Unlock : Lock;
@@ -149,60 +142,6 @@ export const LockCard = memo(function LockCard({
   const headerSubtitleClassName = isLocked
     ? stateIconClassName
     : `${theme === 'light' ? 'text-red-700' : 'text-red-200'} font-semibold uppercase tracking-[0.16em]`;
-
-  if (isExtraSmall) {
-    return (
-      <BaseCard
-        size="extra-small"
-        className={`${isPendingAction ? 'opacity-80' : ''}`}
-        frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-        style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
-        disableDefaultSheen
-        overlay={
-          <>
-            <div
-              className={`absolute inset-0 bg-linear-to-br ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
-            />
-            {isLocked && blackActiveSurface?.innerOverlayClassName ? (
-              <div
-                className={blackActiveSurface.innerOverlayClassName}
-                style={blackActiveSurface.innerOverlayStyle}
-              />
-            ) : null}
-            <div className={`absolute inset-0 ${overlayTintClassName}`} />
-            {isLocked && blackActiveSurface?.shineOverlayClassName ? (
-              <div className={blackActiveSurface.shineOverlayClassName} />
-            ) : null}
-          </>
-        }
-      >
-        <div className="relative flex h-full min-h-0 flex-col justify-between gap-1.5">
-          <EntityCardHeader
-            title={name}
-            subtitle={statusLabel}
-            layout="eyebrow-first"
-            size="extra-small"
-            tone={headerTone}
-            accentColor={activeBaseColor}
-            leading={headerLeading}
-            titleClassName={`${headerTitleClassName} text-[12px]`}
-            subtitleClassName={headerSubtitleClassName}
-            marginBottomClassName="mb-0"
-          />
-
-          <SlideAction
-            actionLabel={swipeLabel}
-            ariaLabel={swipeLabel}
-            completionIcon={completionIcon}
-            disabled={isEditMode || isPendingAction}
-            onComplete={handleToggleLock}
-            size="extra-small"
-            theme={theme}
-          />
-        </div>
-      </BaseCard>
-    );
-  }
 
   return (
     <BaseCard

@@ -198,16 +198,8 @@ export function getDialogHeightClassName(height: NavetDialogHeight) {
   return navetControlTokens.dialog.maxHeightClassNames[height];
 }
 
-export function getBaseCardRadiusClassName(size: CardSize) {
-  if (size === 'tiny') {
-    return 'rounded-[26px]';
-  }
-
-  if (size === 'large' || size === 'extra-large') {
-    return 'rounded-[32px]';
-  }
-
-  return 'rounded-3xl';
+export function getBaseCardRadiusClassName(_size: CardSize) {
+  return navetRadiusTokens.panelInset;
 }
 
 export function getBaseCardGapClassName(size: CardSize) {

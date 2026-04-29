@@ -21,6 +21,10 @@ import { HVACModeControls } from './hvac-mode-controls';
 import { HVACTempControls } from './hvac-temp-controls';
 import { useHVACCardController } from './use-hvac-card-controller';
 
+function resolveHVACCardSize(size: HVACCardProps['size']): 'small' | 'medium' {
+  return size === 'small' ? 'small' : 'medium';
+}
+
 export const HVACCard = memo(function HVACCard({
   id,
   name,
@@ -36,6 +40,7 @@ export const HVACCard = memo(function HVACCard({
 }: HVACCardProps) {
   const { t } = useI18n();
   const { accentColor } = useTheme();
+  const resolvedSize = resolveHVACCardSize(size);
   const controller = useHVACCardController({
     id,
     name,
@@ -45,7 +50,7 @@ export const HVACCard = memo(function HVACCard({
     initialAction,
     initialState,
     isEditMode,
-    size,
+    size: resolvedSize,
   });
   const cardShell = getCardShellSurfaceTokens(controller.theme);
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
@@ -167,7 +172,7 @@ export const HVACCard = memo(function HVACCard({
             title={name}
             subtitle={t('climate.subtitle')}
             layout="eyebrow-first"
-            size={size}
+            size={resolvedSize}
             tone={tone}
             titleClassName={stateSurface.primaryTextClassName}
             subtitleClassName={stateSurface.mutedTextClassName}
@@ -175,7 +180,7 @@ export const HVACCard = memo(function HVACCard({
               <EntityCardHeaderIcon
                 IconComponent={HeaderIcon}
                 isActive={controller.isOn}
-                size={size}
+                size={resolvedSize}
                 tone={tone}
                 ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                 onClick={controller.cardInteraction.iconButtonProps.onClick}
@@ -220,15 +225,17 @@ export const HVACCard = memo(function HVACCard({
                     theme={controller.theme}
                     size="small"
                     leftContent={
-                      <div className="relative z-[3]">
-                        <HVACTempControls
-                          targetTemp={controller.targetTemp}
-                          onTempChange={controller.setTargetTemp}
-                          onTempCommit={controller.commitTargetTemp}
-                          isOn={controller.isOn}
-                          size="small"
-                        />
-                      </div>
+                      <CardActionRowGroup>
+                        <div className="relative z-[3]">
+                          <HVACTempControls
+                            targetTemp={controller.targetTemp}
+                            onTempChange={controller.setTargetTemp}
+                            onTempCommit={controller.commitTargetTemp}
+                            isOn={controller.isOn}
+                            size="small"
+                          />
+                        </div>
+                      </CardActionRowGroup>
                     }
                     rightContent={
                       <div className="relative z-[3]">

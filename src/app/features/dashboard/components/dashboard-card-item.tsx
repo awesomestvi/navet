@@ -171,16 +171,21 @@ function getAllowedSizes(
       return ['small', 'medium', 'medium-vertical', 'large'];
     case 'grouped-sensors':
       return ['small', 'medium'];
+    case 'hvac':
+    case 'climate':
+      return ['small', 'medium'];
     case 'calendars':
       return ['small', 'medium', 'large'];
     case 'weather':
       return ['small', 'medium', 'large'];
     case 'switches':
       return ['tiny', 'extra-small', 'small'];
+    case 'helpers':
+      return ['tiny', 'extra-small', 'small'];
     case 'persons':
       return ['tiny', 'extra-small', 'small'];
     case 'locks':
-      return ['extra-small', 'small'];
+      return ['small'];
     case 'scenes':
       return ['tiny', 'extra-small', 'small', 'medium'];
     default:

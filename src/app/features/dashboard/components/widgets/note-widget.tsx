@@ -72,11 +72,19 @@ export function NoteWidget({
     : undefined;
   const noteReadInsetClassName = 'pl-8.75 pr-3 pt-3';
   const noteEditInsetClassName = 'pl-8.75 pr-3 pt-3';
+  const ruledLinesOverlayClassName =
+    'pointer-events-none absolute left-9 right-3 top-3 bottom-6 rounded-[10px]';
+  const ruledLineHeight = 24;
   const noteTheme =
     theme === 'light'
       ? {
-          ruledLineClassName:
-            'bg-[repeating-linear-gradient(180deg,transparent_0,transparent_23px,rgba(115,115,115,0.08)_23px,rgba(115,115,115,0.08)_24px)] bg-[position:0_12px]',
+          ruledLineStyle: {
+            backgroundImage:
+              'repeating-linear-gradient(180deg, transparent 0 23px, rgba(115,115,115,0.06) 23px 24px)',
+            backgroundSize: `100% ${ruledLineHeight}px`,
+            backgroundPosition: '0 0',
+            maskImage: 'linear-gradient(180deg, transparent 0, black 14px, black 86%, transparent)',
+          } satisfies CSSProperties,
           editorTopSheenStyle: {
             background: 'transparent',
           },
@@ -86,8 +94,14 @@ export function NoteWidget({
         }
       : theme === 'black'
         ? {
-            ruledLineClassName:
-              'bg-[repeating-linear-gradient(180deg,transparent_0,transparent_23px,rgba(113,113,122,0.18)_23px,rgba(113,113,122,0.18)_24px)] bg-[position:0_12px]',
+            ruledLineStyle: {
+              backgroundImage:
+                'repeating-linear-gradient(180deg, transparent 0 23px, rgba(113,113,122,0.14) 23px 24px)',
+              backgroundSize: `100% ${ruledLineHeight}px`,
+              backgroundPosition: '0 0',
+              maskImage:
+                'linear-gradient(180deg, transparent 0, black 14px, black 86%, transparent)',
+            } satisfies CSSProperties,
             editorTopSheenStyle: {
               background:
                 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.015) 100%)',
@@ -98,8 +112,14 @@ export function NoteWidget({
             textareaClassName: `h-full min-h-0 w-full resize-none border-0 bg-transparent pb-[68px] ${noteEditInsetClassName} align-top ${navetTypographyTokens.body} text-[var(--color-gray-300)] placeholder:text-[color-mix(in_srgb,var(--color-gray-300)_56%,transparent)] shadow-none`,
           }
         : {
-            ruledLineClassName:
-              'bg-[repeating-linear-gradient(180deg,transparent_0,transparent_23px,rgba(148,163,184,0.16)_23px,rgba(148,163,184,0.16)_24px)] bg-[position:0_12px]',
+            ruledLineStyle: {
+              backgroundImage:
+                'repeating-linear-gradient(180deg, transparent 0 23px, rgba(148,163,184,0.12) 23px 24px)',
+              backgroundSize: `100% ${ruledLineHeight}px`,
+              backgroundPosition: '0 0',
+              maskImage:
+                'linear-gradient(180deg, transparent 0, black 14px, black 86%, transparent)',
+            } satisfies CSSProperties,
             editorTopSheenStyle: {
               background:
                 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 100%)',
@@ -135,9 +155,7 @@ export function NoteWidget({
             style={binderHolesStyle}
             aria-hidden="true"
           />
-          <div
-            className={`pointer-events-none absolute inset-x-0 top-0 bottom-6 ${noteTheme.ruledLineClassName}`}
-          />
+          <div className={ruledLinesOverlayClassName} style={noteTheme.ruledLineStyle} />
 
           {isEditing ? (
             <>
@@ -176,7 +194,7 @@ export function NoteWidget({
             >
               <Text
                 as="p"
-                className={`relative z-10 flex-1 whitespace-pre-wrap pb-3 ${noteReadInsetClassName} text-left text-pretty ${
+                className={`relative z-10 m-0 flex-1 whitespace-pre-wrap pb-3 ${noteReadInsetClassName} text-left text-pretty ${
                   note.length === 0 ? noteTheme.emptyNoteTextClassName : noteTheme.noteTextClassName
                 }`}
               >

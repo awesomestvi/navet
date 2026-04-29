@@ -35,8 +35,8 @@ describe('system tokens', () => {
   });
 
   it('keeps base-card shape decisions centralized', () => {
-    expect(getBaseCardRadiusClassName('tiny')).toBe('rounded-[26px]');
-    expect(getBaseCardRadiusClassName('large')).toBe('rounded-[32px]');
+    expect(getBaseCardRadiusClassName('tiny')).toBe('rounded-[24px]');
+    expect(getBaseCardRadiusClassName('large')).toBe('rounded-[24px]');
     expect(getBaseCardGapClassName('extra-small')).toBe('gap-2.5');
     expect(getBaseCardGapClassName('medium')).toBe('gap-3');
   });

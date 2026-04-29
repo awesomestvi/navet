@@ -2,7 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import { type ButtonHTMLAttributes, memo } from 'react';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
-import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 
@@ -27,9 +28,35 @@ export const LightCardHeader = memo(function LightCardHeader({
   onIconPointerDown,
   iconAriaLabel,
 }: LightCardHeaderProps) {
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
+  const isExtraSmall = isExtraSmallCardSize(size);
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    tone: isOn ? 'primary' : 'neutral',
+    accentColor,
+    baseColor: isOn ? accentColor : undefined,
+  });
+
+  if (isExtraSmall) {
+    return (
+      <div className="mb-1 min-w-0">
+        <div
+          className={`truncate text-[10px] leading-[12px] ${stateSurface.mutedTextClassName}`}
+          style={{ color: textTokens.subtitleColor }}
+        >
+          {t('lighting.type.light')}
+        </div>
+        <div
+          className={`truncate text-[11px] font-semibold leading-[14px] ${stateSurface.primaryTextClassName}`}
+          style={{ color: textTokens.titleColor }}
+        >
+          {name}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <EntityCardHeader

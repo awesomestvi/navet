@@ -1,5 +1,5 @@
-import { Battery, BatteryLow, Palette, Sliders } from 'lucide-react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { Battery, Palette, Sliders } from 'lucide-react';
+import { memo, useEffect, useId, useMemo, useState } from 'react';
 import {
   CardDialogHeader,
   CardDialogSection,
@@ -47,6 +47,54 @@ interface BatteryOverviewWidgetProps {
   isEditMode?: boolean;
   room?: string;
   onRoomChange?: (room: string) => void;
+}
+
+interface BatteryLevelIconProps {
+  level: number;
+  color: string;
+  className?: string;
+}
+
+function BatteryLevelIcon({ level, color, className }: BatteryLevelIconProps) {
+  const clampedLevel = Math.max(0, Math.min(100, level));
+  const fillWidth = (clampedLevel / 100) * 11;
+  const maskId = useId();
+
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="2.25" y="5" width="14.5" height="10" rx="2.25" stroke={color} strokeWidth="1.5" />
+      <rect x="17.25" y="8" width="1.75" height="4" rx="0.75" fill={color} />
+      <defs>
+        <clipPath id={maskId}>
+          <rect x="4" y="6.75" width={fillWidth} height="6.5" rx="1.1" />
+        </clipPath>
+      </defs>
+      <rect
+        x="4"
+        y="6.75"
+        width="11"
+        height="6.5"
+        rx="1.1"
+        fill={color}
+        opacity={clampedLevel <= 20 ? 0.28 : 0.18}
+      />
+      <rect
+        x="4"
+        y="6.75"
+        width="11"
+        height="6.5"
+        rx="1.1"
+        fill={color}
+        clipPath={`url(#${maskId})`}
+      />
+    </svg>
+  );
 }
 
 function getSelectedEntityIds(value: unknown): string[] | undefined {
@@ -377,14 +425,11 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
               <ul className="mt-auto min-w-0 space-y-1.5">
                 {filteredBatteries.map((device) => (
                   <li key={device.id} className="flex min-w-0 items-center gap-2">
-                    {device.level <= 20 ? (
-                      <BatteryLow className="h-3.5 w-3.5 shrink-0 text-red-400" />
-                    ) : (
-                      <Battery
-                        className="h-3.5 w-3.5 shrink-0"
-                        style={{ color: getLevelColor(device.level) }}
-                      />
-                    )}
+                    <BatteryLevelIcon
+                      level={device.level}
+                      color={getLevelColor(device.level)}
+                      className="h-3.5 w-3.5 shrink-0"
+                    />
                     <span className={`min-w-0 flex-1 truncate text-xs ${surface.textSecondary}`}>
                       {device.name}
                     </span>

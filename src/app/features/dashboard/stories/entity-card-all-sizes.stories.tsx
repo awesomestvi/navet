@@ -14,6 +14,7 @@ const SIZES: CardSize[] = [
   'large',
   'extra-large',
 ];
+const HVAC_SIZES: CardSize[] = ['small', 'medium'];
 
 function AllSizesPage() {
   return (
@@ -43,7 +44,7 @@ function AllSizesPage() {
       <section className="space-y-3">
         <h2 className="text-base font-semibold">HVAC</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {SIZES.map((size) => (
+          {HVAC_SIZES.map((size) => (
             <div key={`hvac-${size}`} className="space-y-1">
               <p className="text-xs uppercase tracking-wide opacity-70">{size}</p>
               <HVACCard

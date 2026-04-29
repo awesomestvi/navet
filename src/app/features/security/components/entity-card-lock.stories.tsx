@@ -52,7 +52,7 @@ const meta = {
     },
     size: {
       control: 'inline-radio',
-      options: ['extra-small', 'small'],
+      options: ['small'],
     },
   },
   args: {
@@ -83,7 +83,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
   args: {
-    size: 'extra-small',
+    size: 'small',
     initialState: true,
     id: 'lock.front_door',
     name: 'Front Door',
@@ -108,28 +108,10 @@ export const Playground: Story = {
   },
 };
 
-export const ExtraSmall: Story = {
-  args: {
-    size: 'extra-small',
-    initialState: true,
-    id: 'lock.front_door',
-    name: 'Front Door',
-  },
-};
-
 export const Small: Story = {
   args: {
     size: 'small',
     initialState: true,
-    id: 'lock.front_door',
-    name: 'Front Door',
-  },
-};
-
-export const ExtraSmallUnlocked: Story = {
-  args: {
-    size: 'extra-small',
-    initialState: false,
     id: 'lock.front_door',
     name: 'Front Door',
   },

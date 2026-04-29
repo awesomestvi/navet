@@ -3,6 +3,7 @@ import { memo } from 'react';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { navetSpacingTokens } from '@/app/components/system/tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 
 interface HVACTempControlsProps {
@@ -28,7 +29,7 @@ export const HVACTempControls = memo(function HVACTempControls({
   const hoverScale = isCompact ? 'hover:scale-105' : '';
 
   return (
-    <>
+    <div className={`flex items-center ${navetSpacingTokens.inline.xs}`}>
       <RoundControlButton
         theme={theme}
         size={primitiveSize}
@@ -59,6 +60,6 @@ export const HVACTempControls = memo(function HVACTempControls({
       >
         <Plus className={controlSizes.icon} />
       </RoundControlButton>
-    </>
+    </div>
   );
 });

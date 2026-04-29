@@ -159,7 +159,9 @@ export const PersonCard = memo(function PersonCard({
       }
       contentClassName="h-full"
     >
-      <div className={`relative flex h-full items-end ${padding}`}>
+      <div
+        className={`relative flex h-full ${isExtraSmall ? 'items-center' : 'items-end'} ${padding}`}
+      >
         <div className="min-w-0 max-w-full">
           <div
             className={`truncate text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] ${eyebrowTextClassName}`}

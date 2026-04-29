@@ -101,7 +101,7 @@ export const SceneCard = memo(function SceneCard({
         )}
 
         <div className="relative flex h-full w-full flex-col justify-between text-left">
-          <div className="min-w-0 w-full pt-1">
+          <div className="min-w-0 w-full">
             <EntityCardTitleBlock
               title={name}
               subtitle={t('deviceType.scene')}

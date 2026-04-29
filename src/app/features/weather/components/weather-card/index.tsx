@@ -92,6 +92,14 @@ export const WeatherCard = memo(function WeatherCard({
   const summaryLabel = formatWeatherConditionLabel(condition);
   const headerIconClassName = isSmall || usesDetailedLayout ? 'h-11 w-11' : 'h-10 w-10';
   const showHourlyForecast = effectiveForecastMode === 'hourly';
+  const compactLocationTextClassName = isSmall ? 'text-[13px]' : 'text-sm';
+  const compactTemperatureTextClassName = isSmall ? 'text-[2rem]' : 'text-3xl';
+  const compactMetaTextClassName = isSmall ? 'text-xs' : 'text-sm';
+  const compactSummaryTextClassName = isSmall ? 'text-xs' : 'text-sm';
+  const compactForecastDayTextClassName = isSmall ? 'text-xs' : 'text-sm';
+  const compactForecastIconClassName = isSmall ? 'mx-auto mb-1 h-5 w-5' : 'mx-auto mb-1 h-6 w-6';
+  const compactForecastValueClassName = isSmall ? 'text-xs leading-none' : 'text-sm leading-none';
+  const compactHeaderIconClassName = isSmall ? 'h-9 w-9' : headerIconClassName;
 
   const textPrimary = weatherTextTreatment.primary;
   const textSecondary = weatherTextTreatment.secondary;
@@ -175,9 +183,9 @@ export const WeatherCard = memo(function WeatherCard({
           />
         ) : null}
 
-        <div className="relative z-2 flex h-full flex-col p-3">
+        <div className="relative z-2 flex h-full min-h-0 flex-col p-3">
           <div
-            className={`flex items-start justify-between gap-3 ${isMedium || isSmall ? 'mb-2' : 'mb-3'}`}
+            className={`flex items-start justify-between ${isSmall ? 'gap-2 mb-1.5' : isMedium ? 'mb-2 gap-3' : 'mb-3 gap-3'}`}
           >
             <div className="min-w-0">
               <div className="inline-flex min-w-0 items-center gap-2">
@@ -186,9 +194,7 @@ export const WeatherCard = memo(function WeatherCard({
                   style={iconStyleSecondary}
                 />
                 <div
-                  className={`truncate ${
-                    isMedium || isSmall ? 'text-sm' : 'text-base'
-                  } font-semibold tracking-[-0.03em]`}
+                  className={`truncate ${isMedium || isSmall ? compactLocationTextClassName : 'text-base'} font-semibold tracking-[-0.03em]`}
                   style={titleStyle}
                 >
                   {cityName}
@@ -196,11 +202,14 @@ export const WeatherCard = memo(function WeatherCard({
               </div>
 
               {isMedium || isSmall ? (
-                <div className="mt-1.5">
-                  <div className="mb-1 text-3xl font-bold leading-none" style={titleStyle}>
+                <div className={isSmall ? 'mt-1' : 'mt-1.5'}>
+                  <div
+                    className={`font-bold leading-none ${compactTemperatureTextClassName} ${isSmall ? 'mb-0.5' : 'mb-1'}`}
+                    style={titleStyle}
+                  >
                     {temperature}°C
                   </div>
-                  <div className="text-sm" style={subtitleStyle}>
+                  <div className={compactMetaTextClassName} style={subtitleStyle}>
                     H:{highTemp}° L:{lowTemp}°
                   </div>
                 </div>
@@ -209,10 +218,13 @@ export const WeatherCard = memo(function WeatherCard({
             <div className="shrink-0 text-right">
               <WeatherIcon
                 condition={condition}
-                className={`${headerIconClassName} ml-auto shrink-0`}
+                className={`${isMedium || isSmall ? compactHeaderIconClassName : headerIconClassName} ml-auto shrink-0`}
                 style={iconStylePrimary}
               />
-              <div className="mt-1 text-sm font-medium leading-tight" style={subtitleStyle}>
+              <div
+                className={`${isSmall ? 'mt-0.5 max-w-18' : 'mt-1'} ${compactSummaryTextClassName} font-medium leading-tight`}
+                style={subtitleStyle}
+              >
                 {summaryLabel}
               </div>
             </div>
@@ -221,23 +233,33 @@ export const WeatherCard = memo(function WeatherCard({
           {isSmall || isMedium ? (
             <div className="flex h-full flex-col">
               {visibleForecast.length > 0 ? (
-                <div className="mt-auto flex w-full items-start justify-between">
+                <div
+                  className={`mt-auto flex w-full items-start justify-between ${isSmall ? 'gap-1' : 'gap-2'}`}
+                >
                   {visibleForecast.map((day) => (
                     <div key={day.day} className="min-w-0 text-center">
-                      <div className="mb-1 text-sm" style={iconStyleSecondary}>
+                      <div
+                        className={`mb-1 ${compactForecastDayTextClassName}`}
+                        style={iconStyleSecondary}
+                      >
                         {day.day}
                       </div>
                       <WeatherIcon
                         condition={day.condition}
-                        className="mx-auto mb-1 h-6 w-6"
+                        className={compactForecastIconClassName}
                         style={iconStylePrimary}
                       />
                       {showHourlyForecast ? (
-                        <div className="text-sm font-medium leading-none" style={titleStyle}>
+                        <div
+                          className={`${compactForecastValueClassName} font-medium`}
+                          style={titleStyle}
+                        >
                           {day.high}°
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center gap-1.5 text-sm leading-none">
+                        <div
+                          className={`flex items-center justify-center ${isSmall ? 'gap-1' : 'gap-1.5'} ${compactForecastValueClassName}`}
+                        >
                           <span className="font-medium" style={titleStyle}>
                             {day.high}°
                           </span>
@@ -250,8 +272,8 @@ export const WeatherCard = memo(function WeatherCard({
               ) : null}
             </div>
           ) : (
-            <div className="mt-auto">
-              <div className="mb-3 flex items-end justify-between">
+            <div className="mt-auto flex min-h-0 flex-col">
+              <div className="flex items-end justify-between gap-4">
                 <div className="shrink-0">
                   <div className="mb-1 text-3xl font-bold leading-none" style={titleStyle}>
                     {temperature}°C
@@ -300,23 +322,23 @@ export const WeatherCard = memo(function WeatherCard({
                 </div>
               </div>
 
-              <div className="my-8 flex items-center justify-between px-1">
+              <div className="my-5 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <Sunrise className="h-4 w-4" style={iconStyleSecondary} />
                   <span className="text-sm font-medium" style={titleStyle}>
                     {sunrise}
                   </span>
                 </div>
-                <div className="mx-4 flex flex-1 items-center">
+                <div className="mx-3 flex min-w-0 flex-1 items-center">
                   <div
                     className="flex-1 border-t border-dashed"
                     style={{ borderColor: textSecondary }}
                   />
                 </div>
-                <div className="mx-2 text-sm" style={subtitleStyle}>
+                <div className="shrink-0 text-sm" style={subtitleStyle}>
                   {daylight}
                 </div>
-                <div className="mx-4 flex flex-1 items-center">
+                <div className="mx-3 flex min-w-0 flex-1 items-center">
                   <div
                     className="flex-1 border-t border-dashed"
                     style={{ borderColor: textSecondary }}
@@ -331,11 +353,11 @@ export const WeatherCard = memo(function WeatherCard({
               </div>
 
               {visibleForecast.length > 0 && (
-                <div className="flex justify-between gap-3">
+                <div className="flex justify-between gap-2">
                   {visibleForecast.map((day) => (
                     <div key={day.day} className="min-w-0 text-center">
                       <div
-                        className="mb-2 text-sm"
+                        className="mb-1.5 text-sm"
                         style={{
                           color: textSecondary,
                           textShadow: weatherTextTreatment.textShadow,
@@ -345,7 +367,7 @@ export const WeatherCard = memo(function WeatherCard({
                       </div>
                       <WeatherIcon
                         condition={day.condition}
-                        className="mx-auto mb-2 h-8 w-8"
+                        className="mx-auto mb-1.5 h-7 w-7"
                         style={iconStylePrimary}
                       />
                       {showHourlyForecast ? (
@@ -354,7 +376,7 @@ export const WeatherCard = memo(function WeatherCard({
                         </div>
                       ) : (
                         <>
-                          <div className="mb-1 text-sm font-medium" style={titleStyle}>
+                          <div className="text-sm font-medium" style={titleStyle}>
                             {day.high}°
                           </div>
                           <div className="text-sm" style={subtitleStyle}>

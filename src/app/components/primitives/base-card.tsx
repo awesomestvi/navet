@@ -286,7 +286,12 @@ export function BaseCard({
   const hasContent = children !== null && children !== undefined && children !== false;
   const paddingClassName = fullBleed ? '' : getStandardCardPadding(size);
   const gapClassName = fullBleed ? '' : getBaseCardGapClassName(size);
-  const contentContainerClassName = fullBleed ? 'h-full' : `min-h-0 flex-1 ${contentClassName}`;
+  const centerStandaloneExtraSmallContent = isExtraSmall && !headerNode && !footerNode;
+  const contentContainerClassName = fullBleed
+    ? 'h-full'
+    : centerStandaloneExtraSmallContent
+      ? `min-h-0 h-full ${contentClassName}`
+      : `min-h-0 flex-1 ${contentClassName}`;
   const hasCustomFrameBackground =
     frameClassName.includes('bg-') ||
     backgroundClassName.includes('bg-') ||
@@ -342,7 +347,7 @@ export function BaseCard({
       <div className={`relative flex h-full min-h-0 flex-col ${innerClassName}`}>
         {isTiny ? (
           <div className="flex h-full w-full flex-col justify-between text-left">
-            <div className="min-w-0 w-full pt-1">{headerNode}</div>
+            <div className="min-w-0 w-full">{headerNode}</div>
             {hasContent ? (
               <div className={contentContainerClassName} style={contentTextStyle}>
                 {children}
