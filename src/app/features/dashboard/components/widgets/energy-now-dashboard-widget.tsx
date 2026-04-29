@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { Bolt, Palette, Sliders } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import {
@@ -28,12 +27,12 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
+import { useEnergyUsageSensorOptions } from '@/app/features/energy';
 import { EnergySparkline } from '@/app/features/energy/components/charts/energy-sparkline';
 import { useEnergyDashboard } from '@/app/features/energy/hooks/use-energy-dashboard';
 import { useEnergyLoadHistory } from '@/app/features/energy/hooks/use-energy-load-history';
 import type { EnergySeriesPoint } from '@/app/features/energy/types/energy.types';
-import { useDevices, useHomeAssistant, useI18n, useRooms, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 interface EnergyNowDashboardWidgetProps {
@@ -57,94 +56,6 @@ interface EnergySourceOption {
   todayUsageKWh: number;
   trendEntityId?: string;
   group: 'home' | 'sources' | 'devices';
-}
-
-function parsePowerEntityWatts(entity: HassEntity | undefined): number | null {
-  if (!entity) {
-    return null;
-  }
-
-  const raw = Number.parseFloat(String(entity.state));
-  if (!Number.isFinite(raw)) {
-    return null;
-  }
-
-  const unit = String(
-    entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement ?? ''
-  )
-    .trim()
-    .toUpperCase();
-
-  if (unit === 'W') {
-    return raw;
-  }
-  if (unit === 'KW') {
-    return raw * 1000;
-  }
-
-  const deviceClass = String(entity.attributes?.device_class ?? '').toLowerCase();
-  return deviceClass === 'power' ? raw : null;
-}
-
-function parseEnergyEntityKWh(entity: HassEntity | undefined): number | null {
-  if (!entity) {
-    return null;
-  }
-
-  const raw = Number.parseFloat(String(entity.state));
-  if (!Number.isFinite(raw)) {
-    return null;
-  }
-
-  const unit = String(
-    entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement ?? ''
-  )
-    .trim()
-    .toUpperCase();
-
-  if (unit === 'KWH') {
-    return raw;
-  }
-  if (unit === 'WH') {
-    return raw / 1000;
-  }
-  if (unit === 'MWH') {
-    return raw * 1000;
-  }
-
-  const deviceClass = String(entity.attributes?.device_class ?? '').toLowerCase();
-  return deviceClass === 'energy' ? raw : null;
-}
-
-function getEntityLabel(entityId: string, entity: HassEntity | undefined): string {
-  const friendlyName =
-    typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : '';
-  return friendlyName.trim() || entityId;
-}
-
-function inferRelatedPowerEntityId(
-  entityId: string,
-  entities: Record<string, HassEntity> | null | undefined
-): string | undefined {
-  const candidates = [
-    entityId.replace('_energy_usage', '_power_usage'),
-    entityId.replace('_energy_usage', '_power_consumed'),
-    entityId.replace('_energy_usage', '_power'),
-    entityId.replace('_energy_usage', '_power_now'),
-    entityId.replace('_energy_usage', '_current_power'),
-  ];
-
-  for (const candidate of candidates) {
-    if (candidate === entityId) {
-      continue;
-    }
-    const watts = parsePowerEntityWatts(entities?.[candidate]);
-    if (watts !== null) {
-      return candidate;
-    }
-  }
-
-  return parsePowerEntityWatts(entities?.[entityId]) !== null ? entityId : undefined;
 }
 
 function getSelectedSourceId(value: unknown): string | undefined {
@@ -583,9 +494,8 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
 }: EnergyNowDashboardWidgetProps) {
   const { accentColor } = useTheme();
   const { t } = useI18n();
-  const devices = useDevices();
-  const rooms = useRooms(devices);
-  const hassEntities = useHomeAssistant(homeAssistantSelectors.entities);
+  const rooms = useAreaRooms();
+  const extraUsageSensorOptions = useEnergyUsageSensorOptions();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const {
     overview,
@@ -662,50 +572,28 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     const usedTrendEntityIds = new Set(
       options.map((option) => option.trendEntityId).filter(Boolean)
     );
-    const extraUsageSensorOptions = Object.entries(hassEntities ?? {})
-      .filter(([entityId, entity]) => {
-        if (!entityId.startsWith('sensor.')) {
-          return false;
-        }
-
-        const friendlyName = getEntityLabel(entityId, entity).toLowerCase();
-        const haystack = `${entityId} ${friendlyName}`;
-
-        return (
-          entityId === 'sensor.power_consumed' ||
-          haystack.includes('_energy_usage') ||
-          haystack.includes(' energy usage')
-        );
-      })
-      .map(([entityId, entity]) => {
-        const trendEntityId = inferRelatedPowerEntityId(entityId, hassEntities) ?? entityId;
-        const currentPowerW = parsePowerEntityWatts(hassEntities?.[trendEntityId]) ?? 0;
-        const todayUsageKWh = parseEnergyEntityKWh(entity) ?? 0;
-
-        return {
-          id: `entity:${entityId}`,
-          name: getEntityLabel(entityId, entity),
-          currentPowerW,
-          todayUsageKWh,
-          trendEntityId,
+    options.push(
+      ...extraUsageSensorOptions
+        .filter(
+          (option) =>
+            !usedTrendEntityIds.has(option.trendEntityId) &&
+            (option.todayUsageKWh > 0 || option.currentPowerW > 0)
+        )
+        .map((option) => ({
+          ...option,
           group: 'devices' as const,
-        };
-      })
-      .filter(
-        (option) =>
-          !usedTrendEntityIds.has(option.trendEntityId) &&
-          (option.todayUsageKWh > 0 || option.currentPowerW > 0)
-      )
-      .sort((left, right) =>
-        right.todayUsageKWh === left.todayUsageKWh
-          ? right.currentPowerW - left.currentPowerW
-          : right.todayUsageKWh - left.todayUsageKWh
-      );
-
-    options.push(...extraUsageSensorOptions);
+        }))
+    );
 
     return options;
-  }, [currentLoadStatisticId, hassEntities, overview, sourceConfig, t, todayTotalUsageKWh]);
+  }, [
+    currentLoadStatisticId,
+    extraUsageSensorOptions,
+    overview,
+    sourceConfig,
+    t,
+    todayTotalUsageKWh,
+  ]);
 
   const selectedOption =
     sourceOptions.find((option) => option.id === selectedSourceId) ?? sourceOptions[0] ?? null;

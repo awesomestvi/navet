@@ -15,12 +15,22 @@ import { DashboardLayout } from '../shell';
 import { ENERGY_WIDGET_ROOM } from '../stores/custom-cards-store';
 import { HomeDashboardOverview } from './home-dashboard-overview';
 
-const lazySections = () => import('@/app/components/layout/sections');
-
-const SecuritySection = lazy(() => lazySections().then((m) => ({ default: m.SecuritySection })));
-const TasksSection = lazy(() => lazySections().then((m) => ({ default: m.TasksSection })));
-const LocksSection = lazy(() => lazySections().then((m) => ({ default: m.LocksSection })));
-const MediaSection = lazy(() => lazySections().then((m) => ({ default: m.MediaSection })));
+const SecuritySection = lazy(async () => {
+  const module = await import('@/app/components/layout/security-section');
+  return { default: module.SecuritySection };
+});
+const TasksSection = lazy(async () => {
+  const module = await import('@/app/components/layout/sections');
+  return { default: module.TasksSection };
+});
+const LocksSection = lazy(async () => {
+  const module = await import('@/app/components/layout/locks-section');
+  return { default: module.LocksSection };
+});
+const MediaSection = lazy(async () => {
+  const module = await import('@/app/components/layout/media-section');
+  return { default: module.MediaSection };
+});
 const EnergySection = lazy(async () => {
   const module = await import('@/app/features/energy');
   return { default: module.EnergySection };

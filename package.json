@@ -42,7 +42,7 @@
     "clsx": "2.1.1",
     "home-assistant-js-websocket": "^9.6.0",
     "leaflet": "^1.9.4",
-    "lucide-react": "1.11.0",
+    "lucide-react": "1.14.0",
     "react-leaflet": "^5.0.0",
     "sonner": "2.0.7",
     "tailwind-merge": "3.5.0",
@@ -52,11 +52,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
-    "@storybook/addon-a11y": "^10.3.5",
-    "@storybook/addon-docs": "10.3.5",
-    "@storybook/addon-vitest": "^10.3.5",
-    "@storybook/react": "10.3.5",
-    "@storybook/react-vite": "^10.3.5",
+    "@storybook/addon-a11y": "^10.3.6",
+    "@storybook/addon-docs": "10.3.6",
+    "@storybook/addon-vitest": "^10.3.6",
+    "@storybook/react": "10.3.6",
+    "@storybook/react-vite": "^10.3.6",
     "@tailwindcss/vite": "4.2.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -68,9 +68,9 @@
     "@vitest/browser-playwright": "^4.1.5",
     "@vitest/coverage-v8": "^4.1.5",
     "husky": "^9.1.7",
-    "jsdom": "^29.0.2",
+    "jsdom": "^29.1.0",
     "playwright": "^1.59.1",
-    "storybook": "^10.3.5",
+    "storybook": "^10.3.6",
     "tailwindcss": "4.2.4",
     "typescript": "^6.0.3",
     "vite": "8.0.10",
@@ -91,7 +91,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "8.0.7"
+      "vite": "8.0.10"
     }
   }
 }

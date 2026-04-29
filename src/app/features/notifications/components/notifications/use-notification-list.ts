@@ -3,6 +3,7 @@ import { shallow } from 'zustand/shallow';
 import { selectUpdateDomainEntities } from '@/app/hooks/ha-domain-entity-maps';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useI18n } from '@/app/i18n';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HaNotificationData } from './use-ha-notification-data';
 import type { Notification } from './use-notifications';
 
@@ -53,7 +54,7 @@ export function useNotificationList({
   pendingUpdateInstalls,
 }: UseNotificationListParams): Notification[] {
   const { t } = useI18n();
-  const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
+  const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
   const updateEntities = useHomeAssistant(selectUpdateDomainEntities, shallow);
 
   return useMemo<Notification[]>(() => {

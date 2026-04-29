@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import { type ReactElement, type ReactNode, useMemo } from 'react';
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CalendarCard } from '@/app/features/calendar';
@@ -12,6 +12,7 @@ import { GroupedSensorCard, SensorCard, type SensorReading } from '@/app/feature
 import { VacuumCard } from '@/app/features/vacuum';
 import { WeatherCard } from '@/app/features/weather';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import type { DeviceMetric } from '@/app/types/device.types';
 
 interface DeviceData {
@@ -46,6 +47,12 @@ function getAvailabilityEntityIds(device: DeviceData): string[] {
   return device.id.includes('.') ? [device.id] : [];
 }
 
+function createEntityStatesSelector(entityIds: string[]) {
+  return function selectEntityStates(state: HomeAssistantStore): Array<string | undefined> {
+    return entityIds.map((entityId) => state.entities?.[entityId]?.state);
+  };
+}
+
 function EntityAvailabilityFrame({
   device,
   isEditMode,
@@ -56,11 +63,9 @@ function EntityAvailabilityFrame({
   children: ReactNode;
 }) {
   const { t } = useI18n();
-  const entityIds = getAvailabilityEntityIds(device);
-  const entityStates = useHomeAssistant(
-    (state) => entityIds.map((entityId) => state.entities?.[entityId]?.state),
-    isSameEntityStateList
-  );
+  const entityIds = useMemo(() => getAvailabilityEntityIds(device), [device]);
+  const selectEntityStates = useMemo(() => createEntityStatesSelector(entityIds), [entityIds]);
+  const entityStates = useHomeAssistant(selectEntityStates, isSameEntityStateList);
   const isUnavailable =
     entityIds.length > 0 &&
     entityStates.length === entityIds.length &&

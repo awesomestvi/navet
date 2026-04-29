@@ -5,8 +5,7 @@ import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { useDevices, useRooms } from '@/app/hooks/use-devices';
+import { useAreaRooms, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSFeedCardProps } from './types';
@@ -31,8 +30,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 }: RSSFeedCardProps) {
   const { theme, colors, primaryColor } = useTheme();
   const { t } = useI18n();
-  const allDevices = useDevices();
-  const rooms = useRooms(allDevices);
+  const rooms = useAreaRooms();
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
   const primaryColorValue = getThemeColorValue(primaryColor);

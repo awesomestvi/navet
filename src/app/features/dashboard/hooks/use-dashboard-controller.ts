@@ -39,7 +39,7 @@ export function useDashboardController(): DashboardController {
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const hassEntitiesHydrated = useHomeAssistant((state) => state.entities != null);
+  const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
     STORAGE_KEYS.allViewGrouping,

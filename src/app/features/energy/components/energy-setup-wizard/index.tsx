@@ -1,6 +1,6 @@
 import { AlertCircle, Plus, Sparkles, Trash2, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FieldBlock } from '@/app/components/patterns';
 import {
   Badge,
@@ -15,13 +15,13 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useEnergyEntityOptions } from '../../hooks/use-energy-entity-options';
 import { getEnergyPrefs, mapPrefsToConfig } from '../../services/energy-ha-service';
 import type { EnergySourceConfig } from '../../types/energy.types';
 import { EnergyQualityBar } from '../charts/energy-quality-bar';
 import { EnergyEntityPicker } from './energy-entity-picker';
 import {
   buildConfigFromDraft,
-  buildEnergyEntityOptions,
   createEnergySetupDraft,
   ENERGY_DEVICE_CATEGORY_OPTIONS,
   getEnergyCategoryLabel,
@@ -46,9 +46,8 @@ export function EnergySetupWizard({ initialConfig, onSave, onCancel }: EnergySet
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const deferredEntities = useDeferredValue(entities);
+  const { powerOptions, energyStatOptions, batteryOptions } = useEnergyEntityOptions();
 
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState(() => createEnergySetupDraft(initialConfig));
@@ -59,19 +58,6 @@ export function EnergySetupWizard({ initialConfig, onSave, onCancel }: EnergySet
 
   const quality = useMemo(() => scoreEnergySetupDraft(draft), [draft]);
   const essentialsComplete = useMemo(() => hasCompleteEssentials(draft), [draft]);
-  const powerOptions = useMemo(
-    () => buildEnergyEntityOptions(deferredEntities, 'power'),
-    [deferredEntities]
-  );
-  const energyStatOptions = useMemo(
-    () => buildEnergyEntityOptions(deferredEntities, 'energy-stat'),
-    [deferredEntities]
-  );
-  const batteryOptions = useMemo(
-    () => buildEnergyEntityOptions(deferredEntities, 'battery-soc'),
-    [deferredEntities]
-  );
-
   const pendingDeviceOption = energyStatOptions.find(
     (option) => option.value === pendingDeviceEntityId
   );

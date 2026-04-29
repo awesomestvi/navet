@@ -18,6 +18,7 @@ Use these docs when you are:
 
 - building or revising shared UI
 - changing card sizing or card-shell behavior
+- changing section-level layouts for locks, lights, media, security, or home overview
 - touching theme tokens, surface logic, or appearance controls
 - reorganizing Storybook taxonomy or stable exports
 - evaluating whether UI belongs in `primitives`, `patterns`, `shared`, or a feature module
@@ -91,6 +92,20 @@ This is also the temporary home for compatibility shims when a migration is in p
 Curated public exports for Storybook and stable discovery.
 
 Use `system/` to re-export mature shared pieces. Do not author new components there by default.
+
+### `src/app/components/layout/`
+
+App-shell and section-level layout composition for navigation, room controls, and domain-focused
+entity sections.
+
+This layer now includes reusable section shells such as:
+
+- `DeviceSectionLayout` for consistent empty-state and edit-mode handling
+- `EntityGrid` for grouped section content
+- specialized section modules for locks, media, and security
+
+Use `layout/` when the component owns app-level structure or cross-feature section composition,
+not when it is a portable primitive or feature-local card.
 
 ## Foundations and Tokens
 
@@ -223,6 +238,7 @@ Storybook covers:
 - foundation tokens
 - shared primitives and patterns
 - app shell components
+- layout-level shells and navigation surfaces
 - entity cards and custom widgets
 - dashboard flows
 - energy visuals
@@ -250,6 +266,7 @@ Use unit tests for:
 - token and helper logic with meaningful branching
 - shared hooks that depend on timers, viewport/media-query state, or persisted browser state
 - controller logic that composes store selectors and action handlers
+- setup helpers that score, infer, or merge feature configuration state
 
 Do not default to broad snapshot coverage for thin visual wrappers that are already exercised in
 Storybook.

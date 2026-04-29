@@ -185,19 +185,61 @@ function compareSortKeys(left: [number, number, string], right: [number, number,
   return left[2].localeCompare(right[2]);
 }
 
-/**
- * Maps raw Home Assistant entities to typed device collections.
- */
-export const useHADevices = (): DeviceCollection => {
+function createEmptyDeviceCollection(): DeviceCollection {
+  return {
+    lights: [],
+    hvac: [],
+    climate: [],
+    media: [],
+    weather: [],
+    switches: [],
+    helpers: [],
+    covers: [],
+    locks: [],
+    scenes: [],
+    persons: [],
+    sensors: [],
+    vacuums: [],
+    calendars: [],
+    cameras: [],
+    'grouped-sensors': [],
+  };
+}
+
+function useRegistryRoomResolver() {
   const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
+  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry, shallow);
+  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
+
+  const areaMap = useMemo(() => new Map(areas.map((area) => [area.area_id, area.name])), [areas]);
+  const entityRegistryMap = useMemo(
+    () => new Map(entityRegistry.map((registryEntry) => [registryEntry.entity_id, registryEntry])),
+    [entityRegistry]
+  );
+  const deviceRegistryMap = useMemo(
+    () => new Map(deviceRegistry.map((device) => [device.id, device])),
+    [deviceRegistry]
+  );
+
+  return {
+    areaMap,
+    areas,
+    deviceRegistry,
+    deviceRegistryMap,
+    entityRegistry,
+    entityRegistryMap,
+  };
+}
+
+export function useWeatherDevices(): WeatherDevice[] {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const config = useHomeAssistant(homeAssistantSelectors.config);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry, shallow);
   const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
+  const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
+
   const primaryWeatherEntityId = useMemo(() => {
     if (!entities) {
       return null;
@@ -205,6 +247,7 @@ export const useHADevices = (): DeviceCollection => {
 
     return Object.keys(entities).find((entityId) => entityId.startsWith('weather.')) ?? null;
   }, [entities]);
+
   const liveWeatherEntity = useHomeAssistant(
     useCallback(
       (state) =>
@@ -212,29 +255,9 @@ export const useHADevices = (): DeviceCollection => {
       [primaryWeatherEntityId]
     )
   );
-  const calendarEntityIds = useMemo(() => {
-    if (!entities) {
-      return [];
-    }
 
-    return Object.keys(entities)
-      .filter((entityId) => entityId.startsWith('calendar.'))
-      .sort((left, right) => left.localeCompare(right));
-  }, [entities]);
-  const liveCalendarEntities = useHomeAssistant(
-    useCallback(
-      (state) =>
-        Object.fromEntries(
-          calendarEntityIds.map((entityId) => [entityId, state.entities?.[entityId] ?? null])
-        ),
-      [calendarEntityIds]
-    ),
-    shallow
-  );
   const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
-  const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
   const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
-  const deferredCalendarEvents = useDeferredValue(calendarEvents);
 
   useEffect(() => {
     if (!connection || !primaryWeatherEntityId) {
@@ -288,6 +311,82 @@ export const useHADevices = (): DeviceCollection => {
     };
   }, [connection, primaryWeatherEntityId]);
 
+  return useMemo(() => {
+    if (!entities || !primaryWeatherEntityId) {
+      return [];
+    }
+
+    const weatherEntity = liveWeatherEntity ?? entities[primaryWeatherEntityId];
+    if (!weatherEntity) {
+      return [];
+    }
+
+    const room = resolveEntityRoom(
+      primaryWeatherEntityId,
+      weatherEntity,
+      areaMap,
+      entityRegistryMap,
+      deviceRegistryMap
+    );
+
+    return [
+      mapWeatherDevice(primaryWeatherEntityId, weatherEntity, getName(weatherEntity), room, {
+        sunEntity: entities['sun.sun'],
+        config,
+        weatherForecastMode,
+        storedForecasts: deferredWeatherForecasts[primaryWeatherEntityId],
+        locale,
+        t,
+        use24HourTime,
+      }),
+    ];
+  }, [
+    areaMap,
+    config,
+    deferredWeatherForecasts,
+    deviceRegistryMap,
+    entities,
+    entityRegistryMap,
+    liveWeatherEntity,
+    locale,
+    primaryWeatherEntityId,
+    t,
+    weatherForecastMode,
+    use24HourTime,
+  ]);
+}
+
+export function useCalendarDevices(): CalendarDevice[] {
+  const connection = useHomeAssistant(homeAssistantSelectors.connection);
+  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+  const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
+  const { locale, t } = useI18n();
+  const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
+
+  const calendarEntityIds = useMemo(() => {
+    if (!entities) {
+      return [];
+    }
+
+    return Object.keys(entities)
+      .filter((entityId) => entityId.startsWith('calendar.'))
+      .sort((left, right) => left.localeCompare(right));
+  }, [entities]);
+
+  const liveCalendarEntities = useHomeAssistant(
+    useCallback(
+      (state) =>
+        Object.fromEntries(
+          calendarEntityIds.map((entityId) => [entityId, state.entities?.[entityId] ?? null])
+        ),
+      [calendarEntityIds]
+    ),
+    shallow
+  );
+
+  const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
+  const deferredCalendarEvents = useDeferredValue(calendarEvents);
+
   useEffect(() => {
     if (!connection || calendarEntityIds.length === 0) {
       startTransition(() => {
@@ -337,30 +436,101 @@ export const useHADevices = (): DeviceCollection => {
   }, [calendarEntityIds, connection]);
 
   return useMemo(() => {
-    if (!entities) {
-      return {
-        lights: [],
-        hvac: [],
-        climate: [],
-        media: [],
-        weather: [],
-        switches: [],
-        helpers: [],
-        covers: [],
-        locks: [],
-        scenes: [],
-        persons: [],
-        sensors: [],
-        vacuums: [],
-        calendars: [],
-        cameras: [],
-        'grouped-sensors': [],
-      };
+    if (!entities || calendarEntityIds.length === 0) {
+      return [];
     }
 
-    const sunEntity = entities['sun.sun'];
-    const weatherEntity =
-      liveWeatherEntity ?? (primaryWeatherEntityId ? entities[primaryWeatherEntityId] : null);
+    const calendarSources: CalendarDevice['sources'] = [];
+    for (const entityId of calendarEntityIds) {
+      const entity = liveCalendarEntities[entityId] ?? entities[entityId];
+      if (!entity) {
+        continue;
+      }
+
+      const room = resolveEntityRoom(
+        entityId,
+        entity,
+        areaMap,
+        entityRegistryMap,
+        deviceRegistryMap
+      );
+      calendarSources.push(
+        ...mapCalendarSources(entityId, entity, getName(entity), room, {
+          calendarEvents: deferredCalendarEvents,
+          locale,
+          t,
+          use24HourTime,
+        })
+      );
+    }
+
+    if (calendarSources.length === 0) {
+      return [];
+    }
+
+    const roomSet = new Set(calendarSources.map((source) => source.room).filter(Boolean));
+    const fallbackEventColors = [
+      'bg-blue-500',
+      'bg-purple-500',
+      'bg-green-500',
+      'bg-orange-500',
+      'bg-indigo-500',
+    ] as const;
+    const singleRoom = roomSet.size === 1 ? roomSet.values().next().value : null;
+    const combinedEvents = calendarSources
+      .flatMap((source, index) =>
+        source.events.map((event) => ({
+          ...event,
+          color:
+            event.color || fallbackEventColors[index % fallbackEventColors.length] || 'bg-blue-500',
+        }))
+      )
+      .sort((left, right) => {
+        const leftKey = left.sortKey ?? left.startTime;
+        const rightKey = right.sortKey ?? right.startTime;
+        return leftKey.localeCompare(rightKey);
+      })
+      .slice(0, 12);
+
+    return [
+      {
+        id: 'calendar.navet_overview',
+        name: t('calendar.defaultTitle'),
+        room: singleRoom ?? UNKNOWN_ROOM_LABEL,
+        size: 'medium',
+        sourceIds: calendarSources.map((source) => source.id),
+        sources: calendarSources,
+        events: combinedEvents,
+      },
+    ];
+  }, [
+    areaMap,
+    calendarEntityIds,
+    deferredCalendarEvents,
+    deviceRegistryMap,
+    entities,
+    entityRegistryMap,
+    liveCalendarEntities,
+    locale,
+    t,
+    use24HourTime,
+  ]);
+}
+
+/**
+ * Maps raw Home Assistant entities to typed device collections.
+ */
+export const useHADevices = (): DeviceCollection => {
+  const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
+  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+  const { t } = useI18n();
+  const calendars = useCalendarDevices();
+  const weather = useWeatherDevices();
+
+  const baseDevices = useMemo(() => {
+    if (!entities) {
+      return createEmptyDeviceCollection();
+    }
 
     const lights: LightDevice[] = [];
     const switches: SwitchDevice[] = [];
@@ -372,15 +542,7 @@ export const useHADevices = (): DeviceCollection => {
     const locks: LockDevice[] = [];
     const scenes: SceneDevice[] = [];
     const vacuums: VacuumDevice[] = [];
-    const weather: WeatherDevice[] = [];
-    const calendars: CalendarDevice[] = [];
-    const calendarSources: CalendarDevice['sources'] = [];
     const cameras: CameraDevice[] = [];
-    const areaMap = new Map(areas.map((area) => [area.area_id, area.name]));
-    const entityRegistryMap = new Map(
-      entityRegistry.map((registryEntry) => [registryEntry.entity_id, registryEntry])
-    );
-    const deviceRegistryMap = new Map(deviceRegistry.map((device) => [device.id, device]));
     const switchMetricsByDeviceId = new Map<string, DeviceMetric[]>();
     const primarySwitchEntityIdByDeviceId = new Map<string, string>();
     const deviceIdsWithVacuumEntity = new Set<string>();
@@ -741,79 +903,10 @@ export const useHADevices = (): DeviceCollection => {
           break;
         }
 
-        case 'calendar': {
-          const sources = mapCalendarSources(
-            entityId,
-            liveCalendarEntities[entityId] ?? entity,
-            name,
-            room,
-            {
-              calendarEvents: deferredCalendarEvents,
-              locale,
-              t,
-              use24HourTime,
-            }
-          );
-          calendarSources.push(...sources);
+        case 'calendar':
+        case 'weather':
           break;
-        }
-
-        case 'weather': {
-          if (entityId !== primaryWeatherEntityId) {
-            break;
-          }
-
-          const mapped = mapWeatherDevice(entityId, weatherEntity ?? entity, name, room, {
-            sunEntity,
-            config,
-            weatherForecastMode,
-            storedForecasts: deferredWeatherForecasts[entityId],
-            locale,
-            t,
-            use24HourTime,
-          });
-          weather.push(mapped);
-          break;
-        }
       }
-    }
-
-    if (calendarSources.length > 0) {
-      const roomSet = new Set(calendarSources.map((source) => source.room).filter(Boolean));
-      const fallbackEventColors = [
-        'bg-blue-500',
-        'bg-purple-500',
-        'bg-green-500',
-        'bg-orange-500',
-        'bg-indigo-500',
-      ] as const;
-      const singleRoom = roomSet.size === 1 ? roomSet.values().next().value : null;
-      const combinedEvents = calendarSources
-        .flatMap((source, index) =>
-          source.events.map((event) => ({
-            ...event,
-            color:
-              event.color ||
-              fallbackEventColors[index % fallbackEventColors.length] ||
-              'bg-blue-500',
-          }))
-        )
-        .sort((left, right) => {
-          const leftKey = left.sortKey ?? left.startTime;
-          const rightKey = right.sortKey ?? right.startTime;
-          return leftKey.localeCompare(rightKey);
-        })
-        .slice(0, 12);
-
-      calendars.push({
-        id: 'calendar.navet_overview',
-        name: t('calendar.defaultTitle'),
-        room: singleRoom ?? UNKNOWN_ROOM_LABEL,
-        size: 'medium',
-        sourceIds: calendarSources.map((source) => source.id),
-        sources: calendarSources,
-        events: combinedEvents,
-      });
     }
 
     return {
@@ -821,7 +914,7 @@ export const useHADevices = (): DeviceCollection => {
       hvac: [],
       climate,
       media,
-      weather,
+      weather: [],
       switches,
       helpers,
       covers,
@@ -830,24 +923,18 @@ export const useHADevices = (): DeviceCollection => {
       persons,
       sensors: [],
       vacuums,
-      calendars,
+      calendars: [],
       cameras,
       'grouped-sensors': [],
     };
-  }, [
-    areas,
-    config,
-    deferredCalendarEvents,
-    deferredWeatherForecasts,
-    deviceRegistry,
-    entities,
-    entityRegistry,
-    liveCalendarEntities,
-    liveWeatherEntity,
-    locale,
-    primaryWeatherEntityId,
-    t,
-    weatherForecastMode,
-    use24HourTime,
-  ]);
+  }, [areaMap, deviceRegistryMap, entities, entityRegistryMap, t]);
+
+  return useMemo(
+    () => ({
+      ...baseDevices,
+      calendars,
+      weather,
+    }),
+    [baseDevices, calendars, weather]
+  );
 };

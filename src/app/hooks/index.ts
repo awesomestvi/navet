@@ -7,12 +7,18 @@ export type { TranslateFn } from '../i18n';
 export { useI18n } from '../i18n';
 export type { Section } from '../navigation/sections';
 export { isSection, NAVIGATION_SECTIONS } from '../navigation/sections';
+export { useAreaRooms } from './use-area-rooms';
 // Existing hooks
 export { useCardState } from './use-card-state';
 export { useClickOutside } from './use-click-outside';
 export { useDashboardDevices } from './use-dashboard-devices';
 export { useDeviceMap } from './use-device-map';
-export { useDevices, useRooms } from './use-devices';
+export {
+  useCalendarDevicesCollection,
+  useDevices,
+  useRooms,
+  useWeatherDevicesCollection,
+} from './use-devices';
 export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
 export { useHomeAssistant } from './use-home-assistant';

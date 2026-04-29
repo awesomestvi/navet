@@ -2,6 +2,8 @@ import { startTransition, useEffect, useState } from 'react';
 
 const INITIAL_BATCH = 8;
 const BATCH_SIZE = 8;
+const EDIT_MODE_INITIAL_BATCH = 16;
+const EDIT_MODE_BATCH_SIZE = 16;
 
 type IdleCallbackHandle = number;
 type IdleDeadlineLike = { didTimeout: boolean; timeRemaining: () => number };
@@ -40,9 +42,10 @@ export function useProgressiveBatching(
       return;
     }
 
-    setVisibleCount(Math.min(INITIAL_BATCH, totalCount));
+    const initialBatch = isEditMode ? EDIT_MODE_INITIAL_BATCH : INITIAL_BATCH;
+    setVisibleCount(Math.min(initialBatch, totalCount));
 
-    if (totalCount <= INITIAL_BATCH) {
+    if (totalCount <= initialBatch) {
       return;
     }
 
@@ -54,10 +57,11 @@ export function useProgressiveBatching(
     const scheduleNextBatch = () => {
       const runBatch = () => {
         if (cancelled) return;
+        const batchSize = isEditMode ? EDIT_MODE_BATCH_SIZE : BATCH_SIZE;
         startTransition(() => {
           setVisibleCount((current) => {
             if (current >= totalCount) return current;
-            const next = Math.min(current + BATCH_SIZE, totalCount);
+            const next = Math.min(current + batchSize, totalCount);
             if (next < totalCount) scheduleNextBatch();
             return next;
           });

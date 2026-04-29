@@ -1,8 +1,7 @@
-import { useCallback, useDeferredValue, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
 import { useEnergyDashboardStore } from '../stores/energy-dashboard-store';
@@ -15,6 +14,7 @@ import type {
   EnergySourceConfig,
   EnergyStat,
 } from '../types/energy.types';
+import { useInferredHomeLoadSensor } from './use-energy-entity-options';
 import { useEnergyStatisticsToday } from './use-energy-statistics-today';
 
 type EntityMap = Record<
@@ -188,74 +188,6 @@ function getConfiguredDevicePowerW(
   }, 0);
 }
 
-function getInferredHomeLoadPowerSensor(entities: EntityMap | null | undefined): {
-  entityId?: string;
-  watts: number;
-} {
-  if (!entities) {
-    return { entityId: undefined, watts: 0 };
-  }
-
-  const candidates = Object.entries(entities)
-    .filter(([entityId, entity]) => {
-      if (!entityId.startsWith('sensor.')) {
-        return false;
-      }
-
-      const unit = String(
-        entity.attributes?.unit_of_measurement ??
-          entity.attributes?.native_unit_of_measurement ??
-          ''
-      ).toUpperCase();
-      const deviceClass = String(entity.attributes?.device_class ?? '').toLowerCase();
-      return deviceClass === 'power' && unit === 'W';
-    })
-    .map(([entityId, entity]) => {
-      const friendlyName = String(entity.attributes?.friendly_name ?? '').toLowerCase();
-      const haystack = `${entityId} ${friendlyName}`.toLowerCase();
-
-      let score = 0;
-      if (haystack.includes('instantaneous_demand') || haystack.includes('instantaneous demand')) {
-        score += 100;
-      }
-      if (
-        haystack.includes('home load') ||
-        haystack.includes('home_load') ||
-        haystack.includes('house power') ||
-        haystack.includes('active power') ||
-        haystack.includes('total power') ||
-        haystack.includes('main power') ||
-        haystack.includes('demand')
-      ) {
-        score += 30;
-      }
-      if (
-        haystack.includes('solar') ||
-        haystack.includes('battery') ||
-        haystack.includes('grid import') ||
-        haystack.includes('grid export') ||
-        haystack.includes('grid_') ||
-        haystack.includes('pv') ||
-        haystack.includes('charger')
-      ) {
-        score -= 40;
-      }
-
-      return {
-        entityId,
-        score,
-        watts: parseW(entity.state),
-      };
-    })
-    .filter((candidate) => candidate.score > 0)
-    .sort((left, right) => right.score - left.score);
-
-  return {
-    entityId: candidates[0]?.entityId,
-    watts: candidates[0]?.watts ?? 0,
-  };
-}
-
 function createEmptyOverview(): EnergyOverview {
   return {
     liveStats: [],
@@ -332,17 +264,11 @@ export function useEnergyHaData(range: EnergyRange): {
   // re-renders when the same entity references are returned.
   const configEntities = useHomeAssistant(configEntitySelector, shallow);
 
-  // Full entity scan needed only to infer a home-load sensor when none is
-  // explicitly configured. Deferred so it does not block urgent renders.
-  const allEntitiesDeferred = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
   const needsInference = sourceConfig !== null && !sourceConfig.homeLoadPowerEntityId;
-  const inferredHomeLoad = useMemo(
-    () =>
-      needsInference
-        ? getInferredHomeLoadPowerSensor(allEntitiesDeferred)
-        : { entityId: undefined as string | undefined, watts: 0 },
-    [needsInference, allEntitiesDeferred]
-  );
+  const inferredHomeLoadCandidate = useInferredHomeLoadSensor();
+  const inferredHomeLoad = needsInference
+    ? inferredHomeLoadCandidate
+    : { entityId: undefined as string | undefined, watts: 0 };
 
   const todayKWh = useEnergyStatisticsToday(sourceConfig);
 

@@ -32,10 +32,15 @@ coverage includes:
 
 - Live Home Assistant entity cards for lights, climate, media, locks, cameras, weather, calendars,
   people, vacuums, sensors, helpers, scripts, and related domains
-- Room-based navigation with dedicated section routes such as `/`, `/energy`, `/lights`,
+- Top-level section routing for `/`, `/energy`, `/security`, `/tasks`, `/locks`, `/lights`,
   `/media`, and `/settings`
+- Room navigation on the home dashboard backed by Home Assistant areas first, with discovered
+  device rooms filling gaps when area metadata is incomplete
 - Edit mode for adding cards, resizing cards, reordering content, and managing dashboard layout
-- Card-level room reassignment for supported entity types
+- Home dashboard editing with sectioned or flow layouts, section ordering, and column-aware drag
+  behavior for cards and custom widgets
+- Card-level room reassignment for supported entity types and section-level customization for
+  security, locks, lights, and media views
 - Dashboard import/export through a YAML-based local config backup flow
 
 ### UI and theming
@@ -49,9 +54,11 @@ coverage includes:
 ### Widgets and specialized views
 
 - Custom widgets including RSS feed, photo frame, quick note, battery overview, button, and map widgets
-- Dedicated section views for energy, lights, locks, media, and security
+- Dedicated section views for energy, security, tasks, locks, lights, media, and settings
 - Live Home Assistant notification surfaces for persistent notifications, repair issues, and updates
 - Artwork-led media cards and TV-specific media layouts
+- Energy setup includes Home Assistant preference auto-detection plus optional extra-source and
+  tracked-device configuration
 
 ## Tech Stack
 
@@ -112,6 +119,7 @@ Cross-feature UI lives under [`src/app/components/`](/Users/vishal/Development/G
   [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
   and into the store via typed events
 - React Context is reserved for infrastructure concerns such as i18n
+- Navigation state persists the current room while the active section is derived from the URL
 
 See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the state-management contract.
 
@@ -122,10 +130,13 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 | [`src/app/App.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/App.tsx) | Root app shell, HA connection bootstrap, PWA/update shell, global DOM sync |
 | [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts) | Shared selectors for minimal store subscriptions |
 | [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx) | Dashboard card registry |
+| [`src/app/features/dashboard/components/dashboard-section-router.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/dashboard-section-router.tsx) | Top-level section router for home, energy, security, tasks, locks, lights, media, and settings |
+| [`src/app/components/layout/device-section-layout.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/device-section-layout.tsx) | Shared section shell for domain-specific entity grids with edit-mode customization |
 | [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |
 | [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts) | Story-specific documentation strings |
 | [`src/app/components/shared/theme/theme-surface-tokens.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme/theme-surface-tokens.ts) | Shared theme/surface decisions |
 | [`src/app/hooks/use-ha-devices.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-ha-devices.ts) | HA entity to device type mapping |
+| [`src/app/hooks/use-area-rooms.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-area-rooms.ts) | Area-name room source derived from the HA registry |
 | [`src/app/hooks/ha-entity-utils.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/ha-entity-utils.ts) | Entity transformation utilities |
 
 ## Setup
@@ -216,6 +227,18 @@ Current shared test support lives in:
 - [`src/test/store-reset.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/store-reset.ts)
 - [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
 - [`src/test/factories/home-assistant-service-stub.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/factories/home-assistant-service-stub.ts)
+
+Active co-located test directories currently include:
+
+- [`src/app/features/calendar/components/calendar/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/calendar/components/calendar/__tests__)
+- [`src/app/features/dashboard/components/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/__tests__)
+- [`src/app/features/dashboard/hooks/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/hooks/__tests__)
+- [`src/app/features/energy/components/dashboard/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/dashboard/__tests__)
+- [`src/app/features/energy/components/energy-setup-wizard/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/energy-setup-wizard/__tests__)
+- [`src/app/features/energy/utils/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/utils/__tests__)
+- [`src/app/features/lighting/components/light-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/lighting/components/light-card/__tests__)
+- [`src/app/features/media/components/media-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/media/components/media-card/__tests__)
+- [`src/app/features/rss/components/rss-feed-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/rss/components/rss-feed-card/__tests__)
 
 Use:
 

@@ -79,55 +79,62 @@ export function selectMapMarkersFromHa(store: HomeAssistantStore): MapMarker[] {
 
   const personPicturesByName = new Map<string, string>();
   const personPicturesByFirstName = new Map<string, string>();
-
-  for (const [id, entity] of Object.entries(entities)) {
-    if (!id.startsWith('person.')) continue;
-
-    const attrs = entity.attributes as Record<string, unknown>;
-    const entityPicture = readEntityPicture(attrs);
-    const friendlyName =
-      typeof attrs.friendly_name === 'string' ? attrs.friendly_name : id.replace(/_/g, ' ');
-    const normalizedName = normalizeMarkerName(friendlyName);
-    const firstName = getFirstName(friendlyName);
-
-    if (entityPicture && normalizedName) {
-      personPicturesByName.set(normalizedName, entityPicture);
-    }
-
-    if (entityPicture && firstName && !personPicturesByFirstName.has(firstName)) {
-      personPicturesByFirstName.set(firstName, entityPicture);
-    }
-  }
-
   const markers: MapMarker[] = [];
-  for (const [id, entity] of Object.entries(entities)) {
-    const domain = id.split('.')[0];
-    if (domain !== 'person' && domain !== 'device_tracker') continue;
 
+  for (const [id, entity] of Object.entries(entities)) {
     const attrs = entity.attributes as Record<string, unknown>;
-    const lat = attrs?.latitude;
-    const lon = attrs?.longitude;
-    if (typeof lat !== 'number' || typeof lon !== 'number') continue;
+    if (id.startsWith('person.')) {
+      const entityPicture = readEntityPicture(attrs);
+      const friendlyName =
+        typeof attrs.friendly_name === 'string' ? attrs.friendly_name : id.replace(/_/g, ' ');
+      const normalizedName = normalizeMarkerName(friendlyName);
+      const firstName = getFirstName(friendlyName);
+
+      if (entityPicture && normalizedName) {
+        personPicturesByName.set(normalizedName, entityPicture);
+      }
+
+      if (entityPicture && firstName && !personPicturesByFirstName.has(firstName)) {
+        personPicturesByFirstName.set(firstName, entityPicture);
+      }
+    }
+
+    if (!id.startsWith('person.') && !id.startsWith('device_tracker.')) {
+      continue;
+    }
+
+    const lat = attrs.latitude;
+    const lon = attrs.longitude;
+    if (typeof lat !== 'number' || typeof lon !== 'number') {
+      continue;
+    }
 
     const markerName = (attrs.friendly_name as string | undefined) ?? id.replace(/_/g, ' ');
-    const normalizedMarkerName = normalizeMarkerName(markerName);
-    const markerFirstName = getFirstName(markerName);
-    const fallbackPicture =
-      personPicturesByName.get(normalizedMarkerName) ??
-      personPicturesByFirstName.get(markerFirstName);
-
     markers.push({
       id,
       name: markerName,
       latitude: lat,
       longitude: lon,
-      entityPicture: readEntityPicture(attrs) ?? fallbackPicture,
+      entityPicture: readEntityPicture(attrs),
       state: entity.state,
       gpsAccuracy: attrs.gps_accuracy as number | undefined,
     });
   }
 
-  return markers;
+  return markers.map((marker) => {
+    if (marker.entityPicture) {
+      return marker;
+    }
+
+    const normalizedMarkerName = normalizeMarkerName(marker.name);
+    const markerFirstName = getFirstName(marker.name);
+    return {
+      ...marker,
+      entityPicture:
+        personPicturesByName.get(normalizedMarkerName) ??
+        personPicturesByFirstName.get(markerFirstName),
+    };
+  });
 }
 
 export function mapMarkersEqual(a: MapMarker[], b: MapMarker[]): boolean {

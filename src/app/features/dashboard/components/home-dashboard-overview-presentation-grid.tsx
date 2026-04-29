@@ -1,10 +1,11 @@
-import { type CSSProperties, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, memo, useMemo } from 'react';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
 } from '@/app/components/shared/card-size-selector';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
@@ -37,10 +38,6 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
-  const outerRef = useRef<HTMLDivElement | null>(null);
-  const innerRef = useRef<HTMLDivElement | null>(null);
-  const [outerWidth, setOuterWidth] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
   const resolvedCardSizes = useMemo(
     () =>
       cardIds.map((cardId) => {
@@ -60,61 +57,8 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     () => getCardGridTargetWidth(renderedGridCols, gridGapPx),
     [gridGapPx, renderedGridCols]
   );
-
-  useEffect(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (
-      !outer ||
-      !inner ||
-      typeof ResizeObserver === 'undefined' ||
-      typeof window === 'undefined'
-    ) {
-      return;
-    }
-
-    let pendingWidth = outer.clientWidth;
-    let pendingHeight = inner.offsetHeight;
-    let frameId: number | null = null;
-
-    const flush = () => {
-      frameId = null;
-      setOuterWidth((previous) => (previous === pendingWidth ? previous : pendingWidth));
-      setContentHeight((previous) => (previous === pendingHeight ? previous : pendingHeight));
-    };
-
-    const scheduleFlush = () => {
-      if (frameId !== null) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(flush);
-    };
-
-    const outerObserver = new ResizeObserver((entries) => {
-      pendingWidth = entries[0]?.contentRect.width ?? outer.clientWidth;
-      scheduleFlush();
-    });
-
-    const innerObserver = new ResizeObserver((entries) => {
-      pendingHeight = entries[0]?.contentRect.height ?? inner.offsetHeight;
-      scheduleFlush();
-    });
-
-    outerObserver.observe(outer);
-    innerObserver.observe(inner);
-
-    scheduleFlush();
-
-    return () => {
-      outerObserver.disconnect();
-      innerObserver.disconnect();
-
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
+  const { outerRef, innerRef, outerWidth, contentHeight } =
+    useAutoScaledGridMeasurements(targetGridWidth);
 
   const autoScale =
     renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;

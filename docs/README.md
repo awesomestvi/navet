@@ -8,7 +8,7 @@ This directory is the index for active Navet documentation.
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): state-management rules and store/service contracts
 - [../design-system/README.md](../design-system/README.md): design-system scope, shared UI layers, and Storybook workflow
 - [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared unit-test helpers, browser mocks, and HA service stubs
-- [../design-system/FEATURES.md](../design-system/FEATURES.md): feature map with test coverage locations
+- [../design-system/FEATURES.md](../design-system/FEATURES.md): feature map with section routing, layout ownership, and test coverage locations
 
 ## Documentation Map
 
@@ -24,7 +24,7 @@ This directory is the index for active Navet documentation.
 
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand-only shared state guidance
 - [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared test harness for Vitest-based unit coverage
-- [../design-system/FEATURES.md](../design-system/FEATURES.md): implementation map of current product areas and test locations
+- [../design-system/FEATURES.md](../design-system/FEATURES.md): implementation map of current product areas, top-level sections, and test locations
 - [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md): visual rules, component patterns, and performance-sensitive UI guidance
 - [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md): Storybook structure and workshop rules
 
@@ -80,7 +80,8 @@ This directory is the index for active Navet documentation.
 - Prefer updating active docs over adding duplicate one-off notes
 - Treat `docs/archive/` as historical material, not the current source of truth
 - When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
-- When shared test harnesses, store-reset behavior, or service stubs change, update the testing references in the active docs
+- When shared test harnesses, store-reset behavior, service stubs, or active `__tests__/` directories change, update the testing references in the active docs
+- When top-level sections, room sourcing, or dashboard layout modes change, update `README.md` and `design-system/FEATURES.md`
 - When new primitives, patterns, or test directories are added, update FEATURES.md and README.md
 
 Last updated: April 29, 2026

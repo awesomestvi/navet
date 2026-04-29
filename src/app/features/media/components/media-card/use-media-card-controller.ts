@@ -31,10 +31,6 @@ function selectMediaPlayerEntities(state: HomeAssistantStore) {
   );
 }
 
-function selectNoMediaPlayerEntities() {
-  return null;
-}
-
 function selectUndefinedEntity() {
   return undefined;
 }
@@ -69,11 +65,6 @@ export function useMediaCardController({
   const remoteEntity = useHomeAssistant(
     remoteEntityId ? homeAssistantSelectors.entity(remoteEntityId) : selectUndefinedEntity
   );
-  const mediaPlayerEntities = useHomeAssistant(
-    isTv ? selectNoMediaPlayerEntities : selectMediaPlayerEntities,
-    shallow
-  );
-  const runMediaAction = useServiceActionHandler();
   const resolvedInitialState = liveEntity
     ? normalizeMediaPlaybackState(liveEntity.state, deviceClass)
     : initialState;
@@ -105,6 +96,14 @@ export function useMediaCardController({
     typeof resolvedInitialSupportedFeatures === 'number'
       ? hasMediaPlayerGroupingSupport(resolvedInitialSupportedFeatures)
       : initialSupportsGrouping;
+  // Only subscribe to all media player entities if grouping is actually supported.
+  // Use the resolved live capability when available so grouping stays functional
+  // even when the initial prop was stale.
+  const mediaPlayerEntities = useHomeAssistant(
+    resolvedInitialSupportsGrouping ? selectMediaPlayerEntities : selectUndefinedEntity,
+    shallow
+  );
+  const runMediaAction = useServiceActionHandler();
   const resolvedInitialGroupMembersFromEntity = Array.isArray(liveAttrs?.group_members)
     ? liveAttrs.group_members.filter(
         (value): value is string => typeof value === 'string' && value.length > 0

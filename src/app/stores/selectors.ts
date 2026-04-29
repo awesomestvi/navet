@@ -170,6 +170,8 @@ export const homeAssistantSelectors = {
   // home-assistant-js-websocket preserves entity object references for unchanged entities,
   // so this produces no re-render when a different entity updates.
   entity: (entityId: string) => (state: HomeAssistantStore) => state.entities?.[entityId],
+  // Entities hydration check — stable selector for checking if entities are loaded
+  entitiesHydrated: (state: HomeAssistantStore) => state.entities != null,
   user: (state: HomeAssistantStore) => state.user,
   areas: (state: HomeAssistantStore) => state.areas,
   deviceRegistry: (state: HomeAssistantStore) => state.deviceRegistry,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useDevices, useI18n, usePersistedState } from '@/app/hooks';
+import { useCalendarDevicesCollection, useI18n, usePersistedState } from '@/app/hooks';
 import {
   getCalendarEventSortValue,
   isCalendarEventVisibleInWindow,
@@ -23,7 +23,7 @@ const CALENDAR_TIME_WINDOW_REFRESH_MS = 60 * 1000;
 
 export function useCalendarCardSources(cardId?: string, fallbackEvents: CalendarEvent[] = []) {
   const { t } = useI18n();
-  const devices = useDevices();
+  const calendars = useCalendarDevicesCollection();
   const [timeWindowTick, setTimeWindowTick] = useState(() => Date.now());
   const [calendarSources, setCalendarSources] = usePersistedState<PersistedCalendarSources>(
     STORAGE_KEYS.calendarCardSources,
@@ -48,7 +48,7 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
 
   const availableCalendars = useMemo(
     () =>
-      devices.calendars.flatMap((calendar) => {
+      calendars.flatMap((calendar) => {
         const sources =
           Array.isArray(calendar.sources) && calendar.sources.length > 0
             ? calendar.sources
@@ -59,7 +59,7 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
           color: SOURCE_COLOR_CLASSES[index % SOURCE_COLOR_CLASSES.length],
         }));
       }),
-    [devices.calendars]
+    [calendars]
   );
 
   const selectedCalendarIds = useMemo(() => {
@@ -72,13 +72,13 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
       return stored;
     }
 
-    const aggregateCard = devices.calendars.find((calendar) => calendar.id === cardId);
+    const aggregateCard = calendars.find((calendar) => calendar.id === cardId);
     if (aggregateCard?.sourceIds?.length) {
       return aggregateCard.sourceIds;
     }
 
     return [cardId];
-  }, [calendarSources, cardId, devices.calendars]);
+  }, [calendarSources, calendars, cardId]);
   const viewMode = useMemo<CalendarViewMode>(() => {
     if (!cardId) {
       return 'week';

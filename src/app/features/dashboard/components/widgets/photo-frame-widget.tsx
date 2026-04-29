@@ -17,7 +17,7 @@ import {
 } from '@/app/components/ui/dropdown-menu';
 import { cn } from '@/app/components/ui/utils';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
-import { useDevices, useI18n, useRooms, useTheme } from '@/app/hooks';
+import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
@@ -87,8 +87,7 @@ export function PhotoFrameWidget({
 }: PhotoFrameWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const devices = useDevices();
-  const rooms = useRooms(devices);
+  const rooms = useAreaRooms();
   const authConfig = useAuth(authSelectors.config);
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -294,7 +293,7 @@ export function PhotoFrameWidget({
             {Array.from({ length: photoCount }).map((_, index) => (
               <button
                 type="button"
-                key={index}
+                key={`photo-dot-${index}`}
                 onClick={() => setCurrentIndex(index)}
                 className="pointer-events-auto h-2 w-2 rounded-full transition-all"
                 style={{

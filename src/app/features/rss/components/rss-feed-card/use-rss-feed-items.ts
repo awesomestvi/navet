@@ -6,14 +6,37 @@ import type { RSSItem, RSSProvider } from './types';
 const RSS_PROXY_PATH = '__navet_rss_proxy__';
 const RSS_SUCCESS_CACHE_TTL_MS = 120_000;
 const RSS_ERROR_CACHE_TTL_MS = 15_000;
+const RSS_CACHE_MAX_SIZE = 50; // Maximum number of entries to prevent memory growth
 
 type RSSFeedItemsCacheEntry = {
   items: RSSItem[];
   error: string | null;
   createdAt: number;
+  lastAccessedAt: number;
 };
 
 const rssFeedItemsCache = new Map<string, RSSFeedItemsCacheEntry>();
+
+/**
+ * Evict least recently used entries when cache exceeds max size.
+ * Called before adding new entries to maintain cache size limit.
+ */
+function evictCacheIfNeeded() {
+  if (rssFeedItemsCache.size <= RSS_CACHE_MAX_SIZE) {
+    return;
+  }
+
+  // Convert to array and sort by lastAccessedAt to find LRU entries
+  const entries = Array.from(rssFeedItemsCache.entries()).sort(
+    (a, b) => a[1].lastAccessedAt - b[1].lastAccessedAt
+  );
+
+  // Remove oldest 20% of entries to avoid frequent evictions
+  const entriesToRemove = Math.max(1, Math.floor(RSS_CACHE_MAX_SIZE * 0.2));
+  for (let i = 0; i < entriesToRemove; i++) {
+    rssFeedItemsCache.delete(entries[i][0]);
+  }
+}
 
 function getProviderCacheKey(provider: RSSProvider) {
   return [
@@ -36,6 +59,10 @@ function getCachedEntry(cacheKey: string): RSSFeedItemsCacheEntry | null {
     rssFeedItemsCache.delete(cacheKey);
     return null;
   }
+
+  // Update last accessed time for LRU tracking
+  cachedEntry.lastAccessedAt = Date.now();
+  rssFeedItemsCache.set(cacheKey, cachedEntry);
 
   return cachedEntry;
 }
@@ -381,10 +408,14 @@ export function useRSSFeedItems(
         const nextError =
           nextItems.length === 0 && failedResults.length > 0 ? t('rss.error.unableToLoad') : null;
 
+        // Evict old entries before adding new one to prevent unbounded growth
+        evictCacheIfNeeded();
+
         rssFeedItemsCache.set(cacheKey, {
           items: nextItems,
           error: nextError,
           createdAt: Date.now(),
+          lastAccessedAt: Date.now(),
         });
         setItems(nextItems);
         setError(nextError);

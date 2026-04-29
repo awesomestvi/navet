@@ -1,16 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
-import {
-  type CSSProperties,
-  memo,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type CSSProperties, memo, type ReactNode, useCallback, useMemo } from 'react';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -22,6 +13,7 @@ import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
 import type { DropMeta } from '../hooks/use-home-dashboard-editor';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -158,10 +150,6 @@ export const CardGrid = memo(function CardGrid({
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
   const hasTrailingAddCardSlot = isEditMode && Boolean(onOpenAddCardDialog);
-  const outerRef = useRef<HTMLDivElement | null>(null);
-  const innerRef = useRef<HTMLDivElement | null>(null);
-  const [outerWidth, setOuterWidth] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
   const resolvedCardSizes = useMemo(
     () =>
       cardIds.map((cardId) => {
@@ -181,66 +169,13 @@ export const CardGrid = memo(function CardGrid({
     () => getCardGridTargetWidth(renderedGridCols, gridGapPx),
     [gridGapPx, renderedGridCols]
   );
+  const { outerRef, innerRef, outerWidth, contentHeight } =
+    useAutoScaledGridMeasurements(targetGridWidth);
   const addCardSlotCols = Math.min(renderedGridCols, 2);
   const hasInlineAddCardSlot = hasTrailingAddCardSlot;
   const handleAddCard = useCallback(() => {
     onOpenAddCardDialog?.();
   }, [onOpenAddCardDialog]);
-
-  useEffect(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (
-      !outer ||
-      !inner ||
-      typeof ResizeObserver === 'undefined' ||
-      typeof window === 'undefined'
-    ) {
-      return;
-    }
-
-    let pendingWidth = outer.clientWidth;
-    let pendingHeight = inner.offsetHeight;
-    let frameId: number | null = null;
-
-    const flush = () => {
-      frameId = null;
-      setOuterWidth((previous) => (previous === pendingWidth ? previous : pendingWidth));
-      setContentHeight((previous) => (previous === pendingHeight ? previous : pendingHeight));
-    };
-
-    const scheduleFlush = () => {
-      if (frameId !== null) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(flush);
-    };
-
-    const outerObserver = new ResizeObserver((entries) => {
-      pendingWidth = entries[0]?.contentRect.width ?? outer.clientWidth;
-      scheduleFlush();
-    });
-
-    const innerObserver = new ResizeObserver((entries) => {
-      pendingHeight = entries[0]?.contentRect.height ?? inner.offsetHeight;
-      scheduleFlush();
-    });
-
-    outerObserver.observe(outer);
-    innerObserver.observe(inner);
-
-    scheduleFlush();
-
-    return () => {
-      outerObserver.disconnect();
-      innerObserver.disconnect();
-
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
 
   const autoScale =
     renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;
@@ -284,8 +219,8 @@ export const CardGrid = memo(function CardGrid({
 
   const visibleCount = useProgressiveBatching(cardIds.length, isEditMode, !sortable);
   const visibleCardIds = useMemo(() => {
-    // Sortable home sections must render every `HomeCardSlot` — `SortableContext` items
-    // must match mounted sortable nodes.
+    // Sortable home sections must render every `HomeCardSlot` so `SortableContext`
+    // items match the mounted sortable nodes during drag measurement.
     if (sortable) {
       return cardIds;
     }

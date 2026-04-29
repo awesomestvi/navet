@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useDevices, useSearch } from '@/app/hooks';
 
 const DEVICE_GROUPS = [
@@ -19,6 +19,7 @@ export function useHeaderSearch() {
   const { searchQuery, setSearchQuery, setFilteredDeviceIds, clearSearch, isSearchActive } =
     useSearch();
   const devices = useDevices();
+  const deferredDevices = useDeferredValue(devices);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
@@ -32,7 +33,7 @@ export function useHeaderSearch() {
     }
 
     const matchingIds = DEVICE_GROUPS.flatMap(({ domain, type, deviceKey }) =>
-      devices[deviceKey].flatMap((device) => {
+      deferredDevices[deviceKey].flatMap((device) => {
         const searchableValues = new Set<string>([
           device.id.toLowerCase(),
           domain,
@@ -64,7 +65,7 @@ export function useHeaderSearch() {
     );
 
     setFilteredDeviceIds(matchingIds);
-  }, [devices, searchQuery, setFilteredDeviceIds]);
+  }, [deferredDevices, searchQuery, setFilteredDeviceIds]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);

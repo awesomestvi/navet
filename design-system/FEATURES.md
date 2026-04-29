@@ -97,6 +97,36 @@ emits typed events for:
 The store updates only the affected slice for each event. Avoid catch-all "copy the whole service
 state" sync paths.
 
+Navigation keeps `currentRoom` persisted in the store while `activeSection` is derived from the
+URL through [`src/app/navigation/sections.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/navigation/sections.ts).
+
+## Top-level sections
+
+The current primary section model is:
+
+- `home`
+- `energy`
+- `security`
+- `tasks`
+- `locks`
+- `lights`
+- `media`
+- `settings`
+
+Section routing and lazy loading are coordinated by
+[`src/app/features/dashboard/components/dashboard-section-router.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/dashboard-section-router.tsx).
+
+Current ownership split:
+
+- `home`: room-driven dashboard overview, home widgets, and the editable sectioned/flow canvas
+- `energy`: energy dashboard plus energy-specific custom-widget band
+- `security`: camera-focused section built on the shared device section layout
+- `tasks`: placeholder section using the shared dashboard empty-state pattern
+- `locks`: lock-focused section built on the shared device section layout
+- `lights`: all-lights overview using the dashboard all-view grid in custom grouping mode
+- `media`: grouped media section with dedicated audio and TV buckets
+- `settings`: app configuration and personalization surfaces
+
 ## Dashboard
 
 ### Ownership
@@ -119,10 +149,23 @@ Important paths:
 ### Current behavior
 
 - Home is the main editable dashboard section
+- When the active room is `All`, home can switch between sectioned and flow-based layout modes
+- Home layout supports section ordering, section insertion, column movement, and per-section card targeting
 - cards can be added from entity-library and widget flows
 - supported cards can be resized across shared card sizes
 - room grouping modes support custom, room, type, and no-grouping views
 - onboarding can start from all entities, a blank board, or imported config
+- available room ordering preserves user order while merging in new rooms discovered from Home Assistant
+
+### Room sourcing
+
+Home-room navigation is assembled from two sources:
+
+- Home Assistant areas via [`src/app/hooks/use-area-rooms.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-area-rooms.ts)
+- discovered device rooms via [`src/app/hooks/use-devices.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-devices.ts)
+
+This keeps the room list stable when registry-backed area names exist while still surfacing devices
+whose room can only be inferred from entity metadata.
 
 ## Settings
 
@@ -181,6 +224,10 @@ Shared story helpers live in
 [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx)
 and [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts).
 
+The current layout layer also has direct Storybook coverage for sidebar, header, room-nav, search,
+and section-customization affordances under
+[`src/app/components/layout/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout).
+
 ### Unit-test support
 
 Vitest is the preferred path for:
@@ -202,8 +249,15 @@ The current shared harness provides:
 Test files are co-located with their source in `__tests__/` subdirectories:
 
 - `src/app/hooks/__tests__/` — shared hook and utility tests
-- `src/app/features/dashboard/hooks/__tests__/` — dashboard controller tests
+- `src/app/features/dashboard/components/__tests__/` — home dashboard presentation and layout behavior
+- `src/app/features/dashboard/hooks/__tests__/` — dashboard controller and action tests
 - `src/app/features/calendar/components/__tests__/` — calendar feature tests
+- `src/app/features/energy/components/dashboard/__tests__/` — energy dashboard behavior
+- `src/app/features/energy/components/energy-setup-wizard/__tests__/` — energy setup scoring and draft flows
+- `src/app/features/energy/utils/__tests__/` — energy utilities
+- `src/app/features/lighting/components/light-card/__tests__/` — light card behavior
+- `src/app/features/media/components/media-card/__tests__/` — media card and controller behavior
+- `src/app/features/rss/components/rss-feed-card/__tests__/` — RSS widget logic
 
 ## Card system
 
@@ -261,6 +315,9 @@ Media cards are backed by live Home Assistant `media_player` entities and includ
 - remaining-time handling
 - local mute/unmute restoration behavior
 
+The top-level media section groups entities into audio, TV, and other device-type buckets using
+[`src/app/components/layout/media-section.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/media-section.tsx).
+
 ### TV treatment
 
 TV-class media entities use a dedicated TV layout with:
@@ -287,6 +344,7 @@ patterns rather than forking presentation logic.
 - Home Assistant weather entities render as live weather cards
 - card settings support room reassignment
 - weather visuals should still respect low-power rendering constraints
+- forecasts are refreshed from Home Assistant service calls and respect the user's weather forecast mode
 
 ### Calendar
 
@@ -305,6 +363,10 @@ patterns rather than forking presentation logic.
 
 - each section exposes domain-focused grids
 - shared edit/customize affordances should be reused instead of per-section reinvention
+- locks and security use the reusable
+  [`src/app/components/layout/device-section-layout.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/device-section-layout.tsx)
+  shell for empty states and edit-mode wrapping
+- lights reuse the dashboard all-view grid rather than maintaining a parallel layout implementation
 
 ### Energy
 
@@ -313,6 +375,7 @@ Energy owns:
 - energy widgets
 - energy charts
 - energy-specific UI shells and services
+- the setup wizard and entity-option inference hooks used to map Home Assistant energy preferences
 
 This feature has its own components, hooks, stores, and data layer.
 
