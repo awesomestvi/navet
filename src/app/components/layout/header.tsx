@@ -1,11 +1,21 @@
 import { CalendarDays, Clock3 } from 'lucide-react';
 import { memo } from 'react';
 import { AppReleaseBadge } from '@/app/components/shared/app-release-badge';
-import { HeaderDesktopActions, HeaderMobileActions } from './header-actions';
+import { HeaderDesktopActions } from './header-actions';
 import { HeaderSearchInput } from './header-search-input';
-import { useHeaderController } from './use-header-controller';
+import { MobileRoomDropdown, type MobileRoomNavigation } from './mobile-room-dropdown';
+import { type HeaderController, useHeaderController } from './use-header-controller';
+import { UserDropdown } from './user-dropdown';
 
-export const Header = memo(function Header() {
+interface HeaderProps {
+  controller?: HeaderController;
+  mobileRoomNavigation?: MobileRoomNavigation;
+}
+
+function HeaderView({
+  controller,
+  mobileRoomNavigation,
+}: HeaderProps & { controller: HeaderController }) {
   const {
     activeColorValue,
     avatarUrl,
@@ -17,17 +27,13 @@ export const Header = memo(function Header() {
     greetingKey,
     handleClearSearch,
     handleSearchChange,
-    handleToggleMobileSearch,
     hoverBg,
     inputBg,
-    isMobileSearchOpen,
     isNotificationOpen,
     isSearchActive,
     isSearchFocused,
     mobileNotificationButtonRef,
-    mobileSearchInputRef,
     searchQuery,
-    setIsMobileSearchOpen,
     setIsNotificationOpen,
     setIsSearchFocused,
     t,
@@ -35,13 +41,34 @@ export const Header = memo(function Header() {
     textSecondary,
     unreadCount,
     weekNumber,
-  } = useHeaderController();
+  } = controller;
 
   return (
-    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
-      <div className="flex min-w-0 flex-col gap-2 md:flex-1 md:flex-row md:items-center md:justify-between md:gap-4">
-        <div className="min-w-0">
-          <div className="flex items-start justify-between gap-2 md:block">
+    <>
+      <div className="flex items-center gap-2 md:hidden">
+        <UserDropdown avatarUrl={avatarUrl} />
+        <div className="min-w-0 flex-1">
+          <h1 className={`truncate text-[1rem] leading-none font-semibold ${textPrimary}`}>
+            {t(greetingKey, { name: firstName })}
+          </h1>
+          <div
+            className={`${textSecondary} mt-1 flex items-center gap-1 text-[0.72rem] leading-none`}
+          >
+            <span className="truncate">{formattedDate}</span>
+            <span aria-hidden="true" className={dividerColor}>
+              |
+            </span>
+            <span className="shrink-0">{formattedTime}</span>
+          </div>
+        </div>
+        {mobileRoomNavigation ? (
+          <MobileRoomDropdown navigation={mobileRoomNavigation} compact />
+        ) : null}
+      </div>
+
+      <div className="hidden md:flex md:flex-row md:items-center md:justify-between md:gap-4">
+        <div className="flex min-w-0 flex-col gap-2 md:flex-1 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="min-w-0">
             <div className="min-w-0">
               <div className="mb-0.5 md:mb-1">
                 <h1
@@ -50,19 +77,6 @@ export const Header = memo(function Header() {
                   <span>{t(greetingKey, { name: firstName })}</span>
                   <AppReleaseBadge className="ml-3 hidden shrink-0 align-middle -translate-y-0.75 lg:inline-flex" />
                 </h1>
-              </div>
-              <div
-                className={`${textSecondary} flex flex-wrap items-center gap-1.5 text-[0.82rem] md:hidden`}
-              >
-                <span>{formattedDate}</span>
-                <span aria-hidden="true" className={dividerColor}>
-                  |
-                </span>
-                <span>{formattedTime}</span>
-                <span aria-hidden="true" className={dividerColor}>
-                  |
-                </span>
-                <span>{t('header.weekLabel', { week: weekNumber })}</span>
               </div>
               <div
                 className={`${textSecondary} hidden flex-wrap items-center gap-x-3 gap-y-1 text-sm md:flex`}
@@ -81,87 +95,55 @@ export const Header = memo(function Header() {
                 </div>
               </div>
             </div>
+          </div>
 
-            <HeaderMobileActions
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="relative flex-1 md:flex-none">
+              <HeaderSearchInput
+                activeColorValue={activeColorValue}
+                hoverBg={hoverBg}
+                inputBg={inputBg}
+                isSearchActive={isSearchActive}
+                isSearchFocused={isSearchFocused}
+                onBlur={() => setIsSearchFocused(false)}
+                onChange={handleSearchChange}
+                onClear={handleClearSearch}
+                onFocus={() => setIsSearchFocused(true)}
+                placeholder={t('header.searchPlaceholder')}
+                query={searchQuery}
+                textPrimary={textPrimary}
+                textSecondary={textSecondary}
+                widthClassName="w-full md:w-64"
+              />
+            </div>
+
+            <HeaderDesktopActions
               activeColorValue={activeColorValue}
               avatarUrl={avatarUrl}
               desktopNotificationButtonRef={desktopNotificationButtonRef}
               hoverBg={hoverBg}
-              isMobileSearchOpen={isMobileSearchOpen}
               isNotificationOpen={isNotificationOpen}
               mobileNotificationButtonRef={mobileNotificationButtonRef}
-              onToggleMobileSearch={handleToggleMobileSearch}
               setIsNotificationOpen={setIsNotificationOpen}
-              searchAriaLabel={t('header.searchPlaceholder')}
               textSecondary={textSecondary}
               unreadCount={unreadCount}
             />
           </div>
         </div>
-
-        <div className="hidden items-center gap-2 md:flex md:gap-4">
-          <div className="relative flex-1 md:flex-none">
-            <HeaderSearchInput
-              activeColorValue={activeColorValue}
-              hoverBg={hoverBg}
-              inputBg={inputBg}
-              isSearchActive={isSearchActive}
-              isSearchFocused={isSearchFocused}
-              onBlur={() => setIsSearchFocused(false)}
-              onChange={handleSearchChange}
-              onClear={handleClearSearch}
-              onFocus={() => setIsSearchFocused(true)}
-              placeholder={t('header.searchPlaceholder')}
-              query={searchQuery}
-              textPrimary={textPrimary}
-              textSecondary={textSecondary}
-              widthClassName="w-full md:w-64"
-            />
-          </div>
-
-          <HeaderDesktopActions
-            activeColorValue={activeColorValue}
-            avatarUrl={avatarUrl}
-            desktopNotificationButtonRef={desktopNotificationButtonRef}
-            hoverBg={hoverBg}
-            isNotificationOpen={isNotificationOpen}
-            mobileNotificationButtonRef={mobileNotificationButtonRef}
-            setIsNotificationOpen={setIsNotificationOpen}
-            textSecondary={textSecondary}
-            unreadCount={unreadCount}
-          />
-        </div>
       </div>
-
-      <div
-        className={`relative overflow-hidden transition-[max-height,opacity,margin] duration-200 md:hidden ${
-          isMobileSearchOpen || isSearchActive
-            ? 'mt-0 max-h-16 opacity-100'
-            : '-mt-1 max-h-0 opacity-0'
-        }`}
-      >
-        <HeaderSearchInput
-          activeColorValue={activeColorValue}
-          hoverBg={hoverBg}
-          inputBg={inputBg}
-          inputRef={mobileSearchInputRef}
-          isSearchActive={isSearchActive}
-          isSearchFocused={isSearchFocused}
-          onBlur={() => {
-            setIsSearchFocused(false);
-            if (!searchQuery) {
-              setIsMobileSearchOpen(false);
-            }
-          }}
-          onChange={handleSearchChange}
-          onClear={handleClearSearch}
-          onFocus={() => setIsSearchFocused(true)}
-          placeholder={t('header.searchPlaceholder')}
-          query={searchQuery}
-          textPrimary={textPrimary}
-          textSecondary={textSecondary}
-        />
-      </div>
-    </div>
+    </>
   );
+}
+
+function HeaderWithController({ mobileRoomNavigation }: Omit<HeaderProps, 'controller'>) {
+  const controller = useHeaderController();
+  return <HeaderView controller={controller} mobileRoomNavigation={mobileRoomNavigation} />;
+}
+
+export const Header = memo(function Header({ controller, mobileRoomNavigation }: HeaderProps) {
+  if (controller) {
+    return <HeaderView controller={controller} mobileRoomNavigation={mobileRoomNavigation} />;
+  }
+
+  return <HeaderWithController mobileRoomNavigation={mobileRoomNavigation} />;
 });

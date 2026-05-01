@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Header } from '@/app/components/layout/header';
 import { Sidebar } from '@/app/components/layout/sidebar';
+import { useHeaderController } from '@/app/components/layout/use-header-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
@@ -14,7 +15,10 @@ import type { DashboardLayoutProps } from './types';
  * Provides consistent layout structure with sidebar and header
  * Memoized to prevent unnecessary re-renders
  */
-export const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
+export const DashboardLayout = memo(function DashboardLayout({
+  children,
+  mobileRoomNavigation,
+}: DashboardLayoutProps) {
   const { theme, wallpaper, primaryColor } = useTheme();
   const { lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
@@ -29,6 +33,7 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
   const isMediumEffects = resolvedEffectsQuality === 'medium';
   const isLowEffects = resolvedEffectsQuality === 'low';
   const showSharedGlassBlur = isGlass && resolvedEffectsQuality === 'high';
+  const headerController = useHeaderController();
 
   const bgColor =
     theme === 'light'
@@ -126,10 +131,25 @@ export const DashboardLayout = memo(function DashboardLayout({ children }: Dashb
 
       {/* Content */}
       <div className="relative z-10 overflow-x-clip">
-        <Sidebar />
+        <Sidebar
+          activeColorValue={headerController.activeColorValue}
+          handleClearSearch={headerController.handleClearSearch}
+          handleSearchChange={headerController.handleSearchChange}
+          handleToggleMobileSearch={headerController.handleToggleMobileSearch}
+          hoverBg={headerController.hoverBg}
+          inputBg={headerController.inputBg}
+          isMobileSearchOpen={headerController.isMobileSearchOpen}
+          isSearchActive={headerController.isSearchActive}
+          isSearchFocused={headerController.isSearchFocused}
+          mobileSearchInputRef={headerController.mobileSearchInputRef}
+          searchQuery={headerController.searchQuery}
+          setIsSearchFocused={headerController.setIsSearchFocused}
+          textPrimary={headerController.textPrimary}
+          textSecondary={headerController.textSecondary}
+        />
 
-        <div className="safe-area-pt-5 min-w-0 flex flex-col gap-4 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-8 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
-          <Header />
+        <div className="safe-area-pt-5 min-w-0 flex flex-col gap-3.5 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
+          <Header controller={headerController} mobileRoomNavigation={mobileRoomNavigation} />
           {children}
         </div>
       </div>

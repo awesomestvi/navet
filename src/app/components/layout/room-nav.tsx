@@ -26,17 +26,7 @@ import {
   Lightbulb,
   Trash2,
 } from 'lucide-react';
-import {
-  type ButtonHTMLAttributes,
-  type CSSProperties,
-  forwardRef,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ButtonHTMLAttributes, forwardRef, memo, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   DialogFooter,
@@ -57,9 +47,9 @@ import {
 import { cn } from '@/app/components/ui/utils';
 import type { AllViewGrouping } from '@/app/features/dashboard';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { getVisibleRoomNavRooms } from './room-nav.utils';
 
 interface RoomNavProps {
   rooms?: string[];
@@ -92,50 +82,6 @@ interface RoomNavMenuButtonProps {
   className: string;
 }
 
-function useStickyActivation() {
-  const stickyMarkerRef = useRef<HTMLDivElement | null>(null);
-  const stickyRef = useRef<HTMLDivElement | null>(null);
-  const shellRef = useRef<HTMLDivElement | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
-  const attachObserver = useCallback(() => {
-    const markerNode = stickyMarkerRef.current;
-    const stickyNode = stickyRef.current;
-    const shellNode = shellRef.current;
-    if (!markerNode || !stickyNode || !shellNode) {
-      return;
-    }
-
-    observerRef.current?.disconnect();
-
-    const stickyTop = Number.parseFloat(window.getComputedStyle(stickyNode).top) || 0;
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        shellNode.classList.toggle('is-stuck', Boolean(entry) && !entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0,
-        rootMargin: `-${stickyTop}px 0px 0px 0px`,
-      }
-    );
-
-    observerRef.current.observe(markerNode);
-  }, []);
-
-  useViewportResize(attachObserver);
-
-  useEffect(() => {
-    attachObserver();
-
-    return () => {
-      observerRef.current?.disconnect();
-    };
-  }, [attachObserver]);
-
-  return { stickyMarkerRef, stickyRef, shellRef };
-}
-
 export const RoomNav = memo(function RoomNav({
   rooms = [],
   roomHiddenItemCounts = new Map(),
@@ -154,7 +100,6 @@ export const RoomNav = memo(function RoomNav({
   const { theme, accentColor } = useTheme();
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const surface = getThemeSurfaceTokens(theme);
-  const { stickyMarkerRef, stickyRef, shellRef } = useStickyActivation();
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const manageableRooms = useMemo(() => {
     const areaNames = areas.map((area) => area.name).filter((name) => name && name !== 'All');
@@ -163,44 +108,12 @@ export const RoomNav = memo(function RoomNav({
     const navetOnlyRooms = rooms.filter((room) => room !== 'All' && !areaNames.includes(room));
     return [...new Set([...orderedKnownRooms, ...unorderedAreaRooms, ...navetOnlyRooms])];
   }, [areas, rooms]);
-  const visibleRooms = useMemo(() => ['All', ...rooms], [rooms]);
+  const visibleRooms = useMemo(() => getVisibleRoomNavRooms(rooms), [rooms]);
   const textSecondary = surface.textSecondary;
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
   const dividerClass =
     theme === 'light' ? 'bg-slate-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
-  const stickyOffset = 'calc(env(safe-area-inset-top, 0px) + 8px)';
-  const stickyShellStyle = useMemo<CSSProperties>(() => {
-    if (theme === 'light') {
-      return {
-        '--room-nav-sticky-border': 'rgba(229, 231, 235, 0.8)',
-        '--room-nav-sticky-bg': 'rgba(255, 255, 255, 0.96)',
-        '--room-nav-sticky-shadow': '0 18px 38px -30px rgba(15, 23, 42, 0.22)',
-      } as CSSProperties;
-    }
-
-    if (theme === 'glass') {
-      return {
-        '--room-nav-sticky-border': 'rgba(255, 255, 255, 0.12)',
-        '--room-nav-sticky-bg': 'rgba(255, 255, 255, 0.10)',
-        '--room-nav-sticky-shadow': 'inset 0 1px 0 rgba(255, 255, 255, 0.12)',
-      } as CSSProperties;
-    }
-
-    if (theme === 'black') {
-      return {
-        '--room-nav-sticky-border': 'rgba(255, 255, 255, 0.18)',
-        '--room-nav-sticky-bg': 'rgba(0, 0, 0, 0.94)',
-        '--room-nav-sticky-shadow': '0 16px 36px -28px rgba(0, 0, 0, 0.8)',
-      } as CSSProperties;
-    }
-
-    return {
-      '--room-nav-sticky-border': 'rgba(255, 255, 255, 0.1)',
-      '--room-nav-sticky-bg': 'rgba(20, 21, 24, 0.92)',
-      '--room-nav-sticky-shadow': '0 10px 24px -24px rgba(0, 0, 0, 0.72)',
-    } as CSSProperties;
-  }, [theme]);
   const showAllViewGrouping = activeRoom === 'All' && onAllViewGroupingChange;
   const canReorderRooms = isEditMode && Boolean(onRoomOrderChange) && manageableRooms.length > 0;
   const hasEditMenus = Boolean(
@@ -227,146 +140,137 @@ export const RoomNav = memo(function RoomNav({
 
   return (
     <>
-      <div
-        ref={stickyMarkerRef}
-        aria-hidden="true"
-        // Zero height keeps this marker out of layout. The negative bottom margin
-        // cancels the parent flex gap so the nav does not gain extra top spacing.
-        className="h-0 -mb-6 pointer-events-none md:-mb-8"
-      />
-      <div ref={stickyRef} className="sticky top-0 z-30" style={{ top: stickyOffset }}>
-        <div ref={shellRef} className="room-nav-shell" data-theme={theme} style={stickyShellStyle}>
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
-              <div className="flex min-w-max items-center gap-1.5 md:gap-2">
-                {visibleRooms.map((room) => (
-                  <RoomNavItem
-                    key={room}
-                    room={room}
-                    activeRoom={activeRoom}
-                    allLabel={t('dashboard.roomNav.all')}
-                    activeClassName={activeRoomItemClassName}
-                    inactiveClassName={inactiveRoomItemClassName}
-                    onRoomChange={onRoomChange}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 pl-1.5 md:gap-2 md:pl-2">
-              {isEditMode && showAllViewGrouping ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <RoomNavMenuButton
-                      icon={LayoutGrid}
-                      label={t('dashboard.roomNav.view')}
-                      textSecondary={textSecondary}
-                      className={actionPillClassName}
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
-                  >
-                    <DropdownMenuLabel className={`px-3 py-2 text-sm font-medium ${textSecondary}`}>
-                      {t('dashboard.roomNav.groupBy')}
-                    </DropdownMenuLabel>
-                    {allViewGroupingOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        className={dropdownItemClassName}
-                        onClick={() => onAllViewGroupingChange(option.value)}
-                      >
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          <span>{option.label}</span>
-                        </span>
-                        {allViewGrouping === option.value ? <Check className="h-4 w-4" /> : null}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-
-              {canReorderRooms ? (
-                <InteractivePill
-                  onClick={() => setIsReorderDialogOpen(true)}
-                  intent="action"
-                  size="small"
-                  className={actionPillClassName}
-                >
-                  <GripVertical className={`h-4 w-4 ${textSecondary}`} />
-                  <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
-                    {t('dashboard.roomNav.reorder')}
-                  </span>
-                </InteractivePill>
-              ) : null}
-
-              {isEditMode && onAddEntity ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <RoomNavMenuButton
-                      icon={Lightbulb}
-                      label={t('dashboard.roomNav.add')}
-                      textSecondary={textSecondary}
-                      className={actionPillClassName}
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
-                  >
-                    <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
-                      <Lightbulb className="h-4 w-4" />
-                      {addEntityLabel}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-
-              {hasEditMenus ? (
-                <div
-                  aria-hidden="true"
-                  className={`mx-1 h-6 w-px shrink-0 rounded-full ${dividerClass}`}
+      <div className="hidden md:block">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max items-center gap-1.5 md:gap-2">
+              {visibleRooms.map((room) => (
+                <RoomNavItem
+                  key={room}
+                  room={room}
+                  activeRoom={activeRoom}
+                  allLabel={t('dashboard.roomNav.all')}
+                  activeClassName={activeRoomItemClassName}
+                  inactiveClassName={inactiveRoomItemClassName}
+                  onRoomChange={onRoomChange}
                 />
-              ) : null}
+              ))}
+            </div>
+          </div>
 
+          <div className="flex shrink-0 items-center gap-1.5 pl-1.5 md:gap-2 md:pl-2">
+            {isEditMode && showAllViewGrouping ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <RoomNavMenuButton
+                    icon={LayoutGrid}
+                    label={t('dashboard.roomNav.view')}
+                    textSecondary={textSecondary}
+                    className={actionPillClassName}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                >
+                  <DropdownMenuLabel className={`px-3 py-2 text-sm font-medium ${textSecondary}`}>
+                    {t('dashboard.roomNav.groupBy')}
+                  </DropdownMenuLabel>
+                  {allViewGroupingOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      className={dropdownItemClassName}
+                      onClick={() => onAllViewGroupingChange(option.value)}
+                    >
+                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span>{option.label}</span>
+                      </span>
+                      {allViewGrouping === option.value ? <Check className="h-4 w-4" /> : null}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+
+            {canReorderRooms ? (
               <InteractivePill
-                onClick={onToggleEditMode}
-                active={isEditMode}
+                onClick={() => setIsReorderDialogOpen(true)}
                 intent="action"
                 size="small"
-                className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
-                  isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
-                }`}
-                style={
-                  isEditMode
-                    ? {
-                        backgroundColor: accentColor,
-                        borderColor: `${accentColor}66`,
-                        boxShadow: `0 14px 28px -18px ${accentColor}`,
-                      }
-                    : undefined
-                }
+                className={actionPillClassName}
               >
-                {isEditMode ? (
-                  <>
-                    <Check className="h-4 w-4 text-white" />
-                    <span className="hidden text-sm font-medium text-white md:inline">
-                      {t('dashboard.roomNav.doneEditing')}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Edit3 className={`h-4 w-4 ${textSecondary}`} />
-                    <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
-                      {t('dashboard.roomNav.customize')}
-                    </span>
-                  </>
-                )}
+                <GripVertical className={`h-4 w-4 ${textSecondary}`} />
+                <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
+                  {t('dashboard.roomNav.reorder')}
+                </span>
               </InteractivePill>
-            </div>
+            ) : null}
+
+            {isEditMode && onAddEntity ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <RoomNavMenuButton
+                    icon={Lightbulb}
+                    label={t('dashboard.roomNav.add')}
+                    textSecondary={textSecondary}
+                    className={actionPillClassName}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                >
+                  <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
+                    <Lightbulb className="h-4 w-4" />
+                    {addEntityLabel}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+
+            {hasEditMenus ? (
+              <div
+                aria-hidden="true"
+                className={`mx-1 h-6 w-px shrink-0 rounded-full ${dividerClass}`}
+              />
+            ) : null}
+
+            <InteractivePill
+              onClick={onToggleEditMode}
+              active={isEditMode}
+              intent="action"
+              size="small"
+              className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
+                isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
+              }`}
+              style={
+                isEditMode
+                  ? {
+                      backgroundColor: accentColor,
+                      borderColor: `${accentColor}66`,
+                      boxShadow: `0 14px 28px -18px ${accentColor}`,
+                    }
+                  : undefined
+              }
+            >
+              {isEditMode ? (
+                <>
+                  <Check className="h-4 w-4 text-white" />
+                  <span className="hidden text-sm font-medium text-white md:inline">
+                    {t('dashboard.roomNav.doneEditing')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Edit3 className={`h-4 w-4 ${textSecondary}`} />
+                  <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
+                    {t('dashboard.roomNav.customize')}
+                  </span>
+                </>
+              )}
+            </InteractivePill>
           </div>
         </div>
       </div>

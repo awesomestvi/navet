@@ -301,5 +301,9 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     );
   }
 
-  return <DashboardLayout>{sectionContent}</DashboardLayout>;
+  return (
+    <DashboardLayout mobileRoomNavigation={{ activeRoom, onRoomChange: changeRoom, rooms }}>
+      {sectionContent}
+    </DashboardLayout>
+  );
 }

@@ -10,6 +10,8 @@ import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
+export type HeaderController = ReturnType<typeof useHeaderController>;
+
 // Narrow to only person.* entities — the only domain this controller needs.
 // Defined at module scope so the selector reference is stable and shallow equality
 // can do its job: no re-render unless a person entity actually changes.
@@ -34,6 +36,7 @@ export function useHeaderController() {
 
   const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();
   const {
+    closeMobileSearch,
     handleClearSearch,
     handleSearchChange,
     handleToggleMobileSearch,
@@ -90,6 +93,7 @@ export function useHeaderController() {
     formattedDate,
     formattedTime,
     greetingKey,
+    closeMobileSearch,
     handleClearSearch,
     handleSearchChange,
     handleToggleMobileSearch,

@@ -86,7 +86,17 @@ export function useHeaderSearch() {
     });
   };
 
+  const openMobileSearch = () => {
+    setIsMobileSearchOpen(true);
+    window.setTimeout(() => mobileSearchInputRef.current?.focus(), 0);
+  };
+
+  const closeMobileSearch = () => {
+    setIsMobileSearchOpen(false);
+  };
+
   return {
+    closeMobileSearch,
     handleClearSearch,
     handleSearchChange,
     handleToggleMobileSearch,
@@ -94,6 +104,7 @@ export function useHeaderSearch() {
     isSearchActive,
     isSearchFocused,
     mobileSearchInputRef,
+    openMobileSearch,
     searchQuery,
     setIsMobileSearchOpen,
     setIsSearchFocused,
