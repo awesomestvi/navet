@@ -26,3 +26,5 @@ export const BRIGHTNESS_PRESET_DEFINITIONS = [
   { key: 'dim', icon: Moon, defaultBrightness: 50, label: 'Dim' },
   { key: 'night', icon: Sparkles, defaultBrightness: 25, label: 'Night' },
 ] as const;
+
+export type BrightnessPresetKey = (typeof BRIGHTNESS_PRESET_DEFINITIONS)[number]['key'];

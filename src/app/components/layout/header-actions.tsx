@@ -55,13 +55,14 @@ export function HeaderMobileActions({
         hoverBg={hoverBg}
         isNotificationOpen={isNotificationOpen}
         mobileNotificationButtonRef={mobileNotificationButtonRef}
+        renderPanel
         setIsNotificationOpen={setIsNotificationOpen}
         textSecondary={textSecondary}
         unreadCount={unreadCount}
         mobile
       />
 
-      <UserDropdown avatarUrl={avatarUrl} />
+      <UserDropdown avatarUrl={avatarUrl} variant="mobile" />
     </div>
   );
 }
@@ -73,10 +74,13 @@ export function HeaderDesktopActions({
   hoverBg,
   isNotificationOpen,
   mobileNotificationButtonRef,
+  renderPanel = true,
   setIsNotificationOpen,
   textSecondary,
   unreadCount,
-}: Omit<HeaderActionsProps, 'isMobileSearchOpen' | 'onToggleMobileSearch' | 'searchAriaLabel'>) {
+}: Omit<HeaderActionsProps, 'isMobileSearchOpen' | 'onToggleMobileSearch' | 'searchAriaLabel'> & {
+  renderPanel?: boolean;
+}) {
   return (
     <>
       <HeaderNotificationButton
@@ -85,6 +89,7 @@ export function HeaderDesktopActions({
         hoverBg={hoverBg}
         isNotificationOpen={isNotificationOpen}
         mobileNotificationButtonRef={mobileNotificationButtonRef}
+        renderPanel={renderPanel}
         setIsNotificationOpen={setIsNotificationOpen}
         textSecondary={textSecondary}
         unreadCount={unreadCount}
@@ -94,13 +99,14 @@ export function HeaderDesktopActions({
   );
 }
 
-function HeaderNotificationButton({
+export function HeaderNotificationButton({
   activeColorValue,
   desktopNotificationButtonRef,
   hoverBg,
   isNotificationOpen,
   mobile = false,
   mobileNotificationButtonRef,
+  renderPanel = false,
   setIsNotificationOpen,
   textSecondary,
   unreadCount,
@@ -111,6 +117,7 @@ function HeaderNotificationButton({
   isNotificationOpen: boolean;
   mobile?: boolean;
   mobileNotificationButtonRef: RefObject<HTMLButtonElement | null>;
+  renderPanel?: boolean;
   setIsNotificationOpen: (open: boolean) => void;
   textSecondary: string;
   unreadCount: number;
@@ -140,7 +147,7 @@ function HeaderNotificationButton({
         ) : null}
       </button>
 
-      {!mobile ? (
+      {renderPanel ? (
         <NotificationPanel
           isOpen={isNotificationOpen}
           onClose={() => setIsNotificationOpen(false)}

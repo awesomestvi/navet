@@ -20,7 +20,7 @@ import { memo } from 'react';
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { Label } from '@/app/components/ui/label';
-import type { BrightnessPresetKey } from '@/app/features/lighting';
+import type { BrightnessPresetKey } from '@/app/constants/light-constants';
 import { useI18n } from '@/app/hooks';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 

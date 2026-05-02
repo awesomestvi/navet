@@ -8,6 +8,7 @@ shared UI layer backed by:
 
 - authoring in `src/app/components/primitives/` and `src/app/components/patterns/`
 - curated exports in `src/app/components/system/`
+- canonical developer imports in `src/app/ui-kit/`
 - shared visual decisions in theme/token helpers
 - Storybook as the review and documentation surface
 - component layers: `primitives/`, `patterns/`, `system/`, `shared/`, `layout/`, `ui/`, `figma/`
@@ -29,7 +30,7 @@ Use these docs when you are:
 2. Patterns over duplication. If the same structure appears across cards or dialogs, extract it.
 3. `system/` is a curated export layer, not the authoring location for new components.
 4. Performance matters. Visual richness cannot make the app unusable on wall panels or tablets.
-5. Storybook is the workshop. Stable shared UI should be reviewed there, not only in app pages.
+5. Storybook is the workshop and the internal UI-kit entrypoint. Stable shared UI should be reviewed there, not only in app pages.
 6. Unit tests cover logic seams. Shared utilities, store behavior, and controller logic should be
    verified in Vitest rather than only through visual review.
 

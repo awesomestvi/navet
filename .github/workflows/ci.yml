@@ -34,6 +34,9 @@ jobs:
       - name: Validate Storybook standards
         run: pnpm check:stories
 
+      - name: Validate UI kit boundaries
+        run: pnpm check:ui-kit
+
       - name: Typecheck
         run: pnpm typecheck
 

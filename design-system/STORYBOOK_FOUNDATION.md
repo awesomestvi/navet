@@ -6,6 +6,7 @@ Navet should grow an internal component workshop before it grows a package works
 
 - Keep Navet in a single repo for now.
 - Build on an internal design-system layer under `src/app/components/system/`.
+- Treat Storybook as the official developer-facing UI-kit surface.
 - Run Storybook in this repo instead of splitting into a package workspace.
 - Delay a monorepo or package split until there is more than one real consumer.
 
@@ -57,10 +58,13 @@ The code foundation now groups stable exports into three buckets:
   - composed UI sections such as field wrappers, empty-state layouts, message bars, and preview cards
 - `src/app/components/system/`
   - curated public export surface for Storybook navigation and cross-app discovery
+- `src/app/ui-kit/`
+  - canonical developer import surface for Navet UI
 - `src/app/components/system/tokens/`
   - theme surface helpers, accent shell treatments, color helpers, and style calculators
 
 Author shared UI in `primitives/` or `patterns/` first. Re-export stable pieces through `system/`.
+For new usage and Storybook docs, prefer `@/app/ui-kit/*`.
 
 ## Story Hierarchy
 
@@ -102,6 +106,7 @@ Storybook sorting is controlled centrally in `.storybook/preview.tsx`. Avoid inv
 - Every story should render in all four themes where possible.
 - Every interactive component should show idle, hover, active, disabled, and selected states.
 - Every pattern should have mobile and desktop variants.
+- Every Storybook docs example should use `@/app/ui-kit/*` imports when a stable shared export exists.
 - Prefer real Navet copy and spacing tokens over synthetic examples.
 - Keep feature-specific data loaders and Home Assistant wiring out of stories.
 - Co-locate the story with the component or feature it documents.
@@ -116,4 +121,4 @@ Only move to a package workspace if one of these becomes true:
 - The UI system needs independent release/versioning
 - Build and ownership boundaries become painful in one package
 
-Until then, Storybook plus `src/app/components/system/` is the simpler path.
+Until then, Storybook plus `src/app/ui-kit/` is the simpler path.

@@ -13,7 +13,10 @@ import {
 import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { HeaderSearchInput } from '@/app/components/layout/header-search-input';
+import { Button } from '@/app/components/primitives';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
+import { getInteractivePillStyles } from '@/app/components/shared/theme/interactive-pill-styles';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { type Section, useI18n, useMediaQuery, useNavigation, useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
@@ -53,7 +56,7 @@ export const Sidebar = memo(function Sidebar({
   textPrimary,
   textSecondary,
 }: SidebarProps) {
-  const { theme } = useTheme();
+  const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const { activeSection, setActiveSection } = useNavigation();
   const { effectsQuality, lowPowerMode } = useSettingsStore(
@@ -67,8 +70,8 @@ export const Sidebar = memo(function Sidebar({
     () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
     [resolvedEffectsQuality, theme]
   );
+  const cardShell = useMemo(() => getCardShellSurfaceTokens(theme), [theme]);
   const isGlass = theme === 'glass';
-  const isBlack = theme === 'black';
   const isLight = theme === 'light';
   const isHighEffects = resolvedEffectsQuality === 'high';
   const resolvedHoverBg = hoverBg ?? surface.hoverBg;
@@ -161,20 +164,7 @@ export const Sidebar = memo(function Sidebar({
   const mobileMenuItems = menuItems.filter((item) =>
     ['home', 'energy', 'security', 'settings'].includes(item.section)
   );
-  const mobileDockBackground = isGlass
-    ? isHighEffects
-      ? 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)), rgba(12,18,32,0.76)'
-      : 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)), rgba(10,16,28,0.88)'
-    : isLight
-      ? 'rgba(255,255,255,0.94)'
-      : isBlack
-        ? 'rgba(0,0,0,0.94)'
-        : 'rgba(10,10,10,0.96)';
-  const searchAccessoryBackground = isGlass
-    ? isHighEffects
-      ? 'linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)), rgba(12,18,32,0.8)'
-      : 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)), rgba(10,16,28,0.9)'
-    : mobileDockBackground;
+  const searchAccessoryBackground = undefined;
   const mobileDockShadow = isGlass
     ? isHighEffects
       ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 18px 34px -24px rgba(0,0,0,0.55)'
@@ -185,22 +175,14 @@ export const Sidebar = memo(function Sidebar({
   const mobileSearchFieldBg = isLight ? resolvedInputBg : 'bg-white/92';
   const mobileSearchFieldText = isLight ? resolvedTextPrimary : 'text-slate-950';
   const mobileSearchFieldIcon = isLight ? 'text-slate-500' : 'text-slate-500';
-  const mobileAccessoryBorder = 'border-transparent';
-  const mobileAccessoryBg = isLight ? 'bg-white/86' : isBlack ? 'bg-white/4' : 'bg-zinc-900/92';
-  const activeTabClassName = isLight
-    ? 'border-slate-300/80 bg-white text-slate-950 shadow-[0_10px_18px_-16px_rgba(15,23,42,0.24)]'
-    : isBlack
-      ? 'border-white/12 bg-white/8 text-white'
-      : isGlass
-        ? 'border-white/14 bg-white/10 text-white'
-        : 'border-zinc-700/90 bg-zinc-800 text-white';
-  const inactiveTabClassName = isLight
-    ? 'border-transparent text-slate-600'
-    : isBlack
-      ? 'border-transparent text-zinc-300'
-      : isGlass
-        ? 'border-transparent text-white/76'
-        : 'border-transparent text-zinc-300';
+  const getMobileTabPill = (isActive: boolean) =>
+    getInteractivePillStyles({
+      intent: 'navigation',
+      isActive,
+      primaryColor,
+      theme,
+      variant: isActive ? 'default' : 'ghost',
+    });
 
   return (
     <>
@@ -242,10 +224,12 @@ export const Sidebar = memo(function Sidebar({
 
       {/* Mobile Bottom Navigation */}
       <div
-        className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom,0px)+1.3125rem)] z-50 px-[1.3125rem] transition-transform duration-300 md:hidden"
+        className="mobile-bottom-dock-offset fixed inset-x-0 z-50 px-[1.3125rem] transition-[transform,opacity] duration-300 md:hidden"
         style={{
+          opacity: isMobileNavHidden ? 0 : 1,
+          pointerEvents: isMobileNavHidden ? 'none' : 'auto',
           transform: isMobileNavHidden
-            ? 'translateY(calc(100% + max(env(safe-area-inset-bottom), 0px) + 1rem))'
+            ? 'translateY(calc(100% + var(--mobile-bottom-dock-offset) + var(--mobile-bottom-dock-viewport-overlap) + 1rem))'
             : 'translateY(0)',
         }}
       >
@@ -271,67 +255,75 @@ export const Sidebar = memo(function Sidebar({
               />
             </div>
 
-            <button
-              type="button"
+            <Button
+              iconOnly
+              variant="secondary"
+              size="small"
               onClick={handleToggleMobileSearch}
-              aria-label={t('common.close')}
-              className={`relative flex h-12.5 w-12.5 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 ${mobileAccessoryBorder} ${mobileAccessoryBg}`}
+              label={t('common.close')}
+              className="h-12.5 w-12.5 shrink-0 border-transparent! backdrop-blur-xl"
               style={{
                 background: searchAccessoryBackground,
                 boxShadow: mobileDockShadow,
               }}
             >
               <X className={`h-4 w-4 ${resolvedTextSecondary}`} />
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex items-end gap-2.5">
             <div
-              className="relative min-w-0 flex-1 overflow-hidden rounded-[22px]"
-              style={{ background: mobileDockBackground, boxShadow: mobileDockShadow }}
+              className={`relative min-w-0 flex-1 overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+              style={{ boxShadow: mobileDockShadow }}
             >
               {isGlass ? (
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_42%)]" />
               ) : null}
 
-              <div
-                className={`relative flex min-h-12.5 items-stretch justify-around px-0.75 py-0.75 ${
-                  isGlass ? surface.panelMuted : surface.shellPanel
-                }`}
-              >
-                {mobileMenuItems.map((item) => (
-                  <button
-                    key={item.section}
-                    onClick={item.onClick}
-                    aria-label={item.label}
-                    aria-current={activeSection === item.section ? 'page' : undefined}
-                    type="button"
-                    className={`flex min-h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-px rounded-[20px] transition-colors ${
-                      activeSection === item.section ? activeTabClassName : inactiveTabClassName
-                    }`}
-                  >
-                    <item.icon className="h-[0.88rem] w-[0.88rem] shrink-0" />
-                    <span className="max-w-full whitespace-nowrap px-0.5 text-[11px] font-normal leading-none tracking-normal">
-                      {item.label}
-                    </span>
-                  </button>
-                ))}
+              <div className="relative flex min-h-12.5 items-stretch justify-around px-0.75 py-0.75">
+                {mobileMenuItems.map((item) => {
+                  const isActive = activeSection === item.section;
+                  const pill = getMobileTabPill(isActive);
+
+                  return (
+                    <button
+                      key={item.section}
+                      onClick={item.onClick}
+                      aria-label={item.label}
+                      aria-current={isActive ? 'page' : undefined}
+                      type="button"
+                      className={`flex min-h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-[20px] px-1 py-1.5 transition-all ${pill.className}`}
+                      style={pill.style}
+                    >
+                      <item.icon className="h-[0.94rem] w-[0.94rem] shrink-0" />
+                      <span
+                        className={`max-w-full whitespace-nowrap px-0.5 text-[11px] leading-none tracking-[-0.01em] ${
+                          isActive ? 'font-semibold' : 'font-medium'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <button
-              type="button"
+            <Button
+              iconOnly
+              variant="secondary"
+              size="small"
               onClick={handleToggleMobileSearch}
-              aria-label={t('sidebar.search')}
+              label={t('sidebar.search')}
               aria-expanded={isMobileSearchOpen}
-              className={`relative flex h-12.5 w-12.5 shrink-0 items-center justify-center rounded-full transition-transform duration-200 ${mobileAccessoryBorder} ${mobileAccessoryBg}`}
+              className="h-12.5 w-12.5 shrink-0 border-transparent! backdrop-blur-xl"
               style={{
                 background: searchAccessoryBackground,
                 boxShadow: mobileDockShadow,
               }}
             >
               <Search className={`h-[0.95rem] w-[0.95rem] ${resolvedTextSecondary}`} />
-            </button>
+            </Button>
           </div>
         )}
       </div>

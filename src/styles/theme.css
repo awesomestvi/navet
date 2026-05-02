@@ -516,6 +516,15 @@
     bottom: max(calc(env(safe-area-inset-bottom) - 8px), 0px);
   }
 
+  .mobile-bottom-dock-offset {
+    --mobile-bottom-dock-offset: 1.3125rem;
+    --mobile-bottom-dock-viewport-overlap: max(
+      calc(var(--navet-viewport-height, 0px) - var(--navet-visible-viewport-height, 0px)),
+      0px
+    );
+    bottom: var(--mobile-bottom-dock-offset);
+  }
+
   @media (display-mode: standalone), (display-mode: fullscreen) {
     .safe-area-pt-3 {
       padding-top: calc(0.75rem + max(env(safe-area-inset-top), 0px));
@@ -527,6 +536,11 @@
 
     .safe-area-pt-5 {
       padding-top: calc(1.25rem + max(env(safe-area-inset-top), 0px));
+    }
+
+    .mobile-bottom-dock-offset {
+      --mobile-bottom-dock-offset: max(calc(env(safe-area-inset-bottom) - 6px), 0.5rem);
+      --mobile-bottom-dock-viewport-overlap: 0px;
     }
   }
 

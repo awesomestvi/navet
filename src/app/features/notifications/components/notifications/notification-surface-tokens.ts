@@ -3,6 +3,7 @@ import type { ThemeType } from '@/app/hooks';
 
 interface NotificationSurfaceTokens {
   panelClassName: string;
+  sheetClassName: string;
   borderClassName: string;
   dividerClassName: string;
   hoverClassName: string;
@@ -11,6 +12,7 @@ interface NotificationSurfaceTokens {
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
+  dialogBackdrop: string;
 }
 
 export function getNotificationSurfaceTokens(theme: ThemeType): NotificationSurfaceTokens {
@@ -20,6 +22,7 @@ export function getNotificationSurfaceTokens(theme: ThemeType): NotificationSurf
 
   return {
     panelClassName: `${surface.panel} ${blurClassName} border ${surface.border} rounded-2xl shadow-2xl`,
+    sheetClassName: `${surface.panel} ${blurClassName} border ${surface.border}`,
     borderClassName:
       theme === 'light'
         ? 'border-gray-200'
@@ -40,5 +43,6 @@ export function getNotificationSurfaceTokens(theme: ThemeType): NotificationSurf
     textPrimary: surface.textPrimary,
     textSecondary: surface.textSecondary,
     textMuted: surface.textSubtle,
+    dialogBackdrop: surface.dialogBackdrop,
   };
 }

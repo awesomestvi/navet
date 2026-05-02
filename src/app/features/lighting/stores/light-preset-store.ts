@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { BRIGHTNESS_PRESET_DEFINITIONS } from '@/app/constants/light-constants';
+import {
+  BRIGHTNESS_PRESET_DEFINITIONS,
+  type BrightnessPresetKey,
+} from '@/app/constants/light-constants';
 
-export type BrightnessPresetKey = (typeof BRIGHTNESS_PRESET_DEFINITIONS)[number]['key'];
+export type { BrightnessPresetKey } from '@/app/constants/light-constants';
 
 type BrightnessPresetValues = Record<BrightnessPresetKey, number>;
 

@@ -48,3 +48,9 @@ export const WithAvatar: Story = {
     avatarUrl: 'https://i.pravatar.cc/96?img=47',
   },
 };
+
+export const Mobile: Story = {
+  args: {
+    variant: 'mobile',
+  },
+};

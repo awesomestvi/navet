@@ -36,6 +36,41 @@ function NotificationPanelPreview({
   );
 }
 
+function NotificationPanelMobilePreview({
+  triggerRef,
+  children,
+}: {
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[44rem] justify-center bg-slate-950 p-6">
+      <div className="relative w-full max-w-[24rem] overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+              Mobile Header
+            </p>
+            <p className="truncate text-sm font-semibold text-white/88">Notifications sheet</p>
+          </div>
+          <button
+            ref={triggerRef}
+            type="button"
+            aria-label="Notifications"
+            className="relative flex h-9 w-9 items-center justify-center rounded-[22px] bg-white/8 text-white/70 transition-colors hover:bg-white/12"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-cyan-400" />
+          </button>
+        </div>
+
+        <div className="h-[38rem] bg-[linear-gradient(180deg,rgba(15,23,42,0.42),rgba(2,6,23,0.82))]" />
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function NotificationPanelStory({ isOpen = true }: { isOpen?: boolean }) {
   const notificationButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -43,6 +78,16 @@ function NotificationPanelStory({ isOpen = true }: { isOpen?: boolean }) {
     <NotificationPanelPreview triggerRef={notificationButtonRef}>
       <NotificationPanel isOpen={isOpen} onClose={() => {}} triggerRefs={[notificationButtonRef]} />
     </NotificationPanelPreview>
+  );
+}
+
+function NotificationPanelMobileStory({ isOpen = true }: { isOpen?: boolean }) {
+  const notificationButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  return (
+    <NotificationPanelMobilePreview triggerRef={notificationButtonRef}>
+      <NotificationPanel isOpen={isOpen} onClose={() => {}} triggerRefs={[notificationButtonRef]} />
+    </NotificationPanelMobilePreview>
   );
 }
 
@@ -155,6 +200,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Open: Story = {};
+
+export const MobileOpen: Story = {
+  render: () => <NotificationPanelMobileStory />,
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+};
 
 export const NotificationExample: Story = {
   render: () => <NotificationExamplePanel notification={normalNotification} />,

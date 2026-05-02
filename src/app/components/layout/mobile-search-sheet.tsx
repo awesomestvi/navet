@@ -1,7 +1,6 @@
-import * as Dialog from '@radix-ui/react-dialog';
 import { Search, X } from 'lucide-react';
 import { memo } from 'react';
-import { DialogShell } from '@/app/components/primitives';
+import { SheetSurface } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
@@ -37,37 +36,21 @@ export const MobileSearchSheet = memo(function MobileSearchSheet({
   } = controller;
 
   return (
-    <DialogShell
+    <SheetSurface
       isOpen={isMobileSearchOpen}
       onOpenChange={(open) => {
         if (!open) {
           closeMobileSearch();
         }
       }}
-      contentAriaDescribedBy="mobile-search-sheet-description"
+      title={t('sidebar.search')}
+      description={t('header.searchPlaceholder')}
+      accentColor={accentColor}
       overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
-      contentClassName={`fixed inset-x-0 bottom-0 z-50 mx-2 mb-2 overflow-hidden rounded-[30px] border p-0 shadow-2xl md:hidden ${surface.panel} ${surface.border} ${
-        theme === 'glass' ? 'backdrop-blur-2xl' : ''
-      }`}
-      contentGlowClassName={
-        theme === 'glass'
-          ? 'pointer-events-none bg-[linear-gradient(180deg,rgba(255,255,255,0.14),transparent_42%)]'
-          : undefined
-      }
-      contentStyle={{
-        boxShadow:
-          theme === 'glass'
-            ? `0 -24px 64px -40px ${accentColor}66, 0 24px 48px -36px rgba(0,0,0,0.72)`
-            : undefined,
-      }}
+      contentClassName={`${surface.panel} ${surface.border}`}
+      bodyClassName="px-4"
     >
-      <Dialog.Title className="sr-only">{t('sidebar.search')}</Dialog.Title>
-      <Dialog.Description id="mobile-search-sheet-description" className="sr-only">
-        {t('header.searchPlaceholder')}
-      </Dialog.Description>
-
-      <div className="relative px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.9rem)]">
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20" aria-hidden="true" />
+      <div className="relative">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
@@ -108,6 +91,6 @@ export const MobileSearchSheet = memo(function MobileSearchSheet({
           textSecondary={textSecondary}
         />
       </div>
-    </DialogShell>
+    </SheetSurface>
   );
 });

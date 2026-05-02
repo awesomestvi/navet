@@ -3,10 +3,11 @@
 export {
   CardActionRow,
   DashboardEmptyState,
+  DashboardHeroSection,
   FieldBlock,
   InteractionPreviewCard,
+  SectionCard,
   SettingsLivePreviewFrame,
   TableCellContent,
 } from '@/app/components/patterns';
 export { MessageBar, type MessageBarProps } from '@/app/components/primitives/message-bar';
-export { DashboardHeroSection } from '@/app/features/dashboard';

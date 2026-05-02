@@ -1,1 +1,1 @@
-pnpm check:lockfile && pnpm check && pnpm check:stories && pnpm typecheck && pnpm test
+pnpm check:lockfile && pnpm check && pnpm check:stories && pnpm check:ui-kit && pnpm typecheck && pnpm test

@@ -1,8 +1,5 @@
-import {
-  CustomDialogDoneButton,
-  DialogFooter,
-  DialogShell,
-} from '@/app/components/primitives/dialog-shell';
+import { CustomDialogDoneButton, DialogFooter } from '@/app/components/primitives/dialog-shell';
+import { ModalSurface } from '@/app/components/primitives/modal-surface';
 import { useI18n } from '@/app/hooks';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
@@ -53,11 +50,14 @@ export function MediaDialogContent({
   const { t } = useI18n();
 
   return (
-    <DialogShell
+    <ModalSurface
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={title}
+      description={artist ?? title}
+      bodyClassName="px-5 py-5 md:p-7"
       overlayClassName={`animate-in fade-in ${controller.surface.dialogBackdrop}`}
-      contentClassName={`fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[28px] border px-5 py-5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 md:w-[90vw] md:p-7 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
+      contentClassName={`max-h-[85vh] max-w-md overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
         controller.isGlass ? 'bg-white/8 border-white/18' : 'bg-zinc-950/92 border-white/10'
       }`}
       contentStyle={controller.dialogSurfaceStyle}
@@ -126,6 +126,6 @@ export function MediaDialogContent({
           />
         </DialogFooter>
       </div>
-    </DialogShell>
+    </ModalSurface>
   );
 }

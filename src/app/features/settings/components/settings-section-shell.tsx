@@ -1,8 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { DashboardHeroSection } from '@/app/features/dashboard';
 import { useI18n } from '@/app/hooks';
+import { DashboardHeroSection } from '@/app/ui-kit/patterns';
 import type { SettingsSectionStyles } from '../hooks/settings-section-styles';
 import type { SectionNavItem } from '../hooks/use-settings-section-controller';
 

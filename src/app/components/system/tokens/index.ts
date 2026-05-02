@@ -46,3 +46,12 @@ export {
   type NavetMotionProfileName,
   navetMotionTokens,
 } from './motion';
+export {
+  getUiKitGlassSheetGlowClassName,
+  getUiKitModalContentClassName,
+  getUiKitPanelSurfaceClassName,
+  getUiKitSheetContentClassName,
+  getUiKitSheetOverlayClassName,
+  navetUiKitRadiusTokens,
+  type UiKitPanelVariant,
+} from './ui-kit-surfaces';

@@ -1,7 +1,8 @@
 import { CalendarDays, Clock3 } from 'lucide-react';
 import { memo } from 'react';
 import { AppReleaseBadge } from '@/app/components/shared/app-release-badge';
-import { HeaderDesktopActions } from './header-actions';
+import { NotificationPanel } from '@/app/features/notifications';
+import { HeaderDesktopActions, HeaderNotificationButton } from './header-actions';
 import { HeaderSearchInput } from './header-search-input';
 import { MobileRoomDropdown, type MobileRoomNavigation } from './mobile-room-dropdown';
 import { type HeaderController, useHeaderController } from './use-header-controller';
@@ -46,7 +47,7 @@ function HeaderView({
   return (
     <>
       <div className="flex items-center gap-2 md:hidden">
-        <UserDropdown avatarUrl={avatarUrl} />
+        <UserDropdown avatarUrl={avatarUrl} variant="mobile" />
         <div className="min-w-0 flex-1">
           <h1 className={`truncate text-[1rem] leading-none font-semibold ${textPrimary}`}>
             {t(greetingKey, { name: firstName })}
@@ -64,6 +65,17 @@ function HeaderView({
         {mobileRoomNavigation ? (
           <MobileRoomDropdown navigation={mobileRoomNavigation} compact />
         ) : null}
+        <HeaderNotificationButton
+          activeColorValue={activeColorValue}
+          desktopNotificationButtonRef={desktopNotificationButtonRef}
+          hoverBg={hoverBg}
+          isNotificationOpen={isNotificationOpen}
+          mobile
+          mobileNotificationButtonRef={mobileNotificationButtonRef}
+          setIsNotificationOpen={setIsNotificationOpen}
+          textSecondary={textSecondary}
+          unreadCount={unreadCount}
+        />
       </div>
 
       <div className="hidden md:flex md:flex-row md:items-center md:justify-between md:gap-4">
@@ -124,6 +136,7 @@ function HeaderView({
               hoverBg={hoverBg}
               isNotificationOpen={isNotificationOpen}
               mobileNotificationButtonRef={mobileNotificationButtonRef}
+              renderPanel={false}
               setIsNotificationOpen={setIsNotificationOpen}
               textSecondary={textSecondary}
               unreadCount={unreadCount}
@@ -131,6 +144,12 @@ function HeaderView({
           </div>
         </div>
       </div>
+
+      <NotificationPanel
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        triggerRefs={[mobileNotificationButtonRef, desktopNotificationButtonRef]}
+      />
     </>
   );
 }

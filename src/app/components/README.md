@@ -18,6 +18,11 @@ This folder has three distinct roles:
   Do not treat `system/` as the source of truth for where new shared components are authored.
   `system/tokens` is the shared home for first-layer foundations such as spacing, radii, icon sizing, and focus behavior.
 
+- `ui-kit/`
+  Canonical import surface for Navet developers.
+  Prefer `@/app/ui-kit/primitives`, `@/app/ui-kit/patterns`, and `@/app/ui-kit/tokens`
+  in new docs, examples, and shared UI consumption. `system/` remains transitional.
+
 - `shared/`
   Existing app-specific shared components that do not belong in the primitive/pattern system.
   Temporary compatibility shims may appear here during migrations, but they should not be long-lived.
@@ -31,6 +36,7 @@ Guidelines:
 
 - Create new shared UI in `primitives/` or `patterns/` first.
 - Re-export stable shared pieces through `system/` once they are ready for broader use.
+- Prefer exposing and consuming stable shared UI through `ui-kit/`.
 - Before adding or widening primitives, align them to the existing foundation tokens in `src/app/components/system/tokens/`.
 - Treat any temporary compatibility shim in `shared/` as a migration path, not as the preferred import target.
 - Keep business logic and feature-specific state out of primitives.

@@ -1,5 +1,6 @@
 import { Activity, LogOut, RefreshCw } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { SheetSurface } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import {
@@ -19,12 +20,17 @@ import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 interface UserDropdownProps {
   avatarUrl?: string | null;
+  variant?: 'desktop' | 'mobile';
 }
 
-export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdownProps) {
+export const UserDropdown = memo(function UserDropdown({
+  avatarUrl,
+  variant = 'desktop',
+}: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const dropdownRef = useClickOutside<HTMLDivElement>(() => setIsOpen(false), isOpen);
+  const isMobile = variant === 'mobile';
+  const dropdownRef = useClickOutside<HTMLDivElement>(() => setIsOpen(false), isOpen && !isMobile);
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
@@ -70,9 +76,70 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
       ? t('userDropdown.role.administrator')
       : t('userDropdown.role.user');
 
+  const content = (
+    <>
+      <div className={`border-b p-4 ${divider}`}>
+        <div className="mb-3 flex items-center gap-3">
+          <Avatar
+            className="h-12 w-12"
+            style={{
+              backgroundColor: accentColor,
+              boxShadow: connected
+                ? `0 0 0 2px ${accentColor}66, 0 0 0 6px ${accentColor}1f`
+                : `0 0 0 1px rgba(255,255,255,0.08)`,
+              opacity: connected ? 1 : 0.84,
+            }}
+          >
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
+            <AvatarFallback className="bg-transparent font-semibold text-white">
+              {initials || t('userDropdown.defaultInitial')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className={`text-sm font-semibold ${textPrimary}`}>{fullName}</p>
+            <p className={`mt-0.5 text-xs ${textMuted}`}>{roleLabel}</p>
+          </div>
+        </div>
+
+        <div className={statusCardClassName}>
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            style={{
+              backgroundColor: connected ? `${accentColor}1f` : 'rgba(255,255,255,0.05)',
+            }}
+          >
+            <Activity className="h-4 w-4" style={{ color: connected ? accentColor : undefined }} />
+          </div>
+          <div className="min-w-0">
+            <p className={`text-xs ${textMuted}`}>{t('settings.system.connection.connectedTo')}</p>
+            <div className="mt-0.5 flex items-center gap-2">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: connected ? '#22c55e' : '#6b7280' }}
+              />
+              <p className={`truncate text-sm font-medium ${textPrimary}`}>
+                {connected ? 'Home Assistant' : t('settings.system.connection.notConnected')}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`space-y-2 border-t p-2 ${divider}`}>
+        <button type="button" onClick={handleRefreshApp} className={refreshButtonClassName}>
+          <RefreshCw className="h-4 w-4" />
+          <span className="text-sm font-medium">{t('pwa.refreshApp')}</span>
+        </button>
+        <button type="button" onClick={handleLogout} className={logoutButtonClassName}>
+          <LogOut className="h-4 w-4" />
+          <span className="text-sm font-medium">{t('common.logout')}</span>
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Avatar Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -97,77 +164,27 @@ export const UserDropdown = memo(function UserDropdown({ avatarUrl }: UserDropdo
         </Avatar>
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
+      {isOpen && !isMobile ? (
         <div
           className={`absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden ${dropdownPanelClassName}`}
         >
-          {/* User Info Section */}
-          <div className={`p-4 border-b ${divider}`}>
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar
-                className="h-12 w-12"
-                style={{
-                  backgroundColor: accentColor,
-                  boxShadow: connected
-                    ? `0 0 0 2px ${accentColor}66, 0 0 0 6px ${accentColor}1f`
-                    : `0 0 0 1px rgba(255,255,255,0.08)`,
-                  opacity: connected ? 1 : 0.84,
-                }}
-              >
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt={fullName} /> : null}
-                <AvatarFallback className="bg-transparent text-white font-semibold">
-                  {initials || t('userDropdown.defaultInitial')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className={`text-sm font-semibold ${textPrimary}`}>{fullName}</p>
-                <p className={`mt-0.5 text-xs ${textMuted}`}>{roleLabel}</p>
-              </div>
-            </div>
-
-            <div className={statusCardClassName}>
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl"
-                style={{
-                  backgroundColor: connected ? `${accentColor}1f` : 'rgba(255,255,255,0.05)',
-                }}
-              >
-                <Activity
-                  className="h-4 w-4"
-                  style={{ color: connected ? accentColor : undefined }}
-                />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-xs ${textMuted}`}>
-                  {t('settings.system.connection.connectedTo')}
-                </p>
-                <div className="mt-0.5 flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: connected ? '#22c55e' : '#6b7280' }}
-                  />
-                  <p className={`truncate text-sm font-medium ${textPrimary}`}>
-                    {connected ? 'Home Assistant' : t('settings.system.connection.notConnected')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* App Actions */}
-          <div className={`space-y-2 p-2 border-t ${divider}`}>
-            <button type="button" onClick={handleRefreshApp} className={refreshButtonClassName}>
-              <RefreshCw className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('pwa.refreshApp')}</span>
-            </button>
-            <button type="button" onClick={handleLogout} className={logoutButtonClassName}>
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('common.logout')}</span>
-            </button>
-          </div>
+          {content}
         </div>
-      )}
+      ) : null}
+
+      {isMobile ? (
+        <SheetSurface
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          title={t('userDropdown.openMenu')}
+          description={fullName}
+          accentColor={accentColor}
+          overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
+          contentClassName={`${surface.panel} ${surface.border}`}
+        >
+          {content}
+        </SheetSurface>
+      ) : null}
 
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>

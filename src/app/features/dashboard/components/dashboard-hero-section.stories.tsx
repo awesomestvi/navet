@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Sparkles } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { DashboardHeroSection } from '@/app/components/system/patterns';
-import { InteractivePill } from '@/app/components/system/primitives';
 import { useTheme } from '@/app/hooks';
+import { DashboardHeroSection } from '@/app/ui-kit/patterns';
+import { InteractivePill } from '@/app/ui-kit/primitives';
+import { getThemeSurfaceTokens } from '@/app/ui-kit/tokens';
 
 function DefaultHeroStory() {
   const { theme } = useTheme();

@@ -308,6 +308,9 @@ export const MapWidget = memo(function MapWidget({
         : theme === 'black'
           ? 'border-white/8 bg-black/72 text-zinc-500'
           : 'border-zinc-800 bg-zinc-950/78 text-zinc-500';
+  const smallAttributionClassName = isSmallCard
+    ? 'bottom-1.5 left-1.5 rounded-[10px] rounded-bl-[16px] px-1.5 py-1 text-[9px] leading-none whitespace-nowrap'
+    : '';
   const settingsButtonClassName = `${baseSurface.border} ${baseSurface.panel} ${cardShell.backdropClassName} ${baseSurface.textSecondary}`;
 
   const markers = useHomeAssistant(selectMapMarkersFromHa, mapMarkersEqual);
@@ -428,23 +431,26 @@ export const MapWidget = memo(function MapWidget({
 
         {isSmallCard ? (
           <div
-            className={`pointer-events-auto absolute bottom-2 left-2 z-[450] max-w-28 rounded-[12px] rounded-bl-[20px] border px-2 py-1.5 text-xs leading-tight ${attributionClassName}`}
+            className={`pointer-events-auto absolute z-[450] border ${smallAttributionClassName} ${attributionClassName}`}
           >
             <a
               href="https://www.openstreetmap.org/copyright"
               target="_blank"
               rel="noreferrer"
               className={baseSurface.textSecondary}
+              aria-label="OpenStreetMap copyright"
+              title="OpenStreetMap contributors"
             >
-              OpenStreetMap
+              OSM
             </a>{' '}
-            contributors
             <span className={`mx-1 ${baseSurface.textMuted}`}>|</span>
             <a
               href="https://carto.com/attributions"
               target="_blank"
               rel="noreferrer"
               className={baseSurface.textSecondary}
+              aria-label="CARTO attributions"
+              title="CARTO attributions"
             >
               CARTO
             </a>

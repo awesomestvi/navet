@@ -8,9 +8,9 @@ import { getCardActionControlSizes } from '@/app/components/shared/card-action-c
 import { getBrightnessPresetSelectedStyle } from '@/app/components/shared/device-editor/brightness-preset-styles';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { getLightCardSurfaceTokens } from '@/app/components/shared/theme/light-card-surface-tokens';
 import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { getLightCardSurfaceTokens } from '@/app/features/lighting';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
 import type { EntityInteractionMode } from '@/app/stores';

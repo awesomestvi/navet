@@ -21,8 +21,8 @@ import {
 import {
   Button,
   DialogDoneFooter,
-  DialogShell,
   InteractivePill,
+  ModalSurface,
   Panel,
 } from '@/app/components/primitives';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
@@ -288,17 +288,20 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   };
 
   return (
-    <DialogShell
+    <ModalSurface
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
+      title={name}
+      description={entityType}
       disableOpenAutoFocus
+      bodyClassName="p-6"
       overlayClassName={surface.dialogBackdrop}
       contentClassName={cn(
-        'fixed top-1/2 left-1/2 z-50 h-auto max-h-[88vh] w-[92vw] max-w-[42rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[30px] border shadow-2xl backdrop-blur-xl',
+        'h-auto max-h-[88vh] max-w-[42rem]',
         surfaceGradientClassName
           ? `bg-gradient-to-br ${surfaceGradientClassName}`
           : dialogSurface.contentClassName,
@@ -318,7 +321,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
       contentOverlayClassName={surfaceOverlayClassName ?? tintSurface.overlayClassName ?? undefined}
     >
       <CustomScrollbar isOn={isActive}>
-        <div className="p-6">
+        <div>
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
@@ -600,6 +603,6 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
           <DialogDoneFooter label={t('common.done')} />
         </div>
       </CustomScrollbar>
-    </DialogShell>
+    </ModalSurface>
   );
 });

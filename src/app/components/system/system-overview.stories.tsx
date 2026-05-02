@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ArrowRight, Layers3, Paintbrush, Sparkles } from 'lucide-react';
 import { toId } from 'storybook/internal/csf';
-import { InteractivePill } from '@/app/components/system/primitives';
-import { getThemeSurfaceTokens } from '@/app/components/system/tokens';
 import { useTheme } from '@/app/hooks';
+import { InteractivePill } from '@/app/ui-kit/primitives';
+import { getThemeSurfaceTokens } from '@/app/ui-kit/tokens';
 
 function toDocsPath(storyName: string) {
   // Use an absolute manager URL so links work from iframe-rendered stories.
@@ -20,6 +20,9 @@ function SystemOverviewPage() {
       description:
         'Design tokens and visual decision helpers — typography, surface treatments, state colors, accent shells, and style calculators.',
       stories: [
+        'Concepts/UI Kit Start Here',
+        'Concepts/UI Kit Inventory',
+        'Concepts/UI Kit Recipes',
         'Theme/Border Radii',
         'Theme/Colors',
         'Theme/Fonts',
@@ -54,6 +57,9 @@ function SystemOverviewPage() {
         'Components/Primitives/Tooltip',
         'Components/Primitives/Tag',
         'Components/Primitives/Panel',
+        'Components/Primitives/Modal Surface',
+        'Components/Primitives/Sheet Surface',
+        'Components/Primitives/Surface Panel',
         'Components/Primitives/Color Input Swatch',
         'Components/Primitives/Loading Spinner',
         'Components/Primitives/Interactive Pill',
@@ -70,8 +76,10 @@ function SystemOverviewPage() {
         'Components/Primitives/MessageBar',
         'Components/Patterns/Table Cell Content',
         'Components/Patterns/Card Action Row',
+        'Components/Patterns/Dashboard Hero Section',
         'Components/Patterns/Empty State',
         'Components/Patterns/Preview Cards',
+        'Components/Patterns/Section Card',
       ],
       icon: Sparkles,
     },
@@ -167,11 +175,13 @@ const meta = {
           '',
           'How the system is organized:',
           '- `Theme` covers visual decision helpers and documentation stories for shared tokens such as surface treatments, readable text behavior, typography, and accent shells.',
-          '- `Primitives` covers low-level reusable building blocks such as pills, buttons, shells, and header parts.',
-          '- `Patterns` covers composed UI sections such as hero layouts, empty states, and interactive previews.',
+          '- `Primitives` covers low-level reusable building blocks such as pills, buttons, modal shells, sheet shells, and card surface containers.',
+          '- `Patterns` covers composed UI sections such as hero layouts, section cards, empty states, and interactive previews.',
+          '- `@/app/ui-kit/*` is the canonical shared import surface for Navet developers.',
           '',
           'How to use this page:',
           '- Start here when you want to understand what already exists before creating new UI.',
+          '- Prefer `@/app/ui-kit/primitives`, `@/app/ui-kit/patterns`, and `@/app/ui-kit/tokens` in examples and new shared code.',
           '- Jump into the linked docs pages for the specific token, primitive, or pattern you want to inspect.',
           '- Prefer evolving shared stories and shared exports before adding one-off feature styling.',
           '',

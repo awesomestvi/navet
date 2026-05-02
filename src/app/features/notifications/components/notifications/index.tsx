@@ -1,4 +1,5 @@
 import { type RefObject, useState } from 'react';
+import { SheetSurface } from '@/app/components/primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +10,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/app/components/ui/alert-dialog';
-import { type PrimaryColor, type ThemeType, useClickOutside, useI18n, useTheme } from '@/app/hooks';
+import {
+  type PrimaryColor,
+  type ThemeType,
+  useClickOutside,
+  useI18n,
+  useMediaQuery,
+  useTheme,
+} from '@/app/hooks';
 import { NotificationEmptyState } from './notification-empty-state';
 import { NotificationHeader } from './notification-header';
 import { NotificationItem } from './notification-item';
@@ -25,9 +33,10 @@ interface NotificationPanelProps {
 
 export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: NotificationPanelProps) {
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const panelRef = useClickOutside<HTMLDivElement>(
     onClose,
-    isOpen && !showClearAllConfirm,
+    isOpen && !showClearAllConfirm && !isMobile,
     triggerRefs
   );
   const { t } = useI18n();
@@ -47,6 +56,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
   const regularNotifications = notifications.filter(
     (notification) => notification.source !== 'update'
   );
+  const desktopPanelClassName = `absolute right-0 top-0 z-auto flex w-96 max-h-[60vh] flex-col overflow-hidden rounded-2xl ${surface.panelClassName}`;
   const formatRelativeTimestamp = (date: Date) =>
     formatTimestamp(date, {
       daysAgo: t('notifications.time.daysAgo', { count: '{count}' }),
@@ -54,64 +64,86 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
       justNow: t('notifications.time.justNow'),
       minutesAgo: t('notifications.time.minutesAgo', { count: '{count}' }),
     });
+  const content = (
+    <>
+      <NotificationHeader
+        onClose={onClose}
+        onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
+        onClearAll={() => setShowClearAllConfirm(true)}
+        unreadCount={unreadCount}
+        hasNotifications={notifications.length > 0}
+        theme={theme}
+        primaryColor={primaryColor}
+        getColorValue={getColorValue}
+      />
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+        {notifications.length === 0 ? (
+          <NotificationEmptyState />
+        ) : (
+          <div className="p-3">
+            {updateNotifications.length > 0 ? (
+              <NotificationSection
+                title={t('notifications.section.updates')}
+                notifications={updateNotifications}
+                dividerClassName={surface.dividerClassName}
+                onPrimaryAction={runPrimaryAction}
+                onDelete={deleteNotification}
+                theme={theme}
+                primaryColor={primaryColor}
+                formatTimestamp={formatRelativeTimestamp}
+              />
+            ) : null}
+
+            {regularNotifications.length > 0 ? (
+              <NotificationSection
+                title={t('notifications.section.notifications')}
+                notifications={regularNotifications}
+                dividerClassName={surface.dividerClassName}
+                onPrimaryAction={runPrimaryAction}
+                onDelete={deleteNotification}
+                theme={theme}
+                primaryColor={primaryColor}
+                formatTimestamp={formatRelativeTimestamp}
+                className={updateNotifications.length > 0 ? 'mt-4' : undefined}
+              />
+            ) : null}
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:absolute md:inset-auto md:right-0 md:top-full md:mt-2">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] md:hidden" />
-
-      <div
-        ref={panelRef}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={`absolute inset-x-3 top-[calc(env(safe-area-inset-top,0px)+0.75rem)] z-10 flex max-h-[min(78vh,42rem)] flex-col overflow-hidden rounded-3xl md:inset-auto md:right-0 md:top-0 md:z-auto md:w-96 md:max-h-[60vh] md:rounded-2xl ${surface.panelClassName}`}
-      >
-        <NotificationHeader
-          onClose={onClose}
-          onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
-          onClearAll={() => setShowClearAllConfirm(true)}
-          unreadCount={unreadCount}
-          hasNotifications={notifications.length > 0}
-          theme={theme}
-          primaryColor={primaryColor}
-          getColorValue={getColorValue}
-        />
-
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
-          {notifications.length === 0 ? (
-            <NotificationEmptyState />
-          ) : (
-            <div className="p-3">
-              {updateNotifications.length > 0 ? (
-                <NotificationSection
-                  title={t('notifications.section.updates')}
-                  notifications={updateNotifications}
-                  dividerClassName={surface.dividerClassName}
-                  onPrimaryAction={runPrimaryAction}
-                  onDelete={deleteNotification}
-                  theme={theme}
-                  primaryColor={primaryColor}
-                  formatTimestamp={formatRelativeTimestamp}
-                />
-              ) : null}
-
-              {regularNotifications.length > 0 ? (
-                <NotificationSection
-                  title={t('notifications.section.notifications')}
-                  notifications={regularNotifications}
-                  dividerClassName={surface.dividerClassName}
-                  onPrimaryAction={runPrimaryAction}
-                  onDelete={deleteNotification}
-                  theme={theme}
-                  primaryColor={primaryColor}
-                  formatTimestamp={formatRelativeTimestamp}
-                  className={updateNotifications.length > 0 ? 'mt-4' : undefined}
-                />
-              ) : null}
-            </div>
-          )}
+    <>
+      {isMobile ? (
+        <SheetSurface
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) onClose();
+          }}
+          title={t('notifications.title')}
+          description={t('notifications.section.notifications')}
+          accentColor={getColorValue(primaryColor)}
+          overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
+          contentClassName={surface.sheetClassName}
+          bodyClassName="flex max-h-[min(78vh,42rem)] flex-col"
+        >
+          {content}
+        </SheetSurface>
+      ) : (
+        <div className="fixed inset-0 z-50 md:absolute md:inset-auto md:right-0 md:top-full md:mt-2">
+          <div
+            ref={panelRef}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={desktopPanelClassName}
+          >
+            {content}
+          </div>
         </div>
-      </div>
+      )}
 
       <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
         <AlertDialogContent>
@@ -134,7 +166,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
