@@ -81,6 +81,8 @@ export function useHeaderSearch() {
       const next = !current;
       if (next) {
         window.setTimeout(() => mobileSearchInputRef.current?.focus(), 0);
+      } else {
+        clearSearch();
       }
       return next;
     });
@@ -92,6 +94,7 @@ export function useHeaderSearch() {
   };
 
   const closeMobileSearch = () => {
+    clearSearch();
     setIsMobileSearchOpen(false);
   };
 

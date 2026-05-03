@@ -32,6 +32,9 @@ const meta = {
   title: 'Components/Primitives/Sheet Surface',
   component: SheetSurfaceStory,
   tags: ['autodocs'],
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
   render: () => <SheetSurfaceStory />,
 } satisfies Meta<typeof SheetSurfaceStory>;
 

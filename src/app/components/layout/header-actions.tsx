@@ -1,4 +1,4 @@
-import { Bell, Search, X } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import type { RefObject } from 'react';
 import { NotificationPanel } from '@/app/features/notifications';
 import { useI18n } from '@/app/hooks';
@@ -9,62 +9,11 @@ interface HeaderActionsProps {
   avatarUrl: string | null;
   desktopNotificationButtonRef: RefObject<HTMLButtonElement | null>;
   hoverBg: string;
-  isMobileSearchOpen: boolean;
   isNotificationOpen: boolean;
   mobileNotificationButtonRef: RefObject<HTMLButtonElement | null>;
-  onToggleMobileSearch: () => void;
   setIsNotificationOpen: (open: boolean) => void;
-  searchAriaLabel: string;
   textSecondary: string;
   unreadCount: number;
-}
-
-export function HeaderMobileActions({
-  activeColorValue,
-  avatarUrl,
-  desktopNotificationButtonRef,
-  hoverBg,
-  isMobileSearchOpen,
-  isNotificationOpen,
-  mobileNotificationButtonRef,
-  onToggleMobileSearch,
-  setIsNotificationOpen,
-  searchAriaLabel,
-  textSecondary,
-  unreadCount,
-}: HeaderActionsProps) {
-  return (
-    <div className="flex items-center gap-2 md:hidden">
-      <button
-        type="button"
-        onClick={onToggleMobileSearch}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
-        aria-label={searchAriaLabel}
-        aria-expanded={isMobileSearchOpen}
-      >
-        {isMobileSearchOpen ? (
-          <X className={`h-5 w-5 ${textSecondary}`} />
-        ) : (
-          <Search className={`h-5 w-5 ${textSecondary}`} />
-        )}
-      </button>
-
-      <HeaderNotificationButton
-        activeColorValue={activeColorValue}
-        desktopNotificationButtonRef={desktopNotificationButtonRef}
-        hoverBg={hoverBg}
-        isNotificationOpen={isNotificationOpen}
-        mobileNotificationButtonRef={mobileNotificationButtonRef}
-        renderPanel
-        setIsNotificationOpen={setIsNotificationOpen}
-        textSecondary={textSecondary}
-        unreadCount={unreadCount}
-        mobile
-      />
-
-      <UserDropdown avatarUrl={avatarUrl} variant="mobile" />
-    </div>
-  );
 }
 
 export function HeaderDesktopActions({
@@ -78,7 +27,7 @@ export function HeaderDesktopActions({
   setIsNotificationOpen,
   textSecondary,
   unreadCount,
-}: Omit<HeaderActionsProps, 'isMobileSearchOpen' | 'onToggleMobileSearch' | 'searchAriaLabel'> & {
+}: HeaderActionsProps & {
   renderPanel?: boolean;
 }) {
   return (

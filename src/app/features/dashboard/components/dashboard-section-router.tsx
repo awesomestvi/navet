@@ -1,12 +1,14 @@
 import { Lightbulb, Sparkles } from 'lucide-react';
 import { lazy, type ReactNode, Suspense } from 'react';
+import { getManageableRoomOrder } from '@/app/components/layout/mobile-layout-helpers';
 import { RoomNav } from '@/app/components/layout/room-nav';
 import { SectionCustomizeShell } from '@/app/components/layout/section-customize-shell';
 import { DashboardEmptyState } from '@/app/components/patterns';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { AllViewGrid } from '../all-view-grid';
 import { DeviceGrid } from '../device-grid';
@@ -48,6 +50,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const {
     activeRoom,
     activeSection,
@@ -70,6 +73,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     rooms,
     updateCardSize,
   } = controller;
+  const manageableRooms = getManageableRoomOrder(rooms, areas);
   const sectionStackProps = {
     className: 'flex flex-col gap-2 md:gap-6',
   };
@@ -302,7 +306,28 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   }
 
   return (
-    <DashboardLayout mobileRoomNavigation={{ activeRoom, onRoomChange: changeRoom, rooms }}>
+    <DashboardLayout
+      mobileEditActions={{
+        isEditMode,
+        onToggleEditMode,
+        onAddEntity:
+          activeRoom === 'All' || addableEntityIds.length === 0 ? undefined : onOpenAddEntityDialog,
+        addEntityLabel: t('dashboard.addEntity.title'),
+        reorderRooms:
+          manageableRooms.length > 0
+            ? {
+                rooms: manageableRooms,
+                areas,
+                roomHiddenItemCounts: controller.roomHiddenItemCounts,
+                roomItemCounts: controller.roomItemCounts,
+                onRoomOrderChange: controller.onSetRoomOrder,
+              }
+            : undefined,
+        allViewGrouping: activeRoom === 'All' ? controller.allViewGrouping : undefined,
+        onAllViewGroupingChange: activeRoom === 'All' ? controller.onSetAllViewGrouping : undefined,
+      }}
+      mobileRoomNavigation={{ activeRoom, onRoomChange: changeRoom, rooms }}
+    >
       {sectionContent}
     </DashboardLayout>
   );

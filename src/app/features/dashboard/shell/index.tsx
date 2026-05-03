@@ -17,6 +17,7 @@ import type { DashboardLayoutProps } from './types';
  */
 export const DashboardLayout = memo(function DashboardLayout({
   children,
+  mobileEditActions,
   mobileRoomNavigation,
 }: DashboardLayoutProps) {
   const { theme, wallpaper, primaryColor } = useTheme();
@@ -141,6 +142,7 @@ export const DashboardLayout = memo(function DashboardLayout({
           isMobileSearchOpen={headerController.isMobileSearchOpen}
           isSearchActive={headerController.isSearchActive}
           isSearchFocused={headerController.isSearchFocused}
+          mobileRoomNavigation={mobileRoomNavigation}
           mobileSearchInputRef={headerController.mobileSearchInputRef}
           searchQuery={headerController.searchQuery}
           setIsSearchFocused={headerController.setIsSearchFocused}
@@ -149,7 +151,11 @@ export const DashboardLayout = memo(function DashboardLayout({
         />
 
         <div className="safe-area-pt-5 min-w-0 flex flex-col gap-3.5 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
-          <Header controller={headerController} mobileRoomNavigation={mobileRoomNavigation} />
+          <Header
+            controller={headerController}
+            mobileEditActions={mobileEditActions}
+            mobileRoomNavigation={mobileRoomNavigation}
+          />
           {children}
         </div>
       </div>

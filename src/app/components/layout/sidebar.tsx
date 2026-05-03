@@ -1,27 +1,23 @@
-import {
-  Clipboard,
-  Home,
-  Lightbulb,
-  Lock,
-  Search,
-  Settings,
-  Tv,
-  Video,
-  X,
-  Zap,
-} from 'lucide-react';
+import { Compass, Search, X } from 'lucide-react';
 import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { HeaderSearchInput } from '@/app/components/layout/header-search-input';
+import { MobileSectionOrbitSheet } from '@/app/components/layout/mobile-section-orbit-sheet';
 import { Button } from '@/app/components/primitives';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getInteractivePillStyles } from '@/app/components/shared/theme/interactive-pill-styles';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { type Section, useI18n, useMediaQuery, useNavigation, useTheme } from '@/app/hooks';
-import { useSettingsStore } from '@/app/stores';
+import { useI18n, useMediaQuery, useTheme } from '@/app/hooks';
+import { useNavigationStore, useSettingsStore } from '@/app/stores';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import type { MobileRoomNavigation } from './mobile-room-dropdown';
+import {
+  getOrderedSectionNavigationItems,
+  getSectionNavigationItems,
+  MOBILE_SECTION_DOCK_ORDER,
+} from './section-navigation';
 
 interface SidebarProps {
   activeColorValue?: string;
@@ -33,6 +29,7 @@ interface SidebarProps {
   isMobileSearchOpen?: boolean;
   isSearchActive?: boolean;
   isSearchFocused?: boolean;
+  mobileRoomNavigation?: MobileRoomNavigation;
   mobileSearchInputRef?: RefObject<HTMLInputElement | null>;
   searchQuery?: string;
   setIsSearchFocused?: (focused: boolean) => void;
@@ -50,6 +47,7 @@ export const Sidebar = memo(function Sidebar({
   isMobileSearchOpen = false,
   isSearchActive = false,
   isSearchFocused = false,
+  mobileRoomNavigation,
   mobileSearchInputRef,
   searchQuery = '',
   setIsSearchFocused = () => {},
@@ -58,7 +56,15 @@ export const Sidebar = memo(function Sidebar({
 }: SidebarProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const { activeSection, setActiveSection } = useNavigation();
+  const { activeSection, lastNonHomeSection, recentSections, setActiveSection } =
+    useNavigationStore(
+      useShallow((state) => ({
+        activeSection: state.activeSection,
+        lastNonHomeSection: state.lastNonHomeSection,
+        recentSections: state.recentSections,
+        setActiveSection: state.setActiveSection,
+      }))
+    );
   const { effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
       effectsQuality: state.effectsQuality,
@@ -80,12 +86,14 @@ export const Sidebar = memo(function Sidebar({
   const resolvedTextSecondary = textSecondary ?? surface.textSecondary;
   const inactiveColor = `${surface.textMuted} ${resolvedHoverBg}`;
   const [isMobileNavHidden, setIsMobileNavHidden] = useState(false);
+  const [isOrbitOpen, setIsOrbitOpen] = useState(false);
   const lastScrollYRef = useRef(0);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     if (!isMobile) {
       setIsMobileNavHidden(false);
+      setIsOrbitOpen(false);
       return;
     }
 
@@ -111,58 +119,21 @@ export const Sidebar = memo(function Sidebar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isMobile]);
 
-  const menuItems = [
-    {
-      icon: Home,
-      label: t('sidebar.home'),
-      section: 'home' as Section,
-      onClick: () => setActiveSection('home'),
-    },
-    {
-      icon: Zap,
-      label: t('sidebar.energy'),
-      section: 'energy' as Section,
-      onClick: () => setActiveSection('energy'),
-    },
-    {
-      icon: Video,
-      label: t('sidebar.security'),
-      section: 'security' as Section,
-      onClick: () => setActiveSection('security'),
-    },
-    {
-      icon: Clipboard,
-      label: t('sidebar.tasks'),
-      section: 'tasks' as Section,
-      onClick: () => setActiveSection('tasks'),
-    },
-    {
-      icon: Lock,
-      label: t('sidebar.locks'),
-      section: 'locks' as Section,
-      onClick: () => setActiveSection('locks'),
-    },
-    {
-      icon: Lightbulb,
-      label: t('sidebar.lights'),
-      section: 'lights' as Section,
-      onClick: () => setActiveSection('lights'),
-    },
-    {
-      icon: Tv,
-      label: t('sidebar.media'),
-      section: 'media' as Section,
-      onClick: () => setActiveSection('media'),
-    },
-    {
-      icon: Settings,
-      label: t('sidebar.settings'),
-      section: 'settings' as Section,
-      onClick: () => setActiveSection('settings'),
-    },
-  ];
-  const mobileMenuItems = menuItems.filter((item) =>
-    ['home', 'energy', 'security', 'settings'].includes(item.section)
+  const menuItems = useMemo(
+    () =>
+      getSectionNavigationItems(t).map((item) => ({
+        ...item,
+        onClick: () => setActiveSection(item.section),
+      })),
+    [setActiveSection, t]
+  );
+  const dockItems = useMemo(
+    () =>
+      getOrderedSectionNavigationItems(t, MOBILE_SECTION_DOCK_ORDER).map((item) => ({
+        ...item,
+        onClick: () => setActiveSection(item.section),
+      })),
+    [setActiveSection, t]
   );
   const searchAccessoryBackground = undefined;
   const mobileDockShadow = isGlass
@@ -174,7 +145,7 @@ export const Sidebar = memo(function Sidebar({
       : '0 18px 36px -28px rgba(0,0,0,0.58)';
   const mobileSearchFieldBg = isLight ? resolvedInputBg : 'bg-white/92';
   const mobileSearchFieldText = isLight ? resolvedTextPrimary : 'text-slate-950';
-  const mobileSearchFieldIcon = isLight ? 'text-slate-500' : 'text-slate-500';
+  const mobileSearchFieldIcon = 'text-slate-500';
   const getMobileTabPill = (isActive: boolean) =>
     getInteractivePillStyles({
       intent: 'navigation',
@@ -202,9 +173,9 @@ export const Sidebar = memo(function Sidebar({
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col gap-4">
-            {menuItems.map((item, index) => (
+            {menuItems.map((item) => (
               <InteractivePill
-                key={index}
+                key={item.section}
                 onClick={item.onClick}
                 aria-label={item.label}
                 aria-current={activeSection === item.section ? 'page' : undefined}
@@ -271,41 +242,35 @@ export const Sidebar = memo(function Sidebar({
             </Button>
           </div>
         ) : (
-          <div className="flex items-end gap-2.5">
+          <div className="flex items-end justify-between gap-2.5">
             <div
-              className={`relative min-w-0 flex-1 overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+              className={`relative overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
               style={{ boxShadow: mobileDockShadow }}
             >
               {isGlass ? (
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_42%)]" />
               ) : null}
 
-              <div className="relative flex min-h-12.5 items-stretch justify-around px-0.75 py-0.75">
-                {mobileMenuItems.map((item) => {
-                  const isActive = activeSection === item.section;
-                  const pill = getMobileTabPill(isActive);
+              <div className="relative flex min-h-12.5 items-stretch gap-1 px-0.75 py-0.75">
+                {dockItems.map((item) => (
+                  <MobileDockButton
+                    key={item.section}
+                    icon={item.icon}
+                    isActive={activeSection === item.section}
+                    label={item.label}
+                    onClick={item.onClick}
+                    pill={getMobileTabPill(activeSection === item.section)}
+                  />
+                ))}
 
-                  return (
-                    <button
-                      key={item.section}
-                      onClick={item.onClick}
-                      aria-label={item.label}
-                      aria-current={isActive ? 'page' : undefined}
-                      type="button"
-                      className={`flex min-h-11 min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-[20px] px-1 py-1.5 transition-all ${pill.className}`}
-                      style={pill.style}
-                    >
-                      <item.icon className="h-[0.94rem] w-[0.94rem] shrink-0" />
-                      <span
-                        className={`max-w-full whitespace-nowrap px-0.5 text-[11px] leading-none tracking-[-0.01em] ${
-                          isActive ? 'font-semibold' : 'font-medium'
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </button>
-                  );
-                })}
+                <MobileDockButton
+                  icon={Compass}
+                  isActive={isOrbitOpen}
+                  label={t('sidebar.orbit')}
+                  onClick={() => setIsOrbitOpen(true)}
+                  pill={getMobileTabPill(isOrbitOpen)}
+                  ariaExpanded={isOrbitOpen}
+                />
               </div>
             </div>
 
@@ -316,7 +281,7 @@ export const Sidebar = memo(function Sidebar({
               onClick={handleToggleMobileSearch}
               label={t('sidebar.search')}
               aria-expanded={isMobileSearchOpen}
-              className="h-12.5 w-12.5 shrink-0 border-transparent! backdrop-blur-xl"
+              className="h-12.5 w-12.5 shrink-0 rounded-[999px] border-transparent! backdrop-blur-xl"
               style={{
                 background: searchAccessoryBackground,
                 boxShadow: mobileDockShadow,
@@ -327,6 +292,53 @@ export const Sidebar = memo(function Sidebar({
           </div>
         )}
       </div>
+
+      <MobileSectionOrbitSheet
+        activeSection={activeSection}
+        currentRoomNavigation={mobileRoomNavigation}
+        isOpen={isOrbitOpen}
+        lastNonHomeSection={lastNonHomeSection}
+        onOpenChange={setIsOrbitOpen}
+        onSelectSection={setActiveSection}
+        recentSections={recentSections}
+      />
     </>
   );
 });
+
+function MobileDockButton({
+  ariaExpanded,
+  icon: Icon,
+  isActive,
+  label,
+  onClick,
+  pill,
+}: {
+  ariaExpanded?: boolean;
+  icon: typeof Search;
+  isActive: boolean;
+  label: string;
+  onClick: () => void;
+  pill: ReturnType<typeof getInteractivePillStyles>;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-expanded={ariaExpanded}
+      aria-label={label}
+      aria-current={isActive ? 'page' : undefined}
+      type="button"
+      className={`flex min-h-11 min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-1.5 transition-all ${pill.className}`}
+      style={pill.style}
+    >
+      <Icon className="h-[0.94rem] w-[0.94rem] shrink-0" />
+      <span
+        className={`max-w-full whitespace-nowrap px-0.5 text-[11px] leading-none tracking-[-0.01em] ${
+          isActive ? 'font-semibold' : 'font-medium'
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}

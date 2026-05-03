@@ -125,7 +125,7 @@ export const UserDropdown = memo(function UserDropdown({
         </div>
       </div>
 
-      <div className={`space-y-2 border-t p-2 ${divider}`}>
+      <div className={`space-y-2 border-t p-4 ${divider}`}>
         <button type="button" onClick={handleRefreshApp} className={refreshButtonClassName}>
           <RefreshCw className="h-4 w-4" />
           <span className="text-sm font-medium">{t('pwa.refreshApp')}</span>

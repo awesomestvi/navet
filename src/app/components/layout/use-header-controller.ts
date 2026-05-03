@@ -28,6 +28,7 @@ export function useHeaderController() {
   const authConfig = useAuth(authSelectors.config);
   const personEntities = useHomeAssistant(selectPersonEntities, shallow);
   const user = useHomeAssistant(homeAssistantSelectors.user);
+  const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -87,6 +88,7 @@ export function useHeaderController() {
     activeColorValue: getThemeColorValue(primaryColor),
     avatarUrl,
     border: surface.border,
+    closeMobileUtility: () => setIsMobileUtilityOpen(false),
     desktopNotificationButtonRef,
     dividerColor: surface.textMuted,
     firstName,
@@ -94,20 +96,25 @@ export function useHeaderController() {
     formattedTime,
     greetingKey,
     closeMobileSearch,
+    closeNotifications: () => setIsNotificationOpen(false),
     handleClearSearch,
     handleSearchChange,
     handleToggleMobileSearch,
     hoverBg: surface.hoverBg,
     inputBg: surface.inputBg,
     isMobileSearchOpen,
+    isMobileUtilityOpen,
     isNotificationOpen,
     isSearchActive,
     isSearchFocused,
     mobileNotificationButtonRef,
     mobileSearchInputRef,
+    openMobileUtility: () => setIsMobileUtilityOpen(true),
+    openNotifications: () => setIsNotificationOpen(true),
     placeholder: surface.placeholder,
     searchQuery,
     setIsMobileSearchOpen,
+    setIsMobileUtilityOpen,
     setIsNotificationOpen,
     setIsSearchFocused,
     surface,

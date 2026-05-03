@@ -1,25 +1,30 @@
-import { CalendarDays, Clock3 } from 'lucide-react';
+import { CalendarDays, Clock3, SlidersHorizontal } from 'lucide-react';
 import { memo } from 'react';
 import { AppReleaseBadge } from '@/app/components/shared/app-release-badge';
 import { NotificationPanel } from '@/app/features/notifications';
-import { HeaderDesktopActions, HeaderNotificationButton } from './header-actions';
+import { HeaderDesktopActions } from './header-actions';
 import { HeaderSearchInput } from './header-search-input';
+import type { MobileHeaderEditActions } from './mobile-header-actions';
+import { MobileHeaderCommandSheet } from './mobile-header-command-sheet';
 import { MobileRoomDropdown, type MobileRoomNavigation } from './mobile-room-dropdown';
 import { type HeaderController, useHeaderController } from './use-header-controller';
 import { UserDropdown } from './user-dropdown';
 
 interface HeaderProps {
   controller?: HeaderController;
+  mobileEditActions?: MobileHeaderEditActions;
   mobileRoomNavigation?: MobileRoomNavigation;
 }
 
 function HeaderView({
   controller,
+  mobileEditActions,
   mobileRoomNavigation,
 }: HeaderProps & { controller: HeaderController }) {
   const {
     activeColorValue,
     avatarUrl,
+    closeNotifications,
     desktopNotificationButtonRef,
     dividerColor,
     firstName,
@@ -30,11 +35,15 @@ function HeaderView({
     handleSearchChange,
     hoverBg,
     inputBg,
+    isMobileUtilityOpen,
     isNotificationOpen,
     isSearchActive,
     isSearchFocused,
     mobileNotificationButtonRef,
+    openMobileUtility,
+    openNotifications,
     searchQuery,
+    setIsMobileUtilityOpen,
     setIsNotificationOpen,
     setIsSearchFocused,
     t,
@@ -65,17 +74,22 @@ function HeaderView({
         {mobileRoomNavigation ? (
           <MobileRoomDropdown navigation={mobileRoomNavigation} compact />
         ) : null}
-        <HeaderNotificationButton
-          activeColorValue={activeColorValue}
-          desktopNotificationButtonRef={desktopNotificationButtonRef}
-          hoverBg={hoverBg}
-          isNotificationOpen={isNotificationOpen}
-          mobile
-          mobileNotificationButtonRef={mobileNotificationButtonRef}
-          setIsNotificationOpen={setIsNotificationOpen}
-          textSecondary={textSecondary}
-          unreadCount={unreadCount}
-        />
+        <button
+          ref={mobileNotificationButtonRef}
+          type="button"
+          onClick={openMobileUtility}
+          className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
+          aria-label={t('common.moreActions')}
+          aria-expanded={isMobileUtilityOpen}
+        >
+          <SlidersHorizontal className={`h-[1.125rem] w-[1.125rem] ${textSecondary}`} />
+          {unreadCount > 0 ? (
+            <span
+              className="absolute right-1 top-1 h-2 w-2 rounded-full"
+              style={{ backgroundColor: activeColorValue }}
+            />
+          ) : null}
+        </button>
       </div>
 
       <div className="hidden md:flex md:flex-row md:items-center md:justify-between md:gap-4">
@@ -147,22 +161,53 @@ function HeaderView({
 
       <NotificationPanel
         isOpen={isNotificationOpen}
-        onClose={() => setIsNotificationOpen(false)}
+        onClose={closeNotifications}
         triggerRefs={[mobileNotificationButtonRef, desktopNotificationButtonRef]}
+      />
+      <MobileHeaderCommandSheet
+        controller={controller}
+        actions={mobileEditActions}
+        isOpen={isMobileUtilityOpen}
+        onOpenChange={setIsMobileUtilityOpen}
+        onOpenNotifications={openNotifications}
       />
     </>
   );
 }
 
-function HeaderWithController({ mobileRoomNavigation }: Omit<HeaderProps, 'controller'>) {
+function HeaderWithController({
+  mobileEditActions,
+  mobileRoomNavigation,
+}: Omit<HeaderProps, 'controller'>) {
   const controller = useHeaderController();
-  return <HeaderView controller={controller} mobileRoomNavigation={mobileRoomNavigation} />;
+  return (
+    <HeaderView
+      controller={controller}
+      mobileEditActions={mobileEditActions}
+      mobileRoomNavigation={mobileRoomNavigation}
+    />
+  );
 }
 
-export const Header = memo(function Header({ controller, mobileRoomNavigation }: HeaderProps) {
+export const Header = memo(function Header({
+  controller,
+  mobileEditActions,
+  mobileRoomNavigation,
+}: HeaderProps) {
   if (controller) {
-    return <HeaderView controller={controller} mobileRoomNavigation={mobileRoomNavigation} />;
+    return (
+      <HeaderView
+        controller={controller}
+        mobileEditActions={mobileEditActions}
+        mobileRoomNavigation={mobileRoomNavigation}
+      />
+    );
   }
 
-  return <HeaderWithController mobileRoomNavigation={mobileRoomNavigation} />;
+  return (
+    <HeaderWithController
+      mobileEditActions={mobileEditActions}
+      mobileRoomNavigation={mobileRoomNavigation}
+    />
+  );
 });
