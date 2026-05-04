@@ -62,6 +62,10 @@ export interface HomeAssistantResolvedMediaSource {
   mime_type?: string;
 }
 
+export interface HomeAssistantAutomationConfig {
+  config: Record<string, unknown>;
+}
+
 interface CallServiceTarget {
   entity_id?: string | string[];
   area_id?: string | string[];
@@ -389,6 +393,17 @@ class HomeAssistantService {
       type: 'media_source/resolve_media',
       media_content_id: mediaContentId,
     }) as Promise<HomeAssistantResolvedMediaSource>;
+  }
+
+  async getAutomationConfig(entityId: string): Promise<HomeAssistantAutomationConfig> {
+    if (!this.connection) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return this.connection.sendMessagePromise({
+      type: 'automation/config',
+      entity_id: entityId,
+    }) as Promise<HomeAssistantAutomationConfig>;
   }
 
   /**
