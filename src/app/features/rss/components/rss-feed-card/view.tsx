@@ -80,7 +80,7 @@ export function RSSFeedCardView({
         ${rssSurface.containerShadowClassName}
         ${!inEditMode ? 'cursor-default' : ''}
       `}
-      frameClassName={rssSurface.surface.panel}
+      frameClassName={`${rssSurface.surface.panel} ${!hasCustomTint ? colors.rss.border : ''}`}
       style={rssSurface.cardStyle}
       disableDefaultSheen
       disableDefaultLightOverlay

@@ -115,23 +115,23 @@ export function getCustomCardTintSurface(
 
   return {
     panelStyle: {
-      background: `linear-gradient(155deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.96) 18%, ${withTintAlpha(
+      background: `linear-gradient(180deg, rgba(39,39,42,0.94) 0%, rgba(24,24,27,0.98) 24%, ${withTintAlpha(
         normalizedTint,
-        0.24
-      )} 58%, ${withTintAlpha(normalizedTint, 0.34)} 100%)`,
-      borderColor: withTintAlpha(normalizedTint, 0.28),
-      boxShadow: `0 24px 60px -38px ${withTintAlpha(normalizedTint, 0.4)}`,
+        0.22
+      )} 68%, ${withTintAlpha(normalizedTint, 0.3)} 100%)`,
+      borderColor: withTintAlpha(normalizedTint, 0.4),
+      boxShadow: `0 26px 62px -38px ${withTintAlpha(normalizedTint, 0.34)}, inset 0 1px 0 rgba(255,255,255,0.04)`,
     },
     glowStyle: {
       background: `radial-gradient(circle at 14% 12%, ${withTintAlpha(
         normalizedTint,
-        0.24
+        0.18
       )} 0%, transparent 30%), radial-gradient(circle at 82% 18%, ${withTintAlpha(
         normalizedTint,
-        0.16
+        0.12
       )} 0%, transparent 24%), linear-gradient(155deg, ${withTintAlpha(
         normalizedTint,
-        0.1
+        0.08
       )} 0%, transparent 56%)`,
     },
     overlayClassName:

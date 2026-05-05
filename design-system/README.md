@@ -1,44 +1,42 @@
 # Navet Design System
 
 This folder documents the shared UI rules that govern Navet's dashboard, cards, settings surfaces,
-and Storybook workshop.
+theme behavior, and Storybook workshop.
 
-Navet does not treat the design system as a separate package. The current model is an in-repo
-shared UI layer backed by:
+Navet does not ship the design system as a separate package. The current model is an in-repo shared
+UI layer backed by:
 
 - authoring in `src/app/components/primitives/` and `src/app/components/patterns/`
-- curated exports in `src/app/components/system/`
-- canonical developer imports in `src/app/ui-kit/`
-- shared visual decisions in theme/token helpers
-- Storybook as the review and documentation surface
-- component layers: `primitives/`, `patterns/`, `system/`, `shared/`, `layout/`, `ui/`, `figma/`
+- curated exports and token stories in `src/app/components/system/`
+- canonical discovery stories in `src/app/ui-kit/`
+- shared theme/surface decisions in `src/app/components/shared/theme/`
+- Storybook as the main visual review and docs surface
 
-## Scope
+## When To Use These Docs
 
-Use these docs when you are:
+Use this folder when you are:
 
 - building or revising shared UI
-- changing card sizing or card-shell behavior
-- changing section-level layouts for locks, lights, media, security, or home overview
-- touching theme tokens, surface logic, or appearance controls
-- reorganizing Storybook taxonomy or stable exports
-- evaluating whether UI belongs in `primitives`, `patterns`, `shared`, or a feature module
+- changing card shells, compact card behavior, or card sizing rules
+- reorganizing Storybook taxonomy or shared exports
+- touching theme tokens, surface logic, readable-text helpers, or appearance controls
+- deciding whether a component belongs in `primitives`, `patterns`, `shared`, `layout`, or a feature module
 
 ## Core Principles
 
-1. Shared primitives first. Reuse or extend a shared primitive before building feature-specific UI.
+1. Shared primitives first. Reuse or extend a shared primitive before building feature-local UI.
 2. Patterns over duplication. If the same structure appears across cards or dialogs, extract it.
-3. `system/` is a curated export layer, not the authoring location for new components.
-4. Performance matters. Visual richness cannot make the app unusable on wall panels or tablets.
-5. Storybook is the workshop and the internal UI-kit entrypoint. Stable shared UI should be reviewed there, not only in app pages.
-6. Unit tests cover logic seams. Shared utilities, store behavior, and controller logic should be
-   verified in Vitest rather than only through visual review.
+3. `system/` is a curated export layer, not the default authoring location for new components.
+4. Feature logic stays in the feature. Shared UI should stay portable and minimally coupled.
+5. Performance matters. Visual richness cannot make the app unusable on tablets or wall panels.
+6. Storybook is the workshop. Stable UI changes should be reviewable there, not only in app pages.
+7. Vitest covers logic seams. Shared utilities, controller logic, and stateful helpers need unit tests when visual review is not enough.
 
 ## Documentation Set
 
-- [UI-GUIDELINES.md](UI-GUIDELINES.md): visual rules, tokens, interaction behavior, accessibility
-- [FEATURES.md](FEATURES.md): implementation map of the current product surface
-- [STORYBOOK_FOUNDATION.md](STORYBOOK_FOUNDATION.md): workshop structure and Storybook rules
+- [UI-GUIDELINES.md](UI-GUIDELINES.md): visual rules, accessibility, motion, and performance constraints
+- [FEATURES.md](FEATURES.md): current feature inventory, ownership map, and test/story coverage
+- [STORYBOOK_FOUNDATION.md](STORYBOOK_FOUNDATION.md): Storybook structure and review workflow
 - [LAYOUT-STRUCTURE.md](LAYOUT-STRUCTURE.md): app-shell and layout architecture
 - [MOODBOARD.md](MOODBOARD.md): visual direction and references
 
@@ -56,7 +54,7 @@ Examples:
 - card shells
 - dialog shells
 - pills
-- card header parts
+- card-header building blocks
 - compact body text
 - loading and status elements
 
@@ -72,50 +70,65 @@ Composed shared structures built from primitives.
 
 Examples:
 
-- dialog sections
-- field/group wrappers
 - empty states
-- preview cards
+- section cards
 - action rows
-- selectable checkbox rows
+- preview cards
+- grouped settings content
+- reusable field and row structures
 
-Use `patterns/` when reuse comes from intent and structure, not just visual similarity.
+Use `patterns/` when the reusable value is the composition or intent, not only the visual shape.
 
 ### `src/app/components/shared/`
 
-App-specific shared UI that is still too coupled, stateful, or composition-heavy to be a real
+App-specific shared UI that is still too coupled, stateful, or migration-heavy to be a true
 primitive or pattern.
 
-This is also the temporary home for compatibility shims when a migration is in progress.
+This is also the landing zone for compatibility shims and shared theme helpers that are not meant
+to become first-class design-system exports.
 
 ### `src/app/components/system/`
 
-Curated public exports for Storybook and stable discovery.
+Curated public exports and token-story surfaces for mature shared pieces.
 
-Use `system/` to re-export mature shared pieces. Do not author new components there by default.
+Use `system/` to expose or document stable shared UI. Do not author new components there by default.
 
 ### `src/app/components/layout/`
 
-App-shell and section-level layout composition for navigation, room controls, and domain-focused
-entity sections.
+App-shell and section-level layout composition for navigation, room controls, headers, and
+domain-focused entity sections.
 
-This layer now includes reusable section shells such as:
+Current layout ownership includes:
 
-- `DeviceSectionLayout` for consistent empty-state and edit-mode handling
-- `EntityGrid` for grouped section content
-- specialized section modules for locks, media, and security
+- header and sidebar shell pieces
+- room navigation and room-order editing
+- mobile command/search/section sheets
+- device-section shells such as locks, media, and security
+- section customization controls
 
-Use `layout/` when the component owns app-level structure or cross-feature section composition,
-not when it is a portable primitive or feature-local card.
+Use `layout/` when the component owns app structure or cross-feature section composition rather than
+portable primitive behavior.
+
+### `src/app/ui-kit/`
+
+This is the curated Storybook-facing discovery layer for stable primitives, patterns, and tokens.
+
+Current entrypoints include:
+
+- `primitives.ts`
+- `patterns.ts`
+- `tokens.ts`
+- `start-here.stories.tsx`
+- `inventory.stories.tsx`
+- `recipes.stories.tsx`
+
+Use this layer for discovery and workshop organization, not as a replacement for the underlying
+authoring directories.
 
 ## Foundations and Tokens
 
-The shared first-layer foundations live in
+The first-layer shared foundations live in
 [`src/app/components/system/tokens/foundations.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/tokens/foundations.ts).
-
-Navet's design system is platform-neutral. Do not use iOS `pt`, Android `dp`, or desktop logical px
-as the design-system foundation. Those are implementation units. Navet's foundation is the shared
-token layer plus the current responsive helpers.
 
 This file is the common source for:
 
@@ -125,38 +138,16 @@ This file is the common source for:
 - icon sizing
 - stroke widths
 - focus treatments
-- shared semantic tone values
+- semantic tone values
 
-When a primitive needs one of these decisions, prefer the foundation tokens instead of introducing
+When a primitive needs one of these decisions, prefer foundation tokens instead of introducing
 one-off Tailwind values.
 
 Current policy:
 
 - `4px` is the base rhythm for shared spacing and sizing
 - semantic tokens are the authoring layer for components
-- primitive tokens should mainly be used to define higher-level semantic tokens
-
-## Density and Adaptation
-
-Navet adapts across width and input capability rather than inheriting a single platform's sizing
-system.
-
-Default policy:
-
-- `comfortable` is the default density for general product surfaces
-- `touch` is for touch-first, coarse-pointer, kiosk-style, and wall-panel contexts
-- `compact` is reserved for desktop or keyboard/mouse-heavy surfaces where denser UI materially
-  improves scanning or editing
-
-Do not default to `compact` on mixed-input devices. If a screen may be tapped regularly, prefer
-`comfortable` unless there is a strong product reason to go larger.
-
-Responsive policy:
-
-- width determines layout structure, column count, and how much content can appear at once
-- input capability determines control targets, spacing comfort, and hover assumptions
-- hover may supplement discoverability on fine-pointer screens, but primary actions must remain
-  visible and obvious without hover on coarse-pointer screens
+- primitive token values should mainly exist to define higher-level semantic tokens
 
 ## Themes and Surface Rules
 
@@ -167,23 +158,22 @@ Navet supports four themes:
 - `light`
 - `black`
 
-Shared surface decisions should resolve through token helpers such as:
+Shared surface decisions should resolve through helpers in
+[`src/app/components/shared/theme/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme), especially:
 
 - `theme-surface-tokens`
-- `card-state-surface-tokens`
 - `card-shell-surface-tokens`
-- `accent-card-shell-tokens`
-- readable-text helpers for tinted surfaces
+- `card-state-surface-tokens`
+- `light-card-surface-tokens`
+- `card-readable-text-tokens`
+- `entity-icon-pill-styles`
 
-Avoid adding inline `theme === ...` branches when an existing surface/token helper already covers
-the case.
+Avoid adding inline `theme === ...` branches when an existing token helper already covers the case.
 
 ## Card System
 
-Card sizes are defined through a single registry in
-[`src/app/components/shared/card-size-selector.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size-selector.tsx)
-with the `CardSize` type in
-[`src/app/components/shared/card-size.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size.ts).
+The canonical size registry lives in
+[`src/app/components/shared/card-size-selector.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size-selector.tsx).
 
 Supported sizes:
 
@@ -201,26 +191,30 @@ Rules:
 
 - derive preview and overlay behavior from the shared registry
 - reuse shared title/header primitives for compact cards
-- use shared off/inactive card-state styling instead of per-feature opacity tricks
+- use shared card-state styling instead of per-feature opacity hacks
 - keep compact layouts lean and avoid duplicate controls across rows
-- do not map card behavior to imported iOS widget dimensions or platform-specific shell sizes
+- do not map card behavior to external platform widget systems
 
 ## Dialog and Settings Patterns
 
 Entity settings dialogs should compose from shared building blocks before inventing feature-local
-shells:
+shells.
 
-- `DialogShell`
+Current shared dialog primitives and patterns include:
+
 - `CardDialogHeader`
 - `CardDialogSection`
 - `CardDialogTabList`
 - `CardDialogTabTrigger`
-- `DialogSectionRow`
+- `DialogShell`
 - `DialogDoneFooter`
+- `DialogFooter`
+- `SettingsDialogDoneButton`
+- `EntityCardHeader`
 - `SelectableCheckboxRow`
 
-This keeps room assignment, controls tabs, helper text spacing, selection rows, and close/done
-affordances aligned across light, HVAC, weather, calendar, vacuum, camera, and switch flows.
+The exact composition may vary by feature, but room assignment, tabbed content, section spacing,
+and close/done affordances should stay aligned across cards and settings sections.
 
 ## Storybook Workflow
 
@@ -234,79 +228,45 @@ pnpm storybook:build
 pnpm check:stories
 ```
 
-Storybook covers:
+Storybook currently covers:
 
 - foundation tokens
 - shared primitives and patterns
-- app shell components
+- app-shell components
 - layout-level shells and navigation surfaces
-- entity cards and custom widgets
-- dashboard flows
+- entity cards
+- dashboard widgets
 - energy visuals
-- settings surfaces
+- settings sections
 
-Cross-feature story utilities live in
-[`src/app/storybook/`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook).
-Import frame helpers from `@/app/storybook/story-frames`.
+Cross-feature story helpers live in
+[`src/app/storybook/`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook). Import frame
+helpers from `@/app/storybook/story-frames`.
 
 ## Testing Shared UI Logic
 
 Storybook remains the primary review surface for visual behavior, but shared UI logic should use
-the Vitest harness when it includes non-trivial state, timing, store subscriptions, or browser
-integration.
+the Vitest harness when it includes non-trivial state, timing, browser integration, or selector-heavy
+behavior.
 
-Shared unit-test support lives in:
+Shared test support lives in:
 
 - [`src/setupTests.ts`](/Users/vishal/Development/Github/Navet/Navet/src/setupTests.ts)
 - [`src/test/render.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/test/render.tsx)
-- [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
 - [`src/test/store-reset.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/store-reset.ts)
+- [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
+- [`src/test/factories/home-assistant-service-stub.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/factories/home-assistant-service-stub.ts)
 
 Use unit tests for:
 
-- token and helper logic with meaningful branching
-- shared hooks that depend on timers, viewport/media-query state, or persisted browser state
-- controller logic that composes store selectors and action handlers
-- setup helpers that score, infer, or merge feature configuration state
+- shared utility logic
+- persisted store behavior
+- controller hooks
+- browser-dependent hooks
+- token and mapping helpers with meaningful branching
 
-Do not default to broad snapshot coverage for thin visual wrappers that are already exercised in
-Storybook.
+## Maintenance Expectations
 
-## Current Storybook Taxonomy
-
-- `Concepts/`
-- `Theme/`
-- `Components/Primitives/`
-- `Components/Patterns/`
-- `Components/Shared/`
-- `App Shell/`
-- `Cards/`
-- `Pages/Dashboard/`
-- `Pages/Energy/`
-- `Pages/Settings/`
-
-Avoid inventing new top-level groups unless the workshop genuinely has a new product area.
-
-## Key Files
-
-| File | Purpose |
-|---|---|
-| [`src/app/components/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/README.md) | Component layer boundaries |
-| [`src/app/components/shared/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/README.md) | `shared/` ownership rules |
-| [`src/app/components/system/tokens/foundations.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/tokens/foundations.ts) | Foundation tokens |
-| [`src/app/components/shared/theme/theme-surface-tokens.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme/theme-surface-tokens.ts) | Shared surface decisions |
-| [`src/app/components/shared/card-size-selector.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size-selector.tsx) | Card size registry |
-| [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |
-| [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts) | Story descriptions |
-
-## Review Checklist
-
-Before landing shared UI changes:
-
-- Does this belong in `primitives/`, `patterns/`, `shared/`, or a feature module?
-- Does an existing token or surface helper already solve the theme decision?
-- Does the component stay performant on low-power devices?
-- Does Storybook need to be updated to document the change?
-- Does the change affect card sizing, dialog composition, or stable exports?
-
-Last updated: April 29, 2026
+- Update these docs when shared UI ownership, token helpers, or Storybook structure changes
+- Update [FEATURES.md](FEATURES.md) when the product surface, section ownership, or test coverage map changes
+- Prefer documenting current layers and rules over preserving historical phrasing

@@ -1,6 +1,22 @@
-import { type PrimaryColor, useThemeStore } from '@/app/stores/theme-store';
+import { type PrimaryColor, type ThemeMode, useThemeStore } from '@/app/stores/theme-store';
 
-type PresetPrimaryColor = Exclude<PrimaryColor, 'custom'>;
+export type PresetPrimaryColor = Exclude<PrimaryColor, 'custom'>;
+
+export interface AccentThemeTone {
+  gradient: string;
+  border: string;
+  iconBg: string;
+  accent: string;
+  glow: string;
+}
+
+export interface AccentDecorativeSurface {
+  gradient: string;
+  border: string;
+  glow: string;
+}
+
+export type AccentToneEmphasis = 'soft' | 'solid';
 
 export const themeColorValues: Record<PresetPrimaryColor, string> = {
   orange: '#f97316',
@@ -96,4 +112,101 @@ export function getThemeColorValue(color: PrimaryColor): string {
 
 export function sanitizeCustomPrimaryColor(color: string | null | undefined) {
   return normalizeHexColor(color);
+}
+
+export function getAccentThemeTone(
+  theme: ThemeMode,
+  color: PresetPrimaryColor,
+  emphasis: AccentToneEmphasis = 'soft'
+): AccentThemeTone {
+  if (theme === 'dark') {
+    return emphasis === 'solid'
+      ? {
+          gradient: `from-${color}-900 to-${color}-950`,
+          border: `border-${color}-700`,
+          iconBg: `bg-${color}-500`,
+          accent: `text-${color}-400`,
+          glow: 'transparent',
+        }
+      : {
+          gradient: `from-${color}-900/90 to-${color}-950/95`,
+          border: `border-${color}-700/30`,
+          iconBg: `bg-${color}-500/20`,
+          accent: `text-${color}-400`,
+          glow: `from-${color}-500/10`,
+        };
+  }
+
+  if (theme === 'light') {
+    return emphasis === 'solid'
+      ? {
+          gradient: `from-${color}-100 to-${color}-200`,
+          border: `border-${color}-300`,
+          iconBg: `bg-${color}-400`,
+          accent: `text-${color}-600`,
+          glow: 'transparent',
+        }
+      : {
+          gradient: `from-${color}-100/90 to-${color}-200/80`,
+          border: `border-${color}-300/60`,
+          iconBg: `bg-${color}-400/40`,
+          accent: `text-${color}-600`,
+          glow: `from-${color}-300/30`,
+        };
+  }
+
+  if (theme === 'black') {
+    return emphasis === 'solid'
+      ? {
+          gradient: `from-${color}-950 to-${color}-900`,
+          border: `border-${color}-800`,
+          iconBg: `bg-${color}-700`,
+          accent: `text-${color}-500`,
+          glow: 'transparent',
+        }
+      : {
+          gradient: `from-${color}-950/90 to-${color}-900/95`,
+          border: `border-${color}-800/30`,
+          iconBg: `bg-${color}-700/20`,
+          accent: `text-${color}-500`,
+          glow: `from-${color}-600/10`,
+        };
+  }
+
+  return emphasis === 'solid'
+    ? {
+        gradient: `from-${color}-800/80 to-${color}-900/90`,
+        border: `border-${color}-600/25`,
+        iconBg: `bg-${color}-400/15`,
+        accent: `text-${color}-400`,
+        glow: 'transparent',
+      }
+    : {
+        gradient: `from-${color}-800/70 to-${color}-900/85`,
+        border: `border-${color}-600/20`,
+        iconBg: `bg-${color}-400/12`,
+        accent: `text-${color}-400`,
+        glow: `from-${color}-400/6`,
+      };
+}
+
+export function getAccentDecorativeSurface(
+  theme: ThemeMode,
+  color: PresetPrimaryColor
+): AccentDecorativeSurface {
+  const tone = getAccentThemeTone(theme, color, 'soft');
+
+  return {
+    gradient: tone.gradient,
+    border: tone.border,
+    glow: tone.glow,
+  };
+}
+
+export function getAccentDialogSurface(color: PresetPrimaryColor) {
+  return {
+    from: `from-${color}-900/95`,
+    to: `to-${color}-950/95`,
+    border: `border-${color}-500/20`,
+  };
 }

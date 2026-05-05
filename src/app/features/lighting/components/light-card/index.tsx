@@ -76,7 +76,7 @@ export const LightCard = memo(function LightCard({
     customColor: controller.customColor,
     currentColor: controller.currentColor,
     theme,
-    lightColors: colors.switch.on,
+    lightColors: colors.light,
     accentColor,
   });
 

@@ -92,14 +92,29 @@ export const WeatherCard = memo(function WeatherCard({
   const summaryLabel = formatWeatherConditionLabel(condition);
   const headerIconClassName = isSmall || usesDetailedLayout ? 'h-11 w-11' : 'h-10 w-10';
   const showHourlyForecast = effectiveForecastMode === 'hourly';
+  const cardContentPaddingClassName = isMedium ? 'px-3 py-2.5' : 'p-3';
+  const compactHeaderClassName = isSmall
+    ? 'mb-1.5 gap-2'
+    : isMedium
+      ? 'mb-1.5 gap-3'
+      : 'mb-3 gap-3';
+  const compactLocationRowClassName = isMedium ? 'gap-1.5' : 'gap-2';
   const compactLocationTextClassName = isSmall ? 'text-[13px]' : 'text-sm';
   const compactTemperatureTextClassName = isSmall ? 'text-[2rem]' : 'text-3xl';
   const compactMetaTextClassName = isSmall ? 'text-xs' : 'text-sm';
   const compactSummaryTextClassName = isSmall ? 'text-xs' : 'text-sm';
   const compactForecastDayTextClassName = isSmall ? 'text-xs' : 'text-sm';
-  const compactForecastIconClassName = isSmall ? 'mx-auto mb-1 h-5 w-5' : 'mx-auto mb-1 h-6 w-6';
+  const compactForecastIconClassName = isSmall
+    ? 'mx-auto mb-1 h-5 w-5'
+    : isMedium
+      ? 'mx-auto mb-0.5 h-5 w-5'
+      : 'mx-auto mb-1 h-6 w-6';
   const compactForecastValueClassName = isSmall ? 'text-xs leading-none' : 'text-sm leading-none';
   const compactHeaderIconClassName = isSmall ? 'h-9 w-9' : headerIconClassName;
+  const compactTemperatureBlockClassName = isSmall ? 'mt-1' : isMedium ? 'mt-1' : 'mt-1.5';
+  const compactTemperatureClassName = isSmall ? 'mb-0.5' : isMedium ? 'mb-0.5' : 'mb-1';
+  const compactSummaryClassName = isSmall ? 'mt-0.5 max-w-18' : isMedium ? 'mt-0.5' : 'mt-1';
+  const compactForecastDayClassName = isSmall ? 'mb-1' : isMedium ? 'mb-0.5' : 'mb-1';
 
   const textPrimary = weatherTextTreatment.primary;
   const textSecondary = weatherTextTreatment.secondary;
@@ -183,12 +198,10 @@ export const WeatherCard = memo(function WeatherCard({
           />
         ) : null}
 
-        <div className="relative z-2 flex h-full min-h-0 flex-col p-3">
-          <div
-            className={`flex items-start justify-between ${isSmall ? 'gap-2 mb-1.5' : isMedium ? 'mb-2 gap-3' : 'mb-3 gap-3'}`}
-          >
+        <div className={`relative z-2 flex h-full min-h-0 flex-col ${cardContentPaddingClassName}`}>
+          <div className={`flex items-start justify-between ${compactHeaderClassName}`}>
             <div className="min-w-0">
-              <div className="inline-flex min-w-0 items-center gap-2">
+              <div className={`inline-flex min-w-0 items-center ${compactLocationRowClassName}`}>
                 <MapPin
                   className={`${isMedium || isSmall ? 'mt-0 h-3.5 w-3.5' : 'mt-0.5 h-4 w-4'} shrink-0`}
                   style={iconStyleSecondary}
@@ -202,9 +215,9 @@ export const WeatherCard = memo(function WeatherCard({
               </div>
 
               {isMedium || isSmall ? (
-                <div className={isSmall ? 'mt-1' : 'mt-1.5'}>
+                <div className={compactTemperatureBlockClassName}>
                   <div
-                    className={`font-bold leading-none ${compactTemperatureTextClassName} ${isSmall ? 'mb-0.5' : 'mb-1'}`}
+                    className={`font-bold leading-none ${compactTemperatureTextClassName} ${compactTemperatureClassName}`}
                     style={titleStyle}
                   >
                     {temperature}°C
@@ -222,7 +235,7 @@ export const WeatherCard = memo(function WeatherCard({
                 style={iconStylePrimary}
               />
               <div
-                className={`${isSmall ? 'mt-0.5 max-w-18' : 'mt-1'} ${compactSummaryTextClassName} font-medium leading-tight`}
+                className={`${compactSummaryClassName} ${compactSummaryTextClassName} font-medium leading-tight`}
                 style={subtitleStyle}
               >
                 {summaryLabel}
@@ -239,7 +252,7 @@ export const WeatherCard = memo(function WeatherCard({
                   {visibleForecast.map((day) => (
                     <div key={day.day} className="min-w-0 text-center">
                       <div
-                        className={`mb-1 ${compactForecastDayTextClassName}`}
+                        className={`${compactForecastDayClassName} ${compactForecastDayTextClassName}`}
                         style={iconStyleSecondary}
                       >
                         {day.day}

@@ -7,8 +7,13 @@ import {
   SlideAction,
 } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import {
+  getCardReadableTextTokens,
+  resolveCardToneBaseColor,
+} from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
+import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -70,7 +75,7 @@ export const LockCard = memo(function LockCard({
     setIsLocked(initialState);
   }, [liveEntity, initialState]);
 
-  const { theme, colors, accentColor } = useTheme();
+  const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
   const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
@@ -93,7 +98,8 @@ export const LockCard = memo(function LockCard({
         : isLocked
           ? 'text-green-300'
           : 'text-red-300';
-  const activeBaseColor = isLocked ? accentColor : '#ef4444';
+  const headerTone = isLocked ? 'green' : 'red';
+  const activeBaseColor = resolveCardToneBaseColor({ tone: headerTone });
   const blackActiveSurface =
     theme === 'black'
       ? getCardStateSurfaceStyleTokens({
@@ -126,7 +132,6 @@ export const LockCard = memo(function LockCard({
     theme === 'light'
       ? 'border-black/8 bg-white/56 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.36)]'
       : 'border-white/10 bg-black/18 shadow-[0_18px_36px_-24px_rgba(0,0,0,0.66)]';
-  const headerTone = isLocked ? 'primary' : 'red';
   const headerLeading = (
     <EntityCardHeaderIcon
       IconComponent={IconComponent}
@@ -142,6 +147,20 @@ export const LockCard = memo(function LockCard({
   const headerSubtitleClassName = isLocked
     ? stateIconClassName
     : `${theme === 'light' ? 'text-red-700' : 'text-red-200'} font-semibold uppercase tracking-[0.16em]`;
+  const slideThumbTokens = getEntityIconPillStyles({
+    isActive: true,
+    isInteractive: false,
+    primaryColor: 'custom',
+    baseColor: activeBaseColor,
+    size: resolvedSize,
+    theme,
+    tone: headerTone,
+  });
+  const slideLabelTokens = getCardReadableTextTokens({
+    theme,
+    tone: headerTone,
+    baseColor: activeBaseColor,
+  });
 
   return (
     <BaseCard
@@ -205,9 +224,14 @@ export const LockCard = memo(function LockCard({
             ariaLabel={swipeLabel}
             completionIcon={completionIcon}
             disabled={isEditMode || isPendingAction}
+            labelStyle={{ color: slideLabelTokens.titleColor }}
             onComplete={handleToggleLock}
             size="small"
             theme={theme}
+            thumbClassName={slideThumbTokens.badgeClassName}
+            thumbIconClassName={slideThumbTokens.iconClassName}
+            thumbIconStyle={slideThumbTokens.iconStyle}
+            thumbStyle={slideThumbTokens.badgeStyle}
           />
         </div>
       </div>

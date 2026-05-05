@@ -3,9 +3,9 @@ import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { BaseCard, Button, Text, Textarea } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { useI18n, useTheme } from '@/app/hooks';
-import { getGradientColors } from '@/app/utils/color-utils';
 
 interface NoteWidgetProps {
   size?: CardSize;
@@ -18,11 +18,11 @@ interface NoteWidgetProps {
 export function NoteWidget({
   initialNote = '',
   onNoteChange,
-  tintColor: _tintColor,
+  tintColor,
 }: Omit<NoteWidgetProps, 'size'>) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
-  const offStateGradient = getGradientColors(false, null, theme);
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const emptyNote = t('widgets.note.emptyState');
   const [note, setNote] = useState(initialNote);
   const [isEditing, setIsEditing] = useState(false);
@@ -58,18 +58,6 @@ export function NoteWidget({
     textarea.setSelectionRange(caretPosition, caretPosition);
   }, [isEditing]);
 
-  const noteCardClassName = [
-    'relative z-10 flex h-full flex-col overflow-hidden rounded-[22px] border',
-    offStateGradient.border,
-    offStateGradient.customGradient
-      ? ''
-      : `bg-gradient-to-br ${offStateGradient.from} ${offStateGradient.to}`,
-  ]
-    .filter(Boolean)
-    .join(' ');
-  const noteCardStyle: CSSProperties | undefined = offStateGradient.customGradient
-    ? { background: offStateGradient.customGradient }
-    : undefined;
   const noteReadInsetClassName = 'pl-8.75 pr-3 pt-3';
   const noteEditInsetClassName = 'pl-8.75 pr-3 pt-3';
   const ruledLinesOverlayClassName =
@@ -140,6 +128,19 @@ export function NoteWidget({
     backgroundSize: '14px 30px',
     backgroundPosition: 'center top',
   };
+  const focusRingClassName =
+    theme === 'glass'
+      ? 'focus-visible:ring-[rgba(148,163,184,0.28)]'
+      : 'focus-visible:ring-white/35';
+  const contentSheenStyle =
+    theme === 'light'
+      ? undefined
+      : ({
+          background:
+            theme === 'black'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 18%, transparent 42%)'
+              : 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.018) 18%, transparent 42%)',
+        } satisfies CSSProperties | undefined);
 
   return (
     <BaseCard
@@ -147,62 +148,77 @@ export function NoteWidget({
       fullBleed
       className="transition-all duration-500"
       contentClassName="h-full"
+      style={tintSurface.panelStyle}
+      overlay={
+        <>
+          {tintSurface.glowStyle ? (
+            <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
+          ) : null}
+          {tintSurface.overlayClassName ? (
+            <div
+              className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`}
+            />
+          ) : null}
+        </>
+      }
     >
-      <div className="relative flex h-full flex-col">
-        <div className={noteCardClassName} style={noteCardStyle}>
-          <div
-            className="pointer-events-none absolute inset-y-0 left-3 w-3"
-            style={binderHolesStyle}
-            aria-hidden="true"
-          />
-          <div className={ruledLinesOverlayClassName} style={noteTheme.ruledLineStyle} />
+      <div className="relative flex h-full flex-col overflow-hidden rounded-[inherit]">
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[inherit]"
+          style={contentSheenStyle}
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-3 w-3"
+          style={binderHolesStyle}
+          aria-hidden="true"
+        />
+        <div className={ruledLinesOverlayClassName} style={noteTheme.ruledLineStyle} />
 
-          {isEditing ? (
-            <>
-              <Textarea
-                ref={textareaRef}
-                value={draftNote}
-                onChange={(event) => setDraftNote(event.target.value)}
-                containerClassName="flex-1"
-                textareaClassName={noteTheme.textareaClassName}
-                style={{
-                  background: 'transparent',
-                  borderWidth: 0,
-                  borderStyle: 'solid',
-                  boxShadow: 'none',
-                }}
-                aria-label={t('widgets.note.title')}
-              />
-              <div className="absolute bottom-3 right-3 z-20">
-                <Button
-                  onClick={handleSave}
-                  iconOnly
-                  size="compact"
-                  label={t('widgets.note.save')}
-                  className="rounded-full border-transparent text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)]"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  <Check className="h-4 w-4" strokeWidth={3} />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleStartEdit}
-              className="relative flex flex-1 flex-col text-left transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
-            >
-              <Text
-                as="p"
-                className={`relative z-10 m-0 flex-1 whitespace-pre-wrap pb-3 ${noteReadInsetClassName} text-left text-pretty ${
-                  note.length === 0 ? noteTheme.emptyNoteTextClassName : noteTheme.noteTextClassName
-                }`}
+        {isEditing ? (
+          <>
+            <Textarea
+              ref={textareaRef}
+              value={draftNote}
+              onChange={(event) => setDraftNote(event.target.value)}
+              containerClassName="relative z-10 flex-1"
+              textareaClassName={noteTheme.textareaClassName}
+              style={{
+                background: 'transparent',
+                borderWidth: 0,
+                borderStyle: 'solid',
+                boxShadow: 'none',
+              }}
+              aria-label={t('widgets.note.title')}
+            />
+            <div className="absolute bottom-3 right-3 z-20">
+              <Button
+                onClick={handleSave}
+                iconOnly
+                size="compact"
+                label={t('widgets.note.save')}
+                className="rounded-full border-transparent text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)]"
+                style={{ backgroundColor: accentColor }}
               >
-                {note.length === 0 ? emptyNote : note}
-              </Text>
-            </button>
-          )}
-        </div>
+                <Check className="h-4 w-4" strokeWidth={3} />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={handleStartEdit}
+            className={`relative z-10 flex flex-1 flex-col text-left transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 ${focusRingClassName}`}
+          >
+            <Text
+              as="p"
+              className={`relative z-10 m-0 flex-1 whitespace-pre-wrap pb-3 ${noteReadInsetClassName} text-left text-pretty ${
+                note.length === 0 ? noteTheme.emptyNoteTextClassName : noteTheme.noteTextClassName
+              }`}
+            >
+              {note.length === 0 ? emptyNote : note}
+            </Text>
+          </button>
+        )}
       </div>
     </BaseCard>
   );

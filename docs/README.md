@@ -1,20 +1,20 @@
 # Navet Documentation
 
-This directory is the index for active Navet documentation.
+This directory is the index for active Navet documentation. The goal of this index is to point to
+the docs that are meant to describe the current codebase rather than historical snapshots.
 
 ## Start Here
 
-- [../README.md](../README.md): project overview, setup, commands, and architecture summary
-- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): state-management rules and store/service contracts
-- [../design-system/README.md](../design-system/README.md): design-system scope, shared UI layers, and Storybook workflow
-- [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared unit-test helpers, browser mocks, and HA service stubs
-- [../design-system/FEATURES.md](../design-system/FEATURES.md): feature map with section routing, layout ownership, and test coverage locations
+- [../README.md](../README.md): project overview, setup, commands, testing workflow, and architecture summary
+- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): shared-state rules, store boundaries, and service-to-store flow
+- [../design-system/README.md](../design-system/README.md): shared UI layers, Storybook workflow, and theme/token guidance
+- [../design-system/FEATURES.md](../design-system/FEATURES.md): current feature inventory, section ownership, and test/story coverage map
 
 ## Documentation Map
 
-### Product and deployment
+### Product, deployment, and operations
 
-- [WIDGETS.md](WIDGETS.md): widget types, widget behavior, and extension notes
+- [WIDGETS.md](WIDGETS.md): widget behavior and extension notes
 - [DOCKER_HOME_ASSISTANT_ADDON.md](DOCKER_HOME_ASSISTANT_ADDON.md): Docker and Home Assistant add-on deployment
 - [VERSIONING.md](VERSIONING.md): release numbering and bump policy
 - [ROADMAP.md](ROADMAP.md): planned work and shipped history
@@ -23,9 +23,9 @@ This directory is the index for active Navet documentation.
 ### Architecture and implementation
 
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand-only shared state guidance
-- [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test): shared test harness for Vitest-based unit coverage
-- [../design-system/FEATURES.md](../design-system/FEATURES.md): implementation map of current product areas, top-level sections, and test locations
-- [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md): visual rules, component patterns, and performance-sensitive UI guidance
+- [../design-system/README.md](../design-system/README.md): UI-layer boundaries and Storybook-first workflow
+- [../design-system/FEATURES.md](../design-system/FEATURES.md): current product surface, section routing, and ownership map
+- [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md): visual rules, theme constraints, and performance-sensitive UI guidance
 - [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md): Storybook structure and workshop rules
 
 ### Branding and legal
@@ -40,6 +40,17 @@ This directory is the index for active Navet documentation.
 
 - [archive/CHANGES.md](archive/CHANGES.md): archived migration and change history
 
+## Current Codebase Reference Points
+
+Use these directories when docs need to be checked against the live implementation:
+
+- [`src/app/features/`](../src/app/features/): feature-owned modules
+- [`src/app/components/`](../src/app/components/): shared UI layers and app-shell composition
+- [`src/app/stores/`](../src/app/stores/): Zustand stores and selectors
+- [`src/app/services/`](../src/app/services/): Home Assistant integration services
+- [`src/app/storybook/`](../src/app/storybook/): shared Storybook frames and docs helpers
+- [`src/test/`](../src/test/): shared Vitest helpers, stubs, and browser mocks
+
 ## Recommended Reading Paths
 
 ### New contributor
@@ -47,26 +58,27 @@ This directory is the index for active Navet documentation.
 1. [../README.md](../README.md)
 2. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
 3. [../design-system/README.md](../design-system/README.md)
-4. [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md)
+4. [../design-system/FEATURES.md](../design-system/FEATURES.md)
 
 ### Working on shared UI
 
 1. [../design-system/README.md](../design-system/README.md)
 2. [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md)
 3. [../design-system/STORYBOOK_FOUNDATION.md](../design-system/STORYBOOK_FOUNDATION.md)
+4. [../README.md](../README.md) for current command and review workflow
 
-### Working on dashboard or state flows
+### Working on dashboard, state, or section flows
 
 1. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
-2. [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test)
-3. [../design-system/FEATURES.md](../design-system/FEATURES.md)
-4. [WIDGETS.md](WIDGETS.md)
+2. [../design-system/FEATURES.md](../design-system/FEATURES.md)
+3. [WIDGETS.md](WIDGETS.md)
+4. [`../src/test/`](../src/test/) for test harness helpers
 
-### Writing tests
+### Writing or updating tests
 
-1. [../src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test)
-2. [../design-system/FEATURES.md](../design-system/FEATURES.md) — test location conventions
-3. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md) — store mocking patterns
+1. [../README.md](../README.md) for current test commands and active `__tests__/` directories
+2. [`../src/test/`](../src/test/) for shared test utilities
+3. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md) for store/service behavior expectations
 
 ### Working on deployment
 
@@ -76,12 +88,16 @@ This directory is the index for active Navet documentation.
 
 ## Maintenance Rules
 
-- Keep active docs aligned with the codebase when architecture, setup, or behavior changes
-- Prefer updating active docs over adding duplicate one-off notes
+- Keep active docs aligned with the codebase when architecture, setup, commands, or product surface changes
+- Prefer updating existing active docs over adding duplicate scratch notes
 - Treat `docs/archive/` as historical material, not the current source of truth
-- When Storybook ownership, card sizing, or feature boundaries change, update the design-system docs
-- When shared test harnesses, store-reset behavior, service stubs, or active `__tests__/` directories change, update the testing references in the active docs
-- When top-level sections, room sourcing, or dashboard layout modes change, update `README.md` and `design-system/FEATURES.md`
-- When new primitives, patterns, or test directories are added, update FEATURES.md and README.md
+- When top-level sections, shared stores, widget types, or test locations change, update `README.md` and `design-system/FEATURES.md`
+- When Storybook ownership, UI-layer boundaries, or token helpers change, update `design-system/README.md`
+- When setup scripts or test commands change, update `README.md`
 
-Last updated: April 29, 2026
+## Known Scope
+
+This index intentionally focuses on active docs. Some older topic documents may still need a deeper
+staleness audit, especially if they describe features that have evolved faster than the docs.
+
+Last updated: May 6, 2026

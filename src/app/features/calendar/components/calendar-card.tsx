@@ -7,6 +7,7 @@ import {
   isCompactCardSize,
 } from '@/app/components/shared/card-size-selector';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { CalendarEventDialog } from './calendar/calendar-event-dialog';
 import { CalendarLargeView } from './calendar/calendar-large-view';
@@ -37,7 +38,7 @@ export const CalendarCard = memo(function CalendarCard({
   onSizeChange: _onSizeChange,
 }: CalendarCardProps) {
   const { t } = useI18n();
-  const { theme, colors } = useTheme();
+  const { theme, colors, accentColor } = useTheme();
   const effectiveSize = getCompactCardSize(size);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -54,9 +55,11 @@ export const CalendarCard = memo(function CalendarCard({
   const { nextEvent, smallGroups, mediumGroups, largeGroups } = useCalendarData(selectedEvents);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
+  const surface = getThemeSurfaceTokens(theme);
 
+  const effectiveCalendarAccentColor = tintColor ?? accentColor;
   const { textPrimary, textSecondary, overlayBg, dividerColor, hoverBg, hoverText } =
-    useCalendarTheme(theme, tintColor);
+    useCalendarTheme(theme, effectiveCalendarAccentColor);
 
   const isSmall = isCompactCardSize(effectiveSize);
   const isMedium = effectiveSize === 'medium';
@@ -73,7 +76,11 @@ export const CalendarCard = memo(function CalendarCard({
           group transition-all duration-300
           ${!inEditMode ? 'cursor-pointer' : ''}
         `}
-        frameClassName={hasCustomTint ? '' : `bg-linear-to-br ${colors.calendar.gradient}`}
+        frameClassName={
+          hasCustomTint
+            ? ''
+            : `bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`
+        }
         style={tintSurface.panelStyle}
         disableDefaultSheen
         disableDefaultLightOverlay
@@ -91,6 +98,11 @@ export const CalendarCard = memo(function CalendarCard({
             {!hasCustomTint ? (
               <div
                 className={`absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent`}
+              />
+            ) : null}
+            {!hasCustomTint && surface.lightOverlay ? (
+              <div
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] ${surface.lightOverlay}`}
               />
             ) : null}
           </>

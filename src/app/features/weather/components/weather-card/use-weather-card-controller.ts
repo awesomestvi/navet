@@ -55,9 +55,7 @@ export function useWeatherCardController({
   });
   const isGlass = theme === 'glass';
   const shell = getAccentCardShellTokens(theme, 'blue');
-  const weatherShellClassName = hasCustomTint
-    ? ''
-    : `${surface.panel} ${cardShell.backdropClassName} ${surface.border}`;
+  const weatherShellClassName = hasCustomTint ? '' : shell.containerClassName;
 
   const cityName = getWeatherCityName(location);
   const weatherTextTreatment = getWeatherTextTreatment(condition, hasCustomTint, textTokens);

@@ -1,64 +1,88 @@
 # Navet
 
-Navet is a smart home dashboard PWA built with React 19, TypeScript, Zustand, and Tailwind CSS 4.
-It connects directly to Home Assistant over WebSocket and is designed to run well on both desktop
-machines and lower-power wall panels.
-
-## Overview
-
-Navet focuses on three things:
-
-- a dashboard-first Home Assistant experience with editable cards, rooms, and widgets
-- a shared UI system with Storybook-backed primitives, patterns, and theme tokens
-- predictable architecture: feature-owned modules, Zustand for shared state, and typed service events
+Navet is a smart home dashboard PWA built with React 19, TypeScript 6, Zustand 5, Tailwind CSS 4.2,
+and Vite 8. It connects directly to Home Assistant over WebSocket and is designed to stay usable on
+both desktop-class hardware and lower-power wall panels.
 
 Current release channel: `0.1.0-beta.2`
 
-See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and version bump rules.
+See [docs/VERSIONING.md](docs/VERSIONING.md) for release policy and bump rules.
 
-### Testing
+## Overview
 
-Navet uses Vitest for unit testing with co-located test files in `__tests__/` directories. Test
-coverage includes:
+Navet is organized around three product goals:
 
-- shared utilities and entity mappers
-- Zustand store behavior
-- controller hooks and dashboard actions
-- calendar and feature-specific logic
+- a dashboard-first Home Assistant experience with editable entity cards, rooms, and custom widgets
+- a shared UI system backed by primitives, patterns, theme helpers, and Storybook coverage
+- predictable architecture with feature-owned modules, Zustand-only shared state, and typed service events
 
-## Highlights
+## Product Surface
 
-### Dashboard and device support
+### Main sections
 
-- Live Home Assistant entity cards for lights, climate, media, locks, cameras, weather, calendars,
-  people, vacuums, sensors, helpers, scripts, and related domains
-- Top-level section routing for `/`, `/energy`, `/security`, `/tasks`, `/locks`, `/lights`,
-  `/media`, and `/settings`
-- Room navigation on the home dashboard backed by Home Assistant areas first, with discovered
-  device rooms filling gaps when area metadata is incomplete
-- Edit mode for adding cards, resizing cards, reordering content, and managing dashboard layout
-- Home dashboard editing with sectioned or flow layouts, section ordering, and column-aware drag
-  behavior for cards and custom widgets
-- Card-level room reassignment for supported entity types and section-level customization for
-  security, locks, lights, and media views
-- Dashboard import/export through a YAML-based local config backup flow
+Top-level sections are defined in [`src/app/navigation/sections.ts`](src/app/navigation/sections.ts):
 
-### UI and theming
+- `home`
+- `energy`
+- `security`
+- `tasks`
+- `locks`
+- `lights`
+- `media`
+- `settings`
 
-- Four theme modes: `glass`, `dark`, `light`, and `black` (`Black` in the UI)
-- Accent color system with built-in accents and custom accent selection
-- Adaptive visual-quality tiers for lower-power devices
-- Shared card-shell primitives, body text, dialog patterns, and surface tokens documented in Storybook
-- PWA shell with install prompt, update prompt, and offline app-shell support
+Routing and lazy-loading are coordinated by
+[`src/app/features/dashboard/components/dashboard-section-router.tsx`](src/app/features/dashboard/components/dashboard-section-router.tsx).
 
-### Widgets and specialized views
+### Home dashboard
 
-- Custom widgets including RSS feed, photo frame, quick note, battery overview, button, and map widgets
-- Dedicated section views for energy, security, tasks, locks, lights, media, and settings
-- Live Home Assistant notification surfaces for persistent notifications, repair issues, and updates
-- Artwork-led media cards and TV-specific media layouts
-- Energy setup includes Home Assistant preference auto-detection plus optional extra-source and
-  tracked-device configuration
+The home section is the main editable canvas. It currently supports:
+
+- room-driven navigation with `All` and per-room views
+- sectioned and flow-style layouts for the `All` room
+- entity cards plus custom widgets stored alongside dashboard layout state
+- card resizing, room reassignment, ordering, and visibility control
+- import/export of local dashboard configuration
+
+### Domain sections
+
+- `energy`: energy dashboard, setup wizard, and an energy-only custom-widget band
+- `security`: camera-oriented section, cover cards, and lock cards
+- `tasks`: Home Assistant automation/task summaries grouped into actionable sections
+- `locks`: lock-focused section built on the shared device-section shell
+- `lights`: all-lights overview using the shared dashboard all-view grid
+- `media`: grouped media section with dedicated audio and TV handling
+- `settings`: appearance, localization, dashboard, interaction, system, and project settings
+
+### Entity and widget coverage
+
+Navet currently includes first-class card or section support for:
+
+- lights and switches
+- climate/HVAC
+- media players and TV remotes
+- locks
+- cameras
+- covers
+- calendars
+- weather
+- people/presence
+- sensors and grouped sensor displays
+- scenes and script-like actions
+- vacuums
+- RSS/news feeds
+- energy dashboards and derived energy widgets
+
+Current home custom-widget types are defined in
+[`src/app/features/dashboard/stores/custom-cards-store.ts`](src/app/features/dashboard/stores/custom-cards-store.ts):
+
+- `rss`
+- `photo`
+- `note`
+- `battery`
+- `energy-now`
+- `button`
+- `map`
 
 ## Tech Stack
 
@@ -70,17 +94,19 @@ coverage includes:
 | Styling | Tailwind CSS 4.2 |
 | UI primitives | Radix UI |
 | Build | Vite 8 |
-| Smart home integration | `home-assistant-js-websocket` |
-| Testing | Vitest 4 |
+| Smart-home integration | `home-assistant-js-websocket` |
+| Mapping | `leaflet` + `react-leaflet` |
+| Notifications | `sonner` |
 | Formatting and linting | Biome 2 |
-| Workshop | Storybook |
+| Unit testing | Vitest 4 |
+| Visual workshop | Storybook 10 |
+| PWA runtime | `vite-plugin-pwa` + `workbox-window` |
 
 ## Architecture
 
-### App structure
+### Feature-owned modules
 
-Navet is organized around feature-owned modules under [`src/app/features/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features).
-Current feature folders include:
+Primary feature folders under [`src/app/features/`](src/app/features/) currently include:
 
 - `auth`
 - `calendar`
@@ -91,35 +117,37 @@ Current feature folders include:
 - `media`
 - `notifications`
 - `person`
-- `power`
 - `rss`
 - `scenes`
 - `security`
 - `sensors`
 - `settings`
+- `tasks`
 - `vacuum`
 - `weather`
 
-Cross-feature UI lives under [`src/app/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components):
+There is also a `power/` folder in the tree, but it is not currently an active feature entrypoint.
+
+Cross-feature UI lives under [`src/app/components/`](src/app/components/):
 
 - `primitives/` for low-level reusable UI
 - `patterns/` for composed shared structures
-- `system/` for the curated public export surface used by Storybook and cross-app discovery
+- `system/` for curated exports and token stories
 - `shared/` for app-specific shared UI and compatibility shims
-- `layout/` and `ui/` for shell-level and wrapper components
-- `figma/` for design integration components
+- `layout/` for app-shell and section-level composition
+- `ui/` for wrapper components around UI libraries
+- `figma/` for design-integration helpers
 
-### State and services
+### Shared state and services
 
-- All shared reactive state lives in Zustand stores under
-  [`src/app/stores/`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores)
-- Current stores: `auth-store`, `config-store`, `edit-mode-store`, `error-store`,
-  `home-assistant-store`, `navigation-store`, `search-store`, `settings-store`, `theme-store`
-- Home Assistant data flows through
-  [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
-  and into the store via typed events
-- React Context is reserved for infrastructure concerns such as i18n
-- Navigation state persists the current room while the active section is derived from the URL
+- All shared reactive state lives in Zustand stores under [`src/app/stores/`](src/app/stores/)
+- Current store files include `auth-store`, `config-store`, `edit-mode-store`, `error-store`,
+  `home-assistant-store`, `navigation-store`, `search-store`, `settings-store`, and `theme-store`
+- Shared subscriptions should go through [`src/app/stores/selectors.ts`](src/app/stores/selectors.ts)
+- Home Assistant integration flows through
+  [`src/app/services/home-assistant.service.ts`](src/app/services/home-assistant.service.ts)
+- The service emits typed updates for entities, registries, config, and connection state
+- React Context is reserved for infrastructure concerns such as i18n rather than shared app state
 
 See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the state-management contract.
 
@@ -127,17 +155,16 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 
 | File | Role |
 |---|---|
-| [`src/app/App.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/App.tsx) | Root app shell, HA connection bootstrap, PWA/update shell, global DOM sync |
-| [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts) | Shared selectors for minimal store subscriptions |
-| [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx) | Dashboard card registry |
-| [`src/app/features/dashboard/components/dashboard-section-router.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/dashboard-section-router.tsx) | Top-level section router for home, energy, security, tasks, locks, lights, media, and settings |
-| [`src/app/components/layout/device-section-layout.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/device-section-layout.tsx) | Shared section shell for domain-specific entity grids with edit-mode customization |
-| [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |
-| [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts) | Story-specific documentation strings |
-| [`src/app/components/shared/theme/theme-surface-tokens.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme/theme-surface-tokens.ts) | Shared theme/surface decisions |
-| [`src/app/hooks/use-ha-devices.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-ha-devices.ts) | HA entity to device type mapping |
-| [`src/app/hooks/use-area-rooms.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/use-area-rooms.ts) | Area-name room source derived from the HA registry |
-| [`src/app/hooks/ha-entity-utils.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/hooks/ha-entity-utils.ts) | Entity transformation utilities |
+| [`src/app/App.tsx`](src/app/App.tsx) | Root shell, auth split, HA bootstrap, DOM sync, and PWA wiring |
+| [`src/app/navigation/sections.ts`](src/app/navigation/sections.ts) | Section registry and URL/path helpers |
+| [`src/app/features/dashboard/components/dashboard-section-router.tsx`](src/app/features/dashboard/components/dashboard-section-router.tsx) | Top-level section router |
+| [`src/app/features/dashboard/utils/card-renderer.tsx`](src/app/features/dashboard/utils/card-renderer.tsx) | Entity-card registry for the dashboard |
+| [`src/app/features/dashboard/stores/custom-cards-store.ts`](src/app/features/dashboard/stores/custom-cards-store.ts) | Custom-widget persistence and migration |
+| [`src/app/components/layout/device-section-layout.tsx`](src/app/components/layout/device-section-layout.tsx) | Shared shell for domain-specific entity sections |
+| [`src/app/components/shared/theme/`](src/app/components/shared/theme/) | Theme, surface, readable-text, and card-state helpers |
+| [`src/app/hooks/use-ha-devices.ts`](src/app/hooks/use-ha-devices.ts) | Home Assistant entity-to-device mapping |
+| [`src/app/storybook/story-frames.tsx`](src/app/storybook/story-frames.tsx) | Shared Storybook frame helpers |
+| [`src/app/storybook/story-docs.ts`](src/app/storybook/story-docs.ts) | Shared Storybook docs descriptions |
 
 ## Setup
 
@@ -145,8 +172,8 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 
 - Node.js 18+
 - `pnpm`
-- A running Home Assistant instance
-- A Home Assistant long-lived access token
+- a running Home Assistant instance
+- a Home Assistant long-lived access token
 
 ### Install
 
@@ -154,7 +181,6 @@ See [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md) for the s
 git clone https://github.com/awesomestvi/navet.git
 cd navet
 pnpm install
-pnpm setup:hooks
 ```
 
 ### Environment
@@ -172,9 +198,9 @@ NAVET_HASS_URL=http://your-home-assistant:8123
 NAVET_HASS_TOKEN=your-long-lived-access-token
 ```
 
-### Development
+### Local development
 
-Start the app:
+Run the app:
 
 ```bash
 pnpm dev
@@ -186,85 +212,21 @@ Optional local hostname setup:
 127.0.0.1 navet.local
 ```
 
-Then open `http://navet.local:5200`.
+Then open `http://navet.local:5173` unless Vite reports a different port.
 
-### Storybook
+### Production-style preview
 
-Run Storybook when working on shared UI, cards, settings dialogs, or app shell pieces:
-
-```bash
-pnpm storybook
-```
-
-Relevant related scripts:
-
-```bash
-pnpm storybook:build
-pnpm check:stories
-```
-
-Storybook is the main review surface for:
-
-- tokens and theme behavior
-- shared primitives and patterns
-- app shell components
-- entity cards and custom widgets
-- dashboard, energy, and settings flows
-
-See [design-system/STORYBOOK_FOUNDATION.md](design-system/STORYBOOK_FOUNDATION.md).
-
-### Unit tests
-
-Navet uses Vitest for focused unit coverage of shared utilities, Zustand stores, browser-dependent
-hooks, and selected feature controllers. The repo also includes shared test helpers so new tests
-can mount hooks with i18n, reset singleton stores deterministically, and stub Home Assistant
-service events without bespoke setup in every file.
-
-Current shared test support lives in:
-
-- [`src/setupTests.ts`](/Users/vishal/Development/Github/Navet/Navet/src/setupTests.ts)
-- [`src/test/render.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/test/render.tsx)
-- [`src/test/store-reset.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/store-reset.ts)
-- [`src/test/browser-mocks.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/browser-mocks.ts)
-- [`src/test/factories/home-assistant-service-stub.ts`](/Users/vishal/Development/Github/Navet/Navet/src/test/factories/home-assistant-service-stub.ts)
-
-Active co-located test directories currently include:
-
-- [`src/app/features/calendar/components/calendar/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/calendar/components/calendar/__tests__)
-- [`src/app/features/dashboard/components/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/__tests__)
-- [`src/app/features/dashboard/hooks/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/hooks/__tests__)
-- [`src/app/features/energy/components/dashboard/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/dashboard/__tests__)
-- [`src/app/features/energy/components/energy-setup-wizard/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/energy-setup-wizard/__tests__)
-- [`src/app/features/energy/utils/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/utils/__tests__)
-- [`src/app/features/lighting/components/light-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/lighting/components/light-card/__tests__)
-- [`src/app/features/media/components/media-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/media/components/media-card/__tests__)
-- [`src/app/features/rss/components/rss-feed-card/__tests__/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/rss/components/rss-feed-card/__tests__)
-
-Use:
-
-```bash
-pnpm test
-pnpm test:coverage
-```
-
-Scope guidance:
-
-- Prefer unit tests for shared logic, persistence, selector-heavy hooks, and controller seams
-- Prefer Storybook for visual review of shared UI, cards, dialogs, and layout flows
-- Avoid broad snapshot-heavy component testing for thin presentational wrappers
-
-### Production preview
-
-Use the preview flow when you need production-style runtime config or media/proxy behavior:
+Use the preview flow when you need the generated runtime config and production bundle behavior:
 
 ```bash
 pnpm preview
 ```
 
-This builds the app, writes `dist/config.js`, and serves the production bundle on
-`http://localhost:4173`.
+This builds the app, writes `dist/config.js`, and serves the bundle on `http://localhost:4173`.
 
-## Common Commands
+## Commands
+
+### App and Storybook
 
 ```bash
 pnpm dev
@@ -272,60 +234,92 @@ pnpm preview
 pnpm storybook
 pnpm storybook:build
 pnpm check:stories
+```
+
+### Quality and tests
+
+```bash
 pnpm test
 pnpm test:coverage
+pnpm test:storybook
 pnpm format
 pnpm check
 pnpm typecheck
 ```
 
-## Product Surface
+### Utility scripts
 
-### Main sections
+```bash
+pnpm check:ui-kit
+pnpm report:ui-kit
+pnpm check:lockfile
+pnpm clean:root
+pnpm clean:all
+```
 
-- `Home`: customizable dashboard
-- `Energy`: energy views, charts, and widgets
-- `Security`: camera-oriented views
-- `Tasks`: placeholder section
-- `Locks`: lock entity grid
-- `Lights`: lighting-oriented section
-- `Media`: media-player and TV views
-- `Settings`: appearance, localization, dashboard, config, and onboarding controls
+## Testing and Review Workflow
 
-### Dashboard capabilities
+### Unit tests
 
-- Start from discovered entities, a blank dashboard, or an imported config
-- Switch Home room grouping between custom, room, type, or no grouping
-- Add entity cards and custom widgets
-- Resize cards across supported sizes including compact variants
-- Reassign rooms from supported card settings dialogs
-- Export and restore local dashboard configuration
+Navet uses Vitest for unit coverage of shared utilities, stores, hooks, controller seams, and selected
+feature logic.
 
-### Supported Home Assistant surfaces
+Shared test support currently lives in:
 
-- `calendar.*` cards with source selection and week/month views
-- `weather.*` cards backed by Home Assistant forecast data
-- `person.*` cards with images and normalized presence text
-- media-player cards with artwork, transport controls, and TV remote flows
-- helper and script domains mapped into existing card paths
+- [`src/setupTests.ts`](src/setupTests.ts)
+- [`src/test/render.tsx`](src/test/render.tsx)
+- [`src/test/store-reset.ts`](src/test/store-reset.ts)
+- [`src/test/browser-mocks.ts`](src/test/browser-mocks.ts)
+- [`src/test/factories/home-assistant-service-stub.ts`](src/test/factories/home-assistant-service-stub.ts)
+- [`src/test/mocks/virtual-pwa-register.ts`](src/test/mocks/virtual-pwa-register.ts)
+
+Active co-located `__tests__/` directories currently include:
+
+- [`src/app/components/layout/__tests__/`](src/app/components/layout/__tests__)
+- [`src/app/components/system/tokens/__tests__/`](src/app/components/system/tokens/__tests__)
+- [`src/app/features/calendar/components/calendar/__tests__/`](src/app/features/calendar/components/calendar/__tests__)
+- [`src/app/features/dashboard/components/__tests__/`](src/app/features/dashboard/components/__tests__)
+- [`src/app/features/dashboard/hooks/__tests__/`](src/app/features/dashboard/hooks/__tests__)
+- [`src/app/features/energy/components/dashboard/__tests__/`](src/app/features/energy/components/dashboard/__tests__)
+- [`src/app/features/energy/components/energy-setup-wizard/__tests__/`](src/app/features/energy/components/energy-setup-wizard/__tests__)
+- [`src/app/features/energy/utils/__tests__/`](src/app/features/energy/utils/__tests__)
+- [`src/app/features/lighting/components/light-card/__tests__/`](src/app/features/lighting/components/light-card/__tests__)
+- [`src/app/features/media/components/media-card/__tests__/`](src/app/features/media/components/media-card/__tests__)
+- [`src/app/features/rss/components/rss-feed-card/__tests__/`](src/app/features/rss/components/rss-feed-card/__tests__)
+- [`src/app/features/tasks/components/__tests__/`](src/app/features/tasks/components/__tests__)
+- [`src/app/features/tasks/utils/__tests__/`](src/app/features/tasks/utils/__tests__)
+- [`src/app/hooks/__tests__/`](src/app/hooks/__tests__)
+- [`src/app/stores/__tests__/`](src/app/stores/__tests__)
+- [`src/app/utils/__tests__/`](src/app/utils/__tests__)
+
+### Storybook
+
+Storybook is the main visual review surface for:
+
+- shared tokens and theme behavior
+- primitives and patterns
+- card shells and card variants
+- settings sections and dialogs
+- layout components and navigation surfaces
+- dashboard and energy widgets
+
+See [design-system/STORYBOOK_FOUNDATION.md](design-system/STORYBOOK_FOUNDATION.md).
 
 ## Documentation
 
-Start with [docs/README.md](docs/README.md) for the documentation index.
+Start with [docs/README.md](docs/README.md) for the active docs index.
 
 Useful entry points:
 
-- [docs/WIDGETS.md](docs/WIDGETS.md)
-- [docs/DOCKER_HOME_ASSISTANT_ADDON.md](docs/DOCKER_HOME_ASSISTANT_ADDON.md)
 - [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md)
-- [src/test/](/Users/vishal/Development/Github/Navet/Navet/src/test)
+- [docs/WIDGETS.md](docs/WIDGETS.md)
 - [design-system/README.md](design-system/README.md)
 - [design-system/FEATURES.md](design-system/FEATURES.md)
 - [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)
 
 ## Contributing
 
-Navet uses Conventional Commits. Format commits as:
+Navet uses Conventional Commits:
 
 ```text
 type(scope): summary
@@ -336,10 +330,10 @@ and `style`.
 
 When contributing:
 
-- keep feature logic inside the owning feature module
-- use shared primitives and patterns before creating new bespoke UI
-- update docs when behavior, architecture, or workflows change
-- keep Storybook titles and colocated story ownership valid
+- keep behavior inside the owning feature module when possible
+- prefer shared primitives and patterns before building new bespoke UI
+- update active docs when architecture, product surface, or workflow changes
+- keep Storybook ownership and titles aligned with the shared UI structure
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 

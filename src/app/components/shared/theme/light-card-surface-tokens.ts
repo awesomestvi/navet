@@ -72,6 +72,10 @@ export function getLightCardSurfaceTokens({
       }`.trim();
 
   if (theme === 'light') {
+    const lightOverlayColor = effectiveSelectedColor
+      ? `${effectiveSelectedColor}24`
+      : `${activeBaseColor}1f`;
+
     return {
       cardClassName: baseCardClassName,
       cardStyle:
@@ -87,9 +91,7 @@ export function getLightCardSurfaceTokens({
       innerOverlayClassName: 'absolute inset-0',
       innerOverlayStyle: isOn
         ? {
-            background: selectedColor
-              ? `linear-gradient(135deg, ${effectiveSelectedColor}24 0%, rgba(255, 255, 255, 0.16) 100%)`
-              : 'rgba(255, 247, 220, 0.18)',
+            background: `linear-gradient(135deg, ${lightOverlayColor} 0%, rgba(255, 255, 255, 0.16) 100%)`,
           }
         : { background: 'rgba(255, 255, 255, 0.6)' },
       shineOverlayClassName: null,

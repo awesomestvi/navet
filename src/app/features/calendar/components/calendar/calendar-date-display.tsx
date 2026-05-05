@@ -17,14 +17,24 @@ export function CalendarDateDisplay({
 }: CalendarDateDisplayProps) {
   return (
     <div className="flex w-[72px] flex-shrink-0 flex-col items-center py-1 text-center">
-      <div className={`text-xs font-medium uppercase tracking-[0.22em] ${textSecondary}`}>
+      <div
+        className="text-xs font-medium uppercase tracking-[0.22em]"
+        style={{ color: textSecondary }}
+      >
         {weekdayLabel}
       </div>
-      <div className={`mt-1 text-4xl font-semibold leading-none ${textPrimary}`}>{dayNumber}</div>
-      <div className={`mt-2 text-xs font-medium uppercase tracking-[0.28em] ${textSecondary}`}>
+      <div className="mt-1 text-4xl font-semibold leading-none" style={{ color: textPrimary }}>
+        {dayNumber}
+      </div>
+      <div
+        className="mt-2 text-xs font-medium uppercase tracking-[0.28em]"
+        style={{ color: textSecondary }}
+      >
         {monthLabel}
       </div>
-      <div className={`mt-3 text-xs font-medium ${textSecondary}`}>{temperatureLabel}</div>
+      <div className="mt-3 text-xs font-medium" style={{ color: textSecondary }}>
+        {temperatureLabel}
+      </div>
     </div>
   );
 }

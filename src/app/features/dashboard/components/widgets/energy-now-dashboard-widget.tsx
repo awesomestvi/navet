@@ -24,7 +24,10 @@ import {
   CustomScrollbar,
 } from '@/app/components/shared/device-editor';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
-import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import {
+  getCustomCardTintSurface,
+  withTintAlpha,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HOME_WIDGET_ROOM } from '@/app/features/dashboard/stores/custom-cards-store';
 import { useEnergyUsageSensorOptions } from '@/app/features/energy';
@@ -301,6 +304,11 @@ export const EnergyNowDashboardCardView = memo(function EnergyNowDashboardCardVi
       size={size}
       fullBleed
       className="transition-all duration-500"
+      style={
+        tintSurface.panelStyle ?? {
+          borderColor: withTintAlpha(accentColor, theme === 'light' ? 0.2 : 0.28),
+        }
+      }
       frameClassName="overflow-hidden"
       overlay={
         <>

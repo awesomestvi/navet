@@ -1,7 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import type { ComponentProps } from 'react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps, ReactNode } from 'react';
+import { useEffect } from 'react';
 import { expect } from 'storybook/test';
 import { LightCard } from '@/app/features/lighting';
+import type { PrimaryColor, ThemeMode } from '@/app/stores/theme-store';
+import { useThemeStore } from '@/app/stores/theme-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
 
@@ -10,6 +13,53 @@ function LightCardStory(args: Omit<ComponentProps<typeof LightCard>, 'onSizeChan
     <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <LightCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
+  );
+}
+
+function ThemeAccentDecorator({
+  theme,
+  primaryColor,
+  customPrimaryColor,
+  children,
+}: {
+  theme: ThemeMode;
+  primaryColor: PrimaryColor;
+  customPrimaryColor?: string | null;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    const previousTheme = useThemeStore.getState();
+
+    useThemeStore.setState({
+      ...previousTheme,
+      theme,
+      followSystemTheme: false,
+      primaryColor,
+      customPrimaryColor: customPrimaryColor ?? null,
+      wallpaper: null,
+    });
+
+    return () => {
+      useThemeStore.setState(previousTheme);
+    };
+  }, [customPrimaryColor, primaryColor, theme]);
+
+  return <>{children}</>;
+}
+
+function withThemeAccent(
+  theme: ThemeMode,
+  primaryColor: PrimaryColor,
+  customPrimaryColor?: string | null
+): Decorator {
+  return (Story) => (
+    <ThemeAccentDecorator
+      theme={theme}
+      primaryColor={primaryColor}
+      customPrimaryColor={customPrimaryColor}
+    >
+      <Story />
+    </ThemeAccentDecorator>
   );
 }
 
@@ -94,6 +144,26 @@ export const Large: Story = {
   args: {
     size: 'large',
   },
+};
+
+export const BlueGlassAccent: Story = {
+  decorators: [withThemeAccent('glass', 'blue')],
+};
+
+export const PurpleDarkAccent: Story = {
+  decorators: [withThemeAccent('dark', 'purple')],
+};
+
+export const TealLightAccent: Story = {
+  decorators: [withThemeAccent('light', 'teal')],
+};
+
+export const OrangeBlackAccent: Story = {
+  decorators: [withThemeAccent('black', 'orange')],
+};
+
+export const CustomAccent: Story = {
+  decorators: [withThemeAccent('glass', 'custom', '#60a5fa')],
 };
 
 export const Docs: Story = {

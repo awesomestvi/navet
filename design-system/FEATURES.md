@@ -1,11 +1,12 @@
 # Navet Feature Map
 
 This document is a current implementation map for Navet's major product areas. It is intended to
-help contributors understand where behavior lives and which shared patterns are expected.
+help contributors understand where behavior lives, which sections are active, and where story/test
+coverage is expected to exist.
 
 ## Feature Inventory
 
-Current feature folders under
+Current active feature folders under
 [`src/app/features/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features):
 
 - `auth`
@@ -17,18 +18,20 @@ Current feature folders under
 - `media`
 - `notifications`
 - `person`
-- `power`
 - `rss`
 - `scenes`
 - `security`
 - `sensors`
 - `settings`
+- `tasks`
 - `vacuum`
 - `weather`
 
-Cross-feature imports should go through a feature's root `index.ts` when crossing feature
-boundaries where that entrypoint exists. The current intended pattern is feature-root imports,
-but `auth` is still a small exception because it does not yet expose a root entry file.
+Additional notes:
+
+- `power/` exists as a folder in the tree but is not currently an active feature entrypoint
+- cross-feature imports should prefer a feature's root `index.ts` when that entrypoint exists
+- `notifications` is a supporting feature surfaced through shared app-shell UI rather than a top-level section
 
 ## App Shell
 
@@ -38,69 +41,63 @@ but `auth` is still a small exception because it does not yet expose a root entr
 
 - the i18n provider
 - the global error display
+- the authenticated split between login and dashboard shell
 - the PWA update prompt
-- the network status banner
-- the notification toaster
-- the authenticated route split between `LoginPage` and `DashboardPage`
+- the network status surface
+- the notification/toast layer
+- theme- and viewport-related DOM synchronization
 
-Component layers under [`src/app/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components):
+Shared app-shell composition lives primarily under
+[`src/app/components/layout/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout).
 
-- `primitives/` for low-level reusable UI
-- `patterns/` for composed shared structures
-- `system/` for curated public exports
-- `shared/` for app-specific shared UI and compatibility shims
-- `layout/` and `ui/` for shell-level and wrapper components
-- `figma/` for design integration components
+Current layout ownership includes:
 
-It also syncs:
+- header and sidebar
+- room navigation
+- section navigation helpers
+- section customization shell/button
+- mobile command, search, and section sheets
+- reusable section layouts such as locks, media, and security
 
-- accent CSS variables
-- viewport CSS variables
-- reduced-effects flags and theme-related DOM data attributes
-
-## State and data flow
+## State and Data Flow
 
 ### Shared state
 
 Navet uses Zustand for all shared reactive state.
 
-Current core stores:
+Current store files:
 
-- `auth-store`
-- `config-store`
-- `edit-mode-store`
-- `error-store`
-- `home-assistant-store`
-- `navigation-store`
-- `search-store`
-- `settings-store`
-- `theme-store`
+- `auth-store.ts`
+- `config-store.ts`
+- `edit-mode-store.ts`
+- `error-store.ts`
+- `home-assistant-store.ts`
+- `navigation-store.ts`
+- `search-store.ts`
+- `settings-store.ts`
+- `theme-store.ts`
 
-Selectors live in
+Shared selectors live in
 [`src/app/stores/selectors.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/stores/selectors.ts)
 and should be preferred over full-store subscriptions.
-
-Shared unit-test support for stores, hooks, and controller seams lives in
-[`src/test/`](/Users/vishal/Development/Github/Navet/Navet/src/test). Reuse those helpers before
-introducing feature-local test scaffolding.
 
 ### Home Assistant flow
 
 [`src/app/services/home-assistant.service.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/services/home-assistant.service.ts)
-emits typed events for:
+emits typed updates for:
 
 - entities
 - config
 - registries
 - connection
 
-The store updates only the affected slice for each event. Avoid catch-all "copy the whole service
-state" sync paths.
+The store updates only the affected slices for each event. Avoid broad "copy the whole service
+state" sync patterns.
 
-Navigation keeps `currentRoom` persisted in the store while `activeSection` is derived from the
-URL through [`src/app/navigation/sections.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/navigation/sections.ts).
+Navigation keeps `currentRoom` persisted in the store while `activeSection` is derived from the URL
+through [`src/app/navigation/sections.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/navigation/sections.ts).
 
-## Top-level sections
+## Top-Level Sections
 
 The current primary section model is:
 
@@ -116,16 +113,16 @@ The current primary section model is:
 Section routing and lazy loading are coordinated by
 [`src/app/features/dashboard/components/dashboard-section-router.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/dashboard-section-router.tsx).
 
-Current ownership split:
+### Section ownership
 
-- `home`: room-driven dashboard overview, home widgets, and the editable sectioned/flow canvas
-- `energy`: energy dashboard plus energy-specific custom-widget band
-- `security`: camera-focused section built on the shared device section layout
-- `tasks`: placeholder section using the shared dashboard empty-state pattern
-- `locks`: lock-focused section built on the shared device section layout
+- `home`: room-driven dashboard overview, editable sectioned/flow canvas, and home widgets
+- `energy`: energy dashboard, setup wizard, drilldown flow, and energy-only custom widget band
+- `security`: camera-first section built on the shared device-section shell
+- `tasks`: Home Assistant automation/task summaries grouped into sections
+- `locks`: lock-focused section built on the shared device-section shell
 - `lights`: all-lights overview using the dashboard all-view grid in custom grouping mode
-- `media`: grouped media section with dedicated audio and TV buckets
-- `settings`: app configuration and personalization surfaces
+- `media`: grouped media section with audio and TV-specific presentation
+- `settings`: appearance, localization, dashboard, interaction, project, and system settings
 
 ## Dashboard
 
@@ -135,27 +132,33 @@ The dashboard feature owns:
 
 - card registration
 - entity visibility
-- custom card placement
+- custom-card placement
 - room ordering
 - card ordering
 - dashboard-specific persisted layout state
+- sectioned and flow layout behavior
 
 Important paths:
 
 - [`src/app/features/dashboard/utils/card-renderer.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/utils/card-renderer.tsx)
 - [`src/app/features/dashboard/hooks/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/hooks)
-- [`src/app/features/dashboard/stores/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/stores)
+- [`src/app/features/dashboard/stores/custom-cards-store.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/stores/custom-cards-store.ts)
+- [`src/app/features/dashboard/stores/dashboard-entities-store.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/stores/dashboard-entities-store.ts)
 
-### Current behavior
+### Current custom widgets
 
-- Home is the main editable dashboard section
-- When the active room is `All`, home can switch between sectioned and flow-based layout modes
-- Home layout supports section ordering, section insertion, column movement, and per-section card targeting
-- cards can be added from entity-library and widget flows
-- supported cards can be resized across shared card sizes
-- room grouping modes support custom, room, type, and no-grouping views
-- onboarding can start from all entities, a blank board, or imported config
-- available room ordering preserves user order while merging in new rooms discovered from Home Assistant
+Current `CardType` values for dashboard/section widgets:
+
+- `rss`
+- `photo`
+- `note`
+- `battery`
+- `energy-now`
+- `button`
+- `map`
+
+Home-widget implementations currently live under
+[`src/app/features/dashboard/components/widgets/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/dashboard/components/widgets).
 
 ### Room sourcing
 
@@ -167,251 +170,138 @@ Home-room navigation is assembled from two sources:
 This keeps the room list stable when registry-backed area names exist while still surfacing devices
 whose room can only be inferred from entity metadata.
 
-## Settings
+## Feature Ownership Highlights
 
-Settings is the control surface for:
+### `calendar`
 
-- appearance and theme mode
-- accent color
-- visual quality and low-power behavior
-- ambience and wallpaper
-- localization
-- dashboard config import/export
-- onboarding reset
-- interaction preferences such as tap behavior
+- weather-like schedule surfaces with selectable sources and multiple display modes
+- key path: [`src/app/features/calendar/components/calendar/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/calendar/components/calendar)
 
-Settings UI should reuse shared patterns and primitives before introducing feature-specific shells.
+### `climate`
 
-## Theme and appearance
+- HVAC card presentation, controls, status labels, and settings dialogs
+- key path: [`src/app/features/climate/components/hvac-card/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/climate/components/hvac-card)
 
-Navet supports four themes:
+### `energy`
 
-- `glass` (default)
-- `dark`
-- `light`
-- `black` (labelled "Black" in the UI)
+- setup wizard, statistics services, dashboard-page composition, and energy widgets
+- key paths:
+  - [`src/app/features/energy/components/dashboard/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/dashboard)
+  - [`src/app/features/energy/components/widgets/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/energy/components/widgets)
 
-The current expectation is:
+### `lighting`
 
-- shared theme branches resolve through surface/token helpers
-- theme-aware shared controls reuse shared primitives
-- accent/tinted surfaces use readable-text token logic when needed
+- light card behavior, settings dialogs, and grouped lighting controls
+- key path: [`src/app/features/lighting/components/light-card/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/lighting/components/light-card)
 
-Key theme helpers live in
-[`src/app/components/shared/theme/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/theme).
+### `media`
 
-## Shared UI system
+- artwork-aware media cards, controller hooks, volume/playback behavior, and TV-specific views
+- key paths:
+  - [`src/app/features/media/components/media-card/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/media/components/media-card)
+  - [`src/app/features/media/components/media/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/media/components/media)
+
+### `notifications`
+
+- persistent-notification and repair/update notification surfaces used by the app shell
+- key path: [`src/app/features/notifications/components/notifications/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/notifications/components/notifications)
+
+### `rss`
+
+- RSS/news card logic, source resolution, and item rendering
+- key path: [`src/app/features/rss/components/rss-feed-card/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/rss/components/rss-feed-card)
+
+### `security`
+
+- camera cards, cover cards, lock card, and security-specific surface tokens
+- key path: [`src/app/features/security/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/security/components)
+
+### `settings`
+
+- sectioned settings UI for appearance, localization, dashboard, interaction, project, and system controls
+- key path: [`src/app/features/settings/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/settings/components)
+
+### `tasks`
+
+- Home Assistant automation grouping and task-row presentation
+- key paths:
+  - [`src/app/features/tasks/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/tasks/components)
+  - [`src/app/features/tasks/utils/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/tasks/utils)
+
+### `vacuum`
+
+- vacuum cards, status utilities, controls, and settings dialogs
+- key path: [`src/app/features/vacuum/components/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/vacuum/components)
+
+### `weather`
+
+- weather card controller, overlays, icons, and settings dialog
+- key path: [`src/app/features/weather/components/weather-card/`](/Users/vishal/Development/Github/Navet/Navet/src/app/features/weather/components/weather-card)
+
+## Shared UI System
 
 ### Ownership split
 
 - `primitives/`: low-level reusable UI such as shared buttons, card shells, header parts, and compact text
-- `patterns/`: composed shared structure
-- `system/`: curated export surface
+- `patterns/`: composed shared structures
+- `system/`: curated export and token-story surface
 - `shared/`: app-specific shared UI and compatibility shims
+- `layout/`: app-shell and section-level composition
+- `ui/`: wrappers around library primitives and dropdown/dialog infrastructure
 
-This split is documented in:
-
-- [README.md](README.md)
-- [`src/app/components/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/README.md)
-- [`src/app/components/shared/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/README.md)
-- [`src/app/components/system/README.md`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/system/README.md)
+See [../README.md](../README.md) and [README.md](README.md) for the higher-level explanation.
 
 ### Storybook support
 
-Storybook is the review surface for the system layer, card surfaces, settings flows, and app shell.
+Storybook is the review surface for:
+
+- token and theme stories
+- shared primitives and patterns
+- layout and navigation surfaces
+- entity cards
+- dashboard widgets
+- settings sections
+- energy-specific visuals
 
 Shared story helpers live in
 [`src/app/storybook/story-frames.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-frames.tsx)
-and [`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts).
+and
+[`src/app/storybook/story-docs.ts`](/Users/vishal/Development/Github/Navet/Navet/src/app/storybook/story-docs.ts).
 
-The current layout layer also has direct Storybook coverage for sidebar, header, room-nav, search,
-and section-customization affordances under
-[`src/app/components/layout/`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout).
-
-### Unit-test support
+## Testing Map
 
 Vitest is the preferred path for:
 
 - shared utility logic
 - persisted store behavior
+- controller composition
 - browser-dependent hooks
-- controller composition that would be hard to validate from stories alone
-- entity mapping and transformation utilities
-- dashboard card action handlers
+- token and entity-mapping helpers
+- dashboard actions and feature-specific logic seams
 
-The current shared harness provides:
+Current co-located `__tests__/` directories:
 
-- provider-wrapped hook rendering
-- deterministic store resets between tests
-- browser API shims
-- Home Assistant service stubs for typed event flows
+- `src/app/components/layout/__tests__/`
+- `src/app/components/system/tokens/__tests__/`
+- `src/app/features/calendar/components/calendar/__tests__/`
+- `src/app/features/dashboard/components/__tests__/`
+- `src/app/features/dashboard/hooks/__tests__/`
+- `src/app/features/energy/components/dashboard/__tests__/`
+- `src/app/features/energy/components/energy-setup-wizard/__tests__/`
+- `src/app/features/energy/utils/__tests__/`
+- `src/app/features/lighting/components/light-card/__tests__/`
+- `src/app/features/media/components/media-card/__tests__/`
+- `src/app/features/rss/components/rss-feed-card/__tests__/`
+- `src/app/features/tasks/components/__tests__/`
+- `src/app/features/tasks/utils/__tests__/`
+- `src/app/hooks/__tests__/`
+- `src/app/stores/__tests__/`
+- `src/app/utils/__tests__/`
 
-Test files are co-located with their source in `__tests__/` subdirectories:
+Shared test harness support lives in [`src/test/`](/Users/vishal/Development/Github/Navet/Navet/src/test).
 
-- `src/app/hooks/__tests__/` — shared hook and utility tests
-- `src/app/features/dashboard/components/__tests__/` — home dashboard presentation and layout behavior
-- `src/app/features/dashboard/hooks/__tests__/` — dashboard controller and action tests
-- `src/app/features/calendar/components/__tests__/` — calendar feature tests
-- `src/app/features/energy/components/dashboard/__tests__/` — energy dashboard behavior
-- `src/app/features/energy/components/energy-setup-wizard/__tests__/` — energy setup scoring and draft flows
-- `src/app/features/energy/utils/__tests__/` — energy utilities
-- `src/app/features/lighting/components/light-card/__tests__/` — light card behavior
-- `src/app/features/media/components/media-card/__tests__/` — media card and controller behavior
-- `src/app/features/rss/components/rss-feed-card/__tests__/` — RSS widget logic
+## Maintenance Expectations
 
-## Card system
-
-### Size model
-
-The canonical size registry lives in
-[`src/app/components/shared/card-size-selector.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/shared/card-size-selector.tsx).
-
-Supported sizes:
-
-- `tiny`
-- `extra-small`
-- `small`
-- `medium`
-- `medium-vertical`
-- `large`
-- `extra-large`
-
-Preview dimensions, ratios, and drag overlays derive from the shared registry rather than per-card
-hardcoded values.
-
-### Compact-card rules
-
-- use shared title/header primitives in dense cards
-- use shared `BaseCard`-style shells where available
-- keep control density intentional
-- do not duplicate the same action in multiple rows of a compact card
-
-## Dialog surfaces
-
-Entity settings dialogs should compose from the shared dialog primitives and patterns, including:
-
-- `DialogShell`
-- `CardDialogHeader`
-- `CardDialogSection`
-- `CardDialogTabList`
-- `CardDialogTabTrigger`
-- `DialogSectionRow`
-- `DialogDoneFooter`
-- `SelectableCheckboxRow`
-
-This keeps room reassignment, sections, tabs, selection rows, and action footers aligned across card
-families.
-
-## Media
-
-### Media players
-
-Media cards are backed by live Home Assistant `media_player` entities and include:
-
-- transport controls
-- metadata
-- artwork-aware layouts
-- volume control
-- remaining-time handling
-- local mute/unmute restoration behavior
-
-The top-level media section groups entities into audio, TV, and other device-type buckets using
-[`src/app/components/layout/media-section.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/media-section.tsx).
-
-### TV treatment
-
-TV-class media entities use a dedicated TV layout with:
-
-- D-pad navigation cluster
-- source selection
-- volume and channel actions
-- remote-profile-based command mapping
-
-The TV card is a specialized path inside the media feature, not a separate global card family.
-
-## Climate
-
-Climate entities render through the HVAC card path. Navet should not reintroduce a parallel legacy
-climate-card implementation.
-
-Climate/HVAC work should stay inside the climate feature and reuse shared card/state/dialog
-patterns rather than forking presentation logic.
-
-## Weather and calendar
-
-### Weather
-
-- Home Assistant weather entities render as live weather cards
-- card settings support room reassignment
-- weather visuals should still respect low-power rendering constraints
-- forecasts are refreshed from Home Assistant service calls and respect the user's weather forecast mode
-
-### Calendar
-
-- Home Assistant calendar entities render as live calendar cards
-- cards support source selection and week/month display modes
-- event details remain part of the calendar feature path
-
-## Security, locks, lights, energy, and notifications
-
-### Security
-
-- security section centers on camera-oriented content
-- section-level customization uses the shared section shell pattern
-
-### Locks and lights
-
-- each section exposes domain-focused grids
-- shared edit/customize affordances should be reused instead of per-section reinvention
-- locks and security use the reusable
-  [`src/app/components/layout/device-section-layout.tsx`](/Users/vishal/Development/Github/Navet/Navet/src/app/components/layout/device-section-layout.tsx)
-  shell for empty states and edit-mode wrapping
-- lights reuse the dashboard all-view grid rather than maintaining a parallel layout implementation
-
-### Energy
-
-Energy owns:
-
-- energy widgets
-- energy charts
-- energy-specific UI shells and services
-- the setup wizard and entity-option inference hooks used to map Home Assistant energy preferences
-
-This feature has its own components, hooks, stores, and data layer.
-
-### Notifications
-
-Notifications feature work includes:
-
-- Home Assistant persistent notifications
-- repair/issues surfaces
-- update actions and update-related content
-
-## Controller decomposition rules
-
-Feature controllers should stay orchestration-focused.
-
-Expected supporting split:
-
-- sync hooks for entity/service synchronization
-- action hooks for side effects and domain actions
-- display hooks/helpers for presentational shaping
-
-Avoid long controller hooks that accumulate sync logic, state derivation, and event handling in one
-place.
-
-## Performance-sensitive areas
-
-Contributors should be careful when changing:
-
-- heavy glass effects
-- chart rendering
-- offscreen dashboard behavior
-- card layout density in compact sizes
-- artwork and media color extraction paths
-- large entity-picker and dashboard grid flows
-
-Visual changes that increase blur, overdraw, nesting, or animation cost should be evaluated with
-low-power dashboards in mind.
-
-Last updated: April 29, 2026
+- Update this file when top-level sections, feature ownership, widget types, or test locations change
+- Remove references to deleted feature folders or moved paths instead of leaving historical hints in active docs
+- Prefer describing the actual current tree over describing an intended future architecture

@@ -18,14 +18,18 @@ export function useCalendarTheme(theme: ThemeType, baseColor?: string | null): C
   const { accentColor } = useTheme();
   const textTokens = getCardReadableTextTokens({
     theme,
-    tone: 'indigo',
+    tone: baseColor ? 'primary' : 'indigo',
     accentColor,
     baseColor,
   });
   const textPrimary = textTokens.titleColor;
   const textSecondary = textTokens.subtitleColor;
   const overlayBg =
-    theme === 'light' ? 'bg-white/60 backdrop-blur-sm' : 'bg-black/20 backdrop-blur-sm';
+    theme === 'light'
+      ? 'bg-white/60 backdrop-blur-sm'
+      : theme === 'glass'
+        ? 'bg-white/[0.03] backdrop-blur-sm'
+        : 'bg-black/20 backdrop-blur-sm';
   const iconBg =
     theme === 'light'
       ? 'bg-indigo-100'

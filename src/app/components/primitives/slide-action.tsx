@@ -18,9 +18,14 @@ export interface SlideActionProps {
   ariaLabel: string;
   completionIcon?: ComponentType<SVGProps<SVGSVGElement>>;
   disabled?: boolean;
+  labelStyle?: CSSProperties;
   onComplete: () => void;
   size: 'extra-small' | 'small';
   theme: ThemeType;
+  thumbClassName?: string;
+  thumbIconClassName?: string;
+  thumbIconStyle?: CSSProperties;
+  thumbStyle?: CSSProperties;
 }
 
 const COMPLETE_THRESHOLD = 0.72;
@@ -30,9 +35,14 @@ export function SlideAction({
   ariaLabel,
   completionIcon: CompletionIcon,
   disabled = false,
+  labelStyle,
   onComplete,
   size,
   theme,
+  thumbClassName,
+  thumbIconClassName,
+  thumbIconStyle,
+  thumbStyle,
 }: SlideActionProps) {
   const trackRef = useRef<HTMLButtonElement | null>(null);
   const completionTimerRef = useRef<number | null>(null);
@@ -78,10 +88,10 @@ export function SlideAction({
       ? 'border-black/8 bg-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]'
       : 'border-white/10 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]';
   const labelColorClassName = theme === 'light' ? 'text-slate-700' : 'text-white/78';
-  const thumbClassName =
+  const defaultThumbClassName =
     theme === 'light'
-      ? 'bg-white text-zinc-950 shadow-[0_12px_24px_-16px_rgba(15,23,42,0.45)]'
-      : 'bg-white text-zinc-950 shadow-[0_12px_24px_-16px_rgba(0,0,0,0.72)]';
+      ? 'text-zinc-950 shadow-[0_12px_24px_-16px_rgba(15,23,42,0.45)]'
+      : 'text-zinc-950 shadow-[0_12px_24px_-16px_rgba(0,0,0,0.72)]';
   const progressFillClassName = theme === 'light' ? 'bg-white/44' : 'bg-white/10';
 
   const applyProgress = useCallback(
@@ -266,26 +276,33 @@ export function SlideAction({
       >
         <div
           className={`flex min-w-0 flex-col items-center justify-center font-medium ${metrics.labelClassName} ${labelColorClassName}`}
-          style={{ opacity: 'var(--slide-label-opacity)' }}
+          style={{ opacity: 'var(--slide-label-opacity)', ...labelStyle }}
         >
           <span className="line-clamp-2 text-center">{actionLabel}</span>
         </div>
       </div>
 
       <div
-        className={`absolute top-1/2 left-0 z-[2] flex items-center justify-center rounded-full ${thumbClassName} ${
+        className={`absolute top-1/2 left-0 z-[2] flex items-center justify-center rounded-full ${defaultThumbClassName} ${thumbClassName ?? ''} ${
           isDragging || isCompleting ? '' : 'transition-transform duration-200'
         }`}
         style={{
           height: metrics.knobSize,
           transform: `translateX(calc(${metrics.padding}px + var(--slide-knob-offset))) translateY(-50%)`,
           width: metrics.knobSize,
+          ...thumbStyle,
         }}
       >
         {isCompleting && CompletionIcon ? (
-          <CompletionIcon className={size === 'extra-small' ? 'h-4 w-4' : 'h-4.5 w-4.5'} />
+          <CompletionIcon
+            className={`${size === 'extra-small' ? 'h-4 w-4' : 'h-4.5 w-4.5'} ${thumbIconClassName ?? ''}`}
+            style={thumbIconStyle}
+          />
         ) : (
-          <ChevronRight className={size === 'extra-small' ? 'h-4 w-4' : 'h-4.5 w-4.5'} />
+          <ChevronRight
+            className={`${size === 'extra-small' ? 'h-4 w-4' : 'h-4.5 w-4.5'} ${thumbIconClassName ?? ''}`}
+            style={thumbIconStyle}
+          />
         )}
       </div>
     </button>

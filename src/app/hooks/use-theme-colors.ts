@@ -3,7 +3,11 @@
  * Separated from use-theme.ts for better maintainability
  */
 
-import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
+import {
+  getAccentDecorativeSurface,
+  getAccentThemeTone,
+  resolvePrimaryColorToken,
+} from '@/app/components/shared/theme/theme-colors';
 import type { PrimaryColor, ThemeMode as ThemeType } from '../stores/theme-store';
 
 export interface ThemeColors {
@@ -191,14 +195,17 @@ export const generateThemeColors = (
 ): ThemeColors => {
   const color = resolvePrimaryColorToken(primaryColor, customPrimaryColor);
   const inactiveTone = getInactiveThemeTone(themeType);
+  const accentSoftTone = getAccentThemeTone(themeType, color, 'soft');
+  const accentSolidTone = getAccentThemeTone(themeType, color, 'solid');
+  const accentDecorativeSurface = getAccentDecorativeSurface(themeType, color);
 
   if (themeType === 'dark') {
     return {
       light: {
-        gradient: `from-${color}-900/90 to-${color}-950/95`,
-        border: `border-${color}-700/30`,
-        iconBg: `bg-${color}-500/20`,
-        glow: `from-${color}-500/10`,
+        gradient: accentSoftTone.gradient,
+        border: accentSoftTone.border,
+        iconBg: accentSoftTone.iconBg,
+        glow: accentSoftTone.glow,
       },
       hvac: {
         heating: {
@@ -218,40 +225,28 @@ export const generateThemeColors = (
         off: inactiveTone,
       },
       media: {
-        gradient: 'from-pink-900 to-pink-950',
-        border: 'border-pink-700',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
         off: {
           gradient: inactiveTone.gradient,
           border: inactiveTone.border,
         },
       },
       switch: {
-        on: {
-          gradient: `from-${color}-900 to-${color}-950`,
-          border: `border-${color}-700`,
-          iconBg: `bg-${color}-500`,
-          accent: `text-${color}-400`,
-          glow: 'transparent',
-        },
+        on: accentSolidTone,
         off: inactiveTone,
       },
       cover: {
-        open: {
-          gradient: `from-${color}-900/90 to-${color}-950/95`,
-          border: `border-${color}-700/30`,
-          iconBg: `bg-${color}-500/20`,
-          accent: `text-${color}-400`,
-          glow: `from-${color}-500/10`,
-        },
+        open: accentSoftTone,
         closed: inactiveTone,
       },
       lock: {
         locked: {
-          gradient: `from-${color}-900/90 to-${color}-950/95`,
-          border: `border-${color}-700/30`,
-          iconBg: `bg-${color}-500/20`,
-          accent: `text-${color}-400`,
-          glow: `from-${color}-500/10`,
+          gradient: 'from-emerald-900/90 to-green-950/95',
+          border: 'border-emerald-700/30',
+          iconBg: 'bg-emerald-500/20',
+          accent: 'text-emerald-400',
+          glow: 'from-emerald-500/10',
         },
         unlocked: {
           gradient: 'from-red-900/90 to-red-950/95',
@@ -262,30 +257,12 @@ export const generateThemeColors = (
         },
       },
       person: {
-        home: {
-          gradient: `from-${color}-900/90 to-${color}-950/95`,
-          border: `border-${color}-700/30`,
-          iconBg: `bg-${color}-500/20`,
-          accent: `text-${color}-400`,
-          glow: `from-${color}-500/10`,
-        },
+        home: accentSoftTone,
         away: inactiveTone,
       },
-      sensor: {
-        gradient: `from-${color}-900/90 to-${color}-950/95`,
-        border: `border-${color}-700/30`,
-        iconBg: `bg-${color}-500/20`,
-        accent: `text-${color}-400`,
-        glow: `from-${color}-500/10`,
-      },
+      sensor: accentSoftTone,
       vacuum: {
-        cleaning: {
-          gradient: `from-${color}-900 to-${color}-950`,
-          border: `border-${color}-700`,
-          iconBg: `bg-${color}-500`,
-          accent: `text-${color}-400`,
-          glow: 'transparent',
-        },
+        cleaning: accentSolidTone,
         returning: {
           gradient: 'from-purple-900 to-purple-950',
           border: 'border-purple-700',
@@ -310,14 +287,14 @@ export const generateThemeColors = (
         },
       },
       rss: {
-        gradient: 'from-orange-900/90 via-red-950/95 to-red-950/95',
-        border: 'border-orange-700/30',
-        glow: 'from-orange-500/10',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
       calendar: {
-        gradient: 'from-indigo-900/90 via-purple-950/95 to-purple-950/95',
-        border: 'border-indigo-700/30',
-        glow: 'from-indigo-500/10',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
     };
   }
@@ -325,10 +302,10 @@ export const generateThemeColors = (
   if (themeType === 'light') {
     return {
       light: {
-        gradient: `from-${color}-100/90 to-${color}-200/80`,
-        border: `border-${color}-300/60`,
-        iconBg: `bg-${color}-400/40`,
-        glow: `from-${color}-300/30`,
+        gradient: accentSoftTone.gradient,
+        border: accentSoftTone.border,
+        iconBg: accentSoftTone.iconBg,
+        glow: accentSoftTone.glow,
       },
       hvac: {
         heating: {
@@ -348,40 +325,28 @@ export const generateThemeColors = (
         off: inactiveTone,
       },
       media: {
-        gradient: 'from-pink-100 to-pink-200',
-        border: 'border-pink-300',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
         off: {
           gradient: inactiveTone.gradient,
           border: inactiveTone.border,
         },
       },
       switch: {
-        on: {
-          gradient: `from-${color}-100 to-${color}-200`,
-          border: `border-${color}-300`,
-          iconBg: `bg-${color}-400`,
-          accent: `text-${color}-600`,
-          glow: 'transparent',
-        },
+        on: accentSolidTone,
         off: inactiveTone,
       },
       cover: {
-        open: {
-          gradient: `from-${color}-100/90 to-${color}-200/80`,
-          border: `border-${color}-300/60`,
-          iconBg: `bg-${color}-400/40`,
-          accent: `text-${color}-600`,
-          glow: `from-${color}-300/30`,
-        },
+        open: accentSoftTone,
         closed: inactiveTone,
       },
       lock: {
         locked: {
-          gradient: `from-${color}-100/90 to-${color}-200/80`,
-          border: `border-${color}-300/60`,
-          iconBg: `bg-${color}-400/40`,
-          accent: `text-${color}-600`,
-          glow: `from-${color}-300/30`,
+          gradient: 'from-emerald-100/90 to-green-200/80',
+          border: 'border-emerald-300/60',
+          iconBg: 'bg-emerald-400/40',
+          accent: 'text-emerald-700',
+          glow: 'from-emerald-300/30',
         },
         unlocked: {
           gradient: 'from-red-100/90 to-red-200/80',
@@ -392,30 +357,12 @@ export const generateThemeColors = (
         },
       },
       person: {
-        home: {
-          gradient: `from-${color}-100/90 to-${color}-200/80`,
-          border: `border-${color}-300/60`,
-          iconBg: `bg-${color}-400/40`,
-          accent: `text-${color}-600`,
-          glow: `from-${color}-300/30`,
-        },
+        home: accentSoftTone,
         away: inactiveTone,
       },
-      sensor: {
-        gradient: `from-${color}-100/90 to-${color}-200/80`,
-        border: `border-${color}-300/60`,
-        iconBg: `bg-${color}-400/40`,
-        accent: `text-${color}-600`,
-        glow: `from-${color}-300/30`,
-      },
+      sensor: accentSoftTone,
       vacuum: {
-        cleaning: {
-          gradient: `from-${color}-100 to-${color}-200`,
-          border: `border-${color}-300`,
-          iconBg: `bg-${color}-400`,
-          accent: `text-${color}-600`,
-          glow: 'transparent',
-        },
+        cleaning: accentSolidTone,
         returning: {
           gradient: 'from-purple-100 to-purple-200',
           border: 'border-purple-300',
@@ -440,14 +387,14 @@ export const generateThemeColors = (
         },
       },
       rss: {
-        gradient: 'from-orange-100/90 via-red-200/95 to-red-200/95',
-        border: 'border-orange-300/60',
-        glow: 'from-orange-300/30',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
       calendar: {
-        gradient: 'from-indigo-100/90 via-purple-200/95 to-purple-200/95',
-        border: 'border-indigo-300/60',
-        glow: 'from-indigo-300/30',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
     };
   }
@@ -455,10 +402,10 @@ export const generateThemeColors = (
   if (themeType === 'black') {
     return {
       light: {
-        gradient: 'from-gray-950 to-black',
-        border: 'border-gray-800',
-        iconBg: 'bg-gray-700',
-        glow: 'from-gray-600/10',
+        gradient: accentSoftTone.gradient,
+        border: accentSoftTone.border,
+        iconBg: accentSoftTone.iconBg,
+        glow: accentSoftTone.glow,
       },
       hvac: {
         heating: {
@@ -478,40 +425,28 @@ export const generateThemeColors = (
         off: inactiveTone,
       },
       media: {
-        gradient: 'from-pink-950 to-pink-900',
-        border: 'border-pink-800',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
         off: {
           gradient: inactiveTone.gradient,
           border: inactiveTone.border,
         },
       },
       switch: {
-        on: {
-          gradient: `from-${color}-950 to-${color}-900`,
-          border: `border-${color}-800`,
-          iconBg: `bg-${color}-700`,
-          accent: `text-${color}-500`,
-          glow: 'transparent',
-        },
+        on: accentSolidTone,
         off: inactiveTone,
       },
       cover: {
-        open: {
-          gradient: `from-${color}-950/90 to-${color}-900/95`,
-          border: `border-${color}-800/30`,
-          iconBg: `bg-${color}-700/20`,
-          accent: `text-${color}-500`,
-          glow: `from-${color}-600/10`,
-        },
+        open: accentSoftTone,
         closed: inactiveTone,
       },
       lock: {
         locked: {
-          gradient: `from-${color}-950/90 to-${color}-900/95`,
-          border: `border-${color}-800/30`,
-          iconBg: `bg-${color}-700/20`,
-          accent: `text-${color}-500`,
-          glow: `from-${color}-600/10`,
+          gradient: 'from-emerald-950/90 to-green-900/95',
+          border: 'border-emerald-800/30',
+          iconBg: 'bg-emerald-700/20',
+          accent: 'text-emerald-500',
+          glow: 'from-emerald-600/10',
         },
         unlocked: {
           gradient: 'from-red-950/90 to-red-900/95',
@@ -522,30 +457,12 @@ export const generateThemeColors = (
         },
       },
       person: {
-        home: {
-          gradient: `from-${color}-950/90 to-${color}-900/95`,
-          border: `border-${color}-800/30`,
-          iconBg: `bg-${color}-700/20`,
-          accent: `text-${color}-500`,
-          glow: `from-${color}-600/10`,
-        },
+        home: accentSoftTone,
         away: inactiveTone,
       },
-      sensor: {
-        gradient: `from-${color}-950/90 to-${color}-900/95`,
-        border: `border-${color}-800/30`,
-        iconBg: `bg-${color}-700/20`,
-        accent: `text-${color}-500`,
-        glow: `from-${color}-600/10`,
-      },
+      sensor: accentSoftTone,
       vacuum: {
-        cleaning: {
-          gradient: `from-${color}-950 to-${color}-900`,
-          border: `border-${color}-800`,
-          iconBg: `bg-${color}-700`,
-          accent: `text-${color}-500`,
-          glow: 'transparent',
-        },
+        cleaning: accentSolidTone,
         returning: {
           gradient: 'from-purple-950 to-purple-900',
           border: 'border-purple-800',
@@ -570,14 +487,14 @@ export const generateThemeColors = (
         },
       },
       rss: {
-        gradient: 'from-orange-950/90 via-red-900/95 to-red-900/95',
-        border: 'border-orange-800/30',
-        glow: 'from-orange-600/10',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
       calendar: {
-        gradient: 'from-indigo-950/90 via-purple-900/95 to-purple-900/95',
-        border: 'border-indigo-800/30',
-        glow: 'from-indigo-600/10',
+        gradient: accentDecorativeSurface.gradient,
+        border: accentDecorativeSurface.border,
+        glow: accentDecorativeSurface.glow,
       },
     };
   }
@@ -585,10 +502,10 @@ export const generateThemeColors = (
   // Glass theme (default)
   return {
     light: {
-      gradient: `from-${color}-800/80 to-${color}-900/90`,
-      border: `border-${color}-600/25`,
-      iconBg: `bg-${color}-400/15`,
-      glow: `from-${color}-400/8`,
+      gradient: accentSoftTone.gradient,
+      border: accentSoftTone.border,
+      iconBg: accentSoftTone.iconBg,
+      glow: accentSoftTone.glow,
     },
     hvac: {
       heating: {
@@ -608,40 +525,28 @@ export const generateThemeColors = (
       off: inactiveTone,
     },
     media: {
-      gradient: 'from-pink-800/80 to-pink-900/90',
-      border: 'border-pink-600/25',
+      gradient: accentDecorativeSurface.gradient,
+      border: accentDecorativeSurface.border,
       off: {
         gradient: inactiveTone.gradient,
         border: inactiveTone.border,
       },
     },
     switch: {
-      on: {
-        gradient: `from-${color}-800/80 to-${color}-900/90`,
-        border: `border-${color}-600/25`,
-        iconBg: `bg-${color}-400/15`,
-        accent: `text-${color}-400`,
-        glow: 'transparent',
-      },
+      on: accentSolidTone,
       off: inactiveTone,
     },
     cover: {
-      open: {
-        gradient: `from-${color}-800/70 to-${color}-900/85`,
-        border: `border-${color}-600/20`,
-        iconBg: `bg-${color}-400/12`,
-        accent: `text-${color}-400`,
-        glow: `from-${color}-400/6`,
-      },
+      open: accentSoftTone,
       closed: inactiveTone,
     },
     lock: {
       locked: {
-        gradient: `from-${color}-800/70 to-${color}-900/85`,
-        border: `border-${color}-600/20`,
-        iconBg: `bg-${color}-400/12`,
-        accent: `text-${color}-400`,
-        glow: `from-${color}-400/6`,
+        gradient: 'from-emerald-800/70 to-green-900/85',
+        border: 'border-emerald-600/20',
+        iconBg: 'bg-emerald-400/12',
+        accent: 'text-emerald-400',
+        glow: 'from-emerald-400/6',
       },
       unlocked: {
         gradient: 'from-red-800/70 to-red-900/85',
@@ -652,30 +557,12 @@ export const generateThemeColors = (
       },
     },
     person: {
-      home: {
-        gradient: `from-${color}-800/70 to-${color}-900/85`,
-        border: `border-${color}-600/20`,
-        iconBg: `bg-${color}-400/12`,
-        accent: `text-${color}-400`,
-        glow: `from-${color}-400/6`,
-      },
+      home: accentSoftTone,
       away: inactiveTone,
     },
-    sensor: {
-      gradient: `from-${color}-800/70 to-${color}-900/85`,
-      border: `border-${color}-600/20`,
-      iconBg: `bg-${color}-400/12`,
-      accent: `text-${color}-400`,
-      glow: `from-${color}-400/6`,
-    },
+    sensor: accentSoftTone,
     vacuum: {
-      cleaning: {
-        gradient: `from-${color}-800/80 to-${color}-900/90`,
-        border: `border-${color}-600/25`,
-        iconBg: `bg-${color}-400/15`,
-        accent: `text-${color}-400`,
-        glow: 'transparent',
-      },
+      cleaning: accentSolidTone,
       returning: {
         gradient: 'from-purple-800/80 to-purple-900/90',
         border: 'border-purple-600/25',
@@ -700,14 +587,14 @@ export const generateThemeColors = (
       },
     },
     rss: {
-      gradient: 'from-orange-800/80 via-red-900/90 to-red-900/90',
-      border: 'border-orange-600/25',
-      glow: 'from-orange-400/8',
+      gradient: accentDecorativeSurface.gradient,
+      border: accentDecorativeSurface.border,
+      glow: accentDecorativeSurface.glow,
     },
     calendar: {
-      gradient: 'from-indigo-800/80 via-purple-900/90 to-purple-900/90',
-      border: 'border-indigo-600/25',
-      glow: 'from-indigo-400/8',
+      gradient: accentDecorativeSurface.gradient,
+      border: accentDecorativeSurface.border,
+      glow: accentDecorativeSurface.glow,
     },
   };
 };

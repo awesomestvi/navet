@@ -17,7 +17,10 @@ import {
   CustomScrollbar,
   IconPicker,
 } from '@/app/components/shared/device-editor';
-import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
+import {
+  getAccentDialogSurface,
+  resolvePrimaryColorToken,
+} from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -58,17 +61,6 @@ interface LightSettingsDialogProps {
   onTintColorChange: (color: string) => void;
 }
 
-const colorMap = {
-  orange: { from: 'from-orange-900/95', to: 'to-orange-950/95', border: 'border-orange-500/20' },
-  blue: { from: 'from-blue-900/95', to: 'to-blue-950/95', border: 'border-blue-500/20' },
-  green: { from: 'from-green-900/95', to: 'to-green-950/95', border: 'border-green-500/20' },
-  purple: { from: 'from-purple-900/95', to: 'to-purple-950/95', border: 'border-purple-500/20' },
-  pink: { from: 'from-pink-900/95', to: 'to-pink-950/95', border: 'border-pink-500/20' },
-  red: { from: 'from-red-900/95', to: 'to-red-950/95', border: 'border-red-500/20' },
-  yellow: { from: 'from-yellow-900/95', to: 'to-yellow-950/95', border: 'border-yellow-500/20' },
-  teal: { from: 'from-teal-900/95', to: 'to-teal-950/95', border: 'border-teal-500/20' },
-} as const;
-
 export const LightSettingsDialog = memo(function LightSettingsDialog({
   entityId,
   isOpen,
@@ -106,7 +98,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   const entityType = getEntityTypeLabel(entityId) || t('lighting.type.light');
   const [activeTab, setActiveTab] = useState('controls');
 
-  const activeDialogColors = colorMap[resolvePrimaryColorToken(primaryColor)];
+  const activeDialogColors = getAccentDialogSurface(resolvePrimaryColorToken(primaryColor));
   const gradientClassName = isOn
     ? `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
     : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10';

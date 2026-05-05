@@ -97,16 +97,12 @@ function StateCardReference({
     accentColor: variant.baseColor,
     baseColor: variant.baseColor,
   });
-  const activeGlowClassName =
+  const activeGlowStyle =
     variant.isActive && variant.baseColor
-      ? `absolute inset-0 bg-gradient-to-br ${
-          variant.tone === 'red'
-            ? 'from-red-400/18'
-            : variant.tone === 'blue'
-              ? 'from-blue-400/18'
-              : 'from-orange-400/18'
-        } to-transparent transition-all duration-500`
-      : null;
+      ? {
+          background: `linear-gradient(135deg, ${variant.baseColor}2e 0%, transparent 72%)`,
+        }
+      : undefined;
 
   return (
     <article
@@ -130,7 +126,13 @@ function StateCardReference({
         } p-4 transition-all duration-500 ${shell.backdropClassName} ${surface.panel} ${surface.border} ${state.containerClassName}`}
         style={stateStyle.cardStyle}
       >
-        {activeGlowClassName ? <div aria-hidden="true" className={activeGlowClassName} /> : null}
+        {activeGlowStyle ? (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 transition-all duration-500"
+            style={activeGlowStyle}
+          />
+        ) : null}
         {stateStyle.innerOverlayClassName ? (
           <div
             aria-hidden="true"
