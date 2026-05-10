@@ -50,7 +50,7 @@
     "tailwind-merge": "3.5.0",
     "workbox-window": "^7.4.1",
     "yaml": "^2.8.4",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
