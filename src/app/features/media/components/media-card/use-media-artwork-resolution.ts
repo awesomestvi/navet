@@ -48,10 +48,11 @@ export function useMediaArtworkResolution({
       ? resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl)
       : resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
     : null;
+  const isPanelMode = isHomeAssistantPanelMode();
   const needsAuthenticatedThumbnail = Boolean(
     resolvedArtwork && isMediaPlayerProxyUrl(resolvedArtwork)
   );
-  const canUseResolvedArtworkFallback = !needsAuthenticatedThumbnail || isHomeAssistantPanelMode();
+  const canUseResolvedArtworkFallback = !needsAuthenticatedThumbnail || isPanelMode;
   const fallbackArtwork =
     thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
 
@@ -70,12 +71,13 @@ export function useMediaArtworkResolution({
         return thumbnailDataUrl;
       }
 
-      if (!authToken) {
+      if (!authToken && !isPanelMode) {
         return null;
       }
 
       const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork, artworkRequestKey), {
-        headers: { Authorization: `Bearer ${authToken}` },
+        credentials: 'same-origin',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       });
       if (!response.ok) {
         return null;
@@ -108,7 +110,14 @@ export function useMediaArtworkResolution({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [artworkRequestKey, authToken, entityId, needsAuthenticatedThumbnail, resolvedArtwork]);
+  }, [
+    artworkRequestKey,
+    authToken,
+    entityId,
+    isPanelMode,
+    needsAuthenticatedThumbnail,
+    resolvedArtwork,
+  ]);
 
   // Clear the failed URL only when the track/content actually changes — never on error state changes.
   // Previously this effect also depended on failedArtworkUrl, which caused a reset loop:

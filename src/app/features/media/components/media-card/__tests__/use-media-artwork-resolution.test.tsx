@@ -81,7 +81,7 @@ describe('useMediaArtworkResolution', () => {
   it('falls back to same-origin media proxy artwork in panel mode when thumbnail loading fails', async () => {
     window.__NAVET_PANEL__ = true;
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
     const { result } = renderHookWithProviders(() =>
       useMediaArtworkResolution({
@@ -95,7 +95,45 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(result.current.albumArt).toBe('/api/media_player_proxy/media_player.kitchen');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: undefined,
+      }
+    );
+  });
+
+  it('loads same-origin panel artwork as an object URL when no auth token is stored', async () => {
+    window.__NAVET_PANEL__ = true;
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/panel-album-art');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/panel-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: undefined,
+      }
+    );
   });
 
   it('falls back to an authenticated object URL when websocket thumbnails are unavailable', async () => {
@@ -127,6 +165,7 @@ describe('useMediaArtworkResolution', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
+        credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
     );
@@ -162,6 +201,7 @@ describe('useMediaArtworkResolution', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
+        credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
     );
