@@ -5,10 +5,17 @@ on:
     branches:
       - main
     tags:
-      - 'v*-alpha.*'
-      - 'v*-beta.*'
-      - 'v*-rc.*'
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      publish_channel:
+        description: Image tags to publish
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - versioned
 
 permissions:
   contents: read
@@ -61,25 +68,43 @@ jobs:
 
       - name: Resolve add-on image tags
         id: tags
+        env:
+          ADDON_VERSION: ${{ steps.version.outputs.value }}
+          PUBLISH_CHANNEL: ${{ github.event.inputs.publish_channel || 'dev' }}
         run: |
           IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon"
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${GITHUB_REF_TYPE}" = "branch" ]; then
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            CHANNEL="versioned"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANNEL="${PUBLISH_CHANNEL:-dev}"
+          else
+            CHANNEL="dev"
+          fi
+
+          if [ "$CHANNEL" = "dev" ]; then
             {
               echo "value<<EOF"
               echo "$IMAGE:dev"
               echo "$IMAGE:sha-${GITHUB_SHA::7}"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$CHANNEL" = "versioned" ]; then
             {
               echo "value<<EOF"
-              echo "$IMAGE:${{ steps.version.outputs.value }}"
-              echo "$IMAGE:beta"
-              echo "$IMAGE:latest"
+              echo "$IMAGE:$ADDON_VERSION"
+              case "$GITHUB_REF_NAME" in
+                *-alpha.* | *-beta.* | *-rc.*)
+                  echo "$IMAGE:beta"
+                  echo "$IMAGE:latest"
+                  ;;
+              esac
               echo "$IMAGE:sha-${GITHUB_SHA::7}"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported publish channel: $CHANNEL" >&2
+            exit 1
           fi
 
       - name: Build add-on image
@@ -91,6 +116,6 @@ jobs:
           push: true
           build-args: |
             BUILD_FROM=${{ matrix.build_from }}
-            BUILD_VERSION=${{ github.event_name == 'workflow_dispatch' && 'dev' || (github.ref_type == 'branch' && 'dev' || steps.version.outputs.value) }}
+            BUILD_VERSION=${{ github.ref_type == 'tag' && steps.version.outputs.value || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_channel == 'versioned' && steps.version.outputs.value || 'dev') }}
             BUILD_ARCH=${{ matrix.arch }}
           tags: ${{ steps.tags.outputs.value }}
