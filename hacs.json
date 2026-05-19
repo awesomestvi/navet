@@ -1,4 +1,4 @@
 {
-  "name": "Navet",
-  "render_readme": true
+  "hide_default_branch": true,
+  "name": "Navet"
 }
