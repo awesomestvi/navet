@@ -14,10 +14,8 @@ function parseDate(value?: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getEndOfDay(date: Date): Date {
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-  return endOfDay;
+function getImplicitAllDayEnd(date: Date): Date {
+  return new Date(date.getTime() + 24 * 60 * 60 * 1000 - 1);
 }
 
 export function getCalendarEventInterval(event: CalendarEvent): CalendarEventInterval {
@@ -31,7 +29,7 @@ export function getCalendarEventInterval(event: CalendarEvent): CalendarEventInt
   if (event.isAllDay && start) {
     return {
       start,
-      end: getEndOfDay(start),
+      end: getImplicitAllDayEnd(start),
     };
   }
 
