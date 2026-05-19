@@ -1,3 +1,4 @@
+import { OverlayScrollArea } from '@/app/components/primitives';
 import { useI18n } from '@/app/hooks';
 import { CalendarEventItem } from './calendar-event-item';
 import { formatCalendarGroupLabel } from './calendar-formatters';
@@ -27,7 +28,11 @@ export function CalendarSmallView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto scrollbar-hide pr-1">
+      <OverlayScrollArea
+        className="flex-1"
+        contentClassName="space-y-2 pr-3"
+        scrollbarStartInset={48}
+      >
         {dayGroups.map((group) => (
           <div key={group.key}>
             <div className="mb-1 px-1 text-xs font-medium" style={{ color: textSecondary }}>
@@ -49,7 +54,7 @@ export function CalendarSmallView({
             </div>
           </div>
         ))}
-      </div>
+      </OverlayScrollArea>
     </div>
   );
 }

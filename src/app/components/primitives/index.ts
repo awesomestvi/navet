@@ -43,6 +43,7 @@ export { Link, type LinkProps } from './link';
 export { LoadingSpinner, type LoadingSpinnerProps } from './loading-spinner';
 export { MessageBar, type MessageBarProps } from './message-bar';
 export { ModalSurface, type ModalSurfaceProps } from './modal-surface';
+export { OverlayScrollArea } from './overlay-scroll-area';
 export { Panel, type PanelProps } from './panel';
 export { Radio, type RadioProps } from './radio';
 export { RoomEyebrow } from './room-eyebrow';

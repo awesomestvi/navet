@@ -59,8 +59,8 @@ class HAConnectionService {
     [K in HAConnectionEventType]?: Array<(data: HAConnectionEventMap[K]) => void>;
   } = {};
   private manuallyDisconnected = false;
-  private connecting = false;
   private activeConfiguration: HomeAssistantConfiguration | null = null;
+  private authenticationAttemptId = 0;
 
   /**
    * Authenticate and establish connection to Home Assistant
@@ -72,16 +72,12 @@ class HAConnectionService {
 
     this.activeConfiguration = configuration;
     this.manuallyDisconnected = false;
-
-    if (this.connecting) {
-      return;
-    }
+    const attemptId = ++this.authenticationAttemptId;
 
     let auth: Auth | undefined;
+    let connection: Connection | null = null;
 
     try {
-      this.connecting = true;
-
       if (this.connection) {
         this.connection.close();
         this.connection = null;
@@ -97,46 +93,73 @@ class HAConnectionService {
       }
 
       // Create connection
-      this.connection = await createConnection({ auth, setupRetry: 3 });
+      connection = await createConnection({ auth, setupRetry: 3 });
+
+      if (attemptId !== this.authenticationAttemptId) {
+        connection.close();
+        return;
+      }
+
+      this.connection = connection;
       this.connected = true;
-      this.user = await getUser(this.connection);
+      this.user = await getUser(connection);
+
+      if (attemptId !== this.authenticationAttemptId || this.connection !== connection) {
+        connection.close();
+        return;
+      }
 
       // Subscribe to entities
-      subscribeEntities(this.connection, (entities) => {
+      subscribeEntities(connection, (entities) => {
+        if (this.connection !== connection) {
+          return;
+        }
         this.entities = entities;
         this.notifyListeners('entities', entities);
       });
 
       // Subscribe to config
-      subscribeConfig(this.connection, (config) => {
+      subscribeConfig(connection, (config) => {
+        if (this.connection !== connection) {
+          return;
+        }
         this.config = config;
         this.notifyListeners('config', config);
       });
 
       // Connection events
-      this.connection.addEventListener('ready', () => {
+      connection.addEventListener('ready', () => {
+        if (this.connection !== connection) {
+          return;
+        }
         this.connected = true;
         this.notifyListeners('connection', {
           connected: true,
-          connection: this.connection,
+          connection,
           reconnecting: false,
         });
       });
 
-      this.connection.addEventListener('disconnected', () => {
+      connection.addEventListener('disconnected', () => {
+        if (this.connection !== connection) {
+          return;
+        }
         this.connected = false;
         this.notifyListeners('connection', {
           connected: false,
-          connection: this.connection,
+          connection,
           reconnecting: !this.manuallyDisconnected && Boolean(this.activeConfiguration),
         });
       });
 
-      this.connection.addEventListener('reconnect-error', (_connection, error) => {
+      connection.addEventListener('reconnect-error', (_connection, error) => {
+        if (this.connection !== connection) {
+          return;
+        }
         this.connected = false;
         this.notifyListeners('connection', {
           connected: false,
-          connection: this.connection,
+          connection,
           reconnecting: false,
         });
         this.notifyListeners('error', {
@@ -149,9 +172,10 @@ class HAConnectionService {
         history.replaceState(null, '', location.pathname);
       }
     } catch (error) {
+      if (attemptId !== this.authenticationAttemptId) {
+        return;
+      }
       this.handleError(error);
-    } finally {
-      this.connecting = false;
     }
   }
 
@@ -265,6 +289,7 @@ class HAConnectionService {
    */
   disconnect(): void {
     this.manuallyDisconnected = true;
+    this.authenticationAttemptId += 1;
     if (this.connection) {
       this.connection.close();
       this.connection = null;

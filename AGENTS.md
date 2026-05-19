@@ -58,7 +58,7 @@ style paths in Storybook configuration.
 
 ```
 src/app/
-  features/        # 17+ domain modules — each owns its hooks, stores, components
+  features/        # 16 domain modules — each owns its hooks, stores, components
   components/
     ui/            # Radix UI wrappers (buttons, dialogs, selects …)
     layout/        # Header, sidebar, navigation
@@ -260,7 +260,7 @@ copy all service state on every event.
 - Pushes to `main` publish only developer app images: `ghcr.io/awesomestvi/navet:dev` and `sha-*`.
 - Manual Publish workflow runs are for developer hardware testing and default to the `dev` app image tag.
 - Public beta app images publish only from `v*-alpha.*`, `v*-beta.*`, and `v*-rc.*` tags. They update the exact tag, `beta`, `latest`, and `sha-*`.
-- Home Assistant add-on images do not publish on every `main` push. They publish on manual workflow runs as `dev` or on public beta tags as add-on version, `beta`, `latest`, and `sha-*`.
+- Home Assistant add-on images publish `dev` and `sha-*` on `main` pushes or manual workflow runs, and add-on version, `beta`, `latest`, and `sha-*` on public beta tags.
 - There is no stable channel yet. Treat `latest` as the current public beta compatibility tag because existing users already consume it.
 
 ---

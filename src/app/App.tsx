@@ -68,8 +68,9 @@ function AppContent() {
       return;
     }
     failedConnectionAttemptKey.current = null;
+    const hassUrl = resolveHomeAssistantConnectionUrl(configToUse);
     const connectionConfig = {
-      hassUrl: resolveHomeAssistantConnectionUrl(configToUse),
+      hassUrl,
       token: configToUse.token,
     };
 
@@ -93,20 +94,21 @@ function AppContent() {
   useEffect(() => {
     const configToUse = authConfig || haConfig;
 
-    if (isAuthenticated && configToUse && !connected && !connecting) {
+    if (isAuthenticated && configToUse && !connected && !connecting && !appError) {
       const attemptKey = getConnectionAttemptKey(configToUse);
       if (failedConnectionAttemptKey.current === attemptKey) {
         return;
       }
 
+      const hassUrl = resolveHomeAssistantConnectionUrl(configToUse);
       void connect({
-        hassUrl: resolveHomeAssistantConnectionUrl(configToUse),
+        hassUrl,
         token: configToUse.token,
       }).catch(() => {
         failedConnectionAttemptKey.current = attemptKey;
       });
     }
-  }, [isAuthenticated, authConfig, haConfig, connected, connecting, connect]);
+  }, [isAuthenticated, authConfig, haConfig, connected, connecting, appError, connect]);
 
   useEffect(() => {
     if (isAuthenticated || sharedSessionLoadAttempted.current) {

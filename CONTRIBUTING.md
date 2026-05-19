@@ -53,6 +53,11 @@ This project adheres to a code of conduct. By participating, you are expected to
    pnpm dev
    ```
 
+   Open the URL Vite prints, usually `http://localhost:5173`. For live Home Assistant testing,
+   enter your Home Assistant URL and long-lived access token in the onboarding screen. Normal source
+   development does not require copying `.env.example`; the repo-root `.env` flow is for
+   Docker/add-on runtime defaults and production-style preview work.
+
 ## 💻 Development Process
 
 ### Branch Strategy
@@ -100,7 +105,8 @@ This project adheres to a code of conduct. By participating, you are expected to
 
 ### CI and local checks
 
-Pull requests and pushes to `main` run **GitHub Actions** (`.github/workflows/ci.yml`) in this order:
+Pull requests and all branch pushes run **GitHub Actions** (`.github/workflows/ci.yml`) in this
+order:
 
 1. `pnpm check` — Biome lint and format
 2. `pnpm check:stories` — Storybook title and ownership rules
@@ -109,7 +115,9 @@ Pull requests and pushes to `main` run **GitHub Actions** (`.github/workflows/ci
 5. `pnpm test` — Vitest unit tests
 6. `pnpm build` — production Vite build
 
-Before opening a PR, run the same sequence locally (or at minimum `pnpm check`, `pnpm check:ui-kit`, `pnpm typecheck`, and `pnpm test`) so CI stays green.
+Before opening a PR, run the relevant fast checks for the area you changed, such as `pnpm check`,
+`pnpm check:stories`, `pnpm check:ui-kit`, `pnpm typecheck`, and `pnpm test`. CI remains the
+source of truth for the production `pnpm build` step.
 
 [Dependabot](.github/dependabot.yml) opens weekly PRs for npm dependency updates; review them for breaking changes before merge.
 
@@ -205,9 +213,9 @@ The current hook split is:
   - enforces the Conventional Commit format: `type(scope): summary`
 - `pre-commit`
   - `pnpm check:lockfile` to keep `package.json` and `pnpm-lock.yaml` in sync
-- `pnpm check` for Biome lint/format issues
-- `pnpm check:stories` for Storybook title conventions, primitive/pattern story coverage, and colocated story ownership
-- `pnpm check:ui-kit` for shared UI boundary rules
+  - `pnpm check` for Biome lint/format issues
+  - `pnpm check:stories` for Storybook title conventions, primitive/pattern story coverage, and colocated story ownership
+  - `pnpm check:ui-kit` for shared UI boundary rules
 - `pre-push`
   - `pnpm typecheck`
   - `pnpm test`

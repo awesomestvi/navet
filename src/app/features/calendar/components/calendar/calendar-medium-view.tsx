@@ -1,3 +1,4 @@
+import { OverlayScrollArea } from '@/app/components/primitives';
 import { CalendarAgendaList } from './calendar-primitives';
 import type { CalendarEvent, CalendarEventGroup } from './types';
 
@@ -21,7 +22,7 @@ export function CalendarMediumView({
   onEventClick,
 }: CalendarMediumViewProps) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+    <OverlayScrollArea className="flex-1" contentClassName="pr-3" scrollbarStartInset={56}>
       <CalendarAgendaList
         dayGroups={dayGroups}
         textPrimary={textPrimary}
@@ -32,6 +33,6 @@ export function CalendarMediumView({
         density="compact"
         onEventClick={onEventClick}
       />
-    </div>
+    </OverlayScrollArea>
   );
 }

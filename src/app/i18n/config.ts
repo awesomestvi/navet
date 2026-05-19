@@ -1,4 +1,4 @@
-export const SUPPORTED_LANGUAGES = ['en', 'sv', 'de', 'fr', 'es', 'pt'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'sv', 'de', 'fr', 'es', 'it', 'pt', 'zh'] as const;
 
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -11,9 +11,11 @@ export const LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { value: 'en', label: 'English' },
   { value: 'sv', label: 'Svenska' },
   { value: 'de', label: 'Deutsch' },
-  { value: 'fr', label: 'Francais' },
-  { value: 'es', label: 'Espanol' },
-  { value: 'pt', label: 'Portugues' },
+  { value: 'fr', label: 'Français' },
+  { value: 'es', label: 'Español' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'pt', label: 'Português' },
+  { value: 'zh', label: '简体中文' },
 ];
 
 const LOCALE_BY_LANGUAGE: Record<AppLanguage, string> = {
@@ -22,7 +24,9 @@ const LOCALE_BY_LANGUAGE: Record<AppLanguage, string> = {
   de: 'de-DE',
   fr: 'fr-FR',
   es: 'es-ES',
+  it: 'it-IT',
   pt: 'pt-BR',
+  zh: 'zh-CN',
 };
 
 export function isSupportedLanguage(value: string): value is AppLanguage {

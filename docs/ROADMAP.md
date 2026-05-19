@@ -55,7 +55,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 
 - [x] **Public demo mode** — `/demo` renders a generated smart home environment with bundled assets and no Home Assistant connection, suitable for public previews without exposing private instances or tokens
 - [x] **Public launch deployment hardening** — Docker and Home Assistant add-on deployments share nginx security headers; runtime config keeps Home Assistant tokens server-only; RSS proxying, imported dashboard config, external URLs, and custom button service calls validate public-facing inputs
-- [x] **Home Assistant add-on image publishing** — add-on CI/CD builds pull request images and publishes `main` branch images to GHCR for supported architectures
+- [x] **Home Assistant add-on image publishing** — add-on CI/CD publishes `dev` images from `main` and manual workflow runs, plus versioned public beta images for supported architectures
 - [x] **Automation management** — Tasks section lists Home Assistant automations, shows active/disabled filters, displays last-run metadata and read-only config details, and supports trigger plus enable/disable actions
 - [x] **Security camera dashboard** — dedicated security camera dashboard model and view with camera live viewing support, entity mapping, stories, and tests
 - [x] **Energy history** — per-device and per-source consumption over time with Home Assistant Energy prefs, recorder statistics, source diagnostics, tracked-device sparklines, and drill-down to individual appliances

@@ -176,6 +176,8 @@ export const ErrorDisplay = memo(function ErrorDisplay({
                     t('errorDisplay.issue.2'),
                     t('errorDisplay.issue.3'),
                     t('errorDisplay.issue.4'),
+                    t('errorDisplay.issue.5'),
+                    t('errorDisplay.issue.6'),
                   ].map((issue) => (
                     <div key={issue} className="flex items-start gap-2">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-300/70" />

@@ -451,6 +451,70 @@
     display: none;
   }
 
+  .room-nav-scrollbar {
+    --room-nav-scrollbar-thumb: rgba(148, 163, 184, 0.5);
+    --room-nav-scrollbar-thumb-hover: rgba(148, 163, 184, 0.72);
+    --room-nav-scrollbar-track: rgba(148, 163, 184, 0.12);
+  }
+
+  .room-nav-scrollbar-bar {
+    background: var(--room-nav-scrollbar-track);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+  }
+
+  .room-nav-scrollbar:hover .room-nav-scrollbar-bar,
+  .room-nav-scrollbar:focus-within .room-nav-scrollbar-bar,
+  .room-nav-scrollbar.is-dragging .room-nav-scrollbar-bar {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .room-nav-scrollbar-thumb {
+    left: var(--room-nav-scrollbar-left);
+    width: var(--room-nav-scrollbar-width);
+    background: var(--room-nav-scrollbar-thumb);
+    transition: background-color 160ms ease;
+  }
+
+  .room-nav-scrollbar-thumb:hover {
+    background: var(--room-nav-scrollbar-thumb-hover);
+  }
+
+  .overlay-scroll-area {
+    --overlay-scrollbar-track: rgba(148, 163, 184, 0.12);
+    --overlay-scrollbar-thumb: rgba(148, 163, 184, 0.5);
+    --overlay-scrollbar-thumb-hover: rgba(148, 163, 184, 0.72);
+  }
+
+  .overlay-scrollbar-track {
+    bottom: var(--overlay-scrollbar-track-end);
+    background: var(--overlay-scrollbar-track);
+    opacity: 0;
+    pointer-events: none;
+    top: var(--overlay-scrollbar-track-start);
+    transition: opacity 160ms ease;
+  }
+
+  .overlay-scroll-area:hover .overlay-scrollbar-track,
+  .overlay-scroll-area:focus-within .overlay-scrollbar-track,
+  .overlay-scroll-area.is-dragging .overlay-scrollbar-track {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .overlay-scrollbar-thumb {
+    top: var(--overlay-scrollbar-start);
+    height: var(--overlay-scrollbar-size);
+    background: var(--overlay-scrollbar-thumb);
+    transition: background-color 160ms ease;
+  }
+
+  .overlay-scrollbar-thumb:hover {
+    background: var(--overlay-scrollbar-thumb-hover);
+  }
+
   .safe-area-pt {
     padding-top: max(env(safe-area-inset-top), 0px);
   }

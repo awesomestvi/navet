@@ -111,13 +111,14 @@ Then open `http://localhost:8080`.
 
 ### Release Pipeline
 
-The GitHub Actions publish workflow publishes a multi-arch image to GitHub Container Registry on pushes to `main`, and it can also be run manually:
+The GitHub Actions publish workflow publishes multi-arch app images to GitHub Container Registry:
 
-- `ghcr.io/<owner>/navet:main`
-- `ghcr.io/<owner>/navet:sha-<commit>`
-- `ghcr.io/<owner>/navet:latest`
+- pushes to `main`: `ghcr.io/<owner>/navet:dev` and `ghcr.io/<owner>/navet:sha-<commit>`
+- public prerelease tags (`v*-alpha.*`, `v*-beta.*`, `v*-rc.*`): exact tag, `beta`, `latest`, and `sha-*`
+- manual workflow runs: the requested developer tag, defaulting to `dev`, plus `sha-*`
 
-Manual dispatch can still publish an additional version tag such as `0.1.0-beta.3`.
+`latest` is the current public beta compatibility tag. It is updated by prerelease tags, not by
+ordinary `main` pushes.
 
 ### GHCR Deployment
 
@@ -183,7 +184,7 @@ Assistant pulls `ghcr.io/awesomestvi/{arch}-navet-addon:dev`.
 Typical flow:
 
 1. Push changes to the repository
-2. Merge or push to `main` and wait for **Publish Home Assistant Add-on** to publish the `dev` image
+2. Merge or push to `main`, or manually run **Publish Home Assistant Add-on**, and wait for it to publish the `dev` image
 3. In Home Assistant, open Settings -> Add-ons -> Add-on Store
 4. Refresh the custom add-on repository
 5. Open the `Navet Dev` add-on
@@ -257,7 +258,7 @@ The current add-on still expects explicit Home Assistant connection details. It 
 
 ## CI Pipeline
 
-The CI workflow runs on pushes to `main` and on pull requests. It currently:
+The CI workflow runs on all branch pushes and pull requests. It currently:
 
 1. Installs dependencies with the pinned `pnpm`
 2. Runs `pnpm check`

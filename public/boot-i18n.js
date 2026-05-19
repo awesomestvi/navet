@@ -6,6 +6,7 @@
     fr: 'Demarrage de votre tableau de bord domotique',
     pt: 'Iniciando o seu painel de casa inteligente',
     sv: 'Startar din smarta hemdashboard',
+    zh: '正在启动你的智能家居仪表板',
   };
 
   function resolveLanguage() {

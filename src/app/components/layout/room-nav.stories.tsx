@@ -3,14 +3,38 @@ import { useState } from 'react';
 import { RoomNav } from '@/app/components/layout/room-nav';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
-function RoomNavStory({ isEditMode = false }: { isEditMode?: boolean }) {
+const DEFAULT_ROOMS = ['Living Room', 'Kitchen', 'Bedroom', 'Office'];
+const MANY_ROOMS = [
+  'Living Room',
+  'Kitchen',
+  'Bedroom',
+  'Office',
+  'Dining Room',
+  'Hallway',
+  'Laundry',
+  'Guest Room',
+  'Nursery',
+  'Garage',
+  'Patio',
+  'Studio',
+  'Basement',
+  'Loft',
+];
+
+function RoomNavStory({
+  isEditMode = false,
+  rooms = DEFAULT_ROOMS,
+}: {
+  isEditMode?: boolean;
+  rooms?: string[];
+}) {
   const [activeRoom, setActiveRoom] = useState('All');
   const [editMode, setEditMode] = useState(isEditMode);
 
   return (
     <>
       <RoomNav
-        rooms={['Living Room', 'Kitchen', 'Bedroom', 'Office']}
+        rooms={rooms}
         activeRoom={activeRoom}
         onRoomChange={setActiveRoom}
         allViewGrouping="custom"
@@ -56,5 +80,11 @@ export const Default: Story = {};
 export const EditMode: Story = {
   args: {
     isEditMode: true,
+  },
+};
+
+export const ManyRooms: Story = {
+  args: {
+    rooms: MANY_ROOMS,
   },
 };

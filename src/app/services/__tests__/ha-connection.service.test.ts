@@ -118,4 +118,54 @@ describe('HAConnectionService', () => {
     ]);
     expect(createConnectionMock).toHaveBeenCalledTimes(1);
   });
+
+  it('allows a new authentication attempt to replace a pending websocket attempt', async () => {
+    const firstConnection = {
+      addEventListener: vi.fn(),
+      close: vi.fn(),
+    };
+    const secondConnection = {
+      addEventListener: vi.fn(),
+      close: vi.fn(),
+    };
+    const firstAttempt = deferred<typeof firstConnection>();
+    const secondAttempt = deferred<typeof secondConnection>();
+    createConnectionMock
+      .mockReturnValueOnce(firstAttempt.promise)
+      .mockReturnValueOnce(secondAttempt.promise);
+
+    const service = new HAConnectionService();
+
+    const firstAuthenticate = service.authenticate({
+      hassUrl: 'https://old-ha.example.com',
+      token: 'old-token',
+    });
+    const secondAuthenticate = service.authenticate({
+      hassUrl: 'https://new-ha.example.com',
+      token: 'new-token',
+    });
+
+    expect(createConnectionMock).toHaveBeenCalledTimes(2);
+
+    secondAttempt.resolve(secondConnection);
+    await secondAuthenticate;
+
+    firstAttempt.resolve(firstConnection);
+    await firstAuthenticate;
+
+    expect(service.getConnection()).toBe(secondConnection);
+    expect(firstConnection.close).toHaveBeenCalled();
+    expect(secondConnection.close).not.toHaveBeenCalled();
+  });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+}

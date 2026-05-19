@@ -165,6 +165,10 @@ volumes:
   navet-data:
 ```
 
+`latest` tracks the current public beta tag. Pushes to `main` publish developer images as `dev` and
+`sha-*`, so production-style deployments should use `latest`, `beta`, or a specific prerelease tag
+instead of expecting `main` to update `latest`.
+
 Start Navet:
 
 ```bash
@@ -202,8 +206,8 @@ Use the source workflow when developing Navet, testing changes, or contributing 
 
 - Node.js `^20.19.0` or `>=22.12.0`
 - `pnpm`
-- A running Home Assistant instance
-- A Home Assistant long-lived access token
+- A running Home Assistant instance only when testing live Home Assistant behavior
+- A Home Assistant long-lived access token only when connecting the local app to that instance
 
 ### Install
 
@@ -213,28 +217,20 @@ cd navet
 pnpm install
 ```
 
-### Configure Home Assistant
-
-Create `.env` from the example file:
-
-```bash
-cp .env.example .env
-```
-
-Set your Home Assistant URL and token:
-
-```env
-NAVET_HASS_URL=http://your-home-assistant:8123
-NAVET_HASS_TOKEN=your-long-lived-access-token
-```
-
 ### Start the app
 
 ```bash
 pnpm dev
 ```
 
-Open the URL Vite prints, usually `http://localhost:5173`.
+Open the URL Vite prints, usually `http://localhost:5173`. For live Home Assistant testing, enter
+your Home Assistant URL and long-lived access token in the onboarding screen. The local app stores
+that session in browser storage, so contributors do not need a repo-root `.env` file for normal
+development.
+
+Use `.env.example` only when you need runtime defaults for Docker, add-on, or production-style
+preview flows. `NAVET_HASS_URL` and `NAVET_HASS_TOKEN` are deployment/runtime values, not required
+source setup.
 
 For a production-style local preview:
 
@@ -246,11 +242,14 @@ pnpm preview
 
 ```bash
 pnpm dev
-pnpm typecheck
-pnpm check
+pnpm check:stories
+pnpm check:ui-kit
 pnpm test
 pnpm storybook
 ```
+
+CI also runs `pnpm check`, `pnpm typecheck`, and `pnpm build`. Follow the repository instructions for
+when to run those locally.
 
 ### Project docs
 

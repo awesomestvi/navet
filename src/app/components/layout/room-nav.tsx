@@ -1,5 +1,16 @@
 import { Check, ChevronDown, Edit3, GripVertical, LayoutGrid, Lightbulb } from 'lucide-react';
-import { type ButtonHTMLAttributes, forwardRef, memo, useMemo, useState } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  forwardRef,
+  memo,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -50,6 +61,11 @@ interface RoomNavMenuButtonProps {
   className: string;
 }
 
+interface RoomNavScrollbarStyle extends CSSProperties {
+  '--room-nav-scrollbar-left': string;
+  '--room-nav-scrollbar-width': string;
+}
+
 export const RoomNav = memo(function RoomNav({
   rooms = [],
   roomHiddenItemCounts = new Map(),
@@ -69,6 +85,19 @@ export const RoomNav = memo(function RoomNav({
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
+  const [isScrollbarDragging, setIsScrollbarDragging] = useState(false);
+  const [scrollbarStyle, setScrollbarStyle] = useState<RoomNavScrollbarStyle>({
+    '--room-nav-scrollbar-left': '0px',
+    '--room-nav-scrollbar-width': '0px',
+  });
+  const [hasRoomOverflow, setHasRoomOverflow] = useState(false);
+  const roomScrollerRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<{
+    maxScrollLeft: number;
+    maxThumbLeft: number;
+    startScrollLeft: number;
+    startX: number;
+  } | null>(null);
   const manageableRooms = useMemo(() => {
     return getManageableRoomOrder(rooms, areas);
   }, [areas, rooms]);
@@ -101,25 +130,156 @@ export const RoomNav = memo(function RoomNav({
     { label: t('dashboard.roomNav.grouping.type'), value: 'type' },
     { label: t('dashboard.roomNav.grouping.none'), value: 'none' },
   ];
+  const updateScrollbarMetrics = useCallback(() => {
+    const scroller = roomScrollerRef.current;
+
+    if (!scroller) {
+      return;
+    }
+
+    const { clientWidth, scrollLeft, scrollWidth } = scroller;
+    const maxScrollLeft = scrollWidth - clientWidth;
+
+    if (maxScrollLeft <= 1) {
+      setHasRoomOverflow(false);
+      setScrollbarStyle({
+        '--room-nav-scrollbar-left': '0px',
+        '--room-nav-scrollbar-width': '0px',
+      });
+      return;
+    }
+
+    const thumbWidth = Math.max(32, (clientWidth / scrollWidth) * clientWidth);
+    const maxThumbLeft = clientWidth - thumbWidth;
+    const thumbLeft = (scrollLeft / maxScrollLeft) * maxThumbLeft;
+
+    setHasRoomOverflow(true);
+    setScrollbarStyle({
+      '--room-nav-scrollbar-left': `${thumbLeft}px`,
+      '--room-nav-scrollbar-width': `${thumbWidth}px`,
+    });
+  }, []);
+  const handleRoomScroll = useCallback(() => {
+    updateScrollbarMetrics();
+  }, [updateScrollbarMetrics]);
+  const handleScrollbarPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const scroller = roomScrollerRef.current;
+
+    if (!scroller) {
+      return;
+    }
+
+    const { clientWidth, scrollLeft, scrollWidth } = scroller;
+    const maxScrollLeft = scrollWidth - clientWidth;
+
+    if (maxScrollLeft <= 1) {
+      return;
+    }
+
+    const thumbWidth = Math.max(32, (clientWidth / scrollWidth) * clientWidth);
+    dragStateRef.current = {
+      maxScrollLeft,
+      maxThumbLeft: clientWidth - thumbWidth,
+      startScrollLeft: scrollLeft,
+      startX: event.clientX,
+    };
+    setIsScrollbarDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }, []);
+  const handleScrollbarPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const scroller = roomScrollerRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!scroller || !dragState) {
+      return;
+    }
+
+    const scrollDelta =
+      ((event.clientX - dragState.startX) / dragState.maxThumbLeft) * dragState.maxScrollLeft;
+    scroller.scrollLeft = dragState.startScrollLeft + scrollDelta;
+  }, []);
+  const handleScrollbarPointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    dragStateRef.current = null;
+    setIsScrollbarDragging(false);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
+
+  useEffect(() => {
+    const scroller = roomScrollerRef.current;
+
+    if (!scroller) {
+      return;
+    }
+
+    updateScrollbarMetrics();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateScrollbarMetrics);
+
+      return () => {
+        window.removeEventListener('resize', updateScrollbarMetrics);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(updateScrollbarMetrics);
+    resizeObserver.observe(scroller);
+
+    if (scroller.firstElementChild) {
+      resizeObserver.observe(scroller.firstElementChild);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [updateScrollbarMetrics]);
 
   return (
     <>
       <div className="hidden md:block">
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
-            <div className="flex min-w-max items-center gap-1.5 md:gap-2">
-              {visibleRooms.map((room) => (
-                <RoomNavItem
-                  key={room}
-                  room={room}
-                  activeRoom={activeRoom}
-                  allLabel={t('dashboard.roomNav.all')}
-                  activeClassName={activeRoomItemClassName}
-                  inactiveClassName={inactiveRoomItemClassName}
-                  onRoomChange={onRoomChange}
-                />
-              ))}
+          <div
+            className={`room-nav-scrollbar relative flex-1 min-w-0 ${
+              isScrollbarDragging ? 'is-dragging' : ''
+            }`}
+            style={scrollbarStyle}
+          >
+            <div
+              ref={roomScrollerRef}
+              className="w-full overflow-x-auto scrollbar-hide"
+              onScroll={handleRoomScroll}
+            >
+              <div className="flex min-w-max items-center gap-1.5 md:gap-2">
+                {visibleRooms.map((room) => (
+                  <RoomNavItem
+                    key={room}
+                    room={room}
+                    activeRoom={activeRoom}
+                    allLabel={t('dashboard.roomNav.all')}
+                    activeClassName={activeRoomItemClassName}
+                    inactiveClassName={inactiveRoomItemClassName}
+                    onRoomChange={onRoomChange}
+                  />
+                ))}
+              </div>
             </div>
+            {hasRoomOverflow ? (
+              <div
+                aria-hidden="true"
+                className="room-nav-scrollbar-bar absolute inset-x-0 -bottom-1.5 z-10 h-2 touch-none select-none rounded-full"
+              >
+                <div
+                  className="room-nav-scrollbar-thumb absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full"
+                  onPointerDown={handleScrollbarPointerDown}
+                  onPointerMove={handleScrollbarPointerMove}
+                  onPointerUp={handleScrollbarPointerUp}
+                  onPointerCancel={handleScrollbarPointerUp}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 pl-1.5 md:gap-2 md:pl-2">

@@ -55,16 +55,17 @@ Recommended lightweight flow:
 
 1. Decide whether the change is `patch`, `minor`, or `beta prerelease`.
 2. Bump `package.json`.
-3. If the release meaning changed, update this file.
-4. Tag the commit with `v<version>`, for example `v0.1.1-beta.1`.
-5. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml).
-6. If needed, manually run the container publish workflows for matching image tags.
+3. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
+4. If the release meaning changed, update this file.
+5. Tag the commit with a prerelease tag such as `v0.1.1-beta.1`.
+6. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml), app image publishing, and add-on image publishing.
+7. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
 
 ## GitHub Releases
 
-- Tags matching `v*` create a GitHub Release automatically.
-- Tags containing `-beta.`, `-alpha.`, or `-rc.` are published as GitHub prereleases.
-- Stable tags such as `v0.1.0` are published as normal releases.
+- Prerelease tags matching `v*-alpha.*`, `v*-beta.*`, or `v*-rc.*` create a GitHub Release automatically.
+- The current release workflow marks those releases as prereleases.
+- Stable `v*` tags are not part of the current automated workflow; add one deliberately when Navet has a stable channel.
 
 ## Stable Exit
 

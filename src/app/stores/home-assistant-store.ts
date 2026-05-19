@@ -53,16 +53,28 @@ const initialState: HomeAssistantState = {
 // The service always holds the latest HassEntities — only the notification is
 // deferred, so getEntities() at flush time returns the most recent snapshot.
 const ENTITY_DEBOUNCE_MS = 50;
+const HA_CONNECTION_GRACE_PERIOD_MS = 10_000;
+const HA_CONNECTION_TIMEOUT_MESSAGE =
+  'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
 
 export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) => {
   let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeServiceUnsubscribe: (() => void) | null = null;
   let panelRegistryLoadStarted = false;
+  let connectAttemptId = 0;
 
   const clearEntityDebounce = () => {
     if (entityDebounceTimer !== null) {
       clearTimeout(entityDebounceTimer);
       entityDebounceTimer = null;
+    }
+  };
+
+  const clearConnectionGraceTimer = () => {
+    if (connectionGraceTimer !== null) {
+      clearTimeout(connectionGraceTimer);
+      connectionGraceTimer = null;
     }
   };
 
@@ -72,40 +84,89 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     clearEntityDebounce();
   };
 
+  const getConnectionTimeoutDetails = (config: HomeAssistantConfiguration) => {
+    const url = config.hassUrl ?? 'unknown Home Assistant URL';
+    return `Saved Home Assistant URL did not respond within ${HA_CONNECTION_GRACE_PERIOD_MS / 1000} seconds: ${url}`;
+  };
+
   return {
     ...initialState,
 
     connect: async (config: HomeAssistantConfiguration) => {
+      const attemptId = ++connectAttemptId;
+      clearConnectionGraceTimer();
       set({ connecting: true, error: null });
       useErrorStore.getState().clearError();
       clearServiceSubscriptions();
+
+      const connectionTimeout = new Promise<'timed-out'>((resolve) => {
+        connectionGraceTimer = setTimeout(() => {
+          if (attemptId !== connectAttemptId) {
+            return;
+          }
+
+          connectAttemptId += 1;
+          connectionGraceTimer = null;
+          clearServiceSubscriptions();
+          homeAssistantService.disconnect();
+
+          const details = getConnectionTimeoutDetails(config);
+          set({
+            error: HA_CONNECTION_TIMEOUT_MESSAGE,
+            connected: false,
+            connection: null,
+            connecting: false,
+            reconnecting: false,
+          });
+          useErrorStore.getState().setError(HA_CONNECTION_TIMEOUT_MESSAGE, details);
+          resolve('timed-out');
+        }, HA_CONNECTION_GRACE_PERIOD_MS);
+      });
 
       try {
         // Subscribe to each typed event — only update the slice of state that changed
         const unsubscribers = [
           homeAssistantService.addListener('entities', (entities) => {
+            if (attemptId !== connectAttemptId) {
+              return;
+            }
             clearEntityDebounce();
             entityDebounceTimer = setTimeout(() => {
+              if (attemptId !== connectAttemptId) {
+                return;
+              }
               entityDebounceTimer = null;
               set({ entities });
             }, ENTITY_DEBOUNCE_MS);
           }),
           homeAssistantService.addListener('config', (config) => {
+            if (attemptId !== connectAttemptId) {
+              return;
+            }
             set({ config });
           }),
           homeAssistantService.addListener(
             'registries',
             ({ areas, devices, entities: entityRegistry }) => {
+              if (attemptId !== connectAttemptId) {
+                return;
+              }
               set({ areas, deviceRegistry: devices, entityRegistry });
             }
           ),
           homeAssistantService.addListener(
             'connection',
             ({ connected, connection, reconnecting }) => {
+              if (attemptId !== connectAttemptId) {
+                return;
+              }
               set({ connected, connection, connecting: reconnecting, reconnecting });
             }
           ),
           homeAssistantService.addListener('error', ({ message }) => {
+            if (attemptId !== connectAttemptId) {
+              return;
+            }
             set({
               error: message,
               connecting: false,
@@ -122,9 +183,20 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
         activeServiceUnsubscribe = unsubscribe;
 
         // Authenticate and connect
-        await homeAssistantService.authenticate(config);
+        const result = await Promise.race([
+          homeAssistantService.authenticate(config).then(() => 'connected' as const),
+          connectionTimeout,
+        ]);
+        if (result === 'timed-out') {
+          return;
+        }
 
         // Populate full initial state after connection
+        if (attemptId !== connectAttemptId) {
+          return;
+        }
+
+        clearConnectionGraceTimer();
         set({
           connected: homeAssistantService.isConnected(),
           config: homeAssistantService.getConfig(),
@@ -138,6 +210,11 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
           reconnecting: false,
         });
       } catch (error) {
+        if (attemptId !== connectAttemptId) {
+          return;
+        }
+
+        clearConnectionGraceTimer();
         clearServiceSubscriptions();
         const message =
           error instanceof Error
@@ -157,6 +234,8 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     },
 
     syncPanelHass: (hass: HomeAssistantPanelHass) => {
+      connectAttemptId += 1;
+      clearConnectionGraceTimer();
       clearServiceSubscriptions();
       homeAssistantService.setPanelHass(hass);
       useErrorStore.getState().clearError();
@@ -193,6 +272,8 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     },
 
     disconnect: () => {
+      connectAttemptId += 1;
+      clearConnectionGraceTimer();
       useErrorStore.getState().clearError();
       clearServiceSubscriptions();
       panelRegistryLoadStarted = false;

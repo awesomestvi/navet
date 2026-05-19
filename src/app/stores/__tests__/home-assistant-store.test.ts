@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAppStores } from '@/test/store-reset';
 
 type StubEntityListener = (payload: Record<string, unknown> | null) => void;
@@ -123,6 +123,10 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.disconnect.mockClear();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('registers typed listeners and hydrates state after connect', async () => {
     homeAssistantServiceStub.connected = true;
     homeAssistantServiceStub.config = { location_name: 'Home' };
@@ -189,5 +193,77 @@ describe('homeAssistantStore', () => {
 
     expect(homeAssistantStore.getState().error).toBe('bad token');
     expect(useErrorStore.getState().error?.message).toBe('bad token');
+  });
+
+  it('times out a stalled connection attempt and surfaces recovery state', async () => {
+    vi.useFakeTimers();
+    homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
+
+    void homeAssistantStore.getState().connect({
+      hassUrl: 'https://stale-ha.example.com',
+      token: 'abc',
+    });
+
+    expect(homeAssistantStore.getState().connecting).toBe(true);
+
+    vi.advanceTimersByTime(10_000);
+
+    expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled();
+    expect(homeAssistantStore.getState().connected).toBe(false);
+    expect(homeAssistantStore.getState().connecting).toBe(false);
+    expect(homeAssistantStore.getState().reconnecting).toBe(false);
+    expect(homeAssistantStore.getState().error).toBe(
+      'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.'
+    );
+    expect(useErrorStore.getState().error?.details).toContain('https://stale-ha.example.com');
+  });
+
+  it('does not let an older timeout affect a superseding successful attempt', async () => {
+    vi.useFakeTimers();
+    homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
+
+    void homeAssistantStore.getState().connect({
+      hassUrl: 'https://old-ha.example.com',
+      token: 'old-token',
+    });
+
+    vi.advanceTimersByTime(5_000);
+
+    homeAssistantServiceStub.connected = true;
+    await homeAssistantStore.getState().connect({
+      hassUrl: 'https://new-ha.example.com',
+      token: 'new-token',
+    });
+
+    vi.advanceTimersByTime(10_000);
+
+    expect(homeAssistantStore.getState().connected).toBe(true);
+    expect(homeAssistantStore.getState().connecting).toBe(false);
+    expect(homeAssistantStore.getState().error).toBeNull();
+    expect(useErrorStore.getState().error).toBeNull();
+  });
+
+  it('ignores stale service events after a timed-out connection attempt', async () => {
+    vi.useFakeTimers();
+    homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
+
+    void homeAssistantStore.getState().connect({
+      hassUrl: 'https://stale-ha.example.com',
+      token: 'abc',
+    });
+
+    const staleConnectionListeners = [...homeAssistantServiceStub.listeners.connection];
+
+    vi.advanceTimersByTime(10_000);
+
+    staleConnectionListeners.forEach((listener) => {
+      listener({ connected: true, connection: { id: 'stale-connection' }, reconnecting: false });
+    });
+
+    expect(homeAssistantStore.getState().connected).toBe(false);
+    expect(homeAssistantStore.getState().connection).toBeNull();
+    expect(homeAssistantStore.getState().error).toBe(
+      'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.'
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { OverlayScrollArea } from '@/app/components/primitives';
 import { BATTERY_LEVEL_COLORS, BATTERY_LEVEL_THRESHOLDS } from './battery-constants';
 
 interface BatteryLevelIconProps {
@@ -130,7 +131,10 @@ export function BatteryList({
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+    <OverlayScrollArea
+      className="flex flex-1 flex-col"
+      contentClassName="flex min-h-full flex-col pr-3"
+    >
       <ul className="mt-auto min-w-0 space-y-1.5">
         {devices.map((device) => (
           <BatteryListItem
@@ -143,7 +147,7 @@ export function BatteryList({
           />
         ))}
       </ul>
-    </div>
+    </OverlayScrollArea>
   );
 }
 
