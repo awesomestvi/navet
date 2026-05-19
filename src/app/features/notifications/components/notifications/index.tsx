@@ -51,14 +51,11 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
     deleteNotification,
     clearAll,
   } = useNotifications();
-  const navetNotifications = notifications.filter(
-    (notification) => notification.source === 'navet'
-  );
   const updateNotifications = notifications.filter(
     (notification) => notification.source === 'update'
   );
   const regularNotifications = notifications.filter(
-    (notification) => notification.source !== 'update' && notification.source !== 'navet'
+    (notification) => notification.source !== 'update'
   );
 
   useEffect(() => {
@@ -106,19 +103,6 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           <NotificationEmptyState />
         ) : (
           <div className="p-3">
-            {navetNotifications.length > 0 ? (
-              <NotificationSection
-                title={t('notifications.section.important')}
-                notifications={navetNotifications}
-                dividerClassName={surface.dividerClassName}
-                onPrimaryAction={runPrimaryAction}
-                onDelete={deleteNotification}
-                theme={theme}
-                primaryColor={primaryColor}
-                formatTimestamp={formatRelativeTimestamp}
-              />
-            ) : null}
-
             {updateNotifications.length > 0 ? (
               <NotificationSection
                 title={t('notifications.section.updates')}
@@ -129,7 +113,6 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
                 theme={theme}
                 primaryColor={primaryColor}
                 formatTimestamp={formatRelativeTimestamp}
-                className={navetNotifications.length > 0 ? 'mt-4' : undefined}
               />
             ) : null}
 
@@ -143,11 +126,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
                 theme={theme}
                 primaryColor={primaryColor}
                 formatTimestamp={formatRelativeTimestamp}
-                className={
-                  navetNotifications.length > 0 || updateNotifications.length > 0
-                    ? 'mt-4'
-                    : undefined
-                }
+                className={updateNotifications.length > 0 ? 'mt-4' : undefined}
               />
             ) : null}
           </div>

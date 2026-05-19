@@ -84,7 +84,7 @@ class NavetRSSProxyView(HomeAssistantView):
 
     url = RSS_PROXY_PATH
     name = "api:navet:rss_proxy"
-    requires_auth = True
+    requires_auth = False
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the RSS proxy view."""
@@ -163,7 +163,7 @@ class NavetHomeAssistantProxyCompatibilityView(HomeAssistantView):
 
     url = f"{HA_PROXY_PATH}/{{requested_path:.*}}"
     name = "api:navet:ha_proxy_compat"
-    requires_auth = True
+    requires_auth = False
 
     async def get(self, request: web.Request) -> web.Response:
         """Redirect proxied HA resource requests to their native same-origin path."""

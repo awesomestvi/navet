@@ -1,6 +1,8 @@
 import { memo, useCallback, useId, useMemo, useState } from 'react';
 import { getEnergyChartSurfaceTokens } from '@/app/components/shared/theme/energy-widget-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import { getEnergyChartTokens } from './energy-chart-tokens';
 
 export interface EnergySparklinePoint {
@@ -62,6 +64,7 @@ export const EnergySparkline = memo(function EnergySparkline({
 }: EnergySparklineProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
+  const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const id = useId();
   const tokens = getEnergyChartTokens(theme, accentColor);
   const chartSurface = getEnergyChartSurfaceTokens(theme);
@@ -87,9 +90,9 @@ export const EnergySparkline = memo(function EnergySparkline({
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false,
+        hour12: !use24HourTime,
       }),
-    [locale]
+    [locale, use24HourTime]
   );
 
   const { baseline, line, pts, chartHeight, minVal, maxVal } = useMemo(() => {

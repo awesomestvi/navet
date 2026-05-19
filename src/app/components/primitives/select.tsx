@@ -4,18 +4,25 @@ import {
   getControlFocusStyles,
   navetIconSizeTokens,
   navetRadiusTokens,
-  navetSizeTokens,
   navetTypographyTokens,
 } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
-export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+type SelectSize = 'default' | 'small';
+
+const SELECT_SIZE_CLASS_NAMES: Record<SelectSize, string> = {
+  default: 'px-4 py-3',
+  small: 'h-9 pl-3.5 pr-10 py-0 leading-5',
+};
+
+export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   invalid?: boolean;
   containerClassName?: string;
   selectClassName?: string;
   indicatorClassName?: string;
   accentColorOverride?: string;
+  size?: SelectSize;
   children: ReactNode;
 }
 
@@ -27,6 +34,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     selectClassName,
     indicatorClassName,
     accentColorOverride,
+    size = 'default',
     onBlur,
     onFocus,
     disabled,
@@ -58,9 +66,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           onBlur?.(event);
         }}
         className={cn(
-          'w-full appearance-none border pl-4 pr-10 outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
+          'w-full appearance-none border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
-          navetSizeTokens.fieldInset,
+          SELECT_SIZE_CLASS_NAMES[size],
           navetTypographyTokens.control,
           theme === 'light'
             ? 'border-gray-200 bg-gray-100 text-gray-900'

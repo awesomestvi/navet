@@ -59,7 +59,7 @@ function SimpleDisclosure({
       <button
         type="button"
         onClick={onToggle}
-        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+        className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
       >
         {icon}
         <span>{label}</span>
@@ -121,7 +121,7 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
               href="https://github.com/awesomestvi/"
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
             >
               <GithubMark className="h-4 w-4" />
               <span>awesomestvi</span>
@@ -131,7 +131,7 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
               href="https://github.com/awesomestvi/navet/blob/main/docs/ATTRIBUTIONS.md"
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
             >
               <span>{t('settings.project.credits.viewAttributions')}</span>
               <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />

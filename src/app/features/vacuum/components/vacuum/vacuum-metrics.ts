@@ -51,6 +51,7 @@ interface ResolveVacuumGlanceMetricsOptions {
   fallbackNextCleaning?: unknown;
   fallbackWaterLevel?: unknown;
   fallbackBinLevel?: unknown;
+  use24HourTime?: boolean;
   entities?: HassEntities | null;
   entityRegistry?: HomeAssistantEntityRegistryEntry[];
 }
@@ -79,9 +80,9 @@ function readFirst(attrs: Record<string, unknown> | undefined, keys: string[]): 
   return undefined;
 }
 
-function formatSchedule(value: unknown): string | undefined {
+function formatSchedule(value: unknown, use24HourTime = false): string | undefined {
   if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return formatDate(value);
+    return formatDate(value, use24HourTime);
   }
 
   if (typeof value !== 'string' && typeof value !== 'number') return undefined;
@@ -91,17 +92,18 @@ function formatSchedule(value: unknown): string | undefined {
 
   const parsedDate = new Date(raw);
   if (Number.isFinite(parsedDate.getTime())) {
-    return formatDate(parsedDate);
+    return formatDate(parsedDate, use24HourTime);
   }
 
   return raw;
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: Date, use24HourTime: boolean): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: !use24HourTime,
   }).format(date);
 }
 
@@ -186,6 +188,7 @@ export function resolveVacuumGlanceMetrics({
   fallbackNextCleaning,
   fallbackWaterLevel,
   fallbackBinLevel,
+  use24HourTime = false,
   entities,
   entityRegistry,
 }: ResolveVacuumGlanceMetricsOptions): VacuumGlanceMetrics {
@@ -195,7 +198,10 @@ export function resolveVacuumGlanceMetrics({
     parseNumberish(attrs?.battery) ??
     parseNumberish(attrs?.battery_percent) ??
     fallbackBattery;
-  const nextCleaning = formatSchedule(readFirst(attrs, NEXT_CLEANING_KEYS) ?? fallbackNextCleaning);
+  const nextCleaning = formatSchedule(
+    readFirst(attrs, NEXT_CLEANING_KEYS) ?? fallbackNextCleaning,
+    use24HourTime
+  );
   const waterLevel = normalizeLevelMetric(
     readFirst(attrs, WATER_LEVEL_KEYS) ??
       findRelatedSensorValue({

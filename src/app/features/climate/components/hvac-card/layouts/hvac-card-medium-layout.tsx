@@ -37,7 +37,7 @@ export const HVACCardMediumLayout = memo(function HVACCardMediumLayout({
             className={`mb-1 text-3xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
             style={{ color: readableTokens.titleColor }}
           >
-            {controller.currentTemp}°C
+            {controller.formatTemperature(controller.currentTemp)}
           </div>
           <div
             className={`text-xs ${stateSurface.secondaryTextClassName}`}
@@ -56,14 +56,14 @@ export const HVACCardMediumLayout = memo(function HVACCardMediumLayout({
             <div className="relative z-[3]">
               <CardActionRowGroup>
                 <HVACTempControls
-                  targetTemp={controller.targetTemp}
-                  onTempChange={controller.setTargetTemp}
-                  onTempCommit={controller.commitTargetTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  onTempChange={controller.setDisplayTargetTemp}
+                  onTempCommit={controller.commitDisplayTargetTemp}
                   isOn={controller.isOn}
                   size="medium"
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
                 />
                 <HVACModeControls
                   mode={controller.visualMode}

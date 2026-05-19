@@ -40,7 +40,7 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
             className={`mb-1 text-4xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
             style={{ color: readableTokens.titleColor }}
           >
-            {controller.currentTemp}°C
+            {controller.formatTemperature(controller.currentTemp)}
           </div>
           <div
             className={`text-sm ${stateSurface.secondaryTextClassName}`}
@@ -73,7 +73,7 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
                     color: isSelected ? readableTokens.titleColor : readableTokens.subtitleColor,
                   }}
                 >
-                  {preset}°
+                  {controller.formatTemperatureValue(preset)}°
                 </button>
               );
             })}
@@ -89,14 +89,14 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
             <div className="relative z-[3]">
               <CardActionRowGroup>
                 <HVACTempControls
-                  targetTemp={controller.targetTemp}
-                  onTempChange={controller.setTargetTemp}
-                  onTempCommit={controller.commitTargetTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  onTempChange={controller.setDisplayTargetTemp}
+                  onTempCommit={controller.commitDisplayTargetTemp}
                   isOn={controller.isOn}
                   size="medium"
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
                 />
                 <HVACModeControls
                   mode={controller.visualMode}

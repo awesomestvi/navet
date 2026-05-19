@@ -1,5 +1,6 @@
 import { Languages } from 'lucide-react';
-import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
+import { Select } from '@/app/components/primitives/select';
 import { useI18n } from '@/app/hooks';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
@@ -10,16 +11,8 @@ interface SettingsLocalizationSectionProps {
 
 export function SettingsLocalizationSection({ controller }: SettingsLocalizationSectionProps) {
   const { t } = useI18n();
-  const {
-    language,
-    languageOptions,
-    styles,
-    theme,
-    updateSettings,
-    use24HourTime,
-    temperatureUnit,
-  } = controller;
-  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
+  const { language, languageOptions, styles, updateSettings, use24HourTime, temperatureUnit } =
+    controller;
 
   return (
     <SettingsSectionShell
@@ -34,25 +27,26 @@ export function SettingsLocalizationSection({ controller }: SettingsLocalization
         description={t('settings.localization.language.description')}
         styles={styles}
       >
-        <div className="flex flex-wrap gap-2.5 md:gap-3">
-          {languageOptions.map((option) => {
-            const isActive = language === option.value;
-            return (
-              <button
-                type="button"
-                key={option.value}
-                onClick={() => updateSettings({ language: option.value })}
-                style={isActive ? pillTokens.activeOptionStyle : undefined}
-                className={`rounded-full border px-4 py-2.5 text-sm font-medium transition-all md:px-5 md:py-3 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                  isActive ? 'shadow-sm' : ''
-                }`}
-                aria-pressed={isActive}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
+        <Select
+          value={language}
+          onChange={(event) => {
+            const nextLanguage = languageOptions.find(
+              (option) => option.value === event.currentTarget.value
+            )?.value;
+
+            if (nextLanguage) {
+              updateSettings({ language: nextLanguage });
+            }
+          }}
+          aria-label={t('settings.localization.language.title')}
+          containerClassName="max-w-xs"
+        >
+          {languageOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
       </SettingsItem>
 
       <SettingsItem
@@ -67,18 +61,15 @@ export function SettingsLocalizationSection({ controller }: SettingsLocalization
           ].map((option) => {
             const isActive = use24HourTime === option.value;
             return (
-              <button
-                type="button"
+              <InteractivePill
                 key={option.label}
+                active={isActive}
+                size="small"
                 onClick={() => updateSettings({ use24HourTime: option.value })}
-                style={isActive ? pillTokens.activeOptionStyle : undefined}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                  isActive ? 'shadow-sm' : ''
-                }`}
                 aria-pressed={isActive}
               >
                 {option.label}
-              </button>
+              </InteractivePill>
             );
           })}
         </div>
@@ -102,18 +93,15 @@ export function SettingsLocalizationSection({ controller }: SettingsLocalization
           ].map((option) => {
             const isActive = temperatureUnit === option.value;
             return (
-              <button
-                type="button"
+              <InteractivePill
                 key={option.value}
+                active={isActive}
+                size="small"
                 onClick={() => updateSettings({ temperatureUnit: option.value })}
-                style={isActive ? pillTokens.activeOptionStyle : undefined}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                  isActive ? 'shadow-sm' : ''
-                }`}
                 aria-pressed={isActive}
               >
                 {option.label}
-              </button>
+              </InteractivePill>
             );
           })}
         </div>

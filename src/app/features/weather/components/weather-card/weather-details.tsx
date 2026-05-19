@@ -3,12 +3,18 @@ import { CaptionValue } from '@/app/components/ui/caption-value';
 import { useI18n } from '@/app/hooks';
 import { formatMetricNumber } from '@/app/hooks/ha-entity-utils';
 import type { WeatherMetricId } from '@/app/stores/settings-store';
+import {
+  formatTemperature,
+  formatTemperatureValue,
+  type TemperatureUnit,
+} from '@/app/utils/temperature';
 
 interface WeatherDetailsProps {
   temperature: number;
   highTemp: number;
   lowTemp: number;
   feelsLikeTemperature?: number;
+  temperatureUnit: TemperatureUnit;
   rainForecast?: string;
   precipitation: number;
   precipitationUnit: string;
@@ -33,6 +39,7 @@ export function WeatherDetails({
   highTemp,
   lowTemp,
   feelsLikeTemperature,
+  temperatureUnit,
   rainForecast,
   precipitation,
   precipitationUnit,
@@ -70,7 +77,7 @@ export function WeatherDetails({
       typeof feelsLikeTemperature === 'number'
         ? {
             caption: t('weather.metric.feelsLike'),
-            value: `${feelsLikeTemperature}°C`,
+            value: formatTemperature(feelsLikeTemperature, temperatureUnit),
           }
         : undefined,
     windGust:
@@ -111,10 +118,11 @@ export function WeatherDetails({
     <div className="flex w-full items-end justify-between gap-4">
       <div className="min-w-0 shrink-0">
         <div className="mb-1 text-3xl font-bold leading-none" style={titleStyle}>
-          {temperature}°C
+          {formatTemperature(temperature, temperatureUnit)}
         </div>
         <div className="mb-0.5 text-sm" style={subtitleStyle}>
-          H:{highTemp}° L:{lowTemp}°
+          H:{formatTemperatureValue(highTemp, temperatureUnit)}° L:
+          {formatTemperatureValue(lowTemp, temperatureUnit)}°
         </div>
         {rainForecast ? (
           <div className="text-sm" style={subtitleStyle}>

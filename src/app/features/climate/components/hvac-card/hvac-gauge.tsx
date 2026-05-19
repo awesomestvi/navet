@@ -5,6 +5,7 @@ import { getHVACGaugeSurfaceTokens } from '@/app/components/shared/theme/hvac-ca
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useI18n, useTheme } from '@/app/hooks';
+import { getTemperatureUnitSymbol, type TemperatureUnit } from '@/app/utils/temperature';
 import {
   getHVACBackgroundGlowColor,
   getHVACGaugeColor,
@@ -22,6 +23,7 @@ interface HVACGaugeProps {
   maxTemp?: number;
   step?: number;
   helperText?: string;
+  temperatureUnit?: TemperatureUnit;
   onTargetTempChange?: (temp: number) => void;
   onTargetTempCommit?: (temp: number) => void;
   variant?: 'card' | 'immersive' | 'docked-card' | 'docked-card-small';
@@ -76,6 +78,7 @@ export const HVACGauge = memo(function HVACGauge({
   maxTemp = 30,
   step = 0.5,
   helperText,
+  temperatureUnit = 'celsius',
   onTargetTempChange,
   onTargetTempCommit,
   variant = 'card',
@@ -91,7 +94,11 @@ export const HVACGauge = memo(function HVACGauge({
   const tone = !isOn ? 'neutral' : mode === 'heat' ? 'orange' : mode === 'cool' ? 'cyan' : 'blue';
   const textTokens = getCardReadableTextTokens({ theme, tone, accentColor });
   const hvacGaugeSurface = getHVACGaugeSurfaceTokens(theme, textTokens.titleColor);
-  const gaugeLabel = t('climate.gaugeLabel', { mode, temp: targetTemp });
+  const temperatureUnitSymbol = getTemperatureUnitSymbol(temperatureUnit);
+  const gaugeLabel = t('climate.gaugeLabel', {
+    mode,
+    temp: `${formatDisplayTemperature(targetTemp)}${temperatureUnitSymbol}`,
+  });
   const progress = clamp((targetTemp - minTemp) / Math.max(maxTemp - minTemp, step || 0.5), 0, 1);
 
   if (variant === 'immersive' || variant === 'docked-card' || variant === 'docked-card-small') {
@@ -173,11 +180,15 @@ export const HVACGauge = memo(function HVACGauge({
                   : 'none',
             }}
           >
-            {formatDisplayTemperature(currentTemp)}°
+            {formatDisplayTemperature(currentTemp)}
+            {temperatureUnitSymbol}
           </div>
 
           <div className="mt-0.5 text-xs" style={{ color: textTokens.subtitleColor }}>
-            {helperText ?? t('climate.currentTemperature', { temp: currentTemp })}
+            {helperText ??
+              t('climate.currentTemperature', {
+                temp: `${formatDisplayTemperature(currentTemp)}${temperatureUnitSymbol}`,
+              })}
           </div>
         </div>
 
@@ -300,14 +311,17 @@ export const HVACGauge = memo(function HVACGauge({
               textShadow: isOn && theme !== 'light' ? `0 0 20px ${textShadow}` : 'none',
             }}
           >
-            {formatDisplayTemperature(targetTemp)}°
+            {formatDisplayTemperature(targetTemp)}
+            {temperatureUnitSymbol}
           </div>
         </div>
         <div
           className={`mt-2 text-xs ${currentTempColor}`}
           style={{ color: textTokens.subtitleColor }}
         >
-          {t('climate.currentTemperature', { temp: currentTemp })}
+          {t('climate.currentTemperature', {
+            temp: `${formatDisplayTemperature(currentTemp)}${temperatureUnitSymbol}`,
+          })}
         </div>
       </div>
     </div>

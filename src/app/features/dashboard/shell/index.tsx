@@ -1,14 +1,139 @@
-import { memo } from 'react';
+import { AlertCircle, ArrowUpRight } from 'lucide-react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Header } from '@/app/components/layout/header';
 import { Sidebar } from '@/app/components/layout/sidebar';
 import { useHeaderController } from '@/app/components/layout/use-header-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { cn } from '@/app/components/ui/utils';
+import { type PrimaryColor, type ThemeType, useTheme } from '@/app/hooks';
+import { isHomeAssistantAddonMode } from '@/app/runtime/app-mode';
 import { useSettingsStore } from '@/app/stores';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
+import { storage } from '@/app/utils/storage';
+import { sanitizeExternalUrl } from '@/app/utils/url-security';
 import type { DashboardLayoutProps } from './types';
+
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)]\(([^)]+)\)/;
+const CUSTOM_PANEL_TOPBAR_ENABLED = false;
+const CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY = 'navet:custom-panel-topbar-dismissed-at';
+const CUSTOM_PANEL_TOPBAR_DISMISS_MS = 6 * 60 * 60 * 1000;
+
+function CustomPanelTopbar({
+  dismissLabel,
+  message,
+  onDismiss,
+  primaryColor,
+  title,
+  theme,
+}: {
+  dismissLabel: string;
+  message: string;
+  onDismiss: () => void;
+  primaryColor: PrimaryColor;
+  title: string;
+  theme: ThemeType;
+}) {
+  const surface = getThemeSurfaceTokens(theme);
+  const accentColor = getThemeColorValue(primaryColor);
+  const linkMatch = message.match(MARKDOWN_LINK_PATTERN);
+  const linkStart = linkMatch?.index ?? -1;
+  const hasLink = Boolean(linkMatch && linkStart >= 0);
+  const linkLabel = linkMatch?.[1] ?? '';
+  const linkHref = hasLink ? sanitizeExternalUrl(linkMatch?.[2]) : null;
+  const beforeLink = hasLink
+    ? message
+        .slice(0, linkStart)
+        .replace('The Home Assistant add-on will be phased out gradually. ', '')
+        .trimEnd()
+    : message;
+  const afterLink = hasLink && linkMatch ? message.slice(linkStart + linkMatch[0].length) : '';
+  const barClassName = cn(
+    'fixed inset-x-0 top-0 z-[70] border-b',
+    surface.shellPanel,
+    theme === 'glass' || theme === 'light' ? 'backdrop-blur-xl' : '',
+    theme === 'light'
+      ? 'shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)]'
+      : theme === 'black'
+        ? 'shadow-none'
+        : 'shadow-[0_18px_48px_-34px_rgba(0,0,0,0.68)]'
+  );
+  const iconBackground =
+    theme === 'light'
+      ? `${accentColor}14`
+      : theme === 'black'
+        ? `${accentColor}22`
+        : `${accentColor}26`;
+  const iconBorder = theme === 'light' ? `${accentColor}38` : `${accentColor}44`;
+
+  return (
+    <div
+      className={barClassName}
+      style={{
+        boxShadow:
+          theme === 'black'
+            ? undefined
+            : `0 18px 48px -38px ${accentColor}66, inset 0 -1px 0 ${accentColor}18`,
+      }}
+    >
+      <div className="mx-auto flex h-8 max-w-screen-2xl items-center justify-center overflow-hidden px-3 text-[0.72rem] leading-none md:h-9 md:px-6 md:text-xs">
+        <div className="flex min-w-0 items-center justify-center gap-2 text-center">
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+            style={{ backgroundColor: iconBackground, borderColor: iconBorder }}
+            aria-hidden="true"
+          >
+            <AlertCircle className="h-3 w-3" style={{ color: accentColor }} />
+          </span>
+          <div className={cn('min-w-0 truncate', surface.textSecondary)}>
+            <span className={cn('font-semibold', surface.textPrimary)}>{title}</span>
+            <span className="mx-1.5 opacity-50" aria-hidden="true">
+              |
+            </span>
+            <span>{beforeLink}</span>
+            {hasLink && linkMatch ? (
+              <>
+                {linkHref ? (
+                  <>
+                    {' '}
+                    <a
+                      href={linkHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-0.5 align-baseline font-semibold underline decoration-current/30 underline-offset-4 transition-opacity hover:opacity-80"
+                      style={{ color: accentColor }}
+                    >
+                      {linkLabel}
+                      <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    </a>
+                  </>
+                ) : (
+                  ` ${linkLabel}`
+                )}
+                {afterLink}
+              </>
+            ) : null}
+            <span className="mx-1.5 opacity-50" aria-hidden="true">
+              |
+            </span>
+            <button
+              type="button"
+              onClick={onDismiss}
+              aria-label={dismissLabel}
+              className={cn(
+                'text-[0.68rem] font-medium opacity-70 transition-opacity hover:opacity-100 md:text-[0.72rem]',
+                surface.textSecondary
+              )}
+            >
+              {dismissLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Dashboard Layout Component
@@ -35,6 +160,41 @@ export const DashboardLayout = memo(function DashboardLayout({
   const isLowEffects = resolvedEffectsQuality === 'low';
   const showSharedGlassBlur = isGlass && resolvedEffectsQuality === 'high';
   const headerController = useHeaderController();
+  const [customPanelTopbarDismissedAt, setCustomPanelTopbarDismissedAt] = useState(() =>
+    storage.get<number | null>(CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY, null)
+  );
+  const isCustomPanelTopbarDismissed =
+    typeof customPanelTopbarDismissedAt === 'number' &&
+    Date.now() - customPanelTopbarDismissedAt < CUSTOM_PANEL_TOPBAR_DISMISS_MS;
+  const showCustomPanelTopbar =
+    CUSTOM_PANEL_TOPBAR_ENABLED && isHomeAssistantAddonMode() && !isCustomPanelTopbarDismissed;
+  const dismissCustomPanelTopbar = useCallback(() => {
+    const dismissedAt = Date.now();
+    storage.set(CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY, dismissedAt);
+    setCustomPanelTopbarDismissedAt(dismissedAt);
+  }, []);
+
+  useEffect(() => {
+    if (typeof customPanelTopbarDismissedAt !== 'number') {
+      return;
+    }
+
+    const remainingMs =
+      CUSTOM_PANEL_TOPBAR_DISMISS_MS - (Date.now() - customPanelTopbarDismissedAt);
+
+    if (remainingMs <= 0) {
+      storage.remove(CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY);
+      setCustomPanelTopbarDismissedAt(null);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      storage.remove(CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY);
+      setCustomPanelTopbarDismissedAt(null);
+    }, remainingMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [customPanelTopbarDismissedAt]);
 
   const bgColor =
     theme === 'light'
@@ -131,7 +291,18 @@ export const DashboardLayout = memo(function DashboardLayout({
       )}
 
       {/* Content */}
-      <div className="relative z-10 overflow-x-clip">
+      <div className={cn('relative z-10 overflow-x-clip', showCustomPanelTopbar && 'pt-8 md:pt-9')}>
+        {showCustomPanelTopbar ? (
+          <CustomPanelTopbar
+            dismissLabel="Dismiss"
+            title={headerController.t('notifications.navet.addonPhaseOut.title')}
+            message={headerController.t('notifications.navet.addonPhaseOut.message')}
+            onDismiss={dismissCustomPanelTopbar}
+            primaryColor={primaryColor}
+            theme={theme}
+          />
+        ) : null}
+
         <Sidebar
           activeColorValue={headerController.activeColorValue}
           handleClearSearch={headerController.handleClearSearch}
@@ -148,6 +319,7 @@ export const DashboardLayout = memo(function DashboardLayout({
           setIsSearchFocused={headerController.setIsSearchFocused}
           textPrimary={headerController.textPrimary}
           textSecondary={headerController.textSecondary}
+          topbarVisible={showCustomPanelTopbar}
         />
 
         <div className="safe-area-pt-5 min-w-0 flex flex-col gap-3.5 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8">

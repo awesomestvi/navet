@@ -54,12 +54,12 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         </div>
 
         {config?.url ? (
-          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:gap-3">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <a
               href={config.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
             >
               <ExternalLink className="h-4 w-4" />
               <span>{t('settings.system.connection.openHomeAssistant')}</span>
@@ -68,7 +68,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
             <button
               type="button"
               onClick={handleResetConnection}
-              className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
             >
               <Settings2 className="h-4 w-4" />
               <span>{t('settings.system.connection.reset')}</span>
@@ -85,7 +85,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         <button
           type="button"
           onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-4 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12"
+          className="inline-flex h-9 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12"
         >
           <LogOut className="h-4 w-4" />
           <span>{t('settings.project.logout')}</span>

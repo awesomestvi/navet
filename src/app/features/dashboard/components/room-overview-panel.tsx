@@ -2,7 +2,10 @@ import { Droplets, Thermometer } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { formatTemperature } from '@/app/utils/temperature';
 
 interface RoomOverviewPanelProps {
   room: string;
@@ -66,6 +69,7 @@ export const RoomOverviewPanel = memo(function RoomOverviewPanel({
   deviceMap,
 }: RoomOverviewPanelProps) {
   const { theme } = useTheme();
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const surface = getThemeSurfaceTokens(theme);
   const { temperature, humidity } = useMemo(
     () => getRoomAmbientMetrics(orderedCardIds, deviceMap),
@@ -76,7 +80,7 @@ export const RoomOverviewPanel = memo(function RoomOverviewPanel({
     {
       id: 'temperature',
       label: 'Temperature',
-      value: temperature !== null ? `${Math.round(temperature)}°C` : null,
+      value: temperature !== null ? formatTemperature(temperature, temperatureUnit) : null,
       icon: Thermometer,
     },
     {

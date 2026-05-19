@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react';
+import { formatTemperatureValue, type TemperatureUnit } from '@/app/utils/temperature';
 import type { ForecastDay } from './index';
 import { WeatherIcon } from './weather-icon';
 
 interface WeatherForecastRowProps {
   forecast: ForecastDay[];
+  temperatureUnit: TemperatureUnit;
   showHourlyForecast: boolean;
   isSmall: boolean;
   isMedium: boolean;
@@ -16,6 +18,7 @@ interface WeatherForecastRowProps {
 
 export function WeatherForecastRow({
   forecast,
+  temperatureUnit,
   showHourlyForecast,
   isSmall,
   isMedium,
@@ -55,14 +58,14 @@ export function WeatherForecastRow({
           />
           {showHourlyForecast ? (
             <div className={`${compactForecastValueClassName} font-medium`} style={titleStyle}>
-              {day.high}°
+              {formatTemperatureValue(day.high, temperatureUnit)}°
             </div>
           ) : (
             <div className={`${weeklyValueClassName} ${compactForecastValueClassName}`}>
               <span className="font-medium" style={titleStyle}>
-                {day.high}°
+                {formatTemperatureValue(day.high, temperatureUnit)}°
               </span>
-              <span style={subtitleStyle}>{day.low}°</span>
+              <span style={subtitleStyle}>{formatTemperatureValue(day.low, temperatureUnit)}°</span>
             </div>
           )}
         </div>

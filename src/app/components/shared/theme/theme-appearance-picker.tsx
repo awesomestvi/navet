@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { ColorInputSwatch } from '@/app/components/primitives/color-input-swatch';
 import type { PrimaryColorOption, ThemeOption } from '@/app/constants/theme-options';
 import { useI18n } from '@/app/hooks';
@@ -16,12 +17,43 @@ interface ThemeAppearancePickerProps {
   onAccentChange: (accent: PrimaryColor) => void;
   onCustomAccentChange: (accent: string | null) => void;
   onThemeChange: (theme: ThemeType) => void;
-  lead?: React.ReactNode;
+  lead?: ReactNode;
   followSystemTheme?: boolean;
   onFollowSystemThemeChange?: (follow: boolean) => void;
 }
 
 const CUSTOM_ACCENT_CHANGE_DEBOUNCE_MS = 120;
+const THEME_PICKER_PILL_CLASS_NAME =
+  'inline-flex h-9 items-center justify-center rounded-full border px-3.5 text-sm font-medium transition-all';
+
+interface ThemeAppearancePickerPillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  active: boolean;
+  children: ReactNode;
+  pickerTokens: ReturnType<typeof getThemeAppearancePickerTokens>;
+}
+
+function ThemeAppearancePickerPill({
+  active,
+  children,
+  className = '',
+  pickerTokens,
+  style,
+  ...props
+}: ThemeAppearancePickerPillProps) {
+  return (
+    <button
+      type="button"
+      className={`${THEME_PICKER_PILL_CLASS_NAME} ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} ${
+        active ? 'shadow-sm' : pickerTokens.optionCardClassName
+      } ${className}`}
+      style={active ? { ...pickerTokens.activeOptionStyle, ...style } : style}
+      aria-pressed={active}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function ThemeAppearancePicker({
   colorOptions,
@@ -87,16 +119,14 @@ export function ThemeAppearancePicker({
                 const isActive = followSystemTheme === option.value;
 
                 return (
-                  <button
+                  <ThemeAppearancePickerPill
                     key={option.title}
-                    type="button"
+                    active={isActive}
+                    pickerTokens={pickerTokens}
                     onClick={() => onFollowSystemThemeChange(option.value)}
-                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} ${!isActive ? pickerTokens.optionCardClassName : ''}`}
-                    style={isActive ? pickerTokens.activeOptionStyle : undefined}
-                    aria-pressed={isActive}
                   >
                     {option.title}
-                  </button>
+                  </ThemeAppearancePickerPill>
                 );
               })}
             </div>
@@ -143,19 +173,16 @@ export function ThemeAppearancePicker({
               const optionLabel = t(option.labelKey);
 
               return (
-                <button
+                <ThemeAppearancePickerPill
                   key={option.value}
-                  type="button"
+                  active={isActive}
+                  pickerTokens={pickerTokens}
                   onClick={() => onThemeChange(option.value)}
                   disabled={manualThemeLocked}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} ${!isActive ? pickerTokens.optionCardClassName : ''} ${
-                    manualThemeLocked ? 'cursor-not-allowed opacity-50' : ''
-                  }`}
-                  style={isActive ? pickerTokens.activeOptionStyle : undefined}
-                  aria-pressed={isActive}
+                  className={manualThemeLocked ? 'cursor-not-allowed opacity-50' : ''}
                 >
                   {optionLabel}
-                </button>
+                </ThemeAppearancePickerPill>
               );
             })}
           </div>

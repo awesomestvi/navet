@@ -3,13 +3,9 @@ import { shallow } from 'zustand/shallow';
 import { selectUpdateDomainEntities } from '@/app/hooks/ha-domain-entity-maps';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useI18n } from '@/app/i18n';
-import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HaNotificationData } from './use-ha-notification-data';
 import type { Notification } from './use-notifications';
-
-const ADDON_PHASE_OUT_NOTIFICATION_ID = 'navet:addon-phase-out';
-const ADDON_PHASE_OUT_NOTIFICATION_TIMESTAMP = new Date('2026-05-19T00:00:00Z');
 
 const inferNotificationType = (
   entityId: string,
@@ -62,26 +58,10 @@ export function useNotificationList({
   const updateEntities = useHomeAssistant(selectUpdateDomainEntities, shallow);
 
   return useMemo<Notification[]>(() => {
-    const navetNotifications: Notification[] = !isHomeAssistantPanelMode()
-      ? [
-          {
-            id: ADDON_PHASE_OUT_NOTIFICATION_ID,
-            notificationId: ADDON_PHASE_OUT_NOTIFICATION_ID,
-            source: 'navet',
-            type: 'warning',
-            title: t('notifications.navet.addonPhaseOut.title'),
-            message: t('notifications.navet.addonPhaseOut.message'),
-            timestamp: ADDON_PHASE_OUT_NOTIFICATION_TIMESTAMP,
-            read: readNotifications.includes(ADDON_PHASE_OUT_NOTIFICATION_ID),
-          },
-        ]
-      : [];
-
     if (
       !hassEntitiesHydrated &&
       persistentNotifications.length === 0 &&
-      repairIssues.length === 0 &&
-      navetNotifications.length === 0
+      repairIssues.length === 0
     ) {
       return [];
     }
@@ -231,12 +211,7 @@ export function useNotificationList({
         };
       });
 
-    return [
-      ...navetNotifications,
-      ...livePersistentNotifications,
-      ...liveRepairNotifications,
-      ...updateNotifications,
-    ]
+    return [...livePersistentNotifications, ...liveRepairNotifications, ...updateNotifications]
       .filter((notification) => !hiddenNotifications.includes(notification.id))
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }, [

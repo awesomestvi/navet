@@ -9,7 +9,8 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import { useVacuumControl } from '../vacuum/use-vacuum-control';
 import { VacuumControlsMedium } from '../vacuum/vacuum-controls-medium';
 import { VacuumControlsSmall } from '../vacuum/vacuum-controls-small';
@@ -177,6 +178,7 @@ export const VacuumCard = memo(function VacuumCard({
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const liveStatus = normalizeVacuumStatus(
     (typeof liveAttrs?.status === 'string' && liveAttrs.status) ||
@@ -204,6 +206,7 @@ export const VacuumCard = memo(function VacuumCard({
     fallbackNextCleaning: nextCleaning,
     fallbackWaterLevel: waterLevel,
     fallbackBinLevel: binLevel,
+    use24HourTime,
     entities: allEntities,
     entityRegistry,
   });

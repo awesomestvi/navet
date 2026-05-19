@@ -25,6 +25,11 @@ function resolveProxyPath(path: string) {
   return resolveIngressAwarePath(`${HOME_ASSISTANT_PROXY_PATH}${path}`);
 }
 
+function stripHomeAssistantProxyPath(path: string) {
+  const unproxiedPath = path.slice(HOME_ASSISTANT_PROXY_PATH.length);
+  return unproxiedPath.startsWith('/') ? unproxiedPath : `/${unproxiedPath}`;
+}
+
 export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: string) {
   if (!resourceUrl) {
     return null;
@@ -40,6 +45,11 @@ export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: s
 
   if (resourceUrl.startsWith('blob:') || resourceUrl.startsWith('data:')) {
     return safeImageUrl;
+  }
+
+  if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH) && isHomeAssistantPanelMode()) {
+    const [proxyPath = '', proxyQuery = ''] = resourceUrl.split('?');
+    return `${stripHomeAssistantProxyPath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
   }
 
   if (
@@ -76,6 +86,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
 
   if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
     const [proxyPath = '', proxyQuery = ''] = resourceUrl.split('?');
+    if (isHomeAssistantPanelMode()) {
+      return `${stripHomeAssistantProxyPath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
+    }
+
     return `${resolveIngressAwarePath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
   }
 
@@ -108,6 +122,15 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
     const resolvedHassUrl = new URL(hassUrl);
     const currentOrigin =
       typeof window !== 'undefined' ? window.location.origin : resolvedHassUrl.origin;
+
+    if (
+      isHomeAssistantPanelMode() &&
+      resolvedResourceUrl.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH) &&
+      (resolvedResourceUrl.origin === currentOrigin ||
+        resolvedResourceUrl.origin === resolvedHassUrl.origin)
+    ) {
+      return `${stripHomeAssistantProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
+    }
 
     if (resolvedResourceUrl.origin === currentOrigin) {
       return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;

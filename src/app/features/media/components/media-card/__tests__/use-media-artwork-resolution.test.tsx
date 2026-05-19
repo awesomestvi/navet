@@ -17,6 +17,7 @@ describe('useMediaArtworkResolution', () => {
   beforeEach(() => {
     fetchMediaThumbnailDataUrlMock.mockReset();
     vi.restoreAllMocks();
+    window.__NAVET_PANEL__ = false;
     useAuthStore.setState({
       config: null,
       isAuthenticated: false,
@@ -87,6 +88,41 @@ describe('useMediaArtworkResolution', () => {
     });
     expect(fetchMock).toHaveBeenCalledWith(
       '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        headers: { Authorization: 'Bearer session-token' },
+      }
+    );
+  });
+
+  it('does not use the Home Assistant dev proxy for authenticated artwork fetches in panel mode', async () => {
+    window.__NAVET_PANEL__ = true;
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/panel-album-art');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/panel-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
         headers: { Authorization: 'Bearer session-token' },
       }

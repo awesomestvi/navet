@@ -86,4 +86,26 @@ describe('resolveVacuumGlanceMetrics', () => {
     expect(metrics.waterLevel).toEqual({ value: 'low', isWarning: true });
     expect(metrics.binLevel).toEqual({ value: '86%', percentage: 86, isWarning: true });
   });
+
+  it('formats scheduled cleanings with the selected 12-hour preference', () => {
+    const metrics = resolveVacuumGlanceMetrics({
+      vacuumEntityId: 'vacuum.roborock',
+      fallbackBattery: 100,
+      fallbackNextCleaning: '2026-05-17T13:00:00.000Z',
+      use24HourTime: false,
+    });
+
+    expect(metrics.nextCleaning).toMatch(/[AP]M$/);
+  });
+
+  it('formats scheduled cleanings with the selected 24-hour preference', () => {
+    const metrics = resolveVacuumGlanceMetrics({
+      vacuumEntityId: 'vacuum.roborock',
+      fallbackBattery: 100,
+      fallbackNextCleaning: '2026-05-17T13:00:00.000Z',
+      use24HourTime: true,
+    });
+
+    expect(metrics.nextCleaning).not.toMatch(/[AP]M$/);
+  });
 });

@@ -2,9 +2,11 @@ import type { TranslateFn } from '@/app/hooks';
 
 export function getHvacTemperatureStatusLabel(
   t: TranslateFn,
-  targetTemp: number,
-  currentTemp: number,
-  visualMode?: string
+  targetTemp: string | number,
+  currentTemp: string | number,
+  visualMode?: string,
+  comparisonTargetTemp = Number(targetTemp),
+  comparisonCurrentTemp = Number(currentTemp)
 ) {
   if (visualMode === 'cool') {
     return t('climate.coolingDownTo', { temp: targetTemp });
@@ -14,7 +16,7 @@ export function getHvacTemperatureStatusLabel(
     return t('climate.heatingTo', { temp: targetTemp });
   }
 
-  return targetTemp < currentTemp
+  return comparisonTargetTemp < comparisonCurrentTemp
     ? t('climate.coolingDownTo', { temp: targetTemp })
     : t('climate.heatingTo', { temp: targetTemp });
 }

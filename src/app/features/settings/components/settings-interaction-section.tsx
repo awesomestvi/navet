@@ -1,6 +1,6 @@
 import { Hand } from 'lucide-react';
 import { InteractionPreviewCard } from '@/app/components/patterns/interaction-preview-card';
-import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { useI18n } from '@/app/hooks';
 import type {
   SettingsInteractionOption,
@@ -15,7 +15,6 @@ interface SettingsInteractionSectionProps {
 export function SettingsInteractionSection({ controller }: SettingsInteractionSectionProps) {
   const { t } = useI18n();
   const { entityInteractionMode, styles, theme, updateSettings } = controller;
-  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
   const interactionOptions: SettingsInteractionOption[] = [
     { value: 'toggle-first', label: t('settings.dashboard.interaction.toggleFirst') },
     { value: 'control-first', label: t('settings.dashboard.interaction.controlFirst') },
@@ -39,18 +38,15 @@ export function SettingsInteractionSection({ controller }: SettingsInteractionSe
             {interactionOptions.map((option) => {
               const isActive = entityInteractionMode === option.value;
               return (
-                <button
-                  type="button"
+                <InteractivePill
                   key={option.value}
+                  active={isActive}
+                  size="small"
                   onClick={() => updateSettings({ entityInteractionMode: option.value })}
-                  style={isActive ? pillTokens.activeOptionStyle : undefined}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                    isActive ? 'shadow-sm' : ''
-                  }`}
                   aria-pressed={isActive}
                 >
                   {option.label}
-                </button>
+                </InteractivePill>
               );
             })}
           </div>

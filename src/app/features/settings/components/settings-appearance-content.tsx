@@ -1,8 +1,8 @@
 import { Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import { Button } from '@/app/components/primitives/button';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { ThemeAppearancePicker } from '@/app/components/shared/theme/theme-appearance-picker';
-import { getThemeAppearancePickerTokens } from '@/app/components/shared/theme/theme-appearance-picker-tokens';
 import { useI18n } from '@/app/hooks';
 import type { EffectsQuality } from '@/app/stores/settings-store';
 import { detectDeviceTier } from '@/app/utils/detect-device-tier';
@@ -83,9 +83,8 @@ export function AppearanceEffectsQualityItem({
   controller: SettingsSectionController;
 }) {
   const { t } = useI18n();
-  const { effectsQuality, styles, theme, updateSettings } = controller;
+  const { effectsQuality, styles, updateSettings } = controller;
   const detectedTier = useMemo(() => detectDeviceTier(), []);
-  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
   const qualityOptions: Array<{ value: EffectsQuality; label: string }> = [
     { value: 'high', label: t('settings.system.effectsQuality.high') },
     { value: 'medium', label: t('settings.system.effectsQuality.medium') },
@@ -103,23 +102,20 @@ export function AppearanceEffectsQualityItem({
           {qualityOptions.map((option) => {
             const isActive = effectsQuality === option.value;
             return (
-              <button
-                type="button"
+              <InteractivePill
                 key={option.label}
+                active={isActive}
+                size="small"
                 onClick={() =>
                   updateSettings({
                     effectsQuality: option.value,
                     ...getLegacyReducedEffectsFlags(option.value),
                   })
                 }
-                style={isActive ? pillTokens.activeOptionStyle : undefined}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                  isActive ? 'shadow-sm' : ''
-                }`}
                 aria-pressed={isActive}
               >
                 {option.label}
-              </button>
+              </InteractivePill>
             );
           })}
         </div>
@@ -134,10 +130,9 @@ export function AppearanceEffectsQualityItem({
 
 export function AppearanceAmbienceItem({ controller }: { controller: SettingsSectionController }) {
   const { t } = useI18n();
-  const { ambientLightBleed, effectsQuality, styles, theme, updateSettings } = controller;
+  const { ambientLightBleed, effectsQuality, styles, updateSettings } = controller;
   const ambienceDisabled = effectsQuality !== 'high';
   const effectiveAmbientLightBleed = ambientLightBleed && !ambienceDisabled;
-  const pillTokens = getThemeAppearancePickerTokens(theme, styles.accentColor);
 
   return (
     <SettingsItem
@@ -153,19 +148,16 @@ export function AppearanceAmbienceItem({ controller }: { controller: SettingsSec
           ].map((option) => {
             const isActive = effectiveAmbientLightBleed === option.value;
             return (
-              <button
-                type="button"
+              <InteractivePill
                 key={option.label}
+                active={isActive}
+                size="small"
                 onClick={() => updateSettings({ ambientLightBleed: option.value })}
                 disabled={ambienceDisabled}
-                style={isActive ? pillTokens.activeOptionStyle : undefined}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all md:px-5 ${pillTokens.textClassName} ${pillTokens.optionBorderClassName} ${!isActive ? pillTokens.optionCardClassName : ''} ${
-                  isActive ? 'shadow-sm' : ''
-                } ${ambienceDisabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 aria-pressed={isActive}
               >
                 {option.label}
-              </button>
+              </InteractivePill>
             );
           })}
         </div>

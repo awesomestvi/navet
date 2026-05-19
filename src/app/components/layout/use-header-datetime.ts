@@ -73,7 +73,7 @@ export function useHeaderDateTime() {
   );
 
   const formattedTime = useMemo(
-    () => formatTime(currentDateTime, { hour: '2-digit', minute: '2-digit' }, false),
+    () => formatTime(currentDateTime, { hour: '2-digit', minute: '2-digit' }),
     [currentDateTime, formatTime]
   );
 

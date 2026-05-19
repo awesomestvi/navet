@@ -46,12 +46,12 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
         description={t('settings.dashboard.entityVisibility.description')}
         styles={styles}
       >
-        <div className="flex flex-wrap gap-2.5 md:gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setShowRevealAllConfirm(true)}
             disabled={hiddenEntityIds.length === 0}
-            className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${
+            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium transition-colors ${
               hiddenEntityIds.length === 0
                 ? 'cursor-not-allowed opacity-50'
                 : `border ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`
@@ -63,7 +63,7 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
           <button
             type="button"
             onClick={() => setShowRestartOnboardingConfirm(true)}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
           >
             <Scale className="h-4 w-4" />
             <span>{t('settings.dashboard.entityVisibility.restartOnboarding')}</span>
@@ -127,21 +127,21 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
           {t('settings.dashboard.backup.body')}
         </p>
 
-        <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:gap-3 md:mt-5">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row md:mt-5">
           <button
             type="button"
             onClick={handleExportDashboardConfig}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
           >
-            <Download className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
             <span>{t('settings.dashboard.backup.export')}</span>
           </button>
           <button
             type="button"
             onClick={() => importInputRef.current?.click()}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors md:px-5 md:py-3 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
           >
-            <Upload className="h-4 w-4" />
+            <Download className="h-4 w-4" />
             <span>{t('settings.dashboard.backup.import')}</span>
           </button>
           <input

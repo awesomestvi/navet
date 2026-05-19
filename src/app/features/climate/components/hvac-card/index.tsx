@@ -54,9 +54,11 @@ export const HVACCard = memo(function HVACCard({
   const stateSurface = getCardStateSurfaceTokens(controller.theme, controller.isOn);
   const targetTemperatureLabel = getHvacTemperatureStatusLabel(
     t,
+    controller.formatTemperature(controller.targetTemp),
+    controller.formatTemperature(controller.currentTemp),
+    controller.visualMode,
     controller.targetTemp,
-    controller.currentTemp,
-    controller.visualMode
+    controller.currentTemp
   );
   const tone = !controller.isOn
     ? 'neutral'
@@ -191,14 +193,15 @@ export const HVACCard = memo(function HVACCard({
                 <HVACGauge
                   id={id}
                   mode={controller.visualMode}
-                  targetTemp={controller.targetTemp}
-                  currentTemp={controller.currentTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  currentTemp={controller.displayCurrentTemp}
                   isOn={controller.isOn}
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
-                  onTargetTempChange={controller.setTargetTemp}
-                  onTargetTempCommit={controller.commitTargetTemp}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
+                  temperatureUnit={controller.temperatureUnit}
+                  onTargetTempChange={controller.setDisplayTargetTemp}
+                  onTargetTempCommit={controller.commitDisplayTargetTemp}
                   variant="docked-card-small"
                   className="pointer-events-auto absolute right-[-1.9rem] top-1/2 z-[2] -translate-y-1/2"
                 />
@@ -215,14 +218,15 @@ export const HVACCard = memo(function HVACCard({
                 <HVACGauge
                   id={id}
                   mode={controller.visualMode}
-                  targetTemp={controller.targetTemp}
-                  currentTemp={controller.currentTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  currentTemp={controller.displayCurrentTemp}
                   isOn={controller.isOn}
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
-                  onTargetTempChange={controller.setTargetTemp}
-                  onTargetTempCommit={controller.commitTargetTemp}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
+                  temperatureUnit={controller.temperatureUnit}
+                  onTargetTempChange={controller.setDisplayTargetTemp}
+                  onTargetTempCommit={controller.commitDisplayTargetTemp}
                   variant="docked-card-small"
                   className="pointer-events-auto absolute right-[-0.25rem] top-1/2 z-[2] -translate-y-1/2"
                 />
@@ -239,14 +243,15 @@ export const HVACCard = memo(function HVACCard({
                 <HVACGauge
                   id={id}
                   mode={controller.visualMode}
-                  targetTemp={controller.targetTemp}
-                  currentTemp={controller.currentTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  currentTemp={controller.displayCurrentTemp}
                   isOn={controller.isOn}
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
-                  onTargetTempChange={controller.setTargetTemp}
-                  onTargetTempCommit={controller.commitTargetTemp}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
+                  temperatureUnit={controller.temperatureUnit}
+                  onTargetTempChange={controller.setDisplayTargetTemp}
+                  onTargetTempCommit={controller.commitDisplayTargetTemp}
                   variant="docked-card"
                   className="pointer-events-auto absolute right-[-3.4rem] top-1/2 z-[2] -translate-y-1/2"
                 />

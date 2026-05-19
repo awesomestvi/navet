@@ -13,7 +13,15 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
+import {
+  convertCelsiusToTemperatureUnit,
+  convertTemperatureUnitToCelsius,
+  formatTemperature,
+  formatTemperatureValue,
+} from '@/app/utils/temperature';
 import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { HVACModeControls } from '../hvac-card/hvac-mode-controls';
@@ -43,6 +51,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
 }: HVACSettingsDialogProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const visualMode = useHvacVisualMode({
@@ -66,6 +75,22 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const styles = getHVACSettingsDialogStyles(visualMode, isOn);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
   const [activeTab, setActiveTab] = useState('hvac');
+  const displayTargetTemp = convertCelsiusToTemperatureUnit(targetTemp, temperatureUnit);
+  const displayCurrentTemp = convertCelsiusToTemperatureUnit(currentTemp, temperatureUnit);
+  const displayMinTemp = convertCelsiusToTemperatureUnit(minTemp, temperatureUnit);
+  const displayMaxTemp = convertCelsiusToTemperatureUnit(maxTemp, temperatureUnit);
+  const displayStep = Math.abs(
+    convertCelsiusToTemperatureUnit(step, temperatureUnit) -
+      convertCelsiusToTemperatureUnit(0, temperatureUnit)
+  );
+  const handleDisplayTargetTempChange = (nextTemp: number) => {
+    onTargetTempChange(convertTemperatureUnitToCelsius(nextTemp, temperatureUnit));
+  };
+  const handleDisplayTargetTempCommit = (nextTemp: number) => {
+    (onTargetTempCommit ?? onTargetTempChange)(
+      convertTemperatureUnitToCelsius(nextTemp, temperatureUnit)
+    );
+  };
 
   return (
     <DialogShell
@@ -105,15 +130,23 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                 <HVACGauge
                   id={entityId}
                   mode={visualMode}
-                  targetTemp={targetTemp}
-                  currentTemp={currentTemp}
+                  targetTemp={displayTargetTemp}
+                  currentTemp={displayCurrentTemp}
                   isOn={isOn}
-                  minTemp={minTemp}
-                  maxTemp={maxTemp}
-                  step={step}
-                  helperText={getHvacTemperatureStatusLabel(t, targetTemp, currentTemp, visualMode)}
-                  onTargetTempChange={onTargetTempChange}
-                  onTargetTempCommit={onTargetTempCommit}
+                  minTemp={displayMinTemp}
+                  maxTemp={displayMaxTemp}
+                  step={displayStep}
+                  temperatureUnit={temperatureUnit}
+                  helperText={getHvacTemperatureStatusLabel(
+                    t,
+                    formatTemperature(targetTemp, temperatureUnit),
+                    formatTemperature(currentTemp, temperatureUnit),
+                    visualMode,
+                    targetTemp,
+                    currentTemp
+                  )}
+                  onTargetTempChange={handleDisplayTargetTempChange}
+                  onTargetTempCommit={handleDisplayTargetTempCommit}
                   variant="immersive"
                 />
               </div>
@@ -124,14 +157,14 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                   leftContent={
                     <div className="flex items-center gap-2">
                       <HVACTempControls
-                        targetTemp={targetTemp}
-                        onTempChange={onTargetTempChange}
-                        onTempCommit={onTargetTempCommit}
+                        targetTemp={displayTargetTemp}
+                        onTempChange={handleDisplayTargetTempChange}
+                        onTempCommit={handleDisplayTargetTempCommit}
                         isOn={isOn}
                         size="medium"
-                        minTemp={minTemp}
-                        maxTemp={maxTemp}
-                        step={step}
+                        minTemp={displayMinTemp}
+                        maxTemp={displayMaxTemp}
+                        step={displayStep}
                       />
                       <HVACModeControls
                         mode={visualMode}
@@ -165,7 +198,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                                 : { color: dialogTextTokens.subtitleColor }
                             }
                           >
-                            {preset.value}°
+                            {formatTemperatureValue(preset.value, temperatureUnit)}°
                           </span>
                         </button>
                       );

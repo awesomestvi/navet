@@ -8,10 +8,12 @@ import {
   importDashboardConfigFromFile,
   importDashboardConfigFromUrl,
 } from '@/app/utils/dashboard-config';
+import { reloadWindow } from '@/app/utils/window-reload';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 
 type OnboardingTransition = 'all' | 'blank' | 'import' | null;
 const RUNTIME_CONFIG_IMPORT_ATTEMPT_KEY = 'navet-runtime-dashboard-config-import-attempt';
+const ONBOARDING_CONFIG_IMPORT_REVEAL_KEY = 'navet-onboarding-config-import-reveal';
 
 interface UseOnboardingControllerOptions {
   allEntityIds: string[];
@@ -32,6 +34,15 @@ export interface OnboardingController {
   onDismissImportedDashboardReveal: () => void;
 }
 
+function consumeOnboardingConfigImportRevealFlag() {
+  if (sessionStorage.getItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY) !== 'true') {
+    return false;
+  }
+
+  sessionStorage.removeItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY);
+  return true;
+}
+
 export function useOnboardingController({
   allEntityIds,
   changeRoom,
@@ -50,9 +61,13 @@ export function useOnboardingController({
     );
 
   const [onboardingTransition, setOnboardingTransition] = useState<OnboardingTransition>(null);
-  const [dashboardArrivalVariant, setDashboardArrivalVariant] =
-    useState<OnboardingTransition>(null);
-  const [showImportedDashboardReveal, setShowImportedDashboardReveal] = useState(false);
+  const [shouldShowImportedRevealAfterReload] = useState(consumeOnboardingConfigImportRevealFlag);
+  const [dashboardArrivalVariant, setDashboardArrivalVariant] = useState<OnboardingTransition>(
+    shouldShowImportedRevealAfterReload ? 'import' : null
+  );
+  const [showImportedDashboardReveal, setShowImportedDashboardReveal] = useState(
+    shouldShowImportedRevealAfterReload
+  );
   const runtimeConfigImportStarted = useRef(false);
 
   useEffect(() => {
@@ -73,7 +88,7 @@ export function useOnboardingController({
 
     void importDashboardConfigFromUrl(dashboardConfigUrl)
       .then(() => {
-        window.location.reload();
+        reloadWindow();
       })
       .catch((error) => {
         console.error('[OnboardingController] Runtime dashboard config import failed:', error);
@@ -100,7 +115,7 @@ export function useOnboardingController({
         await importDashboardConfigFromFile(file);
         toast.success(t('dashboard.feedback.configImported'));
         window.setTimeout(() => {
-          window.location.reload();
+          reloadWindow();
         }, 600);
       } catch (error) {
         console.error('[OnboardingController] Config import failed:', error);
@@ -114,17 +129,15 @@ export function useOnboardingController({
     async (file: File) => {
       try {
         await importDashboardConfigFromFile(file);
-        setActiveSection('home');
-        changeRoom(ALL_ROOMS_ID);
-        setDashboardArrivalVariant('import');
-        setOnboardingTransition('import');
+        sessionStorage.setItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY, 'true');
         toast.success(t('dashboard.feedback.configRestored'));
+        reloadWindow();
       } catch (error) {
         console.error('[OnboardingController] Config import failed:', error);
         toast.error(t('dashboard.feedback.configImportFailed'));
       }
     },
-    [changeRoom, setActiveSection, t]
+    [t]
   );
 
   const onCompleteOnboardingClose = useCallback(() => {

@@ -52,7 +52,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const locale = getLocaleForLanguage(language);
     const dictionary = MESSAGES[language];
     const defaultDateFormatter = new Intl.DateTimeFormat(locale);
-    const defaultDateTimeFormatter = new Intl.DateTimeFormat(locale);
+    const defaultDateTimeFormatter = new Intl.DateTimeFormat(locale, {
+      hour12: !use24HourTime,
+    });
     const defaultNumberFormatter = new Intl.NumberFormat(locale);
     const defaultRelativeTimeFormatter = new Intl.RelativeTimeFormat(locale);
     const defaultTimeFormatter = new Intl.DateTimeFormat(locale, {
@@ -81,7 +83,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           : defaultTimeFormatter.format(date),
       formatDateTime: (date, options) =>
         options
-          ? new Intl.DateTimeFormat(locale, options).format(date)
+          ? new Intl.DateTimeFormat(locale, {
+              ...options,
+              hour12: !use24HourTime,
+            }).format(date)
           : defaultDateTimeFormatter.format(date),
       formatNumber: (value, options) =>
         options

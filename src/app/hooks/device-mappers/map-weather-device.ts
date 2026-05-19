@@ -50,7 +50,10 @@ export function mapWeatherDevice(
   const effectiveForecastMode =
     weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0 ? 'hourly' : 'weekly';
 
-  const hourlyFormatter = new Intl.DateTimeFormat(locale, { hour: 'numeric' });
+  const hourlyFormatter = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    hour12: !use24HourTime,
+  });
   const weeklyFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
 
   const forecast = selectedForecastSource

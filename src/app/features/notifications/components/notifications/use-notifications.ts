@@ -11,7 +11,7 @@ export interface Notification {
   timestamp: Date;
   read: boolean;
   notificationId: string;
-  source: 'persistent_notification' | 'update' | 'repair' | 'navet';
+  source: 'persistent_notification' | 'update' | 'repair';
   isBusy?: boolean;
   progress?: number | null;
   statusLabel?: string;

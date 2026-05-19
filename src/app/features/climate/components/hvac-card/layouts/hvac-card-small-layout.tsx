@@ -36,7 +36,7 @@ export const HVACCardSmallLayout = memo(function HVACCardSmallLayout({
             className={`mb-1 text-3xl font-bold leading-none transition-colors duration-500 ${stateSurface.primaryTextClassName}`}
             style={{ color: readableTokens.titleColor }}
           >
-            {controller.currentTemp}°C
+            {controller.formatTemperature(controller.currentTemp)}
           </div>
           <div
             className={`text-xs ${stateSurface.secondaryTextClassName}`}
@@ -55,14 +55,14 @@ export const HVACCardSmallLayout = memo(function HVACCardSmallLayout({
             <CardActionRowGroup>
               <div className="relative z-[3]">
                 <HVACTempControls
-                  targetTemp={controller.targetTemp}
-                  onTempChange={controller.setTargetTemp}
-                  onTempCommit={controller.commitTargetTemp}
+                  targetTemp={controller.displayTargetTemp}
+                  onTempChange={controller.setDisplayTargetTemp}
+                  onTempCommit={controller.commitDisplayTargetTemp}
                   isOn={controller.isOn}
                   size="small"
-                  minTemp={controller.minTemp}
-                  maxTemp={controller.maxTemp}
-                  step={controller.step}
+                  minTemp={controller.displayMinTemp}
+                  maxTemp={controller.displayMaxTemp}
+                  step={controller.displayStep}
                 />
               </div>
             </CardActionRowGroup>

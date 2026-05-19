@@ -16,7 +16,14 @@ import {
 import { parseNumberish } from '@/app/hooks/ha-entity-utils';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
+import {
+  convertCelsiusToTemperatureUnit,
+  convertTemperatureUnitToCelsius,
+  formatTemperature,
+  formatTemperatureValue,
+} from '@/app/utils/temperature';
 import type { HVACCardProps } from './hvac-card.types';
 import { useHvacEntitySync } from './use-hvac-entity-sync';
 import { useHvacVisualMode } from './use-hvac-visual-mode';
@@ -88,6 +95,7 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const temperatureRange = useMemo(() => resolveClimateTemperatureRange(liveEntity), [liveEntity]);
   const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
   const pendingTargetTempRef = useRef<number | null>(null);
@@ -270,11 +278,30 @@ export function useHVACCardController({
             : 'bg-white/60'
         : 'bg-white/60'
       : undefined;
+  const displayMinTemp = convertCelsiusToTemperatureUnit(temperatureRange.minTemp, temperatureUnit);
+  const displayMaxTemp = convertCelsiusToTemperatureUnit(temperatureRange.maxTemp, temperatureUnit);
+  const displayStep = Math.abs(
+    convertCelsiusToTemperatureUnit(temperatureRange.step, temperatureUnit) -
+      convertCelsiusToTemperatureUnit(0, temperatureUnit)
+  );
+  const displayTargetTemp = convertCelsiusToTemperatureUnit(targetTemp, temperatureUnit);
+  const displayCurrentTemp = convertCelsiusToTemperatureUnit(currentTemp, temperatureUnit);
+
+  const updateDisplayTargetTemp = (nextTemp: number, immediate = false) => {
+    updateTargetTemp(convertTemperatureUnitToCelsius(nextTemp, temperatureUnit), immediate);
+  };
 
   return {
     cardColors,
     cardInteraction,
     currentTemp,
+    displayCurrentTemp,
+    displayMaxTemp,
+    displayMinTemp,
+    displayStep,
+    displayTargetTemp,
+    formatTemperature: (value: number) => formatTemperature(value, temperatureUnit),
+    formatTemperatureValue: (value: number) => formatTemperatureValue(value, temperatureUnit),
     isMedium,
     isOn,
     isSettingsOpen,
@@ -291,9 +318,12 @@ export function useHVACCardController({
     setIsSettingsOpen,
     setMode: updateMode,
     setTargetTemp: (nextTemp: number) => updateTargetTemp(nextTemp),
+    setDisplayTargetTemp: (nextTemp: number) => updateDisplayTargetTemp(nextTemp),
     commitTargetTemp: (nextTemp: number) => updateTargetTemp(nextTemp, true),
+    commitDisplayTargetTemp: (nextTemp: number) => updateDisplayTargetTemp(nextTemp, true),
     step: temperatureRange.step,
     targetTemp,
+    temperatureUnit,
     textColor,
     theme,
   };

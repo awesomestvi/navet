@@ -55,6 +55,22 @@ describe('home-assistant-url', () => {
     );
   });
 
+  it('strips stale Home Assistant proxy image paths in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantProxyUrl('/__navet_ha_proxy__/api/image/serve/image-id/512x512')
+    ).toBe('/api/image/serve/image-id/512x512');
+  });
+
+  it('strips stale Home Assistant proxy image paths for absolute resolution in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantAbsoluteUrl('/__navet_ha_proxy__/api/image/serve/image-id/512x512')
+    ).toBe('/api/image/serve/image-id/512x512');
+  });
+
   it('keeps Home Assistant media proxy paths same-origin in panel mode', () => {
     window.__NAVET_PANEL__ = true;
 
@@ -88,6 +104,28 @@ describe('home-assistant-url', () => {
         'https://ha.example.test'
       )
     ).toBe('/api/image/serve/image-id/512x512?authSig=abc');
+  });
+
+  it('strips stale absolute Home Assistant proxy URLs in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantProxyUrl(
+        `${window.location.origin}/__navet_ha_proxy__/api/image/serve/image-id/512x512`,
+        window.location.origin
+      )
+    ).toBe('/api/image/serve/image-id/512x512');
+  });
+
+  it('strips stale configured Home Assistant proxy media URLs in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantProxyUrl(
+        'https://ha.example.test/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room',
+        'https://ha.example.test'
+      )
+    ).toBe('/api/media_player_proxy/media_player.living_room');
   });
 
   it('keeps relative Home Assistant URLs same-origin for absolute resolution in panel mode', () => {
