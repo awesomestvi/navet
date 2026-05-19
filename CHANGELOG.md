@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.1 - 2026-05-20
+
+Navet stabilizes the Home Assistant custom panel release with better update metadata, more reliable panel loading, and expanded localization.
+
+## ✨ New features
+
+- You can now use Navet in Chinese, Italian, and Portuguese (Brazil).
+- Home Assistant add-on users now see a clear reminder to move to the HACS custom panel setup.
+
+## 🐛 Bug fixes
+
+- HACS updates now use the `0.1.1` release version instead of showing the latest branch commit as the available version.
+- The Home Assistant update dialog can point release announcements at a real GitHub release tag instead of a commit link.
+- Media artwork now loads more reliably in the Home Assistant custom panel.
+- The custom panel now loads its styles before showing the dashboard.
+- The custom panel works better inside Home Assistant by running in its own frame.
+- Panel notifications and other live updates work better when Home Assistant provides a websocket connection.
+- Home Assistant now receives a fresh panel bundle after custom panel updates.
+- The dashboard no longer gets stuck on "Loading devices..." for affected users.
+- Celsius/Fahrenheit and 12-hour/24-hour settings now update displayed units and time formats correctly.
+
+## ⚡ Improvements
+
+- Room navigation now scrolls when there are too many rooms to fit in the available space.
+- Dashboard cards, colors, and Home Assistant panel URLs are more polished.
+- HACS setup guidance and Navet brand assets are easier to find.
+- App dependencies are refreshed for this release.
+
 ## 0.1.1-beta.3 - 2026-05-20
 
 Navet improves HACS update metadata so Home Assistant can point users to release versions.
