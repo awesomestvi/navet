@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.1-beta.1 - 2026-05-19
+
+Navet adds a Home Assistant sidebar panel, new dashboard views, and better boiler support.
+
+## ✨ New features
+
+- You can now open Navet directly from the Home Assistant sidebar.
+- You can now add Navet to HACS as a custom repository.
+- You can now control Home Assistant water heaters from the climate card.
+- Media, security, and device pages now have dedicated dashboard views.
+
+## ⚡ Improvements
+
+- Dashboard pages adapt better across screen sizes.
+- Navet works better when opened inside Home Assistant.
+- Login and error messages are clearer when your Home Assistant connection needs attention.
+- The public demo uses fresher links and screenshots.
+- Home Assistant add-on package information is up to date for this release.
+
+## 📝 Documentation
+
+- Added setup guidance for the Home Assistant sidebar panel.
+- Updated release and add-on notes for this beta.
+
+## 🚧 In progress
+
+- HACS custom repository support is ready for testing and will continue to improve.
+
 ## 0.1.0-beta.4 - 2026-05-17
 
 Changes since `v0.1.0-beta.3`.

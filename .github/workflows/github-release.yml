@@ -3,9 +3,7 @@ name: Publish GitHub Release
 on:
   push:
     tags:
-      - 'v*-alpha.*'
-      - 'v*-beta.*'
-      - 'v*-rc.*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -36,29 +34,24 @@ jobs:
 
           echo "value=$TAG" >> "$GITHUB_OUTPUT"
 
-          echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          if [[ "$TAG" == *-alpha.* || "$TAG" == *-beta.* || "$TAG" == *-rc.* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build release notes
         id: notes
         run: |
           TAG="${{ steps.tag.outputs.value }}"
-          VERSION="${TAG#v}"
+          NOTES_FILE="${RUNNER_TEMP}/navet-release-notes.md"
+
+          node scripts/extract-release-notes.mjs "$TAG" > "$NOTES_FILE"
 
           {
-            echo "body<<EOF"
-            echo "## Navet $VERSION"
-            echo
-            echo "- Release tag: \`$TAG\`"
-            echo "- Package version: \`$VERSION\`"
-            echo
-            echo "See [docs/VERSIONING.md](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/docs/VERSIONING.md) for the current release policy."
-            echo
-            echo "### Container Publishing"
-            echo
-            echo "- App images publish automatically for prerelease tags through [Publish](https://github.com/${{ github.repository }}/actions/workflows/publish.yml): \`$TAG\`, \`beta\`, \`latest\`, and \`sha-*\`."
-            echo "- Home Assistant add-on images publish automatically for prerelease tags through [Publish Home Assistant Add-on](https://github.com/${{ github.repository }}/actions/workflows/publish-addon.yml): add-on version, \`beta\`, \`latest\`, and \`sha-*\`."
-            echo "- Manual workflow runs publish developer images tagged \`dev\` for Raspberry Pi testing before a public beta tag."
-            echo "EOF"
+            echo "body<<RELEASE_NOTES"
+            cat "$NOTES_FILE"
+            echo "RELEASE_NOTES"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
@@ -68,4 +61,4 @@ jobs:
           name: ${{ steps.tag.outputs.value }}
           body: ${{ steps.notes.outputs.body }}
           prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
-          generate_release_notes: true
+          generate_release_notes: false
