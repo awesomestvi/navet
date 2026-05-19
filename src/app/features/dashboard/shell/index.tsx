@@ -16,7 +16,7 @@ import { sanitizeExternalUrl } from '@/app/utils/url-security';
 import type { DashboardLayoutProps } from './types';
 
 const MARKDOWN_LINK_PATTERN = /\[([^\]]+)]\(([^)]+)\)/;
-const CUSTOM_PANEL_TOPBAR_ENABLED = false;
+const CUSTOM_PANEL_TOPBAR_ENABLED = true;
 const CUSTOM_PANEL_TOPBAR_DISMISSED_AT_KEY = 'navet:custom-panel-topbar-dismissed-at';
 const CUSTOM_PANEL_TOPBAR_DISMISS_MS = 6 * 60 * 60 * 1000;
 

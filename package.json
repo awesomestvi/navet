@@ -1,7 +1,7 @@
 {
   "name": "navet",
   "private": true,
-  "version": "0.1.1-beta.1",
+  "version": "0.1.1-beta.2",
   "description": "A smart home dashboard PWA for Home Assistant.",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/awesomestvi/navet#readme",

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.9
+
+- Updated Navet to `0.1.1-beta.2`
+- Fixed media artwork loading in the Home Assistant custom panel
+- Fixed dashboards getting stuck on "Loading devices..." for affected users
+- Fixed Celsius/Fahrenheit and 12-hour/24-hour settings so units and time formats update correctly
+- Added scrolling room navigation for dashboards with more rooms than available space
+- Re-enabled the custom panel migration notice for Home Assistant add-on users
+- Improved custom panel style loading, iframe embedding, and live update support
+- Added Chinese, Italian, and Portuguese (Brazil) language support
+
 ## 0.1.8
 
 - Updated Navet to `0.1.1-beta.1`
