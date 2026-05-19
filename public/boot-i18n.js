@@ -4,6 +4,7 @@
     en: 'Starting your smart home dashboard',
     es: 'Iniciando tu panel de hogar inteligente',
     fr: 'Demarrage de votre tableau de bord domotique',
+    pt: 'Iniciando o seu painel de casa inteligente',
     sv: 'Startar din smarta hemdashboard',
   };
 
