@@ -1,8 +1,12 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import YAML from 'yaml';
 
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const workspaceConfig = fs.existsSync('pnpm-workspace.yaml')
+  ? YAML.parse(fs.readFileSync('pnpm-workspace.yaml', 'utf8'))
+  : {};
 const lockfile = YAML.parse(fs.readFileSync('pnpm-lock.yaml', 'utf8'));
 const importer = lockfile.importers?.['.'];
 
@@ -90,12 +94,12 @@ for (const [name, lockfileSpecifier] of lockfileSpecifiers) {
   }
 }
 
-const manifestOverrides = toSortedObject(packageJson.pnpm?.overrides ?? {});
+const manifestOverrides = toSortedObject(workspaceConfig?.overrides ?? {});
 const lockfileOverrides = toSortedObject(lockfile.overrides ?? {});
 
 if (JSON.stringify(manifestOverrides) !== JSON.stringify(lockfileOverrides)) {
   mismatches.push({
-    name: 'pnpm.overrides',
+    name: 'pnpm-workspace.overrides',
     manifest: JSON.stringify(manifestOverrides),
     lockfile: JSON.stringify(lockfileOverrides),
   });
@@ -113,6 +117,31 @@ if (mismatches.length > 0) {
   }
 
   process.exit(1);
+}
+
+const frozenLockfileCheck = spawnSync(
+  'pnpm',
+  ['install', '--lockfile-only', '--frozen-lockfile'],
+  {
+    env: {
+      ...process.env,
+      CI: 'true',
+    },
+    stdio: 'inherit',
+  }
+);
+
+if (frozenLockfileCheck.error) {
+  console.error('Failed to run pnpm frozen lockfile validation.');
+  console.error(frozenLockfileCheck.error.message);
+  process.exit(1);
+}
+
+if (frozenLockfileCheck.status !== 0) {
+  console.error('');
+  console.error('pnpm-lock.yaml failed frozen lockfile validation.');
+  console.error('Run `pnpm install --lockfile-only` and commit the updated lockfile.');
+  process.exit(frozenLockfileCheck.status ?? 1);
 }
 
 console.log('pnpm lockfile metadata matches package.json');

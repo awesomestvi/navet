@@ -7,6 +7,7 @@ import {
 describe('home-assistant-url', () => {
   beforeEach(() => {
     document.querySelector('base')?.remove();
+    window.__NAVET_PANEL__ = false;
   });
 
   it('keeps safe app asset paths for absolute artwork resolution', () => {
@@ -44,6 +45,49 @@ describe('home-assistant-url', () => {
         'https://ha.example.test'
       )
     ).toBe('/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room');
+  });
+
+  it('keeps Home Assistant image API paths same-origin in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(resolveHomeAssistantProxyUrl('/api/image/serve/image-id/512x512')).toBe(
+      '/api/image/serve/image-id/512x512'
+    );
+  });
+
+  it('keeps Home Assistant media proxy paths same-origin in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(resolveHomeAssistantProxyUrl('/api/media_player_proxy/media_player.living_room')).toBe(
+      '/api/media_player_proxy/media_player.living_room'
+    );
+  });
+
+  it('keeps safe app asset paths unchanged in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(resolveHomeAssistantProxyUrl('/navet/demo/assets/album.jpg')).toBe(
+      '/navet/demo/assets/album.jpg'
+    );
+  });
+
+  it('keeps external image URLs sanitized in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(resolveHomeAssistantProxyUrl('https://cdn.example.test/album.jpg')).toBe(
+      'https://cdn.example.test/album.jpg'
+    );
+  });
+
+  it('keeps absolute Home Assistant URLs same-origin in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantProxyUrl(
+        'https://ha.example.test/api/image/serve/image-id/512x512?authSig=abc',
+        'https://ha.example.test'
+      )
+    ).toBe('/api/image/serve/image-id/512x512?authSig=abc');
   });
 
   it('still expands Home Assistant media paths for production when a Home Assistant URL exists', () => {

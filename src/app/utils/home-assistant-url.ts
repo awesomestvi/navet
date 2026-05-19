@@ -1,3 +1,4 @@
+import { isHomeAssistantPanelMode } from '../runtime/app-mode';
 import { resolveIngressAwarePath } from './home-assistant-connection-target';
 import { isSafeRelativePath, sanitizeImageUrl } from './url-security';
 
@@ -79,6 +80,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
     isSafeRelativePath(resourceUrl) &&
     isHomeAssistantRelativeUrl(resourceUrl)
   ) {
+    if (isHomeAssistantPanelMode()) {
+      return resourceUrl;
+    }
+
     return resolveProxyPath(resourceUrl);
   }
 
@@ -101,15 +106,15 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
       typeof window !== 'undefined' ? window.location.origin : resolvedHassUrl.origin;
 
     if (resolvedResourceUrl.origin === currentOrigin) {
-      if (resolvedResourceUrl.pathname.includes(HOME_ASSISTANT_PROXY_PATH)) {
-        return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
-      }
-
       return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
     }
 
     if (resolvedResourceUrl.origin !== resolvedHassUrl.origin) {
       return sanitizeImageUrl(resourceUrl);
+    }
+
+    if (isHomeAssistantPanelMode()) {
+      return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
     }
 
     return `${resolveProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
