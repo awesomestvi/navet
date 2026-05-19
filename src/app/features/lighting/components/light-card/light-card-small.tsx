@@ -14,6 +14,7 @@ interface LightCardSmallProps {
   size: CardSize;
   brightness: number;
   currentColor: string;
+  colorSwatchColor: string;
   colorTemp: number;
   currentTempColor: string;
   minColorTemp: number;
@@ -21,6 +22,7 @@ interface LightCardSmallProps {
   brightnessPresets: LightBrightnessPreset[];
   isOn: boolean;
   isKelvinMode: boolean;
+  activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
   supportsColorControl: boolean;
@@ -41,6 +43,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   size,
   brightness,
   currentColor,
+  colorSwatchColor,
   colorTemp,
   currentTempColor,
   minColorTemp,
@@ -48,6 +51,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   brightnessPresets,
   isOn,
   isKelvinMode,
+  activeColor,
   IconComponent,
   iconText,
   supportsColorControl,
@@ -79,6 +83,7 @@ export const LightCardSmall = memo(function LightCardSmall({
         IconComponent={IconComponent}
         iconText={iconText}
         size={size}
+        activeColor={activeColor}
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}
         onIconPointerDown={iconButtonProps.onPointerDown}
@@ -97,6 +102,7 @@ export const LightCardSmall = memo(function LightCardSmall({
                 isOn={isOn}
                 size="extra-small"
                 showLabel={false}
+                activeColor={activeColor}
               />
             </div>
 
@@ -121,6 +127,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             max={maxColorTemp}
             size="small"
             showLabel
+            activeColor={activeColor}
           />
         ) : (
           <BrightnessSlider
@@ -130,6 +137,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             isOn={isOn}
             size="small"
             showLabel
+            activeColor={activeColor}
           />
         )}
 
@@ -138,6 +146,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             size="small"
             isOn={isOn}
             currentColor={currentColor}
+            colorSwatchColor={colorSwatchColor}
             currentTempColor={currentTempColor}
             isKelvinMode={isKelvinMode}
             supportsColorTemperature={supportsColorTemperature}

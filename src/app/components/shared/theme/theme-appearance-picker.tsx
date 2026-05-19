@@ -21,6 +21,8 @@ interface ThemeAppearancePickerProps {
   onFollowSystemThemeChange?: (follow: boolean) => void;
 }
 
+const CUSTOM_ACCENT_CHANGE_DEBOUNCE_MS = 120;
+
 export function ThemeAppearancePicker({
   colorOptions,
   customAccent,
@@ -181,6 +183,7 @@ export function ThemeAppearancePicker({
               size="small"
               selected={selectedAccent === 'custom'}
               ringColor={customAccentValue}
+              changeDebounceMs={CUSTOM_ACCENT_CHANGE_DEBOUNCE_MS}
               onClick={() => onAccentChange('custom')}
               onChange={(value) => {
                 onCustomAccentChange(value);

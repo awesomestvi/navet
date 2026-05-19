@@ -1,7 +1,7 @@
 import { Settings2 } from 'lucide-react';
 import { BaseCard, RoundControlButton } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
+import { type ThemeType, useI18n } from '@/app/hooks';
 import { RSSArticleListLarge, RSSArticleListMedium, RSSArticleListSmall } from './rss-article-list';
 import { RSSEmptyState } from './rss-empty-state';
 import { RSSFeedLoadingSkeleton } from './rss-loading-skeleton';
@@ -14,7 +14,7 @@ interface RSSFeedCardViewProps {
   size?: CardSize;
   onSizeChange?: (size: CardSize) => void;
   theme: ThemeType;
-  primaryColor: PrimaryColor;
+  accentColor: string;
   colors: {
     rss: {
       gradient: string;
@@ -43,7 +43,7 @@ export function RSSFeedCardView({
   size = 'large',
   onSizeChange: _onSizeChange,
   theme,
-  primaryColor,
+  accentColor,
   colors,
   tintColor,
   isSmall,
@@ -61,7 +61,7 @@ export function RSSFeedCardView({
   onOpenSettings,
 }: RSSFeedCardViewProps) {
   const { t } = useI18n();
-  const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
+  const rssSurface = getRSSFeedCardSurfaceTokens(theme, accentColor, tintColor);
   const chromeSize = size === 'large' ? 'medium' : size;
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;

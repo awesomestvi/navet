@@ -16,6 +16,7 @@ interface LightCardHeaderProps {
   onIconClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onIconPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
   iconAriaLabel?: string;
+  activeColor?: string | null;
 }
 
 export const LightCardHeader = memo(function LightCardHeader({
@@ -27,6 +28,7 @@ export const LightCardHeader = memo(function LightCardHeader({
   onIconClick,
   onIconPointerDown,
   iconAriaLabel,
+  activeColor,
 }: LightCardHeaderProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -36,7 +38,7 @@ export const LightCardHeader = memo(function LightCardHeader({
     theme,
     tone: isOn ? 'primary' : 'neutral',
     accentColor,
-    baseColor: isOn ? accentColor : undefined,
+    baseColor: isOn ? (activeColor ?? accentColor) : undefined,
   });
 
   if (isExtraSmall) {
@@ -65,6 +67,7 @@ export const LightCardHeader = memo(function LightCardHeader({
       layout="eyebrow-first"
       size={size}
       tone={isOn ? 'primary' : 'neutral'}
+      accentColor={activeColor}
       titleClassName={stateSurface.primaryTextClassName}
       subtitleClassName={stateSurface.mutedTextClassName}
       leading={
@@ -74,6 +77,7 @@ export const LightCardHeader = memo(function LightCardHeader({
           isActive={isOn}
           size={size}
           tone={isOn ? 'primary' : 'neutral'}
+          baseColor={activeColor}
           ariaLabel={iconAriaLabel}
           onClick={onIconClick}
           onPointerDown={onIconPointerDown}

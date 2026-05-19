@@ -17,6 +17,7 @@ interface BrightnessSliderProps {
   disabled?: boolean;
   showLabel?: boolean;
   size?: CardSize;
+  activeColor?: string | null;
 }
 
 export const BrightnessSlider = memo(function BrightnessSlider({
@@ -27,6 +28,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   disabled = false,
   showLabel = true,
   size = 'medium',
+  activeColor: activeColorOverride,
 }: BrightnessSliderProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -37,12 +39,13 @@ export const BrightnessSlider = memo(function BrightnessSlider({
     theme,
     tone: isOn ? 'primary' : 'neutral',
     accentColor,
+    baseColor: isOn ? (activeColorOverride ?? accentColor) : undefined,
   });
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
   const trackHeightClass = 'h-[3px]';
   const thumbSizeClass = 'w-4 h-4';
   const trackBg = theme === 'light' ? 'bg-gray-200' : 'bg-white/10';
-  const activeColor = accentColor;
+  const activeColor = activeColorOverride ?? accentColor;
   const rangeBg = isOn
     ? theme === 'glass'
       ? `linear-gradient(to right, rgba(255,255,255,0.42), ${activeColor}cc)`

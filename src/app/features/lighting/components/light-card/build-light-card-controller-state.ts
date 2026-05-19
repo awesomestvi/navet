@@ -1,10 +1,9 @@
 import type { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import { DEFAULT_LIGHT_CUSTOM_COLOR } from '@/app/constants';
 import type { LightCardController } from './light-card-controller.types';
 
 type BuildLightCardControllerStateParams = Omit<
   LightCardController,
-  'currentColor' | 'iconButtonProps' | 'settingsButtonProps'
+  'colorSwatchColor' | 'currentColor' | 'iconButtonProps' | 'settingsButtonProps'
 > & {
   cardInteraction: ReturnType<typeof useEntityCardInteractionController>;
 };
@@ -44,8 +43,8 @@ export function buildLightCardControllerState({
   tempOptions,
   tintColor,
 }: BuildLightCardControllerStateParams): LightCardController {
-  const resolvedCurrentColor =
-    selectedColor ?? (customColor !== DEFAULT_LIGHT_CUSTOM_COLOR ? customColor : '');
+  const resolvedCurrentColor = selectedColor ?? '';
+  const resolvedColorSwatchColor = selectedColor ?? customColor;
 
   return {
     applyBrightnessPresetsToAll,
@@ -53,6 +52,7 @@ export function buildLightCardControllerState({
     brightnessPresets,
     cardInteraction,
     colorTemp,
+    colorSwatchColor: resolvedColorSwatchColor,
     currentColor: resolvedCurrentColor,
     customColor,
     iconButtonProps: cardInteraction.iconButtonProps,

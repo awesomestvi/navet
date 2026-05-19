@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTheme } from '@/app/hooks';
 
 type ColorInputSwatchSize = 'small' | 'medium' | 'large';
@@ -15,6 +15,7 @@ export interface ColorInputSwatchProps {
   mode?: ColorInputSwatchMode;
   ringColor?: string;
   className?: string;
+  changeDebounceMs?: number;
   onChange?: (value: string) => void;
   onClick?: React.MouseEventHandler<HTMLButtonElement | HTMLLabelElement>;
 }
@@ -62,12 +63,57 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
   mode = 'picker',
   ringColor,
   className = '',
+  changeDebounceMs = 0,
   onChange,
   onClick,
 }: ColorInputSwatchProps) {
   const { theme } = useTheme();
   const classes = SIZE_CLASSES[size];
-  const safeValue = isValidHexColor(value) ? value : '#f97316';
+  const [previewValue, setPreviewValue] = useState(value);
+  const changeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestChangeRef = useRef<string | null>(null);
+  const safeValue = isValidHexColor(previewValue) ? previewValue : '#f97316';
+
+  const clearPendingChange = useCallback(() => {
+    if (changeTimeoutRef.current) {
+      clearTimeout(changeTimeoutRef.current);
+      changeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const flushPendingChange = useCallback(() => {
+    const nextValue = latestChangeRef.current;
+    if (!nextValue) {
+      return;
+    }
+
+    clearPendingChange();
+    latestChangeRef.current = null;
+    onChange?.(nextValue);
+  }, [clearPendingChange, onChange]);
+
+  const handleInputChange = useCallback(
+    (nextValue: string) => {
+      setPreviewValue(nextValue);
+
+      if (!changeDebounceMs) {
+        onChange?.(nextValue);
+        return;
+      }
+
+      latestChangeRef.current = nextValue;
+      clearPendingChange();
+      changeTimeoutRef.current = setTimeout(flushPendingChange, changeDebounceMs);
+    },
+    [changeDebounceMs, clearPendingChange, flushPendingChange, onChange]
+  );
+
+  useEffect(() => {
+    setPreviewValue(value);
+  }, [value]);
+
+  useEffect(() => () => clearPendingChange(), [clearPendingChange]);
+
   const hasFullColorSurface = !disabled && (mode === 'picker' || selected);
   const background =
     mode === 'swatch'
@@ -151,7 +197,8 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
         value={safeValue}
         aria-label={ariaLabel}
         disabled={disabled}
-        onChange={(event) => onChange?.(event.target.value)}
+        onChange={(event) => handleInputChange(event.target.value)}
+        onBlur={flushPendingChange}
         className="absolute inset-0 cursor-pointer opacity-0"
       />
       {selected ? (

@@ -89,10 +89,10 @@ export function RSSFeedSettingsDialog({
   onTintColorChange,
 }: RSSFeedSettingsDialogProps) {
   const surface = getThemeSurfaceTokens(theme);
-  const { colors, primaryColor } = useTheme();
+  const { accentColor, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
-  const rssSurface = getRSSFeedCardSurfaceTokens(theme, primaryColor, tintColor);
+  const rssSurface = getRSSFeedCardSurfaceTokens(theme, accentColor, tintColor);
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const { t } = useI18n();
   const directProviders = providers.filter((provider) => provider.type === 'url');

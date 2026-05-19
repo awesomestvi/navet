@@ -3,7 +3,6 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useDashboardWidgetRoomOptions } from '@/app/features/dashboard';
 import { useAreaRooms, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
@@ -29,12 +28,11 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   tintColor,
   onTintColorChange,
 }: RSSFeedCardProps) {
-  const { theme, colors, primaryColor } = useTheme();
+  const { theme, colors, accentColor } = useTheme();
   const { t } = useI18n();
   const rooms = useAreaRooms();
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const primaryColorValue = getThemeColorValue(primaryColor);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeProviderId, setActiveProviderId] = useState<'all' | string>('all');
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -137,7 +135,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         size={size}
         onSizeChange={onSizeChange}
         theme={theme}
-        primaryColor={primaryColor}
+        accentColor={accentColor}
         colors={colors}
         tintColor={tintColor}
         isSmall={isSmall}
@@ -163,7 +161,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
           roomLabel={roomLabel}
           roomOptions={roomOptions}
           theme={theme}
-          primaryColorValue={primaryColorValue}
+          primaryColorValue={accentColor}
           providers={providers}
           homeAssistantProviders={homeAssistantProviders}
           selectedProviderIds={selectedProviderIds}

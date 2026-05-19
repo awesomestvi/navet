@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useHomeAssistant, useI18n, useSwitchRegistryDeviceTopology, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
@@ -43,7 +42,7 @@ export function useSwitchCardController({
 
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { siblingIds: siblingEntityIds } = useSwitchRegistryDeviceTopology(id);
-  const { colors, theme, primaryColor } = useTheme();
+  const { accentColor, colors, theme } = useTheme();
   const { t } = useI18n();
   const resolvedEntityType = entityType || t('lighting.type.switch');
   const resolvedServiceDomain = serviceDomain || id.split('.')[0];
@@ -93,8 +92,6 @@ export function useSwitchCardController({
 
   const cardColors = isOn ? colors.switch.on : colors.switch.off;
   const hasControlsDialog = true;
-  const accentColor = getThemeColorValue(primaryColor);
-
   const handleToggle = useSwitchToggleAction({
     id,
     isOn,

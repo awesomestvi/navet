@@ -22,6 +22,7 @@ export interface LightCardController {
   cardInteraction: ReturnType<typeof useEntityCardInteractionController>;
   colorTemp: number;
   currentColor: string;
+  colorSwatchColor: string;
   customColor: string;
   iconButtonProps: HeaderIconButtonProps;
   IconComponent: LucideIcon | null;

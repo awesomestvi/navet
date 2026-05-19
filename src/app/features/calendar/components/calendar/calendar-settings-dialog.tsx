@@ -22,7 +22,6 @@ import {
   getInheritedDialogSectionStyle,
   normalizeCustomCardTint,
 } from '@/app/components/shared/theme/custom-card-tint-surface';
-import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import { type ThemeType, useTheme } from '@/app/hooks/use-theme';
@@ -67,10 +66,9 @@ export function CalendarSettingsDialog({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
-  const { primaryColor, colors } = useTheme();
+  const { accentColor, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const isOn = theme !== 'light';
-  const accentColor = getThemeColorValue(primaryColor);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const activeAccentColor = resolvedTintColor ?? accentColor;

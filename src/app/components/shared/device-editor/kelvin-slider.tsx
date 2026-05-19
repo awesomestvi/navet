@@ -4,6 +4,7 @@ import {
   isCompactCardSize,
   isExtraSmallCardSize,
 } from '@/app/components/shared/card-size-selector';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { kelvinToColor } from '@/app/utils/light-color-temperature';
 import type { CardSize } from '../card-size-selector';
@@ -19,6 +20,7 @@ interface KelvinSliderProps {
   max: number;
   showLabel?: boolean;
   size?: CardSize;
+  activeColor?: string | null;
 }
 
 export const KelvinSlider = memo(function KelvinSlider({
@@ -31,12 +33,19 @@ export const KelvinSlider = memo(function KelvinSlider({
   max,
   showLabel = true,
   size = 'medium',
+  activeColor,
 }: KelvinSliderProps) {
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const isExtraSmall = isExtraSmallCardSize(size);
   const isCompact = isCompactCardSize(size);
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    tone: isOn ? 'primary' : 'neutral',
+    accentColor,
+    baseColor: isOn ? (activeColor ?? currentTempColor) : undefined,
+  });
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
   const trackHeightClass = 'h-[3px]';
   const thumbSizeClass = 'w-4 h-4';
@@ -66,10 +75,16 @@ export const KelvinSlider = memo(function KelvinSlider({
     <div>
       {showLabel && (
         <div className="flex items-center justify-between mb-1.5">
-          <span className={`text-xs ${editorSurface.sectionLabelClassName}`}>
+          <span
+            className={`text-xs ${editorSurface.sectionLabelClassName}`}
+            style={{ color: textTokens.subtitleColor }}
+          >
             {t('lighting.colorTemperature')}
           </span>
-          <span className={`text-sm font-bold ${editorSurface.sectionValueClassName}`}>
+          <span
+            className={`text-sm font-bold ${editorSurface.sectionValueClassName}`}
+            style={{ color: textTokens.titleColor }}
+          >
             {roundedValue}K
           </span>
         </div>

@@ -47,6 +47,10 @@ export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: s
     isSafeRelativePath(resourceUrl) &&
     isHomeAssistantRelativeUrl(resourceUrl)
   ) {
+    if (isHomeAssistantPanelMode()) {
+      return resourceUrl;
+    }
+
     return hassUrl ? `${hassUrl}${resourceUrl}` : resourceUrl;
   }
 

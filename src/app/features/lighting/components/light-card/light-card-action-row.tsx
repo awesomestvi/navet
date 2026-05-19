@@ -11,6 +11,7 @@ interface LightCardActionRowProps {
   size: 'small' | 'medium';
   isOn: boolean;
   currentColor: string;
+  colorSwatchColor: string;
   currentTempColor: string;
   isKelvinMode: boolean;
   supportsColorTemperature: boolean;
@@ -30,6 +31,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   size,
   isOn,
   currentColor,
+  colorSwatchColor,
   currentTempColor,
   isKelvinMode,
   supportsColorTemperature,
@@ -58,7 +60,11 @@ export const LightCardActionRow = memo(function LightCardActionRow({
       )}
 
       {supportsColorControl && (
-        <CustomColorTrigger isOn={isOn} currentColor={currentColor} onColorChange={onColorChange} />
+        <CustomColorTrigger
+          isOn={isOn}
+          currentColor={colorSwatchColor || currentColor}
+          onColorChange={onColorChange}
+        />
       )}
 
       <div className={`flex min-w-0 items-center ${gapClass}`}>

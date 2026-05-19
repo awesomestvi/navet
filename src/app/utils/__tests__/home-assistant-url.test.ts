@@ -90,6 +90,17 @@ describe('home-assistant-url', () => {
     ).toBe('/api/image/serve/image-id/512x512?authSig=abc');
   });
 
+  it('keeps relative Home Assistant URLs same-origin for absolute resolution in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+
+    expect(
+      resolveHomeAssistantAbsoluteUrl(
+        '/api/image/serve/image-id/512x512',
+        'https://ha.example.test'
+      )
+    ).toBe('/api/image/serve/image-id/512x512');
+  });
+
   it('still expands Home Assistant media paths for production when a Home Assistant URL exists', () => {
     expect(
       resolveHomeAssistantAbsoluteUrl(

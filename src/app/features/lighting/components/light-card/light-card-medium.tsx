@@ -9,6 +9,7 @@ interface LightCardMediumProps {
   name: string;
   brightness: number;
   currentColor: string;
+  colorSwatchColor: string;
   colorTemp: number;
   currentTempColor: string;
   minColorTemp: number;
@@ -16,6 +17,7 @@ interface LightCardMediumProps {
   brightnessPresets: LightBrightnessPreset[];
   isOn: boolean;
   isKelvinMode: boolean;
+  activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
   supportsColorControl: boolean;
@@ -36,6 +38,7 @@ export const LightCardMedium = memo(function LightCardMedium({
   name,
   brightness,
   currentColor,
+  colorSwatchColor,
   colorTemp,
   currentTempColor,
   minColorTemp,
@@ -43,6 +46,7 @@ export const LightCardMedium = memo(function LightCardMedium({
   brightnessPresets,
   isOn,
   isKelvinMode,
+  activeColor,
   IconComponent,
   iconText,
   supportsColorControl,
@@ -66,6 +70,7 @@ export const LightCardMedium = memo(function LightCardMedium({
         IconComponent={IconComponent}
         iconText={iconText}
         size="medium"
+        activeColor={activeColor}
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}
         onIconPointerDown={iconButtonProps.onPointerDown}
@@ -82,6 +87,7 @@ export const LightCardMedium = memo(function LightCardMedium({
             min={minColorTemp}
             max={maxColorTemp}
             size="medium"
+            activeColor={activeColor}
           />
         ) : (
           <BrightnessSlider
@@ -90,6 +96,7 @@ export const LightCardMedium = memo(function LightCardMedium({
             onCommit={onBrightnessCommit}
             isOn={isOn}
             size="medium"
+            activeColor={activeColor}
           />
         )}
 
@@ -97,6 +104,7 @@ export const LightCardMedium = memo(function LightCardMedium({
           size="medium"
           isOn={isOn}
           currentColor={currentColor}
+          colorSwatchColor={colorSwatchColor}
           currentTempColor={currentTempColor}
           isKelvinMode={isKelvinMode}
           supportsColorTemperature={supportsColorTemperature}

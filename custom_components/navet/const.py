@@ -10,6 +10,8 @@ PANEL_ICON = "mdi:view-dashboard"
 PANEL_TITLE = "Navet"
 
 STATIC_PATH = "/api/navet/static"
+RSS_PROXY_PATH = "/__navet_rss_proxy__"
+HA_PROXY_PATH = "/__navet_ha_proxy__"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 PANEL_ENTRYPOINT = FRONTEND_DIR / "navet-panel.js"
 

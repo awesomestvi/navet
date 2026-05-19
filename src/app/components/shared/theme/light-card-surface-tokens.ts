@@ -27,6 +27,7 @@ interface LightCardSurfaceTokensParams {
 export interface LightCardSurfaceTokens {
   cardClassName: string;
   cardStyle?: CSSProperties;
+  contentAccentColor: string | null;
   glowColor: string;
   activeGlowClassName: string | null;
   activeGlowStyle?: CSSProperties;
@@ -39,7 +40,6 @@ export interface LightCardSurfaceTokens {
 export function getLightCardSurfaceTokens({
   isOn,
   selectedColor,
-  customColor,
   currentColor,
   theme,
   lightColors,
@@ -48,9 +48,7 @@ export function getLightCardSurfaceTokens({
   const isHexColor = (value: string | null | undefined): value is string =>
     typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
   const effectiveSelectedColor = isOn
-    ? (selectedColor ??
-      (isHexColor(currentColor) ? currentColor : null) ??
-      (isHexColor(customColor) && customColor !== '#FFA500' ? customColor : null))
+    ? (selectedColor ?? (isHexColor(currentColor) ? currentColor : null) ?? null)
     : null;
   const gradientColors = getGradientColors(isOn, effectiveSelectedColor, theme);
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
@@ -61,6 +59,7 @@ export function getLightCardSurfaceTokens({
         ? `${effectiveSelectedColor}4d`
         : `${effectiveSelectedColor}66`;
   const activeBaseColor = effectiveSelectedColor ?? accentColor ?? '#f97316';
+  const contentAccentColor = isOn ? activeBaseColor : null;
   const useAccentGradient = isOn && !effectiveSelectedColor && lightColors;
 
   const baseCardClassName = useAccentGradient
@@ -85,6 +84,7 @@ export function getLightCardSurfaceTokens({
               borderColor: effectiveSelectedColor ? selectedColorBorder : undefined,
             }
           : undefined,
+      contentAccentColor,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
       activeGlowClassName: null,
       activeGlowStyle: undefined,
@@ -109,6 +109,7 @@ export function getLightCardSurfaceTokens({
               borderColor: effectiveSelectedColor ? selectedColorBorder : undefined,
             }
           : undefined,
+      contentAccentColor,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
       activeGlowClassName: null,
       activeGlowStyle: undefined,
@@ -138,6 +139,7 @@ export function getLightCardSurfaceTokens({
     return {
       cardClassName: baseCardClassName,
       cardStyle: blackCardStyle,
+      contentAccentColor,
       glowColor: useAccentGradient ? activeBaseColor : gradientColors.glow || activeBaseColor,
       activeGlowClassName: 'absolute inset-0 transition-all duration-500',
       activeGlowStyle: effectiveSelectedColor
@@ -163,6 +165,7 @@ export function getLightCardSurfaceTokens({
     return {
       cardClassName: baseCardClassName,
       cardStyle: darkCardStyle,
+      contentAccentColor,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
       activeGlowClassName: null,
       activeGlowStyle: undefined,
@@ -183,6 +186,7 @@ export function getLightCardSurfaceTokens({
             borderColor: effectiveSelectedColor ? selectedColorBorder : undefined,
           }
         : undefined,
+    contentAccentColor,
     glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
     activeGlowClassName: null,
     activeGlowStyle: undefined,
