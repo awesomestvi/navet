@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1-beta.3 - 2026-05-20
+
+Navet improves HACS update metadata so Home Assistant can point users to release versions.
+
+## 🐛 Bug fixes
+
+- HACS updates now avoid showing the latest branch commit as the available version.
+- The Home Assistant update dialog can point release announcements at a real GitHub release tag instead of a commit link.
+
 ## 0.1.1-beta.2 - 2026-05-20
 
 Navet improves the Home Assistant custom panel experience and makes media artwork more reliable.

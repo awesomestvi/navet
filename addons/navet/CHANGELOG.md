@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10
+
+- Updated Navet to `0.1.1-beta.3`
+- Fixed HACS update metadata so Home Assistant uses release versions instead of branch commit SHAs
+- Fixed release announcement links opening a missing GitHub commit-based release page
+
 ## 0.1.9
 
 - Updated Navet to `0.1.1-beta.2`
