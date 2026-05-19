@@ -1,5 +1,12 @@
 import { Check, ChevronDown, Edit3, GripVertical, LayoutGrid, Lightbulb } from 'lucide-react';
-import { type ButtonHTMLAttributes, forwardRef, memo, useMemo, useState } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  forwardRef,
+  memo,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeDropdownSurfaceClasses } from '@/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -50,6 +57,13 @@ interface RoomNavMenuButtonProps {
   className: string;
 }
 
+interface RoomNavDragState {
+  pointerId: number;
+  startClientX: number;
+  startScrollLeft: number;
+  moved: boolean;
+}
+
 export const RoomNav = memo(function RoomNav({
   rooms = [],
   roomHiddenItemCounts = new Map(),
@@ -69,6 +83,9 @@ export const RoomNav = memo(function RoomNav({
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
+  const roomScrollerRef = useRef<HTMLDivElement | null>(null);
+  const roomNavDragStateRef = useRef<RoomNavDragState | null>(null);
+  const suppressRoomClickRef = useRef(false);
   const manageableRooms = useMemo(() => {
     return getManageableRoomOrder(rooms, areas);
   }, [areas, rooms]);
@@ -102,11 +119,98 @@ export const RoomNav = memo(function RoomNav({
     { label: t('dashboard.roomNav.grouping.none'), value: 'none' },
   ];
 
+  const endRoomNavDrag = (pointerId?: number) => {
+    const roomScroller = roomScrollerRef.current;
+    const dragState = roomNavDragStateRef.current;
+
+    if (!roomScroller || !dragState) {
+      roomNavDragStateRef.current = null;
+      return;
+    }
+
+    if (pointerId !== undefined && dragState.pointerId !== pointerId) {
+      return;
+    }
+
+    if (roomScroller.hasPointerCapture(dragState.pointerId)) {
+      roomScroller.releasePointerCapture(dragState.pointerId);
+    }
+
+    roomNavDragStateRef.current = null;
+  };
+
+  const handleRoomNavPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch' || event.button !== 0) {
+      return;
+    }
+
+    const roomScroller = roomScrollerRef.current;
+
+    if (!roomScroller) {
+      return;
+    }
+
+    roomNavDragStateRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startScrollLeft: roomScroller.scrollLeft,
+      moved: false,
+    };
+  };
+
+  const handleRoomNavPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const roomScroller = roomScrollerRef.current;
+    const dragState = roomNavDragStateRef.current;
+
+    if (!roomScroller || !dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startClientX;
+
+    if (!dragState.moved && Math.abs(deltaX) < 6) {
+      return;
+    }
+
+    if (!dragState.moved) {
+      dragState.moved = true;
+      suppressRoomClickRef.current = true;
+      roomScroller.setPointerCapture(event.pointerId);
+    }
+
+    event.preventDefault();
+    roomScroller.scrollLeft = dragState.startScrollLeft - deltaX;
+  };
+
+  const handleRoomNavPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    endRoomNavDrag(event.pointerId);
+  };
+
+  const handleRoomNavPointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+    endRoomNavDrag(event.pointerId);
+  };
+
+  const handleRoomNavClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (suppressRoomClickRef.current) {
+      suppressRoomClickRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
   return (
     <>
       <div className="hidden md:block">
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+          <div
+            ref={roomScrollerRef}
+            className="flex-1 min-w-0 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing select-none"
+            onClickCapture={handleRoomNavClickCapture}
+            onPointerCancel={handleRoomNavPointerCancel}
+            onPointerDown={handleRoomNavPointerDown}
+            onPointerMove={handleRoomNavPointerMove}
+            onPointerUp={handleRoomNavPointerUp}
+          >
             <div className="flex min-w-max items-center gap-1.5 md:gap-2">
               {visibleRooms.map((room) => (
                 <RoomNavItem
