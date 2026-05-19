@@ -57,4 +57,27 @@ describe('ColorInputSwatch', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith('#ff0000');
   });
+
+  it('keeps picker behavior when rendered with the rainbow visual', () => {
+    const onChange = vi.fn();
+
+    const { container } = renderWithProviders(
+      <ColorInputSwatch
+        value="#f97316"
+        ariaLabel="Custom color"
+        visual="rainbow"
+        onChange={onChange}
+      />
+    );
+
+    const trigger = container.firstElementChild;
+    const input = container.querySelector('input[type="color"]') as HTMLInputElement;
+
+    expect(trigger?.getAttribute('style')).toContain('conic-gradient');
+
+    fireEvent.change(input, { target: { value: '#00ff00' } });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('#00ff00');
+  });
 });

@@ -4,6 +4,7 @@ import { useTheme } from '@/app/hooks';
 
 type ColorInputSwatchSize = 'small' | 'medium' | 'large';
 type ColorInputSwatchMode = 'picker' | 'swatch';
+type ColorInputSwatchVisual = 'color' | 'rainbow' | 'idle';
 
 export interface ColorInputSwatchProps {
   value: string;
@@ -13,6 +14,7 @@ export interface ColorInputSwatchProps {
   selected?: boolean;
   size?: ColorInputSwatchSize;
   mode?: ColorInputSwatchMode;
+  visual?: ColorInputSwatchVisual;
   ringColor?: string;
   className?: string;
   changeDebounceMs?: number;
@@ -61,6 +63,7 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
   selected = false,
   size = 'medium',
   mode = 'picker',
+  visual = 'color',
   ringColor,
   className = '',
   changeDebounceMs = 0,
@@ -114,7 +117,8 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
 
   useEffect(() => () => clearPendingChange(), [clearPendingChange]);
 
-  const hasFullColorSurface = !disabled && (mode === 'picker' || selected);
+  const isIdleVisual = visual === 'idle';
+  const hasFullColorSurface = !disabled && !isIdleVisual && (mode === 'picker' || selected);
   const background =
     mode === 'swatch'
       ? disabled
@@ -126,7 +130,13 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
         ? theme === 'light'
           ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
           : 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.14) 100%)'
-        : `linear-gradient(135deg, ${safeValue} 0%, ${safeValue}cc 48%, rgba(255, 255, 255, 0.92) 100%)`;
+        : isIdleVisual
+          ? theme === 'light'
+            ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+            : 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.14) 100%)'
+          : visual === 'rainbow'
+            ? 'conic-gradient(from 35deg, #f87171 0deg, #fb923c 52deg, #facc15 104deg, #4ade80 156deg, #38bdf8 208deg, #818cf8 260deg, #e879f9 312deg, #f87171 360deg)'
+            : `linear-gradient(135deg, ${safeValue} 0%, ${safeValue}cc 48%, rgba(255, 255, 255, 0.92) 100%)`;
   const borderColor = hasFullColorSurface
     ? 'transparent'
     : theme === 'light'
@@ -205,7 +215,7 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
         <Check
           className={`${classes.icon} pointer-events-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]`}
         />
-      ) : (
+      ) : visual === 'rainbow' ? null : (
         <div
           className={`${classes.core} pointer-events-none flex items-center justify-center rounded-full`}
           style={{
@@ -216,7 +226,11 @@ export const ColorInputSwatch = memo(function ColorInputSwatch({
           <div
             className={`${classes.dot} rounded-full border`}
             style={{
-              background: `linear-gradient(135deg, ${safeValue} 0%, rgba(255, 255, 255, 0.9) 100%)`,
+              background: isIdleVisual
+                ? theme === 'light'
+                  ? '#9ca3af'
+                  : 'rgba(255,255,255,0.4)'
+                : `linear-gradient(135deg, ${safeValue} 0%, rgba(255, 255, 255, 0.9) 100%)`,
               borderColor: dotBorder,
             }}
           />

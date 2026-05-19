@@ -43,6 +43,24 @@ describe('useMediaArtworkResolution', () => {
     expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
   });
 
+  it('uses websocket thumbnail data before panel-mode media proxy fallback artwork', async () => {
+    window.__NAVET_PANEL__ = true;
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,panel-album-art');
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('data:image/jpeg;base64,panel-album-art');
+    });
+    expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+  });
+
   it('does not fall back to protected media proxy URLs when thumbnail loading fails', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
 
@@ -58,6 +76,26 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(result.current.albumArt).toBeNull();
+  });
+
+  it('falls back to same-origin media proxy artwork in panel mode when thumbnail loading fails', async () => {
+    window.__NAVET_PANEL__ = true;
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+    });
+    expect(result.current.albumArt).toBe('/api/media_player_proxy/media_player.kitchen');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('falls back to an authenticated object URL when websocket thumbnails are unavailable', async () => {

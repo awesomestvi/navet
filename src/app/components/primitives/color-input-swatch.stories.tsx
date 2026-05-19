@@ -16,6 +16,7 @@ function PickerModeStory() {
         value={value}
         mode="picker"
         size="large"
+        visual="rainbow"
         selected
         ariaLabel="Choose custom accent"
         onChange={setValue}

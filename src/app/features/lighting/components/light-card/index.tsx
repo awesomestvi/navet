@@ -49,6 +49,7 @@ export const LightCard = memo(function LightCard({
     }))
   );
   const [isKelvinMode, setIsKelvinMode] = useState(false);
+  const [isColorMode, setIsColorMode] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const kelvinResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolvedSize = resolveLightCardSize(size);
@@ -89,6 +90,7 @@ export const LightCard = memo(function LightCard({
     setIsKelvinMode((prev) => {
       const next = !prev;
       if (next) {
+        setIsColorMode(false);
         scheduleKelvinReset();
       } else if (kelvinResetTimerRef.current) {
         clearTimeout(kelvinResetTimerRef.current);
@@ -97,6 +99,16 @@ export const LightCard = memo(function LightCard({
       return next;
     });
   }, [controller.isOn, scheduleKelvinReset]);
+
+  const handleColorActivate = useCallback(() => {
+    if (!controller.isOn) return;
+    setIsKelvinMode(false);
+    if (kelvinResetTimerRef.current) {
+      clearTimeout(kelvinResetTimerRef.current);
+      kelvinResetTimerRef.current = null;
+    }
+    setIsColorMode(true);
+  }, [controller.isOn]);
 
   const handleTempChange = useCallback(
     (temp: number) => {
@@ -114,12 +126,13 @@ export const LightCard = memo(function LightCard({
     [controller.onTempCommit, scheduleKelvinReset]
   );
 
-  // Reset kelvin mode when clicking outside the card
+  // Reset temporary color control selection when clicking outside the card.
   useEffect(() => {
-    if (!isKelvinMode) return;
+    if (!isKelvinMode && !isColorMode) return;
     const handlePointerDown = (e: PointerEvent) => {
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
         setIsKelvinMode(false);
+        setIsColorMode(false);
         if (kelvinResetTimerRef.current) {
           clearTimeout(kelvinResetTimerRef.current);
           kelvinResetTimerRef.current = null;
@@ -128,7 +141,7 @@ export const LightCard = memo(function LightCard({
     };
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isKelvinMode]);
+  }, [isKelvinMode, isColorMode]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -212,7 +225,9 @@ export const LightCard = memo(function LightCard({
                 minColorTemp={controller.minColorTemp}
                 maxColorTemp={controller.maxColorTemp}
                 isKelvinMode={isKelvinMode}
+                isColorMode={isColorMode}
                 onKelvinToggle={handleKelvinToggle}
+                onColorActivate={handleColorActivate}
                 onBrightnessChange={controller.onBrightnessChange}
                 onBrightnessCommit={controller.onBrightnessCommit}
                 onColorChange={controller.onColorChange}
@@ -241,7 +256,9 @@ export const LightCard = memo(function LightCard({
                 minColorTemp={controller.minColorTemp}
                 maxColorTemp={controller.maxColorTemp}
                 isKelvinMode={isKelvinMode}
+                isColorMode={isColorMode}
                 onKelvinToggle={handleKelvinToggle}
+                onColorActivate={handleColorActivate}
                 onBrightnessChange={controller.onBrightnessChange}
                 onBrightnessCommit={controller.onBrightnessCommit}
                 onColorChange={controller.onColorChange}

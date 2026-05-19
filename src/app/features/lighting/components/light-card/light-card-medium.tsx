@@ -17,12 +17,14 @@ interface LightCardMediumProps {
   brightnessPresets: LightBrightnessPreset[];
   isOn: boolean;
   isKelvinMode: boolean;
+  isColorMode: boolean;
   activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
+  onColorActivate: () => void;
   onBrightnessChange: (value: number) => void;
   onBrightnessCommit: (value: number) => void;
   onColorChange: (color: string) => void;
@@ -46,12 +48,14 @@ export const LightCardMedium = memo(function LightCardMedium({
   brightnessPresets,
   isOn,
   isKelvinMode,
+  isColorMode,
   activeColor,
   IconComponent,
   iconText,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
+  onColorActivate,
   onBrightnessChange,
   onBrightnessCommit,
   onColorChange,
@@ -107,11 +111,13 @@ export const LightCardMedium = memo(function LightCardMedium({
           colorSwatchColor={colorSwatchColor}
           currentTempColor={currentTempColor}
           isKelvinMode={isKelvinMode}
+          isColorMode={isColorMode}
           supportsColorTemperature={supportsColorTemperature}
           supportsColorControl={supportsColorControl}
           brightnessPresets={brightnessPresets}
           brightness={brightness}
           onKelvinToggle={onKelvinToggle}
+          onColorActivate={onColorActivate}
           onColorChange={onColorChange}
           onBrightnessCommit={onBrightnessCommit}
           showSettingsButton={showSettingsButton}

@@ -14,11 +14,13 @@ interface LightCardActionRowProps {
   colorSwatchColor: string;
   currentTempColor: string;
   isKelvinMode: boolean;
+  isColorMode: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
   brightnessPresets: LightBrightnessPreset[];
   brightness: number;
   onKelvinToggle: () => void;
+  onColorActivate: () => void;
   onColorChange: (color: string) => void;
   onBrightnessCommit: (value: number) => void;
   showSettingsButton: boolean;
@@ -34,11 +36,13 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   colorSwatchColor,
   currentTempColor,
   isKelvinMode,
+  isColorMode,
   supportsColorTemperature,
   supportsColorControl,
   brightnessPresets,
   brightness,
   onKelvinToggle,
+  onColorActivate,
   onColorChange,
   onBrightnessCommit,
   showSettingsButton,
@@ -63,6 +67,8 @@ export const LightCardActionRow = memo(function LightCardActionRow({
         <CustomColorTrigger
           isOn={isOn}
           currentColor={colorSwatchColor || currentColor}
+          isActive={isColorMode}
+          onActivate={onColorActivate}
           onColorChange={onColorChange}
         />
       )}

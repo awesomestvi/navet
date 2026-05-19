@@ -40,6 +40,7 @@ export const ColorSelectorSection = memo(function ColorSelectorSection({
           ariaLabel={t('lighting.customColorPicker')}
           title={t('lighting.customColorPicker')}
           size="small"
+          visual="rainbow"
           disabled={!isOn}
           selected={selectedColor === customColor}
           ringColor={activeColor}

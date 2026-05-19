@@ -18,6 +18,15 @@ function getStringAttribute(attrs: Record<string, unknown> | undefined, key: str
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
+function getLiveEntityPicture(attrs: Record<string, unknown> | undefined, fallback?: string) {
+  return (
+    getStringAttribute(attrs, 'entity_picture') ??
+    getStringAttribute(attrs, 'entity_picture_local') ??
+    getStringAttribute(attrs, 'media_image_url') ??
+    fallback
+  );
+}
+
 export function useMediaDisplayFields({
   liveAttrs,
   entityPicture,
@@ -28,7 +37,7 @@ export function useMediaDisplayFields({
   nothingPlayingLabel,
   nothingPlayingDescription,
 }: UseMediaDisplayFieldsParams) {
-  const liveEntityPicture = getStringAttribute(liveAttrs, 'entity_picture') ?? entityPicture;
+  const liveEntityPicture = getLiveEntityPicture(liveAttrs, entityPicture);
   const normalizedEntityName = normalizeMediaText(entityName);
   const initialTitleIsEntityName =
     initialTitle.trim().length > 0 && normalizeMediaText(initialTitle) === normalizedEntityName;
@@ -58,6 +67,8 @@ export function useMediaDisplayFields({
     fallbackArtist;
   const liveArtworkKey = [
     getStringAttribute(liveAttrs, 'entity_picture'),
+    getStringAttribute(liveAttrs, 'entity_picture_local'),
+    getStringAttribute(liveAttrs, 'media_image_url'),
     getStringAttribute(liveAttrs, 'media_content_id'),
     getStringAttribute(liveAttrs, 'media_title'),
     getStringAttribute(liveAttrs, 'media_artist'),

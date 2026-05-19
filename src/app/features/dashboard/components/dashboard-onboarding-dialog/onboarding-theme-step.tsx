@@ -118,6 +118,7 @@ export function OnboardingThemeStep({
             ariaLabel={t('themePicker.customAccent')}
             title={t('themePicker.customAccent')}
             size="small"
+            visual="rainbow"
             selected={selectedAccent === 'custom'}
             ringColor={selectedCustomAccent ?? '#f97316'}
             onClick={() => setSelectedAccent('custom')}

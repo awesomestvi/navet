@@ -34,4 +34,32 @@ describe('useMediaDisplayFields', () => {
 
     expect(first.liveArtworkKey).not.toBe(second.liveArtworkKey);
   });
+
+  it('uses entity_picture_local as live artwork when entity_picture is unavailable', () => {
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      entityPicture: '/api/media_player_proxy/media_player.fallback',
+      liveAttrs: {
+        entity_picture_local: '/api/media_player_proxy/media_player.kitchen_local',
+        media_title: 'Local artwork song',
+      },
+    });
+
+    expect(fields.liveEntityPicture).toBe('/api/media_player_proxy/media_player.kitchen_local');
+    expect(fields.liveArtworkKey).toContain('/api/media_player_proxy/media_player.kitchen_local');
+  });
+
+  it('uses media_image_url as live artwork when proxy picture attributes are unavailable', () => {
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      entityPicture: '/api/media_player_proxy/media_player.fallback',
+      liveAttrs: {
+        media_image_url: 'https://cdn.example.test/album.jpg',
+        media_title: 'Remote artwork song',
+      },
+    });
+
+    expect(fields.liveEntityPicture).toBe('https://cdn.example.test/album.jpg');
+    expect(fields.liveArtworkKey).toContain('https://cdn.example.test/album.jpg');
+  });
 });

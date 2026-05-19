@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
+import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import {
@@ -50,8 +51,9 @@ export function useMediaArtworkResolution({
   const needsAuthenticatedThumbnail = Boolean(
     resolvedArtwork && isMediaPlayerProxyUrl(resolvedArtwork)
   );
+  const canUseResolvedArtworkFallback = !needsAuthenticatedThumbnail || isHomeAssistantPanelMode();
   const fallbackArtwork =
-    thumbnailArtworkUrl ?? (needsAuthenticatedThumbnail ? null : resolvedArtwork);
+    thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
 
   useEffect(() => {
     let cancelled = false;

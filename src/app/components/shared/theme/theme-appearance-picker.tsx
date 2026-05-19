@@ -208,6 +208,7 @@ export function ThemeAppearancePicker({
               ariaLabel={t('themePicker.customAccent')}
               title={t('themePicker.customAccent')}
               size="small"
+              visual="rainbow"
               selected={selectedAccent === 'custom'}
               ringColor={customAccentValue}
               changeDebounceMs={CUSTOM_ACCENT_CHANGE_DEBOUNCE_MS}

@@ -41,6 +41,7 @@ export const CustomCardTintPicker = memo(function CustomCardTintPicker({
           ariaLabel={t('widgets.customCard.colorPicker')}
           selected={Boolean(value)}
           size="small"
+          visual="rainbow"
           ringColor={pickerRingColor}
           onChange={onChange}
         />
