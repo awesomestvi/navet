@@ -66,6 +66,12 @@ export function CalendarSettingsDialog({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
+  const isRealCalendarEntity =
+    entityId !== undefined && calendars.some((calendar) => calendar.id === entityId);
+  const roomSelectorEntityId = isRealCalendarEntity
+    ? entityId
+    : (selectedCalendarIds.find((id) => calendars.some((calendar) => calendar.id === id)) ??
+      calendars[0]?.id);
   const { accentColor, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const isOn = theme !== 'light';
@@ -98,7 +104,12 @@ export function CalendarSettingsDialog({
     >
       <CustomScrollbar isOn={isOn}>
         <CardDialogBody>
-          <CardDialogHeader title={title} description={entityType} entityId={entityId} />
+          <CardDialogHeader
+            title={title}
+            description={entityType}
+            entityId={roomSelectorEntityId}
+            editableTitle={isRealCalendarEntity}
+          />
 
           <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
             <CardDialogTabList>

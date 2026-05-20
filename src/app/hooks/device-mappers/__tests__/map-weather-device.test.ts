@@ -53,4 +53,34 @@ describe('mapWeatherDevice', () => {
     expect(device.forecast[0]?.day).toMatch(/^\d{1,2}$/);
     expect(device.forecast[0]?.day).not.toMatch(/[AP]M$/);
   });
+
+  it('uses the entity name before the generic Home Assistant location name', () => {
+    const device = mapWeatherDevice('weather.home', createWeatherEntity(), 'Stockholm', 'Home', {
+      locale: 'en-US',
+      t,
+      use24HourTime: true,
+      weatherForecastMode: 'weekly',
+      config: { location_name: 'Home' },
+    });
+
+    expect(device.location).toBe('Stockholm');
+  });
+
+  it('keeps explicit weather location attributes ahead of the entity name', () => {
+    const device = mapWeatherDevice(
+      'weather.home',
+      createWeatherEntity({ location: 'Solna' }),
+      'Stockholm',
+      'Home',
+      {
+        locale: 'en-US',
+        t,
+        use24HourTime: true,
+        weatherForecastMode: 'weekly',
+        config: { location_name: 'Home' },
+      }
+    );
+
+    expect(device.location).toBe('Solna');
+  });
 });

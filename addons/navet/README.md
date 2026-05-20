@@ -11,10 +11,7 @@ The image is built from the repository root in CI, which allows the add-on image
 
 ## Configuration
 
-- `hass_url`: Optional Home Assistant URL to prefill at runtime
-- `token`: Optional long-lived access token to prefill at runtime
 - `dashboard_config_url`: Optional Navet dashboard YAML export to import on first launch in a fresh browser
 
-If connection values are not provided, Navet falls back to manual setup in the UI.
-Home Assistant credentials entered in one browser and dashboard layout changes are saved to the
-add-on data directory and shared with other browsers that open the same Navet instance.
+Dashboard layout changes are saved to the add-on data directory and shared with other browsers that
+open the same Navet instance.

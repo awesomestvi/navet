@@ -59,7 +59,8 @@ export function MediaDialogHeader({ artist, controller, entityId, title }: Media
       <Dialog.Close asChild>
         <button
           type="button"
-          className={`shrink-0 rounded-xl p-2 transition-all duration-300 ${controller.isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/8 hover:bg-white/12'} ${controller.surface.textPrimary}`}
+          className={`shrink-0 rounded-full p-2 transition-all duration-300 ${controller.isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/8 hover:bg-white/12'} ${controller.surface.textPrimary}`}
+          aria-label={t('common.close')}
         >
           <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
             <path

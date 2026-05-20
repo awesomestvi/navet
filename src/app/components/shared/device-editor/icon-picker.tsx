@@ -45,6 +45,7 @@ interface IconPickerProps {
   selectedIcon: string;
   onIconChange: (iconName: string) => void;
   isLightOn: boolean;
+  label?: string;
 }
 
 const lightIcons = [
@@ -91,6 +92,7 @@ export const IconPicker = memo(function IconPicker({
   selectedIcon,
   onIconChange,
   isLightOn,
+  label,
 }: IconPickerProps) {
   const { primaryColor } = useTheme();
   const { t } = useI18n();
@@ -111,7 +113,7 @@ export const IconPicker = memo(function IconPicker({
         <span
           className={`text-sm font-medium transition-colors duration-500 ${editorSurface.sectionLabelClassName}`}
         >
-          {t('lighting.lightIcon')}
+          {label ?? t('lighting.lightIcon')}
         </span>
       </div>
 

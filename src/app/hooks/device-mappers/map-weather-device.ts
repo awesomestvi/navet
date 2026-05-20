@@ -117,18 +117,21 @@ export function mapWeatherDevice(
 
   const sunriseSource = sunEntitySunrise ?? entity.attributes?.sunrise;
   const sunsetSource = sunEntitySunset ?? entity.attributes?.sunset;
+  const configLocationName =
+    config &&
+    typeof config === 'object' &&
+    'location_name' in config &&
+    typeof config.location_name === 'string'
+      ? config.location_name
+      : '';
   const weatherLocation =
     (typeof entity.attributes?.location === 'string' && entity.attributes.location) ||
     (typeof entity.attributes?.city === 'string' && entity.attributes.city) ||
     (typeof entity.attributes?.place === 'string' && entity.attributes.place) ||
-    (config &&
-    typeof config === 'object' &&
-    'location_name' in config &&
-    typeof config.location_name === 'string'
-      ? (config.location_name as string)
-      : undefined) ||
+    name ||
     room ||
-    name;
+    configLocationName ||
+    entityId;
 
   return {
     id: entityId,

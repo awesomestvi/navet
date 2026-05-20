@@ -88,6 +88,22 @@ describe('LockCard', () => {
     expect(screen.getByRole('button', { name: 'Slide to lock' })).toBeInTheDocument();
   });
 
+  it('shows the target locked state while waiting for the lock echo', async () => {
+    setLockEntity('unlocked');
+    renderLockCard();
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Slide to lock' }), { key: ' ' });
+
+    await waitFor(() => expect(updateLockMock).toHaveBeenCalledWith('lock.front_door', 'locked'));
+    expect(screen.getByText('Locking...')).toBeInTheDocument();
+    expect(screen.queryByText('Unlocked')).not.toBeInTheDocument();
+
+    act(() => setLockEntity('locked'));
+
+    expect(screen.getByText('Locked')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slide to unlock' })).toBeInTheDocument();
+  });
+
   it('restores the previous state when the lock service fails', async () => {
     updateLockMock.mockRejectedValue(new Error('Unable to update lock'));
     renderLockCard();

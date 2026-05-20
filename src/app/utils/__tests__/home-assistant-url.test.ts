@@ -139,12 +139,12 @@ describe('home-assistant-url', () => {
     ).toBe('/api/image/serve/image-id/512x512');
   });
 
-  it('still expands Home Assistant media paths for production when a Home Assistant URL exists', () => {
+  it('proxies Home Assistant media paths for hosted runtime artwork resolution', () => {
     expect(
-      resolveHomeAssistantAbsoluteUrl(
+      resolveHomeAssistantProxyUrl(
         '/api/media_player_proxy/media_player.living_room',
         'https://ha.example.test'
       )
-    ).toBe('https://ha.example.test/api/media_player_proxy/media_player.living_room');
+    ).toBe('/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room');
   });
 });

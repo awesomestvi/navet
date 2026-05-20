@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { useAuth } from '@/app/stores/auth-store';
@@ -22,9 +23,20 @@ function resolveArtworkFetchUrl(artworkUrl: string, cacheKey: string) {
   try {
     const url = new URL(artworkUrl, window.location.origin);
     url.searchParams.set('navet_artwork_key', cacheKey);
+    if (url.origin !== window.location.origin) {
+      return url.toString();
+    }
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return artworkUrl;
+  }
+}
+
+function isSameOriginArtworkUrl(artworkUrl: string) {
+  try {
+    return new URL(artworkUrl, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
   }
 }
 
@@ -43,16 +55,24 @@ export function useMediaArtworkResolution({
   const artworkRequestKey = [entityId, liveArtworkKey ?? artworkKey, artworkVersionKey]
     .filter(Boolean)
     .join('::');
-  const resolvedArtwork = liveEntityPicture
-    ? import.meta.env.DEV
-      ? resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl)
-      : resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
-    : null;
   const isPanelMode = isHomeAssistantPanelMode();
+  const runtimeConfig = getRuntimeConfig();
+  const shouldUseDirectDevArtwork =
+    import.meta.env.DEV && !isPanelMode && !runtimeConfig.proxyBaseUrl;
+  const resolvedArtwork = liveEntityPicture
+    ? shouldUseDirectDevArtwork
+      ? resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
+      : resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl)
+    : null;
   const needsAuthenticatedThumbnail = Boolean(
     resolvedArtwork && isMediaPlayerProxyUrl(resolvedArtwork)
   );
-  const canUseResolvedArtworkFallback = !needsAuthenticatedThumbnail || isPanelMode;
+  const isSameOriginArtwork = Boolean(resolvedArtwork && isSameOriginArtworkUrl(resolvedArtwork));
+  const canFetchResolvedArtwork = Boolean(
+    resolvedArtwork && (authToken || isPanelMode || isSameOriginArtwork)
+  );
+  const canUseResolvedArtworkFallback =
+    !needsAuthenticatedThumbnail || isPanelMode || isSameOriginArtwork;
   const fallbackArtwork =
     thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
 
@@ -71,7 +91,7 @@ export function useMediaArtworkResolution({
         return thumbnailDataUrl;
       }
 
-      if (!authToken && !isPanelMode) {
+      if (!canFetchResolvedArtwork) {
         return null;
       }
 
@@ -113,8 +133,8 @@ export function useMediaArtworkResolution({
   }, [
     artworkRequestKey,
     authToken,
+    canFetchResolvedArtwork,
     entityId,
-    isPanelMode,
     needsAuthenticatedThumbnail,
     resolvedArtwork,
   ]);

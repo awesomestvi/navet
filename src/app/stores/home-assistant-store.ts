@@ -18,6 +18,7 @@ interface HomeAssistantState {
   areas: HomeAssistantAreaRegistryEntry[];
   deviceRegistry: HomeAssistantDeviceRegistryEntry[];
   entityRegistry: HomeAssistantEntityRegistryEntry[];
+  registriesHydrated: boolean;
   connection: Connection | null;
   error: string | null;
   connecting: boolean;
@@ -41,6 +42,7 @@ const initialState: HomeAssistantState = {
   areas: [],
   deviceRegistry: [],
   entityRegistry: [],
+  registriesHydrated: false,
   connection: null,
   error: null,
   connecting: false,
@@ -95,7 +97,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     connect: async (config: HomeAssistantConfiguration) => {
       const attemptId = ++connectAttemptId;
       clearConnectionGraceTimer();
-      set({ connecting: true, error: null });
+      set({ connecting: true, error: null, registriesHydrated: false });
       useErrorStore.getState().clearError();
       clearServiceSubscriptions();
 
@@ -151,7 +153,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
               if (attemptId !== connectAttemptId) {
                 return;
               }
-              set({ areas, deviceRegistry: devices, entityRegistry });
+              set({ areas, deviceRegistry: devices, entityRegistry, registriesHydrated: true });
             }
           ),
           homeAssistantService.addListener(
@@ -205,6 +207,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
           areas: homeAssistantService.getAreas(),
           deviceRegistry: homeAssistantService.getDeviceRegistry(),
           entityRegistry: homeAssistantService.getEntityRegistry(),
+          registriesHydrated: true,
           connection: homeAssistantService.getConnection(),
           connecting: false,
           reconnecting: false,
@@ -239,6 +242,17 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
       clearServiceSubscriptions();
       homeAssistantService.setPanelHass(hass);
       useErrorStore.getState().clearError();
+      activeServiceUnsubscribe = homeAssistantService.addListener(
+        'registries',
+        ({ areas, devices, entities }) => {
+          set({
+            areas,
+            deviceRegistry: devices,
+            entityRegistry: entities,
+            registriesHydrated: true,
+          });
+        }
+      );
 
       set({
         connected: true,
@@ -246,6 +260,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
         entities: homeAssistantService.getEntities(),
         user: homeAssistantService.getUser(),
         connection: homeAssistantService.getConnection(),
+        registriesHydrated: false,
         error: null,
         connecting: false,
         reconnecting: false,
@@ -263,6 +278,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
             areas: homeAssistantService.getAreas(),
             deviceRegistry: homeAssistantService.getDeviceRegistry(),
             entityRegistry: homeAssistantService.getEntityRegistry(),
+            registriesHydrated: true,
           });
         })
         .catch((error) => {

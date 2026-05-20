@@ -42,7 +42,7 @@ export interface DashboardConfigPayload {
   customCards?: ReturnType<typeof useCustomCardsStore.getState>['cards'];
   dashboardEntities?: Pick<
     ReturnType<typeof useDashboardEntitiesStore.getState>,
-    'hiddenEntityIds' | 'onboardingCompleted'
+    'hiddenEntityIds' | 'lockedCardIds' | 'onboardingCompleted'
   >;
   lightPresets?: Pick<
     ReturnType<typeof useLightPresetStore.getState>,
@@ -181,9 +181,11 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
     customCards: pruneEmptyArray(customCardsState.cards),
     dashboardEntities:
       dashboardEntitiesState.hiddenEntityIds.length > 0 ||
+      dashboardEntitiesState.lockedCardIds.length > 0 ||
       dashboardEntitiesState.onboardingCompleted
         ? {
             hiddenEntityIds: dashboardEntitiesState.hiddenEntityIds,
+            lockedCardIds: dashboardEntitiesState.lockedCardIds,
             onboardingCompleted: dashboardEntitiesState.onboardingCompleted,
           }
         : undefined,
@@ -532,6 +534,7 @@ export const importDashboardConfig = (value: unknown) => {
 
   useDashboardEntitiesStore.getState().replaceDashboardEntitiesState({
     hiddenEntityIds: sanitizeStringArray(dashboardEntities.hiddenEntityIds),
+    lockedCardIds: sanitizeStringArray(dashboardEntities.lockedCardIds),
     onboardingCompleted:
       typeof dashboardEntities.onboardingCompleted === 'boolean'
         ? dashboardEntities.onboardingCompleted

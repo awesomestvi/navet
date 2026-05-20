@@ -139,6 +139,7 @@ export function BatterySettingsDialog({
         <CardDialogBody>
           <CardDialogHeader
             title={t('widgets.battery.settings.title')}
+            description={t('widgets.common.widget')}
             showRoomSelector={false}
             eyebrow={
               <CompactRoomSelector

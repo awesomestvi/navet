@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useCustomCardsStore, useDashboardEntitiesStore } from '@/app/features/dashboard';
-import { importDashboardConfig, importDashboardConfigFromUrl } from '@/app/utils/dashboard-config';
+import {
+  exportDashboardConfig,
+  importDashboardConfig,
+  importDashboardConfigFromUrl,
+} from '@/app/utils/dashboard-config';
 
 const baseConfig = {
   version: 3,
@@ -79,6 +83,11 @@ describe('dashboard-config import hardening', () => {
   it('sanitizes imported storage records before persistence', () => {
     importDashboardConfig({
       ...baseConfig,
+      dashboardEntities: {
+        hiddenEntityIds: ['light.hidden'],
+        lockedCardIds: ['light.kitchen', 123, 'custom-note'],
+        onboardingCompleted: true,
+      },
       cardSizes: {
         'light.kitchen': 'large',
         bad: { nested: true },
@@ -93,6 +102,18 @@ describe('dashboard-config import hardening', () => {
     expect(localStorage.getItem(STORAGE_KEYS.cardSizes)).not.toContain('nested');
     expect(localStorage.getItem(STORAGE_KEYS.cardOrders)).toContain('switch.kettle');
     expect(localStorage.getItem(STORAGE_KEYS.homeDashboardLayout)).toContain('null');
+    expect(useDashboardEntitiesStore.getState().lockedCardIds).toEqual([
+      'light.kitchen',
+      'custom-note',
+    ]);
+  });
+
+  it('exports locked card ids with dashboard entity state', () => {
+    useDashboardEntitiesStore.getState().lockCard('light.kitchen');
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.dashboardEntities?.lockedCardIds).toEqual(['light.kitchen']);
   });
 
   it('imports dashboard config from a runtime URL', async () => {

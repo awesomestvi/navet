@@ -166,7 +166,6 @@ The add-on:
 - Uses `ingress: true`
 - Exposes optional direct browser access on `8099/tcp`
 - Generates `/config.js` from add-on options
-- Falls back to manual login in Navet if no options are provided
 - Optionally imports a shared dashboard YAML export on first launch
 
 The repository also includes **Navet Dev**, a separate add-on entry with slug `navet_dev`. It uses
@@ -175,8 +174,6 @@ Assistant pulls `ghcr.io/awesomestvi/{arch}-navet-addon:dev`.
 
 ### Add-on Options
 
-- `hass_url`
-- `token`
 - `dashboard_config_url`
 
 ### Local Add-on Development
@@ -188,7 +185,7 @@ Typical flow:
 3. In Home Assistant, open Settings -> Add-ons -> Add-on Store
 4. Refresh the custom add-on repository
 5. Open the `Navet Dev` add-on
-6. Optionally set `hass_url`, `token`, and `dashboard_config_url`
+6. Optionally set `dashboard_config_url`
 7. Install, rebuild, or reinstall the add-on image for the current `dev` tag
 8. Open Navet through the Ingress panel entry
 
@@ -218,8 +215,8 @@ The app resolves Home Assistant defaults in this order:
 3. Manual setup in the UI
 
 Standalone Docker and add-on deployments serve `/config.js` only from the running instance. Treat
-`NAVET_HASS_TOKEN` as a deployment secret and use a least-privilege Home Assistant token for shared
-dashboard devices.
+`NAVET_HASS_TOKEN` as a deployment secret for standalone Docker deployments, and use a
+least-privilege Home Assistant token for shared dashboard devices.
 
 ## Shared Dashboard Profile
 
@@ -230,10 +227,9 @@ Docker and Home Assistant add-on deployments expose a same-origin dashboard prof
 - `GET /__navet_profile__/default`
 - `PUT /__navet_profile__/default`
 
-The frontend loads a shared session before showing the login form, imports the profile on
-authenticated startup when it is newer than the local profile, then saves completed dashboard changes
-back every few seconds. This lets credentials and a dashboard created in one browser become available
-in another browser or Home Assistant companion-app WebView.
+The frontend imports the shared profile on authenticated startup when it is newer than the local
+profile, then saves completed dashboard changes back every few seconds. This lets a dashboard created
+in one browser become available in another browser or Home Assistant companion-app WebView.
 
 Standalone Docker deployments should mount `/data` to keep the profile across container recreates.
 The included `docker-compose.yml` uses a named `navet-data` volume for this.
@@ -252,10 +248,6 @@ The current dashboard build includes a few runtime-focused optimizations:
 - Configurable entity card interaction styles with a live preview in Settings
 - Optional lower visual quality for slower devices such as Raspberry Pi deployments
 
-## Remaining Limitation
-
-The current add-on still expects explicit Home Assistant connection details. It does not yet use Supervisor-native authentication or automatically derive a user-scoped Home Assistant session.
-
 ## CI Pipeline
 
 The CI workflow runs on all branch pushes and pull requests. It currently:
@@ -272,7 +264,7 @@ The CI workflow runs on all branch pushes and pull requests. It currently:
 
 - Keep Docker and add-on image tags aligned with `package.json` and `addons/navet/config.yaml`
 - Prefer documented release tags for public users over asking them to track `main`
-- Keep `NAVET_HASS_TOKEN` server-only in Docker and add-on deployments
+- Keep `NAVET_HASS_TOKEN` server-only in Docker deployments
 
 ## Notes Specific to This Repo
 
@@ -286,4 +278,4 @@ The CI workflow runs on all branch pushes and pull requests. It currently:
 
 ## If You Want Full Add-on UX
 
-The main code change still missing is Supervisor-native auth and configuration discovery. Without that, the add-on works as a polished hosted Navet UI with explicit HA connection settings.
+The main code change still missing is Supervisor-native auth and configuration discovery.

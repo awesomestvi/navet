@@ -196,6 +196,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                 selectedIcon={selectedIcon}
                 onIconChange={onIconChange}
                 isLightOn={isOn}
+                label={t('lighting.switch.icon')}
               />
             </TabPanel>
           </Tabs>

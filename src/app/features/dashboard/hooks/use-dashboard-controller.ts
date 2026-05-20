@@ -41,6 +41,7 @@ export function useDashboardController(): DashboardController {
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
+  const registriesHydrated = useHomeAssistant(homeAssistantSelectors.registriesHydrated);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
     STORAGE_KEYS.allViewGrouping,
@@ -61,7 +62,14 @@ export function useDashboardController(): DashboardController {
 
   const { activeRoom, changeRoom } = useRoomNavigation(ALL_ROOMS_ID);
 
-  useDashboardRoomNavigation(activeRoom, rooms, changeRoom, hassEntitiesHydrated, devicesLoaded);
+  useDashboardRoomNavigation(
+    activeRoom,
+    rooms,
+    changeRoom,
+    hassEntitiesHydrated,
+    devicesLoaded,
+    registriesHydrated
+  );
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
 
   const { isEditMode, toggleEditMode } = useEditMode();

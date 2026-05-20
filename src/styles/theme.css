@@ -144,37 +144,62 @@
 
   html {
     font-size: 16px;
+    scrollbar-gutter: auto;
+  }
+
+  html[data-pointer-modality="mouse"],
+  html[data-pointer-modality="mouse"] * {
+    scrollbar-gutter: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  body::-webkit-scrollbar,
-  *::-webkit-scrollbar {
+  html[data-pointer-modality="touch"],
+  html[data-pointer-modality="touch"] * {
+    -ms-overflow-style: none;
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+
+  @supports (overflow: overlay) {
+    html[data-pointer-modality="mouse"],
+    html[data-pointer-modality="mouse"] body {
+      overflow: overlay;
+    }
+  }
+
+  html[data-pointer-modality="mouse"] body::-webkit-scrollbar,
+  html[data-pointer-modality="mouse"] *::-webkit-scrollbar {
     width: var(--scrollbar-size);
     height: var(--scrollbar-size);
   }
 
-  body::-webkit-scrollbar-track,
-  *::-webkit-scrollbar-track {
+  html[data-pointer-modality="touch"] body::-webkit-scrollbar,
+  html[data-pointer-modality="touch"] *::-webkit-scrollbar {
+    display: none;
+  }
+
+  html[data-pointer-modality="mouse"] body::-webkit-scrollbar-track,
+  html[data-pointer-modality="mouse"] *::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
     border-radius: 999px;
   }
 
-  body::-webkit-scrollbar-thumb,
-  *::-webkit-scrollbar-thumb {
+  html[data-pointer-modality="mouse"] body::-webkit-scrollbar-thumb,
+  html[data-pointer-modality="mouse"] *::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border: 2px solid var(--scrollbar-thumb-border);
     border-radius: 999px;
     min-height: 40px;
   }
 
-  body::-webkit-scrollbar-thumb:hover,
-  *::-webkit-scrollbar-thumb:hover {
+  html[data-pointer-modality="mouse"] body::-webkit-scrollbar-thumb:hover,
+  html[data-pointer-modality="mouse"] *::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover);
   }
 
-  body::-webkit-scrollbar-corner,
-  *::-webkit-scrollbar-corner {
+  html[data-pointer-modality="mouse"] body::-webkit-scrollbar-corner,
+  html[data-pointer-modality="mouse"] *::-webkit-scrollbar-corner {
     background: transparent;
   }
 
@@ -452,9 +477,9 @@
   }
 
   .room-nav-scrollbar {
-    --room-nav-scrollbar-thumb: rgba(148, 163, 184, 0.5);
-    --room-nav-scrollbar-thumb-hover: rgba(148, 163, 184, 0.72);
-    --room-nav-scrollbar-track: rgba(148, 163, 184, 0.12);
+    --room-nav-scrollbar-thumb: rgba(2, 6, 23, 0.28);
+    --room-nav-scrollbar-thumb-hover: rgba(2, 6, 23, 0.38);
+    --room-nav-scrollbar-track: rgba(2, 6, 23, 0.1);
   }
 
   .room-nav-scrollbar-bar {
@@ -471,6 +496,13 @@
     pointer-events: auto;
   }
 
+  html[data-pointer-modality="touch"] .room-nav-scrollbar:hover .room-nav-scrollbar-bar,
+  html[data-pointer-modality="touch"] .room-nav-scrollbar:focus-within .room-nav-scrollbar-bar,
+  html[data-pointer-modality="touch"] .room-nav-scrollbar.is-dragging .room-nav-scrollbar-bar {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .room-nav-scrollbar-thumb {
     left: var(--room-nav-scrollbar-left);
     width: var(--room-nav-scrollbar-width);
@@ -482,10 +514,65 @@
     background: var(--room-nav-scrollbar-thumb-hover);
   }
 
+  .tab-list-scrollbar {
+    --tab-list-scrollbar-left: 0px;
+    --tab-list-scrollbar-width: 0px;
+    position: relative;
+  }
+
+  .tab-list-scrollbar::before,
+  .tab-list-scrollbar::after {
+    bottom: 2px;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transition:
+      opacity 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .tab-list-scrollbar::before {
+    background: rgba(2, 6, 23, 0.1);
+    border-radius: 999px;
+    height: 2px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .tab-list-scrollbar::after {
+    background: rgba(2, 6, 23, 0.28);
+    border-radius: 999px;
+    height: 2px;
+    left: var(--tab-list-scrollbar-left);
+    width: var(--tab-list-scrollbar-width);
+  }
+
+  html[data-pointer-modality="mouse"]
+    .tab-list-scrollbar[data-scrollbar-overflow="true"]:hover::before,
+  html[data-pointer-modality="mouse"]
+    .tab-list-scrollbar[data-scrollbar-overflow="true"]:hover::after,
+  html[data-pointer-modality="mouse"]
+    .tab-list-scrollbar[data-scrollbar-overflow="true"]:focus-within::before,
+  html[data-pointer-modality="mouse"]
+    .tab-list-scrollbar[data-scrollbar-overflow="true"]:focus-within::after {
+    opacity: 1;
+  }
+
+  html[data-pointer-modality="mouse"]
+    .tab-list-scrollbar[data-scrollbar-overflow="true"]:hover::after {
+    background: rgba(2, 6, 23, 0.36);
+  }
+
+  html[data-pointer-modality="touch"] .tab-list-scrollbar::before,
+  html[data-pointer-modality="touch"] .tab-list-scrollbar::after {
+    opacity: 0;
+  }
+
   .overlay-scroll-area {
-    --overlay-scrollbar-track: rgba(148, 163, 184, 0.12);
-    --overlay-scrollbar-thumb: rgba(148, 163, 184, 0.5);
-    --overlay-scrollbar-thumb-hover: rgba(148, 163, 184, 0.72);
+    --overlay-scrollbar-track: rgba(2, 6, 23, 0.1);
+    --overlay-scrollbar-thumb: rgba(2, 6, 23, 0.28);
+    --overlay-scrollbar-thumb-hover: rgba(2, 6, 23, 0.38);
   }
 
   .overlay-scrollbar-track {
@@ -502,6 +589,13 @@
   .overlay-scroll-area.is-dragging .overlay-scrollbar-track {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  html[data-pointer-modality="touch"] .overlay-scroll-area:hover .overlay-scrollbar-track,
+  html[data-pointer-modality="touch"] .overlay-scroll-area:focus-within .overlay-scrollbar-track,
+  html[data-pointer-modality="touch"] .overlay-scroll-area.is-dragging .overlay-scrollbar-track {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .overlay-scrollbar-thumb {

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup or configuration question
+    url: https://github.com/awesomestvi/navet/discussions
+    about: Ask for help with Home Assistant setup, dashboard configuration, or local installation.
+  - name: Security report
+    url: https://github.com/awesomestvi/navet/security/advisories/new
+    about: Report vulnerabilities privately. Do not open public issues for security problems.

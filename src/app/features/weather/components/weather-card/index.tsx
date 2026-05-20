@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { Navigation } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
@@ -117,7 +117,7 @@ export const WeatherCard = memo(function WeatherCard({
     : isMedium
       ? 'mb-1.5 gap-3'
       : 'mb-3 gap-3';
-  const compactLocationRowClassName = isMedium ? 'gap-1.5' : 'gap-2';
+  const compactLocationRowClassName = 'gap-1.5';
   const compactLocationTextClassName = isSmall ? 'text-[13px]' : 'text-sm';
   const compactTemperatureTextClassName = isSmall ? 'text-[2rem]' : 'text-3xl';
   const compactMetaTextClassName = isSmall ? 'text-xs' : 'text-sm';
@@ -212,12 +212,12 @@ export const WeatherCard = memo(function WeatherCard({
           <div className={`flex items-start justify-between ${compactHeaderClassName}`}>
             <div className="min-w-0">
               <div className={`inline-flex min-w-0 items-center ${compactLocationRowClassName}`}>
-                <MapPin
-                  className={`${isMedium || isSmall ? 'mt-0 h-3.5 w-3.5' : 'mt-0.5 h-4 w-4'} shrink-0`}
+                <Navigation
+                  className={`${isMedium || isSmall ? 'h-3.5 w-3.5' : 'h-4 w-4'} shrink-0`}
                   style={iconStyleSecondary}
                 />
                 <div
-                  className={`truncate ${isMedium || isSmall ? compactLocationTextClassName : 'text-base'} font-semibold tracking-[-0.03em]`}
+                  className={`truncate ${isMedium || isSmall ? compactLocationTextClassName : 'text-base'} font-semibold leading-none tracking-[-0.03em]`}
                   style={titleStyle}
                 >
                   {cityName}

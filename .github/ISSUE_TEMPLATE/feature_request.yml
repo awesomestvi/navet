@@ -1,0 +1,72 @@
+name: Feature request
+description: Suggest a user-facing improvement for Navet.
+title: "[Feature]: "
+labels:
+  - "status: needs-triage"
+  - "type: feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for product improvements, new user workflows, and new capabilities.
+
+        For setup questions or troubleshooting your own Home Assistant configuration, use Discussions instead of opening an issue.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This is a product feature request, not a setup or support question.
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard
+        - Cards / widgets
+        - Device support
+        - Home Assistant connection
+        - Login / onboarding
+        - Search
+        - Settings
+        - Themes / wallpapers
+        - PWA install / updates
+        - Home Assistant add-on
+        - Docker
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem would this solve?
+      placeholder: "I want to ... but today ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like Navet to support.
+      placeholder: "Navet should ..."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Mention workarounds or other approaches you tried.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add mockups, screenshots, links, or examples if useful.
+    validations:
+      required: false

@@ -51,8 +51,8 @@ export const BrightnessPresets = memo(function BrightnessPresets({
               key={preset.brightness}
               onClick={() => onBrightnessChange(preset.brightness)}
               disabled={!isOn}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 ${
-                isOn ? 'hover:scale-110' : editorSurface.disabledCircleClassName
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 ${
+                isOn ? 'hover:scale-105' : editorSurface.disabledCircleClassName
               } ${isSelected ? 'scale-110 shadow-lg' : ''}`}
               style={{
                 ...(isSelected

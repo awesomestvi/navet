@@ -109,7 +109,7 @@ export function SettingsHero({ navItems, styles }: SettingsHeroProps) {
       title={t('settings.hero.title')}
       description={t('settings.hero.description')}
       actions={
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
           {navItems.map(({ id, label, icon: Icon }) => (
             <a
               key={id}

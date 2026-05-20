@@ -87,7 +87,8 @@ export const useHADevices = () => {
 
     for (const [entityId, entity] of Object.entries(entities)) {
       const domain = getDomain(entityId);
-      const name = getName(entity);
+      const entityEntry = entityRegistryMap.get(entityId);
+      const name = getName(entity, entityEntry);
       const room = resolveEntityRoom(
         entityId,
         entity,
@@ -102,7 +103,6 @@ export const useHADevices = () => {
           break;
 
         case 'switch': {
-          const entityEntry = entityRegistryMap.get(entityId);
           if (shouldSkipSwitchDevice(entityId, entityEntry, indexes)) {
             break;
           }

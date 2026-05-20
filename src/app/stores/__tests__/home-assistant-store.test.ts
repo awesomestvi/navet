@@ -142,7 +142,27 @@ describe('homeAssistantStore', () => {
     expect(homeAssistantServiceStub.addListener).toHaveBeenCalledTimes(5);
     expect(homeAssistantStore.getState().connected).toBe(true);
     expect(homeAssistantStore.getState().areas).toHaveLength(1);
+    expect(homeAssistantStore.getState().registriesHydrated).toBe(true);
     expect(homeAssistantStore.getState().entities?.['light.kitchen']?.state).toBe('on');
+  });
+
+  it('marks registries hydrated after registry service events', async () => {
+    await homeAssistantStore.getState().connect({
+      hassUrl: 'https://ha.example.com',
+      token: 'abc',
+    });
+    homeAssistantStore.setState({ registriesHydrated: false });
+
+    homeAssistantServiceStub.listeners.registries.forEach((listener) => {
+      listener({
+        areas: [{ area_id: 'office', name: 'Office' }],
+        devices: [{ id: 'device-2', area_id: 'office' }],
+        entities: [{ entity_id: 'light.office', area_id: 'office' }],
+      });
+    });
+
+    expect(homeAssistantStore.getState().registriesHydrated).toBe(true);
+    expect(homeAssistantStore.getState().areas).toEqual([{ area_id: 'office', name: 'Office' }]);
   });
 
   it('debounces entity updates from the service', async () => {
@@ -179,6 +199,7 @@ describe('homeAssistantStore', () => {
     expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled();
     expect(homeAssistantStore.getState().connected).toBe(false);
     expect(homeAssistantStore.getState().entities).toBeNull();
+    expect(homeAssistantStore.getState().registriesHydrated).toBe(false);
   });
 
   it('propagates connection errors into the HA store and global error store', async () => {

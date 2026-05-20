@@ -169,6 +169,18 @@ export const HVACGauge = memo(function HVACGauge({
 
     return (
       <div className={cn('relative h-[10.5rem] w-full overflow-visible', className)}>
+        <div
+          className="pointer-events-none absolute right-[-8.5rem] top-1/2 h-[18rem] w-[18rem] -translate-y-1/2 rounded-full blur-3xl"
+          style={{
+            background: `radial-gradient(circle, ${withAlpha(gaugeColors.secondary, '66')} 0%, ${withAlpha(gaugeColors.primary, '34')} 42%, transparent 72%)`,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute right-[-3.25rem] top-1/2 h-[13rem] w-[10rem] -translate-y-1/2 rounded-full blur-2xl"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${withAlpha(gaugeColors.primary, '2f')} 42%, ${withAlpha(gaugeColors.secondary, '55')} 100%)`,
+          }}
+        />
         <div className="absolute bottom-0 left-0 z-[2] inline-flex max-w-[43%] flex-col px-8 pb-12">
           <div
             className="text-3xl font-bold leading-none"
@@ -204,6 +216,8 @@ export const HVACGauge = memo(function HVACGauge({
           bandPrimaryColor={bandColors.primary}
           bandSecondaryColor={bandColors.secondary}
           bandGlowColor={bandColors.glow}
+          faceTreatment="soft"
+          faceTintColor={gaugeColors.primary}
           onValueChange={handleTemperatureChange}
           onValueCommit={handleTemperatureCommit}
           className="absolute right-[-9.25rem] top-[54%] h-[17rem] w-[17rem] -translate-y-1/2"

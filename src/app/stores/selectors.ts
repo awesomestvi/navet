@@ -174,6 +174,7 @@ export const homeAssistantSelectors = {
   entity: (entityId: string) => (state: HomeAssistantStore) => state.entities?.[entityId],
   // Entities hydration check — stable selector for checking if entities are loaded
   entitiesHydrated: (state: HomeAssistantStore) => state.entities != null,
+  registriesHydrated: (state: HomeAssistantStore) => state.registriesHydrated,
   user: (state: HomeAssistantStore) => state.user,
   areas: (state: HomeAssistantStore) => state.areas,
   deviceRegistry: (state: HomeAssistantStore) => state.deviceRegistry,

@@ -126,19 +126,14 @@ custom panel for the simplest Home Assistant-native setup.
 
 2. Refresh the add-on store.
 3. Install **Navet**.
-4. Open the add-on configuration and set:
-
-   ```yaml
-   hass_url: http://homeassistant.local:8123
-   token: your-long-lived-access-token
-   dashboard_config_url: ""
-   ```
+4. If you are a returning user, you can set `dashboard_config_url` to your exported Navet
+   dashboard config file. Skip this if you are a new user.
 
 5. Start the add-on and open Navet from the Home Assistant sidebar, or use the add-on's `8099`
    direct-access port for a dashboard view without the Home Assistant sidebar.
 
-Set `dashboard_config_url` to a Navet dashboard YAML export if you want fresh browsers or Home
-Assistant companion-app WebViews to bootstrap the same dashboard instead of starting from onboarding.
+The `dashboard_config_url` option lets fresh browsers or Home Assistant companion-app WebViews
+bootstrap the same dashboard instead of starting from onboarding.
 After first launch, Docker and add-on deployments also keep the entered session and dashboard layout
 changes in shared same-origin storage so other browsers can pick them up.
 
@@ -188,9 +183,9 @@ docker compose pull
 docker compose up -d
 ```
 
-`NAVET_HASS_TOKEN` is injected into Docker and add-on runtime config so those deployments can start
-without the login form. Do not expose it in a public static build, Vite client variable, or
-checked-in file, and use a least-privilege Home Assistant token for shared dashboard devices.
+`NAVET_HASS_TOKEN` is injected into Docker runtime config so Docker deployments can start without
+the login form. Do not expose it in a public static build, Vite client variable, or checked-in file,
+and use a least-privilege Home Assistant token for shared dashboard devices.
 `NAVET_DASHBOARD_CONFIG_URL` can point fresh browsers at a Navet dashboard YAML export to restore the
 same layout on first launch.
 Docker and add-on deployments persist ongoing session and dashboard profile sync at `/data`.
@@ -228,9 +223,8 @@ your Home Assistant URL and long-lived access token in the onboarding screen. Th
 that session in browser storage, so contributors do not need a repo-root `.env` file for normal
 development.
 
-Use `.env.example` only when you need runtime defaults for Docker, add-on, or production-style
-preview flows. `NAVET_HASS_URL` and `NAVET_HASS_TOKEN` are deployment/runtime values, not required
-source setup.
+Use `.env.example` only when you need runtime defaults for Docker or production-style preview flows.
+`NAVET_HASS_URL` and `NAVET_HASS_TOKEN` are deployment/runtime values, not required source setup.
 
 For a production-style local preview:
 

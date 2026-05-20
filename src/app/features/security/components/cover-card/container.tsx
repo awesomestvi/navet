@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { parseNumberish } from '@/app/hooks/ha-entity-utils';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEVICE_CLASS_CONFIG } from './constants';
@@ -12,6 +13,15 @@ const COVER_FEATURE_OPEN = 1;
 const COVER_FEATURE_CLOSE = 2;
 const COVER_FEATURE_SET_POSITION = 4;
 const COVER_FEATURE_STOP = 8;
+
+function normalizeCoverPosition(value: unknown) {
+  const parsed = parseNumberish(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(parsed)));
+}
 
 function supportsCoverFeature(
   supportedFeatures: number | undefined,
@@ -37,7 +47,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   onSizeChange,
   isEditMode,
 }: CoverCardProps) {
-  const resolvedInitialPosition = initialPosition ?? 0;
+  const resolvedInitialPosition = normalizeCoverPosition(initialPosition) ?? 0;
   const [position, setPosition] = useState(resolvedInitialPosition);
   const [deviceClass, setDeviceClass] = useState<DeviceClass>(initialDeviceClass);
   const [coverState, setCoverState] = useState<CoverState>(
@@ -48,12 +58,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const runAction = useServiceActionHandler();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const parsedLiveSupportedFeatures = parseNumberish(liveAttributes?.supported_features);
   const liveSupportedFeatures =
-    typeof liveAttributes?.supported_features === 'number'
-      ? liveAttributes.supported_features
-      : undefined;
+    parsedLiveSupportedFeatures === null ? undefined : Math.round(parsedLiveSupportedFeatures);
   const resolvedSupportedFeatures = liveSupportedFeatures ?? initialSupportedFeatures;
-  const hasLivePosition = typeof liveAttributes?.current_position === 'number';
+  const livePosition = normalizeCoverPosition(liveAttributes?.current_position);
+  const hasLivePosition = livePosition !== null;
   const hasPosition = hasLivePosition || Boolean(initialHasPosition);
   const canOpen = supportsCoverFeature(resolvedSupportedFeatures, COVER_FEATURE_OPEN, true);
   const canClose = supportsCoverFeature(resolvedSupportedFeatures, COVER_FEATURE_CLOSE, true);
@@ -65,9 +75,9 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   useEffect(() => {
     if (!liveEntity) return;
     const attrs = liveEntity.attributes as Record<string, unknown>;
-    const livePosition = typeof attrs.current_position === 'number' ? attrs.current_position : null;
-    if (livePosition !== null) {
-      setPosition(livePosition);
+    const nextPosition = normalizeCoverPosition(attrs.current_position);
+    if (nextPosition !== null) {
+      setPosition(nextPosition);
     }
     const liveState = liveEntity.state as CoverState;
     if (['open', 'closed', 'opening', 'closing'].includes(liveState)) {
@@ -83,16 +93,33 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     [id]
   );
 
-  // Used by the large-card slider for direct position setting.
-  const handlePositionChange = (newPosition: number) => {
+  const previewPosition = (newPosition: number) => {
     if (!canSetPosition) {
       return;
     }
 
-    setPosition(newPosition);
-    setCoverState(newPosition === 100 ? 'open' : newPosition === 0 ? 'closed' : 'open');
+    const nextPosition = normalizeCoverPosition(newPosition);
+    if (nextPosition === null) {
+      return;
+    }
+
+    setPosition(nextPosition);
+    setCoverState(nextPosition === 100 ? 'open' : nextPosition === 0 ? 'closed' : 'open');
+  };
+
+  const commitPosition = (newPosition: number) => {
+    if (!canSetPosition) {
+      return;
+    }
+
+    const nextPosition = normalizeCoverPosition(newPosition);
+    if (nextPosition === null) {
+      return;
+    }
+
+    previewPosition(nextPosition);
     void runAction(
-      () => callCoverService('set_cover_position', { position: newPosition }),
+      () => callCoverService('set_cover_position', { position: nextPosition }),
       t('cover.feedback.updateFailed')
     );
   };
@@ -179,7 +206,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       isSettingsOpen={isSettingsOpen}
       setIsSettingsOpen={setIsSettingsOpen}
       onSizeChange={onSizeChange}
-      handlePositionChange={handlePositionChange}
+      onPreviewPosition={previewPosition}
+      onCommitPosition={commitPosition}
       handleOpen={handleOpen}
       handleClose={handleClose}
       handleStop={handleStop}

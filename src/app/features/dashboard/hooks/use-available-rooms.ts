@@ -12,7 +12,7 @@ export function useAvailableRooms(
 
   const availableRooms = useMemo(() => {
     const discoveredOnlyRooms = discoveredRooms.filter((room) => !areaRooms.includes(room));
-    return [...new Set([...discoveredRooms, ...discoveredOnlyRooms])];
+    return [...new Set([...areaRooms, ...discoveredOnlyRooms])];
   }, [areaRooms, discoveredRooms]);
 
   return { areaRooms, availableRooms };

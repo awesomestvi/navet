@@ -56,17 +56,24 @@ Recommended lightweight flow:
 
 1. Decide whether the change is `patch`, `minor`, or `beta prerelease`.
 2. Bump `package.json`.
-3. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow publishes this section as the release notes that HACS/Home Assistant can show before users update.
-4. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version` matches the package/tag version.
-5. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
-6. If the release meaning changed, update this file.
-7. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
-8. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Prerelease tags also trigger app image publishing and add-on image publishing.
-9. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
+3. Read Linear's `Ready for release` column and use those tickets to draft the release notes. If the column has no tickets for the release, draft a concise changelog from commit messages instead.
+4. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow publishes this section as the release notes that HACS/Home Assistant can show before users update.
+5. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version` matches the package/tag version.
+6. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
+7. If the release meaning changed, update this file.
+8. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
+9. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Prerelease tags also trigger app image publishing and add-on image publishing.
+10. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
 
 ## Release Note Style
 
-Build release notes from every commit since the previous release tag. Query the range with `git log --reverse --format=%H%x09%s%n%b <previous-tag>..<release-tag>`. Account for each commit, but consolidate duplicate or related changes into one user-facing bullet.
+When preparing a release, always check Linear first:
+
+1. Read the Linear `Ready for release` column.
+2. Use those tickets as the primary release-note source when the column has tickets.
+3. If the release has no tickets in `Ready for release`, fall back to commit messages.
+
+For the commit-message fallback, build concise release notes from every commit since the previous release tag. Query the range with `git log --reverse --format=%H%x09%s%n%b <previous-tag>..<release-tag>`. Account for each commit, but consolidate duplicate or related changes into one user-facing bullet.
 
 Use this format inside the matching `CHANGELOG.md` version section:
 

@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { formatCalendarTime, formatClock, formatMetricNumber } from '../ha-entity-utils';
+import { formatCalendarTime, formatClock, formatMetricNumber, getName } from '../ha-entity-utils';
+
+describe('ha-entity-utils entity naming', () => {
+  it('prefers Home Assistant registry names over cached friendly names', () => {
+    expect(
+      getName(
+        {
+          entity_id: 'light.kitchen',
+          state: 'on',
+          attributes: { friendly_name: 'Old kitchen name' },
+        } as never,
+        { name: 'Kitchen island' }
+      )
+    ).toBe('Kitchen island');
+  });
+});
 
 describe('ha-entity-utils time formatting', () => {
   it('formats calendar times in 24-hour mode when requested', () => {

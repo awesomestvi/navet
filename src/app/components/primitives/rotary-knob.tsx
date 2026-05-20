@@ -76,6 +76,8 @@ export interface RotaryKnobProps {
   bandPrimaryColor: string;
   bandSecondaryColor: string;
   bandGlowColor: string;
+  faceTreatment?: 'default' | 'soft';
+  faceTintColor?: string;
   onValueChange?: (value: number) => void;
   onValueCommit?: (value: number) => void;
 }
@@ -131,6 +133,8 @@ export const RotaryKnob = memo(function RotaryKnob({
   bandPrimaryColor,
   bandSecondaryColor,
   bandGlowColor,
+  faceTreatment = 'default',
+  faceTintColor,
   onValueChange,
   onValueCommit,
 }: RotaryKnobProps) {
@@ -145,6 +149,7 @@ export const RotaryKnob = memo(function RotaryKnob({
   const safeStep = step || 1;
   const knobTurns = (value - min) / safeStep;
   const tickRotation = normalizeAngle(knobTurns * 14);
+  const isSoftFace = faceTreatment === 'soft';
 
   const resetDragState = useCallback(() => {
     activePointerIdRef.current = null;
@@ -299,6 +304,13 @@ export const RotaryKnob = memo(function RotaryKnob({
   };
 
   const visuals = getRotaryKnobVisuals(theme);
+  const softFaceTint = faceTintColor ?? bandPrimaryColor;
+  const knobCenterBackground = isSoftFace
+    ? `radial-gradient(circle at 48% 42%, rgba(255,255,255,0.22), color-mix(in srgb, ${softFaceTint} 34%, transparent) 42%, color-mix(in srgb, ${softFaceTint} 20%, transparent) 70%, rgba(255,255,255,0.06) 100%)`
+    : visuals.knobCenterGradient;
+  const knobInnerBackground = isSoftFace
+    ? `radial-gradient(circle at 42% 36%, rgba(255,255,255,0.16), color-mix(in srgb, ${softFaceTint} 18%, transparent) 52%, rgba(255,255,255,0.05) 100%)`
+    : visuals.knobInnerGradient;
   const knobVisual = (
     <>
       <svg
@@ -356,20 +368,24 @@ export const RotaryKnob = memo(function RotaryKnob({
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: visuals.knobCenterGradient,
+          background: knobCenterBackground,
           boxShadow: isOn
-            ? `inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -18px 44px rgba(0,0,0,0.26), 0 0 42px ${bandGlowColor}`
+            ? isSoftFace
+              ? `inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -6px 18px rgba(0,0,0,0.06), 0 0 30px ${bandGlowColor}`
+              : `inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -18px 44px rgba(0,0,0,0.26), 0 0 42px ${bandGlowColor}`
             : 'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -18px 44px rgba(0,0,0,0.18)',
         }}
       />
 
       <div
-        className={`absolute inset-[1.1rem] rounded-full border ${visuals.knobInnerBorder} bg-black/10`}
+        className={`absolute inset-[1.1rem] rounded-full border ${visuals.knobInnerBorder} ${
+          isSoftFace ? 'bg-transparent' : 'bg-black/10'
+        }`}
       />
 
       <div
         className="absolute inset-[1.4rem] rounded-full"
-        style={{ background: visuals.knobInnerGradient }}
+        style={{ background: knobInnerBackground }}
       />
 
       <div
@@ -407,7 +423,10 @@ export const RotaryKnob = memo(function RotaryKnob({
 
       <div
         className={`absolute inset-[4rem] rounded-full border ${visuals.knobInnerBorder}`}
-        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}
+        style={{
+          boxShadow: isSoftFace ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+          background: isSoftFace ? 'rgba(255,255,255,0.015)' : undefined,
+        }}
       />
     </>
   );

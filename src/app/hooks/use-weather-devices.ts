@@ -15,7 +15,7 @@ import {
 import { shallow } from 'zustand/shallow';
 import { SUN_ENTITY_ID, WEATHER_FORECAST_REFRESH_INTERVAL } from '@/app/constants';
 import { mapWeatherDevice } from '@/app/hooks/ha-device-mappers';
-import { resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
+import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useRegistryRoomResolver } from '@/app/hooks/use-registry-device-topology';
 import { useI18n } from '@/app/i18n';
@@ -156,6 +156,7 @@ export function useWeatherDevices(): WeatherDevice[] {
       return [];
     }
 
+    const entityEntry = entityRegistryMap.get(primaryWeatherEntityId);
     const room = resolveEntityRoom(
       primaryWeatherEntityId,
       weatherEntity,
@@ -168,7 +169,7 @@ export function useWeatherDevices(): WeatherDevice[] {
       mapWeatherDevice(
         primaryWeatherEntityId,
         weatherEntity,
-        weatherEntity.attributes?.friendly_name ?? primaryWeatherEntityId,
+        getName(weatherEntity, entityEntry),
         room,
         {
           sunEntity: entities[SUN_ENTITY_ID],

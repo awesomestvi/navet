@@ -162,8 +162,9 @@ export function useCalendarDevices(): CalendarDevice[] {
         entityRegistryMap,
         deviceRegistryMap
       );
+      const entityEntry = entityRegistryMap.get(entityId);
       calendarSources.push(
-        ...mapCalendarSources(entityId, entity, getName(entity), room, {
+        ...mapCalendarSources(entityId, entity, getName(entity, entityEntry), room, {
           calendarEvents: deferredCalendarEvents,
           locale,
           t,

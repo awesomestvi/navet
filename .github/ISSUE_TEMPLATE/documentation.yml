@@ -1,0 +1,36 @@
+name: Documentation issue
+description: Report missing, confusing, or outdated documentation.
+title: "[Docs]: "
+labels:
+  - "status: needs-triage"
+  - "type: docs"
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page or file
+      description: Link the page or name the documentation file.
+      placeholder: "README.md, docs/DOCKER_HOME_ASSISTANT_ADDON.md, ..."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+      placeholder: "The docs say ... but ..."
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested improvement
+      placeholder: "It would be clearer if ..."
+    validations:
+      required: false

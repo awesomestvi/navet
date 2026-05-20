@@ -161,6 +161,33 @@ class HARegistryService {
   }
 
   /**
+   * Update the user-facing entity name in Home Assistant's entity registry.
+   */
+  async updateEntityName(entityId: string, name: string): Promise<void> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('Entity name is required');
+    }
+
+    try {
+      await conn.sendMessagePromise({
+        type: 'config/entity_registry/update',
+        entity_id: entityId,
+        name: trimmedName,
+      });
+    } catch (error) {
+      throw new Error(`entity registry name update failed: ${this.getUnknownErrorMessage(error)}`);
+    }
+
+    await this.loadRegistries();
+  }
+
+  /**
    * Create a new area
    */
   async createArea(name: string): Promise<HomeAssistantAreaRegistryEntry> {

@@ -82,6 +82,7 @@ class HomeAssistantService {
   private registryService: HARegistryService;
   private entityService: HAEntityService;
   private panelAdapter: HomeAssistantPanelAdapter | null = null;
+  private registryListeners = new Set<(data: HAServiceEventMap['registries']) => void>();
 
   constructor() {
     this.connectionService = new HAConnectionService();
@@ -131,16 +132,17 @@ class HomeAssistantService {
     // For registry events, we need to wrap the listener
     if (event === 'registries') {
       const registriesCallback = callback as (data: HAServiceEventMap['registries']) => void;
-      return this.connectionService.addListener('connection', () => {
+      this.registryListeners.add(registriesCallback);
+      const unsubscribeConnection = this.connectionService.addListener('connection', () => {
         // Trigger registry load on connection
         void this.registryService.loadRegistries().then(() => {
-          registriesCallback({
-            areas: this.registryService.getAreas(),
-            devices: this.registryService.getDeviceRegistry(),
-            entities: this.registryService.getEntityRegistry(),
-          });
+          this.emitRegistries();
         });
       });
+      return () => {
+        this.registryListeners.delete(registriesCallback);
+        unsubscribeConnection();
+      };
     }
 
     return () => {};
@@ -205,10 +207,12 @@ class HomeAssistantService {
     if (this.panelAdapter) {
       const { areas, devices, entities } = await this.panelAdapter.loadRegistries();
       this.registryService.replaceRegistries(areas, devices, entities);
+      this.emitRegistries();
       return;
     }
 
     await this.registryService.loadRegistries();
+    this.emitRegistries();
   }
 
   /**
@@ -237,6 +241,15 @@ class HomeAssistantService {
    */
   async updateEntityArea(entityId: string, areaId: string | null): Promise<void> {
     await this.registryService.updateEntityArea(entityId, areaId);
+    this.emitRegistries();
+  }
+
+  /**
+   * Update entity display name in Home Assistant.
+   */
+  async updateEntityName(entityId: string, name: string): Promise<void> {
+    await this.registryService.updateEntityName(entityId, name);
+    this.emitRegistries();
   }
 
   /**
@@ -264,7 +277,9 @@ class HomeAssistantService {
    * Create a new area
    */
   async createArea(name: string): Promise<HomeAssistantAreaRegistryEntry> {
-    return await this.registryService.createArea(name);
+    const area = await this.registryService.createArea(name);
+    this.emitRegistries();
+    return area;
   }
 
   /**
@@ -272,6 +287,7 @@ class HomeAssistantService {
    */
   async deleteArea(areaId: string): Promise<void> {
     await this.registryService.deleteArea(areaId);
+    this.emitRegistries();
   }
 
   /**
@@ -442,6 +458,18 @@ class HomeAssistantService {
   disconnect(): void {
     this.panelAdapter = null;
     this.connectionService.disconnect();
+  }
+
+  private emitRegistries(): void {
+    const registries = {
+      areas: this.registryService.getAreas(),
+      devices: this.registryService.getDeviceRegistry(),
+      entities: this.registryService.getEntityRegistry(),
+    };
+
+    for (const listener of this.registryListeners) {
+      listener(registries);
+    }
   }
 }
 

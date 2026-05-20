@@ -1,6 +1,15 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import type { CSSProperties, ReactNode } from 'react';
-import { useId, useLayoutEffect } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Button } from '@/app/components/primitives/button';
 import {
   getDialogHeightClassName,
@@ -44,10 +53,19 @@ interface DialogShellProps {
 }
 
 const mobileCoverSheetClassName = [
-  'max-sm:!top-auto max-sm:!right-2 max-sm:!bottom-2 max-sm:!left-2',
+  'max-sm:!top-[var(--mobile-cover-sheet-top)] max-sm:!right-2 max-sm:!bottom-2 max-sm:!left-2',
   'max-sm:!mx-0 max-sm:!max-h-[calc(100dvh-1rem)] max-sm:!w-auto max-sm:!max-w-none',
-  'max-sm:!translate-x-0 max-sm:!translate-y-0 max-sm:!rounded-[30px]',
+  'max-sm:![translate:0_var(--mobile-cover-sheet-drag-y)] max-sm:!rounded-[30px]',
+  'max-sm:!transition-[height,top,translate] max-sm:!duration-200 max-sm:!ease-out',
 ].join(' ');
+
+const mobileCoverSheetFullscreenClassName = [
+  'max-sm:!h-auto',
+  'max-sm:!transition-[height,top,translate] max-sm:!duration-200 max-sm:!ease-out',
+].join(' ');
+
+const mobileCoverSheetDraggingClassName = 'max-sm:!transition-none';
+const mobileCoverSheetTopInsetPx = 8;
 
 function blurActiveElement() {
   if (typeof document === 'undefined') {
@@ -58,6 +76,18 @@ function blurActiveElement() {
   if (activeElement instanceof HTMLElement) {
     activeElement.blur();
   }
+}
+
+function getMobileCoverSheetStyle(
+  contentStyle: CSSProperties | undefined,
+  dragOffset: number,
+  topInset: string
+): CSSProperties {
+  return {
+    ...contentStyle,
+    '--mobile-cover-sheet-drag-y': `${dragOffset}px`,
+    '--mobile-cover-sheet-top': topInset,
+  } as CSSProperties;
 }
 
 export function DialogShell({
@@ -78,6 +108,17 @@ export function DialogShell({
   children,
 }: DialogShellProps) {
   const generatedDescriptionId = useId();
+  const [isMobileCoverSheetFullscreen, setIsMobileCoverSheetFullscreen] = useState(false);
+  const [mobileCoverSheetDragOffset, setMobileCoverSheetDragOffset] = useState(0);
+  const [mobileCoverSheetTopInset, setMobileCoverSheetTopInset] = useState('auto');
+  const [isMobileCoverSheetDragging, setIsMobileCoverSheetDragging] = useState(false);
+  const mobileCoverSheetContentRef = useRef<HTMLDivElement | null>(null);
+  const mobileCoverSheetDragStartYRef = useRef(0);
+  const mobileCoverSheetDragStartTopRef = useRef(0);
+  const mobileCoverSheetRestingTopRef = useRef(0);
+  const mobileCoverSheetDragDeltaRef = useRef(0);
+  const mobileCoverSheetPointerIdRef = useRef<number | null>(null);
+  const suppressMobileCoverSheetHandleClickRef = useRef(false);
   const hasDecoratedContent = Boolean(
     contentGlowClassName || contentGlowStyle || contentOverlayClassName
   );
@@ -92,6 +133,156 @@ export function DialogShell({
     }
   }, [isOpen]);
 
+  const resetMobileCoverSheetDragState = useCallback(() => {
+    mobileCoverSheetDragDeltaRef.current = 0;
+    mobileCoverSheetPointerIdRef.current = null;
+    suppressMobileCoverSheetHandleClickRef.current = false;
+    setMobileCoverSheetDragOffset(0);
+    setMobileCoverSheetTopInset(isMobileCoverSheetFullscreen ? '0.5rem' : 'auto');
+    setIsMobileCoverSheetDragging(false);
+  }, [isMobileCoverSheetFullscreen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetMobileCoverSheetDragState();
+      setMobileCoverSheetTopInset('auto');
+      setIsMobileCoverSheetFullscreen(false);
+    }
+  }, [isOpen, resetMobileCoverSheetDragState]);
+
+  useEffect(() => {
+    if (!mobileCoverSheet || !isMobileCoverSheetDragging) {
+      return;
+    }
+
+    const closeThresholdPx = isMobileCoverSheetFullscreen
+      ? Math.max(360, window.innerHeight * 0.7)
+      : 72;
+    const collapseThresholdPx = isMobileCoverSheetFullscreen
+      ? Math.max(56, window.innerHeight * 0.1)
+      : 72;
+    const fullscreenThresholdPx = 56;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerId !== mobileCoverSheetPointerIdRef.current) {
+        return;
+      }
+
+      const deltaY = event.clientY - mobileCoverSheetDragStartYRef.current;
+      if (Math.abs(deltaY) > 6) {
+        suppressMobileCoverSheetHandleClickRef.current = true;
+      }
+
+      mobileCoverSheetDragDeltaRef.current = deltaY;
+      if (isMobileCoverSheetFullscreen && deltaY > 0) {
+        const restingTop =
+          mobileCoverSheetRestingTopRef.current || mobileCoverSheetDragStartTopRef.current;
+        const topInset = Math.min(restingTop, mobileCoverSheetTopInsetPx + deltaY);
+        setMobileCoverSheetTopInset(`${Math.max(mobileCoverSheetTopInsetPx, topInset)}px`);
+        setMobileCoverSheetDragOffset(
+          Math.max(0, deltaY - (restingTop - mobileCoverSheetTopInsetPx))
+        );
+        return;
+      }
+
+      setMobileCoverSheetDragOffset(Math.max(0, deltaY));
+      setMobileCoverSheetTopInset(
+        deltaY < 0
+          ? `${Math.max(
+              mobileCoverSheetTopInsetPx,
+              mobileCoverSheetDragStartTopRef.current + deltaY
+            )}px`
+          : 'auto'
+      );
+    };
+
+    const finishDrag = (event: PointerEvent) => {
+      if (event.pointerId !== mobileCoverSheetPointerIdRef.current) {
+        return;
+      }
+
+      const dragDelta = mobileCoverSheetDragDeltaRef.current;
+      setIsMobileCoverSheetDragging(false);
+      mobileCoverSheetPointerIdRef.current = null;
+      mobileCoverSheetDragDeltaRef.current = 0;
+      setMobileCoverSheetDragOffset(0);
+
+      if (dragDelta >= closeThresholdPx) {
+        blurActiveElement();
+        onOpenChange(false);
+        return;
+      }
+
+      if (isMobileCoverSheetFullscreen && dragDelta >= collapseThresholdPx) {
+        setIsMobileCoverSheetFullscreen(false);
+        setMobileCoverSheetTopInset('auto');
+        return;
+      }
+
+      if (dragDelta <= -fullscreenThresholdPx) {
+        setMobileCoverSheetTopInset('0.5rem');
+        setIsMobileCoverSheetFullscreen(true);
+      } else {
+        setMobileCoverSheetTopInset(isMobileCoverSheetFullscreen ? '0.5rem' : 'auto');
+      }
+
+      window.setTimeout(() => {
+        suppressMobileCoverSheetHandleClickRef.current = false;
+      }, 0);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', finishDrag);
+    window.addEventListener('pointercancel', finishDrag);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', finishDrag);
+      window.removeEventListener('pointercancel', finishDrag);
+    };
+  }, [isMobileCoverSheetDragging, isMobileCoverSheetFullscreen, mobileCoverSheet, onOpenChange]);
+
+  const handleMobileCoverSheetPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    mobileCoverSheetPointerIdRef.current = event.pointerId;
+    mobileCoverSheetDragStartYRef.current = event.clientY;
+    mobileCoverSheetDragStartTopRef.current =
+      mobileCoverSheetContentRef.current?.getBoundingClientRect().top ?? mobileCoverSheetTopInsetPx;
+    if (!isMobileCoverSheetFullscreen) {
+      mobileCoverSheetRestingTopRef.current = mobileCoverSheetDragStartTopRef.current;
+    }
+    mobileCoverSheetDragDeltaRef.current = 0;
+    suppressMobileCoverSheetHandleClickRef.current = false;
+    setIsMobileCoverSheetDragging(true);
+    setMobileCoverSheetDragOffset(0);
+  };
+
+  const handleMobileCoverSheetHandleClick = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.blur();
+    if (suppressMobileCoverSheetHandleClickRef.current) {
+      suppressMobileCoverSheetHandleClickRef.current = false;
+      return;
+    }
+
+    onOpenChange(false);
+  };
+
+  const resolvedContentClassName = [
+    contentClassName,
+    mobileCoverSheet ? mobileCoverSheetClassName : '',
+    mobileCoverSheet && isMobileCoverSheetFullscreen ? mobileCoverSheetFullscreenClassName : '',
+    mobileCoverSheet && isMobileCoverSheetDragging ? mobileCoverSheetDraggingClassName : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const resolvedContentStyle = mobileCoverSheet
+    ? getMobileCoverSheetStyle(contentStyle, mobileCoverSheetDragOffset, mobileCoverSheetTopInset)
+    : contentStyle;
+
   return (
     <Dialog.Root
       open={isOpen}
@@ -103,8 +294,9 @@ export function DialogShell({
       <Dialog.Portal>
         <Dialog.Overlay className={`fixed inset-0 z-50 ${overlayClassName}`} />
         <Dialog.Content
-          className={`${contentClassName} ${mobileCoverSheet ? mobileCoverSheetClassName : ''}`}
-          style={contentStyle}
+          ref={mobileCoverSheetContentRef}
+          className={resolvedContentClassName}
+          style={resolvedContentStyle}
           aria-describedby={resolvedAriaDescribedBy}
           onOpenAutoFocus={
             disableOpenAutoFocus
@@ -124,11 +316,14 @@ export function DialogShell({
           {mobileCoverSheet ? (
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
-              className="relative z-[3] mx-auto mt-3 mb-1 hidden h-5 w-16 touch-none items-center justify-center max-sm:flex"
-              aria-label="Close dialog"
+              onPointerDown={handleMobileCoverSheetPointerDown}
+              onClick={handleMobileCoverSheetHandleClick}
+              className="relative z-[3] mx-auto mt-3 mb-1 hidden h-5 w-20 touch-none items-center justify-center max-sm:flex"
+              aria-label={
+                isMobileCoverSheetFullscreen ? 'Close dialog' : 'Drag dialog to fullscreen or close'
+              }
             >
-              <span className="h-1.5 w-12 rounded-full bg-white/20" aria-hidden="true" />
+              <span className="h-1 w-16 rounded-full bg-white/20" aria-hidden="true" />
             </button>
           ) : null}
           {contentGlowClassName || contentGlowStyle ? (

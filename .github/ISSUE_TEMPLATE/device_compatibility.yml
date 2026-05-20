@@ -1,0 +1,102 @@
+name: Device compatibility
+description: Report a Home Assistant entity, integration, or device that Navet does not handle correctly.
+title: "[Device]: "
+labels:
+  - "status: needs-triage"
+  - "type: bug"
+  - "area: home-assistant"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when a Home Assistant entity or integration appears in Navet with the wrong type, wrong state, missing controls, or missing attributes.
+
+        Redact names, rooms, addresses, tokens, URLs, and any other private home details before posting.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed tokens, private URLs, addresses, and other sensitive information.
+          required: true
+  - type: input
+    id: navet-version
+    attributes:
+      label: Navet version
+      placeholder: "0.1.0-beta.1, dev, sha-..., or commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: home-assistant-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.5.0"
+    validations:
+      required: true
+  - type: input
+    id: integration
+    attributes:
+      label: Home Assistant integration or device brand
+      placeholder: "Roborock, Hue, Shelly, Zigbee2MQTT, Matter, ESPHome"
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Entity domain
+      options:
+        - light
+        - switch
+        - sensor
+        - binary_sensor
+        - climate
+        - cover
+        - media_player
+        - vacuum
+        - camera
+        - lock
+        - fan
+        - script
+        - automation
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: entity
+    attributes:
+      label: Redacted entity state or attributes
+      description: Paste a redacted Home Assistant state object, relevant attributes, or describe the entity. Remove private names and identifiers.
+      render: json
+      placeholder: |
+        {
+          "entity_id": "vacuum.redacted",
+          "state": "docked",
+          "attributes": {
+            "supported_features": 12345
+          }
+        }
+    validations:
+      required: false
+  - type: textarea
+    id: issue
+    attributes:
+      label: What does Navet show incorrectly?
+      placeholder: "Navet shows ... but Home Assistant reports ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Navet should classify/control/display this as ..."
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or logs
+      description: Add screenshots or logs if they help explain the mismatch. Redact private details.
+    validations:
+      required: false

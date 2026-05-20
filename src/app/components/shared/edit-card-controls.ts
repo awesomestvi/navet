@@ -1,7 +1,7 @@
 import type { CardSize } from './card-size';
 
 export type EditControlVariant = 'neutral' | 'destructive';
-export type EditControlPlacement = 'top-left' | 'top-right';
+export type EditControlPlacement = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export function getEditControlLayout(size: CardSize) {
   if (size === 'tiny') {
@@ -9,6 +9,8 @@ export function getEditControlLayout(size: CardSize) {
       isCompact: true,
       topLeftPosition: 'top-2 left-2',
       topRightPosition: 'top-2 right-2',
+      bottomLeftPosition: 'bottom-2 left-2',
+      bottomRightPosition: 'right-2 bottom-2',
       buttonSize: 'h-6 w-6',
       iconSize: 'w-3 h-3',
     };
@@ -19,6 +21,8 @@ export function getEditControlLayout(size: CardSize) {
       isCompact: true,
       topLeftPosition: 'top-3 left-3',
       topRightPosition: 'top-3 right-3',
+      bottomLeftPosition: 'bottom-3 left-3',
+      bottomRightPosition: 'right-3 bottom-3',
       buttonSize: 'h-7 w-7',
       iconSize: 'w-3.5 h-3.5',
     };
@@ -28,6 +32,8 @@ export function getEditControlLayout(size: CardSize) {
     isCompact: true,
     topLeftPosition: 'top-3 left-3',
     topRightPosition: 'top-3 right-3',
+    bottomLeftPosition: 'bottom-3 left-3',
+    bottomRightPosition: 'right-3 bottom-3',
     buttonSize: 'h-8 w-8',
     iconSize: 'w-4 h-4',
   };

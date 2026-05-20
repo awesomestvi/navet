@@ -22,8 +22,12 @@ export const CardEditActionButton = forwardRef<HTMLButtonElement, CardEditAction
     ref
   ) {
     const layout = getEditControlLayout(cardSize);
-    const positionClass =
-      placement === 'top-left' ? layout.topLeftPosition : layout.topRightPosition;
+    const positionClass = {
+      'top-left': layout.topLeftPosition,
+      'top-right': layout.topRightPosition,
+      'bottom-left': layout.bottomLeftPosition,
+      'bottom-right': layout.bottomRightPosition,
+    }[placement];
 
     return (
       <button

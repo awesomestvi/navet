@@ -6,7 +6,8 @@ export function useDashboardRoomNavigation(
   rooms: string[],
   changeRoom: (room: string) => void,
   hassEntitiesHydrated: boolean,
-  devicesLoaded: boolean
+  devicesLoaded: boolean,
+  registriesHydrated: boolean
 ) {
   const previousRoomsRef = useRef<string[]>(rooms);
 
@@ -16,10 +17,11 @@ export function useDashboardRoomNavigation(
       return;
     }
 
+    if (!hassEntitiesHydrated || !devicesLoaded || !registriesHydrated) {
+      return;
+    }
+
     if (rooms.length === 0) {
-      if (!hassEntitiesHydrated || !devicesLoaded) {
-        return;
-      }
       changeRoom(ALL_ROOMS_ID);
       previousRoomsRef.current = rooms;
       return;
@@ -42,5 +44,5 @@ export function useDashboardRoomNavigation(
 
     changeRoom(nextRoom);
     previousRoomsRef.current = rooms;
-  }, [activeRoom, changeRoom, devicesLoaded, hassEntitiesHydrated, rooms]);
+  }, [activeRoom, changeRoom, devicesLoaded, hassEntitiesHydrated, registriesHydrated, rooms]);
 }

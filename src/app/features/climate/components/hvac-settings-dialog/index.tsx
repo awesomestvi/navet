@@ -22,6 +22,7 @@ import {
   formatTemperature,
   formatTemperatureValue,
 } from '@/app/utils/temperature';
+import { getHVACGaugeColor } from '../../utils/hvac-styles';
 import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { HVACModeControls } from '../hvac-card/hvac-mode-controls';
@@ -73,6 +74,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
     accentColor,
   });
   const styles = getHVACSettingsDialogStyles(visualMode, isOn);
+  const dialogGlowColors = getHVACGaugeColor(visualMode);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
   const [activeTab, setActiveTab] = useState('hvac');
   const displayTargetTemp = convertCelsiusToTemperatureUnit(targetTemp, temperatureUnit);
@@ -100,7 +102,23 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
     >
-      <CustomScrollbar isOn={isOn}>
+      {isOn ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[78%]"
+            style={{
+              background: `radial-gradient(ellipse at 100% 43%, ${dialogGlowColors.secondary}70 0%, ${dialogGlowColors.primary}45 28%, ${dialogGlowColors.primary}22 48%, transparent 72%)`,
+            }}
+          />
+          <div
+            className="pointer-events-none absolute top-0 right-0 bottom-0 z-0 w-[58%]"
+            style={{
+              background: `linear-gradient(90deg, transparent 0%, ${dialogGlowColors.primary}18 34%, ${dialogGlowColors.secondary}38 100%)`,
+            }}
+          />
+        </>
+      ) : null}
+      <CustomScrollbar isOn={isOn} className="relative z-10">
         <div className="pt-6 pb-6 max-sm:pt-2 max-sm:pb-3">
           <div className={contentInsetClassName}>
             <CardDialogHeader title={name} description={entityType} entityId={entityId} />

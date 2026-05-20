@@ -93,29 +93,31 @@ export const LockCard = memo(function LockCard({
   const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
   const resolvedSize = resolveLockCardSize(size);
   const isVehicleLock = isVehicleLockEntity(id, name, liveAttributes);
-  const IconComponent = isVehicleLock ? CarFront : isLocked ? Lock : Unlock;
+  const displayIsLocked = pendingTargetLocked ?? isLocked;
+  const IconComponent = isVehicleLock ? CarFront : displayIsLocked ? Lock : Unlock;
   const pendingLabel =
     pendingTargetLocked === null
       ? null
       : pendingTargetLocked
         ? t('security.locking')
         : t('security.unlocking');
-  const statusLabel = pendingLabel ?? (isLocked ? t('security.locked') : t('security.unlocked'));
+  const statusLabel =
+    pendingLabel ?? (displayIsLocked ? t('security.locked') : t('security.unlocked'));
   const swipeLabel = isLocked ? t('security.slideToUnlock') : t('security.slideToLock');
-  const cardColors = isLocked ? colors.lock.locked : colors.lock.unlocked;
+  const cardColors = displayIsLocked ? colors.lock.locked : colors.lock.unlocked;
   const stateIconClassName =
     theme === 'light'
-      ? isLocked
+      ? displayIsLocked
         ? 'text-green-700'
         : 'text-red-700'
       : theme === 'glass'
-        ? isLocked
+        ? displayIsLocked
           ? 'text-green-100'
           : 'text-red-100'
-        : isLocked
+        : displayIsLocked
           ? 'text-green-300'
           : 'text-red-300';
-  const headerTone = isLocked ? 'green' : 'red';
+  const headerTone = displayIsLocked ? 'green' : 'red';
   const activeBaseColor = resolveCardToneBaseColor({ tone: headerTone });
   const blackActiveSurface =
     theme === 'black'
@@ -175,10 +177,10 @@ export const LockCard = memo(function LockCard({
       baseColor={activeBaseColor}
     />
   );
-  const headerTitleClassName = isLocked
+  const headerTitleClassName = displayIsLocked
     ? `${securitySurface.primaryTextClassName} tracking-[-0.02em]`
     : `${securitySurface.lockStatusText} tracking-[-0.02em]`;
-  const headerSubtitleClassName = isLocked
+  const headerSubtitleClassName = displayIsLocked
     ? stateIconClassName
     : `${securitySurface.lockStatusSubtext} font-semibold uppercase tracking-[0.16em]`;
   const slideThumbTokens = getEntityIconPillStyles({
@@ -201,21 +203,21 @@ export const LockCard = memo(function LockCard({
       size="small"
       className={`${isPendingAction ? 'opacity-80' : ''}`}
       frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-      style={isLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+      style={displayIsLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
       disableDefaultSheen
       overlay={
         <>
           <div
             className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
           />
-          {isLocked && blackActiveSurface?.innerOverlayClassName ? (
+          {displayIsLocked && blackActiveSurface?.innerOverlayClassName ? (
             <div
               className={blackActiveSurface.innerOverlayClassName}
               style={blackActiveSurface.innerOverlayStyle}
             />
           ) : null}
           <div className={`absolute inset-0 ${overlayTintClassName}`} />
-          {isLocked && blackActiveSurface?.shineOverlayClassName ? (
+          {displayIsLocked && blackActiveSurface?.shineOverlayClassName ? (
             <div className={blackActiveSurface.shineOverlayClassName} />
           ) : null}
         </>

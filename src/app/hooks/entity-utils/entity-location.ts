@@ -5,7 +5,11 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { UNKNOWN_ROOM_LABEL } from '../../utils/device-location';
 
-export function getName(entity: HassEntity): string {
+export function getName(entity: HassEntity, registryEntry?: { name?: string | null }): string {
+  if (typeof registryEntry?.name === 'string' && registryEntry.name.trim().length > 0) {
+    return registryEntry.name.trim();
+  }
+
   return entity.attributes?.friendly_name || entity.entity_id;
 }
 

@@ -13,11 +13,20 @@ vi.mock('@/app/features/media/utils/media-thumbnail', () => ({
 
 import { useMediaArtworkResolution } from '../use-media-artwork-resolution';
 
+function installRuntimeProxyConfig() {
+  window.__NAVET_CONFIG__ = {
+    hassUrl: 'http://homeassistant.local:8123',
+    hassToken: 'runtime-token',
+    proxyBaseUrl: '/__navet_ha_proxy__',
+  };
+}
+
 describe('useMediaArtworkResolution', () => {
   beforeEach(() => {
     fetchMediaThumbnailDataUrlMock.mockReset();
     vi.restoreAllMocks();
     window.__NAVET_PANEL__ = false;
+    window.__NAVET_CONFIG__ = undefined;
     useAuthStore.setState({
       config: null,
       isAuthenticated: false,
@@ -61,7 +70,7 @@ describe('useMediaArtworkResolution', () => {
     expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
   });
 
-  it('does not fall back to protected media proxy URLs when thumbnail loading fails', async () => {
+  it('does not fall back to raw Home Assistant media proxy artwork in local dev', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
 
     const { result } = renderHookWithProviders(() =>
@@ -72,6 +81,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
+    expect(result.current.albumArt).toBeNull();
     await waitFor(() => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
@@ -163,11 +173,146 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
+      'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: { Authorization: 'Bearer session-token' },
+      }
+    );
+  });
+
+  it('fetches relative Home Assistant media proxy artwork through the Docker proxy', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/docker-album-art');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/docker-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
       '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
+    );
+  });
+
+  it('fetches Docker proxy artwork without a browser-side auth token', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/docker-proxy-token-album-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/docker-proxy-token-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: undefined,
+      }
+    );
+  });
+
+  it('fetches absolute Home Assistant media proxy artwork through the Docker proxy', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/docker-absolute-album-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/docker-absolute-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: { Authorization: 'Bearer session-token' },
+      }
+    );
+  });
+
+  it('keeps Docker proxy artwork as fallback when authenticated fetch fails', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+    });
+    expect(result.current.albumArt).toBe(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
     );
   });
 

@@ -169,6 +169,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                 onCommit={onBrightnessCommit ?? onBrightnessChange}
                 isOn={isOn}
                 disabled={!isOn}
+                presentation="dialog"
               />
               <BrightnessPresets
                 presets={brightnessPresets}

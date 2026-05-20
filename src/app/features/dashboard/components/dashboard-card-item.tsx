@@ -1,12 +1,15 @@
-import { EyeOff, X } from 'lucide-react';
+import { EyeOff, Lock, Unlock, X } from 'lucide-react';
+import type { MouseEvent, ReactNode } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { CardEditActionButton } from '@/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@/app/components/shared/card-size-selector';
+import { getBaseCardRadiusClassName } from '@/app/components/system/tokens';
 import { useI18n } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { CustomCard } from '../stores/custom-cards-store';
+import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 import { renderCard } from '../utils/card-renderer';
 import type { ZoneName } from '../zones/zone-types';
 import { DashboardResizeTrigger } from './dashboard-edit-actions';
@@ -52,6 +55,8 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 }: DashboardCardItemProps) {
   const { t } = useI18n();
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
+  const isLocked = useDashboardEntitiesStore((state) => state.lockedCardIds.includes(id));
+  const toggleCardLock = useDashboardEntitiesStore((state) => state.toggleCardLock);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
@@ -62,9 +67,35 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 
   // Drag is only enabled in edit mode when the card is inside a zone band.
   const draggable = isEditMode && zone !== undefined;
+  const isInteractionLocked = isLocked && !isEditMode;
+  const LockActionIcon = isLocked ? Lock : Unlock;
+  const lockAriaLabel = isLocked ? t('dashboard.edit.unlockCard') : t('dashboard.edit.lockCard');
+  const handleLockToggle = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleCardLock(id);
+  };
+  const renderedCard = device ? (
+    renderCard({ device, size: resolvedSize, handleSizeChange, isEditMode })
+  ) : card ? (
+    <WidgetCard
+      card={{ ...card, size: resolvedSize }}
+      isEditMode={isEditMode}
+      onUpdate={onUpdateCard}
+    />
+  ) : null;
+  const lockedCardContent = (
+    <LockedCardInteractionFrame
+      isLocked={isInteractionLocked}
+      label={t('dashboard.edit.lockedCard')}
+    >
+      {renderedCard}
+    </LockedCardInteractionFrame>
+  );
 
   const cardContent = (
     <>
+      {isEditMode ? <EditModeCardBackdrop size={resolvedSize} /> : null}
       {isEditMode && !onRemoveFromLayout && device && allowEntityRemoval && onRemoveEntity && (
         <CardEditActionButton
           cardSize={editControlSize}
@@ -99,6 +130,26 @@ export const DashboardCardItem = memo(function DashboardCardItem({
         />
       )}
       {isEditMode ? (
+        <CardEditActionButton
+          cardSize={editControlSize}
+          Icon={LockActionIcon}
+          placement="bottom-right"
+          variant="neutral"
+          className={
+            isLocked
+              ? 'border-white/18 bg-black/78 text-white ring-1 ring-black/35 hover:bg-black/82'
+              : ''
+          }
+          aria-pressed={isLocked}
+          aria-label={lockAriaLabel}
+          title={lockAriaLabel}
+          onClick={handleLockToggle}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+        />
+      ) : null}
+      {isEditMode ? (
         <DashboardResizeTrigger
           cardSize={resolvedSize}
           triggerSize={editControlSize}
@@ -106,15 +157,8 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           onSizeChange={(nextSize) => handleSizeChange(id, nextSize)}
         />
       ) : null}
-      {device
-        ? renderCard({ device, size: resolvedSize, handleSizeChange, isEditMode })
-        : card && (
-            <WidgetCard
-              card={{ ...card, size: resolvedSize }}
-              isEditMode={isEditMode}
-              onUpdate={onUpdateCard}
-            />
-          )}
+      {isLocked && !isEditMode ? <LockedCardBadge label={t('dashboard.edit.lockedCard')} /> : null}
+      {lockedCardContent}
     </>
   );
 
@@ -151,6 +195,66 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </div>
   );
 }, areDashboardCardItemPropsEqual);
+
+function EditModeCardBackdrop({ size }: { size: CardSize }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 z-300 ${getBaseCardRadiusClassName(size)} bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.42),transparent_52%),radial-gradient(circle_at_top_right,rgba(0,0,0,0.46),transparent_48%),linear-gradient(to_bottom,rgba(0,0,0,0.22),transparent_34%,transparent_58%,rgba(0,0,0,0.34))]`}
+      aria-hidden="true"
+    />
+  );
+}
+
+function LockedCardBadge({ label }: { label: string }) {
+  return (
+    <div
+      className="pointer-events-none absolute right-3 bottom-3 z-400 flex h-8 w-8 items-center justify-center rounded-full border border-white/18 bg-black/78 text-white shadow-[0_12px_26px_-14px_rgba(0,0,0,0.95)] ring-1 ring-black/35 backdrop-blur-xl"
+      aria-label={label}
+      role="img"
+      title={label}
+    >
+      <Lock className="h-4 w-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]" aria-hidden="true" />
+    </div>
+  );
+}
+
+function LockedCardInteractionFrame({
+  children,
+  isLocked,
+  label,
+}: {
+  children: ReactNode;
+  isLocked: boolean;
+  label: string;
+}) {
+  if (!isLocked) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="relative h-full w-full" data-card-locked="true">
+      <div inert className="h-full w-full">
+        {children}
+      </div>
+      <button
+        type="button"
+        className="absolute inset-0 z-300 cursor-not-allowed rounded-[inherit] border-0 bg-transparent p-0"
+        data-card-lock-overlay="true"
+        aria-label={label}
+        tabIndex={-1}
+        title={label}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      />
+    </div>
+  );
+}
 
 function getAllowedSizes(
   device?: DeviceWithType,

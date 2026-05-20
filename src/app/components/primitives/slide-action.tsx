@@ -29,6 +29,9 @@ export interface SlideActionProps {
 }
 
 const COMPLETE_THRESHOLD = 0.72;
+const COMPLETION_HOLD_MS = 620;
+const RETURN_ANIMATION_MS = 620;
+const RELEASE_ANIMATION_MS = 200;
 
 export function SlideAction({
   actionLabel,
@@ -46,6 +49,9 @@ export function SlideAction({
 }: SlideActionProps) {
   const trackRef = useRef<HTMLButtonElement | null>(null);
   const completionTimerRef = useRef<number | null>(null);
+  const resetTimerRef = useRef<number | null>(null);
+  const returnTimerRef = useRef<number | null>(null);
+  const resetFrameRef = useRef<number | null>(null);
   const dragStateRef = useRef<{
     maxTravel: number;
     pointerId: number;
@@ -53,13 +59,22 @@ export function SlideAction({
     startX: number;
   } | null>(null);
   const progressRef = useRef(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
 
   useEffect(() => {
     return () => {
       if (completionTimerRef.current !== null) {
         window.clearTimeout(completionTimerRef.current);
+      }
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+      if (returnTimerRef.current !== null) {
+        window.clearTimeout(returnTimerRef.current);
+      }
+      if (resetFrameRef.current !== null) {
+        window.cancelAnimationFrame(resetFrameRef.current);
       }
     };
   }, []);
@@ -112,6 +127,10 @@ export function SlideAction({
     [metrics.knobSize, metrics.padding]
   );
 
+  const setMotionDuration = useCallback((durationMs: number) => {
+    trackRef.current?.style.setProperty('--slide-motion-duration', `${durationMs}ms`);
+  }, []);
+
   useEffect(() => {
     applyProgress(progressRef.current);
   }, [applyProgress]);
@@ -120,18 +139,38 @@ export function SlideAction({
     if (completionTimerRef.current !== null) {
       window.clearTimeout(completionTimerRef.current);
     }
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+    }
+    if (returnTimerRef.current !== null) {
+      window.clearTimeout(returnTimerRef.current);
+    }
+    if (resetFrameRef.current !== null) {
+      window.cancelAnimationFrame(resetFrameRef.current);
+    }
 
     setIsCompleting(true);
+    setIsReturning(false);
+    setMotionDuration(0);
     applyProgress(1);
     completionTimerRef.current = window.setTimeout(() => {
       onComplete();
-      setIsCompleting(false);
-      applyProgress(0);
     }, HA_CONTROL_DEBOUNCE_MS);
+    resetTimerRef.current = window.setTimeout(() => {
+      setIsCompleting(false);
+      setIsReturning(true);
+      setMotionDuration(RETURN_ANIMATION_MS);
+      resetFrameRef.current = window.requestAnimationFrame(() => {
+        applyProgress(0);
+        returnTimerRef.current = window.setTimeout(() => {
+          setIsReturning(false);
+        }, RETURN_ANIMATION_MS);
+      });
+    }, COMPLETION_HOLD_MS);
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (disabled || isCompleting) {
+    if (disabled || isCompleting || isReturning) {
       return;
     }
 
@@ -150,7 +189,7 @@ export function SlideAction({
       startX: event.clientX,
     };
 
-    setIsDragging(true);
+    setMotionDuration(0);
     event.currentTarget.setPointerCapture(event.pointerId);
     event.preventDefault();
     event.stopPropagation();
@@ -182,18 +221,18 @@ export function SlideAction({
     event.stopPropagation();
     const shouldComplete = progressRef.current >= COMPLETE_THRESHOLD;
     dragStateRef.current = null;
-    setIsDragging(false);
 
     if (shouldComplete) {
       runCompletion();
       return;
     }
 
-    applyProgress(0);
+    setMotionDuration(RELEASE_ANIMATION_MS);
+    window.requestAnimationFrame(() => applyProgress(0));
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (disabled || isCompleting) {
+    if (disabled || isCompleting || isReturning) {
       return;
     }
 
@@ -213,21 +252,22 @@ export function SlideAction({
     ['--slide-fill-width' as string]: `${metrics.knobSize}px`,
     ['--slide-label-clip-inset' as string]: `${metrics.padding + metrics.knobSize * 0.82}px`,
     ['--slide-label-opacity' as string]: '1',
+    ['--slide-motion-duration' as string]: `${RELEASE_ANIMATION_MS}ms`,
   } as CSSProperties;
 
   return (
     <button
       type="button"
       ref={trackRef}
-      aria-disabled={disabled || isCompleting}
+      aria-disabled={disabled || isCompleting || isReturning}
       aria-label={ariaLabel}
       className={`relative block w-full overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
-        disabled || isCompleting ? 'cursor-default opacity-85' : 'cursor-ew-resize'
+        disabled || isCompleting || isReturning ? 'cursor-default opacity-85' : 'cursor-ew-resize'
       } select-none touch-none`}
       style={slideActionStyle}
       data-card-interactive="true"
-      disabled={disabled || isCompleting}
-      tabIndex={disabled || isCompleting ? -1 : 0}
+      disabled={disabled || isCompleting || isReturning}
+      tabIndex={disabled || isCompleting || isReturning ? -1 : 0}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -244,6 +284,9 @@ export function SlideAction({
           bottom: metrics.padding,
           left: metrics.padding,
           top: metrics.padding,
+          transitionDuration: 'var(--slide-motion-duration)',
+          transitionProperty: 'width',
+          transitionTimingFunction: 'ease-out',
           width: 'var(--slide-fill-width)',
         }}
       />
@@ -254,26 +297,35 @@ export function SlideAction({
           clipPath: 'inset(0 0 0 var(--slide-label-clip-inset))',
           paddingLeft: labelPaddingLeft,
           paddingRight: labelPaddingRight,
+          transitionDuration: 'var(--slide-motion-duration)',
+          transitionProperty: 'clip-path',
+          transitionTimingFunction: 'ease-out',
         }}
       >
         <div
           className={`flex min-w-0 flex-col items-center justify-center font-medium ${metrics.labelClassName} ${labelColorClassName}`}
-          style={{ opacity: 'var(--slide-label-opacity)', ...labelStyle }}
+          style={{
+            opacity: 'var(--slide-label-opacity)',
+            transitionDuration: 'var(--slide-motion-duration)',
+            transitionProperty: 'opacity',
+            transitionTimingFunction: 'ease-out',
+            ...labelStyle,
+          }}
         >
           <span className="line-clamp-2 text-center">{actionLabel}</span>
         </div>
       </div>
 
       <div
-        className={`absolute top-1/2 left-0 z-[2] flex items-center justify-center rounded-full ${defaultThumbClassName} ${thumbClassName ?? ''} ${
-          isDragging || isCompleting ? '' : 'transition-transform duration-200'
-        }`}
+        className={`absolute top-1/2 left-0 z-[2] flex items-center justify-center rounded-full ${defaultThumbClassName} ${thumbClassName ?? ''}`}
         style={{
           height: metrics.knobSize,
           width: metrics.knobSize,
           ...thumbStyle,
           transform: `translateX(calc(${metrics.padding}px + var(--slide-knob-offset))) translateY(-50%)`,
-          transition: isDragging || isCompleting ? 'none' : thumbStyle?.transition,
+          transitionDuration: 'var(--slide-motion-duration)',
+          transitionProperty: 'transform',
+          transitionTimingFunction: 'ease-out',
         }}
       >
         {isCompleting && CompletionIcon ? (

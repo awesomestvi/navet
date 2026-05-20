@@ -19,12 +19,12 @@ Assistant URLs, access tokens, entity state, camera snapshots, and media URLs as
 
 - Browser-entered Home Assistant tokens are stored in `localStorage` for local/self-hosted use. Any
   XSS in the app would expose those tokens, so CSP and URL sanitization are release blockers.
-- `NAVET_HASS_TOKEN` may be injected into Docker and Home Assistant add-on runtime config so those
-  deployments can start without the login form. It must never be included in a public static build,
-  Vite client environment variable, checked-in file, or demo deployment.
+- `NAVET_HASS_TOKEN` may be injected into Docker runtime config so Docker deployments can start
+  without the login form. It must never be included in a public static build, Vite client
+  environment variable, checked-in file, or demo deployment.
 - Prefer least-privilege Home Assistant users/tokens for dashboard deployments. Avoid using an owner
-  account token on shared tablets or public networks. Treat Docker and add-on instances with runtime
-  tokens as authenticated Home Assistant clients.
+  account token on shared tablets or public networks. Treat Docker instances with runtime tokens as
+  authenticated Home Assistant clients.
 
 ## Proxies
 
