@@ -24,8 +24,8 @@ This means:
 
 For Home Assistant OS and Supervised users, the HACS custom panel path is the recommended
 Home Assistant-native setup. The add-on remains supported for users who specifically want a
-separately hosted Navet instance through Ingress or direct port access, but existing add-on users
-should migrate to the custom panel when possible because the add-on will be phased out gradually.
+separately hosted Navet instance through Ingress or direct port access. Existing add-on users can
+switch to the custom panel when they want the normal Home Assistant sidebar panel experience.
 
 The custom panel deployment path is:
 
@@ -136,7 +136,7 @@ authentication policy for that environment.
 Use this option when you specifically want Navet hosted as a Home Assistant add-on with Ingress or
 direct access on port `8099`. For the normal Home Assistant sidebar panel experience, use the HACS
 custom panel integration instead. New Home Assistant OS and Supervised installs should prefer the
-custom panel because this add-on path is planned for gradual phase-out.
+custom panel for the simplest Home Assistant-native setup.
 
 ### Files in This Repo
 

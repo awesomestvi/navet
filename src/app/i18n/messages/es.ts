@@ -798,9 +798,6 @@ export const esMessages = {
   'notifications.update.installingProgress': 'Instalando {progress}%',
   'notifications.update.installing': 'Instalando actualizacion...',
   'notifications.update.readyToInstall': 'Listo para instalar {version}',
-  'notifications.navet.addonPhaseOut.title': 'Mueve Navet al panel personalizado',
-  'notifications.navet.addonPhaseOut.message':
-    'El add-on de Home Assistant se retirara gradualmente. Instala Navet mediante HACS como panel personalizado para usar la ruta de instalacion mas sencilla y recomendada. [Ver pasos de configuracion](https://github.com/awesomestvi/navet#home-assistant-custom-panel-with-hacs).',
   'media.readyToPlay': 'Listo para reproducir',
   'weather.today': 'Hoy',
   'weather.dayFallback': 'Día {day}',

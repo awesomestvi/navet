@@ -996,9 +996,6 @@ export const itMessages = {
   'notifications.update.installingProgress': 'Installazione {progress}%',
   'notifications.update.installing': 'Installazione aggiornamento...',
   'notifications.update.readyToInstall': 'Pronto per installare {version}',
-  'notifications.navet.addonPhaseOut.title': 'Sposta Navet nel pannello personalizzato',
-  'notifications.navet.addonPhaseOut.message':
-    'L’add-on Home Assistant verrà eliminato gradualmente. Installa Navet tramite HACS come pannello personalizzato per il percorso di configurazione più semplice e consigliato. [Vedi istruzioni](https://github.com/awesomestvi/navet#home-assistant-custom-panel-with-hacs).',
   'media.readyToPlay': 'Pronto per la riproduzione',
   'calendar.fallbackEvent': 'Evento {count}',
   'security.dashboard.primaryTitle': 'Feed telecamere',

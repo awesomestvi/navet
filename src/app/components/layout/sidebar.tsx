@@ -44,7 +44,6 @@ interface SidebarProps {
   setIsSearchFocused?: (focused: boolean) => void;
   textPrimary?: string;
   textSecondary?: string;
-  topbarVisible?: boolean;
 }
 
 export const Sidebar = memo(function Sidebar({
@@ -63,7 +62,6 @@ export const Sidebar = memo(function Sidebar({
   setIsSearchFocused = () => {},
   textPrimary,
   textSecondary,
-  topbarVisible = false,
 }: SidebarProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -161,9 +159,6 @@ export const Sidebar = memo(function Sidebar({
   const mobileSearchFieldBg = resolvedInputBg;
   const mobileSearchFieldText = resolvedTextPrimary;
   const mobileSearchFieldIcon = resolvedTextSecondary;
-  const desktopSidebarPosition = topbarVisible
-    ? 'top-8 h-[calc(100%-2rem)] md:top-9 md:h-[calc(100%-2.25rem)]'
-    : 'top-0 h-full';
   const getMobileTabPill = (isActive: boolean) =>
     getInteractivePillStyles({
       intent: 'navigation',
@@ -177,7 +172,7 @@ export const Sidebar = memo(function Sidebar({
     <>
       {/* Desktop Sidebar */}
       <div
-        className={`fixed left-0 hidden w-16 ${surface.shellPanel} border-r md:flex z-50 ${desktopSidebarPosition}`}
+        className={`fixed left-0 top-0 hidden h-full w-16 ${surface.shellPanel} border-r md:flex z-50`}
       >
         <div className="flex w-full justify-center safe-area-pt-5">
           <div className="flex h-10 w-10 items-center justify-center">

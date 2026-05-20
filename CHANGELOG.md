@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2 - 2026-05-20
+
+Navet keeps release publishing aligned for custom panel and add-on users.
+
+## 🐛 Bug fixes
+
+- Add-on release images now publish for stable version tags as well as beta tags.
+
+## ⚡ Improvements
+
+- Home Assistant setup guidance now explains when to use the HACS custom panel and when to use the add-on.
+
 ## 0.1.1 - 2026-05-20
 
 Navet stabilizes the Home Assistant custom panel release with better update metadata, more reliable panel loading, and expanded localization.

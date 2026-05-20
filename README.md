@@ -13,7 +13,7 @@ Navet turns Home Assistant into a dedicated smart home control surface. Use it f
 rooms you touch every day: lights, media, cameras, locks, energy, automations, weather, calendars,
 sensors, and custom dashboard widgets.
 
-Current release: `0.1.1`
+Current release: `0.1.2`
 
 ## Why Navet
 
@@ -102,16 +102,16 @@ Assistant custom panel at `/navet` with the bundled dashboard served by Home Ass
 Use this path when you want Navet inside Home Assistant itself. Use the add-on or Docker paths below
 only when you want a separately hosted Navet instance with shared runtime configuration.
 
-Existing add-on users should migrate to the HACS custom panel when possible. The add-on remains
-available for now, but it will be phased out gradually as the custom panel becomes the primary Home
-Assistant integration path.
+Existing add-on users can use the HACS custom panel when they want the normal Home Assistant
+sidebar panel experience. The add-on remains available for users who want Ingress or direct port
+access.
 
 ### Optional Home Assistant add-on
 
 Use the add-on when you specifically want Navet hosted as a Home Assistant add-on with Ingress or
 direct access on port `8099`. For the normal Home Assistant sidebar panel experience, use the HACS
 custom panel flow above instead. New Home Assistant OS and Supervised installs should prefer the
-custom panel because the add-on is planned for gradual phase-out.
+custom panel for the simplest Home Assistant-native setup.
 
 1. Add the Navet add-on repository to Home Assistant:
 
