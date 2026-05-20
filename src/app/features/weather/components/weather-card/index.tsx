@@ -5,7 +5,11 @@ import { CardWrapper } from '@/app/components/ui/card-wrapper';
 import { useI18n } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore, type WeatherForecastMode } from '@/app/stores/settings-store';
-import { formatTemperature, formatTemperatureValue } from '@/app/utils/temperature';
+import {
+  formatTemperatureFromSourceUnit,
+  formatTemperatureValueFromSourceUnit,
+  type TemperatureUnit,
+} from '@/app/utils/temperature';
 import { useWeatherCardController } from './use-weather-card-controller';
 import { WeatherBackground } from './weather-card-overlays';
 import { WeatherDetails } from './weather-details';
@@ -20,14 +24,18 @@ export type ForecastDay = {
   day: string;
   condition: string;
   high: number;
+  highUnit?: TemperatureUnit;
   low: number;
+  lowUnit?: TemperatureUnit;
 };
 
 interface WeatherCardProps {
   id: string;
   location: string;
   temperature: number;
+  temperatureUnit?: TemperatureUnit;
   feelsLikeTemperature?: number;
+  feelsLikeTemperatureUnit?: TemperatureUnit;
   condition: WeatherCondition | string;
   humidity: number;
   windSpeed: number;
@@ -46,7 +54,9 @@ interface WeatherCardProps {
   forecast: ForecastDay[];
   forecastMode: WeatherForecastMode;
   highTemp: number;
+  highTempUnit?: TemperatureUnit;
   lowTemp: number;
+  lowTempUnit?: TemperatureUnit;
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
@@ -56,7 +66,9 @@ export const WeatherCard = memo(function WeatherCard({
   id,
   location,
   temperature,
+  temperatureUnit: sourceTemperatureUnit,
   feelsLikeTemperature,
+  feelsLikeTemperatureUnit,
   condition,
   humidity,
   windSpeed,
@@ -75,7 +87,9 @@ export const WeatherCard = memo(function WeatherCard({
   forecast,
   forecastMode: effectiveForecastMode,
   highTemp,
+  highTempUnit,
   lowTemp,
+  lowTempUnit,
   size,
   onSizeChange: _onSizeChange,
   isEditMode,
@@ -126,6 +140,10 @@ export const WeatherCard = memo(function WeatherCard({
   const compactTemperatureBlockClassName = isSmall ? 'mt-1' : isMedium ? 'mt-1' : 'mt-1.5';
   const compactTemperatureClassName = isSmall ? 'mb-0.5' : isMedium ? 'mb-0.5' : 'mb-1';
   const compactSummaryClassName = isSmall ? 'mt-0.5 max-w-18' : isMedium ? 'mt-0.5' : 'mt-1';
+  const formatWeatherTemperature = (value: number, sourceUnit?: TemperatureUnit) =>
+    formatTemperatureFromSourceUnit(value, sourceUnit, temperatureUnit);
+  const formatWeatherTemperatureValue = (value: number, sourceUnit?: TemperatureUnit) =>
+    formatTemperatureValueFromSourceUnit(value, sourceUnit, temperatureUnit);
 
   const textPrimary = weatherTextTreatment.primary;
   const textSecondary = weatherTextTreatment.secondary;
@@ -230,14 +248,17 @@ export const WeatherCard = memo(function WeatherCard({
                     className={`font-bold leading-none ${compactTemperatureTextClassName} ${compactTemperatureClassName}`}
                     style={titleStyle}
                   >
-                    {formatTemperature(temperature, temperatureUnit)}
+                    {formatWeatherTemperature(temperature, sourceTemperatureUnit)}
                   </div>
                   <div className={compactMetaTextClassName} style={subtitleStyle}>
-                    H:{formatTemperatureValue(highTemp, temperatureUnit)}° L:
-                    {formatTemperatureValue(lowTemp, temperatureUnit)}°
+                    H:{formatWeatherTemperatureValue(highTemp, highTempUnit)}° L:
+                    {formatWeatherTemperatureValue(lowTemp, lowTempUnit)}°
                     {typeof feelsLikeTemperature === 'number'
                       ? ` · ${t('weather.feelsLikeShort', {
-                          temp: formatTemperature(feelsLikeTemperature, temperatureUnit),
+                          temp: formatWeatherTemperature(
+                            feelsLikeTemperature,
+                            feelsLikeTemperatureUnit
+                          ),
                         })}`
                       : ''}
                   </div>
@@ -266,6 +287,7 @@ export const WeatherCard = memo(function WeatherCard({
                   <WeatherForecastRow
                     forecast={visibleForecast}
                     temperatureUnit={temperatureUnit}
+                    defaultTemperatureUnit={sourceTemperatureUnit}
                     showHourlyForecast={showHourlyForecast}
                     isSmall={isSmall}
                     isMedium={isMedium}
@@ -283,10 +305,14 @@ export const WeatherCard = memo(function WeatherCard({
               <div className="flex items-end justify-between gap-4">
                 <WeatherDetails
                   temperature={temperature}
+                  temperatureUnit={sourceTemperatureUnit}
                   highTemp={highTemp}
+                  highTempUnit={highTempUnit}
                   lowTemp={lowTemp}
+                  lowTempUnit={lowTempUnit}
                   feelsLikeTemperature={feelsLikeTemperature}
-                  temperatureUnit={temperatureUnit}
+                  feelsLikeTemperatureUnit={feelsLikeTemperatureUnit}
+                  displayTemperatureUnit={temperatureUnit}
                   rainForecast={rainForecast}
                   precipitation={precipitation}
                   precipitationUnit={precipitationUnit}
@@ -324,6 +350,7 @@ export const WeatherCard = memo(function WeatherCard({
                   <WeatherForecastRow
                     forecast={visibleForecast}
                     temperatureUnit={temperatureUnit}
+                    defaultTemperatureUnit={sourceTemperatureUnit}
                     showHourlyForecast={showHourlyForecast}
                     isSmall={false}
                     isMedium={false}

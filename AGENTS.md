@@ -33,6 +33,7 @@ pnpm storybook:build # static Storybook build for GitHub Pages
 
 **Do not run `pnpm build` unless explicitly asked.**
 **Do not run `pnpm typecheck` or `pnpm check` yourself** — ask the user to run them and report back.
+For release work, do not run any `pnpm` command yourself. List the required `pnpm` commands for the user, wait for the reported results, and continue from there.
 If a commit or hook is blocked by TypeScript errors, fix the type errors instead of updating or relying on a typecheck baseline.
 
 Storybook builds for GitHub Pages at `/navet/storybook/` via `STORYBOOK_BASE_PATH=/navet/storybook/`.

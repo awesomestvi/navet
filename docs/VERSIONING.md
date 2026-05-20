@@ -5,8 +5,8 @@ Navet is currently in beta. Until the product contract is stable, use pre-`1.0` 
 ## Current Phase
 
 - Current release line: `0.x`
-- Current version: `0.1.2`
-- Meaning: current stable beta-line release for the `0.1.2` Home Assistant custom panel release
+- Current version: `0.1.3`
+- Meaning: current stable beta-line release for the `0.1.3` Home Assistant custom panel release
 
 ## Scheme
 
@@ -56,7 +56,7 @@ Recommended lightweight flow:
 
 1. Decide whether the change is `patch`, `minor`, or `beta prerelease`.
 2. Bump `package.json`.
-3. Read Linear's `Ready for release` column and use those tickets to draft the release notes. If the column has no tickets for the release, draft a concise changelog from commit messages instead.
+3. Fetch Linear's `Ready for Release` column and use those tickets as the release-note source. If the column has no tickets for the release, draft a concise changelog from commit messages instead.
 4. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow publishes this section as the release notes that HACS/Home Assistant can show before users update.
 5. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version` matches the package/tag version.
 6. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
@@ -67,45 +67,69 @@ Recommended lightweight flow:
 
 ## Release Note Style
 
-When preparing a release, always check Linear first:
+Release notes must be issue-led and concise. Fetch Linear first, then have Codex draft the changelog from the release-ready issues instead of copying commit summaries.
 
-1. Read the Linear `Ready for release` column.
-2. Use those tickets as the primary release-note source when the column has tickets.
-3. If the release has no tickets in `Ready for release`, fall back to commit messages.
+Preferred source:
 
-For the commit-message fallback, build concise release notes from every commit since the previous release tag. Query the range with `git log --reverse --format=%H%x09%s%n%b <previous-tag>..<release-tag>`. Account for each commit, but consolidate duplicate or related changes into one user-facing bullet.
+1. Fetch Linear issues in the `Ready for Release` workflow state.
+2. Treat those issues as the complete release scope.
+3. Group related issues into user-facing outcomes.
+4. Mention the Linear issue identifiers only while drafting; do not include them in `CHANGELOG.md`.
 
-Use this format inside the matching `CHANGELOG.md` version section:
+In Codex, use the Linear app to list issues where status is `Ready for Release`. Outside Codex, fetch the same source with:
 
-Brief one-sentence description of the main improvements.
+```bash
+pnpm release:linear
+```
 
-## ✨ New features
-- User-friendly description of what users can now do
+The script reads `LINEAR_API_KEY` from the current environment, or from `~/.zshrc` through an interactive zsh shell for local release drafting.
 
-## 🐛 Bug fixes
-- What no longer happens or works better
+Optional filters:
 
-## ⚡ Improvements
-- How something works better or faster
+```bash
+pnpm release:linear -- --team NAV
+pnpm release:linear -- --label "public beta"
+pnpm release:linear -- --project "0.2 release"
+```
 
-## 📝 Documentation
-- New guides or help information available
+Use this drafting prompt:
 
-## 🚧 In progress
-- Features coming soon
+```text
+Create the CHANGELOG.md section for version <version> from these Linear issues.
 
-Core rules:
+Rules:
+- Write for Home Assistant users, not developers.
+- Explain what was fixed or improved in plain language.
+- Prefer specific outcomes over broad categories.
+- Consolidate related issues into one bullet.
+- Keep each bullet to one clear user-visible result.
+- Do not include implementation details, commit hashes, branch names, PR numbers, or Linear issue IDs.
+- Only include sections that have at least one strong entry.
+- Keep the whole section short enough to read in a Home Assistant update dialog.
 
-1. Query commits from the last release.
-2. Process every commit without skipping.
-3. Categorize changes by user impact.
-4. Write for non-technical users and avoid jargon, technical terms, and code references.
-5. Focus on what users can do, not how it works.
-6. Use simple, direct language in present tense.
-7. Put one benefit in each concise bullet.
-8. Keep the output as raw markdown without code fences.
+Format:
+## <version> - <yyyy-mm-dd>
 
-Only include sections that have entries. Write from the user perspective: prefer phrasing such as "You can now" and "Works better when". Avoid developer perspective, implementation details, and terms such as API, backend, frontend, merge, patch, or commit.
+One sentence summarizing the release.
+
+## New
+- User-visible capability that is now available
+
+## Fixed
+- Problem that no longer happens, with the affected user flow named
+
+## Improved
+- Existing behavior that now feels clearer, faster, or more reliable
+
+## Documentation
+- User-facing setup or troubleshooting guidance that changed
+```
+
+Only use `New`, `Fixed`, `Improved`, and `Documentation`. For small releases, one or two sections are enough. Prefer `Fixed` when the release resolves broken behavior, even if the implementation also changed internals.
+
+Fallback source:
+
+If there are no issues in `Ready for Release`, build concise notes from every commit since the previous release tag. Query the range with `git log --reverse --format=%H%x09%s%n%b <previous-tag>..<release-tag>`. Account for each commit during drafting, but do not force every commit into the final changelog. Consolidate duplicate, internal, or release-only changes into the fewest useful user-facing bullets.
 
 ## GitHub Releases
 

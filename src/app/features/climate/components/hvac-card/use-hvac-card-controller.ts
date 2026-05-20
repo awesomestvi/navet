@@ -19,10 +19,13 @@ import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import {
-  convertCelsiusToTemperatureUnit,
-  convertTemperatureUnitToCelsius,
+  convertDisplayTemperatureToSourceUnit,
+  convertTemperatureUnitValue,
   formatTemperature,
+  formatTemperatureFromSourceUnit,
   formatTemperatureValue,
+  formatTemperatureValueFromSourceUnit,
+  type TemperatureUnit,
 } from '@/app/utils/temperature';
 import type { HVACCardProps } from './hvac-card.types';
 import { useHvacEntitySync } from './use-hvac-entity-sync';
@@ -41,17 +44,40 @@ const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
 const DEFAULT_MIN_TEMP = 16;
 const DEFAULT_MAX_TEMP = 30;
 const DEFAULT_TEMP_STEP = 0.5;
+const DEFAULT_MIN_TEMP_FAHRENHEIT = 60;
+const DEFAULT_MAX_TEMP_FAHRENHEIT = 86;
+const DEFAULT_TEMP_STEP_FAHRENHEIT = 1;
 
-function resolveClimateTemperatureRange(liveEntity: HassEntity | undefined) {
+function resolveDefaultTemperatureRange(sourceTemperatureUnit: TemperatureUnit | undefined) {
+  if (sourceTemperatureUnit !== 'fahrenheit') {
+    return {
+      minTemp: DEFAULT_MIN_TEMP,
+      maxTemp: DEFAULT_MAX_TEMP,
+      step: DEFAULT_TEMP_STEP,
+    };
+  }
+
+  return {
+    minTemp: DEFAULT_MIN_TEMP_FAHRENHEIT,
+    maxTemp: DEFAULT_MAX_TEMP_FAHRENHEIT,
+    step: DEFAULT_TEMP_STEP_FAHRENHEIT,
+  };
+}
+
+function resolveClimateTemperatureRange(
+  liveEntity: HassEntity | undefined,
+  sourceTemperatureUnit: TemperatureUnit | undefined
+) {
   const attrs = liveEntity?.attributes;
-  const minTemp = parseNumberish(attrs?.min_temp) ?? DEFAULT_MIN_TEMP;
-  const maxTemp = parseNumberish(attrs?.max_temp) ?? DEFAULT_MAX_TEMP;
-  const step = parseNumberish(attrs?.target_temp_step) ?? DEFAULT_TEMP_STEP;
+  const fallbackRange = resolveDefaultTemperatureRange(sourceTemperatureUnit);
+  const minTemp = parseNumberish(attrs?.min_temp) ?? fallbackRange.minTemp;
+  const maxTemp = parseNumberish(attrs?.max_temp) ?? fallbackRange.maxTemp;
+  const step = parseNumberish(attrs?.target_temp_step) ?? fallbackRange.step;
 
   return {
     minTemp,
     maxTemp,
-    step: step > 0 ? step : DEFAULT_TEMP_STEP,
+    step: step > 0 ? step : fallbackRange.step,
   };
 }
 
@@ -65,6 +91,7 @@ export function useHVACCardController({
   name,
   initialTemp = 21,
   initialCurrentTemp = 22,
+  sourceTemperatureUnit,
   initialMode = 'cool',
   initialAction,
   supportedHvacModes: initialSupportedHvacModes,
@@ -77,13 +104,14 @@ export function useHVACCardController({
   | 'name'
   | 'initialTemp'
   | 'initialCurrentTemp'
+  | 'temperatureUnit'
   | 'initialMode'
   | 'initialAction'
   | 'supportedHvacModes'
   | 'initialState'
   | 'isEditMode'
   | 'size'
->) {
+> & { sourceTemperatureUnit?: TemperatureUnit }) {
   const { t } = useI18n();
   const [targetTemp, setTargetTemp] = useState(initialTemp);
   const [currentTemp, setCurrentTemp] = useState(initialCurrentTemp);
@@ -96,7 +124,10 @@ export function useHVACCardController({
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
-  const temperatureRange = useMemo(() => resolveClimateTemperatureRange(liveEntity), [liveEntity]);
+  const temperatureRange = useMemo(
+    () => resolveClimateTemperatureRange(liveEntity, sourceTemperatureUnit),
+    [liveEntity, sourceTemperatureUnit]
+  );
   const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
   const pendingTargetTempRef = useRef<number | null>(null);
   const targetTempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -278,17 +309,36 @@ export function useHVACCardController({
             : 'bg-white/60'
         : 'bg-white/60'
       : undefined;
-  const displayMinTemp = convertCelsiusToTemperatureUnit(temperatureRange.minTemp, temperatureUnit);
-  const displayMaxTemp = convertCelsiusToTemperatureUnit(temperatureRange.maxTemp, temperatureUnit);
-  const displayStep = Math.abs(
-    convertCelsiusToTemperatureUnit(temperatureRange.step, temperatureUnit) -
-      convertCelsiusToTemperatureUnit(0, temperatureUnit)
+  const displayMinTemp = convertTemperatureUnitValue(
+    temperatureRange.minTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
   );
-  const displayTargetTemp = convertCelsiusToTemperatureUnit(targetTemp, temperatureUnit);
-  const displayCurrentTemp = convertCelsiusToTemperatureUnit(currentTemp, temperatureUnit);
+  const displayMaxTemp = convertTemperatureUnitValue(
+    temperatureRange.maxTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
+  const displayStep = Math.abs(
+    convertTemperatureUnitValue(temperatureRange.step, sourceTemperatureUnit, temperatureUnit) -
+      convertTemperatureUnitValue(0, sourceTemperatureUnit, temperatureUnit)
+  );
+  const displayTargetTemp = convertTemperatureUnitValue(
+    targetTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
+  const displayCurrentTemp = convertTemperatureUnitValue(
+    currentTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
 
   const updateDisplayTargetTemp = (nextTemp: number, immediate = false) => {
-    updateTargetTemp(convertTemperatureUnitToCelsius(nextTemp, temperatureUnit), immediate);
+    updateTargetTemp(
+      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit),
+      immediate
+    );
   };
 
   return {
@@ -300,8 +350,14 @@ export function useHVACCardController({
     displayMinTemp,
     displayStep,
     displayTargetTemp,
-    formatTemperature: (value: number) => formatTemperature(value, temperatureUnit),
-    formatTemperatureValue: (value: number) => formatTemperatureValue(value, temperatureUnit),
+    formatTemperature: (value: number) =>
+      sourceTemperatureUnit
+        ? formatTemperatureFromSourceUnit(value, sourceTemperatureUnit, temperatureUnit)
+        : formatTemperature(value, temperatureUnit),
+    formatTemperatureValue: (value: number) =>
+      sourceTemperatureUnit
+        ? formatTemperatureValueFromSourceUnit(value, sourceTemperatureUnit, temperatureUnit)
+        : formatTemperatureValue(value, temperatureUnit),
     isMedium,
     isOn,
     isSettingsOpen,

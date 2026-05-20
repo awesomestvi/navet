@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.13
+
+- Updated Navet to `0.1.3`
+- Fixed Docker media artwork loading
+- Fixed dashboard navigation unexpectedly returning to the unassigned room tab
+- Added cover card drag controls, card locking, and editable custom card names
+- Refined card dialogs, scrollbars, slide actions, and add-on setup guidance
+
 ## 0.1.12
 
 - Updated Navet to `0.1.2`

@@ -1,6 +1,7 @@
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { SensorIconType } from '../features/sensors';
 import type { WeatherForecastMode } from '../stores/settings-store';
+import type { TemperatureUnit } from '../utils/temperature';
 
 export interface DeviceMetric {
   label: string;
@@ -37,6 +38,7 @@ export interface ClimateDevice extends BaseDevice {
   room: string;
   temperature: number;
   currentTemperature: number;
+  temperatureUnit?: TemperatureUnit;
   mode: string;
   action?: string;
   supportedHvacModes?: string[];
@@ -47,7 +49,9 @@ export interface ClimateDevice extends BaseDevice {
 export interface WeatherDevice extends BaseDevice {
   room: string;
   temperature: number;
+  temperatureUnit?: TemperatureUnit;
   feelsLikeTemperature?: number;
+  feelsLikeTemperatureUnit?: TemperatureUnit;
   location: string;
   condition: string;
   humidity: number;
@@ -65,13 +69,17 @@ export interface WeatherDevice extends BaseDevice {
   daylight: string;
   rainForecast: string;
   highTemp: number;
+  highTempUnit?: TemperatureUnit;
   lowTemp: number;
+  lowTempUnit?: TemperatureUnit;
   forecastMode: WeatherForecastMode;
   forecast: Array<{
     day: string;
     condition: string;
     high: number;
+    highUnit?: TemperatureUnit;
     low: number;
+    lowUnit?: TemperatureUnit;
   }>;
 }
 

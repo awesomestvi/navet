@@ -38,6 +38,54 @@ describe('mapWeatherDevice', () => {
     expect(device.forecast[0]?.day).toMatch(/[AP]M$/);
   });
 
+  it('preserves Fahrenheit weather and forecast units', () => {
+    const device = mapWeatherDevice(
+      'weather.home',
+      createWeatherEntity({
+        temperature: 72,
+        apparent_temperature: 75,
+        unit_of_measurement: '°F',
+      }),
+      'Home',
+      'Home',
+      {
+        locale: 'en-US',
+        t,
+        use24HourTime: false,
+        weatherForecastMode: 'weekly',
+        storedForecasts: {
+          daily: [
+            {
+              datetime: '2026-05-17T13:00:00.000Z',
+              temperature: 80,
+              templow: 65,
+              temperature_unit: '°F',
+              condition: 'sunny',
+            },
+          ],
+          hourly: [],
+        },
+      }
+    );
+
+    expect(device.temperature).toBe(72);
+    expect(device.temperatureUnit).toBe('fahrenheit');
+    expect(device.feelsLikeTemperature).toBe(75);
+    expect(device.feelsLikeTemperatureUnit).toBe('fahrenheit');
+    expect(device.highTemp).toBe(80);
+    expect(device.highTempUnit).toBe('fahrenheit');
+    expect(device.lowTemp).toBe(65);
+    expect(device.lowTempUnit).toBe('fahrenheit');
+    expect(device.forecast[0]).toEqual(
+      expect.objectContaining({
+        high: 80,
+        highUnit: 'fahrenheit',
+        low: 65,
+        lowUnit: 'fahrenheit',
+      })
+    );
+  });
+
   it('formats hourly forecast labels with the selected 24-hour preference', () => {
     const device = mapWeatherDevice('weather.home', createWeatherEntity(), 'Home', 'Home', {
       locale: 'en-US',

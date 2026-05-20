@@ -33,6 +33,23 @@ describe('mapClimateDevice', () => {
     expect(device.supportedHvacModes).toEqual(['heat', 'cool', 'fan_only']);
   });
 
+  it('preserves Home Assistant Fahrenheit climate units', () => {
+    const device = mapClimateDevice(
+      'climate.hallway',
+      createClimateEntity({
+        temperature: 72,
+        current_temperature: 70,
+        unit_of_measurement: '°F',
+      }),
+      'Hallway',
+      'Hallway'
+    );
+
+    expect(device.temperature).toBe(72);
+    expect(device.currentTemperature).toBe(70);
+    expect(device.temperatureUnit).toBe('fahrenheit');
+  });
+
   it('ignores malformed HVAC mode entries', () => {
     const device = mapClimateDevice(
       'climate.hallway',

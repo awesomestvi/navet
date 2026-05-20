@@ -1,11 +1,15 @@
 import type { CSSProperties } from 'react';
-import { formatTemperatureValue, type TemperatureUnit } from '@/app/utils/temperature';
+import {
+  formatTemperatureValueFromSourceUnit,
+  type TemperatureUnit,
+} from '@/app/utils/temperature';
 import type { ForecastDay } from './index';
 import { WeatherIcon } from './weather-icon';
 
 interface WeatherForecastRowProps {
   forecast: ForecastDay[];
   temperatureUnit: TemperatureUnit;
+  defaultTemperatureUnit?: TemperatureUnit;
   showHourlyForecast: boolean;
   isSmall: boolean;
   isMedium: boolean;
@@ -19,6 +23,7 @@ interface WeatherForecastRowProps {
 export function WeatherForecastRow({
   forecast,
   temperatureUnit,
+  defaultTemperatureUnit,
   showHourlyForecast,
   isSmall,
   isMedium,
@@ -58,14 +63,31 @@ export function WeatherForecastRow({
           />
           {showHourlyForecast ? (
             <div className={`${compactForecastValueClassName} font-medium`} style={titleStyle}>
-              {formatTemperatureValue(day.high, temperatureUnit)}°
+              {formatTemperatureValueFromSourceUnit(
+                day.high,
+                day.highUnit ?? defaultTemperatureUnit,
+                temperatureUnit
+              )}
+              °
             </div>
           ) : (
             <div className={`${weeklyValueClassName} ${compactForecastValueClassName}`}>
               <span className="font-medium" style={titleStyle}>
-                {formatTemperatureValue(day.high, temperatureUnit)}°
+                {formatTemperatureValueFromSourceUnit(
+                  day.high,
+                  day.highUnit ?? defaultTemperatureUnit,
+                  temperatureUnit
+                )}
+                °
               </span>
-              <span style={subtitleStyle}>{formatTemperatureValue(day.low, temperatureUnit)}°</span>
+              <span style={subtitleStyle}>
+                {formatTemperatureValueFromSourceUnit(
+                  day.low,
+                  day.lowUnit ?? defaultTemperatureUnit,
+                  temperatureUnit
+                )}
+                °
+              </span>
             </div>
           )}
         </div>

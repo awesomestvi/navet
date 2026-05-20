@@ -1,6 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { TranslateFn } from '../../i18n';
 import type { WeatherDevice } from '../../types/device.types';
+import { normalizeTemperatureUnit, type TemperatureUnit } from '../../utils/temperature';
 import {
   formatClock,
   formatDaylight,
@@ -10,6 +11,17 @@ import {
 } from '../ha-entity-utils';
 
 type WeatherForecastEntry = Record<string, unknown>;
+
+function resolveTemperatureUnit(...values: unknown[]): TemperatureUnit | undefined {
+  for (const value of values) {
+    const unit = normalizeTemperatureUnit(value);
+    if (unit) {
+      return unit;
+    }
+  }
+
+  return undefined;
+}
 
 interface WeatherContext {
   locale: string;
@@ -49,6 +61,11 @@ export function mapWeatherDevice(
       : dailyForecastSource;
   const effectiveForecastMode =
     weatherForecastMode === 'hourly' && hourlyForecastSource.length > 0 ? 'hourly' : 'weekly';
+  const entityTemperatureUnit = resolveTemperatureUnit(
+    entity.attributes?.unit_of_measurement,
+    entity.attributes?.temperature_unit,
+    entity.attributes?.native_unit_of_measurement
+  );
 
   const hourlyFormatter = new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
@@ -81,15 +98,33 @@ export function mapWeatherDevice(
         parseRoundedNumberish(entry.temperature) ??
         parseRoundedNumberish(entry.native_temperature) ??
         0;
+      const forecastTemperatureUnit = resolveTemperatureUnit(
+        entry.temperature_unit,
+        entry.native_temperature_unit,
+        entry.unit_of_measurement,
+        entry.native_unit_of_measurement,
+        entityTemperatureUnit
+      );
+      const forecastLowUnit = resolveTemperatureUnit(
+        entry.templow_unit,
+        entry.native_templow_unit,
+        entry.temperature_unit,
+        entry.native_temperature_unit,
+        entry.unit_of_measurement,
+        entry.native_unit_of_measurement,
+        entityTemperatureUnit
+      );
 
       return {
         day: dayLabel,
         condition: (typeof entry.condition === 'string' && entry.condition) || entity.state,
         high: forecastTemperature,
+        highUnit: forecastTemperatureUnit,
         low:
           effectiveForecastMode === 'hourly'
             ? forecastTemperature
             : (parseRoundedNumberish(entry.templow) ?? 0),
+        lowUnit: effectiveForecastMode === 'hourly' ? forecastTemperatureUnit : forecastLowUnit,
       };
     });
 
@@ -99,6 +134,20 @@ export function mapWeatherDevice(
     parseRoundedNumberish(entity.attributes?.native_temperature) ??
     0;
   const lowTemp = parseRoundedNumberish(dailyForecastSource[0]?.templow) ?? highTemp;
+  const weatherTemperature = parseRoundedNumberish(entity.attributes?.temperature);
+  const nativeWeatherTemperature = parseRoundedNumberish(entity.attributes?.native_temperature);
+  const displayWeatherTemperature = weatherTemperature ?? nativeWeatherTemperature ?? 0;
+  const weatherTemperatureUnit =
+    weatherTemperature !== undefined
+      ? entityTemperatureUnit
+      : resolveTemperatureUnit(
+          entity.attributes?.native_unit_of_measurement,
+          entityTemperatureUnit
+        );
+  const apparentTemperature = parseRoundedNumberish(entity.attributes?.apparent_temperature);
+  const nativeApparentTemperature = parseRoundedNumberish(
+    entity.attributes?.native_apparent_temperature
+  );
   const precipitationUnit =
     (typeof entity.attributes?.precipitation_unit === 'string' &&
       entity.attributes.precipitation_unit) ||
@@ -139,14 +188,20 @@ export function mapWeatherDevice(
     room,
     size: 'large',
     location: weatherLocation,
-    temperature:
-      parseRoundedNumberish(entity.attributes?.temperature) ??
-      parseRoundedNumberish(entity.attributes?.native_temperature) ??
-      0,
-    feelsLikeTemperature:
-      parseRoundedNumberish(entity.attributes?.apparent_temperature) ??
-      parseRoundedNumberish(entity.attributes?.native_apparent_temperature) ??
-      undefined,
+    temperature: displayWeatherTemperature,
+    temperatureUnit: weatherTemperatureUnit,
+    feelsLikeTemperature: apparentTemperature ?? nativeApparentTemperature ?? undefined,
+    feelsLikeTemperatureUnit:
+      apparentTemperature !== undefined
+        ? resolveTemperatureUnit(
+            entity.attributes?.apparent_temperature_unit,
+            entityTemperatureUnit
+          )
+        : resolveTemperatureUnit(
+            entity.attributes?.native_apparent_temperature_unit,
+            entity.attributes?.native_unit_of_measurement,
+            entityTemperatureUnit
+          ),
     condition: entity.state,
     humidity: parseNumberish(entity.attributes?.humidity) ?? 0,
     windSpeed:
@@ -199,7 +254,19 @@ export function mapWeatherDevice(
             })
           : '',
     highTemp,
+    highTempUnit: resolveTemperatureUnit(
+      dailyForecastSource[0]?.temperature_unit,
+      dailyForecastSource[0]?.native_temperature_unit,
+      entityTemperatureUnit
+    ),
     lowTemp,
+    lowTempUnit: resolveTemperatureUnit(
+      dailyForecastSource[0]?.templow_unit,
+      dailyForecastSource[0]?.native_templow_unit,
+      dailyForecastSource[0]?.temperature_unit,
+      dailyForecastSource[0]?.native_temperature_unit,
+      entityTemperatureUnit
+    ),
     forecastMode: effectiveForecastMode,
     forecast,
   };

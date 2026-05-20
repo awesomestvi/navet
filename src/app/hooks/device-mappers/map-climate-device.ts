@@ -1,5 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ClimateDevice } from '../../types/device.types';
+import { normalizeTemperatureUnit } from '../../utils/temperature';
 import { parseNumberish } from '../ha-entity-utils';
 
 function parseSupportedHvacModes(value: unknown): string[] | undefined {
@@ -27,6 +28,14 @@ function resolveClimateMode(entity: HassEntity): string {
   );
 }
 
+function resolveClimateTemperatureUnit(entity: HassEntity) {
+  return (
+    normalizeTemperatureUnit(entity.attributes?.unit_of_measurement) ??
+    normalizeTemperatureUnit(entity.attributes?.temperature_unit) ??
+    normalizeTemperatureUnit(entity.attributes?.native_unit_of_measurement)
+  );
+}
+
 export function mapClimateDevice(
   entityId: string,
   entity: HassEntity,
@@ -42,6 +51,7 @@ export function mapClimateDevice(
     currentTemperature:
       parseNumberish(entity.attributes?.current_temperature) ??
       (parseFloat(entity.attributes?.temperature ?? '0') || 0),
+    temperatureUnit: resolveClimateTemperatureUnit(entity),
     mode: resolveClimateMode(entity),
     action:
       (typeof entity.attributes?.hvac_action === 'string' && entity.attributes.hvac_action) ||

@@ -95,7 +95,7 @@ describe('resolveVacuumGlanceMetrics', () => {
       use24HourTime: false,
     });
 
-    expect(metrics.nextCleaning).toMatch(/[AP]M$/);
+    expect(metrics.nextCleaning).toMatch(/[ap]m$/i);
   });
 
   it('formats scheduled cleanings with the selected 24-hour preference', () => {

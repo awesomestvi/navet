@@ -13,7 +13,7 @@ Navet turns Home Assistant into a dedicated smart home control surface. Use it f
 rooms you touch every day: lights, media, cameras, locks, energy, automations, weather, calendars,
 sensors, and custom dashboard widgets.
 
-Current release: `0.1.2`
+Current release: `0.1.3`
 
 ## Why Navet
 

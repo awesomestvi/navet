@@ -4,17 +4,21 @@ import { useI18n } from '@/app/hooks';
 import { formatMetricNumber } from '@/app/hooks/ha-entity-utils';
 import type { WeatherMetricId } from '@/app/stores/settings-store';
 import {
-  formatTemperature,
-  formatTemperatureValue,
+  formatTemperatureFromSourceUnit,
+  formatTemperatureValueFromSourceUnit,
   type TemperatureUnit,
 } from '@/app/utils/temperature';
 
 interface WeatherDetailsProps {
   temperature: number;
+  temperatureUnit?: TemperatureUnit;
   highTemp: number;
+  highTempUnit?: TemperatureUnit;
   lowTemp: number;
+  lowTempUnit?: TemperatureUnit;
   feelsLikeTemperature?: number;
-  temperatureUnit: TemperatureUnit;
+  feelsLikeTemperatureUnit?: TemperatureUnit;
+  displayTemperatureUnit: TemperatureUnit;
   rainForecast?: string;
   precipitation: number;
   precipitationUnit: string;
@@ -36,10 +40,14 @@ interface WeatherDetailsProps {
 
 export function WeatherDetails({
   temperature,
-  highTemp,
-  lowTemp,
-  feelsLikeTemperature,
   temperatureUnit,
+  highTemp,
+  highTempUnit,
+  lowTemp,
+  lowTempUnit,
+  feelsLikeTemperature,
+  feelsLikeTemperatureUnit,
+  displayTemperatureUnit,
   rainForecast,
   precipitation,
   precipitationUnit,
@@ -77,7 +85,11 @@ export function WeatherDetails({
       typeof feelsLikeTemperature === 'number'
         ? {
             caption: t('weather.metric.feelsLike'),
-            value: formatTemperature(feelsLikeTemperature, temperatureUnit),
+            value: formatTemperatureFromSourceUnit(
+              feelsLikeTemperature,
+              feelsLikeTemperatureUnit,
+              displayTemperatureUnit
+            ),
           }
         : undefined,
     windGust:
@@ -118,11 +130,11 @@ export function WeatherDetails({
     <div className="flex w-full items-end justify-between gap-4">
       <div className="min-w-0 shrink-0">
         <div className="mb-1 text-3xl font-bold leading-none" style={titleStyle}>
-          {formatTemperature(temperature, temperatureUnit)}
+          {formatTemperatureFromSourceUnit(temperature, temperatureUnit, displayTemperatureUnit)}
         </div>
         <div className="mb-0.5 text-sm" style={subtitleStyle}>
-          H:{formatTemperatureValue(highTemp, temperatureUnit)}° L:
-          {formatTemperatureValue(lowTemp, temperatureUnit)}°
+          H:{formatTemperatureValueFromSourceUnit(highTemp, highTempUnit, displayTemperatureUnit)}°
+          L:{formatTemperatureValueFromSourceUnit(lowTemp, lowTempUnit, displayTemperatureUnit)}°
         </div>
         {rainForecast ? (
           <div className="text-sm" style={subtitleStyle}>

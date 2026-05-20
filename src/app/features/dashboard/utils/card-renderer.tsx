@@ -127,6 +127,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       room={device.room as string}
       initialTemp={device.temperature as number | undefined}
       initialCurrentTemp={device.currentTemperature as number | undefined}
+      temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
       initialMode={device.mode as string | undefined}
       initialAction={device.action as string | undefined}
       supportedHvacModes={device.supportedHvacModes as string[] | undefined}
@@ -168,7 +169,11 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       location={device.location as string}
       temperature={device.temperature as number}
+      temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
       feelsLikeTemperature={device.feelsLikeTemperature as number | undefined}
+      feelsLikeTemperatureUnit={
+        device.feelsLikeTemperatureUnit as 'celsius' | 'fahrenheit' | undefined
+      }
       condition={device.condition as string}
       humidity={device.humidity as number}
       windSpeed={device.windSpeed as number}
@@ -189,12 +194,16 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
           day: string;
           condition: string;
           high: number;
+          highUnit?: 'celsius' | 'fahrenheit';
           low: number;
+          lowUnit?: 'celsius' | 'fahrenheit';
         }>) ?? []
       }
       forecastMode={(device.forecastMode as 'weekly' | 'hourly' | undefined) ?? 'weekly'}
       highTemp={device.highTemp as number}
+      highTempUnit={device.highTempUnit as 'celsius' | 'fahrenheit' | undefined}
       lowTemp={device.lowTemp as number}
+      lowTempUnit={device.lowTempUnit as 'celsius' | 'fahrenheit' | undefined}
       size={size}
       onSizeChange={() => {}}
       isEditMode={isEditMode}

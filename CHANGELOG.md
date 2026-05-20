@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.3 - 2026-05-21
+
+Navet fixes dashboard navigation and media artwork issues while making cards easier to control and edit.
+
+## New
+
+- Cover cards can now be adjusted by dragging the position line directly.
+- Cards can now be locked so they stay visible without reacting to accidental taps.
+- Custom card names can now be changed from the dashboard.
+
+## Fixed
+
+- Media artwork now appears correctly when Navet runs in Docker.
+- The dashboard no longer intermittently refreshes back to the unassigned room tab.
+- Fahrenheit values no longer get converted again when they are already in Fahrenheit.
+- Dialogs can be dragged closed reliably again.
+- Switch card dialogs no longer refer to a light icon.
+
+## Improved
+
+- Cover, light, and slide-to-unlock card dialogs are easier to read and use.
+- Scrollbars behave better in dashboard areas that overflow.
+
+## Documentation
+
+- Add-on setup guidance no longer tells users to rely on a login URL and token when that is not the recommended setup path.
+
 ## 0.1.2 - 2026-05-20
 
 Navet keeps release publishing aligned for custom panel and add-on users.

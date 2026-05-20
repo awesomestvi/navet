@@ -1,7 +1,7 @@
 {
   "name": "navet",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A smart home dashboard PWA for Home Assistant.",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/awesomestvi/navet#readme",
@@ -19,6 +19,7 @@
     "build:ha-panel": "node scripts/build-ha-panel.mjs",
     "dev": "vite",
     "migrate:linear-issues": "node scripts/migrate-linear-issues.mjs",
+    "release:linear": "node scripts/fetch-linear-release-issues.mjs",
     "preview": "pnpm build && pnpm preview:config && vite preview --host 0.0.0.0 --port 4173",
     "preview:config": "node scripts/write-preview-config.mjs",
     "clean:root": "node scripts/clean-root-artifacts.mjs",
