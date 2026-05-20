@@ -213,6 +213,7 @@ Rules:
 - derive preview and overlay behavior from the shared registry
 - reuse shared title/header primitives for compact cards
 - use shared card-state styling instead of per-feature opacity hacks
+- keep lock, resize, remove, and other edit controls on the shared edit-control placement helpers
 - keep compact layouts lean and avoid duplicate controls across rows
 - do not map card behavior to external platform widget systems
 
@@ -236,6 +237,23 @@ Current shared dialog primitives and patterns include:
 
 The exact composition may vary by feature, but room assignment, tabbed content, section spacing,
 and close/done affordances should stay aligned across cards and settings sections.
+
+On small screens, `DialogShell` defaults to a mobile cover sheet. Its handle can drag upward into a
+near-fullscreen sheet, drag downward to collapse, or drag far enough down to close. Dialog content
+that should remain fixed instead of sheet-like should pass `mobileCoverSheet={false}`.
+
+`TabList` owns its compact overflow behavior. Default and non-segmented tab lists hide native
+scrollbars and expose a pointer-aware synthetic scrollbar from `.tab-list-scrollbar`; avoid adding
+feature-local scrollbar wrappers around tabs.
+
+`SlideAction` owns the slide-to-confirm motion contract. It holds the completed state briefly,
+then returns the thumb and label with controlled transition timings, so consumers should call it as
+an action primitive rather than layering extra reset animations around it.
+
+The app calls `initializeInputModality()` and sets `data-pointer-modality` on `<html>` from
+[`src/app/utils/input-modality.ts`](../src/app/utils/input-modality.ts). Shared CSS uses this to show
+mouse-friendly scrollbars and suppress touch-only hover affordances; feature code should prefer this
+global attribute over independent pointer-detection state.
 
 ## Storybook Workflow
 

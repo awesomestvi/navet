@@ -24,9 +24,11 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 - Widgets persist through the shared dashboard custom-card store for both the home section and the energy section
 - RSS widget feed configuration is stored on the widget card itself so exports/imports keep provider selection and article count
 - Direct RSS URLs are fetched through the same-origin `/__navet_rss_proxy__` path; Docker and add-on nginx load those feeds through the embedded njs runtime (no browser CORS, no separate Node sidecar)
-- Widgets support edit-mode move/resize/delete flows
+- Widgets support edit-mode rename, move, resize, lock, and delete flows
 - Widget sizing is template-specific (not one global size list)
 - Widgets can be assigned to rooms and participate in the home overview zone layout
+- Locked widget cards stay visible but ignore accidental taps outside edit mode, using the same
+  `lockedCardIds` dashboard entity state as entity cards
 
 Room assignment details:
 
@@ -62,6 +64,13 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 2. Use the card resize action.
 3. Pick a supported size for that widget type.
 
+### Rename
+
+1. Enter edit mode.
+2. Open the widget settings or edit action.
+3. Change the custom card name.
+4. Save the widget settings.
+
 ### Move
 
 1. Enter edit mode.
@@ -72,6 +81,12 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 1. Enter edit mode.
 2. Use the remove action on the card.
 3. Confirm deletion.
+
+### Lock
+
+1. Enter edit mode.
+2. Use the lock action on the widget card.
+3. Leave edit mode. The widget remains visible but no longer reacts to normal dashboard taps until it is unlocked.
 
 ### Edit Data
 
@@ -115,6 +130,7 @@ These files define widget type ids, labels, defaults, and supported sizes.
 Store responsibilities:
 - persist cards
 - add/remove/update cards
+- persist custom widget names through the card data payload
 - normalize invalid migrated sizes
 - preserve home-zone overrides and shared room sentinels used by the home and energy sections
 - migrate legacy widget types (`news` -> `rss`)
@@ -147,6 +163,10 @@ interface CustomCard {
 
 `room` is not limited to Home Assistant room names. The dashboard also uses sentinel values such as
 `__home__` and `__energy__` for section-level widget bands.
+
+Dashboard export/import and shared profile sync also include dashboard entity state. That state now
+contains `lockedCardIds`, so locked widget and entity cards survive YAML backup/restore and
+Docker/add-on profile synchronization.
 
 ## Legacy Notes
 

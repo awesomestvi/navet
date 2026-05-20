@@ -61,6 +61,10 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Energy history** — per-device and per-source consumption over time with Home Assistant Energy prefs, recorder statistics, source diagnostics, tracked-device sparklines, and drill-down to individual appliances
 - [x] **Energy dashboard refresh** — richer energy data panels, load history handling, live HA service tests, generated mock energy data, and expanded Storybook coverage
 - [x] **Dashboard data panel polish** — refreshed home cards, dashboard card metrics, security/task/light/vacuum presentation details, and localized copy across the updated panel experience
+- [x] **Card locking** — entity and widget cards can be locked in edit mode so shared dashboard screens keep showing them without reacting to accidental taps
+- [x] **Custom card naming** — dashboard widgets and custom cards can be renamed after creation, with names preserved through dashboard persistence
+- [x] **Weather and climate unit hardening** — weather and HVAC cards preserve Home Assistant source temperature units so Fahrenheit values are not converted twice
+- [x] **Media artwork reliability** — media artwork resolves across Home Assistant panels, Docker, and local development runtime paths
 - [x] **Zone-based Home screen layout** — Home view organises all devices into `hero`, `actions`, `status`, and `analytics` zone bands; per-card zone overrides persist through dashboard layout state and YAML export; `extra-large` cards use a 3 logical column x 2 row footprint for large hero-style cards; responsive grids derive rendered spans from the shared card-size registry
 - [x] **Custom accent color picker** — custom color input alongside 8 built-in accent presets in Settings → Appearance
 - [x] **Widget settings** — RSS Feed, Quick Note, and Photo Frame widgets support post-creation configuration (feed URLs, note content, photo URLs)
@@ -83,7 +87,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
 - [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [x] **HVAC card** — unified climate entity card
-- [x] **Cover card** — cover entity controls
+- [x] **Cover card** — cover entity controls with direct drag/keyboard position adjustment, preset chips, and feature-aware open/close/stop actions
 - [x] **Lock card** — lock entity controls
 - [x] **Helper and script support** — helpers and scripts via sensor/switch card paths
 - [x] **Persistent notifications** — repairs, updates, and markdown-formatted messages

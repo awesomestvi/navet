@@ -21,8 +21,8 @@ Current release: `0.1.3`
   always-on dashboard displays.
 - **Works with your Home Assistant setup.** Run it as a native Home Assistant custom panel, a Home
   Assistant add-on, or a standalone Docker container connected to your Home Assistant instance.
-- **Easy to shape around your home.** Arrange rooms, resize cards, reorder devices, add widgets, and
-  keep the dashboard focused on the controls you actually use.
+- **Easy to shape around your home.** Arrange rooms, resize cards, rename widgets, lock cards,
+  reorder devices, add widgets, and keep the dashboard focused on the controls you actually use.
 - **Self-hosted by design.** Your Home Assistant URL, token, entity state, and camera feeds stay in
   your own environment.
 - **Installable app experience.** Use Navet as a PWA on supported devices for a focused dashboard
@@ -33,18 +33,20 @@ Current release: `0.1.3`
 ### Home dashboard
 
 - Room-based navigation with an `All` overview and per-room views
-- Editable entity cards with ordering, room assignment, visibility, and card sizing
-- Custom widgets for notes, photos, RSS/news, battery status, energy, buttons, and maps
+- Editable entity cards with ordering, room assignment, visibility, card locking, and card sizing
+- Custom widgets for notes, photos, RSS/news, battery status, energy, buttons, and maps, including
+  editable names and per-widget settings
 - Import/export support for local dashboard configuration
 
 ### Smart home sections
 
 - **Energy:** usage overview, current demand, historical trends, setup flow, and energy widgets
-- **Security:** cameras, covers, lock cards, and security-focused layouts
+- **Security:** cameras, covers with direct position gestures, lock cards, and security-focused layouts
 - **Lighting:** lights, switches, scenes, and room-oriented control
 - **Media:** grouped media players with dedicated audio and TV handling
 - **Tasks:** Home Assistant automation summaries grouped into actionable sections
-- **Daily context:** weather, calendars, people/presence, sensors, vacuums, and RSS feeds
+- **Daily context:** weather with source-aware temperature units, calendars, people/presence, sensors,
+  vacuums, and RSS feeds
 
 ### Interface and customization
 

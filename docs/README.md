@@ -93,9 +93,9 @@ Use these directories when docs need to be checked against the live implementati
 - Keep active docs aligned with the codebase when architecture, setup, commands, or product surface changes
 - Prefer updating existing active docs over adding duplicate scratch notes
 - Treat `docs/archive/` as historical material, not the current source of truth
-- When top-level sections, shared stores, widget types, or test locations change, update `README.md` and `design-system/FEATURES.md`
+- When top-level sections, shared stores, widget types, dashboard edit behavior, or test locations change, update `README.md`, `docs/WIDGETS.md`, and `design-system/FEATURES.md`
 - When Storybook ownership, UI-layer boundaries, token helpers, or `ui-kit/` exports change, update `design-system/README.md` and `STORYBOOK_WORKFLOW.md`
 - When the Home Assistant service split or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
 - When setup scripts or test commands change, update `README.md`
 
-Last updated: May 19, 2026
+Last updated: May 21, 2026

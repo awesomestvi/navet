@@ -9,6 +9,7 @@ coverage is expected to exist.
 Current active feature folders under
 [`src/app/features/`](../src/app/features):
 
+- `auth`
 - `calendar`
 - `climate`
 - `dashboard`
@@ -29,6 +30,7 @@ Current active feature folders under
 Additional notes:
 
 - cross-feature imports should prefer a feature's root `index.ts` when that entrypoint exists
+- `auth` owns the login/onboarding entry surface rather than a top-level dashboard section
 - `notifications` is a supporting feature surfaced through shared app-shell UI rather than a top-level section
 
 ## App Shell
@@ -136,7 +138,9 @@ The dashboard feature owns:
 
 - card registration
 - entity visibility
+- locked entity/widget card interaction state
 - custom-card placement
+- custom-card naming and persisted widget data
 - room ordering
 - card ordering
 - dashboard-specific persisted layout state
@@ -242,7 +246,9 @@ Default placement and fallback resolution live in:
 
 ### `security`
 
-- camera cards, cover cards, lock card, and security-specific surface tokens
+- camera cards, lock cards, and security-specific surface tokens
+- cover cards include direct drag/keyboard position controls via `CoverPositionGestureSurface`,
+  preset chips, and feature-aware open/close/stop actions
 - key path: [`src/app/features/security/components/`](../src/app/features/security/components)
 
 ### `settings`
@@ -264,7 +270,8 @@ Default placement and fallback resolution live in:
 
 ### `weather`
 
-- weather card controller, overlays, icons, and settings dialog
+- weather card controller, source-aware temperature units via `normalizeTemperatureUnit`, overlays,
+  icons, and settings dialog
 - key path: [`src/app/features/weather/components/weather-card/`](../src/app/features/weather/components/weather-card)
 
 ## Shared UI System
@@ -308,6 +315,7 @@ Vitest is the preferred path for:
 - browser-dependent hooks
 - token and entity-mapping helpers
 - dashboard actions and feature-specific logic seams
+- input modality, temperature conversion, registry service, cover gesture, and dashboard lock-state behavior
 
 Current co-located `__tests__/` directories:
 
