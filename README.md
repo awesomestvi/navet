@@ -162,8 +162,8 @@ volumes:
   navet-data:
 ```
 
-`latest` tracks the current public beta tag. Pushes to `main` publish developer images as `dev` and
-`sha-*`, so production-style deployments should use `latest`, `beta`, or a specific prerelease tag
+`latest` tracks the current public release tag. Pushes to `main` publish developer images as `dev` and
+`sha-*`, so production-style deployments should use `latest`, `beta`, or a specific release tag
 instead of expecting `main` to update `latest`.
 
 Start Navet:

@@ -114,10 +114,10 @@ Then open `http://localhost:8080`.
 The GitHub Actions publish workflow publishes multi-arch app images to GitHub Container Registry:
 
 - pushes to `main`: `ghcr.io/<owner>/navet:dev` and `ghcr.io/<owner>/navet:sha-<commit>`
-- public prerelease tags (`v*-alpha.*`, `v*-beta.*`, `v*-rc.*`): exact tag, `beta`, `latest`, and `sha-*`
+- public release tags (`v*`): exact tag, `beta`, `latest`, and `sha-*`
 - manual workflow runs: the requested developer tag, defaulting to `dev`, plus `sha-*`
 
-`latest` is the current public beta compatibility tag. It is updated by prerelease tags, not by
+`latest` is the current public release compatibility tag. It is updated by release tags, not by
 ordinary `main` pushes.
 
 ### GHCR Deployment

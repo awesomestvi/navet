@@ -62,7 +62,7 @@ Recommended lightweight flow:
 6. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
 7. If the release meaning changed, update this file.
 8. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
-9. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Prerelease tags also trigger app image publishing and add-on image publishing.
+9. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Version tags also trigger app image publishing and add-on image publishing.
 10. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
 
 ## Release Note Style

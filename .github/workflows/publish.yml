@@ -5,9 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*-alpha.*'
-      - 'v*-beta.*'
-      - 'v*-rc.*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
