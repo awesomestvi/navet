@@ -6,6 +6,7 @@ import { itMessages } from './it';
 import { ptMessages } from './pt';
 import { svMessages } from './sv';
 import { zhMessages } from './zh';
+import { zhMessages } from './ru';
 
 export type TranslationKey = keyof typeof enMessages;
 
