@@ -14,6 +14,7 @@ import {
   type ViteDevServer,
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './build/vite-chunking'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
@@ -22,68 +23,6 @@ import {
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string
-}
-
-function getPackageName(id: string) {
-  const parts = id.split('node_modules/')
-  const packagePath = parts.at(-1)
-  if (!packagePath) {
-    return null
-  }
-
-  const segments = packagePath.split('/')
-
-  if (segments[0]?.startsWith('@') && segments[1]) {
-    return `${segments[0]}/${segments[1]}`
-  }
-
-  return segments[0] ?? null
-}
-
-function normalizeModuleId(id: string) {
-  return id.split(path.sep).join('/')
-}
-
-function getAppChunkName(id: string) {
-  const moduleId = normalizeModuleId(id)
-
-  if (!moduleId.includes('/src/app/')) {
-    return undefined
-  }
-
-  if (
-    moduleId.includes('/src/app/features/energy/') ||
-    moduleId.includes('/src/app/hooks/ha-battery-sensor-rows')
-  ) {
-    return 'energy'
-  }
-
-  if (moduleId.includes('/src/app/features/settings/')) {
-    return 'settings'
-  }
-
-  if (
-    moduleId.includes('/src/app/features/dashboard/components/widgets/') ||
-    moduleId.includes('/src/app/components/shared/theme/dashboard-widget-surface-tokens')
-  ) {
-    return 'dashboard-widgets'
-  }
-
-  if (moduleId.includes('/src/app/features/dashboard/components/home-dashboard-overview-edit')) {
-    return 'home-dashboard-overview-edit'
-  }
-
-  if (
-    moduleId.includes('/src/app/components/layout/') ||
-    moduleId.includes('/src/app/components/shared/entity-room-selector') ||
-    moduleId.includes('/src/app/components/primitives/room-eyebrow') ||
-    moduleId.includes('/src/app/components/primitives/select') ||
-    moduleId.includes('/src/app/hooks/use-registry-device-topology')
-  ) {
-    return 'sections'
-  }
-
-  return undefined
 }
 
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
@@ -417,6 +356,15 @@ export default defineConfig(({ mode }) => {
     assetsInclude: ['**/*.svg'],
 
     build: {
+      modulePreload: {
+        resolveDependencies(_filename, deps, context) {
+          if (context.hostType !== 'html') {
+            return deps
+          }
+
+          return deps.filter((dependency) => !isLazyHtmlPreload(dependency))
+        },
+      },
       chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
@@ -426,41 +374,7 @@ export default defineConfig(({ mode }) => {
               return appChunkName
             }
 
-            const moduleId = normalizeModuleId(id)
-            if (!moduleId.includes('node_modules')) {
-              return undefined
-            }
-
-            const packageName = getPackageName(moduleId)
-            if (!packageName) {
-              return undefined
-            }
-
-            if (packageName === 'react' || packageName === 'react-dom' || packageName === 'scheduler') {
-              return 'react-vendor'
-            }
-
-            if (packageName.startsWith('@radix-ui/')) {
-              return 'radix-vendor'
-            }
-
-            if (
-              packageName === '@dnd-kit/core' ||
-              packageName === '@dnd-kit/sortable' ||
-              packageName === '@dnd-kit/utilities'
-            ) {
-              return 'dnd-vendor'
-            }
-
-            if (packageName === 'home-assistant-js-websocket') {
-              return 'ha-vendor'
-            }
-
-            if (packageName === 'lucide-react') {
-              return 'icons-vendor'
-            }
-
-            return 'vendor'
+            return getVendorChunkName(id)
           },
         },
       },

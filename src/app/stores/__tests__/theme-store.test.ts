@@ -4,6 +4,8 @@ import { useThemeStore } from '../theme-store';
 
 describe('useThemeStore', () => {
   beforeEach(async () => {
+    document.querySelector('base')?.remove();
+    window.history.replaceState(null, '', '/');
     await resetAppStores();
   });
 
@@ -29,6 +31,39 @@ describe('useThemeStore', () => {
     useThemeStore.getState().setWallpaper('preset:soft-dark-gradient');
 
     expect(useThemeStore.getState().wallpaper).toBe('/wallpapers/soft-dark-gradient.svg');
+  });
+
+  it('normalizes built-in wallpapers under the Home Assistant add-on ingress base', () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+
+    useThemeStore.getState().setWallpaper('/wallpapers/luxury-living-room-ambient.svg');
+
+    expect(useThemeStore.getState().wallpaper).toBe(
+      '/api/hassio_ingress/navet_dev/wallpapers/luxury-living-room-ambient.svg'
+    );
+  });
+
+  it('migrates persisted built-in wallpaper paths to the current ingress base', async () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/current_slug/`;
+    document.head.append(base);
+    localStorage.setItem(
+      'ha-dashboard-theme',
+      JSON.stringify({
+        state: {
+          wallpaper: '/api/hassio_ingress/old_slug/wallpapers/luxury-living-room-ambient.svg',
+        },
+        version: 0,
+      })
+    );
+
+    await useThemeStore.persist.rehydrate();
+
+    expect(useThemeStore.getState().wallpaper).toBe(
+      '/api/hassio_ingress/current_slug/wallpapers/luxury-living-room-ambient.svg'
+    );
   });
 
   it('rehydrates normalized persisted values', async () => {

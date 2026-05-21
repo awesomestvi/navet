@@ -1,10 +1,18 @@
+import type { HassEntities } from 'home-assistant-js-websocket';
 import { ChevronDown, ChevronUp, Play } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { Badge, Button, IconButton, Panel, Switch, Tag } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import {
+  useAccentColor,
+  useHomeAssistant,
+  useI18n,
+  useServiceActionHandler,
+  useThemeMode,
+} from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
 
@@ -59,11 +67,36 @@ function DetailSection({
   );
 }
 
+function collectEntityIds(value: unknown, entityIds = new Set<string>()): Set<string> {
+  if (typeof value === 'string') {
+    const matches = value.match(/\b[a-z_]+\.[a-zA-Z0-9_]+\b/g);
+    for (const match of matches ?? []) {
+      entityIds.add(match);
+    }
+    return entityIds;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectEntityIds(item, entityIds);
+    }
+    return entityIds;
+  }
+
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      collectEntityIds(item, entityIds);
+    }
+  }
+
+  return entityIds;
+}
+
 export function AutomationTaskRow({ automation, shouldReduceMotion }: AutomationTaskRowProps) {
   const { formatDateTime, t } = useI18n();
-  const { theme, accentColor } = useTheme();
+  const theme = useThemeMode();
+  const accentColor = useAccentColor();
   const surface = getThemeSurfaceTokens(theme);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
   const runAction = useServiceActionHandler();
   const [isTriggering, setIsTriggering] = useState(false);
   const [isUpdatingEnabled, setIsUpdatingEnabled] = useState(false);
@@ -71,6 +104,28 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [automationConfig, setAutomationConfig] = useState<Record<string, unknown> | null>(null);
+  const detailEntityIds = useMemo(
+    () => (automationConfig ? [...collectEntityIds(automationConfig)].sort() : []),
+    [automationConfig]
+  );
+  const selectDetailEntities = useCallback(
+    (state: HomeAssistantStore): HassEntities | null => {
+      if (!state.entities || detailEntityIds.length === 0) {
+        return null;
+      }
+
+      const entities: HassEntities = {};
+      for (const entityId of detailEntityIds) {
+        const entity = state.entities[entityId];
+        if (entity) {
+          entities[entityId] = entity;
+        }
+      }
+      return entities;
+    },
+    [detailEntityIds]
+  );
+  const detailEntities = useHomeAssistant(selectDetailEntities, shallow);
 
   const lastTriggeredLabel = useMemo(() => {
     if (!automation.lastTriggered) {
@@ -90,7 +145,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
   const configSections = useMemo(
     () =>
       automationConfig
-        ? buildAutomationConfigSections(automationConfig, { entities })
+        ? buildAutomationConfigSections(automationConfig, { entities: detailEntities })
         : {
             overview: automation.description,
             description: automation.description,
@@ -98,7 +153,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
             conditions: [],
             actions: [],
           },
-    [automation.description, automationConfig, entities]
+    [automation.description, automationConfig, detailEntities]
   );
 
   const handleTrigger = () => {

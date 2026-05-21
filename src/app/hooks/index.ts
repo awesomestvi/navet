@@ -12,6 +12,7 @@ export { useAreaRooms } from './use-area-rooms';
 export { useCardState } from './use-card-state';
 export { useClickOutside } from './use-click-outside';
 export { useDashboardDevices } from './use-dashboard-devices';
+export { useDashboardWidgetRoomOptions } from './use-dashboard-widget-room-options';
 export { useDeviceMap } from './use-device-map';
 export {
   useCalendarDevicesCollection,
@@ -42,4 +43,11 @@ export { useRoomNavigation } from './use-room-navigation';
 export { useSearch } from './use-search';
 export { useServiceActionHandler } from './use-service-action-handler';
 export type { PrimaryColor, ThemeType } from './use-theme';
-export { useTheme } from './use-theme';
+export {
+  useAccentColor,
+  usePrimaryColor,
+  useTheme,
+  useThemeColors,
+  useThemeMode,
+  useWallpaper,
+} from './use-theme';

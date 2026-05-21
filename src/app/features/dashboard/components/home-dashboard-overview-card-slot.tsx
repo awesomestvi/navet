@@ -67,6 +67,16 @@ export function HomeCardSlot({
   optimizeOffscreenPaint?: boolean;
 }) {
   if (!sortable) {
+    if (optimizeOffscreenPaint) {
+      return (
+        <div
+          className={`${className} h-full min-h-40 [content-visibility:auto] [contain-intrinsic-block-size:10rem]`}
+        >
+          {content}
+        </div>
+      );
+    }
+
     return content;
   }
 

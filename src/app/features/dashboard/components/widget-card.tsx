@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Component, lazy, Suspense } from 'react';
 import { BaseCard } from '@/app/components/primitives';
 import type { RSSCardData } from '@/app/features/rss';
-import { RSSFeedCard } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
@@ -60,6 +59,11 @@ const ButtonWidget = lazy(async () => {
 const MapWidget = lazy(async () => {
   const module = await import('./widgets/map-widget');
   return { default: module.MapWidget };
+});
+
+const RSSFeedCard = lazy(async () => {
+  const module = await import('@/app/features/rss');
+  return { default: module.RSSFeedCard };
 });
 
 function isMapMarker(value: unknown): value is MapMarker {

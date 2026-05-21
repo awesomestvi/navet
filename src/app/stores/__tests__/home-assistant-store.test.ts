@@ -1,4 +1,6 @@
+import type { HassConfig, HassEntity, HassUser } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { HomeAssistantPanelHass } from '@/app/services/home-assistant-panel-adapter';
 import { resetAppStores } from '@/test/store-reset';
 
 type StubEntityListener = (payload: Record<string, unknown> | null) => void;
@@ -23,6 +25,74 @@ type StubHomeAssistantService = {
   deviceRegistry: Array<{ id: string; area_id?: string | null }>;
   entityRegistry: Array<{ entity_id: string; area_id?: string | null }>;
 };
+
+const panelConfig = {
+  latitude: 0,
+  longitude: 0,
+  elevation: 0,
+  radius: 100,
+  unit_system: {
+    length: 'km',
+    mass: 'g',
+    volume: 'L',
+    temperature: 'C',
+    pressure: 'Pa',
+    wind_speed: 'm/s',
+    accumulated_precipitation: 'mm',
+  },
+  location_name: 'Panel Home',
+  time_zone: 'Europe/Stockholm',
+  components: [],
+  config_dir: '/config',
+  allowlist_external_dirs: [],
+  allowlist_external_urls: [],
+  version: '2026.5.0',
+  config_source: 'storage',
+  recovery_mode: false,
+  safe_mode: false,
+  state: 'RUNNING',
+  external_url: null,
+  internal_url: null,
+  currency: 'SEK',
+  country: 'SE',
+  language: 'en',
+} satisfies HassConfig;
+
+const panelUser = {
+  id: 'panel-user',
+  is_admin: true,
+  is_owner: true,
+  name: 'Panel User',
+} as HassUser;
+
+function createPanelEntity(state: string): HassEntity {
+  return {
+    entity_id: 'light.kitchen',
+    state,
+    last_changed: '2026-05-18T00:00:00.000Z',
+    last_updated: '2026-05-18T00:00:00.000Z',
+    attributes: {},
+    context: {
+      id: 'context-1',
+      user_id: 'panel-user',
+      parent_id: null,
+    },
+  };
+}
+
+function createPanelHass(state: string): HomeAssistantPanelHass {
+  const callWS: HomeAssistantPanelHass['callWS'] = async <T = unknown>() => [] as T;
+
+  return {
+    states: {
+      'light.kitchen': createPanelEntity(state),
+    },
+    config: panelConfig,
+    user: panelUser,
+    callService: vi.fn(async () => undefined),
+    callWS: vi.fn(callWS) as HomeAssistantPanelHass['callWS'],
+  };
+}
 
 const { homeAssistantServiceStub } = vi.hoisted(() => ({
   homeAssistantServiceStub: {
@@ -93,6 +163,30 @@ const { homeAssistantServiceStub } = vi.hoisted(() => ({
     getConnection: vi.fn(function (this: StubHomeAssistantService) {
       return this.connection;
     }),
+    setPanelHass: vi.fn(function (
+      this: StubHomeAssistantService,
+      hass: {
+        states: Record<string, unknown>;
+        config: Record<string, unknown>;
+        user?: unknown;
+        connection?: unknown;
+      }
+    ) {
+      this.connected = true;
+      this.config = hass.config;
+      this.entities = hass.states;
+      this.user = hass.user ?? null;
+      this.connection = hass.connection ?? { id: 'panel-connection' };
+    }),
+    loadRegistries: vi.fn(async function (this: StubHomeAssistantService) {
+      this.listeners.registries.forEach((listener) => {
+        listener({
+          areas: this.areas,
+          devices: this.deviceRegistry,
+          entities: this.entityRegistry,
+        });
+      });
+    }),
   },
 }));
 
@@ -121,6 +215,8 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.addListener.mockClear();
     homeAssistantServiceStub.authenticate.mockClear();
     homeAssistantServiceStub.disconnect.mockClear();
+    homeAssistantServiceStub.setPanelHass.mockClear();
+    homeAssistantServiceStub.loadRegistries.mockClear();
   });
 
   afterEach(() => {
@@ -286,5 +382,21 @@ describe('homeAssistantStore', () => {
     expect(homeAssistantStore.getState().error).toBe(
       'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.'
     );
+  });
+
+  it('syncs repeated panel hass updates without recreating panel registry listeners', async () => {
+    homeAssistantStore.getState().syncPanelHass(createPanelHass('on'));
+
+    await Promise.resolve();
+
+    expect(homeAssistantServiceStub.addListener).toHaveBeenCalledTimes(1);
+    expect(homeAssistantServiceStub.loadRegistries).toHaveBeenCalledTimes(1);
+    expect(homeAssistantStore.getState().entities?.['light.kitchen']?.state).toBe('on');
+
+    homeAssistantStore.getState().syncPanelHass(createPanelHass('off'));
+
+    expect(homeAssistantServiceStub.addListener).toHaveBeenCalledTimes(1);
+    expect(homeAssistantServiceStub.loadRegistries).toHaveBeenCalledTimes(1);
+    expect(homeAssistantStore.getState().entities?.['light.kitchen']?.state).toBe('off');
   });
 });

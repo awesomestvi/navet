@@ -20,7 +20,8 @@ import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-he
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { CompactRoomSelector, CustomCardTintPicker } from '@/app/components/shared/device-editor';
+import { CompactRoomSelector } from '@/app/components/shared/device-editor/compact-room-selector';
+import { CustomCardTintPicker } from '@/app/components/shared/device-editor/custom-card-tint-picker';
 import {
   getCustomCardTintSurface,
   normalizeCustomCardTint,

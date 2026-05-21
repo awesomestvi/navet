@@ -205,6 +205,9 @@ export function PhotoFrameWidget({
             <img
               src={currentPhotoUrl}
               alt=""
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
               className={`absolute inset-0 h-full w-full object-cover ${imageMotionClassName}`}
             />
           ) : (

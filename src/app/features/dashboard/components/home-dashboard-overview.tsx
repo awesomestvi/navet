@@ -1,7 +1,7 @@
 import { lazy, memo, Suspense, useMemo } from 'react';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
+import { useAccentColor, useI18n, useThemeMode } from '@/app/hooks';
 import {
   buildHomeOverviewCollections,
   type HomeDashboardOverviewProps,
@@ -35,7 +35,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   onToggleEditMode,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
-  const { theme, accentColor } = useTheme();
+  const theme = useThemeMode();
+  const accentColor = useAccentColor();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const { allCards, flowCards, sectionCards } = useMemo(

@@ -3,10 +3,12 @@ import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
+const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const FALLBACK_POINT_COUNT = 12;
 
 function formatBucketLabel(timestampMs: number, index: number, total: number) {
@@ -88,7 +90,11 @@ export function useEnergyLoadHistory(
       }
 
       try {
-        const stats = await getPowerStatisticsHistory(activeConnection, resolvedEntityId);
+        const stats = await getCachedEnergyStatistics(
+          `history:${resolvedEntityId}`,
+          CACHE_TTL_MS,
+          () => getPowerStatisticsHistory(activeConnection, resolvedEntityId)
+        );
         if (stats.length === 0) {
           setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
           return;
