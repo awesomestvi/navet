@@ -1,9 +1,9 @@
-name: Build
+name: Build and Release
 
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
   build:
@@ -13,16 +13,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies and build frontend
-        run: |
-          npm install
-          npm run build
+      - run: npm install
+      - run: npm run build
       - name: Prepare release package
         run: |
           mkdir temp_release
-          # Копируем Python-файлы интеграции
           cp -r custom_components temp_release/
-          # Копируем собранный фронтенд в папку www, как ожидает panel.py
           mkdir -p temp_release/www/navet_ru/
           cp -r dist/* temp_release/www/navet_ru/
           cd temp_release
