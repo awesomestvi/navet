@@ -1,0 +1,12 @@
+{
+  "domain": "navet_ru",
+  "name": "Navet Dashboard (RU)",
+  "version": "0.1.3",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@dinamik1488"],
+  "config_flow": false,
+  "iot_class": "local_push",
+  "documentation": "https://github.com/dinamik1488/navet_ru",
+  "issue_tracker": "https://github.com/dinamik1488/navet_ru/issues"
+}

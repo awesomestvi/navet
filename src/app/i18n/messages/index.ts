@@ -6,6 +6,7 @@ import { itMessages } from './it';
 import { ptMessages } from './pt';
 import { svMessages } from './sv';
 import { zhMessages } from './zh';
+import { ruMessages } from './ru';
 
 export type TranslationKey = keyof typeof enMessages;
 
@@ -18,4 +19,5 @@ export const MESSAGES = {
   it: itMessages,
   pt: ptMessages,
   zh: zhMessages,
+  ru: ruMessages,
 } as const satisfies Record<string, Record<TranslationKey, string>>;

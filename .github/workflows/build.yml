@@ -1,0 +1,47 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Prepare release package
+        run: |
+          mkdir temp_release
+          if [ -d "custom_components" ]; then
+            cp -r custom_components temp_release/
+          else
+            echo "No custom_components folder, continuing without it"
+          fi
+          mkdir -p temp_release/www/navet_ru/
+          if [ -d "dist" ]; then
+            cp -r dist/* temp_release/www/navet_ru/
+          else
+            echo "dist folder not found!"
+            exit 1
+          fi
+          cd temp_release
+          zip -r ../navet.zip .
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: navet.zip
+          generate_release_notes: true
+          skip_if_release_exists: true

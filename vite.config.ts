@@ -466,7 +466,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      host: 'navet.local',
+      host: '0.0.0.0',
       port: 5200,
       strictPort: true,
       proxy: hassUrl
