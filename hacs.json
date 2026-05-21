@@ -1,10 +1,9 @@
 {
-  "name": "Navet_RU",
-  "hide_default_branch": true,
-  "render_readme": true,
+  "name": "Navet Dashboard (RU)",
+  "content_in_root": false,
   "zip_release": true,
   "filename": "navet.zip",
   "homeassistant": "2024.1.0",
-  "persistent_directory": "userdata",
-  "iot_class": "local_push"
+  "hide_default_branch": true,
+  "render_readme": true
 }
