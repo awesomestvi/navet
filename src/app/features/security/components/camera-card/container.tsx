@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -77,6 +77,45 @@ function readFrontendStreamTypes(value: unknown): string[] {
 }
 
 const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
+const CAMERA_CLOCK_INTERVAL_MS = 30_000;
+const cameraClockSubscribers = new Set<() => void>();
+let cameraClockNow = Date.now();
+let cameraClockIntervalId: number | null = null;
+
+function subscribeToCameraClock(callback: () => void) {
+  cameraClockSubscribers.add(callback);
+
+  if (cameraClockIntervalId === null) {
+    cameraClockNow = Date.now();
+    cameraClockIntervalId = window.setInterval(() => {
+      cameraClockNow = Date.now();
+      for (const subscriber of cameraClockSubscribers) {
+        subscriber();
+      }
+    }, CAMERA_CLOCK_INTERVAL_MS);
+  }
+
+  return () => {
+    cameraClockSubscribers.delete(callback);
+
+    if (cameraClockSubscribers.size === 0 && cameraClockIntervalId !== null) {
+      window.clearInterval(cameraClockIntervalId);
+      cameraClockIntervalId = null;
+    }
+  };
+}
+
+function getCameraClockSnapshot() {
+  return cameraClockNow;
+}
+
+function useCameraClock() {
+  return useSyncExternalStore(
+    subscribeToCameraClock,
+    getCameraClockSnapshot,
+    getCameraClockSnapshot
+  );
+}
 
 export const CameraCardContainer = memo(function CameraCardContainer({
   id,
@@ -96,7 +135,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [frontendStreamTypes, setFrontendStreamTypes] = useState<string[]>([]);
-  const [now, setNow] = useState(() => Date.now());
+  const now = useCameraClock();
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const liveEntityPicture =
@@ -159,14 +198,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       isCancelled = true;
     };
   }, [connected, id]);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setNow(Date.now());
-    }, 30_000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
 
   // Subscribe to only entities belonging to this camera's device.
   // Re-renders only when one of those entities changes, not on unrelated HA updates.

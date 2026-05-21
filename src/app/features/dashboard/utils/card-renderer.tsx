@@ -1,18 +1,12 @@
-import { type ReactElement, type ReactNode, useMemo } from 'react';
+import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'react';
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { CalendarCard } from '@/app/features/calendar';
-import { HVACCard } from '@/app/features/climate';
-import { LightCard, SwitchCard } from '@/app/features/lighting';
-import { MediaCard } from '@/app/features/media';
-import { PersonCard } from '@/app/features/person';
-import { SceneCard } from '@/app/features/scenes';
-import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
-import { GroupedSensorCard, SensorCard, type SensorReading } from '@/app/features/sensors';
-import { VacuumCard, type VacuumStatus } from '@/app/features/vacuum';
-import { WeatherCard } from '@/app/features/weather';
+import type { SensorReading } from '@/app/features/sensors';
+import type { VacuumStatus } from '@/app/features/vacuum';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceMetric } from '@/app/types/device.types';
 
 interface DeviceData {
@@ -29,6 +23,85 @@ interface CardRendererOptions {
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
+
+const CalendarCard = lazy(async () => {
+  const module = await import('@/app/features/calendar');
+  return { default: module.CalendarCard };
+});
+
+const HVACCard = lazy(async () => {
+  const module = await import('@/app/features/climate');
+  return { default: module.HVACCard };
+});
+
+const LightCard = lazy(async () => {
+  const module = await import('@/app/features/lighting');
+  return { default: module.LightCard };
+});
+
+const SwitchCard = lazy(async () => {
+  const module = await import('@/app/features/lighting');
+  return { default: module.SwitchCard };
+});
+
+const MediaCard = lazy(async () => {
+  const module = await import('@/app/features/media');
+  return { default: module.MediaCard };
+});
+
+const PersonCard = lazy(async () => {
+  const module = await import('@/app/features/person');
+  return { default: module.PersonCard };
+});
+
+const SceneCard = lazy(async () => {
+  const module = await import('@/app/features/scenes');
+  return { default: module.SceneCard };
+});
+
+const CameraCard = lazy(async () => {
+  const module = await import('@/app/features/security');
+  return { default: module.CameraCard };
+});
+
+const CoverCard = lazy(async () => {
+  const module = await import('@/app/features/security');
+  return { default: module.CoverCard };
+});
+
+const LockCard = lazy(async () => {
+  const module = await import('@/app/features/security');
+  return { default: module.LockCard };
+});
+
+const GroupedSensorCard = lazy(async () => {
+  const module = await import('@/app/features/sensors');
+  return { default: module.GroupedSensorCard };
+});
+
+const SensorCard = lazy(async () => {
+  const module = await import('@/app/features/sensors');
+  return { default: module.SensorCard };
+});
+
+const VacuumCard = lazy(async () => {
+  const module = await import('@/app/features/vacuum');
+  return { default: module.VacuumCard };
+});
+
+const WeatherCard = lazy(async () => {
+  const module = await import('@/app/features/weather');
+  return { default: module.WeatherCard };
+});
+
+function EntityCardFallback() {
+  return (
+    <div
+      className="h-full w-full rounded-[inherit] border border-white/8 bg-white/5"
+      aria-hidden="true"
+    />
+  );
+}
 
 function isSameEntityStateList(left: Array<string | undefined>, right: Array<string | undefined>) {
   if (left.length !== right.length) {
@@ -63,6 +136,8 @@ function EntityAvailabilityFrame({
   children: ReactNode;
 }) {
   const { t } = useI18n();
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const shouldReducePaintEffects = effectsQuality !== 'high';
   const entityIds = useMemo(() => getAvailabilityEntityIds(device), [device]);
   const selectEntityStates = useMemo(() => createEntityStatesSelector(entityIds), [entityIds]);
   const entityStates = useHomeAssistant(selectEntityStates, isSameEntityStateList);
@@ -77,13 +152,27 @@ function EntityAvailabilityFrame({
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-3xl">
-      <div className="pointer-events-none h-full w-full opacity-45 saturate-50">{children}</div>
-      <div className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 backdrop-blur-[1px]" />
+      <div
+        className={`pointer-events-none h-full w-full opacity-45 ${
+          shouldReducePaintEffects ? '' : 'saturate-50'
+        }`}
+      >
+        {children}
+      </div>
+      <div
+        className={`pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 ${
+          shouldReducePaintEffects ? '' : 'backdrop-blur-[1px]'
+        }`}
+      />
       {!isEditMode ? (
         <div className="pointer-events-auto absolute inset-0 z-20 rounded-[inherit]" />
       ) : null}
       <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-        <div className="inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-xs font-semibold tracking-[0.06em] text-white/92 uppercase backdrop-blur-md">
+        <div
+          className={`inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-xs font-semibold tracking-[0.06em] text-white/92 uppercase ${
+            shouldReducePaintEffects ? '' : 'backdrop-blur-md'
+          }`}
+        >
           {t('camera.status.unavailable')}
         </div>
       </div>
@@ -383,7 +472,7 @@ export const renderCard = (options: CardRendererOptions): ReactElement | null =>
   return (
     <CardErrorBoundary>
       <EntityAvailabilityFrame device={options.device} isEditMode={options.isEditMode}>
-        {card}
+        <Suspense fallback={<EntityCardFallback />}>{card}</Suspense>
       </EntityAvailabilityFrame>
     </CardErrorBoundary>
   );

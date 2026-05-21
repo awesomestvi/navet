@@ -6,7 +6,7 @@ import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
-import { useHomeAssistant, useTheme } from './hooks';
+import { useAccentColor, useHomeAssistant } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { loadDashboardSession } from './services/dashboard-session.service';
@@ -41,7 +41,7 @@ function AppContent() {
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
-  const { accentColor } = useTheme();
+  const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );

@@ -161,6 +161,32 @@ describe('useRSSFeedItems', () => {
     expect(result.current.items[0]?.url).toBe('https://shared.example.com/story');
   });
 
+  it('dedupes simultaneous URL provider requests for matching feeds', async () => {
+    const providers = [
+      makeProvider('shared-request', 'Shared', 'https://feeds.example.com/shared-request.xml'),
+    ];
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        makeRssResponse([
+          makeItem({
+            title: 'Shared request story',
+            link: 'https://shared-request.example.com/1',
+          }),
+        ])
+      )
+    );
+
+    const first = renderHook(() => useRSSFeedItems(providers, null, 1), { wrapper });
+    const second = renderHook(() => useRSSFeedItems(providers, null, 1), { wrapper });
+
+    await waitFor(() => expect(first.result.current.isLoading).toBe(false));
+    await waitFor(() => expect(second.result.current.isLoading).toBe(false));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(first.result.current.items[0]?.title).toBe('Shared request story');
+    expect(second.result.current.items[0]?.title).toBe('Shared request story');
+  });
+
   it('keeps undated items after dated ones', async () => {
     const providers = [
       makeProvider('dated-provider', 'Dated', 'https://feeds.example.com/dated.xml'),

@@ -145,7 +145,7 @@ export const CardGrid = memo(function CardGrid({
 }: CardGridProps) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const optimizeOffscreenPaint = sortable && effectsQuality !== 'high';
+  const optimizeOffscreenPaint = !isEditMode && effectsQuality !== 'high';
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);

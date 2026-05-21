@@ -5,7 +5,7 @@ import { Sidebar } from '@/app/components/layout/sidebar';
 import { useHeaderController } from '@/app/components/layout/use-header-controller';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
+import { usePrimaryColor, useThemeMode, useWallpaper } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import type { DashboardLayoutProps } from './types';
@@ -20,7 +20,9 @@ export const DashboardLayout = memo(function DashboardLayout({
   mobileEditActions,
   mobileRoomNavigation,
 }: DashboardLayoutProps) {
-  const { theme, wallpaper, primaryColor } = useTheme();
+  const theme = useThemeMode();
+  const wallpaper = useWallpaper();
+  const primaryColor = usePrimaryColor();
   const { lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
       lowPowerMode: state.lowPowerMode,

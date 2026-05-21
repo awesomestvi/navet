@@ -30,6 +30,15 @@ const LEGACY_ADAPTIVE_WALLPAPER_MAP: Record<string, string> = {
   'preset:dynamic-sunrise-gradient': getPublicAssetUrl('wallpapers/dynamic-sunrise-gradient.svg'),
 };
 
+function normalizeBuiltInWallpaperPath(pathname: string) {
+  const wallpaperPathStart = pathname.indexOf('/wallpapers/');
+  if (wallpaperPathStart === -1) {
+    return null;
+  }
+
+  return getPublicAssetUrl(pathname.slice(wallpaperPathStart + 1));
+}
+
 interface ThemeState {
   theme: ThemeMode;
   followSystemTheme: boolean;
@@ -72,7 +81,10 @@ function normalizeWallpaperPath(wallpaper: string | null | undefined) {
     try {
       const resolved = new URL(trimmed, window.location.href);
       if (resolved.origin === window.location.origin) {
-        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+        return (
+          normalizeBuiltInWallpaperPath(resolved.pathname) ??
+          `${resolved.pathname}${resolved.search}${resolved.hash}`
+        );
       }
     } catch (error) {
       console.error('[ThemeStore] Wallpaper URL resolution failed:', error);

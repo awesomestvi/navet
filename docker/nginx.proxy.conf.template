@@ -13,6 +13,7 @@ server {
     if ($uri ~ "\.\.") {
       return 400;
     }
+    add_header Cache-Control "no-store" always;
     proxy_pass ${NAVET_HASS_URL}/;
     proxy_http_version 1.1;
     proxy_set_header Host $proxy_host;
@@ -26,11 +27,32 @@ ${NAVET_PROXY_AUTH_DIRECTIVE}
   include /etc/nginx/snippets/navet-rss-proxy.conf;
 
   location = /config.js {
-    add_header Cache-Control "no-store";
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+
+  location /assets/ {
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    try_files $uri =404;
+  }
+
+  location /wallpapers/ {
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    try_files $uri =404;
+  }
+
+  location ~* \.(?:png|svg|ico|webmanifest)$ {
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    try_files $uri =404;
+  }
+
+  location = /index.html {
+    add_header Cache-Control "no-store" always;
     try_files $uri =404;
   }
 
   location / {
+    add_header Cache-Control "no-store" always;
     try_files $uri $uri/ /index.html;
   }
 }

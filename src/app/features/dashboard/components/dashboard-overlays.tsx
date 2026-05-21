@@ -42,6 +42,10 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
   } = controller;
 
   const normalCards = useMemo<DashboardLibraryCard[]>(() => {
+    if (!showAddCardDialog) {
+      return [];
+    }
+
     const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
     const placedCardIds = new Set(isHomeCanvasTarget ? homeLayout.cardIds : orderedCardIds);
 
@@ -74,6 +78,7 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     homeLayout.cardIds,
     isEditMode,
     orderedCardIds,
+    showAddCardDialog,
     t,
   ]);
 

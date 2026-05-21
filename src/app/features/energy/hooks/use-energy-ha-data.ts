@@ -4,6 +4,7 @@ import { useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
 import {
@@ -303,7 +304,7 @@ export function useEnergyHaData(range: EnergyRange): {
   haSourceConfig: EnergySourceConfig | null;
 } {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
-  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
+  const entityStructure = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
   const [haSourceConfig, setHaSourceConfig] = useState<EnergySourceConfig | null>(null);
 
@@ -340,10 +341,10 @@ export function useEnergyHaData(range: EnergyRange): {
   const isConfigured = hasEnergySourceConfig(haSourceConfig);
   const runtimeSourceConfig = useMemo(
     () =>
-      haSourceConfig && allEntities
-        ? augmentConfigWithLivePowerEntities(haSourceConfig, allEntities, entityRegistry)
+      haSourceConfig && entityStructure
+        ? augmentConfigWithLivePowerEntities(haSourceConfig, entityStructure, entityRegistry)
         : haSourceConfig,
-    [allEntities, entityRegistry, haSourceConfig]
+    [entityRegistry, entityStructure, haSourceConfig]
   );
 
   // Build the list of entity IDs that are directly named in the config. This
@@ -422,19 +423,19 @@ export function useEnergyHaData(range: EnergyRange): {
       entries.push({
         id,
         label:
-          getEntityFriendlyName(allEntities, liveEntityId) ??
-          getEntityFriendlyName(allEntities, entityId) ??
+          getEntityFriendlyName(configEntities, liveEntityId) ??
+          getEntityFriendlyName(configEntities, entityId) ??
           label,
         entityId,
         liveEntityId,
         status: getSourceDiagnosticStatus(
-          allEntities,
+          configEntities,
           entityId,
           liveEntityId,
           entityId ? todayKWh[entityId] : undefined
         ),
         currentPowerW: liveEntityId
-          ? (parseNumberState(allEntities?.[liveEntityId]?.state) ?? 0)
+          ? (parseNumberState(configEntities?.[liveEntityId]?.state) ?? 0)
           : undefined,
         todayKWh: entityId ? (todayKWh[entityId] ?? 0) : undefined,
       });
@@ -474,7 +475,7 @@ export function useEnergyHaData(range: EnergyRange): {
     }
 
     return entries;
-  }, [allEntities, haSourceConfig, runtimeSourceConfig, todayKWh]);
+  }, [configEntities, haSourceConfig, runtimeSourceConfig, todayKWh]);
 
   const { overview, currentLoadStatisticId } = useMemo(() => {
     if (!isConfigured || !runtimeSourceConfig) {

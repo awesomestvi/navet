@@ -35,6 +35,7 @@
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",
     "check:commitmsg": "node scripts/check-commit-message.mjs",
     "check:fix": "biome check --apply ./src",
+    "report:bundle": "node scripts/inspect-bundle.mjs",
     "report:ui-kit": "node scripts/check-ui-kit-usage.mjs",
     "test": "vitest --config vitest.unit.config.ts --project unit",
     "test:coverage": "vitest --config vitest.unit.config.ts --project unit --coverage",

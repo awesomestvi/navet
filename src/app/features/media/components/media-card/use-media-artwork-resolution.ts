@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
-import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
+import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { useAuth } from '@/app/stores/auth-store';
 import { authSelectors } from '@/app/stores/selectors';
 import {
@@ -56,9 +56,10 @@ export function useMediaArtworkResolution({
     .filter(Boolean)
     .join('::');
   const isPanelMode = isHomeAssistantPanelMode();
+  const isAddonMode = isHomeAssistantAddonMode();
   const runtimeConfig = getRuntimeConfig();
   const shouldUseDirectDevArtwork =
-    import.meta.env.DEV && !isPanelMode && !runtimeConfig.proxyBaseUrl;
+    import.meta.env.DEV && !isPanelMode && !isAddonMode && !runtimeConfig.proxyBaseUrl;
   const resolvedArtwork = liveEntityPicture
     ? shouldUseDirectDevArtwork
       ? resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)

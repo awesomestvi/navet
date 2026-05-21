@@ -1,6 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { useEffect, useRef } from 'react';
-import { shallow } from 'zustand/shallow';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { useHomeAssistant } from './use-home-assistant';
 
@@ -66,8 +65,7 @@ export function useHaEntitySync<TLocal, THA>({
   comparatorRef.current = comparator;
   onEntityChangeRef.current = onEntityChange;
 
-  const entities = useHomeAssistant(homeAssistantSelectors.entities, shallow);
-  const entity = entities?.[entityId] as THA | undefined;
+  const entity = useHomeAssistant(homeAssistantSelectors.entity(entityId)) as THA | undefined;
 
   useEffect(() => {
     if (!enabled || !entity) {

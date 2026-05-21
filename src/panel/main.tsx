@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ErrorDisplay } from '@/app/components/shared/error-display';
 import { Toaster } from '@/app/components/ui/sonner';
 import { DashboardPage } from '@/app/features/dashboard';
-import { useTheme } from '@/app/hooks';
+import { useAccentColor } from '@/app/hooks';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
 import { I18nProvider } from '@/app/i18n';
 import type { HomeAssistantPanelHass } from '@/app/services/home-assistant-panel-adapter';
@@ -98,7 +98,7 @@ interface HomeAssistantPanelProps {
 }
 
 function PanelRuntime({ hass }: HomeAssistantPanelProps) {
-  const { accentColor } = useTheme();
+  const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
@@ -183,6 +183,7 @@ class NavetPanelElement extends HTMLElement {
     route: null,
     panel: null,
   };
+  private hasRendered = false;
   private renderQueued = false;
   private stylesReady = false;
 
@@ -211,6 +212,7 @@ class NavetPanelElement extends HTMLElement {
   disconnectedCallback() {
     this.root?.unmount();
     this.root = null;
+    this.hasRendered = false;
   }
 
   set hass(hass: {
@@ -221,8 +223,15 @@ class NavetPanelElement extends HTMLElement {
     callService: HomeAssistantPanelHass['callService'];
     callWS: HomeAssistantPanelHass['callWS'];
   }) {
+    const hadInitialHass = this.props.hass !== null;
     this.props = { ...this.props, hass };
-    this.queueRender();
+
+    if (!hadInitialHass || !this.stylesReady || !this.root || !this.hasRendered) {
+      this.queueRender();
+      return;
+    }
+
+    homeAssistantStore.getState().syncPanelHass(hass);
   }
 
   set narrow(narrow: boolean) {
@@ -249,6 +258,7 @@ class NavetPanelElement extends HTMLElement {
     queueMicrotask(() => {
       this.renderQueued = false;
       this.root?.render(<HomeAssistantPanelRoot {...this.props} />);
+      this.hasRendered = true;
     });
   }
 }

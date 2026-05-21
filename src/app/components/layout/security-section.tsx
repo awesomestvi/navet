@@ -2,6 +2,7 @@ import { Plus, Video } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
+import { shallow } from 'zustand/shallow';
 import { DashboardEmptyState } from '@/app/components/patterns';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -15,17 +16,31 @@ import {
   useEditMode,
   useHomeAssistant,
   useI18n,
-  useTheme,
+  useThemeMode,
 } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 export function SecuritySection() {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDevices();
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const selectSecuritySummaryEntities = useCallback((state: HomeAssistantStore) => {
+    if (!state.entities) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      Object.entries(state.entities).filter(
+        ([entityId]) =>
+          entityId.startsWith('binary_sensor.') ||
+          entityId.startsWith('alarm_control_panel.') ||
+          entityId.startsWith('siren.')
+      )
+    );
+  }, []);
+  const entities = useHomeAssistant(selectSecuritySummaryEntities, shallow);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(

@@ -3,8 +3,13 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import { useDashboardWidgetRoomOptions } from '@/app/features/dashboard';
-import { useAreaRooms, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import {
+  useAreaRooms,
+  useDashboardWidgetRoomOptions,
+  useHomeAssistant,
+  useI18n,
+  useTheme,
+} from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { sanitizeExternalUrl } from '@/app/utils/url-security';
 import { RSSFeedSettingsDialog } from './settings-dialog';
@@ -36,7 +41,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeProviderId, setActiveProviderId] = useState<'all' | string>('all');
   const [refreshNonce, setRefreshNonce] = useState(0);
-  const [, setSecondsUntilRefresh] = useState(RSS_REFRESH_INTERVAL_SECONDS);
   const {
     providers,
     selectedProviders,
@@ -86,18 +90,9 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 
   useEffect(() => {
     void providerSelectionKey;
-    setSecondsUntilRefresh(RSS_REFRESH_INTERVAL_SECONDS);
-
     const intervalId = window.setInterval(() => {
-      setSecondsUntilRefresh((current) => {
-        if (current <= 1) {
-          setRefreshNonce((value) => value + 1);
-          return RSS_REFRESH_INTERVAL_SECONDS;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
+      setRefreshNonce((value) => value + 1);
+    }, RSS_REFRESH_INTERVAL_SECONDS * 1000);
 
     return () => window.clearInterval(intervalId);
   }, [providerSelectionKey]);

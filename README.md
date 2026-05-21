@@ -178,6 +178,23 @@ Open:
 http://localhost:8080
 ```
 
+The container serves HTTP internally. Lighthouse Best Practices will continue to flag direct
+`:8080` access because HTTPS and HTTP-to-HTTPS redirects are intentionally handled by the deployment
+edge, not by the Navet container. For a production-style score, put Navet behind a TLS-terminating
+reverse proxy and keep the container on the private network.
+
+Example Caddy reverse proxy:
+
+```Caddyfile
+navet.example.com {
+  reverse_proxy navet:80
+  encode zstd gzip
+}
+```
+
+For Tailnet-only deployments, expose that HTTPS hostname through Tailscale Serve or a local reverse
+proxy that terminates TLS, then audit the HTTPS URL instead of `http://<host>:8080`.
+
 Update later:
 
 ```bash

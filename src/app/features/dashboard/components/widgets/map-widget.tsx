@@ -1,10 +1,12 @@
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Settings2 } from 'lucide-react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { AttributionControl, Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { useShallow } from 'zustand/react/shallow';
 import { BaseCard, customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { CustomCardTintPicker, DialogHeader } from '@/app/components/shared/device-editor';
+import { CustomCardTintPicker } from '@/app/components/shared/device-editor/custom-card-tint-picker';
+import { DialogHeader } from '@/app/components/shared/device-editor/dialog-header';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
@@ -16,11 +18,14 @@ import {
 } from '@/app/components/shared/theme/map-widget-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
 import { useAuth } from '@/app/stores/auth-store';
-import { authSelectors } from '@/app/stores/selectors';
+import { authSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
+import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { BoundsFitter } from './map-bounds-fitter';
+import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { buildMarkerIcon } from './map-marker-icon';
 import { mapMarkersEqual, selectMapMarkersFromHa } from './map-markers';
 import { getTileUrl, TILE_ATTRIBUTION } from './map-tiles';
@@ -48,7 +53,7 @@ function MapSettingsDialog({
   tintColor,
   onTintColorChange,
 }: MapSettingsDialogProps) {
-  const { theme } = useTheme();
+  const theme = useThemeMode();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
@@ -81,6 +86,38 @@ function MapSettingsDialog({
   );
 }
 
+function requestDeferredMapReady(callback: () => void) {
+  const timeoutId = window.setTimeout(callback, 650);
+
+  return () => {
+    window.clearTimeout(timeoutId);
+  };
+}
+
+function MapPlaceholder({
+  markerCount,
+  mapControlSurface,
+  baseSurface,
+  cardShell,
+  label,
+}: {
+  markerCount: number;
+  mapControlSurface: ReturnType<typeof getMapControlSurfaceTokens>;
+  baseSurface: ReturnType<typeof getThemeSurfaceTokens>;
+  cardShell: ReturnType<typeof getCardShellSurfaceTokens>;
+  label: string;
+}) {
+  return (
+    <div
+      className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
+      data-map-placeholder="true"
+    >
+      <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
+      <span className={`text-xs ${baseSurface.textMuted}`}>{markerCount > 0 ? label : ''}</span>
+    </div>
+  );
+}
+
 export const MapWidget = memo(function MapWidget({
   size = 'large',
   tintColor,
@@ -88,9 +125,23 @@ export const MapWidget = memo(function MapWidget({
   onTintColorChange,
   isEditMode = false,
 }: MapWidgetProps) {
-  const { theme, primaryColor } = useTheme();
+  const theme = useThemeMode();
+  const primaryColor = usePrimaryColor();
   const { t } = useI18n();
   const authConfig = useAuth(authSelectors.config);
+  const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
+    useShallow((state) => ({
+      disableAnimations: state.disableAnimations,
+      lowPowerMode: state.lowPowerMode,
+      effectsQuality: settingsSelectors.effectsQuality(state),
+    }))
+  );
+  const resolvedEffectsQuality = resolveEffectsQuality(
+    effectsQuality,
+    disableAnimations || lowPowerMode
+  );
+  const shouldReduceMapEffects = resolvedEffectsQuality !== 'high';
+  const mapViewportRef = useRef<HTMLDivElement | null>(null);
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const baseSurface = getThemeSurfaceTokens(theme);
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -98,9 +149,23 @@ export const MapWidget = memo(function MapWidget({
   const tileUrl = getTileUrl(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isSmallCard = size === 'small';
-  const mapWidgetSurface = getMapWidgetSurfaceTokens(theme);
+  const mapWidgetSurface = useMemo(() => {
+    const tokens = getMapWidgetSurfaceTokens(theme);
+    if (!shouldReduceMapEffects) {
+      return tokens;
+    }
+
+    return {
+      ...tokens,
+      tileFilter: 'none',
+      popupShadow: 'none',
+      lightOverlayBg: undefined,
+    };
+  }, [shouldReduceMapEffects, theme]);
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
   const settingsButtonClassName = mapControlSurface.settingsButtonClassName;
+  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [isMapDeferredReady, setIsMapDeferredReady] = useState(false);
   const mapFrameStyle = useMemo(
     () => ({
       borderColor:
@@ -120,11 +185,15 @@ export const MapWidget = memo(function MapWidget({
       markers.map((marker) => ({
         ...marker,
         entityPicture: marker.entityPicture
-          ? (resolveHomeAssistantProxyUrl(marker.entityPicture, authConfig?.url) ?? undefined)
+          ? (resolveHomeAssistantProxyUrl(
+              getCompactHomeAssistantImageUrl(marker.entityPicture),
+              authConfig?.url
+            ) ?? undefined)
           : undefined,
       })),
     [authConfig?.url, markers]
   );
+  const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
 
@@ -133,6 +202,42 @@ export const MapWidget = memo(function MapWidget({
       setIsSettingsOpen(false);
     }
   }, [isEditMode]);
+
+  useEffect(() => {
+    const node = mapViewportRef.current;
+    if (!node || resolvedMarkers.length === 0) {
+      setIsMapVisible(false);
+      return;
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsMapVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsMapVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '180px 0px' }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [resolvedMarkers.length]);
+
+  useEffect(() => {
+    if (!isMapVisible || resolvedMarkers.length === 0) {
+      setIsMapDeferredReady(false);
+      return;
+    }
+
+    return requestDeferredMapReady(() => setIsMapDeferredReady(true));
+  }, [isMapVisible, resolvedMarkers.length]);
 
   return (
     <BaseCard
@@ -144,6 +249,7 @@ export const MapWidget = memo(function MapWidget({
       contentClassName="h-full"
     >
       <div
+        ref={mapViewportRef}
         className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
         style={mapInnerStyle}
       >
@@ -159,7 +265,7 @@ export const MapWidget = memo(function MapWidget({
               {t('widgets.map.noTrackers')}
             </span>
           </div>
-        ) : (
+        ) : shouldRenderLiveMap ? (
           <MapContainer
             center={defaultCenter}
             zoom={4}
@@ -169,7 +275,7 @@ export const MapWidget = memo(function MapWidget({
             scrollWheelZoom
             style={{ height: '100%', width: '100%' }}
           >
-            <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} />
+            <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} detectRetina={false} />
             {!isSmallCard ? <AttributionControl prefix={false} position="bottomleft" /> : null}
             <BoundsFitter markers={resolvedMarkers} />
             {resolvedMarkers.map((marker) => (
@@ -206,18 +312,26 @@ export const MapWidget = memo(function MapWidget({
               </Marker>
             ))}
           </MapContainer>
+        ) : (
+          <MapPlaceholder
+            markerCount={resolvedMarkers.length}
+            mapControlSurface={mapControlSurface}
+            baseSurface={baseSurface}
+            cardShell={cardShell}
+            label={t('widgets.map.title')}
+          />
         )}
-        {resolvedMarkers.length > 0 && surface.overlayClassName ? (
+        {shouldRenderLiveMap && surface.overlayClassName ? (
           <div
             className={`pointer-events-none absolute inset-0 z-[350] ${surface.overlayClassName}`}
           />
         ) : null}
-        {resolvedMarkers.length > 0 && baseSurface.lightOverlay ? (
+        {shouldRenderLiveMap && baseSurface.lightOverlay ? (
           <div
             className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
           />
         ) : null}
-        {resolvedMarkers.length > 0 && mapWidgetSurface.lightOverlayBg ? (
+        {shouldRenderLiveMap && mapWidgetSurface.lightOverlayBg ? (
           <div
             className="pointer-events-none absolute inset-0 z-[352]"
             style={{ background: mapWidgetSurface.lightOverlayBg }}
@@ -292,7 +406,7 @@ export const MapWidget = memo(function MapWidget({
           background: ${mapWidgetSurface.attributionBg};
           color: ${mapWidgetSurface.attributionText};
           border: 1px solid ${mapWidgetSurface.attributionBorder};
-          backdrop-filter: ${theme === 'light' ? 'none' : 'blur(16px)'};
+          backdrop-filter: ${theme === 'light' || shouldReduceMapEffects ? 'none' : 'blur(16px)'};
         }
 
         .dashboard-map-widget .leaflet-control-attribution a {
@@ -305,7 +419,7 @@ export const MapWidget = memo(function MapWidget({
           color: ${mapWidgetSurface.popupText};
           border: 1px solid ${mapWidgetSurface.popupBorder};
           box-shadow: ${mapWidgetSurface.popupShadow};
-          backdrop-filter: blur(16px);
+          backdrop-filter: ${shouldReduceMapEffects ? 'none' : 'blur(16px)'};
         }
       `}</style>
     </BaseCard>

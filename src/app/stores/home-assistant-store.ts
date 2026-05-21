@@ -64,6 +64,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
   let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeServiceUnsubscribe: (() => void) | null = null;
   let panelRegistryLoadStarted = false;
+  let panelHassAttached = false;
   let connectAttemptId = 0;
 
   const clearEntityDebounce = () => {
@@ -237,10 +238,28 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
     },
 
     syncPanelHass: (hass: HomeAssistantPanelHass) => {
+      const isPanelUpdate = panelHassAttached;
+      panelHassAttached = true;
+      homeAssistantService.setPanelHass(hass);
+
+      if (isPanelUpdate) {
+        useErrorStore.getState().clearError();
+        set({
+          connected: true,
+          config: homeAssistantService.getConfig(),
+          entities: homeAssistantService.getEntities(),
+          user: homeAssistantService.getUser(),
+          connection: homeAssistantService.getConnection(),
+          error: null,
+          connecting: false,
+          reconnecting: false,
+        });
+        return;
+      }
+
       connectAttemptId += 1;
       clearConnectionGraceTimer();
       clearServiceSubscriptions();
-      homeAssistantService.setPanelHass(hass);
       useErrorStore.getState().clearError();
       activeServiceUnsubscribe = homeAssistantService.addListener(
         'registries',
@@ -293,6 +312,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
       useErrorStore.getState().clearError();
       clearServiceSubscriptions();
       panelRegistryLoadStarted = false;
+      panelHassAttached = false;
       homeAssistantService.disconnect();
       set(initialState);
     },

@@ -21,8 +21,16 @@ function installRuntimeProxyConfig() {
   };
 }
 
+function installIngressBase(addonSlug = 'navet_dev') {
+  const base = document.createElement('base');
+  base.href = `${window.location.origin}/api/hassio_ingress/${addonSlug}/`;
+  document.head.append(base);
+}
+
 describe('useMediaArtworkResolution', () => {
   beforeEach(() => {
+    document.querySelector('base')?.remove();
+    window.history.replaceState(null, '', '/');
     fetchMediaThumbnailDataUrlMock.mockReset();
     vi.restoreAllMocks();
     window.__NAVET_PANEL__ = false;
@@ -248,6 +256,102 @@ describe('useMediaArtworkResolution', () => {
         credentials: 'same-origin',
         headers: undefined,
       }
+    );
+  });
+
+  it('fetches add-on ingress media proxy artwork through the ingress-aware proxy', async () => {
+    installIngressBase();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/addon-album-art');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/addon-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: { Authorization: 'Bearer session-token' },
+      }
+    );
+  });
+
+  it('fetches absolute Home Assistant artwork through the add-on ingress proxy', async () => {
+    installIngressBase();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    useAuthStore.setState({
+      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
+      isAuthenticated: true,
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/addon-absolute-album-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/addon-absolute-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: { Authorization: 'Bearer session-token' },
+      }
+    );
+  });
+
+  it('keeps add-on ingress proxy artwork as fallback when authenticated fetch fails', async () => {
+    installIngressBase();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+    });
+    expect(result.current.albumArt).toBe(
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
     );
   });
 

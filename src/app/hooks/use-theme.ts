@@ -77,3 +77,43 @@ export function useTheme(): ThemeValue {
     ]
   );
 }
+
+export function useThemeMode(): ThemeType {
+  const { theme, followSystemTheme } = useThemeStore(
+    useShallow((state) => ({
+      theme: state.theme,
+      followSystemTheme: state.followSystemTheme,
+    }))
+  );
+  const sysDark = useMediaQuery('(prefers-color-scheme: dark)');
+  return followSystemTheme ? (sysDark ? 'dark' : 'light') : theme;
+}
+
+export function usePrimaryColor(): PrimaryColor {
+  return useThemeStore(themeSelectors.primaryColor);
+}
+
+export function useWallpaper(): string | null {
+  return useThemeStore(themeSelectors.wallpaper);
+}
+
+export function useAccentColor(): string {
+  const primaryColor = useThemeStore(themeSelectors.primaryColor);
+  const customPrimaryColor = useThemeStore(themeSelectors.customPrimaryColor);
+
+  return useMemo(
+    () => resolvePrimaryColorValue(primaryColor, customPrimaryColor),
+    [customPrimaryColor, primaryColor]
+  );
+}
+
+export function useThemeColors(): ThemeColors {
+  const theme = useThemeMode();
+  const primaryColor = useThemeStore(themeSelectors.primaryColor);
+  const customPrimaryColor = useThemeStore(themeSelectors.customPrimaryColor);
+
+  return useMemo(
+    () => generateThemeColors(theme, primaryColor, customPrimaryColor),
+    [customPrimaryColor, primaryColor, theme]
+  );
+}
