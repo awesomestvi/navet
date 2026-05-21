@@ -17,12 +17,13 @@ import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import {
-  convertCelsiusToTemperatureUnit,
-  convertTemperatureUnitToCelsius,
-  formatTemperature,
-  formatTemperatureValue,
+  convertDisplayTemperatureToSourceUnit,
+  convertTemperatureUnitValue,
+  formatTemperatureFromSourceUnit,
+  formatTemperatureValueFromSourceUnit,
 } from '@/app/utils/temperature';
 import { getHVACGaugeColor } from '../../utils/hvac-styles';
+import { convertCelsiusPresetToSourceUnit } from '../../utils/hvac-temperature-presets';
 import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { HVACModeControls } from '../hvac-card/hvac-mode-controls';
@@ -40,6 +41,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   mode,
   targetTemp,
   currentTemp,
+  sourceTemperatureUnit,
   minTemp = 16,
   maxTemp = 30,
   step = 0.5,
@@ -77,20 +79,38 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const dialogGlowColors = getHVACGaugeColor(visualMode);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
   const [activeTab, setActiveTab] = useState('hvac');
-  const displayTargetTemp = convertCelsiusToTemperatureUnit(targetTemp, temperatureUnit);
-  const displayCurrentTemp = convertCelsiusToTemperatureUnit(currentTemp, temperatureUnit);
-  const displayMinTemp = convertCelsiusToTemperatureUnit(minTemp, temperatureUnit);
-  const displayMaxTemp = convertCelsiusToTemperatureUnit(maxTemp, temperatureUnit);
+  const displayTargetTemp = convertTemperatureUnitValue(
+    targetTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
+  const displayCurrentTemp = convertTemperatureUnitValue(
+    currentTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
+  const displayMinTemp = convertTemperatureUnitValue(
+    minTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
+  const displayMaxTemp = convertTemperatureUnitValue(
+    maxTemp,
+    sourceTemperatureUnit,
+    temperatureUnit
+  );
   const displayStep = Math.abs(
-    convertCelsiusToTemperatureUnit(step, temperatureUnit) -
-      convertCelsiusToTemperatureUnit(0, temperatureUnit)
+    convertTemperatureUnitValue(step, sourceTemperatureUnit, temperatureUnit) -
+      convertTemperatureUnitValue(0, sourceTemperatureUnit, temperatureUnit)
   );
   const handleDisplayTargetTempChange = (nextTemp: number) => {
-    onTargetTempChange(convertTemperatureUnitToCelsius(nextTemp, temperatureUnit));
+    onTargetTempChange(
+      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
+    );
   };
   const handleDisplayTargetTempCommit = (nextTemp: number) => {
     (onTargetTempCommit ?? onTargetTempChange)(
-      convertTemperatureUnitToCelsius(nextTemp, temperatureUnit)
+      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
     );
   };
 
@@ -157,8 +177,16 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                   temperatureUnit={temperatureUnit}
                   helperText={getHvacTemperatureStatusLabel(
                     t,
-                    formatTemperature(targetTemp, temperatureUnit),
-                    formatTemperature(currentTemp, temperatureUnit),
+                    formatTemperatureFromSourceUnit(
+                      targetTemp,
+                      sourceTemperatureUnit,
+                      temperatureUnit
+                    ),
+                    formatTemperatureFromSourceUnit(
+                      currentTemp,
+                      sourceTemperatureUnit,
+                      temperatureUnit
+                    ),
                     visualMode,
                     targetTemp,
                     currentTemp
@@ -198,13 +226,19 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                 <DialogSectionRow label={t('climate.presets')}>
                   <div className="flex flex-wrap items-center gap-2.5">
                     {temperaturePresets.map((preset) => {
-                      const isSelected = Math.abs(targetTemp - preset.value) < 0.05;
+                      const sourcePresetValue = convertCelsiusPresetToSourceUnit(
+                        preset.value,
+                        sourceTemperatureUnit
+                      );
+                      const isSelected = Math.abs(targetTemp - sourcePresetValue) < 0.05;
 
                       return (
                         <button
                           type="button"
                           key={`${preset.label ?? preset.value}`}
-                          onClick={() => (onTargetTempCommit ?? onTargetTempChange)(preset.value)}
+                          onClick={() =>
+                            (onTargetTempCommit ?? onTargetTempChange)(sourcePresetValue)
+                          }
                           disabled={!isOn}
                           className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
                         >
@@ -216,7 +250,12 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                                 : { color: dialogTextTokens.subtitleColor }
                             }
                           >
-                            {formatTemperatureValue(preset.value, temperatureUnit)}°
+                            {formatTemperatureValueFromSourceUnit(
+                              sourcePresetValue,
+                              sourceTemperatureUnit,
+                              temperatureUnit
+                            )}
+                            °
                           </span>
                         </button>
                       );

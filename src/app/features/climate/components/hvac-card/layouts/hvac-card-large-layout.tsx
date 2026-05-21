@@ -3,6 +3,8 @@ import { CardActionRow, CardActionRowGroup } from '@/app/components/patterns/car
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { cn } from '@/app/components/ui/utils';
 import type { ThemeType } from '@/app/hooks';
+import { formatTemperatureValueFromSourceUnit } from '@/app/utils/temperature';
+import { convertCelsiusPresetToSourceUnit } from '../../../utils/hvac-temperature-presets';
 import { HVACModeControls } from '../hvac-mode-controls';
 import { HVACTempControls } from '../hvac-temp-controls';
 import type { HVACCardController } from '../use-hvac-card-controller';
@@ -53,7 +55,11 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
         <div className="mt-auto">
           <div className="mb-4 flex max-w-[72%] items-center gap-1.5">
             {TEMPERATURE_PRESETS.map((preset) => {
-              const isSelected = Math.abs(controller.targetTemp - preset) < 0.05;
+              const sourcePresetValue = convertCelsiusPresetToSourceUnit(
+                preset,
+                controller.sourceTemperatureUnit
+              );
+              const isSelected = Math.abs(controller.targetTemp - sourcePresetValue) < 0.05;
 
               return (
                 <button
@@ -61,7 +67,7 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
                   key={preset}
                   onClick={(event) => {
                     event.stopPropagation();
-                    controller.commitTargetTemp(preset);
+                    controller.commitTargetTemp(sourcePresetValue);
                   }}
                   className={cn(
                     'relative z-[3] min-w-[4.5rem] rounded-2xl border px-3 py-2 text-sm font-semibold transition-all',
@@ -73,7 +79,12 @@ export const HVACCardLargeLayout = memo(function HVACCardLargeLayout({
                     color: isSelected ? readableTokens.titleColor : readableTokens.subtitleColor,
                   }}
                 >
-                  {controller.formatTemperatureValue(preset)}°
+                  {formatTemperatureValueFromSourceUnit(
+                    sourcePresetValue,
+                    controller.sourceTemperatureUnit,
+                    controller.temperatureUnit
+                  )}
+                  °
                 </button>
               );
             })}

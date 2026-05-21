@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Component, lazy, Suspense } from 'react';
 import { BaseCard } from '@/app/components/primitives';
+import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { RSSCardData } from '@/app/features/rss';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
@@ -87,9 +88,9 @@ interface WidgetCardProps {
   onUpdate?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 
-function WidgetFallback() {
+function WidgetFallback({ size }: { size: CardSize }) {
   return (
-    <BaseCard size="medium" className="animate-pulse bg-white/5">
+    <BaseCard size={size} className="animate-pulse bg-white/5">
       <span />
     </BaseCard>
   );
@@ -229,7 +230,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
   return (
     <div className="relative h-full">
       <WidgetErrorBoundary>
-        <Suspense fallback={<WidgetFallback />}>{widgetContent}</Suspense>
+        <Suspense fallback={<WidgetFallback size={card.size} />}>{widgetContent}</Suspense>
       </WidgetErrorBoundary>
     </div>
   );

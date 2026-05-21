@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import {
@@ -31,7 +32,19 @@ function getProfileSignature(profile: DashboardConfigPayload) {
   return JSON.stringify({
     ...profile,
     exportedAt: undefined,
+    navigation: undefined,
   });
+}
+
+function getProfileForSync(): DashboardConfigPayload {
+  const profile = exportDashboardConfig();
+  return {
+    ...profile,
+    navigation: {
+      currentRoom: ALL_ROOMS_ID,
+      activeSection: 'home',
+    },
+  };
 }
 
 function readSyncMetadata(): DashboardProfileSyncMetadata {
@@ -69,7 +82,7 @@ export function useDashboardProfileSync() {
         return false;
       }
 
-      importDashboardConfig(profile);
+      importDashboardConfig(profile, { applyNavigation: false });
       writeSyncMetadata({
         lastAppliedAt: profile.exportedAt,
         lastSavedSignature: getProfileSignature(profile),
@@ -129,7 +142,7 @@ export function useDashboardProfileSync() {
         return;
       }
 
-      const profile = exportDashboardConfig();
+      const profile = getProfileForSync();
       const signature = getProfileSignature(profile);
       const metadata = readSyncMetadata();
 

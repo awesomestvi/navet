@@ -14,7 +14,7 @@ import {
   type ViteDevServer,
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './build/vite-chunking'
+import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
