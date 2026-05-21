@@ -1,3 +1,4 @@
+import type { TemperatureUnit } from '@/app/utils/temperature';
 import type { HVACSiblingEntity } from '../hvac-card/use-hvac-card-controller';
 
 export interface HVACTemperaturePreset {
@@ -14,6 +15,7 @@ export interface HVACSettingsDialogProps {
   mode: string;
   targetTemp: number;
   currentTemp: number;
+  sourceTemperatureUnit?: TemperatureUnit;
   minTemp?: number;
   maxTemp?: number;
   step?: number;

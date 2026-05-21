@@ -181,16 +181,13 @@ source of truth for the production `pnpm build` step.
 
 ### Commit Messages
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+Follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/#specification):
 
-- Format: `type(scope): summary`
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, etc.)
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
+- Format: `<type>[optional scope][optional !]: <description>`
+- `feat` commits add a new feature.
+- `fix` commits fix a bug.
+- Other clear types are allowed, such as `build`, `chore`, `ci`, `docs`, `perf`, `refactor`, `style`, and `test`.
+- Breaking changes use `!` before the colon or a `BREAKING CHANGE:` footer.
 
 Version bumps follow the beta semver policy in [docs/VERSIONING.md](docs/VERSIONING.md). While Navet is in beta, prefer `0.x.y` and `0.x.y-beta.n` over `1.0.0`.
 
@@ -199,8 +196,7 @@ Examples:
 feat(calendar): add source selection to card settings
 fix(search): match Home Assistant entity-id queries
 docs(readme): update appearance and search behavior
-style(settings): tighten preview card spacing
-refactor(lighting): share light card surface tokens
+refactor(lighting)!: replace legacy light state mapping
 ```
 
 ### Pre-commit Hooks
@@ -210,7 +206,7 @@ Navet uses Husky hooks in `.husky/`. `pnpm install` runs the `prepare` script an
 The current hook split is:
 
 - `commit-msg`
-  - enforces the Conventional Commit format: `type(scope): summary`
+  - enforces the Conventional Commits header format: `<type>[optional scope][optional !]: <description>`
 - `pre-commit`
   - `pnpm check:lockfile` to keep `package.json` and `pnpm-lock.yaml` in sync
   - `pnpm check` for Biome lint/format issues

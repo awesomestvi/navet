@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import { useCustomCardsStore, useDashboardEntitiesStore } from '@/app/features/dashboard';
+import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
   exportDashboardConfig,
   importDashboardConfig,
@@ -26,6 +27,7 @@ describe('dashboard-config import hardening', () => {
     localStorage.clear();
     useCustomCardsStore.setState(useCustomCardsStore.getInitialState(), true);
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
+    useNavigationStore.setState(useNavigationStore.getInitialState(), true);
   });
 
   it('drops unsafe custom card URLs and service calls', () => {
@@ -114,6 +116,27 @@ describe('dashboard-config import hardening', () => {
     const exported = exportDashboardConfig();
 
     expect(exported.dashboardEntities?.lockedCardIds).toEqual(['light.kitchen']);
+  });
+
+  it('can import shared profile data without replacing current navigation', () => {
+    useNavigationStore.getState().applyNavigationState({
+      currentRoom: 'Kitchen',
+      activeSection: 'home',
+    });
+
+    importDashboardConfig(
+      {
+        ...baseConfig,
+        navigation: {
+          currentRoom: 'Unassigned',
+          activeSection: 'settings',
+        },
+      },
+      { applyNavigation: false }
+    );
+
+    expect(useNavigationStore.getState().currentRoom).toBe('Kitchen');
+    expect(useNavigationStore.getState().activeSection).toBe('home');
   });
 
   it('imports dashboard config from a runtime URL', async () => {

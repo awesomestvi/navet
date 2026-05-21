@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
-import { getAppChunkName, getVendorChunkName } from './build/vite-chunking';
+import { getAppChunkName, getVendorChunkName } from './scripts/vite-chunking';
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string;

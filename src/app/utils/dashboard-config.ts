@@ -55,6 +55,10 @@ export interface DashboardConfigPayload {
   roomOrder?: string[];
 }
 
+interface ImportDashboardConfigOptions {
+  applyNavigation?: boolean;
+}
+
 const parseStoredJson = <T>(key: string, fallback: T): T => {
   return storage.get(key, fallback);
 };
@@ -430,7 +434,10 @@ function sanitizeImportedCustomCards(value: unknown) {
   });
 }
 
-export const importDashboardConfig = (value: unknown) => {
+export const importDashboardConfig = (
+  value: unknown,
+  { applyNavigation = true }: ImportDashboardConfigOptions = {}
+) => {
   if (!isRecord(value) || (value.version !== 1 && value.version !== 2 && value.version !== 3)) {
     throw new Error('Unsupported dashboard config format.');
   }
@@ -525,10 +532,12 @@ export const importDashboardConfig = (value: unknown) => {
         : defaultSettings.ambientLightBleed,
   });
 
-  useNavigationStore.getState().applyNavigationState({
-    currentRoom: (navigation.currentRoom as string | undefined) ?? ALL_ROOMS_ID,
-    activeSection: isSection(navigation.activeSection) ? navigation.activeSection : 'home',
-  });
+  if (applyNavigation) {
+    useNavigationStore.getState().applyNavigationState({
+      currentRoom: (navigation.currentRoom as string | undefined) ?? ALL_ROOMS_ID,
+      activeSection: isSection(navigation.activeSection) ? navigation.activeSection : 'home',
+    });
+  }
 
   useCustomCardsStore.getState().replaceCards(sanitizeImportedCustomCards(value.customCards));
 

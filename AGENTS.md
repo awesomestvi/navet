@@ -7,15 +7,23 @@ Connects to Home Assistant over WebSocket.
 
 ## Commit Rules
 
-- Use [Conventional Commits](https://www.conventionalcommits.org/) format: `type(scope): summary`
-- Valid types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `build`, `ci`, `perf`, `style`
-- Summary must be lowercase, imperative mood, no period at the end
-- Do not use generic or free-form commit messages
-- Include a concise bullet-point body for meaningful changes so the project can track what changed between releases
-- Keep bullet lists contiguous in the commit body. Do not create each bullet as a separate `git commit -m` paragraph, because that inserts blank lines between items.
-- Keep commit bodies focused on user-visible behavior, architecture, tests, docs, or operational impact
-- Trivial commits such as formatting-only or metadata-only changes may omit the body
-- Do not use `git commit --no-verify` unless the user explicitly approves skipping hooks for that commit
+- Follow the [Conventional Commits 1.0.0 specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
+- Use this structure:
+  ```text
+  <type>[optional scope][optional !]: <description>
+
+  [optional body]
+
+  [optional footer(s)]
+  ```
+- `feat` means the commit adds a new feature.
+- `fix` means the commit fixes a bug.
+- Other types are allowed when they describe the change clearly, such as `build`, `chore`, `ci`, `docs`, `perf`, `refactor`, `style`, or `test`.
+- A scope may be added after the type to identify the affected area, for example `feat(dashboard): add room filters`.
+- The description must immediately follow the colon and space, and should be a concise summary of the change.
+- A body may be added after one blank line when the change needs extra context. The body is free-form and may contain multiple paragraphs.
+- Footers may be added after one blank line following the body. Use git-trailer style tokens such as `Refs: #123` or `Reviewed-by: Name`.
+- Breaking changes must be marked either with `!` before the colon, such as `feat(api)!: remove legacy auth`, or with a footer that starts with `BREAKING CHANGE:`.
 
 ---
 

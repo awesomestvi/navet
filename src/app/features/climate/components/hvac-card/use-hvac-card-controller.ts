@@ -380,6 +380,7 @@ export function useHVACCardController({
     step: temperatureRange.step,
     targetTemp,
     temperatureUnit,
+    sourceTemperatureUnit,
     textColor,
     theme,
   };

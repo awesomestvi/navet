@@ -6,5 +6,5 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["build/**/*.ts", "vite.config.ts", "vite.panel.config.ts"]
+  "include": ["scripts/vite-chunking.ts", "vite.config.ts", "vite.panel.config.ts"]
 }

@@ -1,6 +1,7 @@
 import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'react';
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { getBaseCardRadiusClassName } from '@/app/components/system/tokens';
 import type { SensorReading } from '@/app/features/sensors';
 import type { VacuumStatus } from '@/app/features/vacuum';
 import { useHomeAssistant, useI18n } from '@/app/hooks';
@@ -94,10 +95,10 @@ const WeatherCard = lazy(async () => {
   return { default: module.WeatherCard };
 });
 
-function EntityCardFallback() {
+function EntityCardFallback({ size }: { size: CardSize }) {
   return (
     <div
-      className="h-full w-full rounded-[inherit] border border-white/8 bg-white/5"
+      className={`h-full w-full ${getBaseCardRadiusClassName(size)} border border-white/8 bg-white/5`}
       aria-hidden="true"
     />
   );
@@ -472,7 +473,7 @@ export const renderCard = (options: CardRendererOptions): ReactElement | null =>
   return (
     <CardErrorBoundary>
       <EntityAvailabilityFrame device={options.device} isEditMode={options.isEditMode}>
-        <Suspense fallback={<EntityCardFallback />}>{card}</Suspense>
+        <Suspense fallback={<EntityCardFallback size={options.size} />}>{card}</Suspense>
       </EntityAvailabilityFrame>
     </CardErrorBoundary>
   );

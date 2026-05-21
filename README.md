@@ -287,7 +287,7 @@ when to run those locally.
 Navet uses Conventional Commits:
 
 ```text
-type(scope): summary
+<type>[optional scope][optional !]: <description>
 ```
 
 When contributing:
