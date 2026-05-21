@@ -1,0 +1,36 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Prepare release package
+        run: |
+          mkdir navet-build
+          cp -r dist/* navet-build/
+          cp -r custom_components/* navet-build/ 2>/dev/null || true
+          cd navet-build
+          zip -r ../navet.zip .
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: navet.zip
+          generate_release_notes: true
