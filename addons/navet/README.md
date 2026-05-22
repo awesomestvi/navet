@@ -12,7 +12,8 @@ The image is built from the repository root in CI, which allows the add-on image
 ## Configuration
 
 - `hass_url`: Optional Home Assistant URL. Leave blank to enter a browser-reachable Home Assistant
-  URL on the Navet login screen.
+  URL on the Navet login screen. The add-on still uses Home Assistant's internal Core hostname for
+  same-origin media and asset proxy requests.
 - `token`: Optional Home Assistant long-lived access token. Set this to open Navet without the login
   form.
 - `dashboard_config_url`: Optional Navet dashboard YAML export to import on first launch in a fresh browser

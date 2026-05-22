@@ -8,7 +8,7 @@ NGINX_CONF="/etc/nginx/http.d/default.conf"
 HASS_URL="$(bashio::config 'hass_url')"
 HASS_TOKEN="$(bashio::config 'token')"
 DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
-RESOLVED_HASS_URL="${HASS_URL}"
+RESOLVED_HASS_URL="${HASS_URL:-http://homeassistant:8123}"
 if [[ "${RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then
   RESOLVED_HASS_URL="http://homeassistant:8123"
 fi
@@ -32,7 +32,7 @@ if [[ "${HASS_TOKEN}" =~ [[:space:][:cntrl:]] ]]; then
   exit 1
 fi
 
-HASS_URL_JS="${RESOLVED_HASS_URL//\\/\\\\}"
+HASS_URL_JS="${HASS_URL//\\/\\\\}"
 HASS_URL_JS="${HASS_URL_JS//\"/\\\"}"
 HASS_TOKEN_JS="${HASS_TOKEN//\\/\\\\}"
 HASS_TOKEN_JS="${HASS_TOKEN_JS//\"/\\\"}"
@@ -48,13 +48,12 @@ window.__NAVET_CONFIG__ = {
 };
 EOF
 
-if [[ -n "${RESOLVED_HASS_URL}" ]]; then
-  PROXY_AUTH_DIRECTIVE=""
-  if [[ -n "${HASS_TOKEN}" ]]; then
-    PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "Bearer '"${HASS_TOKEN}"'";'
-  fi
+PROXY_AUTH_DIRECTIVE=""
+if [[ -n "${HASS_TOKEN}" ]]; then
+  PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "Bearer '"${HASS_TOKEN}"'";'
+fi
 
-  cat > "${NGINX_CONF}" <<EOF
+cat > "${NGINX_CONF}" <<EOF
 server {
   listen 8099;
   server_name _;
@@ -114,6 +113,5 @@ ${PROXY_AUTH_DIRECTIVE}
   }
 }
 EOF
-fi
 
 nginx -g 'daemon off;'

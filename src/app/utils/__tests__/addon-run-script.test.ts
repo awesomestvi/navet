@@ -7,8 +7,11 @@ const shellExpansionStart = '$' + '{';
 
 describe('Home Assistant add-on run script', () => {
   it('keeps blank hass_url blank so users can enter a browser-reachable Home Assistant URL', () => {
-    expect(runScript).toContain(`RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL}"`);
-    expect(runScript).not.toContain(
+    expect(runScript).toContain(`HASS_URL_JS="${shellExpansionStart}HASS_URL//\\\\/\\\\\\\\}"`);
+  });
+
+  it('defaults the add-on proxy upstream to the internal Home Assistant Core endpoint', () => {
+    expect(runScript).toContain(
       `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
     );
   });
@@ -24,17 +27,14 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).toContain(`RESOLVED_HASS_URL="${shellExpansionStart}RESOLVED_HASS_URL%/}"`);
   });
 
-  it('uses the resolved Home Assistant URL in config.js and nginx proxy_pass', () => {
-    expect(runScript).toContain(
-      `HASS_URL_JS="${shellExpansionStart}RESOLVED_HASS_URL//\\\\/\\\\\\\\}"`
-    );
+  it('uses the resolved Home Assistant URL in nginx proxy_pass only', () => {
     expect(runScript).toContain(`proxy_pass ${shellExpansionStart}RESOLVED_HASS_URL}/;`);
     expect(runScript).not.toContain(`proxy_pass ${shellExpansionStart}HASS_URL}/;`);
   });
 
-  it('emits the Home Assistant proxy location only for configured Home Assistant URLs', () => {
+  it('always emits the Home Assistant proxy location for add-on ingress assets and media', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
-    expect(runScript).toContain(`if [[ -n "${shellExpansionStart}RESOLVED_HASS_URL}" ]]; then`);
+    expect(runScript).not.toContain(`if [[ -n "${shellExpansionStart}RESOLVED_HASS_URL}" ]]; then`);
   });
 
   it('keeps websocket auth on the Home Assistant websocket message', () => {

@@ -168,8 +168,8 @@ The add-on:
 - Handles direct RSS proxy requests through nginx `njs`
 - Uses `ingress: true`
 - Exposes optional direct browser access on `8099/tcp`
-- Generates `/config.js` from add-on options. Blank `hass_url` stays blank so users can enter a
-  browser-reachable Home Assistant URL on the Navet login screen
+- Generates `/config.js` from add-on options. Blank `hass_url` stays blank for browser login while
+  the add-on's same-origin Home Assistant proxy defaults to the internal Core hostname
 - Proxies Home Assistant API and WebSocket requests through `/__navet_ha_proxy__/`
 - Optionally imports a shared dashboard YAML export on first launch
 
