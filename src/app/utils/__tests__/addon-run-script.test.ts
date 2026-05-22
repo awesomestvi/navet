@@ -49,6 +49,14 @@ describe('Home Assistant add-on run script', () => {
     expect(websocketLocation).not.toContain('proxy_set_header Authorization');
   });
 
+  it('strips forwarded proxy headers from Home Assistant proxy requests', () => {
+    expect(runScript).toContain('proxy_set_header Forwarded "";');
+    expect(runScript).toContain('proxy_set_header X-Forwarded-For "";');
+    expect(runScript).toContain('proxy_set_header X-Forwarded-Host "";');
+    expect(runScript).toContain('proxy_set_header X-Forwarded-Proto "";');
+    expect(runScript).toContain('proxy_set_header X-Real-IP "";');
+  });
+
   it('rejects tokens with spaces or line breaks before writing runtime config', () => {
     expect(runScript).toContain(
       `if [[ "${shellExpansionStart}HASS_TOKEN}" =~ [[:space:][:cntrl:]] ]]; then`

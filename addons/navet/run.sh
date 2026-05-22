@@ -69,6 +69,11 @@ server {
     proxy_pass ${RESOLVED_HASS_URL}/api/websocket;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
+    proxy_set_header Forwarded "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Host "";
+    proxy_set_header X-Forwarded-Proto "";
+    proxy_set_header X-Real-IP "";
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_read_timeout 3600s;
@@ -82,6 +87,11 @@ server {
     proxy_pass ${RESOLVED_HASS_URL}/;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
+    proxy_set_header Forwarded "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Host "";
+    proxy_set_header X-Forwarded-Proto "";
+    proxy_set_header X-Real-IP "";
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_read_timeout 3600s;
