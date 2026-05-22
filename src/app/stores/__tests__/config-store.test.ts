@@ -22,12 +22,12 @@ describe('useConfigStore', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://ha.example.com/api/', expect.any(Object));
   });
 
-  it('tests add-on manual login connections through the ingress proxy', async () => {
+  it('skips REST preflight for add-on manual login connections through ingress', async () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://supervisor/core',
+      hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
     const fetchMock = vi
@@ -35,17 +35,10 @@ describe('useConfigStore', () => {
       .mockResolvedValue(new Response(null, { status: 200 }));
 
     await expect(
-      useConfigStore.getState().testConnection('http://supervisor/core', 'abc')
+      useConfigStore.getState().testConnection('http://homeassistant:8123', 'abc')
     ).resolves.toBe(true);
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/`,
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer abc',
-        }),
-      })
-    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('returns false for invalid URLs or failed requests', async () => {
@@ -65,7 +58,7 @@ describe('useConfigStore', () => {
         .getState()
         .testConnection(
           'https://ha.example.com',
-          'GET http://supervisor/core/api/ net::ERR_NAME_NOT_RESOLVED'
+          'GET http://homeassistant:8123/api/ net::ERR_NAME_NOT_RESOLVED'
         )
     ).resolves.toBe(false);
 

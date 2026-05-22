@@ -25,7 +25,6 @@ import {
 } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
 import { resolveHomeAssistantConnectionUrl } from './utils/home-assistant-connection-target';
-import { storage } from './utils/storage';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function getConnectionAttemptKey(config: { url: string; token: string }) {
@@ -82,7 +81,6 @@ function AppContent() {
 
   const resetSessionToLogin = useCallback(() => {
     failedConnectionAttemptKey.current = null;
-    storage.clear();
     logout();
   }, [logout]);
 

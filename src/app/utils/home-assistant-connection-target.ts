@@ -8,7 +8,7 @@ function normalizeUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-function isRuntimeHostedSession(config: SessionConfig): boolean {
+export function isRuntimeHostedHomeAssistantSession(config: SessionConfig): boolean {
   const runtimeConfig = getRuntimeConfig();
 
   if (!runtimeConfig.hassUrl) {
@@ -80,7 +80,7 @@ export function resolveAddonLocalEndpointUrl(path: string): string {
 export function resolveHomeAssistantConnectionUrl(config: SessionConfig): string {
   const runtimeConfig = getRuntimeConfig();
 
-  if (!isRuntimeHostedSession(config)) {
+  if (!isRuntimeHostedHomeAssistantSession(config)) {
     return config.url;
   }
 

@@ -8,7 +8,10 @@ import {
   type SessionConfig,
   writeStoredSessionConfig,
 } from '../session/session';
-import { resolveHomeAssistantConnectionUrl } from '../utils/home-assistant-connection-target';
+import {
+  isRuntimeHostedHomeAssistantSession,
+  resolveHomeAssistantConnectionUrl,
+} from '../utils/home-assistant-connection-target';
 
 export type HAConfig = SessionConfig;
 
@@ -47,10 +50,14 @@ export const useConfigStore = create<ConfigState>()((set) => ({
         return false;
       }
       const connectionUrl = resolveHomeAssistantConnectionUrl(configToTest);
+      if (isRuntimeHostedHomeAssistantSession(configToTest)) {
+        return true;
+      }
+
       const response = await fetch(`${connectionUrl}/api/`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${configToTest.token}`,
           'Content-Type': 'application/json',
         },
         mode: 'cors',
