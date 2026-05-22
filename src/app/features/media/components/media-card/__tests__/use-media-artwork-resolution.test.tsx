@@ -336,7 +336,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('fetches add-on media proxy artwork directly from Home Assistant when runtime HA config is empty', async () => {
+  it('fetches add-on media proxy artwork through the ingress proxy when runtime HA config is empty', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     useAuthStore.setState({
@@ -366,19 +366,15 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/addon-direct-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
     );
-    expect(fetchMock).not.toHaveBeenCalledWith(
-      expect.stringContaining('/api/hassio_ingress/navet_dev/__navet_ha_proxy__/'),
-      expect.anything()
-    );
   });
 
-  it('does not keep a broken add-on ingress proxy fallback when empty-runtime artwork fetch fails', async () => {
+  it('keeps add-on ingress proxy artwork as fallback when empty-runtime artwork fetch fails', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     useAuthStore.setState({
@@ -399,13 +395,15 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
     );
-    expect(result.current.albumArt).toBeNull();
+    expect(result.current.albumArt).toBe(
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
+    );
   });
 
   it('fetches absolute Home Assistant media proxy artwork through the Docker proxy', async () => {
