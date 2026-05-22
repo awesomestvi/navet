@@ -8,7 +8,7 @@ const shellExpansionStart = '$' + '{';
 describe('Home Assistant add-on run script', () => {
   it('defaults blank hass_url to the internal Home Assistant Core endpoint', () => {
     expect(runScript).toContain(
-      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
+      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant.local:8123}"`
     );
   });
 
@@ -16,7 +16,11 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).toContain(
       `if [[ "${shellExpansionStart}RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then`
     );
-    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant:8123"');
+    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant.local:8123"');
+  });
+
+  it('normalizes configured Home Assistant URLs before writing proxy targets', () => {
+    expect(runScript).toContain(`RESOLVED_HASS_URL="${shellExpansionStart}RESOLVED_HASS_URL%/}"`);
   });
 
   it('uses the resolved Home Assistant URL in config.js and nginx proxy_pass', () => {
@@ -30,6 +34,18 @@ describe('Home Assistant add-on run script', () => {
   it('always emits the Home Assistant proxy location for add-on ingress', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
     expect(runScript).not.toContain(`if [[ -n "${shellExpansionStart}HASS_URL}" ]]; then`);
+  });
+
+  it('keeps websocket auth on the Home Assistant websocket message', () => {
+    const websocketLocation = runScript.slice(
+      runScript.indexOf('location = /__navet_ha_proxy__/api/websocket'),
+      runScript.indexOf('location /__navet_ha_proxy__/')
+    );
+
+    expect(websocketLocation).toContain(
+      `proxy_pass ${shellExpansionStart}RESOLVED_HASS_URL}/api/websocket;`
+    );
+    expect(websocketLocation).not.toContain('proxy_set_header Authorization');
   });
 
   it('rejects tokens with spaces or line breaks before writing runtime config', () => {

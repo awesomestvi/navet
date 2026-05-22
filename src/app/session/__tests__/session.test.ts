@@ -68,8 +68,8 @@ describe('session config', () => {
 
   it('ignores runtime tokens that contain pasted diagnostic text', () => {
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
-      hassToken: 'GET http://homeassistant:8123/api/ net::ERR_NAME_NOT_RESOLVED',
+      hassUrl: 'http://homeassistant.local:8123',
+      hassToken: 'GET http://homeassistant.local:8123/api/ net::ERR_NAME_NOT_RESOLVED',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
@@ -79,7 +79,7 @@ describe('session config', () => {
   it('does not authenticate from incomplete add-on runtime config inside Home Assistant ingress', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
@@ -89,7 +89,7 @@ describe('session config', () => {
   it('does not fall back to stored browser config when add-on runtime token is blank', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
     writeStoredSessionConfig('navet-test-session', {
@@ -100,10 +100,41 @@ describe('session config', () => {
     expect(readInitialSessionConfig('navet-test-session')).toBeNull();
   });
 
+  it('restores a stored add-on login when the runtime token is blank', () => {
+    window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://homeassistant.local:8123/',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    writeStoredSessionConfig('navet-test-session', {
+      url: 'http://homeassistant.local:8123',
+      token: 'user-entered-token',
+    });
+
+    expect(readInitialSessionConfig('navet-test-session')).toEqual({
+      url: 'http://homeassistant.local:8123',
+      token: 'user-entered-token',
+    });
+  });
+
+  it('ignores a stored add-on login with an invalid token when the runtime token is blank', () => {
+    window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://homeassistant.local:8123',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    writeStoredSessionConfig('navet-test-session', {
+      url: 'http://homeassistant.local:8123',
+      token: 'GET http://homeassistant.local:8123/api/ net::ERR_NAME_NOT_RESOLVED',
+    });
+
+    expect(readInitialSessionConfig('navet-test-session')).toBeNull();
+  });
+
   it('skips shared dashboard session loading for incomplete add-on runtime config', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
@@ -113,8 +144,8 @@ describe('session config', () => {
   it('skips shared dashboard session loading when add-on runtime token is invalid', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
-      hassToken: 'GET http://homeassistant:8123/api/ net::ERR_NAME_NOT_RESOLVED',
+      hassUrl: 'http://homeassistant.local:8123',
+      hassToken: 'GET http://homeassistant.local:8123/api/ net::ERR_NAME_NOT_RESOLVED',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
@@ -123,7 +154,7 @@ describe('session config', () => {
 
   it('allows shared dashboard session loading outside incomplete add-on runtime config', () => {
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 

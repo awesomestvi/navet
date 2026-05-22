@@ -38,13 +38,13 @@ describe('home-assistant-connection-target', () => {
 
   it('uses same-origin proxy URL for matching hosted runtime URLs without runtime tokens', () => {
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant:8123',
+        url: 'http://homeassistant.local:8123',
         token: 'user-entered-token',
       })
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
@@ -101,13 +101,13 @@ describe('home-assistant-connection-target', () => {
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant:8123',
+      hassUrl: 'http://homeassistant.local:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant:8123',
+        url: 'http://homeassistant.local:8123',
         token: 'user-entered-token',
       })
     ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
