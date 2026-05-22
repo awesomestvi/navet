@@ -8,9 +8,9 @@ NGINX_CONF="/etc/nginx/http.d/default.conf"
 HASS_URL="$(bashio::config 'hass_url')"
 HASS_TOKEN="$(bashio::config 'token')"
 DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
-RESOLVED_HASS_URL="${HASS_URL:-http://homeassistant.local:8123}"
+RESOLVED_HASS_URL="${HASS_URL:-http://homeassistant:8123}"
 if [[ "${RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then
-  RESOLVED_HASS_URL="http://homeassistant.local:8123"
+  RESOLVED_HASS_URL="http://homeassistant:8123"
 fi
 RESOLVED_HASS_URL="${RESOLVED_HASS_URL%/}"
 

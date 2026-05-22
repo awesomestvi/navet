@@ -8,7 +8,7 @@ const shellExpansionStart = '$' + '{';
 describe('Home Assistant add-on run script', () => {
   it('defaults blank hass_url to the internal Home Assistant Core endpoint', () => {
     expect(runScript).toContain(
-      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant.local:8123}"`
+      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
     );
   });
 
@@ -16,7 +16,7 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).toContain(
       `if [[ "${shellExpansionStart}RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then`
     );
-    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant.local:8123"');
+    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant:8123"');
   });
 
   it('normalizes configured Home Assistant URLs before writing proxy targets', () => {

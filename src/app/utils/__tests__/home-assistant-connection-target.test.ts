@@ -36,16 +36,33 @@ describe('home-assistant-connection-target', () => {
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
 
-  it('uses same-origin proxy URL for matching hosted runtime URLs without runtime tokens', () => {
+  it('uses the direct-port same-origin proxy URL for matching hosted runtime URLs without runtime tokens', () => {
+    window.history.replaceState(null, '', '/dashboard');
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant.local:8123',
+      hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant.local:8123',
+        url: 'http://homeassistant:8123',
         token: 'user-entered-token',
+      })
+    ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
+  });
+
+  it('uses the direct-port same-origin proxy URL for matching hosted runtime URLs with runtime tokens', () => {
+    window.history.replaceState(null, '', '/dashboard');
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://homeassistant:8123',
+      hassToken: 'runtime-token',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+
+    expect(
+      resolveHomeAssistantConnectionUrl({
+        url: 'http://homeassistant:8123',
+        token: 'runtime-token',
       })
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
@@ -101,13 +118,13 @@ describe('home-assistant-connection-target', () => {
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant.local:8123',
+      hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant.local:8123',
+        url: 'http://homeassistant:8123',
         token: 'user-entered-token',
       })
     ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
