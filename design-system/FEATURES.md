@@ -319,14 +319,20 @@ Vitest is the preferred path for:
 
 Current co-located `__tests__/` directories:
 
+- `src/app/__tests__/`
 - `src/app/components/layout/__tests__/`
 - `src/app/components/primitives/__tests__/`
 - `src/app/components/shared/theme/__tests__/`
 - `src/app/components/system/tokens/__tests__/`
 - `src/app/features/calendar/components/calendar/__tests__/`
+- `src/app/features/climate/components/hvac-card/__tests__/`
+- `src/app/features/climate/components/hvac-settings-dialog/__tests__/`
 - `src/app/features/climate/utils/__tests__/`
 - `src/app/features/dashboard/components/__tests__/`
+- `src/app/features/dashboard/components/widgets/__tests__/`
 - `src/app/features/dashboard/hooks/__tests__/`
+- `src/app/features/dashboard/page/__tests__/`
+- `src/app/features/dashboard/shell/__tests__/`
 - `src/app/features/dashboard/stores/__tests__/`
 - `src/app/features/dashboard/utils/__tests__/`
 - `src/app/features/energy/components/dashboard/__tests__/`
@@ -339,13 +345,16 @@ Current co-located `__tests__/` directories:
 - `src/app/features/media/components/media/__tests__/`
 - `src/app/features/rss/components/rss-feed-card/__tests__/`
 - `src/app/features/security/components/__tests__/`
+- `src/app/features/security/components/camera-card/__tests__/`
 - `src/app/features/security/components/cover-card/__tests__/`
 - `src/app/features/security/utils/__tests__/`
+- `src/app/features/sensors/components/sensor-group-settings/__tests__/`
 - `src/app/features/tasks/components/__tests__/`
 - `src/app/features/tasks/utils/__tests__/`
 - `src/app/features/vacuum/components/vacuum/__tests__/`
 - `src/app/hooks/__tests__/`
 - `src/app/hooks/device-mappers/__tests__/`
+- `src/app/runtime/__tests__/`
 - `src/app/services/__tests__/`
 - `src/app/session/__tests__/`
 - `src/app/stores/__tests__/`

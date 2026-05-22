@@ -13,7 +13,7 @@ Navet turns Home Assistant into a dedicated smart home control surface. Use it f
 rooms you touch every day: lights, media, cameras, locks, energy, automations, weather, calendars,
 sensors, and custom dashboard widgets.
 
-Current release: `0.1.3`
+Current release: `0.2.0`
 
 ## Why Navet
 
@@ -162,9 +162,9 @@ volumes:
   navet-data:
 ```
 
-`latest` tracks the current public release tag. Pushes to `main` publish developer images as `dev` and
-`sha-*`, so production-style deployments should use `latest`, `beta`, or a specific release tag
-instead of expecting `main` to update `latest`.
+`latest` tracks the current public release compatibility tag. Pushes to `main` publish developer
+images as `dev` and `sha-*`, so production-style deployments should use `latest`, `beta`, or a
+specific release tag instead of expecting `main` to update `latest`.
 
 Start Navet:
 
