@@ -27,7 +27,7 @@ describe('useConfigStore', () => {
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant.local:8123',
+      hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
     const fetchMock = vi
@@ -35,7 +35,7 @@ describe('useConfigStore', () => {
       .mockResolvedValue(new Response(null, { status: 200 }));
 
     await expect(
-      useConfigStore.getState().testConnection('http://homeassistant.local:8123', 'abc')
+      useConfigStore.getState().testConnection('http://homeassistant:8123', 'abc')
     ).resolves.toBe(true);
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe('useConfigStore', () => {
         .getState()
         .testConnection(
           'https://ha.example.com',
-          'GET http://homeassistant.local:8123/api/ net::ERR_NAME_NOT_RESOLVED'
+          'GET http://homeassistant:8123/api/ net::ERR_NAME_NOT_RESOLVED'
         )
     ).resolves.toBe(false);
 
