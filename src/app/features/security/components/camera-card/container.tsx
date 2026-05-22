@@ -16,6 +16,7 @@ import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
+  type CameraGo2RtcConfig,
   type CameraViewMode,
   useSettingsStore,
 } from '@/app/stores/settings-store';
@@ -89,6 +90,14 @@ function readFrontendStreamTypes(value: unknown) {
 
   const raw = (value as { frontend_stream_types?: unknown }).frontend_stream_types;
   return readCameraStreamTypes(raw);
+}
+
+function canUseGo2RtcCameraCard() {
+  return (
+    typeof customElements !== 'undefined' &&
+    Boolean(customElements.get('webrtc-camera')) &&
+    Boolean(homeAssistantService.getPanelHass())
+  );
 }
 
 const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
@@ -175,14 +184,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const cameraViewMode = useSettingsStore(settingsSelectors.cameraViewModeForEntity(id));
   const cameraFeedMode = useSettingsStore(settingsSelectors.cameraFeedModeForEntity(id));
+  const go2RtcConfig = useSettingsStore(settingsSelectors.cameraGo2RtcConfigForEntity(id));
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
   const updateCameraFeedMode = useSettingsStore(settingsSelectors.updateCameraFeedMode);
+  const updateCameraGo2RtcConfig = useSettingsStore(settingsSelectors.updateCameraGo2RtcConfig);
   const { siblingIds: deviceEntityIds } = useCameraRegistryDeviceTopology(id);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
   const [frontendStreamTypes, setFrontendStreamTypes] = useState<CameraStreamType[]>([]);
+  const [hasGo2RtcCustomCard, setHasGo2RtcCustomCard] = useState(canUseGo2RtcCameraCard);
   const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
   const now = useCameraClock();
@@ -201,6 +213,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     resolveCameraMjpegStreamUrl(baseSnapshotUrl),
     refreshKey
   );
+  const hasConfiguredGo2RtcFeed =
+    go2RtcConfig.serverUrl.trim().length > 0 && go2RtcConfig.streamName.trim().length > 0;
+  const hasGo2RtcFeed = hasConfiguredGo2RtcFeed || hasGo2RtcCustomCard;
 
   const isUnavailable = liveEntity?.state === 'unavailable';
   const isRunning = liveEntity
@@ -213,6 +228,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         ? Number(liveAttrs.supported_features)
         : initialSupportedFeatures;
   const isStreamCapable =
+    hasGo2RtcFeed ||
     frontendStreamTypes.length > 0 ||
     (typeof supportedFeatures === 'number' && Number.isFinite(supportedFeatures)
       ? (supportedFeatures & 2) === 2
@@ -227,6 +243,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const imageSource = selectCameraImageSource({
     cameraViewMode,
     cameraFeedMode,
+    hasGo2RtcFeed,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
@@ -240,9 +257,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isFallback: imageSource.isFallback,
   });
   const liveStreamKind =
-    imageSource.kind === 'hls' || imageSource.kind === 'web_rtc' ? imageSource.kind : null;
+    imageSource.kind === 'go2rtc' || imageSource.kind === 'hls' || imageSource.kind === 'web_rtc'
+      ? imageSource.kind
+      : null;
   const shouldRenderLiveStream = isVisible && liveStreamKind;
-  const streamFailureResetKey = `${cameraViewMode}:${cameraFeedMode}:${frontendStreamTypes.join(',')}`;
+  const streamFailureResetKey = `${cameraViewMode}:${cameraFeedMode}:${go2RtcConfig.serverUrl}:${go2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
 
   useEffect(() => {
     void streamFailureResetKey;
@@ -254,6 +273,27 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       if (streamRetryTimeoutRef.current !== null) {
         window.clearTimeout(streamRetryTimeoutRef.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    setHasGo2RtcCustomCard(canUseGo2RtcCameraCard());
+    if (typeof customElements === 'undefined' || customElements.get('webrtc-camera')) {
+      return;
+    }
+
+    let isCancelled = false;
+    void customElements
+      .whenDefined('webrtc-camera')
+      .then(() => {
+        if (!isCancelled) {
+          setHasGo2RtcCustomCard(canUseGo2RtcCameraCard());
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isCancelled = true;
     };
   }, []);
 
@@ -382,6 +422,15 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     [id, updateCameraFeedMode]
   );
 
+  const handleGo2RtcConfigChange = useCallback(
+    (config: CameraGo2RtcConfig) => {
+      updateCameraGo2RtcConfig(id, config);
+      setFailedStreamTypes([]);
+      setRefreshKey((k) => k + 1);
+    },
+    [id, updateCameraGo2RtcConfig]
+  );
+
   const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
     setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
 
@@ -421,6 +470,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
               kind={shouldRenderLiveStream}
               posterUrl={snapshotUrl}
               homeAssistantUrl={config?.url}
+              go2RtcConfig={go2RtcConfig}
               fitMode="cover"
               onError={handleStreamError}
             />
@@ -458,10 +508,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           mjpegStreamUrl={mjpegStreamUrl}
           cameraViewMode={cameraViewMode}
           cameraFeedMode={cameraFeedMode}
+          go2RtcConfig={go2RtcConfig}
           isUnavailable={isUnavailable}
           isRunning={isRunning}
           isStreamCapable={isStreamCapable}
           frontendStreamTypes={frontendStreamTypes}
+          hasGo2RtcFeed={hasGo2RtcFeed}
           homeAssistantUrl={config?.url}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -478,11 +530,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           siblingEntities={siblingEntities}
           cameraViewMode={cameraViewMode}
           cameraFeedMode={cameraFeedMode}
+          go2RtcConfig={go2RtcConfig}
           frontendStreamTypes={frontendStreamTypes}
+          hasGo2RtcFeed={hasGo2RtcFeed}
           hasMjpegStream={Boolean(mjpegStreamUrl)}
           hasSnapshot={Boolean(snapshotUrl)}
           onCameraViewModeChange={handleCameraViewModeChange}
           onCameraFeedModeChange={handleCameraFeedModeChange}
+          onGo2RtcConfigChange={handleGo2RtcConfigChange}
         />
       )}
     </>

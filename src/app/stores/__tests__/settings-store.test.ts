@@ -32,6 +32,10 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().updateSettings({ lowPowerMode: true });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraFeedMode('camera.front_door', 'web_rtc');
+    useSettingsStore.getState().updateCameraGo2RtcConfig('camera.front_door', {
+      serverUrl: 'http://go2rtc.local:1984',
+      streamName: 'front_door',
+    });
     useSettingsStore.getState().resetSettings();
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
@@ -39,6 +43,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraFeedModes).toEqual({});
+    expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({});
   });
 
   it('stores camera view mode per entity', () => {
@@ -52,12 +57,26 @@ describe('useSettingsStore', () => {
   });
 
   it('stores camera feed mode per entity', () => {
-    useSettingsStore.getState().updateCameraFeedMode('camera.front_door', 'web_rtc');
+    useSettingsStore.getState().updateCameraFeedMode('camera.front_door', 'go2rtc');
     useSettingsStore.getState().updateCameraFeedMode('camera.garage', 'mjpeg');
 
     expect(useSettingsStore.getState().cameraFeedModes).toEqual({
-      'camera.front_door': 'web_rtc',
+      'camera.front_door': 'go2rtc',
       'camera.garage': 'mjpeg',
+    });
+  });
+
+  it('stores direct go2rtc config per entity', () => {
+    useSettingsStore.getState().updateCameraGo2RtcConfig('camera.front_door', {
+      serverUrl: ' http://go2rtc.local:1984 ',
+      streamName: ' front_door ',
+    });
+
+    expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({
+      'camera.front_door': {
+        serverUrl: 'http://go2rtc.local:1984',
+        streamName: 'front_door',
+      },
     });
   });
 
@@ -78,6 +97,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraFeedModes).toEqual({});
+    expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({});
   });
 
   it('rehydrates valid per-camera view modes only', async () => {
@@ -109,7 +129,7 @@ describe('useSettingsStore', () => {
       JSON.stringify({
         state: {
           cameraFeedModes: {
-            'camera.front_door': 'web_rtc',
+            'camera.front_door': 'go2rtc',
             'camera.garage': 'mjpeg',
             'camera.invalid': 'rtsp',
           },
@@ -121,8 +141,38 @@ describe('useSettingsStore', () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().cameraFeedModes).toEqual({
-      'camera.front_door': 'web_rtc',
+      'camera.front_door': 'go2rtc',
       'camera.garage': 'mjpeg',
+    });
+  });
+
+  it('rehydrates valid direct go2rtc configs only', async () => {
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: {
+          cameraGo2RtcConfigs: {
+            'camera.front_door': {
+              serverUrl: ' http://go2rtc.local:1984 ',
+              streamName: ' front_door ',
+            },
+            'camera.invalid': {
+              serverUrl: 1984,
+              streamName: 'invalid',
+            },
+          },
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({
+      'camera.front_door': {
+        serverUrl: 'http://go2rtc.local:1984',
+        streamName: 'front_door',
+      },
     });
   });
 });

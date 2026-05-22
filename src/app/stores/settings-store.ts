@@ -7,7 +7,11 @@ import { storage } from '@/app/utils/storage';
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
-export type CameraFeedMode = 'auto' | 'web_rtc' | 'hls' | 'mjpeg';
+export type CameraFeedMode = 'auto' | 'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg';
+export interface CameraGo2RtcConfig {
+  serverUrl: string;
+  streamName: string;
+}
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -36,6 +40,7 @@ export interface UserSettings {
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
   cameraFeedModes: Record<string, CameraFeedMode>;
+  cameraGo2RtcConfigs: Record<string, CameraGo2RtcConfig>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -45,6 +50,7 @@ interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
+  updateCameraGo2RtcConfig: (entityId: string, config: CameraGo2RtcConfig) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
@@ -66,6 +72,7 @@ export const defaultSettings: UserSettings = {
   cameraViewMode: 'live',
   cameraViewModes: {},
   cameraFeedModes: {},
+  cameraGo2RtcConfigs: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -76,7 +83,13 @@ function isCameraViewMode(value: unknown): value is CameraViewMode {
 }
 
 function isCameraFeedMode(value: unknown): value is CameraFeedMode {
-  return value === 'auto' || value === 'web_rtc' || value === 'hls' || value === 'mjpeg';
+  return (
+    value === 'auto' ||
+    value === 'go2rtc' ||
+    value === 'web_rtc' ||
+    value === 'hls' ||
+    value === 'mjpeg'
+  );
 }
 
 function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode> {
@@ -100,6 +113,34 @@ function normalizeCameraFeedModes(value: unknown): Record<string, CameraFeedMode
     Object.entries(value).filter((entry): entry is [string, CameraFeedMode] =>
       isCameraFeedMode(entry[1])
     )
+  );
+}
+
+function isCameraGo2RtcConfig(value: unknown): value is CameraGo2RtcConfig {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    typeof (value as Partial<CameraGo2RtcConfig>).serverUrl === 'string' &&
+    typeof (value as Partial<CameraGo2RtcConfig>).streamName === 'string'
+  );
+}
+
+function normalizeCameraGo2RtcConfigs(value: unknown): Record<string, CameraGo2RtcConfig> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, CameraGo2RtcConfig] => isCameraGo2RtcConfig(entry[1]))
+      .map(([entityId, config]) => [
+        entityId,
+        {
+          serverUrl: config.serverUrl.trim(),
+          streamName: config.streamName.trim(),
+        },
+      ])
   );
 }
 
@@ -136,6 +177,16 @@ export const useSettingsStore = create<SettingsState>()(
             [entityId]: mode,
           },
         })),
+      updateCameraGo2RtcConfig: (entityId, config) =>
+        set((state) => ({
+          cameraGo2RtcConfigs: {
+            ...state.cameraGo2RtcConfigs,
+            [entityId]: {
+              serverUrl: config.serverUrl.trim(),
+              streamName: config.streamName.trim(),
+            },
+          },
+        })),
       applyImportedSettings: (importedSettings) =>
         set(() => ({
           ...defaultSettings,
@@ -145,6 +196,7 @@ export const useSettingsStore = create<SettingsState>()(
             : defaultSettings.cameraViewMode,
           cameraViewModes: normalizeCameraViewModes(importedSettings.cameraViewModes),
           cameraFeedModes: normalizeCameraFeedModes(importedSettings.cameraFeedModes),
+          cameraGo2RtcConfigs: normalizeCameraGo2RtcConfigs(importedSettings.cameraGo2RtcConfigs),
         })),
       resetSettings: () => set(defaultSettings),
     }),
@@ -161,6 +213,7 @@ export const useSettingsStore = create<SettingsState>()(
             : current.cameraViewMode,
           cameraViewModes: normalizeCameraViewModes(next.cameraViewModes),
           cameraFeedModes: normalizeCameraFeedModes(next.cameraFeedModes),
+          cameraGo2RtcConfigs: normalizeCameraGo2RtcConfigs(next.cameraGo2RtcConfigs),
         };
       },
     }

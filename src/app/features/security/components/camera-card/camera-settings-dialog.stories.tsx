@@ -59,11 +59,17 @@ const meta = {
     siblingEntities,
     cameraViewMode: 'live',
     cameraFeedMode: 'auto',
+    go2RtcConfig: {
+      serverUrl: 'http://homeassistant.local:11984',
+      streamName: 'camera.front_door',
+    },
     frontendStreamTypes: ['web_rtc', 'hls'],
+    hasGo2RtcFeed: true,
     hasMjpegStream: true,
     hasSnapshot: true,
     onCameraViewModeChange: () => undefined,
     onCameraFeedModeChange: () => undefined,
+    onGo2RtcConfigChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

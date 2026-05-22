@@ -17,6 +17,7 @@ import { isSection } from '@/app/navigation/sections';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
   type CameraFeedMode,
+  type CameraGo2RtcConfig,
   type CameraViewMode,
   defaultSettings,
   useSettingsStore,
@@ -43,6 +44,7 @@ export interface DashboardConfigPayload {
       | 'updateSettings'
       | 'updateCameraViewMode'
       | 'updateCameraFeedMode'
+      | 'updateCameraGo2RtcConfig'
       | 'applyImportedSettings'
       | 'resetSettings'
     >
@@ -93,7 +95,7 @@ const weatherMetricIds = new Set<WeatherMetricId>([
   'cloudCover',
 ]);
 const cameraViewModes = new Set<CameraViewMode>(['live', 'auto', 'snapshot']);
-const cameraFeedModes = new Set<CameraFeedMode>(['auto', 'web_rtc', 'hls', 'mjpeg']);
+const cameraFeedModes = new Set<CameraFeedMode>(['auto', 'go2rtc', 'web_rtc', 'hls', 'mjpeg']);
 
 function isWeatherMetricId(value: unknown): value is WeatherMetricId {
   return typeof value === 'string' && weatherMetricIds.has(value as WeatherMetricId);
@@ -133,6 +135,33 @@ function resolveCameraFeedModes(value: unknown): Record<string, CameraFeedMode> 
   );
 }
 
+function resolveCameraGo2RtcConfigs(value: unknown): Record<string, CameraGo2RtcConfig> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, CameraGo2RtcConfig] => {
+        const config = entry[1] as Partial<CameraGo2RtcConfig> | undefined;
+        return (
+          Boolean(config) &&
+          typeof config === 'object' &&
+          !Array.isArray(config) &&
+          typeof config.serverUrl === 'string' &&
+          typeof config.streamName === 'string'
+        );
+      })
+      .map(([entityId, config]) => [
+        entityId,
+        {
+          serverUrl: config.serverUrl.trim(),
+          streamName: config.streamName.trim(),
+        },
+      ])
+  );
+}
+
 function areArraysEqual<T>(left: T[], right: T[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
@@ -143,6 +172,7 @@ const buildExportedSettings = (
     | 'updateSettings'
     | 'updateCameraViewMode'
     | 'updateCameraFeedMode'
+    | 'updateCameraGo2RtcConfig'
     | 'applyImportedSettings'
     | 'resetSettings'
   >
@@ -195,6 +225,7 @@ const buildExportedSettings = (
         : undefined,
     cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
     cameraFeedModes: pruneEmptyRecord(settingsState.cameraFeedModes),
+    cameraGo2RtcConfigs: pruneEmptyRecord(settingsState.cameraGo2RtcConfigs),
     weatherMetricIds: !areArraysEqual(
       settingsState.weatherMetricIds,
       defaultSettings.weatherMetricIds
@@ -593,6 +624,7 @@ export const importDashboardConfig = (
     cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
     cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
     cameraFeedModes: resolveCameraFeedModes(settings.cameraFeedModes),
+    cameraGo2RtcConfigs: resolveCameraGo2RtcConfigs(settings.cameraGo2RtcConfigs),
     weatherForecastMode:
       settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
         ? settings.weatherForecastMode

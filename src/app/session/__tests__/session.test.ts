@@ -66,6 +66,16 @@ describe('session config', () => {
     expect(readRuntimeSessionConfig()).toBeNull();
   });
 
+  it('ignores runtime tokens that contain pasted diagnostic text', () => {
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://supervisor/core',
+      hassToken: 'GET http://supervisor/core/api/ net::ERR_NAME_NOT_RESOLVED',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+
+    expect(readRuntimeSessionConfig()).toBeNull();
+  });
+
   it('does not authenticate from incomplete add-on runtime config inside Home Assistant ingress', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
@@ -94,6 +104,17 @@ describe('session config', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {
       hassUrl: 'http://supervisor/core',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+
+    expect(shouldSkipSharedSessionLoad()).toBe(true);
+  });
+
+  it('skips shared dashboard session loading when add-on runtime token is invalid', () => {
+    window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://supervisor/core',
+      hassToken: 'GET http://supervisor/core/api/ net::ERR_NAME_NOT_RESOLVED',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 

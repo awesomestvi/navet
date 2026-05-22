@@ -520,6 +520,8 @@ export const frMessages = {
   'login.hideToken': 'Masquer le jeton',
   'login.errors.urlRequired': 'Veuillez saisir l’URL de votre maison connectée',
   'login.errors.tokenRequired': 'Veuillez saisir votre jeton d’accès',
+  'login.errors.tokenInvalid':
+    'Saisissez un jeton d’accès longue durée sans espaces ni retours à la ligne',
   'login.errors.urlInvalid':
     'Veuillez saisir une URL valide (par ex. http://homeassistant.local:8123)',
   'login.errors.saveFailed': 'Impossible d’enregistrer la configuration',
@@ -1183,14 +1185,24 @@ export const frMessages = {
   'camera.settings.viewMode.auto': 'Auto',
   'camera.settings.viewMode.snapshot': 'Snapshot',
   'camera.settings.viewMode.description':
-    'Live prefers Home Assistant WebRTC/HLS when available, with MJPEG and snapshot fallback. Auto refreshes snapshots. Snapshot refreshes only when requested.',
+    'Live prefers go2rtc when available, then Home Assistant WebRTC/HLS, with MJPEG and snapshot fallback. Auto refreshes snapshots. Snapshot refreshes only when requested.',
   'camera.settings.feedMode': 'Live feed',
   'camera.settings.feedMode.auto': 'Auto',
+  'camera.settings.feedMode.go2rtc': 'go2rtc',
   'camera.settings.feedMode.web_rtc': 'WebRTC',
   'camera.settings.feedMode.hls': 'HLS',
   'camera.settings.feedMode.mjpeg': 'MJPEG',
   'camera.settings.feedMode.description':
-    'Auto prefers WebRTC, then HLS, then MJPEG. Choose a feed to try it first while keeping fallback available.',
+    'Auto prefers go2rtc when available, then Home Assistant WebRTC, HLS, and MJPEG. Choose a feed to try it first while keeping fallback available.',
+  'camera.settings.go2rtc': 'go2rtc',
+  'camera.settings.go2rtc.serverUrl': 'Server URL',
+  'camera.settings.go2rtc.streamName': 'Stream name',
+  'camera.settings.go2rtc.description.addon':
+    'Home Assistant OS or add-on users: enable the go2rtc debug UI in Home Assistant, then use your Home Assistant host with port 11984, for example http://homeassistant.local:11984. The stream name is usually the camera entity id, such as camera.front_door.',
+  'camera.settings.go2rtc.description.customPanel':
+    'Custom panel users can leave these fields empty when the WebRTC custom card is already loaded in Home Assistant; Navet will use that embedded go2rtc path automatically.',
+  'camera.settings.go2rtc.description.standalone':
+    'Standalone go2rtc users can use http://<go2rtc-host>:1984 and the stream name configured in go2rtc, such as front_door or camera.front_door.',
   'camera.status.live': 'En direct',
   'camera.status.unavailable': 'Indisponible',
   'camera.status.noSignal': 'Aucun signal',

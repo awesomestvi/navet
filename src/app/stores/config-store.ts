@@ -2,11 +2,13 @@ import { create } from 'zustand';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import {
   clearStoredSessionConfig,
+  isUsableSessionToken,
   normalizeSessionConfig,
   readInitialSessionConfig,
   type SessionConfig,
   writeStoredSessionConfig,
 } from '../session/session';
+import { resolveHomeAssistantConnectionUrl } from '../utils/home-assistant-connection-target';
 
 export type HAConfig = SessionConfig;
 
@@ -33,14 +35,19 @@ export const useConfigStore = create<ConfigState>()((set) => ({
 
   testConnection: async (url: string, token: string): Promise<boolean> => {
     try {
-      const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+      const configToTest = normalizeSessionConfig({ url, token });
       try {
-        new URL(cleanUrl);
+        new URL(configToTest.url);
       } catch (error) {
         console.error('[ConfigStore] Invalid URL format:', error);
         return false;
       }
-      const response = await fetch(`${cleanUrl}/api/`, {
+      if (!isUsableSessionToken(configToTest.token)) {
+        console.error('[ConfigStore] Invalid token format');
+        return false;
+      }
+      const connectionUrl = resolveHomeAssistantConnectionUrl(configToTest);
+      const response = await fetch(`${connectionUrl}/api/`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

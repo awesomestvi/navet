@@ -133,6 +133,10 @@ class HomeAssistantService {
     this.panelAdapter = new HomeAssistantPanelAdapter(hass);
   }
 
+  getPanelHass(): HomeAssistantPanelHass | null {
+    return this.panelAdapter?.getHass() ?? null;
+  }
+
   /**
    * Subscribe to a specific typed HA service event.
    * Returns an unsubscribe function.

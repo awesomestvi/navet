@@ -9,10 +9,31 @@ import {
 } from '../camera-view-mode';
 
 describe('camera view mode helpers', () => {
+  it('prefers go2rtc for live cameras when the custom card is available', () => {
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
+      hasGo2RtcFeed: true,
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: ['hls', 'web_rtc'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(),
+    });
+
+    expect(source).toEqual({
+      url: undefined,
+      kind: 'go2rtc',
+      isFallback: false,
+    });
+  });
+
   it('prefers WebRTC for live cameras when Home Assistant advertises it', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['hls', 'web_rtc'],
@@ -32,6 +53,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['web_rtc', 'hls'],
@@ -51,6 +73,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['hls', 'web_rtc'],
@@ -70,6 +93,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: undefined,
       frontendStreamTypes: [],
@@ -89,6 +113,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'auto',
       cameraFeedMode: 'web_rtc',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['hls'],
@@ -122,6 +147,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=1',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=1',
       frontendStreamTypes: ['web_rtc', 'hls'],
@@ -148,6 +174,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'mjpeg',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['web_rtc', 'hls'],
@@ -167,6 +194,7 @@ describe('camera view mode helpers', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'mjpeg',
+      hasGo2RtcFeed: false,
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: undefined,
       frontendStreamTypes: ['web_rtc', 'hls'],

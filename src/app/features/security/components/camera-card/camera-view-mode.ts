@@ -5,7 +5,7 @@ export const CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS = 30_000;
 export const CAMERA_STREAM_TYPES = ['web_rtc', 'hls'] as const;
 
 export type CameraStreamType = (typeof CAMERA_STREAM_TYPES)[number];
-export type CameraImageSourceKind = CameraStreamType | 'mjpeg' | 'snapshot';
+export type CameraImageSourceKind = CameraStreamType | 'go2rtc' | 'mjpeg' | 'snapshot';
 export type CameraSelectableFeedKind = Exclude<CameraImageSourceKind, 'snapshot'>;
 
 export interface CameraImageSource {
@@ -48,7 +48,7 @@ function hasUsableStreamType(
   return streamTypes.includes(streamType) && !failedStreamTypes.has(streamType);
 }
 
-const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['web_rtc', 'hls', 'mjpeg'];
+const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['go2rtc', 'web_rtc', 'hls', 'mjpeg'];
 
 function getLiveFeedOrder(cameraFeedMode: CameraFeedMode): CameraSelectableFeedKind[] {
   if (cameraFeedMode === 'auto') {
@@ -64,6 +64,7 @@ function getLiveFeedOrder(cameraFeedMode: CameraFeedMode): CameraSelectableFeedK
 export function selectCameraImageSource({
   cameraViewMode,
   cameraFeedMode,
+  hasGo2RtcFeed,
   snapshotUrl,
   mjpegStreamUrl,
   frontendStreamTypes,
@@ -73,6 +74,7 @@ export function selectCameraImageSource({
 }: {
   cameraViewMode: CameraViewMode;
   cameraFeedMode: CameraFeedMode;
+  hasGo2RtcFeed: boolean;
   snapshotUrl: string | undefined;
   mjpegStreamUrl: string | undefined;
   frontendStreamTypes: readonly CameraStreamType[];
@@ -86,6 +88,10 @@ export function selectCameraImageSource({
 
   if (cameraViewMode === 'live') {
     for (const feedKind of getLiveFeedOrder(cameraFeedMode)) {
+      if (feedKind === 'go2rtc' && hasGo2RtcFeed && !failedStreamTypes.has('go2rtc')) {
+        return { url: undefined, kind: 'go2rtc', isFallback: false };
+      }
+
       if (
         (feedKind === 'web_rtc' || feedKind === 'hls') &&
         hasUsableStreamType(frontendStreamTypes, failedStreamTypes, feedKind)
