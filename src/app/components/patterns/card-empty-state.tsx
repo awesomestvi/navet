@@ -1,5 +1,6 @@
 import { type LucideIcon, Settings2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import {
   normalizeCustomCardTint,
@@ -27,23 +28,23 @@ const compactCardSizes = new Set<CardSize>(['tiny', 'extra-small', 'small', 'med
 function getActionPalette(theme: ReturnType<typeof useTheme>['theme'], accentColor: string) {
   if (theme === 'light') {
     return {
-      background: withTintAlpha(accentColor, 0.12),
-      hoverBackground: withTintAlpha(accentColor, 0.18),
-      border: withTintAlpha(accentColor, 0.28),
+      background: withTintAlpha(accentColor, 0.08),
+      hoverBackground: withTintAlpha(accentColor, 0.13),
+      border: withTintAlpha(accentColor, 0.22),
       text: accentColor,
-      shadow: `0 12px 24px -20px ${withTintAlpha(accentColor, 0.34)}, inset 0 1px 0 rgba(255,255,255,0.72)`,
+      shadow: `inset 0 1px 0 rgba(255,255,255,0.58)`,
     };
   }
 
-  const backgroundAlpha = theme === 'black' ? 0.24 : 0.2;
-  const hoverAlpha = theme === 'black' ? 0.32 : 0.28;
+  const backgroundAlpha = theme === 'black' ? 0.14 : 0.12;
+  const hoverAlpha = theme === 'black' ? 0.2 : 0.18;
 
   return {
     background: withTintAlpha(accentColor, backgroundAlpha),
     hoverBackground: withTintAlpha(accentColor, hoverAlpha),
-    border: withTintAlpha(accentColor, theme === 'black' ? 0.42 : 0.36),
+    border: withTintAlpha(accentColor, theme === 'black' ? 0.28 : 0.24),
     text: '#ffffff',
-    shadow: `0 16px 32px -24px ${withTintAlpha(accentColor, 0.62)}, inset 0 1px 0 rgba(255,255,255,0.12)`,
+    shadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
   };
 }
 
@@ -84,42 +85,18 @@ export function CardEmptyState({
         className
       )}
     >
-      <div
-        className={cn(
-          'relative flex shrink-0 items-center justify-center overflow-hidden border',
-          surface.border,
-          isTiny
-            ? 'h-8 w-8 rounded-xl'
-            : isCompact
-              ? 'h-10 w-10 rounded-2xl'
-              : 'h-12 w-12 rounded-[18px]'
-        )}
-        style={{
-          background: `linear-gradient(180deg, ${accentColor}${theme === 'light' ? '1c' : '22'}, transparent 120%)`,
-          boxShadow: isTiny
-            ? undefined
-            : `inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 36px -30px ${accentColor}88`,
-        }}
-      >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-br from-white/16 via-white/[0.03] to-transparent"
-        />
-        <Icon
-          className={cn(
-            'relative',
-            isTiny ? 'h-3.5 w-3.5' : isCompact ? 'h-4 w-4' : 'h-5 w-5',
-            surface.textPrimary
-          )}
-        />
-      </div>
+      <EntityCardHeaderIcon
+        IconComponent={Icon}
+        isActive={false}
+        size={size}
+        baseColor={accentColor}
+      />
 
-      <div className={cn('min-w-0', isCompact ? 'max-w-[14rem]' : 'max-w-[18rem]')}>
+      <div className={cn('min-w-0', isCompact ? 'max-w-[12rem]' : 'max-w-[16rem]')}>
         <h3
           className={cn(
-            'font-semibold leading-tight tracking-normal',
-            surface.textPrimary,
-            isTiny ? 'text-xs' : isCompact ? 'text-sm' : 'text-base'
+            'truncate text-[12px] font-semibold leading-[18px] tracking-normal',
+            surface.textPrimary
           )}
         >
           {title}
@@ -127,9 +104,8 @@ export function CardEmptyState({
         {!isTiny ? (
           <p
             className={cn(
-              'mt-1 leading-snug',
-              surface.textSecondary,
-              isCompact ? 'text-xs' : 'text-sm'
+              'mt-0.5 line-clamp-3 text-[11px] leading-[14px] tracking-normal',
+              surface.textMuted
             )}
           >
             {description}
@@ -141,11 +117,12 @@ export function CardEmptyState({
         <Button
           type="button"
           variant="secondary"
-          size="small"
-          leading={<ActionIcon className="h-3.5 w-3.5" />}
+          size="compact"
+          leading={<ActionIcon className="h-3 w-3" />}
           className={cn(
             'border-[var(--card-empty-action-border)] bg-[var(--card-empty-action-bg)] text-[var(--card-empty-action-text)] hover:bg-[var(--card-empty-action-hover-bg)]',
-            isCompact ? 'mt-1' : 'mt-2'
+            'h-7 px-3 text-xs font-semibold',
+            isCompact ? 'mt-0.5' : 'mt-1'
           )}
           style={actionStyle}
           onPointerDown={(event) => event.stopPropagation()}

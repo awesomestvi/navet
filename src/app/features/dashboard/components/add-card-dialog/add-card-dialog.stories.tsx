@@ -17,6 +17,13 @@ const demoLibraryCards = [
     kind: 'device' as const,
   },
   {
+    id: 'fan.hallway',
+    title: 'Hallway Fan',
+    subtitle: 'fan.hallway',
+    meta: 'Fan',
+    kind: 'device' as const,
+  },
+  {
     id: 'widget.quick_note',
     title: 'Quick Note',
     subtitle: 'Widget',

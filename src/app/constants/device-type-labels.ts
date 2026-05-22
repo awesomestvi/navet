@@ -3,6 +3,7 @@ import type { DeviceCollection } from '../types/device.types';
 
 export const DEVICE_TYPE_LABEL_KEYS: Record<keyof DeviceCollection, TranslationKey> = {
   lights: 'deviceType.light',
+  fans: 'climate.mode.fan',
   hvac: 'deviceType.hvac',
   climate: 'deviceType.climate',
   media: 'deviceType.media',

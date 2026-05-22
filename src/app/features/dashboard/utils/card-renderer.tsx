@@ -40,6 +40,11 @@ const LightCard = lazy(async () => {
   return { default: module.LightCard };
 });
 
+const FanCard = lazy(async () => {
+  const module = await import('@/app/features/lighting');
+  return { default: module.FanCard };
+});
+
 const SwitchCard = lazy(async () => {
   const module = await import('@/app/features/lighting');
   return { default: module.SwitchCard };
@@ -190,6 +195,19 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       initialState={device.state as boolean | undefined}
       initialBrightness={device.brightness as number | undefined}
       initialTemp={device.temp as number | undefined}
+      size={size}
+      onSizeChange={handleSizeChange}
+      isEditMode={isEditMode}
+    />
+  ),
+
+  fans: ({ device, size, handleSizeChange, isEditMode }) => (
+    <FanCard
+      id={device.id as string}
+      name={device.name as string}
+      room={device.room as string}
+      initialState={device.state as boolean | undefined}
+      initialPercentage={device.percentage as number | undefined}
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}

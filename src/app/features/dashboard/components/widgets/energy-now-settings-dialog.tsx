@@ -90,7 +90,7 @@ export function EnergyNowSettingsDialog({
       height: 'capped',
     }
   );
-  const selectedId = selectedSourceId ?? options[0]?.id;
+  const selectedId = selectedSourceId;
   const [activeTab, setActiveTab] = useState<'controls' | 'card'>('controls');
 
   return (

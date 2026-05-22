@@ -21,6 +21,7 @@ export const ZONE_DEFAULTS_BY_DEVICE_TYPE: Record<string, ZoneName> = {
   media: 'hero',
   // Actions — things you tap to toggle or control
   lights: 'actions',
+  fans: 'actions',
   switches: 'actions',
   locks: 'actions',
   scenes: 'actions',

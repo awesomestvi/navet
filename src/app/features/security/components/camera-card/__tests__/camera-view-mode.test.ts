@@ -9,30 +9,13 @@ import {
 } from '../camera-view-mode';
 
 describe('camera view mode helpers', () => {
-  it('uses the HA MJPEG proxy for live cameras when available', () => {
+  it('prefers WebRTC for live cameras when Home Assistant advertises it', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
-      frontendStreamTypes: ['web_rtc'],
-      isUnavailable: false,
-      isRunning: true,
-      failedStreamTypes: new Set(),
-    });
-
-    expect(source).toEqual({
-      url: '/api/camera_proxy_stream/camera.front?_t=0',
-      kind: 'mjpeg',
-      isFallback: false,
-    });
-  });
-
-  it('uses WebRTC for live cameras when the MJPEG proxy is unavailable', () => {
-    const source = selectCameraImageSource({
-      cameraViewMode: 'live',
-      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
-      mjpegStreamUrl: undefined,
-      frontendStreamTypes: ['web_rtc'],
+      frontendStreamTypes: ['hls', 'web_rtc'],
       isUnavailable: false,
       isRunning: true,
       failedStreamTypes: new Set(),
@@ -45,12 +28,13 @@ describe('camera view mode helpers', () => {
     });
   });
 
-  it('uses HLS for live cameras when MJPEG and WebRTC are unavailable', () => {
+  it('falls live mode back from WebRTC to HLS', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
-      mjpegStreamUrl: undefined,
-      frontendStreamTypes: ['hls', 'web_rtc'],
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: ['web_rtc', 'hls'],
       isUnavailable: false,
       isRunning: true,
       failedStreamTypes: new Set(['web_rtc']),
@@ -63,9 +47,29 @@ describe('camera view mode helpers', () => {
     });
   });
 
+  it('falls live mode back from HLS to MJPEG', () => {
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: ['hls', 'web_rtc'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(['web_rtc', 'hls']),
+    });
+
+    expect(source).toEqual({
+      url: '/api/camera_proxy_stream/camera.front?_t=0',
+      kind: 'mjpeg',
+      isFallback: false,
+    });
+  });
+
   it('falls live mode back to snapshots when streaming is unavailable', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: undefined,
       frontendStreamTypes: [],
@@ -84,6 +88,7 @@ describe('camera view mode helpers', () => {
   it('uses snapshots for auto mode and refreshes them', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'auto',
+      cameraFeedMode: 'web_rtc',
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['hls'],
@@ -116,12 +121,13 @@ describe('camera view mode helpers', () => {
   it('falls back to snapshots after stream errors and uses live fallback refresh timing', () => {
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
       snapshotUrl: '/api/camera_proxy/camera.front?_t=1',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=1',
-      frontendStreamTypes: ['web_rtc'],
+      frontendStreamTypes: ['web_rtc', 'hls'],
       isUnavailable: false,
       isRunning: true,
-      failedStreamTypes: new Set(['mjpeg', 'web_rtc']),
+      failedStreamTypes: new Set(['web_rtc', 'hls', 'mjpeg']),
     });
 
     expect(source).toEqual({
@@ -136,6 +142,44 @@ describe('camera view mode helpers', () => {
         isFallback: source.isFallback,
       })
     ).toBe(CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS);
+  });
+
+  it('honors a selected MJPEG feed ahead of WebRTC when it is available', () => {
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'mjpeg',
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: ['web_rtc', 'hls'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(),
+    });
+
+    expect(source).toEqual({
+      url: '/api/camera_proxy_stream/camera.front?_t=0',
+      kind: 'mjpeg',
+      isFallback: false,
+    });
+  });
+
+  it('falls a selected feed back to the live order when it is unavailable', () => {
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'mjpeg',
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: undefined,
+      frontendStreamTypes: ['web_rtc', 'hls'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(),
+    });
+
+    expect(source).toEqual({
+      url: undefined,
+      kind: 'web_rtc',
+      isFallback: false,
+    });
   });
 
   it('builds cache-busted snapshot and stream proxy URLs', () => {

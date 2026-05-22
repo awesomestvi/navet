@@ -136,12 +136,18 @@ export const settingsSelectors = {
   effectsQuality: (state: SettingsState) => state.effectsQuality,
   entityInteractionMode: (state: SettingsState) => state.entityInteractionMode,
   cameraViewMode: (state: SettingsState) => state.cameraViewMode,
+  cameraViewModeForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraViewModes[entityId] ?? 'live',
+  cameraFeedModeForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraFeedModes[entityId] ?? 'auto',
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
 
   // Actions
   updateSettings: (state: SettingsState) => state.updateSettings,
+  updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
+  updateCameraFeedMode: (state: SettingsState) => state.updateCameraFeedMode,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
   // Combined selectors

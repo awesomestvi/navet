@@ -8,6 +8,10 @@ export {
   isAllDayCalendarValue,
   parseCalendarDate,
 } from './calendar-utils';
+export {
+  resolveClimateTemperatureUnit,
+  resolveHomeAssistantTemperatureUnit,
+} from './climate-utils';
 export { getName, resolveEntityRoom } from './entity-location';
 export { formatEntityType, formatMediaEntityType, helperLabelForDomain } from './i18n-formatters';
 export { brightnessToPercent, normalizeKelvin } from './light-utils';

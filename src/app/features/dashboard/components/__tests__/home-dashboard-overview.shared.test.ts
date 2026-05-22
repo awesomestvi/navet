@@ -15,6 +15,7 @@ import {
 
 const baseDevices: DeviceCollection = {
   lights: [],
+  fans: [],
   hvac: [],
   climate: [],
   media: [],

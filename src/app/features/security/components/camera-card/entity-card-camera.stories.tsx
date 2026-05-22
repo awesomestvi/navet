@@ -13,8 +13,8 @@ type CameraCardStoryArgs = Omit<ComponentProps<typeof CameraCard>, 'onSizeChange
 
 function CameraCardStory({ cameraViewMode = 'live', ...args }: CameraCardStoryArgs) {
   useEffect(() => {
-    useSettingsStore.getState().updateSettings({ cameraViewMode });
-  }, [cameraViewMode]);
+    useSettingsStore.getState().updateCameraViewMode(args.id, cameraViewMode);
+  }, [args.id, cameraViewMode]);
 
   return (
     <EntityCardStoryFrame size={args.size ?? 'medium'}>

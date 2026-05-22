@@ -78,6 +78,7 @@ function areDevicesEqual(a: DeviceWithType, b: DeviceWithType): boolean {
 export const useDeviceMap = (devices: DeviceCollection) => {
   const {
     lights,
+    fans,
     hvac,
     climate,
     media,
@@ -102,6 +103,7 @@ export const useDeviceMap = (devices: DeviceCollection) => {
     const map = new Map<string, DeviceWithType>();
     const groups = [
       ['lights', lights],
+      ['fans', fans],
       ['hvac', hvac],
       ['climate', climate],
       ['media', media],
@@ -145,6 +147,7 @@ export const useDeviceMap = (devices: DeviceCollection) => {
     cameras,
     climate,
     covers,
+    fans,
     groupedSensors,
     helpers,
     hvac,

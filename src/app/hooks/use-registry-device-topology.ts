@@ -7,8 +7,8 @@ import { useHomeAssistant } from './use-home-assistant';
 
 const EMPTY_IDS: string[] = [];
 
-/** HVAC sibling domains: switch, input_boolean, script, button, input_button */
-const HVAC_SIBLING_PATTERN = /^(switch|input_boolean|script|button|input_button)\./;
+/** HVAC sibling domains: fan, switch, input_boolean, script, button, input_button */
+const HVAC_SIBLING_PATTERN = /^(fan|switch|input_boolean|script|button|input_button)\./;
 
 export interface RegistryDeviceIdsSlice {
   deviceId: string | null;

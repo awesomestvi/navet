@@ -15,8 +15,9 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import type { CameraViewMode } from '@/app/stores/settings-store';
+import type { CameraFeedMode, CameraViewMode } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
+import type { CameraStreamType } from './camera-view-mode';
 
 export interface SiblingEntity {
   id: string;
@@ -30,7 +31,12 @@ interface CameraSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
+  cameraFeedMode: CameraFeedMode;
+  frontendStreamTypes: readonly CameraStreamType[];
+  hasMjpegStream: boolean;
+  hasSnapshot: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
+  onCameraFeedModeChange: (mode: CameraFeedMode) => void;
 }
 
 function getDisplayName(entityId: string, entity: HassEntity): string {
@@ -167,21 +173,40 @@ function NumberRow({
   );
 }
 
-const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['live', 'auto', 'snapshot'];
+const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['auto', 'live', 'snapshot'];
+const CAMERA_FEED_OPTIONS: CameraFeedMode[] = ['auto', 'web_rtc', 'hls', 'mjpeg'];
 
 function CameraViewModeRow({
   value,
+  frontendStreamTypes,
+  hasMjpegStream,
+  hasSnapshot,
   onChange,
 }: {
   value: CameraViewMode;
+  frontendStreamTypes: readonly CameraStreamType[];
+  hasMjpegStream: boolean;
+  hasSnapshot: boolean;
   onChange: (mode: CameraViewMode) => void;
 }) {
   const { t } = useI18n();
+  const hasLiveFeed = frontendStreamTypes.length > 0 || hasMjpegStream;
+  const supportedOptions = CAMERA_VIEW_OPTIONS.filter((mode) => {
+    if (mode === 'live') {
+      return hasLiveFeed;
+    }
+
+    return hasSnapshot;
+  });
+
+  if (supportedOptions.length === 0) {
+    return null;
+  }
 
   return (
     <DialogSectionRow label={t('camera.settings.viewMode')}>
       <div className="inline-flex flex-wrap items-center gap-1">
-        {CAMERA_VIEW_OPTIONS.map((mode) => (
+        {supportedOptions.map((mode) => (
           <CardDialogChoicePill
             key={mode}
             active={mode === value}
@@ -200,6 +225,64 @@ function CameraViewModeRow({
   );
 }
 
+function isCameraFeedAvailable(
+  mode: CameraFeedMode,
+  frontendStreamTypes: readonly CameraStreamType[],
+  hasMjpegStream: boolean
+) {
+  if (mode === 'auto') {
+    return frontendStreamTypes.length > 0 || hasMjpegStream;
+  }
+
+  if (mode === 'mjpeg') {
+    return hasMjpegStream;
+  }
+
+  return frontendStreamTypes.includes(mode);
+}
+
+function CameraFeedModeRow({
+  value,
+  frontendStreamTypes,
+  hasMjpegStream,
+  onChange,
+}: {
+  value: CameraFeedMode;
+  frontendStreamTypes: readonly CameraStreamType[];
+  hasMjpegStream: boolean;
+  onChange: (mode: CameraFeedMode) => void;
+}) {
+  const { t } = useI18n();
+  const supportedOptions = CAMERA_FEED_OPTIONS.filter((mode) =>
+    isCameraFeedAvailable(mode, frontendStreamTypes, hasMjpegStream)
+  );
+
+  if (supportedOptions.length === 0) {
+    return null;
+  }
+
+  return (
+    <DialogSectionRow label={t('camera.settings.feedMode')}>
+      <div className="inline-flex flex-wrap items-center gap-1">
+        {supportedOptions.map((mode) => (
+          <CardDialogChoicePill
+            key={mode}
+            active={mode === value}
+            onClick={() => onChange(mode)}
+            size="compact"
+            aria-pressed={mode === value}
+          >
+            {t(`camera.settings.feedMode.${mode}` as TranslationKey)}
+          </CardDialogChoicePill>
+        ))}
+      </div>
+      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
+        {t('camera.settings.feedMode.description')}
+      </p>
+    </DialogSectionRow>
+  );
+}
+
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
@@ -207,7 +290,12 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   onOpenChange,
   siblingEntities,
   cameraViewMode,
+  cameraFeedMode,
+  frontendStreamTypes,
+  hasMjpegStream,
+  hasSnapshot,
   onCameraViewModeChange,
+  onCameraFeedModeChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -250,7 +338,19 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
           <div className="space-y-6">
-            <CameraViewModeRow value={cameraViewMode} onChange={onCameraViewModeChange} />
+            <CameraViewModeRow
+              value={cameraViewMode}
+              frontendStreamTypes={frontendStreamTypes}
+              hasMjpegStream={hasMjpegStream}
+              hasSnapshot={hasSnapshot}
+              onChange={onCameraViewModeChange}
+            />
+            <CameraFeedModeRow
+              value={cameraFeedMode}
+              frontendStreamTypes={frontendStreamTypes}
+              hasMjpegStream={hasMjpegStream}
+              onChange={onCameraFeedModeChange}
+            />
 
             {hasControls ? (
               <>

@@ -1,4 +1,5 @@
 import { Palette, Sliders, ToggleLeft } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { memo, useCallback, useState } from 'react';
 import {
   CardDialogBody,
@@ -51,6 +52,9 @@ interface SwitchSettingsDialogProps {
   siblingEntities: SwitchSiblingEntity[];
   tintColor: string;
   onTintColorChange: (color: string) => void;
+  dialogTintColor?: string;
+  dialogSurfaceClassName?: string;
+  dialogSurfaceStyle?: CSSProperties;
 }
 
 export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
@@ -72,6 +76,9 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   siblingEntities,
   tintColor,
   onTintColorChange,
+  dialogTintColor,
+  dialogSurfaceClassName,
+  dialogSurfaceStyle,
 }: SwitchSettingsDialogProps) {
   const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
@@ -83,11 +90,16 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   );
 
   const activeDialogColors = getAccentDialogSurface(resolvePrimaryColorToken(primaryColor));
-  const activeAccentColor = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
+  const activeAccentColor =
+    normalizeCustomCardTint(tintColor) ??
+    normalizeCustomCardTint(dialogTintColor) ??
+    getThemeColorValue(primaryColor);
   const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, activeAccentColor);
   const gradientClassName = isOn
     ? `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
     : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10';
+  const dialogSurfaceOverrideClassName = isOn ? (dialogSurfaceClassName ?? '') : '';
+  const resolvedDialogSurfaceStyle = isOn ? dialogSurfaceStyle : undefined;
 
   return (
     <DialogShell
@@ -95,7 +107,8 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
       onOpenChange={onOpenChange}
       disableOpenAutoFocus
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${gradientClassName}`}
+      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${gradientClassName} ${dialogSurfaceOverrideClassName}`}
+      contentStyle={resolvedDialogSurfaceStyle}
     >
       <CustomScrollbar isOn={isOn}>
         <CardDialogBody>
@@ -106,6 +119,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
               {hasControls ? (
                 <CardDialogTabTrigger
                   active={activeTab === 'controls'}
+                  accentColor={activeAccentColor}
                   icon={ToggleLeft}
                   onClick={() => setActiveTab('controls')}
                 >
@@ -115,6 +129,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
               {hasMetrics ? (
                 <CardDialogTabTrigger
                   active={activeTab === 'metrics'}
+                  accentColor={activeAccentColor}
                   icon={Sliders}
                   onClick={() => setActiveTab('metrics')}
                 >
@@ -123,6 +138,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
               ) : null}
               <CardDialogTabTrigger
                 active={activeTab === 'card'}
+                accentColor={activeAccentColor}
                 icon={Palette}
                 onClick={() => setActiveTab('card')}
               >
@@ -191,12 +207,19 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
             </TabPanel>
 
             <TabPanel value="card" className="mt-5 space-y-6">
-              <CustomCardTintPicker value={tintColor} onChange={onTintColorChange} isOn={isOn} />
+              <CustomCardTintPicker
+                value={tintColor}
+                onChange={onTintColorChange}
+                isOn={isOn}
+                defaultColor={activeAccentColor}
+                pickerRingColor={activeAccentColor}
+              />
               <IconPicker
                 selectedIcon={selectedIcon}
                 onIconChange={onIconChange}
                 isLightOn={isOn}
                 label={t('lighting.switch.icon')}
+                accentColor={activeAccentColor}
               />
             </TabPanel>
           </Tabs>

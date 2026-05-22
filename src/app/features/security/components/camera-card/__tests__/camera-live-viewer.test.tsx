@@ -12,6 +12,7 @@ const defaultProps = {
   snapshotUrl: '/api/camera_proxy/camera.front_door?_t=0',
   mjpegStreamUrl: '/api/camera_proxy_stream/camera.front_door?_t=0',
   cameraViewMode: 'auto' as const,
+  cameraFeedMode: 'auto' as const,
   isUnavailable: false,
   isRunning: true,
   isStreamCapable: true,

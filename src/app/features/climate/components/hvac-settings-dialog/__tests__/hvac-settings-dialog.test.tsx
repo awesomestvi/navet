@@ -5,6 +5,16 @@ import { renderWithProviders } from '@/test/render';
 import { HVACSettingsDialog } from '../index';
 import type { HVACSettingsDialogProps } from '../types';
 
+const { serviceMock } = vi.hoisted(() => ({
+  serviceMock: {
+    callService: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('@/app/services/home-assistant.service', () => ({
+  homeAssistantService: serviceMock,
+}));
+
 function renderDialog(overrides: Partial<HVACSettingsDialogProps> = {}) {
   const props: HVACSettingsDialogProps = {
     entityId: 'climate.hallway',
@@ -32,6 +42,7 @@ function renderDialog(overrides: Partial<HVACSettingsDialogProps> = {}) {
 
 describe('HVACSettingsDialog', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useSettingsStore.setState({ temperatureUnit: 'fahrenheit' });
   });
 
@@ -113,5 +124,58 @@ describe('HVACSettingsDialog', () => {
     fireEvent.click(screen.getByLabelText('Increase temperature'));
 
     expect(props.onTargetTempCommit).toHaveBeenCalledWith(expect.closeTo(22.5));
+  });
+
+  it('renders fan sibling controls and calls Home Assistant fan services', () => {
+    renderDialog({
+      siblingEntities: [
+        {
+          id: 'fan.hallway',
+          entity: {
+            entity_id: 'fan.hallway',
+            state: 'on',
+            attributes: {
+              friendly_name: 'Hallway Fan',
+              percentage: 50,
+              percentage_step: 25,
+              preset_mode: 'auto',
+              preset_modes: ['auto', 'sleep'],
+            },
+            last_changed: '2026-05-17T00:00:00.000Z',
+            last_updated: '2026-05-17T00:00:00.000Z',
+            context: { id: 'ctx', parent_id: null, user_id: null },
+          },
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^Controls$/ }));
+
+    expect(screen.getByText('Hallway Fan')).toBeInTheDocument();
+    expect(screen.getByText('Fan · 50%')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Hallway Fan/i }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'turn_off',
+      {},
+      { entity_id: 'fan.hallway' }
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '75%' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'set_percentage',
+      { percentage: 75 },
+      { entity_id: 'fan.hallway' }
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'sleep' }));
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'fan',
+      'set_preset_mode',
+      { preset_mode: 'sleep' },
+      { entity_id: 'fan.hallway' }
+    );
   });
 });

@@ -58,7 +58,12 @@ const meta = {
     name: 'Front Door Camera',
     siblingEntities,
     cameraViewMode: 'live',
+    cameraFeedMode: 'auto',
+    frontendStreamTypes: ['web_rtc', 'hls'],
+    hasMjpegStream: true,
+    hasSnapshot: true,
     onCameraViewModeChange: () => undefined,
+    onCameraFeedModeChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

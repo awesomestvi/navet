@@ -152,7 +152,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
             {isEmpty ? (
               <CardEmptyState
                 title={emptyText ?? t('sensors.group.emptyState')}
-                description={t('sensors.group.emptyDescription')}
+                description={t('sensors.groupSettings.emptySelected')}
                 icon={Gauge}
                 actionLabel={t('sensors.groupSettings.addSensors')}
                 onAction={() => setIsSettingsOpen(true)}

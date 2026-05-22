@@ -1,5 +1,9 @@
+import { Settings2, Zap } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { CardEmptyState } from '@/app/components/patterns';
+import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { EnergyNowCardView, useEnergyDashboard, useEnergyLoadHistory } from '@/app/features/energy';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { EnergyNowSettingsDialog, type EnergySourceOption } from './energy-now-settings-dialog';
@@ -39,6 +43,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     useEnergyDashboard();
   const selectedSourceId = getSelectedSourceId(data?.selectedSourceId);
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
+  const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
 
   const sourceOptions = useMemo(() => {
@@ -93,18 +98,88 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     selectedOption?.trendEntityId,
     selectedOption?.currentPowerW ?? overview.totals.currentLoadW
   );
+  const isCustomCard = Boolean(onUpdate);
+  const settingsDialog = (
+    <EnergyNowSettingsDialog
+      isOpen={isSettingsOpen}
+      onOpenChange={setIsSettingsOpen}
+      options={sourceOptions}
+      selectedSourceId={selectedSourceId}
+      onSelectionChange={(nextSelectedSourceId) =>
+        onUpdate?.({ selectedSourceId: nextSelectedSourceId })
+      }
+      roomValue={roomValue}
+      roomLabel={roomLabel}
+      roomOptions={roomOptions}
+      onRoomChange={onRoomChange}
+      tintColor={tintColor}
+      onTintColorChange={(nextTintColor) =>
+        onUpdate?.({ ...(data ?? {}), tintColor: nextTintColor })
+      }
+      theme={theme}
+    />
+  );
+  const emptyCard = (
+    <BaseCard
+      size={size}
+      fullBleed
+      className="transition-all duration-500"
+      style={tintSurface.panelStyle}
+      frameClassName="overflow-hidden"
+      overlay={
+        <>
+          {tintSurface.glowStyle ? (
+            <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
+          ) : null}
+          {tintSurface.overlayClassName ? (
+            <div
+              className={`pointer-events-none absolute inset-0 ${tintSurface.overlayClassName}`}
+            />
+          ) : null}
+        </>
+      }
+      contentClassName="h-full"
+    >
+      <div className="relative z-[2] h-full p-4">
+        <CardEmptyState
+          title={t('dashboard.addCard.templates.energyNow.name')}
+          description={
+            isConfigured ? t('widgets.energyNow.settings.sources') : t('energy.setup.panelTitle')
+          }
+          icon={Zap}
+          actionLabel={t('widgets.energyNow.settings.sources')}
+          onAction={() => setIsSettingsOpen(true)}
+          actionIcon={Settings2}
+          size={size}
+          accentColor={tintColor ?? accentColor}
+        />
+      </div>
+    </BaseCard>
+  );
 
   if (!isConnected) {
     return <EnergyNowStatusWidget message={t('network.disconnectedDescription')} />;
   }
 
   if (!isConfigured) {
+    if (isCustomCard) {
+      return (
+        <>
+          {emptyCard}
+          {settingsDialog}
+        </>
+      );
+    }
     return <EnergyNowStatusWidget message={t('energy.setup.panelDescription')} />;
   }
 
+  const isEmpty = isCustomCard ? !selectedSourceId : false;
+
   return (
     <>
-      {onUpdate ? (
+      {isEmpty ? (
+        emptyCard
+      ) : onUpdate ? (
         <button
           type="button"
           className="h-full w-full cursor-pointer text-left"
@@ -134,24 +209,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
         />
       )}
 
-      <EnergyNowSettingsDialog
-        isOpen={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        options={sourceOptions}
-        selectedSourceId={selectedOption?.id}
-        onSelectionChange={(nextSelectedSourceId) =>
-          onUpdate?.({ selectedSourceId: nextSelectedSourceId })
-        }
-        roomValue={roomValue}
-        roomLabel={roomLabel}
-        roomOptions={roomOptions}
-        onRoomChange={onRoomChange}
-        tintColor={tintColor}
-        onTintColorChange={(nextTintColor) =>
-          onUpdate?.({ ...(data ?? {}), tintColor: nextTintColor })
-        }
-        theme={theme}
-      />
+      {settingsDialog}
     </>
   );
 });

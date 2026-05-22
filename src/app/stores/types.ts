@@ -2,6 +2,7 @@ import type { CardSize } from '../components/shared/card-size-selector';
 import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
+  CameraFeedMode,
   CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -68,6 +69,8 @@ interface UserSettings {
   effectsQuality: EffectsQuality;
   entityInteractionMode: EntityInteractionMode;
   cameraViewMode: CameraViewMode;
+  cameraViewModes: Record<string, CameraViewMode>;
+  cameraFeedModes: Record<string, CameraFeedMode>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -75,6 +78,8 @@ interface UserSettings {
 
 export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
+  updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
+  updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }

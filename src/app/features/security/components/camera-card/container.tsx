@@ -14,7 +14,11 @@ import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { authSelectors, homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
-import { type CameraViewMode, useSettingsStore } from '@/app/stores/settings-store';
+import {
+  type CameraFeedMode,
+  type CameraViewMode,
+  useSettingsStore,
+} from '@/app/stores/settings-store';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
@@ -89,6 +93,9 @@ function readFrontendStreamTypes(value: unknown) {
 
 const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
 const CAMERA_CLOCK_INTERVAL_MS = 30_000;
+const CAMERA_STREAM_RETRY_DELAY_MS = 5_000;
+const CAMERA_CAPABILITIES_RETRY_DELAY_MS = 3_000;
+const CAMERA_CAPABILITIES_MAX_RETRIES = 5;
 const cameraClockSubscribers = new Set<() => void>();
 let cameraClockNow = Date.now();
 let cameraClockIntervalId: number | null = null;
@@ -166,14 +173,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const cameraViewMode = useSettingsStore(settingsSelectors.cameraViewMode);
-  const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
+  const cameraViewMode = useSettingsStore(settingsSelectors.cameraViewModeForEntity(id));
+  const cameraFeedMode = useSettingsStore(settingsSelectors.cameraFeedModeForEntity(id));
+  const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
+  const updateCameraFeedMode = useSettingsStore(settingsSelectors.updateCameraFeedMode);
   const { siblingIds: deviceEntityIds } = useCameraRegistryDeviceTopology(id);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
   const [frontendStreamTypes, setFrontendStreamTypes] = useState<CameraStreamType[]>([]);
+  const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
   const now = useCameraClock();
 
@@ -216,6 +226,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
   const imageSource = selectCameraImageSource({
     cameraViewMode,
+    cameraFeedMode,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
@@ -231,12 +242,20 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const liveStreamKind =
     imageSource.kind === 'hls' || imageSource.kind === 'web_rtc' ? imageSource.kind : null;
   const shouldRenderLiveStream = isVisible && liveStreamKind;
-  const streamFailureResetKey = `${cameraViewMode}:${frontendStreamTypes.join(',')}`;
+  const streamFailureResetKey = `${cameraViewMode}:${cameraFeedMode}:${frontendStreamTypes.join(',')}`;
 
   useEffect(() => {
     void streamFailureResetKey;
     setFailedStreamTypes([]);
   }, [streamFailureResetKey]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRetryTimeoutRef.current !== null) {
+        window.clearTimeout(streamRetryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!refreshIntervalMs || !snapshotUrl || !isVisible || !isRunning || isUnavailable) {
@@ -255,27 +274,44 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   useEffect(() => {
     let isCancelled = false;
+    let retryTimeoutId: number | null = null;
+    let retryCount = 0;
+
+    const loadCapabilities = () => {
+      void homeAssistantService
+        .getCameraCapabilities(id)
+        .then((capabilities) => {
+          if (!isCancelled) {
+            setFrontendStreamTypes(readFrontendStreamTypes(capabilities));
+          }
+        })
+        .catch(() => {
+          if (isCancelled) {
+            return;
+          }
+
+          setFrontendStreamTypes([]);
+          if (retryCount >= CAMERA_CAPABILITIES_MAX_RETRIES) {
+            return;
+          }
+
+          retryCount += 1;
+          retryTimeoutId = window.setTimeout(loadCapabilities, CAMERA_CAPABILITIES_RETRY_DELAY_MS);
+        });
+    };
 
     if (!connected) {
       setFrontendStreamTypes([]);
       return;
     }
 
-    void homeAssistantService
-      .getCameraCapabilities(id)
-      .then((capabilities) => {
-        if (!isCancelled) {
-          setFrontendStreamTypes(readFrontendStreamTypes(capabilities));
-        }
-      })
-      .catch(() => {
-        if (!isCancelled) {
-          setFrontendStreamTypes([]);
-        }
-      });
+    loadCapabilities();
 
     return () => {
       isCancelled = true;
+      if (retryTimeoutId !== null) {
+        window.clearTimeout(retryTimeoutId);
+      }
     };
   }, [connected, id]);
 
@@ -330,15 +366,34 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   const handleCameraViewModeChange = useCallback(
     (mode: CameraViewMode) => {
-      updateSettings({ cameraViewMode: mode });
+      updateCameraViewMode(id, mode);
       setFailedStreamTypes([]);
       setRefreshKey((k) => k + 1);
     },
-    [updateSettings]
+    [id, updateCameraViewMode]
+  );
+
+  const handleCameraFeedModeChange = useCallback(
+    (mode: CameraFeedMode) => {
+      updateCameraFeedMode(id, mode);
+      setFailedStreamTypes([]);
+      setRefreshKey((k) => k + 1);
+    },
+    [id, updateCameraFeedMode]
   );
 
   const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
     setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
+
+    if (streamRetryTimeoutRef.current !== null) {
+      return;
+    }
+
+    streamRetryTimeoutRef.current = window.setTimeout(() => {
+      streamRetryTimeoutRef.current = null;
+      setFailedStreamTypes([]);
+      setRefreshKey((k) => k + 1);
+    }, CAMERA_STREAM_RETRY_DELAY_MS);
   }, []);
 
   const handleToggleMotionDetection = useCallback(() => {
@@ -402,6 +457,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           snapshotUrl={snapshotUrl}
           mjpegStreamUrl={mjpegStreamUrl}
           cameraViewMode={cameraViewMode}
+          cameraFeedMode={cameraFeedMode}
           isUnavailable={isUnavailable}
           isRunning={isRunning}
           isStreamCapable={isStreamCapable}
@@ -421,7 +477,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}
           cameraViewMode={cameraViewMode}
+          cameraFeedMode={cameraFeedMode}
+          frontendStreamTypes={frontendStreamTypes}
+          hasMjpegStream={Boolean(mjpegStreamUrl)}
+          hasSnapshot={Boolean(snapshotUrl)}
           onCameraViewModeChange={handleCameraViewModeChange}
+          onCameraFeedModeChange={handleCameraFeedModeChange}
         />
       )}
     </>

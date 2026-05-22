@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { HVACCard } from '@/app/features/climate';
-import { LightCard } from '@/app/features/lighting';
+import { FanCard, LightCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
@@ -42,6 +42,42 @@ function StateMatrixPage() {
             size="medium"
             onSizeChange={() => {}}
             isEditMode
+          />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Fan states</h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <FanCard
+            id="fan.state.medium"
+            name="Ceiling Fan"
+            room="Bedroom"
+            initialState
+            initialPercentage={66}
+            size="small"
+            onSizeChange={() => {}}
+            isEditMode={false}
+          />
+          <FanCard
+            id="fan.state.high"
+            name="Ceiling Fan"
+            room="Bedroom"
+            initialState
+            initialPercentage={100}
+            size="small"
+            onSizeChange={() => {}}
+            isEditMode={false}
+          />
+          <FanCard
+            id="fan.state.off"
+            name="Ceiling Fan"
+            room="Bedroom"
+            initialState={false}
+            initialPercentage={0}
+            size="small"
+            onSizeChange={() => {}}
+            isEditMode={false}
           />
         </div>
       </section>

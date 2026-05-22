@@ -16,6 +16,7 @@ import { resolveAppLanguage } from '@/app/i18n/config';
 import { isSection } from '@/app/navigation/sections';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
+  type CameraFeedMode,
   type CameraViewMode,
   defaultSettings,
   useSettingsStore,
@@ -37,7 +38,14 @@ export interface DashboardConfigPayload {
     wallpaper?: ReturnType<typeof useThemeStore.getState>['wallpaper'];
   };
   settings: Partial<
-    Omit<ReturnType<typeof useSettingsStore.getState>, 'updateSettings' | 'resetSettings'>
+    Omit<
+      ReturnType<typeof useSettingsStore.getState>,
+      | 'updateSettings'
+      | 'updateCameraViewMode'
+      | 'updateCameraFeedMode'
+      | 'applyImportedSettings'
+      | 'resetSettings'
+    >
   >;
   navigation: Pick<ReturnType<typeof useNavigationStore.getState>, 'currentRoom' | 'activeSection'>;
   customCards?: ReturnType<typeof useCustomCardsStore.getState>['cards'];
@@ -85,6 +93,7 @@ const weatherMetricIds = new Set<WeatherMetricId>([
   'cloudCover',
 ]);
 const cameraViewModes = new Set<CameraViewMode>(['live', 'auto', 'snapshot']);
+const cameraFeedModes = new Set<CameraFeedMode>(['auto', 'web_rtc', 'hls', 'mjpeg']);
 
 function isWeatherMetricId(value: unknown): value is WeatherMetricId {
   return typeof value === 'string' && weatherMetricIds.has(value as WeatherMetricId);
@@ -100,6 +109,30 @@ function resolveCameraViewMode(value: unknown): CameraViewMode {
     : defaultSettings.cameraViewMode;
 }
 
+function resolveCameraViewModes(value: unknown): Record<string, CameraViewMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
+      cameraViewModes.has(entry[1] as CameraViewMode)
+    )
+  );
+}
+
+function resolveCameraFeedModes(value: unknown): Record<string, CameraFeedMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraFeedMode] =>
+      cameraFeedModes.has(entry[1] as CameraFeedMode)
+    )
+  );
+}
+
 function areArraysEqual<T>(left: T[], right: T[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
@@ -107,7 +140,11 @@ function areArraysEqual<T>(left: T[], right: T[]) {
 const buildExportedSettings = (
   settingsState: Omit<
     ReturnType<typeof useSettingsStore.getState>,
-    'updateSettings' | 'resetSettings'
+    | 'updateSettings'
+    | 'updateCameraViewMode'
+    | 'updateCameraFeedMode'
+    | 'applyImportedSettings'
+    | 'resetSettings'
   >
 ) => {
   const effectsQuality = resolveEffectsQuality(
@@ -156,6 +193,8 @@ const buildExportedSettings = (
       settingsState.cameraViewMode !== defaultSettings.cameraViewMode
         ? settingsState.cameraViewMode
         : undefined,
+    cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
+    cameraFeedModes: pruneEmptyRecord(settingsState.cameraFeedModes),
     weatherMetricIds: !areArraysEqual(
       settingsState.weatherMetricIds,
       defaultSettings.weatherMetricIds
@@ -552,6 +591,8 @@ export const importDashboardConfig = (
         ? settings.entityInteractionMode
         : defaultSettings.entityInteractionMode,
     cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
+    cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
+    cameraFeedModes: resolveCameraFeedModes(settings.cameraFeedModes),
     weatherForecastMode:
       settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
         ? settings.weatherForecastMode

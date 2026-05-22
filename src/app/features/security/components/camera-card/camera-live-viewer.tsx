@@ -4,7 +4,7 @@ import { DialogShell } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
-import type { CameraViewMode } from '@/app/stores/settings-store';
+import type { CameraFeedMode, CameraViewMode } from '@/app/stores/settings-store';
 import { CameraStreamPlayer } from './camera-stream-player';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
 import { selectCameraImageSource } from './camera-view-mode';
@@ -18,10 +18,11 @@ interface CameraLiveViewerProps {
   snapshotUrl: string | undefined;
   mjpegStreamUrl: string | undefined;
   cameraViewMode: CameraViewMode;
+  cameraFeedMode: CameraFeedMode;
   isUnavailable: boolean;
   isRunning: boolean;
   isStreamCapable: boolean;
-  frontendStreamTypes: CameraStreamType[];
+  frontendStreamTypes: readonly CameraStreamType[];
   homeAssistantUrl: string | undefined;
   onRefresh: () => void;
   onOpenSettings: () => void;
@@ -69,6 +70,7 @@ export function CameraLiveViewer({
   snapshotUrl,
   mjpegStreamUrl,
   cameraViewMode,
+  cameraFeedMode,
   isUnavailable,
   isRunning,
   isStreamCapable,
@@ -86,6 +88,7 @@ export function CameraLiveViewer({
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
   const source = selectCameraImageSource({
     cameraViewMode,
+    cameraFeedMode,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,

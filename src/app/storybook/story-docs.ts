@@ -1008,6 +1008,23 @@ const STORY_DOCS: Record<string, string> = {
       'Check that secondary lighting details do not clutter the card at smaller sizes.',
     ]
   ),
+  'Cards/Entity/Fan': doc(
+    'Entity card for standalone fan devices with card-level power and quick speed selection.',
+    [
+      'The light-card-adjacent surface treatment for fan entities.',
+      'Low, medium, and high speed actions using the shared card action row.',
+      'The settings affordance and fan-specific card customization surface.',
+    ],
+    [
+      'Use this story when changing fan-card styling, speed actions, or dialog accent behavior.',
+      'Review the card beside light stories because standalone fans intentionally share that visual family.',
+    ],
+    [
+      'Check that card click still reads as power control.',
+      'Check that speed buttons feel like Navet controls and do not reintroduce an off action.',
+      'Check that dialog accents match the fan card surface instead of the global primary color.',
+    ]
+  ),
   'Cards/Dialogs/Light': doc(
     'Settings dialog for configuring the light card rather than operating the light itself.',
     [

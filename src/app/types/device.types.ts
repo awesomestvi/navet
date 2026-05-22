@@ -26,6 +26,15 @@ export interface LightDevice extends BaseDevice {
   temp: number;
 }
 
+// Fan device
+export interface FanDevice extends BaseDevice {
+  room: string;
+  state: boolean;
+  percentage: number;
+  presetMode?: string;
+  presetModes?: string[];
+}
+
 // HVAC device
 export interface HVACDevice extends BaseDevice {
   room: string;
@@ -252,6 +261,7 @@ export interface GroupedSensorDevice extends BaseDevice {
 // Union type for all devices
 export type Device =
   | LightDevice
+  | FanDevice
   | HVACDevice
   | ClimateDevice
   | WeatherDevice
@@ -271,6 +281,7 @@ export type Device =
 // Device collection
 export interface DeviceCollection {
   lights: LightDevice[];
+  fans: FanDevice[];
   hvac: HVACDevice[];
   climate: ClimateDevice[];
   media: MediaDevice[];

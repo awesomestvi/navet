@@ -1,6 +1,14 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, type LucideIcon, Pencil, X } from 'lucide-react';
-import { type CSSProperties, memo, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  memo,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'sonner';
 import { Button, Input, InteractivePill } from '@/app/components/primitives';
 import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector';
@@ -40,12 +48,14 @@ interface CardDialogBodyProps {
 interface CardDialogTabTriggerProps {
   active: boolean;
   children: ReactNode;
+  accentColor?: string;
   icon?: LucideIcon;
   onClick?: () => void;
   className?: string;
 }
 
-interface CardDialogChoicePillProps {
+interface CardDialogChoicePillProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   active?: boolean;
   children: ReactNode;
   className?: string;
@@ -296,6 +306,7 @@ export function CardDialogTabList({
 export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
   active,
   children,
+  accentColor,
   icon,
   onClick,
   className,
@@ -303,6 +314,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
   return (
     <InteractivePill
       active={active}
+      accentColor={accentColor}
       size="compact"
       className={cn('text-xs', className)}
       icon={icon}
@@ -320,6 +332,7 @@ export const CardDialogChoicePill = memo(function CardDialogChoicePill({
   onClick,
   size = 'default',
   style,
+  ...props
 }: CardDialogChoicePillProps) {
   return (
     <InteractivePill
@@ -328,6 +341,7 @@ export const CardDialogChoicePill = memo(function CardDialogChoicePill({
       className={cn('min-w-22', className)}
       size={size}
       style={style}
+      {...props}
     >
       {children}
     </InteractivePill>

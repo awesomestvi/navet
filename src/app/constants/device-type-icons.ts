@@ -5,6 +5,7 @@ import {
   Calendar,
   Camera,
   CloudSun,
+  Fan,
   Gauge,
   Home,
   Lightbulb,
@@ -23,6 +24,7 @@ import type { DeviceCollection } from '../types/device.types';
 
 export const DEVICE_TYPE_ICONS: Record<string, LucideIcon> = {
   lights: Lightbulb,
+  fans: Fan,
   hvac: Snowflake,
   climate: Thermometer,
   media: Tv,
