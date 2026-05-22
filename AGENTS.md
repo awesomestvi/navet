@@ -36,12 +36,14 @@ pnpm format       # Biome format (auto-fix)
 pnpm check:stories # validate Storybook title, coverage, and ownership rules
 pnpm check:ui-kit  # validate UI-kit import and boundary rules
 pnpm test          # unit tests
+pnpm build:ha-panel # build bundled Home Assistant custom panel assets
 pnpm storybook:build # static Storybook build for GitHub Pages
 ```
 
 **Do not run `pnpm build` unless explicitly asked.**
 **Do not run `pnpm typecheck` or `pnpm check` yourself** — ask the user to run them and report back.
 For release work, do not run any `pnpm` command yourself. List the required `pnpm` commands for the user, wait for the reported results, and continue from there.
+For HACS/Home Assistant custom panel releases, include `pnpm build:ha-panel` in the user-run release commands before the release commit/tag.
 If a commit or hook is blocked by TypeScript errors, fix the type errors instead of updating or relying on a typecheck baseline.
 
 Storybook builds for GitHub Pages at `/navet/storybook/` via `STORYBOOK_BASE_PATH=/navet/storybook/`.

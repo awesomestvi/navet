@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Updated Navet to `0.2.1`
+- Added fan dashboard cards with power, percentage, oscillation, direction, preset, and speed controls
+- Added fan controls to supported HVAC card settings
+- Fixed Fahrenheit climate readings being converted twice
+- Improved empty states for dashboard widgets without configured data
+- Added explicit camera feed choices for Auto, Live, and Snapshot view modes, plus Auto, WebRTC, HLS, and MJPEG live-feed selection with fallback
+
 ## 0.2.0
 
 - Updated Navet to `0.2.0`

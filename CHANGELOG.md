@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.1 - 2026-05-22
+
+Navet adds fan control and improves dashboard cards for common Home Assistant setups.
+
+## New
+
+- Fan entities can now appear as dashboard cards with direct controls for power, percentage, oscillation, direction, preset modes, and supported fan speeds.
+- Climate card settings now expose fan controls when Home Assistant reports fan support for the HVAC entity.
+
+## Fixed
+
+- Climate cards now avoid converting already-Fahrenheit values again, preventing incorrect readings such as extremely high Fahrenheit temperatures.
+- Dashboard widgets now show clearer empty states when they have no usable entities, actions, or energy data yet.
+
+## Improved
+
+- Camera cards now document and expose the supported feed choices: Auto, Live, and Snapshot view modes, plus Auto, WebRTC, HLS, and MJPEG live-feed selection with fallback.
+- Card and widget controls have more consistent interaction styling across dashboard, settings, and edit flows.
+
 ## 0.2.0 - 2026-05-22
 
 Navet adds new dashboard controls and improves live card behavior while making the app load more efficiently.
