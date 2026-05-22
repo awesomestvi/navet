@@ -169,7 +169,7 @@ The add-on:
 - Uses `ingress: true`
 - Exposes optional direct browser access on `8099/tcp`
 - Generates `/config.js` from add-on options, defaulting blank `hass_url` to
-  `http://homeassistant:8123` for Home Assistant OS and Supervised installs
+  `http://homeassistant.local:8123` for Home Assistant OS and Supervised installs
 - Proxies Home Assistant API and WebSocket requests through `/__navet_ha_proxy__/`
 - Optionally imports a shared dashboard YAML export on first launch
 

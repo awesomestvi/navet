@@ -42,6 +42,29 @@ export function readStoredSessionConfig(key: string): SessionConfig | null {
   return storage.get<SessionConfig | null>(key, null);
 }
 
+function readStoredRuntimeHostedSessionConfig(key: string): SessionConfig | null {
+  const runtimeConfig = getRuntimeConfig();
+  if (!runtimeConfig.hassUrl) {
+    return null;
+  }
+
+  const storedSessionConfig = readStoredSessionConfig(key);
+  if (!storedSessionConfig) {
+    return null;
+  }
+
+  const normalizedStoredSessionConfig = normalizeSessionConfig(storedSessionConfig);
+  const normalizedRuntimeUrl = normalizeUrl(runtimeConfig.hassUrl);
+  if (
+    normalizedStoredSessionConfig.url !== normalizedRuntimeUrl ||
+    !isUsableSessionToken(normalizedStoredSessionConfig.token)
+  ) {
+    return null;
+  }
+
+  return normalizedStoredSessionConfig;
+}
+
 export function writeStoredSessionConfig(key: string, config: SessionConfig): SessionConfig {
   const normalized = normalizeSessionConfig(config);
   storage.set(key, normalized);
@@ -97,7 +120,7 @@ export function readInitialSessionConfig(key: string): SessionConfig | null {
     }
 
     if (shouldSkipSharedSessionLoad()) {
-      return null;
+      return readStoredRuntimeHostedSessionConfig(key);
     }
 
     return readStoredSessionConfig(key);
