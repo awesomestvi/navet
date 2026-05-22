@@ -62,15 +62,16 @@ export function useMediaArtworkResolution({
   const isAddonMode = isHomeAssistantAddonMode();
   const runtimeConfig = getRuntimeConfig();
   const hasRuntimeHomeAssistantProxy = Boolean(runtimeConfig.hassUrl && runtimeConfig.proxyBaseUrl);
+  const hasHomeAssistantProxy = isAddonMode || hasRuntimeHomeAssistantProxy;
   const shouldUseDirectDevArtwork =
-    import.meta.env.DEV && !isPanelMode && !isAddonMode && !hasRuntimeHomeAssistantProxy;
+    import.meta.env.DEV && !isPanelMode && !isAddonMode && !hasHomeAssistantProxy;
   const shouldUseDirectAuthenticatedArtwork =
-    !isPanelMode && !hasRuntimeHomeAssistantProxy && !shouldUseDirectDevArtwork;
+    !isPanelMode && !hasHomeAssistantProxy && !shouldUseDirectDevArtwork;
   const resolvedArtwork = liveEntityPicture
     ? shouldUseDirectDevArtwork || shouldUseDirectAuthenticatedArtwork
       ? resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
       : resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl, {
-          proxyAvailable: hasRuntimeHomeAssistantProxy,
+          proxyAvailable: hasHomeAssistantProxy,
         })
     : null;
   const needsAuthenticatedThumbnail = Boolean(
