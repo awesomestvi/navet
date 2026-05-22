@@ -45,12 +45,50 @@ function getDocumentBasePath(): string | null {
   return getIngressBasePathFromPathname(new URL(baseHref).pathname);
 }
 
-function getCurrentIngressBasePath(): string | null {
-  if (typeof window === 'undefined') {
-    return getDocumentBasePath();
+function getDocumentAssetBasePath(): string | null {
+  if (typeof document === 'undefined') {
+    return null;
   }
 
-  return getDocumentBasePath() ?? getIngressBasePathFromPathname(window.location.pathname);
+  const assetElements = [
+    ...Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]')).map(
+      (element) => element.src
+    ),
+    ...Array.from(document.querySelectorAll<HTMLLinkElement>('link[href]')).map(
+      (element) => element.href
+    ),
+  ];
+
+  for (const assetUrl of assetElements) {
+    try {
+      const pathname = new URL(assetUrl).pathname;
+      const assetsStart = pathname.indexOf('/assets/');
+      if (assetsStart === -1) {
+        continue;
+      }
+
+      const ingressBasePath = getIngressBasePathFromPathname(pathname.slice(0, assetsStart + 1));
+      if (ingressBasePath) {
+        return ingressBasePath;
+      }
+    } catch {
+      // Ignore malformed asset URLs and keep looking for a usable runtime asset path.
+    }
+  }
+
+  return null;
+}
+
+function getCurrentIngressBasePath(): string | null {
+  if (typeof window === 'undefined') {
+    return getDocumentBasePath() ?? getDocumentAssetBasePath();
+  }
+
+  return (
+    getDocumentBasePath() ??
+    getIngressBasePathFromPathname(window.location.pathname) ??
+    getDocumentAssetBasePath()
+  );
 }
 
 export function resolveIngressAwarePath(path: string): string {
