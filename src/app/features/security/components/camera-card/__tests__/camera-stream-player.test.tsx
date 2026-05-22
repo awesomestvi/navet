@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
+import type { HassConfig } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { CameraStreamPlayer } from '../camera-stream-player';
@@ -9,10 +10,43 @@ vi.mock('@/app/services/home-assistant.service', () => ({
     getWebRtcClientConfiguration: vi.fn(),
     subscribeCameraWebRtcOffer: vi.fn(),
     addCameraWebRtcCandidate: vi.fn(),
+    getPanelHass: vi.fn(),
   },
 }));
 
 const serviceMock = vi.mocked(homeAssistantService);
+
+const panelConfig = {
+  latitude: 0,
+  longitude: 0,
+  elevation: 0,
+  radius: 100,
+  unit_system: {
+    length: 'km',
+    mass: 'g',
+    volume: 'L',
+    temperature: 'C',
+    pressure: 'Pa',
+    wind_speed: 'm/s',
+    accumulated_precipitation: 'mm',
+  },
+  location_name: 'Home',
+  time_zone: 'Europe/Stockholm',
+  components: [],
+  config_dir: '/config',
+  allowlist_external_dirs: [],
+  allowlist_external_urls: [],
+  version: '2026.5.0',
+  config_source: 'storage',
+  recovery_mode: false,
+  safe_mode: false,
+  state: 'RUNNING',
+  external_url: null,
+  internal_url: null,
+  currency: 'SEK',
+  country: 'SE',
+  language: 'en',
+} satisfies HassConfig;
 
 class MockMediaStream {
   getTracks() {
@@ -47,10 +81,37 @@ class MockRTCPeerConnection {
   addIceCandidate = vi.fn(async () => undefined);
 }
 
+class MockWebSocket {
+  static OPEN = 1;
+  static instances: MockWebSocket[] = [];
+
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onerror: (() => void) | null = null;
+  onclose: (() => void) | null = null;
+  readyState = MockWebSocket.OPEN;
+  send = vi.fn();
+  close = vi.fn();
+
+  constructor(public url: string) {
+    MockWebSocket.instances.push(this);
+  }
+}
+
 describe('CameraStreamPlayer', () => {
+  let go2RtcConfig: Record<string, unknown> | null = null;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    go2RtcConfig = null;
     MockRTCPeerConnection.instances = [];
+    MockWebSocket.instances = [];
+    serviceMock.getPanelHass.mockReturnValue({
+      states: {},
+      config: panelConfig,
+      callService: vi.fn(),
+      callWS: vi.fn(),
+    });
     serviceMock.getCameraStreamUrl.mockResolvedValue({ url: '/api/hls/camera.front/master.m3u8' });
     serviceMock.getWebRtcClientConfiguration.mockResolvedValue({ configuration: {} });
     serviceMock.subscribeCameraWebRtcOffer.mockResolvedValue(vi.fn());
@@ -68,6 +129,7 @@ describe('CameraStreamPlayer', () => {
     });
     vi.stubGlobal('MediaStream', MockMediaStream);
     vi.stubGlobal('RTCPeerConnection', MockRTCPeerConnection);
+    vi.stubGlobal('WebSocket', MockWebSocket);
     vi.stubGlobal(
       'RTCSessionDescription',
       vi.fn((value) => value)
@@ -76,6 +138,16 @@ describe('CameraStreamPlayer', () => {
       'RTCIceCandidate',
       vi.fn((value) => value)
     );
+    if (!customElements.get('webrtc-camera')) {
+      customElements.define(
+        'webrtc-camera',
+        class extends HTMLElement {
+          setConfig(config: Record<string, unknown>) {
+            go2RtcConfig = config;
+          }
+        }
+      );
+    }
   });
 
   afterEach(() => {
@@ -127,5 +199,56 @@ describe('CameraStreamPlayer', () => {
 
     await waitFor(() => expect(unsubscribe).toHaveBeenCalled());
     expect(MockRTCPeerConnection.instances[0]?.close).toHaveBeenCalled();
+  });
+
+  it('embeds the go2rtc WebRTC custom card when available', async () => {
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="go2rtc"
+        posterUrl="/api/camera_proxy/camera.front"
+        homeAssistantUrl="https://ha.example.com"
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(go2RtcConfig).toEqual(
+        expect.objectContaining({
+          type: 'custom:webrtc-camera',
+          entity: 'camera.front',
+          mode: 'webrtc',
+        })
+      )
+    );
+    expect(container.querySelector('webrtc-camera')).toBeTruthy();
+  });
+
+  it('connects directly to a configured go2rtc WebSocket feed before using the custom card', async () => {
+    render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="go2rtc"
+        posterUrl="/api/camera_proxy/camera.front"
+        homeAssistantUrl="https://ha.example.com"
+        go2RtcConfig={{ serverUrl: 'http://go2rtc.local:1984', streamName: 'front_door' }}
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(MockWebSocket.instances[0]?.url).toBe('ws://go2rtc.local:1984/api/ws?src=front_door')
+    );
+
+    MockWebSocket.instances[0]?.onopen?.();
+
+    await waitFor(() =>
+      expect(MockWebSocket.instances[0]?.send).toHaveBeenCalledWith(
+        JSON.stringify({ type: 'webrtc/offer', value: 'offer-sdp' })
+      )
+    );
+    expect(go2RtcConfig).toBeNull();
   });
 });

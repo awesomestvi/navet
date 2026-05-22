@@ -12,6 +12,21 @@ function normalizeToken(token: string): string {
   return token.trim();
 }
 
+export function isUsableSessionToken(token: string): boolean {
+  if (token.length === 0) {
+    return false;
+  }
+
+  for (const character of token) {
+    const codePoint = character.codePointAt(0);
+    if (character.trim() === '' || codePoint === undefined || codePoint < 32 || codePoint === 127) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function normalizeUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
@@ -40,7 +55,11 @@ export function clearStoredSessionConfig(key: string): void {
 export function readRuntimeSessionConfig(): SessionConfig | null {
   const runtimeConfig = getRuntimeConfig();
 
-  if (!runtimeConfig.hassUrl || !runtimeConfig.hassToken) {
+  if (
+    !runtimeConfig.hassUrl ||
+    !runtimeConfig.hassToken ||
+    !isUsableSessionToken(runtimeConfig.hassToken)
+  ) {
     return null;
   }
 
@@ -64,7 +83,10 @@ export function shouldSkipSharedSessionLoad(): boolean {
   }
 
   const runtimeConfig = getRuntimeConfig();
-  return Boolean(runtimeConfig.hassUrl && !runtimeConfig.hassToken);
+  return Boolean(
+    runtimeConfig.hassUrl &&
+      (!runtimeConfig.hassToken || !isUsableSessionToken(runtimeConfig.hassToken))
+  );
 }
 
 export function readInitialSessionConfig(key: string): SessionConfig | null {

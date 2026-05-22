@@ -16,6 +16,22 @@ import type {
   ThemeState,
 } from './types';
 
+const emptyCameraGo2RtcConfigByEntityId = new Map<
+  string,
+  { serverUrl: string; streamName: string }
+>();
+
+function getEmptyCameraGo2RtcConfig(entityId: string) {
+  const cached = emptyCameraGo2RtcConfigByEntityId.get(entityId);
+  if (cached) {
+    return cached;
+  }
+
+  const config = { serverUrl: '', streamName: entityId };
+  emptyCameraGo2RtcConfigByEntityId.set(entityId, config);
+  return config;
+}
+
 /**
  * Auth Store Selectors
  */
@@ -140,6 +156,8 @@ export const settingsSelectors = {
     state.cameraViewModes[entityId] ?? 'live',
   cameraFeedModeForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraFeedModes[entityId] ?? 'auto',
+  cameraGo2RtcConfigForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraGo2RtcConfigs[entityId] ?? getEmptyCameraGo2RtcConfig(entityId),
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
@@ -148,6 +166,7 @@ export const settingsSelectors = {
   updateSettings: (state: SettingsState) => state.updateSettings,
   updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
   updateCameraFeedMode: (state: SettingsState) => state.updateCameraFeedMode,
+  updateCameraGo2RtcConfig: (state: SettingsState) => state.updateCameraGo2RtcConfig,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
   // Combined selectors

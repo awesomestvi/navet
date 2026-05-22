@@ -41,6 +41,10 @@ export class HomeAssistantPanelAdapter {
     this.hass = hass;
   }
 
+  getHass(): HomeAssistantPanelHass {
+    return this.hass;
+  }
+
   getConfig(): HassConfig {
     return this.hass.config;
   }

@@ -5,14 +5,47 @@ import { useConfigStore } from '../config-store';
 describe('useConfigStore', () => {
   beforeEach(async () => {
     await resetAppStores();
+    document.querySelector('base')?.remove();
+    window.__NAVET_CONFIG__ = undefined;
+    window.history.replaceState(null, '', '/');
   });
 
   it('tests a valid Home Assistant connection', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 200 }));
 
     await expect(
       useConfigStore.getState().testConnection('https://ha.example.com/', 'abc')
     ).resolves.toBe(true);
+
+    expect(fetchMock).toHaveBeenCalledWith('https://ha.example.com/api/', expect.any(Object));
+  });
+
+  it('tests add-on manual login connections through the ingress proxy', async () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://supervisor/core',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 200 }));
+
+    await expect(
+      useConfigStore.getState().testConnection('http://supervisor/core', 'abc')
+    ).resolves.toBe(true);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/`,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer abc',
+        }),
+      })
+    );
   });
 
   it('returns false for invalid URLs or failed requests', async () => {
@@ -22,6 +55,21 @@ describe('useConfigStore', () => {
     await expect(
       useConfigStore.getState().testConnection('https://ha.example.com', 'abc')
     ).resolves.toBe(false);
+  });
+
+  it('rejects pasted diagnostic text as a token before fetching', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+    await expect(
+      useConfigStore
+        .getState()
+        .testConnection(
+          'https://ha.example.com',
+          'GET http://supervisor/core/api/ net::ERR_NAME_NOT_RESOLVED'
+        )
+    ).resolves.toBe(false);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('saves normalized config and can clear it', async () => {

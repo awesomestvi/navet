@@ -24,4 +24,13 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
     expect(runScript).not.toContain(`if [[ -n "${shellExpansionStart}HASS_URL}" ]]; then`);
   });
+
+  it('rejects tokens with spaces or line breaks before writing runtime config', () => {
+    expect(runScript).toContain(
+      `if [[ "${shellExpansionStart}HASS_TOKEN}" =~ [[:space:][:cntrl:]] ]]; then`
+    );
+    expect(runScript).toContain(
+      'token must be a Home Assistant long-lived access token without spaces or line breaks'
+    );
+  });
 });

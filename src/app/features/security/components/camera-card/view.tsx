@@ -102,6 +102,9 @@ export function CameraCardView({
   if (frontendStreamTypes.length > 0) {
     streamLabel = frontendStreamTypes.join('/').toUpperCase();
   }
+  if (streamKind === 'go2rtc') {
+    streamLabel = 'go2rtc';
+  }
   if (streamKind === 'hls' || streamKind === 'web_rtc' || streamKind === 'mjpeg') {
     streamLabel = streamKind.toUpperCase();
   }

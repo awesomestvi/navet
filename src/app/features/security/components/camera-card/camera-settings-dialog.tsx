@@ -1,21 +1,35 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
+import { RadioTower, Sliders } from 'lucide-react';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { CardDialogBody, CardDialogChoicePill, CardDialogHeader } from '@/app/components/patterns';
+import {
+  CardDialogBody,
+  CardDialogChoicePill,
+  CardDialogHeader,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+} from '@/app/components/patterns';
 import {
   customCardDialogShellProps,
   DialogDoneFooter,
   DialogShell,
+  Input,
   Select,
   Slider,
   Switch,
 } from '@/app/components/primitives';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
+import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import type { CameraFeedMode, CameraViewMode } from '@/app/stores/settings-store';
+import type {
+  CameraFeedMode,
+  CameraGo2RtcConfig,
+  CameraViewMode,
+} from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { CameraStreamType } from './camera-view-mode';
 
@@ -32,11 +46,14 @@ interface CameraSettingsDialogProps {
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
   cameraFeedMode: CameraFeedMode;
+  go2RtcConfig: CameraGo2RtcConfig;
   frontendStreamTypes: readonly CameraStreamType[];
+  hasGo2RtcFeed: boolean;
   hasMjpegStream: boolean;
   hasSnapshot: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
   onCameraFeedModeChange: (mode: CameraFeedMode) => void;
+  onGo2RtcConfigChange: (config: CameraGo2RtcConfig) => void;
 }
 
 function getDisplayName(entityId: string, entity: HassEntity): string {
@@ -174,23 +191,25 @@ function NumberRow({
 }
 
 const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['auto', 'live', 'snapshot'];
-const CAMERA_FEED_OPTIONS: CameraFeedMode[] = ['auto', 'web_rtc', 'hls', 'mjpeg'];
+const CAMERA_FEED_OPTIONS: CameraFeedMode[] = ['auto', 'go2rtc', 'web_rtc', 'hls', 'mjpeg'];
 
 function CameraViewModeRow({
   value,
   frontendStreamTypes,
+  hasGo2RtcFeed,
   hasMjpegStream,
   hasSnapshot,
   onChange,
 }: {
   value: CameraViewMode;
   frontendStreamTypes: readonly CameraStreamType[];
+  hasGo2RtcFeed: boolean;
   hasMjpegStream: boolean;
   hasSnapshot: boolean;
   onChange: (mode: CameraViewMode) => void;
 }) {
   const { t } = useI18n();
-  const hasLiveFeed = frontendStreamTypes.length > 0 || hasMjpegStream;
+  const hasLiveFeed = hasGo2RtcFeed || frontendStreamTypes.length > 0 || hasMjpegStream;
   const supportedOptions = CAMERA_VIEW_OPTIONS.filter((mode) => {
     if (mode === 'live') {
       return hasLiveFeed;
@@ -228,10 +247,15 @@ function CameraViewModeRow({
 function isCameraFeedAvailable(
   mode: CameraFeedMode,
   frontendStreamTypes: readonly CameraStreamType[],
+  hasGo2RtcFeed: boolean,
   hasMjpegStream: boolean
 ) {
   if (mode === 'auto') {
-    return frontendStreamTypes.length > 0 || hasMjpegStream;
+    return hasGo2RtcFeed || frontendStreamTypes.length > 0 || hasMjpegStream;
+  }
+
+  if (mode === 'go2rtc') {
+    return hasGo2RtcFeed;
   }
 
   if (mode === 'mjpeg') {
@@ -244,17 +268,19 @@ function isCameraFeedAvailable(
 function CameraFeedModeRow({
   value,
   frontendStreamTypes,
+  hasGo2RtcFeed,
   hasMjpegStream,
   onChange,
 }: {
   value: CameraFeedMode;
   frontendStreamTypes: readonly CameraStreamType[];
+  hasGo2RtcFeed: boolean;
   hasMjpegStream: boolean;
   onChange: (mode: CameraFeedMode) => void;
 }) {
   const { t } = useI18n();
   const supportedOptions = CAMERA_FEED_OPTIONS.filter((mode) =>
-    isCameraFeedAvailable(mode, frontendStreamTypes, hasMjpegStream)
+    isCameraFeedAvailable(mode, frontendStreamTypes, hasGo2RtcFeed, hasMjpegStream)
   );
 
   if (supportedOptions.length === 0) {
@@ -283,6 +309,65 @@ function CameraFeedModeRow({
   );
 }
 
+function Go2RtcSettingsRow({
+  entityId,
+  value,
+  onChange,
+}: {
+  entityId: string;
+  value: CameraGo2RtcConfig;
+  onChange: (config: CameraGo2RtcConfig) => void;
+}) {
+  const { t } = useI18n();
+  const serverUrlInputId = `${entityId}-go2rtc-server-url`;
+  const streamNameInputId = `${entityId}-go2rtc-stream-name`;
+
+  return (
+    <DialogSectionRow label={t('camera.settings.go2rtc')}>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <label
+            htmlFor={serverUrlInputId}
+            className="block px-1 text-xs font-medium text-white/76"
+          >
+            {t('camera.settings.go2rtc.serverUrl')}
+          </label>
+          <Input
+            id={serverUrlInputId}
+            value={value.serverUrl}
+            onChange={(event) => onChange({ ...value, serverUrl: event.target.value })}
+            placeholder="http://homeassistant.local:11984"
+            size="small"
+            variant="soft"
+            spellCheck={false}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label
+            htmlFor={streamNameInputId}
+            className="block px-1 text-xs font-medium text-white/76"
+          >
+            {t('camera.settings.go2rtc.streamName')}
+          </label>
+          <Input
+            id={streamNameInputId}
+            value={value.streamName}
+            onChange={(event) => onChange({ ...value, streamName: event.target.value })}
+            placeholder={entityId}
+            size="small"
+            variant="soft"
+            spellCheck={false}
+          />
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5 px-1 text-xs leading-relaxed text-white/58">
+        <p>{t('camera.settings.go2rtc.description.addon')}</p>
+        <p>{t('camera.settings.go2rtc.description.standalone')}</p>
+      </div>
+    </DialogSectionRow>
+  );
+}
+
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
@@ -291,14 +376,18 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   siblingEntities,
   cameraViewMode,
   cameraFeedMode,
+  go2RtcConfig,
   frontendStreamTypes,
+  hasGo2RtcFeed,
   hasMjpegStream,
   hasSnapshot,
   onCameraViewModeChange,
   onCameraFeedModeChange,
+  onGo2RtcConfigChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState('controls');
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const shell = getAccentCardShellTokens(theme, 'blue');
@@ -320,6 +409,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
   const numbers = siblingEntities.filter((s) => s.id.startsWith('number.'));
   const hasControls = switches.length > 0 || selects.length > 0 || numbers.length > 0;
+  const showGo2RtcTab = !isHomeAssistantPanelMode();
 
   return (
     <DialogShell
@@ -337,85 +427,120 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
         <CardDialogBody>
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
-          <div className="space-y-6">
-            <CameraViewModeRow
-              value={cameraViewMode}
-              frontendStreamTypes={frontendStreamTypes}
-              hasMjpegStream={hasMjpegStream}
-              hasSnapshot={hasSnapshot}
-              onChange={onCameraViewModeChange}
-            />
-            <CameraFeedModeRow
-              value={cameraFeedMode}
-              frontendStreamTypes={frontendStreamTypes}
-              hasMjpegStream={hasMjpegStream}
-              onChange={onCameraFeedModeChange}
-            />
+          <Tabs value={activeTab} defaultValue="controls" onValueChange={setActiveTab}>
+            <CardDialogTabList>
+              <CardDialogTabTrigger
+                active={activeTab === 'controls'}
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                Controls
+              </CardDialogTabTrigger>
+              {showGo2RtcTab ? (
+                <CardDialogTabTrigger
+                  active={activeTab === 'go2rtc'}
+                  icon={RadioTower}
+                  onClick={() => setActiveTab('go2rtc')}
+                >
+                  go2rtc
+                </CardDialogTabTrigger>
+              ) : null}
+            </CardDialogTabList>
 
-            {hasControls ? (
-              <>
-                {switches.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.switches')}>
-                    <div className="space-y-2">
-                      {switches.map(({ id, entity }) => (
-                        <SwitchRow
-                          key={id}
-                          entityId={id}
-                          label={getDisplayName(id, entity)}
-                          isOn={entity.state === 'on'}
-                        />
-                      ))}
-                    </div>
-                  </DialogSectionRow>
-                )}
+            <TabPanel value="controls" className="mt-5 space-y-6">
+              <CameraViewModeRow
+                value={cameraViewMode}
+                frontendStreamTypes={frontendStreamTypes}
+                hasGo2RtcFeed={hasGo2RtcFeed}
+                hasMjpegStream={hasMjpegStream}
+                hasSnapshot={hasSnapshot}
+                onChange={onCameraViewModeChange}
+              />
+              <CameraFeedModeRow
+                value={cameraFeedMode}
+                frontendStreamTypes={frontendStreamTypes}
+                hasGo2RtcFeed={hasGo2RtcFeed}
+                hasMjpegStream={hasMjpegStream}
+                onChange={onCameraFeedModeChange}
+              />
 
-                {selects.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.modes')}>
-                    <div className="space-y-4">
-                      {selects.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        const options = Array.isArray(attrs?.options)
-                          ? (attrs.options as string[])
-                          : [];
-                        return (
-                          <SelectRow
+              {hasControls ? (
+                <>
+                  {switches.length > 0 && (
+                    <DialogSectionRow label={t('camera.settings.switches')}>
+                      <div className="space-y-2">
+                        {switches.map(({ id, entity }) => (
+                          <SwitchRow
                             key={id}
                             entityId={id}
                             label={getDisplayName(id, entity)}
-                            current={entity.state}
-                            options={options}
+                            isOn={entity.state === 'on'}
                           />
-                        );
-                      })}
-                    </div>
-                  </DialogSectionRow>
-                )}
+                        ))}
+                      </div>
+                    </DialogSectionRow>
+                  )}
 
-                {numbers.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.adjustments')}>
-                    <div className="space-y-4">
-                      {numbers.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        return (
-                          <NumberRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            value={Number(entity.state)}
-                            min={Number(attrs?.min ?? 0)}
-                            max={Number(attrs?.max ?? 100)}
-                            step={Number(attrs?.step ?? 1)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </DialogSectionRow>
-                )}
-              </>
-            ) : (
-              <p className="text-center text-sm text-white/76">{t('camera.settings.noControls')}</p>
-            )}
-          </div>
+                  {selects.length > 0 && (
+                    <DialogSectionRow label={t('camera.settings.modes')}>
+                      <div className="space-y-4">
+                        {selects.map(({ id, entity }) => {
+                          const attrs = entity.attributes as Record<string, unknown>;
+                          const options = Array.isArray(attrs?.options)
+                            ? (attrs.options as string[])
+                            : [];
+                          return (
+                            <SelectRow
+                              key={id}
+                              entityId={id}
+                              label={getDisplayName(id, entity)}
+                              current={entity.state}
+                              options={options}
+                            />
+                          );
+                        })}
+                      </div>
+                    </DialogSectionRow>
+                  )}
+
+                  {numbers.length > 0 && (
+                    <DialogSectionRow label={t('camera.settings.adjustments')}>
+                      <div className="space-y-4">
+                        {numbers.map(({ id, entity }) => {
+                          const attrs = entity.attributes as Record<string, unknown>;
+                          return (
+                            <NumberRow
+                              key={id}
+                              entityId={id}
+                              label={getDisplayName(id, entity)}
+                              value={Number(entity.state)}
+                              min={Number(attrs?.min ?? 0)}
+                              max={Number(attrs?.max ?? 100)}
+                              step={Number(attrs?.step ?? 1)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </DialogSectionRow>
+                  )}
+                </>
+              ) : (
+                <p className="text-center text-sm text-white/76">
+                  {t('camera.settings.noControls')}
+                </p>
+              )}
+            </TabPanel>
+
+            {showGo2RtcTab ? (
+              <TabPanel value="go2rtc" className="mt-5">
+                <Go2RtcSettingsRow
+                  entityId={entityId}
+                  value={go2RtcConfig}
+                  onChange={onGo2RtcConfigChange}
+                />
+              </TabPanel>
+            ) : null}
+          </Tabs>
 
           <DialogDoneFooter label={t('common.done')} />
         </CardDialogBody>

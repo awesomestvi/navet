@@ -6,6 +6,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { useI18n, useTheme } from '@/app/hooks';
+import { isUsableSessionToken } from '@/app/session/session';
 import { useAuth } from '@/app/stores/auth-store';
 import { useConfig } from '@/app/stores/config-store';
 import { authSelectors, configSelectors } from '@/app/stores/selectors';
@@ -41,6 +42,11 @@ export function LoginPage() {
 
     if (!token.trim()) {
       setError(t('login.errors.tokenRequired'));
+      return;
+    }
+
+    if (!isUsableSessionToken(token.trim())) {
+      setError(t('login.errors.tokenInvalid'));
       return;
     }
 

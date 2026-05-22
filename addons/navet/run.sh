@@ -23,6 +23,11 @@ if [[ "${RESOLVED_HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *\"* || "${R
   exit 1
 fi
 
+if [[ "${HASS_TOKEN}" =~ [[:space:][:cntrl:]] ]]; then
+  echo "token must be a Home Assistant long-lived access token without spaces or line breaks" >&2
+  exit 1
+fi
+
 HASS_URL_JS="${RESOLVED_HASS_URL//\\/\\\\}"
 HASS_URL_JS="${HASS_URL_JS//\"/\\\"}"
 HASS_TOKEN_JS="${HASS_TOKEN//\\/\\\\}"

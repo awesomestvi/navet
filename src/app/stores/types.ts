@@ -3,6 +3,7 @@ import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
   CameraFeedMode,
+  CameraGo2RtcConfig,
   CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -71,6 +72,7 @@ interface UserSettings {
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
   cameraFeedModes: Record<string, CameraFeedMode>;
+  cameraGo2RtcConfigs: Record<string, CameraGo2RtcConfig>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -80,6 +82,7 @@ export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
+  updateCameraGo2RtcConfig: (entityId: string, config: CameraGo2RtcConfig) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
