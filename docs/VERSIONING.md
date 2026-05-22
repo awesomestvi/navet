@@ -5,8 +5,8 @@ Navet is currently in beta. Until the product contract is stable, use pre-`1.0` 
 ## Current Phase
 
 - Current release line: `0.x`
-- Current version: `0.2.0`
-- Meaning: current public beta release for the `0.2.0` Home Assistant custom panel and add-on release
+- Current version: `0.2.1`
+- Meaning: current public beta release for the `0.2.1` Home Assistant custom panel and add-on release
 
 ## Scheme
 
@@ -26,6 +26,7 @@ Examples:
 - `0.1.0`
 - `0.1.1`
 - `0.2.0`
+- `0.2.1`
 
 ## Bump Rules
 
@@ -59,11 +60,12 @@ Recommended lightweight flow:
 3. Fetch Linear's `Ready for Release` column and use those tickets as the release-note source. If the column has no tickets for the release, draft a concise changelog from commit messages instead.
 4. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow publishes this section as the release notes that HACS/Home Assistant can show before users update.
 5. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version` matches the package/tag version.
-6. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
-7. If the release meaning changed, update this file.
-8. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
-9. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Version tags also trigger app image publishing and add-on image publishing.
-10. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
+6. For HACS custom panel releases, build the bundled panel assets with `pnpm build:ha-panel` and include the generated `custom_components/navet/frontend/` changes in the release commit.
+7. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
+8. If the release meaning changed, update this file.
+9. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
+10. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Version tags also trigger app image publishing and add-on image publishing.
+11. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
 
 ## Release Note Style
 
