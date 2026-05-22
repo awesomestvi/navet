@@ -6,10 +6,17 @@ const runScript = readFileSync(join(process.cwd(), 'addons/navet/run.sh'), 'utf8
 const shellExpansionStart = '$' + '{';
 
 describe('Home Assistant add-on run script', () => {
-  it('defaults blank hass_url to the Supervisor Core endpoint', () => {
+  it('defaults blank hass_url to the internal Home Assistant Core endpoint', () => {
     expect(runScript).toContain(
-      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://supervisor/core}"`
+      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
     );
+  });
+
+  it('maps the old Supervisor Core URL to the user-token Home Assistant endpoint', () => {
+    expect(runScript).toContain(
+      `if [[ "${shellExpansionStart}RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then`
+    );
+    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant:8123"');
   });
 
   it('uses the resolved Home Assistant URL in config.js and nginx proxy_pass', () => {

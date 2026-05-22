@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAppStores } from '@/test/store-reset';
 import App from '../App';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 import { useAuthStore } from '../stores/auth-store';
 
 const CONNECTION_TIMEOUT_MESSAGE =
@@ -217,6 +218,32 @@ describe('App Home Assistant connection recovery', () => {
       hassUrl: 'http://192.168.68.71:8123',
       token: 'token',
     });
+  });
+
+  it('keeps Home Assistant local storage when returning to login from recovery', async () => {
+    homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
+    localStorage.setItem('hassTokens', '{"data":"home-assistant-session"}');
+    localStorage.setItem(
+      STORAGE_KEYS.authConfig,
+      '{"url":"http://old.local:8123","token":"token"}'
+    );
+    localStorage.setItem(STORAGE_KEYS.haConfig, '{"url":"http://old.local:8123","token":"token"}');
+    setAuthenticatedSession();
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /back to login/i }));
+
+    expect(screen.getByText('login')).toBeInTheDocument();
+    expect(localStorage.getItem('hassTokens')).toBe('{"data":"home-assistant-session"}');
+    expect(localStorage.getItem(STORAGE_KEYS.authConfig)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.haConfig)).toBeNull();
   });
 });
 
