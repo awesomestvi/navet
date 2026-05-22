@@ -21,10 +21,9 @@ interface UseMediaArtworkResolutionParams {
 
 const ARTWORK_CLEAR_DELAY_MS = 700;
 
-function resolveArtworkFetchUrl(artworkUrl: string, cacheKey: string) {
+function resolveArtworkFetchUrl(artworkUrl: string) {
   try {
     const url = new URL(artworkUrl, window.location.origin);
-    url.searchParams.set('navet_artwork_key', cacheKey);
     if (url.origin !== window.location.origin) {
       return url.toString();
     }
@@ -87,7 +86,10 @@ export function useMediaArtworkResolution({
         (shouldUseDirectAuthenticatedArtwork && authToken))
   );
   const canUseResolvedArtworkFallback =
-    !needsAuthenticatedThumbnail || shouldUseDirectDevArtwork || isPanelMode || isSameOriginArtwork;
+    !needsAuthenticatedThumbnail ||
+    shouldUseDirectDevArtwork ||
+    isPanelMode ||
+    (isSameOriginArtwork && !isProxiedArtwork);
   const fallbackArtwork =
     thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
 
@@ -127,34 +129,35 @@ export function useMediaArtworkResolution({
     }
 
     const loadAuthenticatedArtwork = async () => {
+      const requestKey = artworkRequestKey;
       const thumbnailDataUrl = await fetchMediaThumbnailDataUrl(entityId).catch(() => null);
       if (thumbnailDataUrl) {
-        return thumbnailDataUrl;
+        return { artworkUrl: thumbnailDataUrl, requestKey };
       }
 
       if (!canFetchResolvedArtwork) {
-        return null;
+        return { artworkUrl: null, requestKey };
       }
 
-      const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork, artworkRequestKey), {
+      const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork), {
         credentials: 'same-origin',
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       });
       if (!response.ok) {
-        return null;
+        return { artworkUrl: null, requestKey };
       }
 
       const blob = await response.blob();
       if (!blob.type.startsWith('image/')) {
-        return null;
+        return { artworkUrl: null, requestKey };
       }
 
       const objectUrl = URL.createObjectURL(blob);
-      return objectUrl;
+      return { artworkUrl: objectUrl, requestKey };
     };
 
     void loadAuthenticatedArtwork()
-      .then((artworkUrl) => {
+      .then(({ artworkUrl }) => {
         if (cancelled) {
           if (artworkUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(artworkUrl);

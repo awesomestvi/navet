@@ -123,13 +123,10 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(result.current.albumArt).toBe('/api/media_player_proxy/media_player.kitchen');
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
-      {
-        credentials: 'same-origin',
-        headers: undefined,
-      }
-    );
+    expect(fetchMock).toHaveBeenCalledWith('/api/media_player_proxy/media_player.kitchen', {
+      credentials: 'same-origin',
+      headers: undefined,
+    });
   });
 
   it('loads same-origin panel artwork as an object URL when no auth token is stored', async () => {
@@ -155,13 +152,10 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/panel-album-art');
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
-      {
-        credentials: 'same-origin',
-        headers: undefined,
-      }
-    );
+    expect(fetchMock).toHaveBeenCalledWith('/api/media_player_proxy/media_player.kitchen', {
+      credentials: 'same-origin',
+      headers: undefined,
+    });
   });
 
   it('does not fetch direct Home Assistant media proxy artwork when websocket thumbnails are unavailable', async () => {
@@ -217,7 +211,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/docker-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
@@ -251,7 +245,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/docker-proxy-token-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: undefined,
@@ -288,7 +282,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/addon-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
@@ -328,7 +322,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/addon-absolute-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
@@ -366,7 +360,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/addon-direct-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
@@ -374,7 +368,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('keeps add-on ingress proxy artwork as fallback when empty-runtime artwork fetch fails', async () => {
+  it('does not render a broken add-on ingress proxy fallback when empty-runtime artwork fetch fails', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     useAuthStore.setState({
@@ -395,15 +389,13 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
       }
     );
-    expect(result.current.albumArt).toBe(
-      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
-    );
+    expect(result.current.albumArt).toBeNull();
   });
 
   it('fetches absolute Home Assistant media proxy artwork through the Docker proxy', async () => {
@@ -437,7 +429,7 @@ describe('useMediaArtworkResolution', () => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/docker-absolute-album-art');
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
         headers: { Authorization: 'Bearer session-token' },
@@ -445,7 +437,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('keeps Docker proxy artwork as fallback when authenticated fetch fails', async () => {
+  it('does not render a broken Docker proxy artwork fallback when authenticated fetch fails', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     useAuthStore.setState({
@@ -466,9 +458,7 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
-    expect(result.current.albumArt).toBe(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
-    );
+    expect(result.current.albumArt).toBeNull();
   });
 
   it('does not use the Home Assistant dev proxy for authenticated artwork fetches in panel mode', async () => {
@@ -498,13 +488,10 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/panel-album-art');
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/media_player_proxy/media_player.kitchen?navet_artwork_key=media_player.kitchen',
-      {
-        credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
-      }
-    );
+    expect(fetchMock).toHaveBeenCalledWith('/api/media_player_proxy/media_player.kitchen', {
+      credentials: 'same-origin',
+      headers: { Authorization: 'Bearer session-token' },
+    });
   });
 
   it('reloads authenticated artwork when the track key changes but the proxy URL stays stable', async () => {
