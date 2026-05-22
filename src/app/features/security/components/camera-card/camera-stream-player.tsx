@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { CameraGo2RtcConfig } from '@/app/stores/settings-store';
+import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
 interface CameraStreamPlayerProps {
@@ -11,7 +12,7 @@ interface CameraStreamPlayerProps {
   go2RtcConfig?: CameraGo2RtcConfig;
   fitMode: 'cover' | 'contain';
   onLoad?: () => void;
-  onError: (kind: CameraImageSourceKind) => void;
+  onError: (kind: CameraImageSourceKind, options?: CameraStreamErrorOptions) => void;
 }
 
 const videoFitClassNames = {
@@ -19,8 +20,25 @@ const videoFitClassNames = {
   cover: 'object-cover',
 } as const;
 
+interface CameraStreamErrorOptions {
+  retryable?: boolean;
+}
+
 function resolveHomeAssistantUrl(url: string, homeAssistantUrl: string | undefined) {
-  return url.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${url}` : url;
+  return resolveHomeAssistantProxyUrl(url, homeAssistantUrl) ?? url;
+}
+
+function isHomeAssistantCameraStreamUnsupportedError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const { code, message } = error as { code?: unknown; message?: unknown };
+  return (
+    code === 'start_stream_failed' &&
+    typeof message === 'string' &&
+    message.includes('does not support play stream service')
+  );
 }
 
 function applyVideoBaseAttributes(video: HTMLVideoElement, posterUrl: string | undefined) {
@@ -90,7 +108,7 @@ function HlsCameraPlayer({
         }
 
         if (!Hls.isSupported()) {
-          onError('hls');
+          onError('hls', { retryable: false });
           return;
         }
 
@@ -110,9 +128,11 @@ function HlsCameraPlayer({
             onError('hls');
           }
         });
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          onError('hls');
+          onError('hls', {
+            retryable: !isHomeAssistantCameraStreamUnsupportedError(error),
+          });
         }
       }
     };

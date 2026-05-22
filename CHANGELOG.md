@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.2 - 2026-05-22
+
+Navet improves Home Assistant add-on login and ingress reliability.
+
+## Fixed
+
+- Add-on login sessions are restored more reliably after refreshes.
+- Add-on media artwork, assets, and local endpoints now stay behind the Home Assistant ingress path.
+
+## Improved
+
+- Add-on users should leave Home Assistant URL and token configuration blank, then sign in from the Navet login page.
+- Camera cards can use direct go2rtc WebRTC feeds outside the Home Assistant custom panel.
+
 ## 0.2.1 - 2026-05-22
 
 Navet adds fan control and improves dashboard cards for common Home Assistant setups.
