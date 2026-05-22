@@ -8,6 +8,7 @@ NGINX_CONF="/etc/nginx/http.d/default.conf"
 HASS_URL="$(bashio::config 'hass_url')"
 HASS_TOKEN="$(bashio::config 'token')"
 DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
+RESOLVED_HASS_URL="${HASS_URL:-http://supervisor/core}"
 
 mkdir -p /data
 chown nginx:nginx /data 2>/dev/null || true
@@ -17,12 +18,12 @@ if [[ -n "${HASS_URL}" && ! "${HASS_URL}" =~ ^https?:// ]]; then
   exit 1
 fi
 
-if [[ "${HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *\"* || "${HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *\'* || "${HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *";"* ]]; then
+if [[ "${RESOLVED_HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *\"* || "${RESOLVED_HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *\'* || "${RESOLVED_HASS_URL}${HASS_TOKEN}${DASHBOARD_CONFIG_URL}" == *";"* ]]; then
   echo "hass_url, token, and dashboard_config_url must not contain quotes or semicolons" >&2
   exit 1
 fi
 
-HASS_URL_JS="${HASS_URL//\\/\\\\}"
+HASS_URL_JS="${RESOLVED_HASS_URL//\\/\\\\}"
 HASS_URL_JS="${HASS_URL_JS//\"/\\\"}"
 HASS_TOKEN_JS="${HASS_TOKEN//\\/\\\\}"
 HASS_TOKEN_JS="${HASS_TOKEN_JS//\"/\\\"}"
@@ -38,13 +39,12 @@ window.__NAVET_CONFIG__ = {
 };
 EOF
 
-if [[ -n "${HASS_URL}" ]]; then
-  PROXY_AUTH_DIRECTIVE=""
-  if [[ -n "${HASS_TOKEN}" ]]; then
-    PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "Bearer '"${HASS_TOKEN}"'";'
-  fi
+PROXY_AUTH_DIRECTIVE=""
+if [[ -n "${HASS_TOKEN}" ]]; then
+  PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "Bearer '"${HASS_TOKEN}"'";'
+fi
 
-  cat > "${NGINX_CONF}" <<EOF
+cat > "${NGINX_CONF}" <<EOF
 server {
   listen 8099;
   server_name _;
@@ -60,7 +60,7 @@ server {
     if (\$uri ~ "\.\.") {
       return 400;
     }
-    proxy_pass ${HASS_URL}/;
+    proxy_pass ${RESOLVED_HASS_URL}/;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
     proxy_set_header Upgrade \$http_upgrade;
@@ -94,6 +94,5 @@ ${PROXY_AUTH_DIRECTIVE}
   }
 }
 EOF
-fi
 
 nginx -g 'daemon off;'

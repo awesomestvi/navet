@@ -60,6 +60,8 @@ The integration:
 - Serves bundled static assets from `/api/navet/static/`
 - Loads `navet-panel.js` as the panel module
 - Ships local Home Assistant brand assets from `custom_components/navet/brand/`
+- Uses the current Home Assistant frontend session through the injected `hass` object, so the
+  Navet login page is not shown in the custom panel.
 
 ## Option 2: Standalone Docker
 
@@ -84,7 +86,8 @@ The production container writes `/config.js` from:
 
 If `NAVET_HASS_URL` and `NAVET_HASS_TOKEN` are set, Navet uses them as the initial Home Assistant
 session and opens the dashboard without the login form. If either is unset, Navet falls back to
-manual setup in the UI.
+manual setup in the UI and connects directly to the Home Assistant URL entered on the Navet login
+page.
 If `NAVET_DASHBOARD_CONFIG_URL` is set, a fresh browser imports that Navet dashboard YAML export
 before showing onboarding.
 
@@ -165,7 +168,9 @@ The add-on:
 - Handles direct RSS proxy requests through nginx `njs`
 - Uses `ingress: true`
 - Exposes optional direct browser access on `8099/tcp`
-- Generates `/config.js` from add-on options
+- Generates `/config.js` from add-on options, defaulting blank `hass_url` to
+  `http://supervisor/core` for Home Assistant OS and Supervised installs
+- Proxies Home Assistant API and WebSocket requests through `/__navet_ha_proxy__/`
 - Optionally imports a shared dashboard YAML export on first launch
 
 The repository also includes **Navet Dev**, a separate add-on entry with slug `navet_dev`. It uses
@@ -174,7 +179,9 @@ Assistant pulls `ghcr.io/awesomestvi/{arch}-navet-addon:dev`.
 
 ### Add-on Options
 
-- `dashboard_config_url`
+- `hass_url`: optional Home Assistant URL. Leave blank on Home Assistant OS or Supervised installs.
+- `token`: optional Home Assistant long-lived access token for automatic login.
+- `dashboard_config_url`: optional Navet dashboard YAML export to import on first launch.
 
 ### Local Add-on Development
 
@@ -185,7 +192,8 @@ Typical flow:
 3. In Home Assistant, open Settings -> Add-ons -> Add-on Store
 4. Refresh the custom add-on repository
 5. Open the `Navet Dev` add-on
-6. Optionally set `dashboard_config_url`
+6. Optionally set `token` and `dashboard_config_url`; leave `hass_url` blank for Home Assistant OS
+   or Supervised installs
 7. Install, rebuild, or reinstall the add-on image for the current `dev` tag
 8. Open Navet through the Ingress panel entry
 

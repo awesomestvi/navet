@@ -13,6 +13,8 @@ This custom integration registers Navet as a native Home Assistant sidebar panel
 
 The integration registers the `/navet` panel, serves the bundled frontend from
 `/api/navet/static/`, and loads `navet-panel.js` as a Home Assistant custom panel module.
+The panel uses the current Home Assistant frontend session and does not ask for a separate Navet
+URL or token.
 
 ## Development
 

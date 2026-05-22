@@ -58,9 +58,27 @@ function isHomeAssistantIngressSession(): boolean {
   return window.location.pathname.includes(HOME_ASSISTANT_INGRESS_PREFIX);
 }
 
+export function shouldSkipSharedSessionLoad(): boolean {
+  if (!isHomeAssistantIngressSession()) {
+    return false;
+  }
+
+  const runtimeConfig = getRuntimeConfig();
+  return Boolean(runtimeConfig.hassUrl && !runtimeConfig.hassToken);
+}
+
 export function readInitialSessionConfig(key: string): SessionConfig | null {
   if (isHomeAssistantIngressSession()) {
-    return readRuntimeSessionConfig() ?? readStoredSessionConfig(key);
+    const runtimeSessionConfig = readRuntimeSessionConfig();
+    if (runtimeSessionConfig) {
+      return runtimeSessionConfig;
+    }
+
+    if (shouldSkipSharedSessionLoad()) {
+      return null;
+    }
+
+    return readStoredSessionConfig(key);
   }
 
   return readStoredSessionConfig(key) ?? readRuntimeSessionConfig();

@@ -11,7 +11,7 @@ function normalizeUrl(url: string): string {
 function isRuntimeHostedSession(config: SessionConfig): boolean {
   const runtimeConfig = getRuntimeConfig();
 
-  if (!runtimeConfig.hassUrl || !runtimeConfig.hassToken) {
+  if (!runtimeConfig.hassUrl) {
     return false;
   }
 

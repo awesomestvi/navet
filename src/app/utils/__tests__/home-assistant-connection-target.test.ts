@@ -36,6 +36,20 @@ describe('home-assistant-connection-target', () => {
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
 
+  it('uses same-origin proxy URL for matching hosted runtime URLs without runtime tokens', () => {
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://supervisor/core',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+
+    expect(
+      resolveHomeAssistantConnectionUrl({
+        url: 'http://supervisor/core',
+        token: 'user-entered-token',
+      })
+    ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
+  });
+
   it('resolves proxy paths under the Home Assistant ingress base path', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/addon-slug/`;
@@ -78,6 +92,23 @@ describe('home-assistant-connection-target', () => {
       resolveHomeAssistantConnectionUrl({
         url: 'https://ha.example.com',
         token: 'stored-user-token',
+      })
+    ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
+  });
+
+  it('uses the ingress-aware proxy URL for add-on manual login sessions', () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+    window.__NAVET_CONFIG__ = {
+      hassUrl: 'http://supervisor/core',
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+
+    expect(
+      resolveHomeAssistantConnectionUrl({
+        url: 'http://supervisor/core',
+        token: 'user-entered-token',
       })
     ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
   });

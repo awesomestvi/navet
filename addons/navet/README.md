@@ -11,7 +11,14 @@ The image is built from the repository root in CI, which allows the add-on image
 
 ## Configuration
 
+- `hass_url`: Optional Home Assistant URL. Leave blank on Home Assistant OS or Supervised installs;
+  the add-on uses the internal `http://supervisor/core` URL.
+- `token`: Optional Home Assistant long-lived access token. Set this to open Navet without the login
+  form.
 - `dashboard_config_url`: Optional Navet dashboard YAML export to import on first launch in a fresh browser
+
+When `hass_url` and `token` are blank, Navet opens the login page with the internal Home Assistant
+URL prefilled. Enter a long-lived access token to connect through Ingress.
 
 Dashboard layout changes are saved to the add-on data directory and shared with other browsers that
 open the same Navet instance.
