@@ -3,6 +3,7 @@
 ## 0.2.1
 
 - Updated Navet to `0.2.1`
+- Fixed Home Assistant add-on Ingress proxy setup when `hass_url` is left blank
 - Added fan dashboard cards with power, percentage, oscillation, direction, preset, and speed controls
 - Added fan controls to supported HVAC card settings
 - Fixed Fahrenheit climate readings being converted twice

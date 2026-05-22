@@ -10,6 +10,7 @@ import { useAccentColor, useHomeAssistant } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { loadDashboardSession } from './services/dashboard-session.service';
+import { shouldSkipSharedSessionLoad } from './session/session';
 import { useErrorStore, useSettingsStore } from './stores';
 import { useAuth } from './stores/auth-store';
 import { useConfig } from './stores/config-store';
@@ -111,7 +112,7 @@ function AppContent() {
   }, [isAuthenticated, authConfig, haConfig, connected, connecting, appError, connect]);
 
   useEffect(() => {
-    if (isAuthenticated || sharedSessionLoadAttempted.current) {
+    if (isAuthenticated || sharedSessionLoadAttempted.current || shouldSkipSharedSessionLoad()) {
       return;
     }
 
