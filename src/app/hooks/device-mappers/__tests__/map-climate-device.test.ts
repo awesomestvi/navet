@@ -50,6 +50,40 @@ describe('mapClimateDevice', () => {
     expect(device.temperatureUnit).toBe('fahrenheit');
   });
 
+  it('resolves native Home Assistant Fahrenheit climate units', () => {
+    const device = mapClimateDevice(
+      'climate.hallway',
+      createClimateEntity({
+        temperature: 72,
+        current_temperature: 70,
+        native_temperature_unit: '°F',
+      }),
+      'Hallway',
+      'Hallway'
+    );
+
+    expect(device.temperature).toBe(72);
+    expect(device.currentTemperature).toBe(70);
+    expect(device.temperatureUnit).toBe('fahrenheit');
+  });
+
+  it('falls back to the Home Assistant config temperature unit', () => {
+    const device = mapClimateDevice(
+      'climate.hallway',
+      createClimateEntity({
+        temperature: 72,
+        current_temperature: 70,
+      }),
+      'Hallway',
+      'Hallway',
+      '°F'
+    );
+
+    expect(device.temperature).toBe(72);
+    expect(device.currentTemperature).toBe(70);
+    expect(device.temperatureUnit).toBe('fahrenheit');
+  });
+
   it('ignores malformed HVAC mode entries', () => {
     const device = mapClimateDevice(
       'climate.hallway',

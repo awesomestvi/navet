@@ -1,6 +1,7 @@
 import { Search, Settings2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type MouseEvent, type PointerEvent, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { CardEmptyState } from '@/app/components/patterns';
 import {
   BaseCard,
   Button,
@@ -235,7 +236,7 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, data.tintColor);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(!data.service);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const accentHex = getThemeColorValue(primaryColor);
   const IconComponent = getNamedIconComponent(data.icon ?? 'Zap');
@@ -260,6 +261,22 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
     }
   };
 
+  const stopCardInteraction = (
+    event: MouseEvent<HTMLButtonElement> | PointerEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+  };
+
+  const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    void handleTap();
+  };
+
+  const handleSettingsClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setIsSettingsOpen(true);
+  };
+
   const isConfigured = Boolean(data.service);
 
   return (
@@ -282,10 +299,11 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
       contentClassName="h-full"
     >
       <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
-        {(isEditMode || !isConfigured) && onUpdate && (
+        {isEditMode && isConfigured && onUpdate && (
           <button
             type="button"
-            onClick={() => setIsSettingsOpen(true)}
+            onClick={handleSettingsClick}
+            onPointerDown={stopCardInteraction}
             className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
             aria-label={t('widgets.button.configure')}
           >
@@ -293,38 +311,48 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={handleTap}
-          disabled={isEditMode || !isConfigured}
-          aria-label={
-            data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))
-          }
-          className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
-          style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
-        >
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
-            style={{
-              backgroundColor: isConfigured ? `${accentHex}22` : surface.subtleFill,
-              color: isConfigured ? accentHex : undefined,
-            }}
+        {isConfigured ? (
+          <button
+            type="button"
+            onClick={handleActionClick}
+            onPointerDown={stopCardInteraction}
+            disabled={isEditMode}
+            aria-label={data.label || data.service}
+            className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
+            style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
           >
-            <IconComponent className={`h-7 w-7 ${!isConfigured ? surface.textMuted : ''}`} />
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span
-              className={`text-sm font-medium ${isConfigured ? surface.textPrimary : surface.textMuted}`}
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+              style={{
+                backgroundColor: `${accentHex}22`,
+                color: accentHex,
+              }}
             >
-              {data.label || (isConfigured ? data.service : t('widgets.button.unconfigured'))}
-            </span>
-            {isConfigured && data.entityId ? (
-              <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
-                {data.entityId}
+              <IconComponent className="h-7 w-7" />
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className={`text-sm font-medium ${surface.textPrimary}`}>
+                {data.label || data.service}
               </span>
-            ) : null}
-          </div>
-        </button>
+              {data.entityId ? (
+                <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
+                  {data.entityId}
+                </span>
+              ) : null}
+            </div>
+          </button>
+        ) : (
+          <CardEmptyState
+            title={t('widgets.button.title')}
+            description={t('widgets.button.unconfigured')}
+            icon={IconComponent}
+            actionLabel={onUpdate ? t('widgets.button.configure') : undefined}
+            onAction={onUpdate ? () => setIsSettingsOpen(true) : undefined}
+            actionIcon={onUpdate ? Settings2 : undefined}
+            size="medium"
+            accentColor={data.tintColor ?? accentHex}
+          />
+        )}
 
         {onUpdate && (
           <ButtonSettingsDialog

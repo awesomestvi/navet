@@ -13,6 +13,7 @@ import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
 interface InteractivePillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  accentColor?: string;
   active?: boolean;
   children: ReactNode;
   className?: string;
@@ -43,6 +44,7 @@ const INTERACTIVE_PILL_SIZE_CLASS_NAMES = {
 export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProps>(
   function InteractivePill(
     {
+      accentColor,
       active = false,
       children,
       className = '',
@@ -58,6 +60,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
     const { theme, primaryColor } = useTheme();
     const sizeClassName = INTERACTIVE_PILL_SIZE_CLASS_NAMES[size];
     const pillStyles = getInteractivePillStyles({
+      accentColor,
       intent,
       isActive: active,
       primaryColor,

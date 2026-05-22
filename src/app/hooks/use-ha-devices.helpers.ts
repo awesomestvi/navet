@@ -31,6 +31,7 @@ export interface HADeviceIndexes {
 const PRIMARY_CARD_DOMAINS = new Set([
   'light',
   'switch',
+  'fan',
   'climate',
   'water_heater',
   'cover',
@@ -95,6 +96,7 @@ export function compareSortKeys(left: [number, number, string], right: [number, 
 export function createEmptyDeviceCollection(): DeviceCollection {
   return {
     lights: [],
+    fans: [],
     hvac: [],
     climate: [],
     media: [],

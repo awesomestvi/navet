@@ -1,4 +1,4 @@
-import { Battery, Palette, Sliders } from 'lucide-react';
+import { Battery, Palette, Settings2, Sliders } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
   CardDialogBody,
@@ -6,6 +6,7 @@ import {
   CardDialogSection,
   CardDialogTabList,
   CardDialogTabTrigger,
+  CardEmptyState,
   SelectableCheckboxRow,
 } from '@/app/components/patterns';
 import {
@@ -316,6 +317,11 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
       : selectedEntityIds !== undefined
         ? t('widgets.battery.noSelectedBatteries')
         : t('widgets.battery.noBatteries');
+  const emptyStateDescription =
+    batteries.length === 0
+      ? t('widgets.battery.settings.noneAvailable')
+      : t('widgets.battery.settings.help');
+  const isEmpty = filteredBatteries.length === 0;
 
   return (
     <div className="h-full">
@@ -340,7 +346,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
         contentClassName="h-full"
       >
         <div className="relative flex h-full min-w-0 flex-col p-3">
-          {onUpdate ? (
+          {onUpdate && !isEmpty ? (
             <CardSettingsActionButton
               theme={theme}
               size={chromeSize === 'small' ? 'small' : 'medium'}
@@ -353,23 +359,40 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
               aria-label={t('widgets.battery.settings.title')}
             />
           ) : null}
-          <EntityCardHeader
-            title={t('widgets.battery.title')}
-            subtitle={t('widgets.common.widget')}
-            layout="eyebrow-first"
-            size={chromeSize}
-            titleClassName={surface.textPrimary}
-            subtitleClassName={surface.textMuted}
-            leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />}
-          />
-          <BatteryList
-            devices={filteredBatteries}
-            isCompact={isCompact}
-            subtleFill={subtleFill}
-            textSecondary={surface.textSecondary}
-            emptyStateLabel={emptyStateLabel}
-            getLevelColor={(level) => getLevelColor(level, accentHex)}
-          />
+          {isEmpty ? (
+            <CardEmptyState
+              title={emptyStateLabel}
+              description={emptyStateDescription}
+              icon={Battery}
+              actionLabel={onUpdate ? t('widgets.battery.settings.title') : undefined}
+              onAction={onUpdate ? () => setIsSettingsOpen(true) : undefined}
+              actionIcon={onUpdate ? Settings2 : undefined}
+              size={size}
+              accentColor={tintColor ?? accentHex}
+            />
+          ) : (
+            <>
+              <EntityCardHeader
+                title={t('widgets.battery.title')}
+                subtitle={t('widgets.common.widget')}
+                layout="eyebrow-first"
+                size={chromeSize}
+                titleClassName={surface.textPrimary}
+                subtitleClassName={surface.textMuted}
+                leading={
+                  <EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />
+                }
+              />
+              <BatteryList
+                devices={filteredBatteries}
+                isCompact={isCompact}
+                subtleFill={subtleFill}
+                textSecondary={surface.textSecondary}
+                emptyStateLabel={emptyStateLabel}
+                getLevelColor={(level) => getLevelColor(level, accentHex)}
+              />
+            </>
+          )}
         </div>
       </BaseCard>
       <BatterySettingsDialog

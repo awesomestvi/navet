@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { CardSize } from '@/app/components/shared/card-size';
 import { HVACCard } from '@/app/features/climate';
-import { LightCard } from '@/app/features/lighting';
+import { FanCard, LightCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 
@@ -15,6 +15,7 @@ const SIZES: CardSize[] = [
   'extra-large',
 ];
 const LIGHT_SIZES: CardSize[] = ['extra-small', 'small', 'medium'];
+const FAN_SIZES: CardSize[] = ['small', 'medium'];
 const HVAC_SIZES: CardSize[] = ['small', 'medium'];
 
 function AllSizesPage() {
@@ -33,6 +34,27 @@ function AllSizesPage() {
                 initialState
                 initialBrightness={64}
                 initialTemp={3900}
+                size={size}
+                onSizeChange={() => {}}
+                isEditMode={false}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Fan</h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {FAN_SIZES.map((size) => (
+            <div key={`fan-${size}`} className="space-y-1">
+              <p className="text-xs uppercase tracking-wide opacity-70">{size}</p>
+              <FanCard
+                id={`fan.story.${size}`}
+                name="Ceiling Fan"
+                room="Bedroom"
+                initialState
+                initialPercentage={66}
                 size={size}
                 onSizeChange={() => {}}
                 isEditMode={false}

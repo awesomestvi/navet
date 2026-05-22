@@ -1,11 +1,12 @@
-import type { CameraViewMode } from '@/app/stores/settings-store';
+import type { CameraFeedMode, CameraViewMode } from '@/app/stores/settings-store';
 
 export const CAMERA_AUTO_REFRESH_INTERVAL_MS = 10_000;
 export const CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS = 30_000;
-export const CAMERA_STREAM_TYPES = ['hls', 'web_rtc'] as const;
+export const CAMERA_STREAM_TYPES = ['web_rtc', 'hls'] as const;
 
 export type CameraStreamType = (typeof CAMERA_STREAM_TYPES)[number];
 export type CameraImageSourceKind = CameraStreamType | 'mjpeg' | 'snapshot';
+export type CameraSelectableFeedKind = Exclude<CameraImageSourceKind, 'snapshot'>;
 
 export interface CameraImageSource {
   url: string | undefined;
@@ -47,8 +48,22 @@ function hasUsableStreamType(
   return streamTypes.includes(streamType) && !failedStreamTypes.has(streamType);
 }
 
+const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['web_rtc', 'hls', 'mjpeg'];
+
+function getLiveFeedOrder(cameraFeedMode: CameraFeedMode): CameraSelectableFeedKind[] {
+  if (cameraFeedMode === 'auto') {
+    return AUTO_LIVE_FEED_ORDER;
+  }
+
+  return [
+    cameraFeedMode,
+    ...AUTO_LIVE_FEED_ORDER.filter((feedKind) => feedKind !== cameraFeedMode),
+  ];
+}
+
 export function selectCameraImageSource({
   cameraViewMode,
+  cameraFeedMode,
   snapshotUrl,
   mjpegStreamUrl,
   frontendStreamTypes,
@@ -57,6 +72,7 @@ export function selectCameraImageSource({
   failedStreamTypes,
 }: {
   cameraViewMode: CameraViewMode;
+  cameraFeedMode: CameraFeedMode;
   snapshotUrl: string | undefined;
   mjpegStreamUrl: string | undefined;
   frontendStreamTypes: readonly CameraStreamType[];
@@ -69,20 +85,21 @@ export function selectCameraImageSource({
   }
 
   if (cameraViewMode === 'live') {
-    if (mjpegStreamUrl && !failedStreamTypes.has('mjpeg')) {
-      return {
-        url: mjpegStreamUrl,
-        kind: 'mjpeg',
-        isFallback: false,
-      };
-    }
+    for (const feedKind of getLiveFeedOrder(cameraFeedMode)) {
+      if (
+        (feedKind === 'web_rtc' || feedKind === 'hls') &&
+        hasUsableStreamType(frontendStreamTypes, failedStreamTypes, feedKind)
+      ) {
+        return { url: undefined, kind: feedKind, isFallback: false };
+      }
 
-    if (hasUsableStreamType(frontendStreamTypes, failedStreamTypes, 'web_rtc')) {
-      return { url: undefined, kind: 'web_rtc', isFallback: false };
-    }
-
-    if (hasUsableStreamType(frontendStreamTypes, failedStreamTypes, 'hls')) {
-      return { url: undefined, kind: 'hls', isFallback: false };
+      if (feedKind === 'mjpeg' && mjpegStreamUrl && !failedStreamTypes.has('mjpeg')) {
+        return {
+          url: mjpegStreamUrl,
+          kind: 'mjpeg',
+          isFallback: false,
+        };
+      }
     }
   }
 

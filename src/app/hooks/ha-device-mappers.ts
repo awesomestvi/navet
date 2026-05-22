@@ -8,6 +8,7 @@ export {
   mapCameraDevice,
   mapClimateDevice,
   mapCoverDevice,
+  mapFanDevice,
   mapLightDevice,
   mapLockDevice,
   mapMediaDevice,

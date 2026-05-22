@@ -91,10 +91,7 @@ describe('WidgetCard sensor group', () => {
 
     expect(screen.queryByText('Widget')).not.toBeInTheDocument();
     expect(screen.getByText('No sensors selected')).toBeInTheDocument();
-    expect(
-      screen.getByText('Add sensors to this group to track them together.')
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Search and add sensors below')).not.toBeInTheDocument();
+    expect(screen.getByText('Search and add sensors below')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Open settings for Sensor group' })
     ).not.toBeInTheDocument();

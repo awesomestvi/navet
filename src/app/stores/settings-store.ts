@@ -7,6 +7,7 @@ import { storage } from '@/app/utils/storage';
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
+export type CameraFeedMode = 'auto' | 'web_rtc' | 'hls' | 'mjpeg';
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -33,6 +34,8 @@ export interface UserSettings {
   effectsQuality: EffectsQuality;
   entityInteractionMode: EntityInteractionMode;
   cameraViewMode: CameraViewMode;
+  cameraViewModes: Record<string, CameraViewMode>;
+  cameraFeedModes: Record<string, CameraFeedMode>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -40,6 +43,8 @@ export interface UserSettings {
 
 interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
+  updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
+  updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
@@ -59,6 +64,8 @@ export const defaultSettings: UserSettings = {
   effectsQuality: 'high',
   entityInteractionMode: 'toggle-first',
   cameraViewMode: 'live',
+  cameraViewModes: {},
+  cameraFeedModes: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -66,6 +73,34 @@ export const defaultSettings: UserSettings = {
 
 function isCameraViewMode(value: unknown): value is CameraViewMode {
   return value === 'live' || value === 'auto' || value === 'snapshot';
+}
+
+function isCameraFeedMode(value: unknown): value is CameraFeedMode {
+  return value === 'auto' || value === 'web_rtc' || value === 'hls' || value === 'mjpeg';
+}
+
+function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
+      isCameraViewMode(entry[1])
+    )
+  );
+}
+
+function normalizeCameraFeedModes(value: unknown): Record<string, CameraFeedMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraFeedMode] =>
+      isCameraFeedMode(entry[1])
+    )
+  );
 }
 
 /**
@@ -87,7 +122,30 @@ export const useSettingsStore = create<SettingsState>()(
       ...defaultSettings,
       effectsQuality: getInitialEffectsQuality(),
       updateSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
-      applyImportedSettings: (importedSettings) => set(() => ({ ...importedSettings })),
+      updateCameraViewMode: (entityId, mode) =>
+        set((state) => ({
+          cameraViewModes: {
+            ...state.cameraViewModes,
+            [entityId]: mode,
+          },
+        })),
+      updateCameraFeedMode: (entityId, mode) =>
+        set((state) => ({
+          cameraFeedModes: {
+            ...state.cameraFeedModes,
+            [entityId]: mode,
+          },
+        })),
+      applyImportedSettings: (importedSettings) =>
+        set(() => ({
+          ...defaultSettings,
+          ...importedSettings,
+          cameraViewMode: isCameraViewMode(importedSettings.cameraViewMode)
+            ? importedSettings.cameraViewMode
+            : defaultSettings.cameraViewMode,
+          cameraViewModes: normalizeCameraViewModes(importedSettings.cameraViewModes),
+          cameraFeedModes: normalizeCameraFeedModes(importedSettings.cameraFeedModes),
+        })),
       resetSettings: () => set(defaultSettings),
     }),
     {
@@ -101,6 +159,8 @@ export const useSettingsStore = create<SettingsState>()(
           cameraViewMode: isCameraViewMode(next.cameraViewMode)
             ? next.cameraViewMode
             : current.cameraViewMode,
+          cameraViewModes: normalizeCameraViewModes(next.cameraViewModes),
+          cameraFeedModes: normalizeCameraFeedModes(next.cameraFeedModes),
         };
       },
     }

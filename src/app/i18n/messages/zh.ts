@@ -1065,7 +1065,14 @@ export const zhMessages = {
   'camera.settings.viewMode.auto': 'Auto',
   'camera.settings.viewMode.snapshot': 'Snapshot',
   'camera.settings.viewMode.description':
-    'Live uses Home Assistant streaming when available. Auto refreshes snapshots. Snapshot refreshes only when requested.',
+    'Live prefers Home Assistant WebRTC/HLS when available, with MJPEG and snapshot fallback. Auto refreshes snapshots. Snapshot refreshes only when requested.',
+  'camera.settings.feedMode': 'Live feed',
+  'camera.settings.feedMode.auto': 'Auto',
+  'camera.settings.feedMode.web_rtc': 'WebRTC',
+  'camera.settings.feedMode.hls': 'HLS',
+  'camera.settings.feedMode.mjpeg': 'MJPEG',
+  'camera.settings.feedMode.description':
+    'Auto prefers WebRTC, then HLS, then MJPEG. Choose a feed to try it first while keeping fallback available.',
   'camera.status.live': '实时',
   'camera.status.unavailable': '摄像头状态',
   'camera.status.noSignal': '无信号',

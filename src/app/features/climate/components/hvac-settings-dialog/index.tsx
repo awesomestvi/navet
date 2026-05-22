@@ -1,4 +1,4 @@
-import { Sliders, Thermometer } from 'lucide-react';
+import { Fan, Sliders, Thermometer } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import {
   CardActionRow,
@@ -276,6 +276,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                         label={getSiblingDisplayName(id, entity.attributes?.friendly_name)}
                         typeLabel={getEntityTypeLabel(id)}
                         state={entity.state}
+                        attributes={entity.attributes}
                       />
                     ))}
                   </div>
@@ -315,17 +316,38 @@ function ClimateSiblingControlRow({
   label,
   typeLabel,
   state,
+  attributes,
 }: {
   entityId: string;
   label: string;
   typeLabel: string;
   state: string;
+  attributes: Record<string, unknown>;
 }) {
   const domain = entityId.split('.')[0] ?? '';
-  const isToggle = domain === 'switch' || domain === 'input_boolean' || domain === 'script';
+  const isFan = domain === 'fan';
+  const isToggle =
+    isFan || domain === 'switch' || domain === 'input_boolean' || domain === 'script';
   const isOn = state === 'on';
+  const fanPercentage = readFanPercentage(attributes.percentage);
+  const fanPercentageStep = readFanPercentageStep(attributes.percentage_step);
+  const fanPresetMode =
+    typeof attributes.preset_mode === 'string' ? attributes.preset_mode : undefined;
+  const fanPresetModes = readStringList(attributes.preset_modes);
 
   const handlePress = useCallback(async () => {
+    if (domain === 'fan') {
+      await homeAssistantService.callService(
+        'fan',
+        isOn ? 'turn_off' : 'turn_on',
+        {},
+        {
+          entity_id: entityId,
+        }
+      );
+      return;
+    }
+
     if (domain === 'button' || domain === 'input_button') {
       await homeAssistantService.callService(domain, 'press', {}, { entity_id: entityId });
       return;
@@ -345,29 +367,144 @@ function ClimateSiblingControlRow({
     );
   }, [domain, entityId, isOn]);
 
-  return (
-    <button
-      type="button"
-      onClick={handlePress}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-transparent bg-white/5 px-4 py-3 text-left transition-colors hover:bg-white/10"
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-white">{label}</span>
-        <span className="block text-xs text-white/72">{typeLabel}</span>
-      </span>
-      {isToggle ? (
-        <div
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${isOn ? 'bg-blue-500' : 'bg-white/20'}`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${isOn ? 'translate-x-5' : 'translate-x-0.5'}`}
-          />
-        </div>
-      ) : (
-        <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-xs font-medium text-white/88">
-          Run
-        </span>
-      )}
-    </button>
+  const setFanPercentage = useCallback(
+    async (percentage: number) => {
+      await homeAssistantService.callService(
+        'fan',
+        'set_percentage',
+        { percentage: clampFanPercentage(percentage) },
+        { entity_id: entityId }
+      );
+    },
+    [entityId]
   );
+
+  const setFanPresetMode = useCallback(
+    async (presetMode: string) => {
+      await homeAssistantService.callService(
+        'fan',
+        'set_preset_mode',
+        { preset_mode: presetMode },
+        { entity_id: entityId }
+      );
+    },
+    [entityId]
+  );
+
+  const nextLowerFanPercentage = clampFanPercentage((fanPercentage ?? 0) - fanPercentageStep);
+  const nextHigherFanPercentage = clampFanPercentage((fanPercentage ?? 0) + fanPercentageStep);
+
+  return (
+    <div className="rounded-2xl border border-transparent bg-white/5 transition-colors hover:bg-white/10">
+      <button
+        type="button"
+        onClick={handlePress}
+        className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          {isFan ? <Fan className="h-4 w-4 shrink-0 text-white/72" /> : null}
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-white">{label}</span>
+            <span className="block text-xs text-white/72">
+              {isFan && fanPercentage !== undefined
+                ? `${typeLabel} · ${fanPercentage}%`
+                : typeLabel}
+            </span>
+          </span>
+        </span>
+        {isToggle ? (
+          <span
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${isOn ? 'bg-blue-500' : 'bg-white/20'}`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${isOn ? 'translate-x-5' : 'translate-x-0.5'}`}
+            />
+          </span>
+        ) : (
+          <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-xs font-medium text-white/88">
+            Run
+          </span>
+        )}
+      </button>
+
+      {isFan && (fanPercentage !== undefined || fanPresetModes.length > 0) ? (
+        <div className="space-y-2 border-t border-white/10 px-4 pt-3 pb-3">
+          {fanPercentage !== undefined ? (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-medium text-white/72">Speed</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFanPercentage(nextLowerFanPercentage)}
+                  disabled={!isOn || fanPercentage <= 0}
+                  className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-xs font-semibold text-white/88 transition-colors hover:bg-white/14 disabled:opacity-40"
+                >
+                  {nextLowerFanPercentage}%
+                </button>
+                <span className="min-w-10 text-center text-xs font-semibold text-white">
+                  {fanPercentage}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFanPercentage(nextHigherFanPercentage)}
+                  disabled={!isOn || fanPercentage >= 100}
+                  className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-xs font-semibold text-white/88 transition-colors hover:bg-white/14 disabled:opacity-40"
+                >
+                  {nextHigherFanPercentage}%
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {fanPresetModes.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {fanPresetModes.map((presetMode) => (
+                <button
+                  type="button"
+                  key={presetMode}
+                  onClick={() => setFanPresetMode(presetMode)}
+                  disabled={!isOn}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                    presetMode === fanPresetMode
+                      ? 'border-blue-300/40 bg-blue-500/24 text-white'
+                      : 'border-white/12 bg-white/8 text-white/80 hover:bg-white/14'
+                  }`}
+                >
+                  {presetMode}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function readFanPercentage(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  return clampFanPercentage(value);
+}
+
+function readFanPercentageStep(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return 25;
+  }
+
+  return Math.min(100, Math.max(1, Math.round(value)));
+}
+
+function readStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+}
+
+function clampFanPercentage(value: number): number {
+  return Math.min(100, Math.max(0, Math.round(value)));
 }

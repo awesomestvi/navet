@@ -13,7 +13,11 @@ import {
   useServiceActionHandler,
   useTheme,
 } from '@/app/hooks';
-import { parseNumberish } from '@/app/hooks/ha-entity-utils';
+import {
+  parseNumberish,
+  resolveClimateTemperatureUnit,
+  resolveHomeAssistantTemperatureUnit,
+} from '@/app/hooks/ha-entity-utils';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
@@ -123,10 +127,19 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const homeAssistantTemperatureUnit = useHomeAssistant((state) =>
+    resolveHomeAssistantTemperatureUnit(state.config)
+  );
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
+  const effectiveSourceTemperatureUnit = useMemo(
+    () =>
+      sourceTemperatureUnit ??
+      resolveClimateTemperatureUnit(liveEntity, homeAssistantTemperatureUnit),
+    [homeAssistantTemperatureUnit, liveEntity, sourceTemperatureUnit]
+  );
   const temperatureRange = useMemo(
-    () => resolveClimateTemperatureRange(liveEntity, sourceTemperatureUnit),
-    [liveEntity, sourceTemperatureUnit]
+    () => resolveClimateTemperatureRange(liveEntity, effectiveSourceTemperatureUnit),
+    [effectiveSourceTemperatureUnit, liveEntity]
   );
   const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
   const pendingTargetTempRef = useRef<number | null>(null);
@@ -311,32 +324,39 @@ export function useHVACCardController({
       : undefined;
   const displayMinTemp = convertTemperatureUnitValue(
     temperatureRange.minTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayMaxTemp = convertTemperatureUnitValue(
     temperatureRange.maxTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayStep = Math.abs(
-    convertTemperatureUnitValue(temperatureRange.step, sourceTemperatureUnit, temperatureUnit) -
-      convertTemperatureUnitValue(0, sourceTemperatureUnit, temperatureUnit)
+    convertTemperatureUnitValue(
+      temperatureRange.step,
+      effectiveSourceTemperatureUnit,
+      temperatureUnit
+    ) - convertTemperatureUnitValue(0, effectiveSourceTemperatureUnit, temperatureUnit)
   );
   const displayTargetTemp = convertTemperatureUnitValue(
     targetTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayCurrentTemp = convertTemperatureUnitValue(
     currentTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
 
   const updateDisplayTargetTemp = (nextTemp: number, immediate = false) => {
     updateTargetTemp(
-      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit),
+      convertDisplayTemperatureToSourceUnit(
+        nextTemp,
+        temperatureUnit,
+        effectiveSourceTemperatureUnit
+      ),
       immediate
     );
   };
@@ -351,12 +371,16 @@ export function useHVACCardController({
     displayStep,
     displayTargetTemp,
     formatTemperature: (value: number) =>
-      sourceTemperatureUnit
-        ? formatTemperatureFromSourceUnit(value, sourceTemperatureUnit, temperatureUnit)
+      effectiveSourceTemperatureUnit
+        ? formatTemperatureFromSourceUnit(value, effectiveSourceTemperatureUnit, temperatureUnit)
         : formatTemperature(value, temperatureUnit),
     formatTemperatureValue: (value: number) =>
-      sourceTemperatureUnit
-        ? formatTemperatureValueFromSourceUnit(value, sourceTemperatureUnit, temperatureUnit)
+      effectiveSourceTemperatureUnit
+        ? formatTemperatureValueFromSourceUnit(
+            value,
+            effectiveSourceTemperatureUnit,
+            temperatureUnit
+          )
         : formatTemperatureValue(value, temperatureUnit),
     isMedium,
     isOn,
@@ -380,7 +404,7 @@ export function useHVACCardController({
     step: temperatureRange.step,
     targetTemp,
     temperatureUnit,
-    sourceTemperatureUnit,
+    sourceTemperatureUnit: effectiveSourceTemperatureUnit,
     textColor,
     theme,
   };

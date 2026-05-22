@@ -2,6 +2,7 @@ export { mapCalendarSources } from './map-calendar-device';
 export { mapCameraDevice } from './map-camera-device';
 export { mapClimateDevice } from './map-climate-device';
 export { mapCoverDevice } from './map-cover-device';
+export { mapFanDevice } from './map-fan-device';
 export { mapLightDevice } from './map-light-device';
 export { mapLockDevice } from './map-lock-device';
 export { mapMediaDevice } from './map-media-device';

@@ -7,12 +7,14 @@ export type InteractivePillIntent = 'navigation' | 'action';
 export type InteractivePillVariant = 'default' | 'ghost';
 
 export function getInteractivePillStyles({
+  accentColor,
   intent = 'navigation',
   isActive,
   primaryColor,
   theme,
   variant = 'default',
 }: {
+  accentColor?: string;
   intent?: InteractivePillIntent;
   isActive: boolean;
   primaryColor: PrimaryColor;
@@ -22,7 +24,7 @@ export function getInteractivePillStyles({
   className: string;
   style?: CSSProperties;
 } {
-  const accent = getThemeColorValue(primaryColor);
+  const accent = accentColor ?? getThemeColorValue(primaryColor);
   const pickerTokens = getThemeAppearancePickerTokens(theme, accent);
   const isGhost = variant === 'ghost';
   const baseClassName = isGhost

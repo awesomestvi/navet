@@ -6,6 +6,7 @@ import type {
   CameraDevice,
   ClimateDevice,
   CoverDevice,
+  FanDevice,
   HelperDevice,
   LightDevice,
   LockDevice,
@@ -20,6 +21,7 @@ import {
   mapCameraDevice,
   mapClimateDevice,
   mapCoverDevice,
+  mapFanDevice,
   mapLightDevice,
   mapLockDevice,
   mapMediaDevice,
@@ -28,7 +30,7 @@ import {
   mapSwitchDevice,
   mapVacuumDevice,
 } from './ha-device-mappers';
-import { getName, resolveEntityRoom } from './ha-entity-utils';
+import { getName, resolveEntityRoom, resolveHomeAssistantTemperatureUnit } from './ha-entity-utils';
 import { useCalendarDevices } from './use-calendar-devices';
 import {
   buildDeviceIndexes,
@@ -63,6 +65,9 @@ function useRegistryRoomResolver() {
 export const useHADevices = () => {
   const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
   const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+  const homeAssistantTemperatureUnit = useHomeAssistant((state) =>
+    resolveHomeAssistantTemperatureUnit(state.config)
+  );
   const { t } = useI18n();
   const calendars = useCalendarDevices();
   const weather = useWeatherDevices();
@@ -73,6 +78,7 @@ export const useHADevices = () => {
     }
 
     const lights: LightDevice[] = [];
+    const fans: FanDevice[] = [];
     const switches: SwitchDevice[] = [];
     const helpers: HelperDevice[] = [];
     const climate: ClimateDevice[] = [];
@@ -100,6 +106,10 @@ export const useHADevices = () => {
       switch (domain) {
         case 'light':
           lights.push(mapLightDevice(entityId, entity, name, room));
+          break;
+
+        case 'fan':
+          fans.push(mapFanDevice(entityId, entity, name, room));
           break;
 
         case 'switch': {
@@ -146,7 +156,9 @@ export const useHADevices = () => {
 
         case 'climate':
         case 'water_heater':
-          climate.push(mapClimateDevice(entityId, entity, name, room));
+          climate.push(
+            mapClimateDevice(entityId, entity, name, room, homeAssistantTemperatureUnit)
+          );
           break;
 
         case 'media_player':
@@ -189,6 +201,7 @@ export const useHADevices = () => {
 
     return {
       lights,
+      fans,
       hvac: [],
       climate,
       media,
@@ -205,7 +218,7 @@ export const useHADevices = () => {
       cameras,
       'grouped-sensors': [],
     };
-  }, [areaMap, deviceRegistryMap, entities, entityRegistryMap, t]);
+  }, [areaMap, deviceRegistryMap, entities, entityRegistryMap, homeAssistantTemperatureUnit, t]);
 
   return useMemo(
     () => ({

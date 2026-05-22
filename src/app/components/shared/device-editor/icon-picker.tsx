@@ -46,6 +46,7 @@ interface IconPickerProps {
   onIconChange: (iconName: string) => void;
   isLightOn: boolean;
   label?: string;
+  accentColor?: string;
 }
 
 const lightIcons = [
@@ -93,10 +94,11 @@ export const IconPicker = memo(function IconPicker({
   onIconChange,
   isLightOn,
   label,
+  accentColor,
 }: IconPickerProps) {
   const { primaryColor } = useTheme();
   const { t } = useI18n();
-  const activeColor = getThemeColorValue(primaryColor);
+  const activeColor = accentColor ?? getThemeColorValue(primaryColor);
   const editorSurface = getDeviceEditorSurfaceTokens(isLightOn);
   const normalizedIconName = normalizeLightIconName(selectedIcon);
   const customIconComponent = normalizedIconName

@@ -1,3 +1,4 @@
+export { FanCard } from './components/fan-card';
 export { LightCard } from './components/light-card';
 export { getLightCardSurfaceTokens } from './components/light-card/light-card-surface-tokens';
 export { kelvinToColor } from './components/light-card/light-card-utils';

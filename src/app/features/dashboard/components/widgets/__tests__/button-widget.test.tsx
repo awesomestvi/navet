@@ -1,0 +1,68 @@
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { renderWithProviders } from '@/test/render';
+import { ButtonWidget } from '../button-widget';
+
+vi.mock('@/app/services/home-assistant.service', () => ({
+  homeAssistantService: {
+    callService: vi.fn(),
+  },
+}));
+
+describe('ButtonWidget', () => {
+  beforeEach(() => {
+    vi.mocked(homeAssistantService.callService).mockReset();
+    vi.mocked(homeAssistantService.callService).mockResolvedValue(undefined);
+  });
+
+  it('runs the configured action without bubbling to the card container', async () => {
+    const onCardClick = vi.fn();
+
+    renderWithProviders(
+      <button aria-label="Card container" type="button" onClick={onCardClick}>
+        <ButtonWidget
+          data={{
+            label: 'Movie Mode',
+            service: 'scene.turn_on',
+            entityId: 'scene.movie_mode',
+            icon: 'Film',
+          }}
+        />
+      </button>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
+
+    await waitFor(() => {
+      expect(homeAssistantService.callService).toHaveBeenCalledWith(
+        'scene',
+        'turn_on',
+        {},
+        { entity_id: 'scene.movie_mode' }
+      );
+    });
+    expect(onCardClick).not.toHaveBeenCalled();
+  });
+
+  it('does not open the settings dialog just because an unconfigured card mounts', () => {
+    const { rerender } = renderWithProviders(<ButtonWidget data={{ label: 'Movie Mode' }} />);
+
+    expect(screen.getByText('Action Button')).toBeInTheDocument();
+    expect(screen.getByText('Tap to set up')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    rerender(<ButtonWidget data={{ label: 'Movie Mode' }} />);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('opens the settings dialog from the unconfigured empty state action', () => {
+    renderWithProviders(<ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+
+    expect(screen.getByText('Action Button')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Button label')).toBeInTheDocument();
+  });
+});

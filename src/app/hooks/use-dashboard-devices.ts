@@ -10,6 +10,7 @@ export const useDashboardDevices = (
 
     return {
       lights: devices.lights.filter((device) => !hiddenIds.has(device.id)),
+      fans: devices.fans.filter((device) => !hiddenIds.has(device.id)),
       hvac: devices.hvac.filter((device) => !hiddenIds.has(device.id)),
       climate: devices.climate.filter((device) => !hiddenIds.has(device.id)),
       media: devices.media.filter((device) => !hiddenIds.has(device.id)),

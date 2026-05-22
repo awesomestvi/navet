@@ -11,9 +11,14 @@ import { storage } from '@/app/utils/storage';
 interface UseSwitchCardAppearanceParams {
   id: string;
   isScript: boolean;
+  defaultIconName?: string;
 }
 
-function getDefaultSwitchIconName(isScript: boolean) {
+function getDefaultSwitchIconName(isScript: boolean, defaultIconName?: string) {
+  if (defaultIconName) {
+    return defaultIconName;
+  }
+
   return isScript ? 'Play' : 'Power';
 }
 
@@ -30,7 +35,11 @@ function normalizeStoredTint(value: unknown) {
   return typeof value === 'string' ? value : '';
 }
 
-export function useSwitchCardAppearance({ id, isScript }: UseSwitchCardAppearanceParams): {
+export function useSwitchCardAppearance({
+  id,
+  isScript,
+  defaultIconName: defaultIconNameOverride,
+}: UseSwitchCardAppearanceParams): {
   HeaderIconComponent: LucideIcon | null;
   headerIconText: string | null;
   selectedIcon: string;
@@ -38,7 +47,7 @@ export function useSwitchCardAppearance({ id, isScript }: UseSwitchCardAppearanc
   tintColor: string;
   setTintColor: (color: string) => void;
 } {
-  const defaultIconName = getDefaultSwitchIconName(isScript);
+  const defaultIconName = getDefaultSwitchIconName(isScript, defaultIconNameOverride);
   const iconStorageKey = `${STORAGE_KEYS.switchCardIcons}:${id}`;
   const tintStorageKey = `${STORAGE_KEYS.switchCardTintColors}:${id}`;
   const [selectedIcon, setSelectedIconState] = useState(() =>
