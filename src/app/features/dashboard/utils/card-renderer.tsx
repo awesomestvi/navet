@@ -336,6 +336,19 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       name={device.name as string}
       room={device.room as string}
       initialPosition={device.position as number | undefined}
+      initialPositionMode={device.positionMode as 'position' | 'tilt' | undefined}
+      initialDeviceClass={
+        device.deviceClass as
+          | 'blind'
+          | 'shade'
+          | 'curtain'
+          | 'garage'
+          | 'gate'
+          | 'awning'
+          | 'shutter'
+          | 'door'
+          | undefined
+      }
       supportedFeatures={device.supportedFeatures as number | undefined}
       hasPosition={device.hasPosition as boolean | undefined}
       size={size}

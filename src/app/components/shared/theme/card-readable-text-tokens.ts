@@ -42,7 +42,13 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function normalizeHex(color: string): string {
+function rgbToHex({ r, g, b }: { r: number; g: number; b: number }) {
+  return `#${[r, g, b]
+    .map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+function normalizeColor(color: string): string {
   const value = color.trim().toLowerCase();
   if (/^#[0-9a-f]{6}$/.test(value)) {
     return value;
@@ -52,22 +58,27 @@ function normalizeHex(color: string): string {
     return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
   }
 
+  const rgbMatch = value.match(
+    /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)(?:\s*,\s*(?:\d+(?:\.\d+)?))?\s*\)$/
+  );
+  if (rgbMatch) {
+    return rgbToHex({
+      r: Number(rgbMatch[1]),
+      g: Number(rgbMatch[2]),
+      b: Number(rgbMatch[3]),
+    });
+  }
+
   return '#64748b';
 }
 
 function hexToRgb(color: string) {
-  const normalized = normalizeHex(color);
+  const normalized = normalizeColor(color);
   return {
     r: Number.parseInt(normalized.slice(1, 3), 16),
     g: Number.parseInt(normalized.slice(3, 5), 16),
     b: Number.parseInt(normalized.slice(5, 7), 16),
   };
-}
-
-function rgbToHex({ r, g, b }: { r: number; g: number; b: number }) {
-  return `#${[r, g, b]
-    .map((channel) => clamp(Math.round(channel), 0, 255).toString(16).padStart(2, '0'))
-    .join('')}`;
 }
 
 function mixColors(colorA: string, colorB: string, ratio: number) {
@@ -113,11 +124,11 @@ export function resolveCardToneBaseColor({
   baseColor?: string | null;
 }) {
   if (baseColor) {
-    return normalizeHex(baseColor);
+    return normalizeColor(baseColor);
   }
 
   if (tone === 'primary') {
-    return normalizeHex(accentColor ?? '#f97316');
+    return normalizeColor(accentColor ?? '#f97316');
   }
 
   if (tone === 'neutral') {
@@ -134,7 +145,7 @@ function resolveBackgroundColor(
   backgroundColor?: string | null
 ) {
   if (backgroundColor) {
-    return normalizeHex(backgroundColor);
+    return normalizeColor(backgroundColor);
   }
 
   if (tone === 'neutral') {

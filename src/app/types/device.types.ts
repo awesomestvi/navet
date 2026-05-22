@@ -100,6 +100,8 @@ export interface MediaDevice extends BaseDevice {
   durationSeconds?: number;
   positionUpdatedAt?: string;
   supportsGrouping?: boolean;
+  supportsPreviousTrack?: boolean;
+  supportsNextTrack?: boolean;
   groupMembers?: string[];
 }
 
@@ -125,6 +127,8 @@ export type HelperDevice = Pick<
 export interface CoverDevice extends BaseDevice {
   room: string;
   position: number;
+  positionMode?: 'position' | 'tilt';
+  deviceClass?: string;
   supportedFeatures?: number;
   hasPosition?: boolean;
 }

@@ -1,5 +1,5 @@
 import { act } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 
 const { runActionMock, serviceMock } = vi.hoisted(() => ({
@@ -22,6 +22,10 @@ vi.mock('@/app/services/home-assistant.service', () => ({
 import { useMediaPlayback } from '../use-media-playback';
 
 describe('useMediaPlayback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('wires service actions through the shared handler', () => {
     expect(runActionMock).toBeTypeOf('function');
   });
@@ -31,6 +35,8 @@ describe('useMediaPlayback', () => {
       useMediaPlayback({
         entityId: 'media_player.living_room',
         isPlaying: false,
+        canPreviousTrack: true,
+        canNextTrack: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -51,6 +57,8 @@ describe('useMediaPlayback', () => {
         useMediaPlayback({
           entityId: 'media_player.living_room',
           isPlaying: true,
+          canPreviousTrack: true,
+          canNextTrack: true,
           shuffleEnabled: false,
           repeatMode,
           t: (key) => key,
@@ -77,6 +85,8 @@ describe('useMediaPlayback', () => {
       useMediaPlayback({
         entityId: 'media_player.office',
         isPlaying: true,
+        canPreviousTrack: true,
+        canNextTrack: true,
         shuffleEnabled: true,
         repeatMode: 'off',
         t: (key) => key,
@@ -93,6 +103,8 @@ describe('useMediaPlayback', () => {
       useMediaPlayback({
         entityId: 'media_player.office',
         isPlaying: true,
+        canPreviousTrack: true,
+        canNextTrack: true,
         shuffleEnabled: false,
         repeatMode: 'off',
         t: (key) => key,
@@ -104,5 +116,27 @@ describe('useMediaPlayback', () => {
 
     act(() => result.current.closeDialog(false));
     expect(result.current.isOpen).toBe(false);
+  });
+
+  it('does not call previous or next services when the player does not support track skipping', () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaPlayback({
+        entityId: 'media_player.bedroom',
+        isPlaying: true,
+        canPreviousTrack: false,
+        canNextTrack: false,
+        shuffleEnabled: false,
+        repeatMode: 'off',
+        t: (key) => key,
+      })
+    );
+
+    act(() => {
+      result.current.handlePrevious();
+      result.current.handleNext();
+    });
+
+    expect(serviceMock.updateMediaPlayerPlayback).not.toHaveBeenCalled();
+    expect(runActionMock).not.toHaveBeenCalled();
   });
 });

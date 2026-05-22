@@ -16,6 +16,7 @@ import { MediaMarqueeText } from './media-marquee-text';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
+import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaSmallViewProps {
   entityId: string;
@@ -32,8 +33,10 @@ interface MediaSmallViewProps {
   theme: ThemeType;
   onToggleMute: () => void;
   onPrevious: () => void;
+  canPreviousTrack: boolean;
   onTogglePlay: () => void;
   onNext: () => void;
+  canNextTrack: boolean;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
   onVolumeInteractionEnd: () => void;
@@ -55,8 +58,10 @@ export function MediaSmallView({
   theme,
   onToggleMute,
   onPrevious,
+  canPreviousTrack,
   onTogglePlay,
   onNext,
+  canNextTrack,
   onVolumeChange,
   onVolumeInteractionStart,
   onVolumeInteractionEnd,
@@ -66,11 +71,12 @@ export function MediaSmallView({
   const [showDeferredBackdrop, setShowDeferredBackdrop] = useState(false);
   const { containerRef, isVolumeMode, registerVolumeInteraction, toggleVolumeMode } =
     useMediaVolumeMode();
+  const stableArtwork = useStableMediaArtwork(artwork);
 
   useEffect(() => {
     setShowDeferredBackdrop(false);
 
-    if (!artwork) {
+    if (!stableArtwork) {
       return;
     }
 
@@ -81,13 +87,13 @@ export function MediaSmallView({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [artwork]);
+  }, [stableArtwork]);
 
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
+  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
@@ -95,15 +101,16 @@ export function MediaSmallView({
   });
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
-  const subduedFallback = !artwork && !isActive;
+  const subduedFallback = !stableArtwork && !isActive;
   const fallbackTitleColor =
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
+  const controlIconStyle = { color: fallbackTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(palette.highlight, 0.14),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.12)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
   };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
@@ -111,9 +118,9 @@ export function MediaSmallView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(palette.highlight, 0.22),
+        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          palette.highlight,
+          fallbackTitleColor,
           0.18
         )}`,
       }
@@ -124,34 +131,34 @@ export function MediaSmallView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(palette.highlight, 0.22),
+        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          palette.highlight,
+          fallbackTitleColor,
           0.18
         )}`,
       }
     : neutralButtonStyle;
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(palette.highlight, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.14)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
+  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${palette.highlight} 0%, ${palette.vibrant} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(palette.vibrant, 0.26)}`,
+    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: palette.highlight,
-    boxShadow: `0 0 0 1px ${withAlpha(palette.highlight, 0.2)}, 0 0 14px ${withAlpha(
-      palette.vibrant,
+    backgroundColor: fallbackTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      fallbackTitleColor,
       0.32
     )}`,
   };
   const shouldRenderDecorativeArtworkLayers =
-    artwork !== null &&
-    artwork !== undefined &&
-    (import.meta.env.DEV || !isMediaPlayerProxyUrl(artwork));
+    stableArtwork !== null &&
+    stableArtwork !== undefined &&
+    (import.meta.env.DEV || !isMediaPlayerProxyUrl(stableArtwork));
   const backgroundBaseStyle = {
     background: subduedFallback
       ? `linear-gradient(165deg, ${withAlpha(palette.dominant, 0.18)} 0%, ${withAlpha(
@@ -201,22 +208,22 @@ export function MediaSmallView({
       className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]"
     >
       <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
-      {artwork ? (
+      {stableArtwork ? (
         showDeferredBackdrop && shouldRenderDecorativeArtworkLayers ? (
           <>
             <img
-              src={artwork}
+              src={stableArtwork}
               alt=""
               aria-hidden="true"
-              onError={() => onArtworkError?.(artwork)}
+              onError={() => onArtworkError?.(stableArtwork)}
               className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-58 saturate-[1.02] contrast-[0.98]"
               decoding="async"
             />
             <img
-              src={artwork}
+              src={stableArtwork}
               alt=""
               aria-hidden="true"
-              onError={() => onArtworkError?.(artwork)}
+              onError={() => onArtworkError?.(stableArtwork)}
               className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-16 blur-[26px] saturate-[1.02]"
               decoding="async"
             />
@@ -284,7 +291,7 @@ export function MediaSmallView({
                 onTogglePlay();
               }}
               className="h-10 w-10 border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
+              iconStyle={controlIconStyle}
               style={subduedFallback ? undefined : playButtonStyle}
             >
               {isPlaying ? (
@@ -307,7 +314,7 @@ export function MediaSmallView({
               toggleVolumeMode();
             }}
             className="border backdrop-blur-xl transition-colors"
-            iconClassName="!text-white"
+            iconStyle={controlIconStyle}
             style={volumeToggleButtonStyle}
           >
             <Volume2 className={controlSizes.icon} />
@@ -351,7 +358,7 @@ export function MediaSmallView({
                 onToggleMute();
               }}
               className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white"
+              iconStyle={controlIconStyle}
               style={muteButtonStyle}
             >
               <VolumeX className={controlSizes.icon} />
@@ -363,12 +370,13 @@ export function MediaSmallView({
                 size="small"
                 variant="neutral"
                 aria-label={t('media.previousTrack')}
+                disabled={!canPreviousTrack}
                 onClick={(event) => {
                   event.stopPropagation();
                   onPrevious();
                 }}
-                className="border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                iconStyle={controlIconStyle}
                 style={neutralButtonStyle}
               >
                 <SkipBack className={controlSizes.icon} />
@@ -379,12 +387,13 @@ export function MediaSmallView({
                 size="small"
                 variant="neutral"
                 aria-label={t('media.nextTrack')}
+                disabled={!canNextTrack}
                 onClick={(event) => {
                   event.stopPropagation();
                   onNext();
                 }}
-                className="border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                iconStyle={controlIconStyle}
                 style={neutralButtonStyle}
               >
                 <SkipForward className={controlSizes.icon} />

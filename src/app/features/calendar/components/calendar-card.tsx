@@ -115,6 +115,7 @@ export const CalendarCard = memo(function CalendarCard({
               theme={theme}
               size={chromeSize}
               variant="soft"
+              accentColor={effectiveCalendarAccentColor}
               className="absolute right-0 top-0 z-10"
               aria-label={t('calendar.settings.title')}
               onPointerDown={(event) => event.stopPropagation()}

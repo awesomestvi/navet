@@ -30,6 +30,10 @@ function stripHomeAssistantProxyPath(path: string) {
   return unproxiedPath.startsWith('/') ? unproxiedPath : `/${unproxiedPath}`;
 }
 
+interface ResolveHomeAssistantProxyUrlOptions {
+  proxyAvailable?: boolean;
+}
+
 export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: string) {
   if (!resourceUrl) {
     return null;
@@ -71,7 +75,11 @@ export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: s
   return sanitizeImageUrl(resourceUrl) ?? null;
 }
 
-export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: string) {
+export function resolveHomeAssistantProxyUrl(
+  resourceUrl: string,
+  hassUrl?: string,
+  options: ResolveHomeAssistantProxyUrlOptions = {}
+) {
   if (!resourceUrl) {
     return null;
   }
@@ -90,6 +98,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
       return `${stripHomeAssistantProxyPath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
     }
 
+    if (options.proxyAvailable === false) {
+      return null;
+    }
+
     return `${resolveIngressAwarePath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
   }
 
@@ -100,6 +112,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
   ) {
     if (isHomeAssistantPanelMode()) {
       return resourceUrl;
+    }
+
+    if (options.proxyAvailable === false) {
+      return hassUrl ? `${hassUrl}${resourceUrl}` : null;
     }
 
     return resolveProxyPath(resourceUrl);
@@ -142,6 +158,10 @@ export function resolveHomeAssistantProxyUrl(resourceUrl: string, hassUrl?: stri
 
     if (isHomeAssistantPanelMode()) {
       return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
+    }
+
+    if (options.proxyAvailable === false) {
+      return sanitizeImageUrl(resourceUrl);
     }
 
     return `${resolveProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;

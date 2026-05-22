@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { useTheme } from '@/app/hooks';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '@/app/storybook/story-frames';
+import { RSSFeedCardView } from './view';
 
 function RSSFeedStory({
   size = 'large',
@@ -11,6 +13,47 @@ function RSSFeedStory({
   tintColor?: string;
 }) {
   return <CustomWidgetStoryFrame card={buildCustomCard('rss', size, { tintColor })} />;
+}
+
+function RSSEmptyStory({
+  size = 'medium',
+  variant = 'no-selection',
+}: {
+  size?: CardSize;
+  variant?: 'no-providers' | 'no-selection' | 'no-articles';
+}) {
+  const { theme, accentColor } = useTheme();
+
+  return (
+    <div style={{ width: size === 'small' ? 160 : 320, height: size === 'large' ? 320 : 160 }}>
+      <RSSFeedCardView
+        size={size}
+        theme={theme}
+        accentColor={accentColor}
+        colors={{
+          rss: {
+            gradient: 'from-sky-500/20 via-blue-500/10 to-transparent',
+            border: 'border-white/10',
+            glow: 'from-sky-300/20',
+          },
+        }}
+        tintColor="#3b82f6"
+        isSmall={size === 'small'}
+        isMedium={size === 'medium'}
+        latestArticle={null}
+        items={[]}
+        selectedProviders={[]}
+        activeProviderId="all"
+        onActiveProviderChange={() => {}}
+        handleArticleClick={() => {}}
+        isLoading={false}
+        error={null}
+        hasConfiguredProviders={variant !== 'no-providers'}
+        hasSelectedProviders={variant !== 'no-providers' && variant !== 'no-selection'}
+        onOpenSettings={() => {}}
+      />
+    </div>
+  );
 }
 
 const meta = {
@@ -87,4 +130,16 @@ export const LargeDarkTint: Story = {
     size: 'large',
     tintColor: '#1d4ed8',
   },
+};
+
+export const EmptyNoProviders: Story = {
+  render: () => <RSSEmptyStory size="medium" variant="no-providers" />,
+};
+
+export const EmptyNoSelection: Story = {
+  render: () => <RSSEmptyStory size="medium" variant="no-selection" />,
+};
+
+export const EmptyNoArticles: Story = {
+  render: () => <RSSEmptyStory size="large" variant="no-articles" />,
 };

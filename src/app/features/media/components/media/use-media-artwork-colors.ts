@@ -46,8 +46,25 @@ const FALLBACK_COLORS: Record<ThemeType, MediaArtworkPalette> = {
 
 const paletteCache = new Map<string, MediaArtworkPalette>();
 const pendingPaletteRequests = new Map<string, Promise<MediaArtworkPalette | null>>();
+const ARTWORK_PALETTE_CLEAR_DELAY_MS = 700;
 
 export function withAlpha(color: string, alpha: number) {
+  const hexValue = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexValue) {
+    const normalized =
+      hexValue[1].length === 3
+        ? hexValue[1]
+            .split('')
+            .map((channel) => `${channel}${channel}`)
+            .join('')
+        : hexValue[1];
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   const values = color.match(/\d+(\.\d+)?/g);
   if (!values || values.length < 3) return color;
   const [r, g, b] = values;
@@ -66,7 +83,26 @@ export function useMediaArtworkColors(
 
   useEffect(() => {
     if (!artwork) {
-      setColors(FALLBACK_COLORS[theme]);
+      const timeoutId = window.setTimeout(() => {
+        setColors(FALLBACK_COLORS[theme]);
+      }, ARTWORK_PALETTE_CLEAR_DELAY_MS);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    const fallbackColors = FALLBACK_COLORS[theme];
+    setColors((currentColors) =>
+      currentColors === FALLBACK_COLORS.light ||
+      currentColors === FALLBACK_COLORS.dark ||
+      currentColors === FALLBACK_COLORS.glass ||
+      currentColors === FALLBACK_COLORS.black
+        ? fallbackColors
+        : currentColors
+    );
+
+    if (requestKey.length === 0) {
       return;
     }
 
@@ -75,8 +111,6 @@ export function useMediaArtworkColors(
       setColors(cachedPalette);
       return;
     }
-
-    setColors(FALLBACK_COLORS[theme]);
 
     let cancelled = false;
     const existingRequest = pendingPaletteRequests.get(requestKey);

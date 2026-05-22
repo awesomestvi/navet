@@ -14,6 +14,7 @@ import { EnergyNowGradientOverlays } from './energy-now-gradient-overlays';
 
 interface EnergyNowCardViewProps {
   title: string;
+  subtitle?: string;
   currentLoadW: number;
   todayUsageKWh: number;
   trend: EnergySeriesPoint[];
@@ -24,6 +25,7 @@ interface EnergyNowCardViewProps {
 
 export const EnergyNowCardView = memo(function EnergyNowCardView({
   title,
+  subtitle = 'Energy',
   currentLoadW,
   todayUsageKWh,
   trend,
@@ -118,7 +120,7 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
           ) : (
             <EntityCardHeader
               title={title}
-              subtitle="Energy"
+              subtitle={subtitle}
               size={headerSize}
               layout="eyebrow-first"
               className="mb-0"

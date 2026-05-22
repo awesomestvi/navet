@@ -16,6 +16,7 @@ import { resolveAppLanguage } from '@/app/i18n/config';
 import { isSection } from '@/app/navigation/sections';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
+  type CameraViewMode,
   defaultSettings,
   useSettingsStore,
   type WeatherMetricId,
@@ -83,6 +84,7 @@ const weatherMetricIds = new Set<WeatherMetricId>([
   'uvIndex',
   'cloudCover',
 ]);
+const cameraViewModes = new Set<CameraViewMode>(['live', 'auto', 'snapshot']);
 
 function isWeatherMetricId(value: unknown): value is WeatherMetricId {
   return typeof value === 'string' && weatherMetricIds.has(value as WeatherMetricId);
@@ -90,6 +92,12 @@ function isWeatherMetricId(value: unknown): value is WeatherMetricId {
 
 function resolveWeatherMetricIds(value: unknown): WeatherMetricId[] {
   return Array.isArray(value) ? value.filter(isWeatherMetricId) : defaultSettings.weatherMetricIds;
+}
+
+function resolveCameraViewMode(value: unknown): CameraViewMode {
+  return typeof value === 'string' && cameraViewModes.has(value as CameraViewMode)
+    ? (value as CameraViewMode)
+    : defaultSettings.cameraViewMode;
 }
 
 function areArraysEqual<T>(left: T[], right: T[]) {
@@ -143,6 +151,10 @@ const buildExportedSettings = (
     entityInteractionMode:
       settingsState.entityInteractionMode !== defaultSettings.entityInteractionMode
         ? settingsState.entityInteractionMode
+        : undefined,
+    cameraViewMode:
+      settingsState.cameraViewMode !== defaultSettings.cameraViewMode
+        ? settingsState.cameraViewMode
         : undefined,
     weatherMetricIds: !areArraysEqual(
       settingsState.weatherMetricIds,
@@ -226,6 +238,7 @@ const cardTypes = new Set<CardType>([
   'energy-now',
   'button',
   'map',
+  'sensor-group',
 ]);
 const cardSizes = new Set(['small', 'medium', 'large', 'extra-large']);
 const MAX_IMPORTED_CARDS = 200;
@@ -400,6 +413,23 @@ function sanitizeCustomCardData(
     });
   }
 
+  if (type === 'sensor-group') {
+    return omitUndefinedEntries({
+      name: stringValue(data.name, 80),
+      sensorEntityIds: sanitizeStringArray(data.sensorEntityIds, 4).filter((entityId) =>
+        entityId.startsWith('sensor.')
+      ),
+      accentColor:
+        data.accentColor === 'teal' ||
+        data.accentColor === 'blue' ||
+        data.accentColor === 'purple' ||
+        data.accentColor === 'amber' ||
+        data.accentColor === 'emerald'
+          ? data.accentColor
+          : undefined,
+    });
+  }
+
   return sanitizeJsonRecord(data);
 }
 
@@ -521,6 +551,7 @@ export const importDashboardConfig = (
       settings.entityInteractionMode === 'toggle-first'
         ? settings.entityInteractionMode
         : defaultSettings.entityInteractionMode,
+    cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
     weatherForecastMode:
       settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
         ? settings.weatherForecastMode

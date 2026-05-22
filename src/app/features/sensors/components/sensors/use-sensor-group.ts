@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SensorReading } from './sensor-types';
 
 interface UseSensorGroupProps {
@@ -16,10 +16,14 @@ interface UseSensorGroupReturn {
 
 export function useSensorGroup({
   initialSensors,
-  maxSensors = 4,
+  maxSensors = 6,
 }: UseSensorGroupProps): UseSensorGroupReturn {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedSensors, setSelectedSensors] = useState<SensorReading[]>(initialSensors);
+
+  useEffect(() => {
+    setSelectedSensors(initialSensors);
+  }, [initialSensors]);
 
   const handleSensorsUpdate = (newSensors: SensorReading[]) => {
     setSelectedSensors(newSensors.slice(0, maxSensors));

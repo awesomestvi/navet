@@ -15,5 +15,7 @@ export interface UseMediaCardControllerParams {
   initialDurationSeconds?: number;
   initialPositionUpdatedAt?: string;
   initialSupportsGrouping?: boolean;
+  initialSupportsPreviousTrack?: boolean;
+  initialSupportsNextTrack?: boolean;
   initialGroupMembers?: string[];
 }

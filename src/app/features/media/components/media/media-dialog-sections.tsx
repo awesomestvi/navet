@@ -115,6 +115,8 @@ export function MediaDialogArtwork({
 interface MediaDialogPlaybackControlsProps {
   controller: MediaDialogController;
   isPlaying: boolean;
+  canNextTrack: boolean;
+  canPreviousTrack: boolean;
   onCycleRepeat: () => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -127,6 +129,8 @@ interface MediaDialogPlaybackControlsProps {
 export function MediaDialogPlaybackControls({
   controller,
   isPlaying,
+  canNextTrack,
+  canPreviousTrack,
   onCycleRepeat,
   onNext,
   onPrevious,
@@ -155,8 +159,9 @@ export function MediaDialogPlaybackControls({
         size="large"
         variant="soft"
         aria-label={t('media.previousTrack')}
+        disabled={!canPreviousTrack}
         onClick={onPrevious}
-        className="h-12 w-12 transition-colors !border-0 text-white"
+        className="h-12 w-12 transition-colors !border-0 text-white disabled:cursor-not-allowed disabled:opacity-45"
         style={controller.subtleControlStyle}
       >
         <SkipBack className="h-6 w-6" />
@@ -181,8 +186,9 @@ export function MediaDialogPlaybackControls({
         size="large"
         variant="soft"
         aria-label={t('media.nextTrack')}
+        disabled={!canNextTrack}
         onClick={onNext}
-        className="h-12 w-12 transition-colors !border-0 text-white"
+        className="h-12 w-12 transition-colors !border-0 text-white disabled:cursor-not-allowed disabled:opacity-45"
         style={controller.subtleControlStyle}
       >
         <SkipForward className="h-6 w-6" />

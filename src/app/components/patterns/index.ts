@@ -9,6 +9,7 @@ export {
   CardDialogTabList,
   CardDialogTabTrigger,
 } from './card-dialog';
+export { CardEmptyState, type CardEmptyStateProps } from './card-empty-state';
 export { DashboardEmptyState, type DashboardEmptyStateProps } from './dashboard-empty-state';
 export { DashboardHeroSection, type DashboardHeroSectionProps } from './dashboard-hero-section';
 export { FieldBlock, type FieldBlockProps } from './field-block';

@@ -38,6 +38,26 @@ describe('home-assistant-url', () => {
     );
   });
 
+  it('resolves Home Assistant media paths directly when proxy generation is disabled', () => {
+    expect(
+      resolveHomeAssistantProxyUrl(
+        '/api/media_player_proxy/media_player.living_room',
+        'https://ha.example.test',
+        { proxyAvailable: false }
+      )
+    ).toBe('https://ha.example.test/api/media_player_proxy/media_player.living_room');
+  });
+
+  it('does not keep stale Home Assistant proxy paths when proxy generation is disabled', () => {
+    expect(
+      resolveHomeAssistantProxyUrl(
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room',
+        'https://ha.example.test',
+        { proxyAvailable: false }
+      )
+    ).toBeNull();
+  });
+
   it('proxies absolute Home Assistant media URLs when they match the configured Home Assistant URL', () => {
     expect(
       resolveHomeAssistantProxyUrl(
@@ -45,6 +65,16 @@ describe('home-assistant-url', () => {
         'https://ha.example.test'
       )
     ).toBe('/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room');
+  });
+
+  it('keeps matching absolute Home Assistant media URLs direct when proxy generation is disabled', () => {
+    expect(
+      resolveHomeAssistantProxyUrl(
+        'https://ha.example.test/api/media_player_proxy/media_player.living_room',
+        'https://ha.example.test',
+        { proxyAvailable: false }
+      )
+    ).toBe('https://ha.example.test/api/media_player_proxy/media_player.living_room');
   });
 
   it('keeps Home Assistant image API paths same-origin in panel mode', () => {

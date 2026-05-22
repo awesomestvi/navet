@@ -23,6 +23,20 @@ describe('useMediaPlaybackProgress', () => {
     expect(setElapsedSeconds).not.toHaveBeenCalled();
   });
 
+  it('does not reset elapsed time when no playback position is available', () => {
+    const setElapsedSeconds = vi.fn();
+
+    renderHookWithProviders(() =>
+      useMediaPlaybackProgress({
+        isPlaying: true,
+        durationSeconds: 200,
+        setElapsedSeconds,
+      })
+    );
+
+    expect(setElapsedSeconds).not.toHaveBeenCalled();
+  });
+
   it('computes elapsed time from the media position timestamp', async () => {
     const setElapsedSeconds = vi.fn();
 

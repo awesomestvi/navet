@@ -1,17 +1,12 @@
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Settings2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { AttributionControl, Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { useShallow } from 'zustand/react/shallow';
-import { BaseCard, customCardDialogShellProps, DialogShell } from '@/app/components/primitives';
+import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
-import { CustomCardTintPicker } from '@/app/components/shared/device-editor/custom-card-tint-picker';
-import { DialogHeader } from '@/app/components/shared/device-editor/dialog-header';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import {
-  getCustomCardTintSurface,
-  normalizeCustomCardTint,
-} from '@/app/components/shared/theme/custom-card-tint-surface';
+import { normalizeCustomCardTint } from '@/app/components/shared/theme/custom-card-tint-surface';
 import {
   getMapControlSurfaceTokens,
   getMapWidgetSurfaceTokens,
@@ -36,54 +31,6 @@ export interface MapWidgetProps {
   size?: CardSize;
   tintColor?: string;
   markers?: MapMarker[];
-  onTintColorChange?: (color: string) => void;
-  isEditMode?: boolean;
-}
-
-interface MapSettingsDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  tintColor?: string;
-  onTintColorChange?: (color: string) => void;
-}
-
-function MapSettingsDialog({
-  isOpen,
-  onOpenChange,
-  tintColor,
-  onTintColorChange,
-}: MapSettingsDialogProps) {
-  const theme = useThemeMode();
-  const { t } = useI18n();
-  const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
-  const tintSurface = getCustomCardTintSurface(theme, tintColor);
-  const dialogShell = customCardDialogShellProps(
-    { panel: surface.panelClassName, border: surface.borderClassName },
-    tintSurface,
-    { maxWidth: 'sm' }
-  );
-
-  return (
-    <DialogShell
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-    >
-      <DialogHeader title={t('widgets.map.title')} isOn={theme !== 'light'} />
-      {onTintColorChange ? (
-        <CustomCardTintPicker
-          value={tintColor}
-          onChange={onTintColorChange}
-          defaultColor="#3b82f6"
-          className={surface.textMuted}
-        />
-      ) : null}
-    </DialogShell>
-  );
 }
 
 function requestDeferredMapReady(callback: () => void) {
@@ -122,8 +69,6 @@ export const MapWidget = memo(function MapWidget({
   size = 'large',
   tintColor,
   markers: staticMarkers,
-  onTintColorChange,
-  isEditMode = false,
 }: MapWidgetProps) {
   const theme = useThemeMode();
   const primaryColor = usePrimaryColor();
@@ -147,7 +92,6 @@ export const MapWidget = memo(function MapWidget({
   const cardShell = getCardShellSurfaceTokens(theme);
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
   const tileUrl = getTileUrl(theme);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isSmallCard = size === 'small';
   const mapWidgetSurface = useMemo(() => {
     const tokens = getMapWidgetSurfaceTokens(theme);
@@ -163,7 +107,6 @@ export const MapWidget = memo(function MapWidget({
     };
   }, [shouldReduceMapEffects, theme]);
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
-  const settingsButtonClassName = mapControlSurface.settingsButtonClassName;
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isMapDeferredReady, setIsMapDeferredReady] = useState(false);
   const mapFrameStyle = useMemo(
@@ -196,12 +139,6 @@ export const MapWidget = memo(function MapWidget({
   const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
-
-  useEffect(() => {
-    if (!isEditMode) {
-      setIsSettingsOpen(false);
-    }
-  }, [isEditMode]);
 
   useEffect(() => {
     const node = mapViewportRef.current;
@@ -366,24 +303,6 @@ export const MapWidget = memo(function MapWidget({
           </div>
         ) : null}
       </div>
-
-      {isEditMode && onTintColorChange ? (
-        <button
-          type="button"
-          onClick={() => setIsSettingsOpen(true)}
-          className={`absolute bottom-4 right-4 z-500 shrink-0 rounded-full border p-2 transition-opacity hover:opacity-90 ${settingsButtonClassName}`}
-          aria-label={t('widgets.map.title')}
-        >
-          <Settings2 className="h-4 w-4" />
-        </button>
-      ) : null}
-
-      <MapSettingsDialog
-        isOpen={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        tintColor={tintColor}
-        onTintColorChange={onTintColorChange}
-      />
 
       <style>{`
         .dashboard-map-widget,

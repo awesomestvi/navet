@@ -7,7 +7,15 @@ export { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM } from '@/app/constants/rooms';
 
 import type { ZoneName } from '../zones/zone-types';
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'energy-now' | 'button' | 'map';
+export type CardType =
+  | 'rss'
+  | 'photo'
+  | 'note'
+  | 'battery'
+  | 'energy-now'
+  | 'button'
+  | 'map'
+  | 'sensor-group';
 
 export interface CustomCard {
   id: string;
@@ -38,6 +46,10 @@ function normalizeCustomCard(card: CustomCard): CustomCard {
     card.size !== 'large' &&
     card.size !== 'extra-large'
   ) {
+    return { ...card, size: 'medium' };
+  }
+
+  if (card.type === 'sensor-group' && card.size !== 'small' && card.size !== 'medium') {
     return { ...card, size: 'medium' };
   }
 

@@ -75,6 +75,8 @@ interface MediaCardProps {
   durationSeconds?: number;
   positionUpdatedAt?: string;
   supportsGrouping?: boolean;
+  supportsPreviousTrack?: boolean;
+  supportsNextTrack?: boolean;
   groupMembers?: string[];
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
@@ -104,6 +106,8 @@ export const MediaCard = memo(function MediaCard({
   durationSeconds: initialDurationSeconds,
   positionUpdatedAt: initialPositionUpdatedAt,
   supportsGrouping: initialSupportsGrouping,
+  supportsPreviousTrack: initialSupportsPreviousTrack,
+  supportsNextTrack: initialSupportsNextTrack,
   groupMembers: initialGroupMembers,
   size,
   onSizeChange: _onSizeChange,
@@ -139,6 +143,8 @@ export const MediaCard = memo(function MediaCard({
     availableGroupingPlayers,
     attachGroupMember,
     detachGroupMember,
+    canNextTrack,
+    canPreviousTrack,
     shuffleEnabled,
     source,
     sourceList,
@@ -169,6 +175,8 @@ export const MediaCard = memo(function MediaCard({
     initialDurationSeconds,
     initialPositionUpdatedAt,
     initialSupportsGrouping,
+    initialSupportsPreviousTrack,
+    initialSupportsNextTrack,
     initialGroupMembers,
   });
   const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
@@ -224,8 +232,10 @@ export const MediaCard = memo(function MediaCard({
     onOpenDialog: openDialog,
     onToggleMute: toggleMute,
     onPrevious: handlePrevious,
+    canPreviousTrack,
     onTogglePlay: togglePlay,
     onNext: handleNext,
+    canNextTrack,
     onVolumeChange: handleVolumeChange,
     onVolumeInteractionStart: startVolumeInteraction,
     onVolumeInteractionEnd: endVolumeInteraction,
@@ -327,8 +337,10 @@ export const MediaCard = memo(function MediaCard({
             groupMembers={groupMembers}
             availableGroupingPlayers={availableGroupingPlayers}
             onPrevious={handlePrevious}
+            canPreviousTrack={canPreviousTrack}
             onTogglePlay={togglePlay}
             onNext={handleNext}
+            canNextTrack={canNextTrack}
             shuffleEnabled={shuffleEnabled}
             repeatMode={repeatMode}
             onToggleShuffle={toggleShuffle}

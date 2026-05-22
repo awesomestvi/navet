@@ -1,57 +1,122 @@
 import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DialogShell } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
+import type { TranslationKey } from '@/app/i18n';
+import type { CameraViewMode } from '@/app/stores/settings-store';
+import { CameraStreamPlayer } from './camera-stream-player';
+import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
+import { selectCameraImageSource } from './camera-view-mode';
 
 interface CameraLiveViewerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  entityId: string;
   name: string;
   room: string;
   snapshotUrl: string | undefined;
-  streamPreviewUrl: string | undefined;
+  mjpegStreamUrl: string | undefined;
+  cameraViewMode: CameraViewMode;
   isUnavailable: boolean;
   isRunning: boolean;
   isStreamCapable: boolean;
-  frontendStreamTypes: string[];
+  frontendStreamTypes: CameraStreamType[];
+  homeAssistantUrl: string | undefined;
   onRefresh: () => void;
   onOpenSettings: () => void;
+  onCameraViewModeChange: (mode: CameraViewMode) => void;
+}
+
+const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['live', 'auto', 'snapshot'];
+
+function CameraViewerModeControl({
+  value,
+  onChange,
+}: {
+  value: CameraViewMode;
+  onChange: (mode: CameraViewMode) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className="pointer-events-auto grid grid-cols-3 gap-1 rounded-full border border-white/12 bg-black/45 p-1 text-xs font-semibold text-white backdrop-blur-xl">
+      {CAMERA_VIEW_OPTIONS.map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onChange(mode)}
+          className={`min-w-0 rounded-full px-3 py-1.5 transition-colors ${
+            mode === value
+              ? 'bg-white text-black'
+              : 'text-white/72 hover:bg-white/12 hover:text-white'
+          }`}
+          aria-pressed={mode === value}
+        >
+          {t(`camera.settings.viewMode.${mode}` as TranslationKey)}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function CameraLiveViewer({
   isOpen,
   onOpenChange,
+  entityId,
   name,
   room,
   snapshotUrl,
-  streamPreviewUrl,
+  mjpegStreamUrl,
+  cameraViewMode,
   isUnavailable,
   isRunning,
   isStreamCapable,
   frontendStreamTypes,
+  homeAssistantUrl,
   onRefresh,
   onOpenSettings,
+  onCameraViewModeChange,
 }: CameraLiveViewerProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const [streamFailed, setStreamFailed] = useState(false);
-  const sourceUrl = streamFailed ? snapshotUrl : (streamPreviewUrl ?? snapshotUrl);
+  const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
+  const streamFailureResetKey = `${isOpen}:${cameraViewMode}:${frontendStreamTypes.join(',')}`;
+  const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
+  const source = selectCameraImageSource({
+    cameraViewMode,
+    snapshotUrl,
+    mjpegStreamUrl,
+    frontendStreamTypes,
+    isUnavailable,
+    isRunning,
+    failedStreamTypes: failedStreamTypeSet,
+  });
+  const sourceUrl = source.url;
+  const videoStreamKind = source.kind === 'hls' || source.kind === 'web_rtc' ? source.kind : null;
   const streamTypeLabel = useMemo(() => {
+    if (source.isFallback) {
+      return t('camera.viewer.snapshotFallback');
+    }
+    if (source.kind === 'hls' || source.kind === 'web_rtc' || source.kind === 'mjpeg') {
+      return source.kind.toUpperCase();
+    }
     if (frontendStreamTypes.length > 0) {
       return frontendStreamTypes.join(' / ').toUpperCase();
     }
 
     return isStreamCapable ? t('camera.viewer.streamCapable') : t('camera.viewer.snapshotOnly');
-  }, [frontendStreamTypes, isStreamCapable, t]);
+  }, [frontendStreamTypes, isStreamCapable, source.isFallback, source.kind, t]);
 
   useEffect(() => {
-    if (!isOpen && !streamPreviewUrl && !snapshotUrl) {
-      return;
-    }
-    setStreamFailed(false);
-  }, [isOpen, streamPreviewUrl, snapshotUrl]);
+    void streamFailureResetKey;
+    setFailedStreamTypes([]);
+  }, [streamFailureResetKey]);
+
+  const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
+    setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
+  }, []);
 
   return (
     <DialogShell
@@ -67,13 +132,23 @@ export function CameraLiveViewer({
     >
       <div className="relative flex h-full min-h-0 flex-col bg-black text-white">
         <div className="absolute inset-0">
-          {sourceUrl && !isUnavailable ? (
+          {videoStreamKind && !isUnavailable ? (
+            <CameraStreamPlayer
+              entityId={entityId}
+              kind={videoStreamKind}
+              posterUrl={snapshotUrl}
+              homeAssistantUrl={homeAssistantUrl}
+              fitMode="contain"
+              onError={handleStreamError}
+            />
+          ) : sourceUrl && !isUnavailable ? (
             <img
+              key={sourceUrl}
               src={sourceUrl}
               alt={name}
               className="h-full w-full object-contain"
               draggable={false}
-              onError={() => setStreamFailed(true)}
+              onError={() => handleStreamError(source.kind)}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-950">
@@ -128,17 +203,21 @@ export function CameraLiveViewer({
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 md:p-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isRunning ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]' : 'bg-white/45'
-              }`}
-            />
-            <Video className="h-3.5 w-3.5 text-white/72" />
-            <span>{isRunning ? t('camera.status.live') : t('common.off')}</span>
-            {streamFailed && streamPreviewUrl ? (
-              <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
-            ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isRunning ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]' : 'bg-white/45'
+                }`}
+              />
+              <Video className="h-3.5 w-3.5 text-white/72" />
+              <span>{isRunning ? t('camera.status.live') : t('common.off')}</span>
+              {source.isFallback ? (
+                <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
+              ) : null}
+            </div>
+
+            <CameraViewerModeControl value={cameraViewMode} onChange={onCameraViewModeChange} />
           </div>
         </div>
       </div>

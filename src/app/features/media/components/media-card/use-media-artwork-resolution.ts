@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
@@ -18,6 +18,8 @@ interface UseMediaArtworkResolutionParams {
   liveArtworkKey?: string;
   homeAssistantUrl?: string;
 }
+
+const ARTWORK_CLEAR_DELAY_MS = 700;
 
 function resolveArtworkFetchUrl(artworkUrl: string, cacheKey: string) {
   try {
@@ -51,6 +53,7 @@ export function useMediaArtworkResolution({
   const authToken = useAuth(authSelectors.config)?.token;
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
   const [thumbnailArtworkUrl, setThumbnailArtworkUrl] = useState<string | null>(null);
+  const latestObjectUrlRef = useRef<string | null>(null);
 
   const artworkRequestKey = [entityId, liveArtworkKey ?? artworkKey, artworkVersionKey]
     .filter(Boolean)
@@ -58,31 +61,67 @@ export function useMediaArtworkResolution({
   const isPanelMode = isHomeAssistantPanelMode();
   const isAddonMode = isHomeAssistantAddonMode();
   const runtimeConfig = getRuntimeConfig();
+  const hasRuntimeHomeAssistantProxy = Boolean(runtimeConfig.hassUrl && runtimeConfig.proxyBaseUrl);
   const shouldUseDirectDevArtwork =
-    import.meta.env.DEV && !isPanelMode && !isAddonMode && !runtimeConfig.proxyBaseUrl;
+    import.meta.env.DEV && !isPanelMode && !isAddonMode && !hasRuntimeHomeAssistantProxy;
+  const shouldUseDirectAuthenticatedArtwork =
+    !isPanelMode && !hasRuntimeHomeAssistantProxy && !shouldUseDirectDevArtwork;
   const resolvedArtwork = liveEntityPicture
-    ? shouldUseDirectDevArtwork
+    ? shouldUseDirectDevArtwork || shouldUseDirectAuthenticatedArtwork
       ? resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
-      : resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl)
+      : resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl, {
+          proxyAvailable: hasRuntimeHomeAssistantProxy,
+        })
     : null;
   const needsAuthenticatedThumbnail = Boolean(
     resolvedArtwork && isMediaPlayerProxyUrl(resolvedArtwork)
   );
   const isSameOriginArtwork = Boolean(resolvedArtwork && isSameOriginArtworkUrl(resolvedArtwork));
+  const isProxiedArtwork = Boolean(resolvedArtwork?.includes('/__navet_ha_proxy__/'));
   const canFetchResolvedArtwork = Boolean(
-    resolvedArtwork && (authToken || isPanelMode || isSameOriginArtwork)
+    resolvedArtwork &&
+      (isProxiedArtwork ||
+        isPanelMode ||
+        isSameOriginArtwork ||
+        (shouldUseDirectAuthenticatedArtwork && authToken))
   );
   const canUseResolvedArtworkFallback =
-    !needsAuthenticatedThumbnail || isPanelMode || isSameOriginArtwork;
+    !needsAuthenticatedThumbnail || shouldUseDirectDevArtwork || isPanelMode || isSameOriginArtwork;
   const fallbackArtwork =
     thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
 
   useEffect(() => {
     let cancelled = false;
-    let objectUrl: string | null = null;
-    setThumbnailArtworkUrl(null);
 
-    if (!resolvedArtwork || !needsAuthenticatedThumbnail) {
+    if (!resolvedArtwork) {
+      const timeoutId = window.setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setThumbnailArtworkUrl((previousArtworkUrl) => {
+          if (previousArtworkUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(previousArtworkUrl);
+          }
+          latestObjectUrlRef.current = null;
+          return null;
+        });
+      }, ARTWORK_CLEAR_DELAY_MS);
+
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    if (!needsAuthenticatedThumbnail) {
+      setThumbnailArtworkUrl((previousArtworkUrl) => {
+        if (previousArtworkUrl?.startsWith('blob:')) {
+          URL.revokeObjectURL(previousArtworkUrl);
+        }
+        latestObjectUrlRef.current = null;
+        return null;
+      });
       return;
     }
 
@@ -109,27 +148,49 @@ export function useMediaArtworkResolution({
         return null;
       }
 
-      objectUrl = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       return objectUrl;
     };
 
     void loadAuthenticatedArtwork()
       .then((artworkUrl) => {
-        if (!cancelled) {
-          setThumbnailArtworkUrl(artworkUrl);
+        if (cancelled) {
+          if (artworkUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(artworkUrl);
+          }
+          return;
         }
+
+        setThumbnailArtworkUrl((previousArtworkUrl) => {
+          if (
+            previousArtworkUrl?.startsWith('blob:') &&
+            previousArtworkUrl !== artworkUrl &&
+            previousArtworkUrl === latestObjectUrlRef.current
+          ) {
+            URL.revokeObjectURL(previousArtworkUrl);
+          }
+
+          latestObjectUrlRef.current = artworkUrl?.startsWith('blob:') ? artworkUrl : null;
+          return artworkUrl;
+        });
       })
       .catch(() => {
         if (!cancelled) {
-          setThumbnailArtworkUrl(null);
+          setThumbnailArtworkUrl((previousArtworkUrl) => {
+            if (
+              previousArtworkUrl?.startsWith('blob:') &&
+              previousArtworkUrl === latestObjectUrlRef.current
+            ) {
+              URL.revokeObjectURL(previousArtworkUrl);
+            }
+            latestObjectUrlRef.current = null;
+            return null;
+          });
         }
       });
 
     return () => {
       cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
     };
   }, [
     artworkRequestKey,

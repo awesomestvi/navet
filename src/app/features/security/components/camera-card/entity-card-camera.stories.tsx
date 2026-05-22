@@ -1,11 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
+import { useEffect } from 'react';
 import { CameraCard } from '@/app/features/security';
+import { type CameraViewMode, useSettingsStore } from '@/app/stores/settings-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
 import cameraSampleImage from '@/assets/camera-sample.webp';
 
-function CameraCardStory(args: Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'>) {
+type CameraCardStoryArgs = Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'> & {
+  cameraViewMode?: CameraViewMode;
+};
+
+function CameraCardStory({ cameraViewMode = 'live', ...args }: CameraCardStoryArgs) {
+  useEffect(() => {
+    useSettingsStore.getState().updateSettings({ cameraViewMode });
+  }, [cameraViewMode]);
+
   return (
     <EntityCardStoryFrame size={args.size ?? 'medium'}>
       <CameraCard {...args} onSizeChange={noopCardSizeChange} />
@@ -30,6 +40,7 @@ const meta = {
     entityPicture: cameraSampleImage,
     supportedFeatures: 2,
     isStreamCapable: true,
+    cameraViewMode: 'live',
     size: 'medium',
     isEditMode: false,
   },
@@ -72,12 +83,40 @@ export const ExtraLarge: Story = {
   },
 };
 
+export const LiveStream: Story = {
+  args: {
+    entityPicture: '/api/camera_proxy/camera.front_door',
+    cameraViewMode: 'live',
+    isStreamCapable: true,
+  },
+};
+
+export const AutoSnapshot: Story = {
+  args: {
+    entityPicture: '/api/camera_proxy/camera.front_door',
+    cameraViewMode: 'auto',
+    isStreamCapable: true,
+  },
+};
+
 export const SnapshotOnly: Story = {
   args: {
     id: 'camera.l10s_ultra_gen_2_map',
     name: 'L10s Ultra Gen 2 Current Map',
     room: 'Utility',
     supportedFeatures: 0,
+    isStreamCapable: false,
+    cameraViewMode: 'snapshot',
+  },
+};
+
+export const StreamFallback: Story = {
+  args: {
+    id: 'camera.garage',
+    name: 'Garage Cam',
+    room: 'Garage',
+    entityPicture: '/api/camera_proxy/camera.garage',
+    cameraViewMode: 'live',
     isStreamCapable: false,
   },
 };

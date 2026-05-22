@@ -4,16 +4,18 @@ import { iconMap } from './sensor-types';
 
 interface GridSensorDisplayProps {
   sensors: SensorReading[];
-  textPrimary: string;
-  textSecondary: string;
+  textPrimaryColor: string;
+  textSecondaryColor: string;
+  accentColor: string;
   colors: { accent: string };
   isMedium: boolean;
 }
 
 export function GridSensorDisplay({
   sensors,
-  textPrimary,
-  textSecondary,
+  textPrimaryColor,
+  textSecondaryColor,
+  accentColor,
   colors,
   isMedium,
 }: GridSensorDisplayProps) {
@@ -23,17 +25,23 @@ export function GridSensorDisplay({
         const SensorIcon = sensor.icon ? iconMap[sensor.icon] : Gauge;
         return (
           <div key={sensor.id} className="flex flex-col">
-            <span className={`text-xs ${textSecondary} truncate mb-1 flex items-center gap-1`}>
+            <span
+              className="mb-1 flex items-center gap-1 truncate text-xs"
+              style={{ color: textSecondaryColor }}
+            >
               <SensorIcon className="w-3 h-3 flex-shrink-0" />
               {sensor.label}
             </span>
             <div>
               <span
-                className={`${isMedium ? 'text-xl' : 'text-2xl'} font-bold ${textPrimary} leading-none`}
+                className={`${isMedium ? 'text-xl' : 'text-2xl'} font-bold leading-none`}
+                style={{ color: textPrimaryColor }}
               >
                 {sensor.value}
               </span>
-              <span className={`text-sm ${colors.accent} ml-1`}>{sensor.unit}</span>
+              <span className={`ml-1 text-sm ${colors.accent}`} style={{ color: accentColor }}>
+                {sensor.unit}
+              </span>
             </div>
           </div>
         );

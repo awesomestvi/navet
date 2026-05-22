@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@/app/i18n/i18n-provider';
+import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { CoverCard } from '../index';
 
 const { callServiceMock, toastErrorMock } = vi.hoisted(() => ({
@@ -33,8 +35,17 @@ const COVER_FEATURE_OPEN = 1;
 const COVER_FEATURE_CLOSE = 2;
 const COVER_FEATURE_SET_POSITION = 4;
 const COVER_FEATURE_STOP = 8;
+const COVER_FEATURE_OPEN_TILT = 16;
+const COVER_FEATURE_CLOSE_TILT = 32;
+const COVER_FEATURE_STOP_TILT = 64;
+const COVER_FEATURE_SET_TILT_POSITION = 128;
 const ALL_COVER_FEATURES =
   COVER_FEATURE_OPEN | COVER_FEATURE_CLOSE | COVER_FEATURE_SET_POSITION | COVER_FEATURE_STOP;
+const ALL_TILT_COVER_FEATURES =
+  COVER_FEATURE_OPEN_TILT |
+  COVER_FEATURE_CLOSE_TILT |
+  COVER_FEATURE_STOP_TILT |
+  COVER_FEATURE_SET_TILT_POSITION;
 
 function renderCoverCard(props: Partial<ComponentProps<typeof CoverCard>> = {}) {
   return render(
@@ -55,8 +66,53 @@ function renderCoverCard(props: Partial<ComponentProps<typeof CoverCard>> = {}) 
   );
 }
 
+function createCoverEntity(position: number | null, state = 'open'): HassEntity {
+  return {
+    entity_id: 'cover.living_room_blind',
+    state,
+    attributes: {
+      ...(position === null ? {} : { current_position: position }),
+      supported_features: ALL_COVER_FEATURES,
+    },
+    last_changed: '2026-05-22T00:00:00.000Z',
+    last_updated: '2026-05-22T00:00:00.000Z',
+    context: { id: 'ctx', parent_id: null, user_id: null },
+  } as HassEntity;
+}
+
+function setLiveCoverPosition(position: number, state = 'open') {
+  homeAssistantStore.setState({
+    entities: {
+      'cover.living_room_blind': createCoverEntity(position, state),
+    },
+  });
+}
+
+function setLiveCoverStateWithoutPosition(state: string) {
+  homeAssistantStore.setState({
+    entities: {
+      'cover.living_room_blind': createCoverEntity(null, state),
+    },
+  });
+}
+
+function setLiveCoverTiltPosition(position: number, state = 'open') {
+  homeAssistantStore.setState({
+    entities: {
+      'cover.living_room_blind': {
+        ...createCoverEntity(null, state),
+        attributes: {
+          current_tilt_position: position,
+          supported_features: ALL_TILT_COVER_FEATURES,
+        },
+      } as HassEntity,
+    },
+  });
+}
+
 describe('CoverCard', () => {
   beforeEach(() => {
+    homeAssistantStore.setState({ entities: null });
     callServiceMock.mockReset();
     callServiceMock.mockResolvedValue(undefined);
     toastErrorMock.mockReset();
@@ -75,6 +131,30 @@ describe('CoverCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'open_cover',
+        {},
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+  });
+
+  it('shows open fill for covers that report state without current position', () => {
+    act(() => setLiveCoverStateWithoutPosition('open'));
+    renderCoverCard({ hasPosition: false, initialPosition: 0 });
+
+    expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+  });
+
+  it('optimistically fills positionless covers when opening from the card', async () => {
+    act(() => setLiveCoverStateWithoutPosition('closed'));
+    renderCoverCard({ hasPosition: false, initialPosition: 0 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+
+    expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     await waitFor(() =>
       expect(callServiceMock).toHaveBeenCalledWith(
         'cover',
@@ -130,6 +210,87 @@ describe('CoverCard', () => {
     );
   });
 
+  it('uses tilt services for tilt-only cover position controls', async () => {
+    act(() => setLiveCoverTiltPosition(30));
+    renderCoverCard({
+      initialPosition: 30,
+      initialPositionMode: 'tilt',
+      supportedFeatures: ALL_TILT_COVER_FEATURES,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '75' }));
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'set_cover_tilt_position',
+        { tilt_position: 75 },
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+  });
+
+  it('uses tilt open and close services for tilt-only covers', async () => {
+    act(() => setLiveCoverTiltPosition(0, 'closed'));
+    renderCoverCard({
+      initialPosition: 0,
+      initialPositionMode: 'tilt',
+      supportedFeatures: ALL_TILT_COVER_FEATURES,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'open_cover_tilt',
+        {},
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'close_cover_tilt',
+        {},
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+  });
+
+  it('follows live tilt movement while Home Assistant reports intermediate opening positions', async () => {
+    act(() => setLiveCoverTiltPosition(0, 'closed'));
+    renderCoverCard({
+      initialPosition: 0,
+      initialPositionMode: 'tilt',
+      supportedFeatures: ALL_TILT_COVER_FEATURES,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'open_cover_tilt',
+        {},
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+    expect(screen.getAllByText('0%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverTiltPosition(10, 'opening'));
+    expect(screen.getAllByText('10%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverTiltPosition(30, 'opening'));
+    expect(screen.getAllByText('30%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverTiltPosition(100, 'open'));
+    expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
+  });
+
   it('previews upward cover position swipes and commits once on release', async () => {
     renderCoverCard();
 
@@ -163,6 +324,72 @@ describe('CoverCard', () => {
       )
     );
     expect(callServiceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the committed cover position optimistic while Home Assistant reports intermediate movement', async () => {
+    act(() => setLiveCoverPosition(30));
+    renderCoverCard({ initialPosition: 30 });
+
+    const gestureSurface = screen.getByRole('slider', { name: 'Living Room Blind cover' });
+    vi.spyOn(gestureSurface, 'getBoundingClientRect').mockReturnValue({
+      bottom: 100,
+      height: 100,
+      left: 0,
+      right: 120,
+      toJSON: () => ({}),
+      top: 0,
+      width: 120,
+      x: 0,
+      y: 0,
+    });
+
+    fireEvent.pointerDown(gestureSurface, { clientY: 70, pointerId: 1 });
+    fireEvent.pointerMove(gestureSurface, { clientY: 30, pointerId: 1 });
+    fireEvent.pointerUp(gestureSurface, { clientY: 30, pointerId: 1 });
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'set_cover_position',
+        { position: 70 },
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverPosition(40, 'opening'));
+    expect(screen.queryByText('40%')).not.toBeInTheDocument();
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverPosition(60, 'opening'));
+    expect(screen.queryByText('60%')).not.toBeInTheDocument();
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverPosition(70));
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
+  });
+
+  it('follows live position movement while position-capable covers are closing', async () => {
+    act(() => setLiveCoverPosition(70));
+    renderCoverCard({ initialPosition: 70 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    await waitFor(() =>
+      expect(callServiceMock).toHaveBeenCalledWith(
+        'cover',
+        'close_cover',
+        {},
+        { entity_id: 'cover.living_room_blind' }
+      )
+    );
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverPosition(40, 'closing'));
+    expect(screen.getAllByText('40%').length).toBeGreaterThan(0);
+
+    act(() => setLiveCoverPosition(0, 'closed'));
+    expect(screen.getAllByText('0%').length).toBeGreaterThan(0);
   });
 
   it('commits downward cover position swipes once on release', async () => {

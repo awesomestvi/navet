@@ -57,6 +57,8 @@ const meta = {
     entityId: 'camera.front_door',
     name: 'Front Door Camera',
     siblingEntities,
+    cameraViewMode: 'live',
+    onCameraViewModeChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

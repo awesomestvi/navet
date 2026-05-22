@@ -276,7 +276,7 @@ export function CoverCardView({
       overlay={
         <>
           <div
-            className={`absolute inset-x-0 bottom-0 bg-linear-to-br ${openColors.gradient}`}
+            className={`absolute inset-x-0 bottom-0 bg-linear-to-br ${openColors.gradient} transition-[height] duration-700 ease-out`}
             style={{ height: `${clampedPosition}%` }}
           />
           <div className={`absolute inset-0 bg-linear-to-br ${openColors.glow} to-transparent`} />

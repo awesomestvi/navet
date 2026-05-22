@@ -14,6 +14,7 @@ import { MediaMarqueeText } from './media-marquee-text';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
+import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumVerticalViewProps {
   entityId: string;
@@ -31,8 +32,10 @@ interface MediaMediumVerticalViewProps {
   onOpenDialog?: () => void;
   onToggleMute: () => void;
   onPrevious: () => void;
+  canPreviousTrack: boolean;
   onTogglePlay: () => void;
   onNext: () => void;
+  canNextTrack: boolean;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
   onVolumeInteractionEnd: () => void;
@@ -54,8 +57,10 @@ export function MediaMediumVerticalView({
   onOpenDialog,
   onToggleMute,
   onPrevious,
+  canPreviousTrack,
   onTogglePlay,
   onNext,
+  canNextTrack,
   onVolumeChange,
   onVolumeInteractionStart,
   onVolumeInteractionEnd,
@@ -65,7 +70,8 @@ export function MediaMediumVerticalView({
     useMediaVolumeMode();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
-  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
+  const stableArtwork = useStableMediaArtwork(artwork);
+  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
@@ -75,15 +81,16 @@ export function MediaMediumVerticalView({
   const subtitleTone = stateSurface.secondaryTextClassName;
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
-  const subduedFallback = !artwork;
+  const subduedFallback = !stableArtwork;
   const fallbackTitleColor =
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
+  const controlIconStyle = { color: fallbackTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(palette.highlight, 0.14),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.12)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
   };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
@@ -91,9 +98,9 @@ export function MediaMediumVerticalView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(palette.highlight, 0.22),
+        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          palette.highlight,
+          fallbackTitleColor,
           0.18
         )}`,
       }
@@ -104,27 +111,27 @@ export function MediaMediumVerticalView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(palette.highlight, 0.22),
+        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          palette.highlight,
+          fallbackTitleColor,
           0.18
         )}`,
       }
     : neutralButtonStyle;
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(palette.highlight, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.14)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
+  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${palette.highlight} 0%, ${palette.vibrant} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(palette.vibrant, 0.26)}`,
+    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: palette.highlight,
-    boxShadow: `0 0 0 1px ${withAlpha(palette.highlight, 0.2)}, 0 0 14px ${withAlpha(
-      palette.vibrant,
+    backgroundColor: fallbackTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      fallbackTitleColor,
       0.32
     )}`,
   };
@@ -134,14 +141,14 @@ export function MediaMediumVerticalView({
       className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]"
     >
       <MediaArtworkSurface
-        artwork={artwork}
+        artwork={stableArtwork}
         onArtworkError={onArtworkError}
         palette={palette}
         layout="stacked"
         artRegionClassName="h-[52%]"
         imagePaddingClassName=""
         imageClassName="object-cover object-top"
-        subduedFallback={!artwork && !isActive}
+        subduedFallback={!stableArtwork && !isActive}
       />
 
       <div className="relative z-[1] flex h-full flex-col">
@@ -197,7 +204,7 @@ export function MediaMediumVerticalView({
                   onTogglePlay();
                 }}
                 className="h-10 w-10 border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                iconStyle={controlIconStyle}
                 style={subduedFallback ? undefined : playButtonStyle}
               >
                 {isPlaying ? (
@@ -220,7 +227,7 @@ export function MediaMediumVerticalView({
                 toggleVolumeMode();
               }}
               className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white"
+              iconStyle={controlIconStyle}
               style={volumeToggleButtonStyle}
             >
               <Volume2 className={controlSizes.icon} />
@@ -264,7 +271,7 @@ export function MediaMediumVerticalView({
                   onToggleMute();
                 }}
                 className="border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white"
+                iconStyle={controlIconStyle}
                 style={muteButtonStyle}
               >
                 <VolumeX className={controlSizes.icon} />
@@ -276,12 +283,13 @@ export function MediaMediumVerticalView({
                   size="small"
                   variant="neutral"
                   aria-label={t('media.previousTrack')}
+                  disabled={!canPreviousTrack}
                   onClick={(event) => {
                     event.stopPropagation();
                     onPrevious();
                   }}
-                  className="border backdrop-blur-xl transition-colors"
-                  iconClassName="!text-white/90"
+                  className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                  iconStyle={controlIconStyle}
                   style={neutralButtonStyle}
                 >
                   <SkipBack className={controlSizes.icon} />
@@ -292,12 +300,13 @@ export function MediaMediumVerticalView({
                   size="small"
                   variant="neutral"
                   aria-label={t('media.nextTrack')}
+                  disabled={!canNextTrack}
                   onClick={(event) => {
                     event.stopPropagation();
                     onNext();
                   }}
-                  className="border backdrop-blur-xl transition-colors"
-                  iconClassName="!text-white/90"
+                  className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                  iconStyle={controlIconStyle}
                   style={neutralButtonStyle}
                 >
                   <SkipForward className={controlSizes.icon} />
