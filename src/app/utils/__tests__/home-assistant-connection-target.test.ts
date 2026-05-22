@@ -95,6 +95,17 @@ describe('home-assistant-connection-target', () => {
     );
   });
 
+  it('infers the ingress base from loaded asset URLs when the base tag and current path are not usable', () => {
+    window.history.replaceState(null, '', '/');
+    const script = document.createElement('script');
+    script.src = `${window.location.origin}/api/hassio_ingress/navet_dev/assets/index.js`;
+    document.head.append(script);
+
+    expect(resolveAddonLocalEndpointUrl('/__navet_profile__/default')).toBe(
+      `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_profile__/default`
+    );
+  });
+
   it('uses the ingress-aware proxy URL for matching hosted runtime sessions', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
