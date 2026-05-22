@@ -114,6 +114,35 @@ describe('session config', () => {
     expect(readInitialSessionConfig('navet-test-session')).toBeNull();
   });
 
+  it('ignores stale internal add-on URLs inside Home Assistant ingress when runtime config is blank', () => {
+    window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
+    window.__NAVET_CONFIG__ = {
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    writeStoredSessionConfig('navet-test-session', {
+      url: 'http://homeassistant:8123',
+      token: 'user-entered-token',
+    });
+
+    expect(readInitialSessionConfig('navet-test-session')).toBeNull();
+  });
+
+  it('restores browser-reachable stored URLs inside Home Assistant ingress when runtime config is blank', () => {
+    window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
+    window.__NAVET_CONFIG__ = {
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    writeStoredSessionConfig('navet-test-session', {
+      url: 'https://ha.example.com',
+      token: 'user-entered-token',
+    });
+
+    expect(readInitialSessionConfig('navet-test-session')).toEqual({
+      url: 'https://ha.example.com',
+      token: 'user-entered-token',
+    });
+  });
+
   it('restores a stored add-on login when the runtime token is blank', () => {
     window.history.replaceState(null, '', '/api/hassio_ingress/navet_dev/');
     window.__NAVET_CONFIG__ = {

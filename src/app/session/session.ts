@@ -31,6 +31,15 @@ function normalizeUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
+function isAddonInternalHomeAssistantUrl(url: string): boolean {
+  const normalized = normalizeUrl(url).toLowerCase();
+  return (
+    normalized === 'http://homeassistant:8123' ||
+    normalized === 'http://homeassistant.local:8123' ||
+    normalized === 'http://supervisor/core'
+  );
+}
+
 export function normalizeSessionConfig(config: SessionConfig): SessionConfig {
   return {
     url: normalizeUrl(config.url),
@@ -123,7 +132,12 @@ export function readInitialSessionConfig(key: string): SessionConfig | null {
       return readStoredRuntimeHostedSessionConfig(key);
     }
 
-    return readStoredSessionConfig(key);
+    const storedSessionConfig = readStoredSessionConfig(key);
+    if (storedSessionConfig && isAddonInternalHomeAssistantUrl(storedSessionConfig.url)) {
+      return null;
+    }
+
+    return storedSessionConfig;
   }
 
   return readStoredSessionConfig(key) ?? readRuntimeSessionConfig();
