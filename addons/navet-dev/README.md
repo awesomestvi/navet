@@ -15,8 +15,8 @@ in Home Assistant and rebuild or reinstall this add-on.
 
 ## Configuration
 
-- `hass_url`: Optional Home Assistant URL. Leave blank on Home Assistant OS or Supervised installs;
-  the add-on uses the internal `http://homeassistant:8123` Core URL.
+- `hass_url`: Optional Home Assistant URL. Leave blank to enter a browser-reachable Home Assistant
+  URL on the Navet login screen.
 - `token`: Optional Home Assistant long-lived access token. Set this to open Navet without the login
   form.
 - `dashboard_config_url`: Optional Navet dashboard YAML export to import on first launch in a fresh browser

@@ -6,8 +6,9 @@ const runScript = readFileSync(join(process.cwd(), 'addons/navet/run.sh'), 'utf8
 const shellExpansionStart = '$' + '{';
 
 describe('Home Assistant add-on run script', () => {
-  it('defaults blank hass_url to the internal Home Assistant Core endpoint', () => {
-    expect(runScript).toContain(
+  it('keeps blank hass_url blank so users can enter a browser-reachable Home Assistant URL', () => {
+    expect(runScript).toContain(`RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL}"`);
+    expect(runScript).not.toContain(
       `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
     );
   });
@@ -31,9 +32,9 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).not.toContain(`proxy_pass ${shellExpansionStart}HASS_URL}/;`);
   });
 
-  it('always emits the Home Assistant proxy location for add-on ingress', () => {
+  it('emits the Home Assistant proxy location only for configured Home Assistant URLs', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
-    expect(runScript).not.toContain(`if [[ -n "${shellExpansionStart}HASS_URL}" ]]; then`);
+    expect(runScript).toContain(`if [[ -n "${shellExpansionStart}RESOLVED_HASS_URL}" ]]; then`);
   });
 
   it('keeps websocket auth on the Home Assistant websocket message', () => {
