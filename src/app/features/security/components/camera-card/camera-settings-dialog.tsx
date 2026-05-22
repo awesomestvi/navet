@@ -1,11 +1,21 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { memo, useCallback } from 'react';
-import { CardDialogBody, CardDialogHeader } from '@/app/components/patterns';
-import { DialogDoneFooter, DialogShell } from '@/app/components/primitives';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { CardDialogBody, CardDialogChoicePill, CardDialogHeader } from '@/app/components/patterns';
+import {
+  customCardDialogShellProps,
+  DialogDoneFooter,
+  DialogShell,
+  Select,
+  Slider,
+  Switch,
+} from '@/app/components/primitives';
 import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
+import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
+import type { TranslationKey } from '@/app/i18n';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import type { CameraViewMode } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 
 export interface SiblingEntity {
@@ -19,6 +29,8 @@ interface CameraSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   siblingEntities: SiblingEntity[];
+  cameraViewMode: CameraViewMode;
+  onCameraViewModeChange: (mode: CameraViewMode) => void;
 }
 
 function getDisplayName(entityId: string, entity: HassEntity): string {
@@ -39,24 +51,18 @@ function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string;
   }, [entityId, isOn]);
 
   return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 py-3 transition-colors hover:bg-white/10"
-    >
-      <span className="text-sm text-white/88">{label}</span>
-      <div
-        className={`relative h-6 w-11 rounded-full transition-colors duration-200 ${
-          isOn ? 'bg-blue-500' : 'bg-white/20'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-            isOn ? 'translate-x-5' : 'translate-x-0.5'
-          }`}
-        />
+    <div className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:bg-white/10">
+      <div className="min-w-0">
+        <span className="block truncate text-sm font-medium text-white">{label}</span>
+        <span className="block text-xs text-white/58">{entityId}</span>
       </div>
-    </button>
+      <Switch
+        checked={isOn}
+        onCheckedChange={() => void handleToggle()}
+        aria-label={label}
+        className="shrink-0"
+      />
+    </div>
   );
 }
 
@@ -85,23 +91,21 @@ function SelectRow({
 
   return (
     <div className="space-y-2">
-      <p className="px-1 text-xs text-white/76">{label}</p>
-      <div className="flex flex-wrap gap-2">
+      <label htmlFor={entityId} className="px-1 text-xs font-medium text-white/76">
+        {label}
+      </label>
+      <Select
+        id={entityId}
+        value={current}
+        onChange={(event) => void handleSelect(event.target.value)}
+        size="small"
+      >
         {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => handleSelect(option)}
-            className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
-              option === current
-                ? 'bg-blue-500 text-white'
-                : 'bg-white/10 text-white/82 hover:bg-white/20'
-            }`}
-          >
+          <option key={option} value={option}>
             {option}
-          </button>
+          </option>
         ))}
-      </div>
+      </Select>
     </div>
   );
 }
@@ -121,6 +125,12 @@ function NumberRow({
   max: number;
   step: number;
 }) {
+  const [draftValue, setDraftValue] = useState(value);
+
+  useEffect(() => {
+    setDraftValue(value);
+  }, [value]);
+
   const handleChange = useCallback(
     async (newValue: number) => {
       await homeAssistantService.callService(
@@ -136,20 +146,57 @@ function NumberRow({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-white/76">{label}</p>
+        <p className="text-xs font-medium text-white/76">{label}</p>
         <span className="text-xs font-semibold text-white">{value}</span>
       </div>
-      <input
-        type="range"
+      <Slider
+        value={draftValue}
         min={min}
         max={max}
         step={step}
-        defaultValue={value}
-        onMouseUp={(e) => handleChange(Number((e.target as HTMLInputElement).value))}
-        onTouchEnd={(e) => handleChange(Number((e.target as HTMLInputElement).value))}
-        className="h-1.5 w-full cursor-pointer accent-blue-500"
+        ariaLabel={label}
+        onValueChange={setDraftValue}
+        onValueCommit={(nextValue) => void handleChange(nextValue)}
+        rootClassName="relative flex h-7 w-full touch-none select-none items-center"
+        trackClassName="relative h-2 grow overflow-hidden rounded-full bg-white/12"
+        rangeClassName="absolute h-full rounded-full bg-blue-500"
+        thumbClassName="block h-5 w-5 rounded-full border border-white/20 bg-white shadow-lg outline-none transition-transform focus-visible:ring-2 focus-visible:ring-white/40"
+        touchThumbClassName="block h-6 w-6 rounded-full border border-white/20 bg-white shadow-lg outline-none"
       />
     </div>
+  );
+}
+
+const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['live', 'auto', 'snapshot'];
+
+function CameraViewModeRow({
+  value,
+  onChange,
+}: {
+  value: CameraViewMode;
+  onChange: (mode: CameraViewMode) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <DialogSectionRow label={t('camera.settings.viewMode')}>
+      <div className="inline-flex flex-wrap items-center gap-1">
+        {CAMERA_VIEW_OPTIONS.map((mode) => (
+          <CardDialogChoicePill
+            key={mode}
+            active={mode === value}
+            onClick={() => onChange(mode)}
+            size="compact"
+            aria-pressed={mode === value}
+          >
+            {t(`camera.settings.viewMode.${mode}` as TranslationKey)}
+          </CardDialogChoicePill>
+        ))}
+      </div>
+      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
+        {t('camera.settings.viewMode.description')}
+      </p>
+    </DialogSectionRow>
   );
 }
 
@@ -159,11 +206,27 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   isOpen,
   onOpenChange,
   siblingEntities,
+  cameraViewMode,
+  onCameraViewModeChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
+  const shell = getAccentCardShellTokens(theme, 'blue');
+  const dialogShell = customCardDialogShellProps(
+    surface,
+    {},
+    {
+      padding: false,
+      animate: true,
+      fallbackDecoration: {
+        glowClassName: shell.glowClassName,
+        overlayClassName: shell.overlayClassName,
+      },
+      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${shell.containerClassName}`,
+    }
+  );
 
   const switches = siblingEntities.filter((s) => s.id.startsWith('switch.'));
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
@@ -175,76 +238,84 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       disableOpenAutoFocus
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName="fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200"
+      overlayClassName={surface.dialogBackdrop}
+      contentClassName={dialogShell.contentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowClassName={dialogShell.contentGlowClassName}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
-      <CustomScrollbar isOn>
+      <CustomScrollbar isOn={theme !== 'light'}>
         <CardDialogBody>
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
 
-          {hasControls ? (
-            <div className="space-y-6">
-              {switches.length > 0 && (
-                <DialogSectionRow label={t('camera.settings.switches')}>
-                  <div className="space-y-2">
-                    {switches.map(({ id, entity }) => (
-                      <SwitchRow
-                        key={id}
-                        entityId={id}
-                        label={getDisplayName(id, entity)}
-                        isOn={entity.state === 'on'}
-                      />
-                    ))}
-                  </div>
-                </DialogSectionRow>
-              )}
+          <div className="space-y-6">
+            <CameraViewModeRow value={cameraViewMode} onChange={onCameraViewModeChange} />
 
-              {selects.length > 0 && (
-                <DialogSectionRow label={t('camera.settings.modes')}>
-                  <div className="space-y-4">
-                    {selects.map(({ id, entity }) => {
-                      const attrs = entity.attributes as Record<string, unknown>;
-                      const options = Array.isArray(attrs?.options)
-                        ? (attrs.options as string[])
-                        : [];
-                      return (
-                        <SelectRow
+            {hasControls ? (
+              <>
+                {switches.length > 0 && (
+                  <DialogSectionRow label={t('camera.settings.switches')}>
+                    <div className="space-y-2">
+                      {switches.map(({ id, entity }) => (
+                        <SwitchRow
                           key={id}
                           entityId={id}
                           label={getDisplayName(id, entity)}
-                          current={entity.state}
-                          options={options}
+                          isOn={entity.state === 'on'}
                         />
-                      );
-                    })}
-                  </div>
-                </DialogSectionRow>
-              )}
+                      ))}
+                    </div>
+                  </DialogSectionRow>
+                )}
 
-              {numbers.length > 0 && (
-                <DialogSectionRow label={t('camera.settings.adjustments')}>
-                  <div className="space-y-4">
-                    {numbers.map(({ id, entity }) => {
-                      const attrs = entity.attributes as Record<string, unknown>;
-                      return (
-                        <NumberRow
-                          key={id}
-                          entityId={id}
-                          label={getDisplayName(id, entity)}
-                          value={Number(entity.state)}
-                          min={Number(attrs?.min ?? 0)}
-                          max={Number(attrs?.max ?? 100)}
-                          step={Number(attrs?.step ?? 1)}
-                        />
-                      );
-                    })}
-                  </div>
-                </DialogSectionRow>
-              )}
-            </div>
-          ) : (
-            <p className="text-center text-sm text-white/76">{t('camera.settings.noControls')}</p>
-          )}
+                {selects.length > 0 && (
+                  <DialogSectionRow label={t('camera.settings.modes')}>
+                    <div className="space-y-4">
+                      {selects.map(({ id, entity }) => {
+                        const attrs = entity.attributes as Record<string, unknown>;
+                        const options = Array.isArray(attrs?.options)
+                          ? (attrs.options as string[])
+                          : [];
+                        return (
+                          <SelectRow
+                            key={id}
+                            entityId={id}
+                            label={getDisplayName(id, entity)}
+                            current={entity.state}
+                            options={options}
+                          />
+                        );
+                      })}
+                    </div>
+                  </DialogSectionRow>
+                )}
+
+                {numbers.length > 0 && (
+                  <DialogSectionRow label={t('camera.settings.adjustments')}>
+                    <div className="space-y-4">
+                      {numbers.map(({ id, entity }) => {
+                        const attrs = entity.attributes as Record<string, unknown>;
+                        return (
+                          <NumberRow
+                            key={id}
+                            entityId={id}
+                            label={getDisplayName(id, entity)}
+                            value={Number(entity.state)}
+                            min={Number(attrs?.min ?? 0)}
+                            max={Number(attrs?.max ?? 100)}
+                            step={Number(attrs?.step ?? 1)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </DialogSectionRow>
+                )}
+              </>
+            ) : (
+              <p className="text-center text-sm text-white/76">{t('camera.settings.noControls')}</p>
+            )}
+          </div>
 
           <DialogDoneFooter label={t('common.done')} />
         </CardDialogBody>

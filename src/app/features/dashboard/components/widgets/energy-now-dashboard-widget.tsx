@@ -112,6 +112,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
         >
           <EnergyNowCardView
             title={selectedOption?.name ?? t('widgets.energyNow.settings.home')}
+            subtitle={t('widgets.common.widget')}
             currentLoadW={selectedOption?.currentPowerW ?? overview.totals.currentLoadW}
             todayUsageKWh={selectedOption?.todayUsageKWh ?? todayTotalUsageKWh}
             trend={selectedTrend}
@@ -123,6 +124,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
       ) : (
         <EnergyNowCardView
           title={selectedOption?.name ?? t('widgets.energyNow.settings.home')}
+          subtitle={t('widgets.common.widget')}
           currentLoadW={selectedOption?.currentPowerW ?? overview.totals.currentLoadW}
           todayUsageKWh={selectedOption?.todayUsageKWh ?? todayTotalUsageKWh}
           trend={selectedTrend}

@@ -641,6 +641,8 @@ export const esMessages = {
   'climate.gaugeLabel': 'Indicador de temperatura {mode} que muestra {temp} grados',
   'sensors.single': 'Sensor',
   'sensors.group': 'Grupo de sensores',
+  'sensors.group.emptyState': 'No hay sensores seleccionados',
+  'sensors.group.emptyDescription': 'Agrega sensores a este grupo para seguirlos juntos.',
   'sensors.groupSettings.title': 'Ajustes de {name}',
   'sensors.groupSettings.description': 'Gestiona los sensores de este grupo',
   'sensors.groupSettings.room': 'Habitación',
@@ -702,8 +704,11 @@ export const esMessages = {
   'vacuum.feedback.returnFailed': 'No se pudo devolver la aspiradora a la base',
   'rss.title': 'Fuente RSS',
   'rss.configureProviders': 'Configurar proveedores RSS',
+  'rss.empty.noProvidersTitle': 'No hay proveedores RSS',
   'rss.empty.noProviders': 'Agrega proveedores RSS para empezar a seguir fuentes.',
+  'rss.empty.noSelectionTitle': 'No hay fuentes seleccionadas',
   'rss.empty.noSelection': 'Selecciona uno o más proveedores para esta tarjeta.',
+  'rss.empty.noArticlesTitle': 'Aún no hay artículos',
   'rss.empty.noArticles': 'No hay artículos disponibles ahora mismo.',
   'rss.loading.title': 'Cargando fuentes',
   'rss.loading.description':
@@ -1116,6 +1121,9 @@ export const esMessages = {
   'dashboard.addCard.templates.map.name': 'Mapa',
   'dashboard.addCard.templates.map.description':
     'Mapa en vivo que muestra entidades person y device_tracker con coordenadas GPS.',
+  'dashboard.addCard.templates.sensorGroup.name': 'Grupo de sensores',
+  'dashboard.addCard.templates.sensorGroup.description':
+    'Muestra sensores seleccionados en una tarjeta compacta.',
   'widgets.note.title': 'Nota rápida',
   'widgets.note.emptyState': 'Haz clic para agregar una nota...',
   'widgets.note.placeholder': 'Escribe tu nota aquí...',
@@ -1165,6 +1173,12 @@ export const esMessages = {
   'camera.settings.modes': 'Modos',
   'camera.settings.adjustments': 'Ajustes',
   'camera.settings.noControls': 'No hay controles disponibles para esta cámara.',
+  'camera.settings.viewMode': 'Camera view',
+  'camera.settings.viewMode.live': 'Live',
+  'camera.settings.viewMode.auto': 'Auto',
+  'camera.settings.viewMode.snapshot': 'Snapshot',
+  'camera.settings.viewMode.description':
+    'Live uses Home Assistant streaming when available. Auto refreshes snapshots. Snapshot refreshes only when requested.',
   'camera.status.live': 'En vivo',
   'camera.status.unavailable': 'No disponible',
   'camera.status.noSignal': 'Sin senal',

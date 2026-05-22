@@ -1,6 +1,9 @@
 import { memo } from 'react';
-import { DialogShell } from '@/app/components/primitives/dialog-shell';
-import { CustomScrollbar } from '@/app/components/shared/device-editor';
+import { customCardDialogShellProps, DialogShell } from '@/app/components/primitives/dialog-shell';
+import {
+  getAccentDialogSurface,
+  type PresetPrimaryColor,
+} from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { iconMap } from '../sensors';
@@ -9,24 +12,54 @@ import type { SensorGroupSettingsDialogProps } from './types';
 import { useSensorGroupSettings } from './use-sensor-group-settings';
 import { SensorGroupSettingsView } from './view';
 
+const SENSOR_DIALOG_COLOR: Record<
+  SensorGroupSettingsDialogProps['accentColor'],
+  PresetPrimaryColor
+> = {
+  amber: 'yellow',
+  blue: 'blue',
+  emerald: 'green',
+  purple: 'purple',
+  teal: 'teal',
+};
+
 export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsContainer({
-  entityId,
   isOpen,
   onClose,
   groupName,
+  roomValue,
+  roomLabel,
+  roomOptions,
   currentSensors,
   maxSensors,
   accentColor,
+  availableSensors,
+  showRoomSelector = true,
+  onNameChange,
+  onRoomChange,
   onSensorsUpdate,
 }: SensorGroupSettingsDialogProps) {
   const colors = SENSOR_GROUP_COLOR_MAP[accentColor];
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const activeDialogColors = getAccentDialogSurface(SENSOR_DIALOG_COLOR[accentColor]);
+  const dialogShell = customCardDialogShellProps(
+    surface,
+    {},
+    {
+      maxWidth: 'md',
+      padding: false,
+      height: 'capped',
+      overflow: true,
+    }
+  );
+  const dialogContentClassName = `${dialogShell.contentClassName} max-h-[calc(100dvh-1rem)] min-w-0 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
   const controller = useSensorGroupSettings({
     currentSensors,
     maxSensors,
     onClose,
     onSensorsUpdate,
+    availableSensors,
   });
 
   return (
@@ -38,17 +71,25 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
         }
       }}
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName="fixed top-1/2 left-1/2 z-50 h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl animate-in fade-in zoom-in duration-200"
+      contentClassName={dialogContentClassName}
+      contentStyle={dialogShell.contentStyle}
+      contentGlowClassName={dialogShell.contentGlowClassName}
+      contentGlowStyle={dialogShell.contentGlowStyle}
+      contentOverlayClassName={dialogShell.contentOverlayClassName}
+      bodyClassName="min-h-0 min-w-0 overflow-hidden"
     >
       <SensorGroupSettingsView
-        entityId={entityId}
         groupName={groupName}
+        roomValue={roomValue}
+        roomLabel={roomLabel}
+        roomOptions={roomOptions}
+        showRoomSelector={showRoomSelector}
+        onNameChange={onNameChange}
+        onRoomChange={onRoomChange}
         selectedSensors={controller.selectedSensors}
         maxSensors={maxSensors}
         searchQuery={controller.searchQuery}
         setSearchQuery={controller.setSearchQuery}
-        isDropdownOpen={controller.isDropdownOpen}
-        setIsDropdownOpen={controller.setIsDropdownOpen}
         highlightedIndex={controller.highlightedIndex}
         setHighlightedIndex={controller.setHighlightedIndex}
         inputRef={controller.inputRef}
@@ -59,9 +100,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
         handleAddSensor={controller.handleAddSensor}
         handleRemoveSensor={controller.handleRemoveSensor}
         handleSave={controller.handleSave}
-        handleCancel={controller.handleCancel}
         isSensorSelected={controller.isSensorSelected}
-        CustomScrollbar={CustomScrollbar}
       />
     </DialogShell>
   );

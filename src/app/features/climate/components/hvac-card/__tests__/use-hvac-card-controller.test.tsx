@@ -58,4 +58,22 @@ describe('useHVACCardController', () => {
 
     expect(serviceMock.setClimateTemperature).toHaveBeenCalledWith('climate.hallway', 73);
   });
+
+  it('renders active water heater operating modes with the heat visual tone', () => {
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'water_heater.boiler',
+        name: 'Boiler',
+        initialTemp: 48,
+        initialCurrentTemp: 48,
+        initialMode: 'eco',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.mode).toBe('eco');
+    expect(result.current.visualMode).toBe('heat');
+  });
 });

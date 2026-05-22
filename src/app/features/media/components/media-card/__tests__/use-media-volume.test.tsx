@@ -108,6 +108,35 @@ describe('useMediaVolume', () => {
     expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 45);
   });
 
+  it('does not send intermediate volume changes while dragging', async () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaVolume({
+        canMuteVolume: true,
+        canSetVolume: true,
+        entityId: 'media_player.office',
+        initialVolume: 20,
+        initialMuted: false,
+        t: (key) => key,
+      })
+    );
+
+    act(() => {
+      result.current.startVolumeInteraction();
+      result.current.handleVolumeChange(35);
+      result.current.handleVolumeChange(50);
+    });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(serviceMock.setMediaPlayerVolume).not.toHaveBeenCalled();
+
+    act(() => result.current.endVolumeInteraction());
+
+    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 50);
+  });
+
   it('unmutes before setting a non-zero volume when needed', async () => {
     const { result } = renderHookWithProviders(() =>
       useMediaVolume({

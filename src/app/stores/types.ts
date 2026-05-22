@@ -2,6 +2,7 @@ import type { CardSize } from '../components/shared/card-size-selector';
 import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
+  CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
   WeatherForecastMode,
@@ -66,6 +67,7 @@ interface UserSettings {
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
   entityInteractionMode: EntityInteractionMode;
+  cameraViewMode: CameraViewMode;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -77,7 +79,15 @@ export interface SettingsState extends UserSettings {
   resetSettings: () => void;
 }
 
-export type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'button';
+export type CardType =
+  | 'rss'
+  | 'photo'
+  | 'note'
+  | 'battery'
+  | 'energy-now'
+  | 'button'
+  | 'map'
+  | 'sensor-group';
 
 export interface CustomCard {
   id: string;

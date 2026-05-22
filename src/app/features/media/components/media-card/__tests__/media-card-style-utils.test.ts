@@ -4,6 +4,7 @@ import {
   getMediaDisplayVolume,
   getMediaProgressPercent,
 } from '../../media/media-card-style-utils';
+import { withAlpha } from '../../media/use-media-artwork-colors';
 
 describe('media card style utils', () => {
   it('clamps percentage values to the media control range', () => {
@@ -21,5 +22,10 @@ describe('media card style utils', () => {
     expect(getMediaProgressPercent(30, 0)).toBe(0);
     expect(getMediaProgressPercent(30, 60)).toBe(50);
     expect(getMediaProgressPercent(90, 60)).toBe(100);
+  });
+
+  it('applies alpha to hex readable text colors', () => {
+    expect(withAlpha('#0f172a', 0.24)).toBe('rgba(15, 23, 42, 0.24)');
+    expect(withAlpha('#fff', 0.4)).toBe('rgba(255, 255, 255, 0.4)');
   });
 });

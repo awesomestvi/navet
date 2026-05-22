@@ -8,6 +8,15 @@ interface UseHvacVisualModeParams {
   targetTemp: number;
 }
 
+const WATER_HEATER_HEAT_MODES = new Set([
+  'eco',
+  'electric',
+  'gas',
+  'heat_pump',
+  'high_demand',
+  'performance',
+]);
+
 export function useHvacVisualMode({
   action,
   currentTemp,
@@ -49,6 +58,10 @@ export function useHvacVisualMode({
     }
 
     if (normalizedMode === 'heat') {
+      return 'heat';
+    }
+
+    if (WATER_HEATER_HEAT_MODES.has(normalizedMode)) {
       return 'heat';
     }
 

@@ -355,7 +355,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
           ) : null}
           <EntityCardHeader
             title={t('widgets.battery.title')}
-            subtitle={t('common.custom')}
+            subtitle={t('widgets.common.widget')}
             layout="eyebrow-first"
             size={chromeSize}
             titleClassName={surface.textPrimary}

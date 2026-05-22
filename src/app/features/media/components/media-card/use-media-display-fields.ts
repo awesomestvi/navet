@@ -3,10 +3,12 @@ interface UseMediaDisplayFieldsParams {
   entityPicture?: string;
   artworkKey?: string;
   entityName: string;
+  playbackState: 'playing' | 'paused' | 'idle' | 'off';
   initialTitle: string;
   initialArtist: string;
   nothingPlayingLabel: string;
   nothingPlayingDescription: string;
+  readyToPlayLabel: string;
 }
 
 function normalizeMediaText(value: string) {
@@ -32,21 +34,30 @@ export function useMediaDisplayFields({
   entityPicture,
   artworkKey,
   entityName,
+  playbackState,
   initialTitle,
   initialArtist,
   nothingPlayingLabel,
   nothingPlayingDescription,
+  readyToPlayLabel,
 }: UseMediaDisplayFieldsParams) {
   const liveEntityPicture = getLiveEntityPicture(liveAttrs, entityPicture);
   const normalizedEntityName = normalizeMediaText(entityName);
+  const isAvailable = playbackState !== 'off';
   const initialTitleIsEntityName =
     initialTitle.trim().length > 0 && normalizeMediaText(initialTitle) === normalizedEntityName;
   const fallbackTitle =
-    initialTitle.trim().length > 0 && !initialTitleIsEntityName
+    initialTitle.trim().length > 0 && (!initialTitleIsEntityName || isAvailable)
       ? initialTitle
-      : nothingPlayingLabel;
+      : isAvailable
+        ? entityName
+        : nothingPlayingLabel;
   const fallbackArtist =
-    initialArtist.trim().length > 0 ? initialArtist : nothingPlayingDescription;
+    initialArtist.trim().length > 0
+      ? initialArtist
+      : isAvailable
+        ? readyToPlayLabel
+        : nothingPlayingDescription;
   const resolvedDisplayTitle =
     (typeof liveAttrs?.media_title === 'string' && liveAttrs.media_title) ||
     (typeof liveAttrs?.app_name === 'string' && liveAttrs.app_name) ||
@@ -54,7 +65,7 @@ export function useMediaDisplayFields({
     (typeof liveAttrs?.media_series_title === 'string' && liveAttrs.media_series_title) ||
     fallbackTitle;
   const displayTitle =
-    normalizeMediaText(resolvedDisplayTitle) === normalizedEntityName
+    !isAvailable && normalizeMediaText(resolvedDisplayTitle) === normalizedEntityName
       ? nothingPlayingLabel
       : resolvedDisplayTitle;
   const displayArtist =

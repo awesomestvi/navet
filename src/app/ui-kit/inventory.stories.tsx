@@ -71,6 +71,7 @@ const inventory = [
       ['CardDialogSection', '@/app/ui-kit/patterns'],
       ['CardDialogTabList', '@/app/ui-kit/patterns'],
       ['CardDialogTabTrigger', '@/app/ui-kit/patterns'],
+      ['CardEmptyState', '@/app/ui-kit/patterns', 'compact card fallback'],
       ['DashboardEmptyState', '@/app/ui-kit/patterns'],
       ['DashboardHeroSection', '@/app/ui-kit/patterns'],
       ['FieldBlock', '@/app/ui-kit/patterns'],

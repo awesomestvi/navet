@@ -6,6 +6,7 @@ import { storage } from '@/app/utils/storage';
 
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
+export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -31,6 +32,7 @@ export interface UserSettings {
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
   entityInteractionMode: EntityInteractionMode;
+  cameraViewMode: CameraViewMode;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -56,10 +58,15 @@ export const defaultSettings: UserSettings = {
   lowPowerMode: false,
   effectsQuality: 'high',
   entityInteractionMode: 'toggle-first',
+  cameraViewMode: 'live',
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
 };
+
+function isCameraViewMode(value: unknown): value is CameraViewMode {
+  return value === 'live' || value === 'auto' || value === 'snapshot';
+}
 
 /**
  * On first load (no persisted settings), auto-detect the device's rendering
@@ -91,6 +98,9 @@ export const useSettingsStore = create<SettingsState>()(
         return {
           ...current,
           ...next,
+          cameraViewMode: isCameraViewMode(next.cameraViewMode)
+            ? next.cameraViewMode
+            : current.cameraViewMode,
         };
       },
     }

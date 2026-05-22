@@ -73,6 +73,12 @@ export const Medium: Story = {
   },
 };
 
+export const Empty: Story = {
+  args: {
+    sensors: [],
+  },
+};
+
 export const Docs: Story = {
   parameters: {
     docsOnly: true,

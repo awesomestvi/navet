@@ -3,8 +3,11 @@ import type { Connection } from 'home-assistant-js-websocket';
 import type {
   HomeAssistantAutomationConfig,
   HomeAssistantCameraCapabilities,
+  HomeAssistantCameraStream,
   HomeAssistantMediaSourceItem,
   HomeAssistantResolvedMediaSource,
+  HomeAssistantWebRtcClientConfiguration,
+  HomeAssistantWebRtcOfferEvent,
 } from './home-assistant.service';
 
 type HAServiceTarget = {
@@ -275,6 +278,71 @@ class HAEntityService {
       type: 'camera/capabilities',
       entity_id: entityId,
     }) as Promise<HomeAssistantCameraCapabilities>;
+  }
+
+  async getCameraStreamUrl(
+    entityId: string,
+    format: 'hls' = 'hls'
+  ): Promise<HomeAssistantCameraStream> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return conn.sendMessagePromise({
+      type: 'camera/stream',
+      entity_id: entityId,
+      format,
+    }) as Promise<HomeAssistantCameraStream>;
+  }
+
+  async getWebRtcClientConfiguration(
+    entityId: string
+  ): Promise<HomeAssistantWebRtcClientConfiguration> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return conn.sendMessagePromise({
+      type: 'camera/webrtc/get_client_config',
+      entity_id: entityId,
+    }) as Promise<HomeAssistantWebRtcClientConfiguration>;
+  }
+
+  subscribeCameraWebRtcOffer(
+    entityId: string,
+    offer: string,
+    callback: (event: HomeAssistantWebRtcOfferEvent) => void
+  ): Promise<() => void> {
+    const conn = this.connection();
+    if (!conn) {
+      return Promise.reject(new Error('Home Assistant is not connected'));
+    }
+
+    return conn.subscribeMessage(callback, {
+      type: 'camera/webrtc/offer',
+      entity_id: entityId,
+      offer,
+    });
+  }
+
+  async addCameraWebRtcCandidate(
+    entityId: string,
+    sessionId: string,
+    candidate: RTCIceCandidateInit
+  ): Promise<void> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    await conn.sendMessagePromise({
+      type: 'camera/webrtc/candidate',
+      entity_id: entityId,
+      session_id: sessionId,
+      candidate,
+    });
   }
 
   /**

@@ -26,6 +26,7 @@ export function useMediaVolume({
   const [previousVolume, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
   const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
   const pendingVolumeRef = useRef<number | null>(null);
+  const isAdjustingVolumeRef = useRef(false);
   const volumeCommitTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -91,6 +92,11 @@ export function useMediaVolume({
       pendingVolumeRef.current = nextVolume;
       if (volumeCommitTimeoutRef.current !== null) {
         window.clearTimeout(volumeCommitTimeoutRef.current);
+        volumeCommitTimeoutRef.current = null;
+      }
+
+      if (isAdjustingVolumeRef.current) {
+        return;
       }
       volumeCommitTimeoutRef.current = window.setTimeout(() => {
         const pendingVolume = pendingVolumeRef.current;
@@ -107,15 +113,20 @@ export function useMediaVolume({
     [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]
   );
 
-  const startVolumeInteraction = useCallback(() => setIsAdjustingVolume(true), []);
+  const startVolumeInteraction = useCallback(() => {
+    isAdjustingVolumeRef.current = true;
+    setIsAdjustingVolume(true);
+  }, []);
 
   const endVolumeInteraction = useCallback(() => {
     if (!canSetVolume) {
+      isAdjustingVolumeRef.current = false;
       setIsAdjustingVolume(false);
       pendingVolumeRef.current = null;
       return;
     }
 
+    isAdjustingVolumeRef.current = false;
     setIsAdjustingVolume(false);
     if (volumeCommitTimeoutRef.current !== null) {
       window.clearTimeout(volumeCommitTimeoutRef.current);

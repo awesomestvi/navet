@@ -34,6 +34,8 @@ export function MediaDialogContent({
   onNext,
   onOpenChange,
   onPrevious,
+  canNextTrack,
+  canPreviousTrack,
   onToggleMute,
   onTogglePlay,
   onToggleShuffle,
@@ -89,6 +91,8 @@ export function MediaDialogContent({
         <MediaDialogPlaybackControls
           controller={controller}
           isPlaying={isPlaying}
+          canNextTrack={canNextTrack}
+          canPreviousTrack={canPreviousTrack}
           onCycleRepeat={onCycleRepeat}
           onNext={onNext}
           onPrevious={onPrevious}

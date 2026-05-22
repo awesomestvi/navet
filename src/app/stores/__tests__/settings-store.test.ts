@@ -34,6 +34,7 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
     expect(useSettingsStore.getState().username).toBe(defaultSettings.username);
+    expect(useSettingsStore.getState().cameraViewMode).toBe('live');
   });
 
   it('rehydrates persisted settings', async () => {
@@ -50,5 +51,6 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().compactMode).toBe(true);
     expect(useSettingsStore.getState().language).toBe('sv');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
+    expect(useSettingsStore.getState().cameraViewMode).toBe('live');
   });
 });

@@ -1,5 +1,9 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { hasMediaPlayerGroupingSupport } from '../../constants/media-player-features';
+import {
+  hasMediaPlayerGroupingSupport,
+  hasMediaPlayerNextTrackSupport,
+  hasMediaPlayerPreviousTrackSupport,
+} from '../../constants/media-player-features';
 import type { TranslateFn } from '../../i18n';
 import type { MediaDevice } from '../../types/device.types';
 import { formatMediaEntityType, parseNumberish } from '../ha-entity-utils';
@@ -38,7 +42,7 @@ export function mapMediaDevice(
     (typeof entity.attributes?.media_channel === 'string' && entity.attributes.media_channel) ||
     (typeof entity.attributes?.media_series_title === 'string' &&
       entity.attributes.media_series_title) ||
-    t('media.nothingPlaying');
+    (normalizedState === 'off' ? t('media.nothingPlaying') : name);
 
   const mediaArtist =
     (typeof entity.attributes?.media_artist === 'string' && entity.attributes.media_artist) ||
@@ -48,7 +52,7 @@ export function mapMediaDevice(
       entity.attributes.media_series_title) ||
     (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
     (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
-    t('media.nothingPlayingDescription');
+    (normalizedState === 'off' ? t('media.nothingPlayingDescription') : t('media.readyToPlay'));
 
   const mediaSource =
     typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined;
@@ -96,6 +100,8 @@ export function mapMediaDevice(
       typeof mediaDuration === 'number' ? Math.max(0, Math.floor(mediaDuration)) : undefined,
     positionUpdatedAt,
     supportsGrouping: hasMediaPlayerGroupingSupport(supportedFeatures),
+    supportsPreviousTrack: hasMediaPlayerPreviousTrackSupport(supportedFeatures),
+    supportsNextTrack: hasMediaPlayerNextTrackSupport(supportedFeatures),
     groupMembers,
   };
 }

@@ -17,6 +17,7 @@ interface CardDialogHeaderProps {
   showRoomSelector?: boolean;
   forceDarkRoomSelector?: boolean;
   editableTitle?: boolean;
+  onTitleChange?: (title: string) => void | Promise<void>;
   trailing?: ReactNode;
   supportingContent?: ReactNode;
   className?: string;
@@ -66,6 +67,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   showRoomSelector = true,
   forceDarkRoomSelector = true,
   editableTitle = true,
+  onTitleChange,
   trailing,
   supportingContent,
   className,
@@ -76,7 +78,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   const [displayTitle, setDisplayTitle] = useState(title);
   const [draftTitle, setDraftTitle] = useState(title);
   const [isSavingTitle, setIsSavingTitle] = useState(false);
-  const canEditTitle = Boolean(entityId && editableTitle);
+  const canEditTitle = Boolean(editableTitle && (entityId || onTitleChange));
 
   useEffect(() => {
     setDisplayTitle(title);
@@ -102,7 +104,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   };
 
   const saveTitleEdit = async () => {
-    if (!entityId) {
+    if (!entityId && !onTitleChange) {
       return;
     }
 
@@ -119,9 +121,15 @@ export const CardDialogHeader = memo(function CardDialogHeader({
 
     setIsSavingTitle(true);
     try {
-      await homeAssistantService.updateEntityName(entityId, nextTitle);
+      if (onTitleChange) {
+        await onTitleChange(nextTitle);
+      } else if (entityId) {
+        await homeAssistantService.updateEntityName(entityId, nextTitle);
+      }
       setDisplayTitle(nextTitle);
-      toast.success(t('entityNameEditor.saved', { name: nextTitle }));
+      if (entityId && !onTitleChange) {
+        toast.success(t('entityNameEditor.saved', { name: nextTitle }));
+      }
       setIsEditingTitle(false);
     } catch (error) {
       const message =

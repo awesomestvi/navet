@@ -5,8 +5,10 @@ const baseParams = {
   entityName: 'Kitchen',
   initialTitle: 'Kitchen',
   initialArtist: '',
+  playbackState: 'playing' as const,
   nothingPlayingLabel: 'Nothing playing',
   nothingPlayingDescription: 'No media selected',
+  readyToPlayLabel: 'Ready to play',
 };
 
 describe('useMediaDisplayFields', () => {
@@ -61,5 +63,27 @@ describe('useMediaDisplayFields', () => {
 
     expect(fields.liveEntityPicture).toBe('https://cdn.example.test/album.jpg');
     expect(fields.liveArtworkKey).toContain('https://cdn.example.test/album.jpg');
+  });
+
+  it('shows the player name for an available player with no media metadata', () => {
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      liveAttrs: {},
+      playbackState: 'idle',
+    });
+
+    expect(fields.displayTitle).toBe('Kitchen');
+    expect(fields.displayArtist).toBe('Ready to play');
+  });
+
+  it('keeps the empty playback fallback for an off player with no media metadata', () => {
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      liveAttrs: {},
+      playbackState: 'off',
+    });
+
+    expect(fields.displayTitle).toBe('Nothing playing');
+    expect(fields.displayArtist).toBe('No media selected');
   });
 });

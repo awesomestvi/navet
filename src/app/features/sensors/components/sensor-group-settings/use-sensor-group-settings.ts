@@ -4,21 +4,21 @@ import { AVAILABLE_SENSORS } from './data';
 import type { AvailableSensor, SensorGroupSettingsDialogProps } from './types';
 
 export function useSensorGroupSettings({
+  availableSensors = AVAILABLE_SENSORS,
   currentSensors,
   maxSensors,
   onClose,
   onSensorsUpdate,
 }: Pick<
   SensorGroupSettingsDialogProps,
-  'currentSensors' | 'maxSensors' | 'onClose' | 'onSensorsUpdate'
+  'availableSensors' | 'currentSensors' | 'maxSensors' | 'onClose' | 'onSensorsUpdate'
 >) {
   const [selectedSensors, setSelectedSensors] = useState<SensorReading[]>(currentSensors);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const filteredSensors = AVAILABLE_SENSORS.filter((sensor) => {
+  const filteredSensors = availableSensors.filter((sensor) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) {
       return true;
@@ -27,17 +27,13 @@ export function useSensorGroupSettings({
       sensor.label.toLowerCase().includes(query) ||
       sensor.category.toLowerCase().includes(query) ||
       sensor.unit.toLowerCase().includes(query) ||
-      sensor.id.toLowerCase().includes(query)
+      sensor.id.toLowerCase().includes(query) ||
+      (sensor.room?.toLowerCase().includes(query) ?? false)
     );
   });
 
   const isSensorSelected = useCallback(
-    (sensorId: string) =>
-      selectedSensors.some((sensor) =>
-        AVAILABLE_SENSORS.find(
-          (available) => available.id === sensorId && available.label === sensor.label
-        )
-      ),
+    (sensorId: string) => selectedSensors.some((sensor) => sensor.id === sensorId),
     [selectedSensors]
   );
 
@@ -47,16 +43,12 @@ export function useSensorGroupSettings({
         return;
       }
 
-      const alreadySelected = selectedSensors.some((current) =>
-        AVAILABLE_SENSORS.find(
-          (available) => available.id === sensor.id && available.label === current.label
-        )
-      );
+      const alreadySelected = selectedSensors.some((current) => current.id === sensor.id);
       if (alreadySelected) {
         return;
       }
 
-      setSelectedSensors([
+      const nextSensors = [
         ...selectedSensors,
         {
           id: sensor.id,
@@ -65,34 +57,33 @@ export function useSensorGroupSettings({
           unit: sensor.unit,
           icon: sensor.icon,
         },
-      ]);
+      ];
+
+      setSelectedSensors(nextSensors);
+      onSensorsUpdate(nextSensors);
       setSearchQuery('');
       setHighlightedIndex(-1);
       setTimeout(() => inputRef.current?.focus(), 0);
     },
-    [maxSensors, selectedSensors]
+    [maxSensors, onSensorsUpdate, selectedSensors]
   );
 
-  const handleRemoveSensor = useCallback((index: number) => {
-    setSelectedSensors((current) => current.filter((_, currentIndex) => currentIndex !== index));
-  }, []);
-
-  const resetState = useCallback(() => {
-    setSelectedSensors(currentSensors);
-    setSearchQuery('');
-    setIsDropdownOpen(false);
-    setHighlightedIndex(-1);
-  }, [currentSensors]);
+  const handleRemoveSensor = useCallback(
+    (sensorId: string) => {
+      const nextSensors = selectedSensors.filter((sensor) => sensor.id !== sensorId);
+      setSelectedSensors(nextSensors);
+      onSensorsUpdate(nextSensors);
+    },
+    [onSensorsUpdate, selectedSensors]
+  );
 
   const handleCancel = useCallback(() => {
-    resetState();
     onClose();
-  }, [onClose, resetState]);
+  }, [onClose]);
 
   const handleSave = useCallback(() => {
-    onSensorsUpdate(selectedSensors);
     onClose();
-  }, [onClose, onSensorsUpdate, selectedSensors]);
+  }, [onClose]);
 
   return {
     filteredSensors,
@@ -102,12 +93,10 @@ export function useSensorGroupSettings({
     handleSave,
     highlightedIndex,
     inputRef,
-    isDropdownOpen,
     isSensorSelected,
     searchQuery,
     selectedSensors,
     setHighlightedIndex,
-    setIsDropdownOpen,
     setSearchQuery,
   };
 }

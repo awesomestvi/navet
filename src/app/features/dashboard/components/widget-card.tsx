@@ -1,8 +1,15 @@
-import type { ReactNode } from 'react';
-import { Component, lazy, Suspense } from 'react';
+import { Component, lazy, type ReactNode, Suspense, useMemo } from 'react';
 import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { RSSCardData } from '@/app/features/rss';
+import {
+  buildAvailableSensorOptions,
+  GroupedSensorCard,
+  resolveSensorReadings,
+  type SensorReading,
+} from '@/app/features/sensors';
+import { useHomeAssistant } from '@/app/hooks';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
@@ -88,11 +95,93 @@ interface WidgetCardProps {
   onUpdate?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 
+type SensorGroupWidgetData = {
+  name?: string;
+  sensorEntityIds?: string[];
+  accentColor?: 'teal' | 'blue' | 'purple' | 'amber' | 'emerald';
+};
+
+const EMPTY_SENSOR_ENTITY_IDS: string[] = [];
+
 function WidgetFallback({ size }: { size: CardSize }) {
   return (
     <BaseCard size={size} className="animate-pulse bg-white/5">
       <span />
     </BaseCard>
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function SensorGroupWidget({
+  card,
+  isEditMode,
+  onUpdate,
+}: {
+  card: CustomCard;
+  isEditMode: boolean;
+  onUpdate: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
+}) {
+  const entities = useHomeAssistant(homeAssistantSelectors.entities);
+  const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
+  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const data = card.data as SensorGroupWidgetData | undefined;
+  const sensorEntityIds = isStringArray(data?.sensorEntityIds)
+    ? data.sensorEntityIds
+    : EMPTY_SENSOR_ENTITY_IDS;
+  const sensors = useMemo(
+    () => resolveSensorReadings({ entities, sensorEntityIds }),
+    [entities, sensorEntityIds]
+  );
+  const availableSensors = useMemo(
+    () =>
+      buildAvailableSensorOptions({
+        entities,
+        areas,
+        deviceRegistry,
+        entityRegistry,
+      }),
+    [areas, deviceRegistry, entities, entityRegistry]
+  );
+  const accentColor = data?.accentColor ?? 'teal';
+  const name = data?.name ?? 'Sensor group';
+
+  const handleSensorsUpdate = (nextSensors: SensorReading[]) => {
+    onUpdate(card.id, {
+      data: {
+        ...card.data,
+        sensorEntityIds: nextSensors.map((sensor) => sensor.id),
+      },
+    });
+  };
+  const handleNameChange = (nextName: string) => {
+    onUpdate(card.id, {
+      data: {
+        ...card.data,
+        name: nextName,
+      },
+    });
+  };
+
+  return (
+    <GroupedSensorCard
+      id={card.id}
+      name={name}
+      room={card.room}
+      sensors={sensors}
+      size={card.size}
+      onSizeChange={() => {}}
+      isEditMode={isEditMode}
+      accentColor={accentColor}
+      availableSensors={availableSensors}
+      showRoomSelector
+      onNameChange={handleNameChange}
+      onRoomChange={(room) => onUpdate(card.id, { room })}
+      onSensorsUpdate={handleSensorsUpdate}
+    />
   );
 }
 
@@ -216,11 +305,12 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           markers={
             Array.isArray(card.data?.markers) ? card.data.markers.filter(isMapMarker) : undefined
           }
-          onTintColorChange={(tintColor) =>
-            handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
-          }
-          isEditMode={isEditMode}
         />
+      );
+      break;
+    case 'sensor-group':
+      widgetContent = (
+        <SensorGroupWidget card={card} isEditMode={isEditMode} onUpdate={handleCardUpdate} />
       );
       break;
     default:

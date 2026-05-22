@@ -30,3 +30,16 @@ export const MEDIA_PLAYER_FEATURES = {
 export function hasMediaPlayerGroupingSupport(supportedFeatures: number): boolean {
   return (supportedFeatures & MEDIA_PLAYER_FEATURES.GROUPING) === MEDIA_PLAYER_FEATURES.GROUPING;
 }
+
+export function hasMediaPlayerPreviousTrackSupport(supportedFeatures: number): boolean {
+  return (
+    (supportedFeatures & MEDIA_PLAYER_FEATURES.PREVIOUS_TRACK) ===
+    MEDIA_PLAYER_FEATURES.PREVIOUS_TRACK
+  );
+}
+
+export function hasMediaPlayerNextTrackSupport(supportedFeatures: number): boolean {
+  return (
+    (supportedFeatures & MEDIA_PLAYER_FEATURES.NEXT_TRACK) === MEDIA_PLAYER_FEATURES.NEXT_TRACK
+  );
+}

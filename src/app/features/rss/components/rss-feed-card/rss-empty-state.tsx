@@ -1,5 +1,6 @@
-import { Settings2 } from 'lucide-react';
-import { Button } from '@/app/components/primitives';
+import { AlertCircle, Newspaper, Rss, Settings2 } from 'lucide-react';
+import { CardEmptyState } from '@/app/components/patterns';
+import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
 import type { RSSFeedCardSurfaceTokens } from './surface-tokens';
 
@@ -8,6 +9,7 @@ interface RSSEmptyStateProps {
   hasSelectedProviders: boolean;
   error: string | null;
   inEditMode: boolean;
+  size: CardSize;
   rssSurface: RSSFeedCardSurfaceTokens;
   onOpenSettings: () => void;
 }
@@ -16,49 +18,57 @@ export function RSSEmptyState({
   hasConfiguredProviders,
   hasSelectedProviders,
   error,
-  inEditMode,
+  size,
   rssSurface,
   onOpenSettings,
 }: RSSEmptyStateProps) {
   const { t } = useI18n();
-  const emptyMessage = !hasConfiguredProviders
-    ? t('rss.empty.noProviders')
+  const state = !hasConfiguredProviders
+    ? {
+        title: t('rss.empty.noProvidersTitle'),
+        description: t('rss.empty.noProviders'),
+        icon: Rss,
+        actionLabel: t('rss.configureProviders'),
+        actionIcon: Settings2,
+        onAction: onOpenSettings,
+      }
     : !hasSelectedProviders
-      ? t('rss.empty.noSelection')
+      ? {
+          title: t('rss.empty.noSelectionTitle'),
+          description: t('rss.empty.noSelection'),
+          icon: Settings2,
+          actionLabel: t('rss.configureProviders'),
+          actionIcon: Settings2,
+          onAction: onOpenSettings,
+        }
       : error
-        ? error
-        : t('rss.empty.noArticles');
+        ? {
+            title: t('rss.error.unableToLoad'),
+            description: error,
+            icon: AlertCircle,
+            actionLabel: undefined,
+            actionIcon: undefined,
+            onAction: undefined,
+          }
+        : {
+            title: t('rss.empty.noArticlesTitle'),
+            description: t('rss.empty.noArticles'),
+            icon: Newspaper,
+            actionLabel: undefined,
+            actionIcon: undefined,
+            onAction: undefined,
+          };
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: rssSurface.textSecondaryColor }}>
-        {emptyMessage}
-      </p>
-      {inEditMode ? (
-        <div
-          className="mt-4 inline-flex w-fit items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium"
-          style={{ color: rssSurface.textPrimaryColor }}
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          {t('rss.configureProviders')}
-        </div>
-      ) : (
-        <Button
-          type="button"
-          variant="secondary"
-          size="small"
-          leading={<Settings2 className="h-3.5 w-3.5" />}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenSettings();
-          }}
-          className={`mt-4 ${rssSurface.hoverClassName}`}
-          style={{ color: rssSurface.textPrimaryColor }}
-        >
-          {t('rss.configureProviders')}
-        </Button>
-      )}
-    </div>
+    <CardEmptyState
+      title={state.title}
+      description={state.description}
+      icon={state.icon}
+      actionLabel={state.actionLabel}
+      actionIcon={state.actionIcon}
+      onAction={state.onAction}
+      size={size}
+      accentColor={rssSurface.resolvedTintColor ?? rssSurface.accentColor.base}
+    />
   );
 }

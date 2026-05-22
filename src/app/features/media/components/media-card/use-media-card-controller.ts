@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { shallow } from 'zustand/shallow';
-import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
+import {
+  hasMediaPlayerGroupingSupport,
+  hasMediaPlayerNextTrackSupport,
+  hasMediaPlayerPreviousTrackSupport,
+} from '@/app/constants/media-player-features';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
@@ -52,6 +56,8 @@ export function useMediaCardController({
   initialDurationSeconds,
   initialPositionUpdatedAt,
   initialSupportsGrouping = false,
+  initialSupportsPreviousTrack = true,
+  initialSupportsNextTrack = true,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
   const authConfig = useAuth(authSelectors.config);
@@ -96,6 +102,14 @@ export function useMediaCardController({
     typeof resolvedInitialSupportedFeatures === 'number'
       ? hasMediaPlayerGroupingSupport(resolvedInitialSupportedFeatures)
       : initialSupportsGrouping;
+  const canPreviousTrack =
+    typeof resolvedInitialSupportedFeatures === 'number'
+      ? hasMediaPlayerPreviousTrackSupport(resolvedInitialSupportedFeatures)
+      : initialSupportsPreviousTrack;
+  const canNextTrack =
+    typeof resolvedInitialSupportedFeatures === 'number'
+      ? hasMediaPlayerNextTrackSupport(resolvedInitialSupportedFeatures)
+      : initialSupportsNextTrack;
   // Only subscribe to all media player entities if grouping is actually supported.
   // Use the resolved live capability when available so grouping stays functional
   // even when the initial prop was stale.
@@ -187,7 +201,15 @@ export function useMediaCardController({
     toggleShuffle,
     openDialog,
     closeDialog,
-  } = useMediaPlayback({ entityId, isPlaying, shuffleEnabled, repeatMode, t });
+  } = useMediaPlayback({
+    entityId,
+    isPlaying,
+    canPreviousTrack,
+    canNextTrack,
+    shuffleEnabled,
+    repeatMode,
+    t,
+  });
 
   // Derive playback fields from liveEntity when available, fall back to initial props.
   const { displayArtist, displayTitle, liveArtworkKey, liveEntityPicture } = useMediaDisplayFields({
@@ -195,16 +217,17 @@ export function useMediaCardController({
     entityPicture,
     artworkKey,
     entityName,
+    playbackState: state,
     initialTitle,
     initialArtist,
     nothingPlayingLabel: t('media.nothingPlaying'),
     nothingPlayingDescription: t('media.nothingPlayingDescription'),
+    readyToPlayLabel: t('media.readyToPlay'),
   });
 
   const { albumArt, handleArtworkError } = useMediaArtworkResolution({
     entityId,
     artworkKey,
-    artworkVersionKey: liveEntity?.last_updated,
     liveEntityPicture,
     liveArtworkKey,
     homeAssistantUrl: authConfig?.url,
@@ -242,8 +265,8 @@ export function useMediaCardController({
       typeof liveAttrs?.media_position_updated_at === 'string'
         ? liveAttrs.media_position_updated_at
         : undefined,
-    initialElapsedSeconds,
-    initialPositionUpdatedAt,
+    initialElapsedSeconds: liveEntity ? undefined : initialElapsedSeconds,
+    initialPositionUpdatedAt: liveEntity ? undefined : initialPositionUpdatedAt,
     setElapsedSeconds,
   });
 
@@ -290,6 +313,8 @@ export function useMediaCardController({
     albumArt,
     attachGroupMember,
     availableGroupingPlayers,
+    canNextTrack,
+    canPreviousTrack,
     closeDialog,
     detachGroupMember,
     displayArtist,
@@ -302,7 +327,7 @@ export function useMediaCardController({
     handleNext,
     handlePrevious,
     handleVolumeChange,
-    isOff: isTv ? state === 'off' : state === 'off' || state === 'idle',
+    isOff: state === 'off',
     isMuted,
     isOpen,
     isPlaying,

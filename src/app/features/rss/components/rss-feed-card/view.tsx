@@ -1,5 +1,5 @@
-import { Settings2 } from 'lucide-react';
-import { BaseCard, RoundControlButton } from '@/app/components/primitives';
+import { BaseCard } from '@/app/components/primitives';
+import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { type ThemeType, useI18n } from '@/app/hooks';
 import { RSSArticleListLarge, RSSArticleListMedium, RSSArticleListSmall } from './rss-article-list';
@@ -109,6 +109,7 @@ export function RSSFeedCardView({
             hasSelectedProviders={hasSelectedProviders}
             error={error}
             inEditMode={inEditMode}
+            size={size}
             rssSurface={rssSurface}
             onOpenSettings={onOpenSettings}
           />
@@ -130,10 +131,11 @@ export function RSSFeedCardView({
                 controlAccentColor={controlAccentColor}
                 theme={theme}
               />
-              <RoundControlButton
+              <CardSettingsActionButton
                 theme={theme}
                 size={chromeSize === 'small' ? 'small' : 'medium'}
                 variant="soft"
+                accentColor={controlAccentColor}
                 aria-label={t('rss.configureProviders')}
                 className="shrink-0"
                 onClick={(event) => {
@@ -141,9 +143,7 @@ export function RSSFeedCardView({
                   onOpenSettings();
                 }}
                 onPointerDown={(event) => event.stopPropagation()}
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-              </RoundControlButton>
+              />
             </div>
 
             {isSmall && latestArticle ? (

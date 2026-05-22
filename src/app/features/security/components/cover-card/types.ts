@@ -20,6 +20,7 @@ export interface CoverCardProps {
   name: string;
   room: string;
   initialPosition?: number;
+  initialPositionMode?: 'position' | 'tilt';
   supportedFeatures?: number;
   hasPosition?: boolean;
   initialDeviceClass?: DeviceClass;

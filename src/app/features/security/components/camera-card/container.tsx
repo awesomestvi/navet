@@ -1,13 +1,32 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { shallow } from 'zustand/shallow';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
+import { authSelectors, homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { type CameraViewMode, useSettingsStore } from '@/app/stores/settings-store';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
+import { CameraStreamPlayer } from './camera-stream-player';
+import {
+  appendCameraCacheBuster,
+  type CameraImageSourceKind,
+  type CameraStreamType,
+  getCameraAutoRefreshInterval,
+  readCameraStreamTypes,
+  resolveCameraMjpegStreamUrl,
+  selectCameraImageSource,
+} from './camera-view-mode';
 import type { CameraCardProps } from './types';
 import { CameraCardView } from './view';
 
@@ -59,21 +78,13 @@ function resolveHomeAssistantImageUrl(
   return imageUrl.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${imageUrl}` : imageUrl;
 }
 
-function resolveCameraStreamPreviewUrl(snapshotUrl: string | undefined) {
-  if (!snapshotUrl?.includes('/api/camera_proxy/')) {
-    return undefined;
-  }
-
-  return snapshotUrl.replace('/api/camera_proxy/', '/api/camera_proxy_stream/');
-}
-
-function readFrontendStreamTypes(value: unknown): string[] {
+function readFrontendStreamTypes(value: unknown) {
   if (!value || typeof value !== 'object') {
     return [];
   }
 
   const raw = (value as { frontend_stream_types?: unknown }).frontend_stream_types;
-  return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
+  return readCameraStreamTypes(raw);
 }
 
 const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
@@ -117,6 +128,31 @@ function useCameraClock() {
   );
 }
 
+function useCameraCardVisibility() {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry?.isIntersecting ?? true);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { cardRef, isVisible };
+}
+
 export const CameraCardContainer = memo(function CameraCardContainer({
   id,
   name,
@@ -130,11 +166,15 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const config = useAuth(authSelectors.config);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
+  const cameraViewMode = useSettingsStore(settingsSelectors.cameraViewMode);
+  const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
   const { siblingIds: deviceEntityIds } = useCameraRegistryDeviceTopology(id);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [frontendStreamTypes, setFrontendStreamTypes] = useState<string[]>([]);
+  const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
+  const [frontendStreamTypes, setFrontendStreamTypes] = useState<CameraStreamType[]>([]);
+  const { cardRef, isVisible } = useCameraCardVisibility();
   const now = useCameraClock();
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
@@ -146,10 +186,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     : initialSnapshotUrl;
 
   // Append cache-busting param so refresh forces a new frame from HA
-  const snapshotUrl = baseSnapshotUrl
-    ? `${baseSnapshotUrl}${baseSnapshotUrl.includes('?') ? '&' : '?'}_t=${refreshKey}`
-    : undefined;
-  const streamPreviewUrl = resolveCameraStreamPreviewUrl(snapshotUrl);
+  const snapshotUrl = appendCameraCacheBuster(baseSnapshotUrl, refreshKey);
+  const mjpegStreamUrl = appendCameraCacheBuster(
+    resolveCameraMjpegStreamUrl(baseSnapshotUrl),
+    refreshKey
+  );
 
   const isUnavailable = liveEntity?.state === 'unavailable';
   const isRunning = liveEntity
@@ -172,6 +213,45 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       : null;
   const statusChangedAt =
     parseTimestamp(liveEntity?.last_changed) ?? parseTimestamp(liveEntity?.last_updated);
+  const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
+  const imageSource = selectCameraImageSource({
+    cameraViewMode,
+    snapshotUrl,
+    mjpegStreamUrl,
+    frontendStreamTypes,
+    isUnavailable,
+    isRunning,
+    failedStreamTypes: failedStreamTypeSet,
+  });
+  const refreshIntervalMs = getCameraAutoRefreshInterval({
+    cameraViewMode,
+    imageSourceKind: imageSource.kind,
+    isFallback: imageSource.isFallback,
+  });
+  const liveStreamKind =
+    imageSource.kind === 'hls' || imageSource.kind === 'web_rtc' ? imageSource.kind : null;
+  const shouldRenderLiveStream = isVisible && liveStreamKind;
+  const streamFailureResetKey = `${cameraViewMode}:${frontendStreamTypes.join(',')}`;
+
+  useEffect(() => {
+    void streamFailureResetKey;
+    setFailedStreamTypes([]);
+  }, [streamFailureResetKey]);
+
+  useEffect(() => {
+    if (!refreshIntervalMs || !snapshotUrl || !isVisible || !isRunning || isUnavailable) {
+      return;
+    }
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshKey((k) => k + 1);
+      }
+    };
+    const interval = window.setInterval(refreshIfVisible, refreshIntervalMs);
+
+    return () => window.clearInterval(interval);
+  }, [isRunning, isUnavailable, isVisible, refreshIntervalMs, snapshotUrl]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -244,7 +324,21 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     parseTimestamp(motionEntity?.entity?.last_updated);
 
   const handleRefresh = useCallback(() => {
+    setFailedStreamTypes([]);
     setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleCameraViewModeChange = useCallback(
+    (mode: CameraViewMode) => {
+      updateSettings({ cameraViewMode: mode });
+      setFailedStreamTypes([]);
+      setRefreshKey((k) => k + 1);
+    },
+    [updateSettings]
+  );
+
+  const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
+    setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
   }, []);
 
   const handleToggleMotionDetection = useCallback(() => {
@@ -263,7 +357,20 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         id={id}
         name={name}
         room={room}
-        snapshotUrl={snapshotUrl}
+        cardRef={cardRef}
+        imageUrl={imageSource.url}
+        streamElement={
+          shouldRenderLiveStream ? (
+            <CameraStreamPlayer
+              entityId={id}
+              kind={shouldRenderLiveStream}
+              posterUrl={snapshotUrl}
+              homeAssistantUrl={config?.url}
+              fitMode="cover"
+              onError={handleStreamError}
+            />
+          ) : undefined
+        }
         isUnavailable={isUnavailable}
         isRunning={isRunning}
         statusChangedAt={statusChangedAt}
@@ -273,9 +380,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         now={now}
         size={size}
         isEditMode={isEditMode}
+        cameraViewMode={cameraViewMode}
         isStreamCapable={isStreamCapable}
         frontendStreamTypes={frontendStreamTypes}
+        streamKind={imageSource.kind}
+        isStreamFallback={imageSource.isFallback}
         onRefresh={handleRefresh}
+        onImageError={() => handleStreamError(imageSource.kind)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenViewer={() => setIsViewerOpen(true)}
         onToggleMotionDetection={handleToggleMotionDetection}
@@ -285,16 +396,20 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         <CameraLiveViewer
           isOpen={isViewerOpen}
           onOpenChange={setIsViewerOpen}
+          entityId={id}
           name={name}
           room={room}
           snapshotUrl={snapshotUrl}
-          streamPreviewUrl={isStreamCapable ? streamPreviewUrl : undefined}
+          mjpegStreamUrl={mjpegStreamUrl}
+          cameraViewMode={cameraViewMode}
           isUnavailable={isUnavailable}
           isRunning={isRunning}
           isStreamCapable={isStreamCapable}
           frontendStreamTypes={frontendStreamTypes}
+          homeAssistantUrl={config?.url}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onCameraViewModeChange={handleCameraViewModeChange}
         />
       )}
 
@@ -305,6 +420,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}
+          cameraViewMode={cameraViewMode}
+          onCameraViewModeChange={handleCameraViewModeChange}
         />
       )}
     </>

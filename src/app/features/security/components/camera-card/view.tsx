@@ -1,14 +1,20 @@
-import { Camera, Eye, RefreshCw, Settings2, Video } from 'lucide-react';
+import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
+import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useI18n } from '@/app/hooks';
+import type { TranslationKey } from '@/app/i18n';
+import type { CameraViewMode } from '@/app/stores/settings-store';
+import type { CameraImageSourceKind } from './camera-view-mode';
 
 interface CameraCardViewProps {
   id: string;
   name: string;
   room: string;
-  snapshotUrl: string | undefined;
+  cardRef?: RefObject<HTMLDivElement | null>;
+  imageUrl: string | undefined;
+  streamElement?: ReactNode;
   isUnavailable: boolean;
   isRunning: boolean;
   statusChangedAt: number | null;
@@ -18,9 +24,13 @@ interface CameraCardViewProps {
   now: number;
   size: CardSize;
   isEditMode: boolean;
+  cameraViewMode: CameraViewMode;
   isStreamCapable: boolean;
   frontendStreamTypes: string[];
+  streamKind: CameraImageSourceKind;
+  isStreamFallback: boolean;
   onRefresh: () => void;
+  onImageError: () => void;
   onOpenSettings: () => void;
   onOpenViewer: () => void;
   onToggleMotionDetection: () => void;
@@ -53,7 +63,9 @@ export function CameraCardView({
   id,
   name,
   room,
-  snapshotUrl,
+  cardRef,
+  imageUrl,
+  streamElement,
   isUnavailable,
   isRunning,
   statusChangedAt,
@@ -63,9 +75,13 @@ export function CameraCardView({
   now,
   size,
   isEditMode,
+  cameraViewMode,
   isStreamCapable,
   frontendStreamTypes,
+  streamKind,
+  isStreamFallback,
   onRefresh,
+  onImageError,
   onOpenSettings,
   onOpenViewer,
   onToggleMotionDetection,
@@ -75,158 +91,160 @@ export function CameraCardView({
   const statusLabel = isUnavailable
     ? t('camera.status.unavailable')
     : isRunning
-      ? t('camera.status.live')
+      ? t(`camera.settings.viewMode.${cameraViewMode}` as TranslationKey)
       : t('common.off');
   const motionLabel = motionDetected ? t('camera.motion.detected') : t('camera.motion.clear');
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
-  const streamLabel =
-    frontendStreamTypes.length > 0
-      ? frontendStreamTypes.join('/').toUpperCase()
-      : isStreamCapable
-        ? t('camera.viewer.streamCapable')
-        : t('camera.viewer.snapshotOnly');
+  let streamLabel = isStreamCapable
+    ? t('camera.viewer.streamCapable')
+    : t('camera.viewer.snapshotOnly');
+  if (frontendStreamTypes.length > 0) {
+    streamLabel = frontendStreamTypes.join('/').toUpperCase();
+  }
+  if (streamKind === 'hls' || streamKind === 'web_rtc' || streamKind === 'mjpeg') {
+    streamLabel = streamKind.toUpperCase();
+  }
+  const resolvedStreamLabel = isStreamFallback ? t('camera.viewer.snapshotFallback') : streamLabel;
 
   return (
-    <BaseCard
-      size={size}
-      fullBleed
-      interactive={!isEditMode}
-      frameClassName="bg-zinc-900"
-      data-entity-id={id}
-      disableDefaultSheen
-      overlay={
-        snapshotUrl && !isUnavailable ? (
-          <img
-            src={snapshotUrl}
-            alt={name}
-            className="absolute inset-0 h-full w-full object-cover"
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Camera className="h-8 w-8 text-zinc-500" />
-            <span className="text-xs text-zinc-500">
-              {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-            </span>
-          </div>
-        )
-      }
-      contentClassName="h-full"
-    >
-      {!isEditMode ? (
-        <button
-          type="button"
-          onClick={onOpenViewer}
-          aria-label={t('camera.actions.openViewer')}
-          className="absolute inset-0 z-[1] cursor-pointer"
-        />
-      ) : null}
-
-      {/* Refresh button (top-left, only when live and not in edit mode) */}
-      {isRunning && !isEditMode && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRefresh();
-          }}
-          aria-label={t('camera.actions.refreshSnapshot')}
-          className="absolute left-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
-      )}
-
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-        <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-          <span
-            className={`h-2 w-2 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]' : 'bg-white/45'}`}
-          />
-          <span>{statusLabel}</span>
-          {statusElapsed ? <span className="text-white/78">{statusElapsed}</span> : null}
-        </div>
-      </div>
-
-      {/* Bottom gradient overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/95 via-black/72 to-transparent px-3 pb-3 pt-10">
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <EntityCardHeader
-              title={name}
-              subtitle={isCompact ? '' : room}
-              layout="eyebrow-first"
-              size={size}
-              titleClassName="leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
-              subtitleClassName="text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
-              className="mb-0 min-w-0"
-              contentClassName="text-left"
+    <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
+      <BaseCard
+        size={size}
+        fullBleed
+        interactive={!isEditMode}
+        frameClassName="bg-zinc-900"
+        disableDefaultSheen
+        role={!isEditMode ? 'button' : undefined}
+        tabIndex={!isEditMode ? 0 : undefined}
+        onClick={!isEditMode ? onOpenViewer : undefined}
+        onKeyDown={
+          !isEditMode
+            ? (event: KeyboardEvent<HTMLDivElement>) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onOpenViewer();
+                }
+              }
+            : undefined
+        }
+        aria-label={!isEditMode ? t('camera.actions.openViewer') : undefined}
+        overlay={
+          streamElement && !isUnavailable ? (
+            streamElement
+          ) : imageUrl && !isUnavailable ? (
+            <img
+              key={imageUrl}
+              src={imageUrl}
+              alt={name}
+              className="absolute inset-0 h-full w-full object-cover"
+              draggable={false}
+              onError={onImageError}
             />
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-              <div
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-medium backdrop-blur-sm ${
-                  motionDetected
-                    ? 'border-emerald-400/35 bg-emerald-400/16 text-emerald-50'
-                    : 'border-white/12 bg-black/35 text-white/78'
-                }`}
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    motionDetected ? 'bg-emerald-300' : 'bg-white/40'
-                  }`}
-                />
-                <span>{motionLabel}</span>
-                {motionElapsed ? <span className="text-current/70">{motionElapsed}</span> : null}
-              </div>
-              {!isCompact ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/35 px-3 py-1.5 font-medium text-white/78 backdrop-blur-sm">
-                  <Video className="h-3.5 w-3.5" />
-                  <span>{streamLabel}</span>
-                </div>
-              ) : null}
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Camera className="h-8 w-8 text-zinc-500" />
+              <span className="text-xs text-zinc-500">
+                {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
+              </span>
             </div>
-          </div>
+          )
+        }
+        contentClassName="h-full"
+      >
+        {/* Refresh button (top-left, only when live and not in edit mode) */}
+        {isRunning && !isEditMode && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRefresh();
+            }}
+            aria-label={t('camera.actions.refreshSnapshot')}
+            className="absolute top-3 left-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/38 text-white/82 backdrop-blur-sm transition-colors hover:bg-black/58 hover:text-white"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+        )}
 
-          {/* Action buttons */}
-          {!isEditMode && (
-            <div className="flex shrink-0 items-center gap-2">
-              {motionDetectionEnabled !== null ? (
+        <div className="absolute top-3 right-3 left-12 z-10 flex min-w-0 items-center justify-end gap-1.5 text-xs font-medium text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+          <div className="inline-flex items-center gap-1.5">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.75)]' : 'bg-white/45'}`}
+            />
+            <span>{statusLabel}</span>
+          </div>
+          {statusElapsed ? <span className="text-white/68">{statusElapsed}</span> : null}
+          <span className="text-white/38">/</span>
+          <span className={motionDetected ? 'text-emerald-100' : 'text-white/68'}>
+            {motionLabel}
+            {motionElapsed ? <span className="text-current/62"> {motionElapsed}</span> : null}
+          </span>
+          {!isCompact ? (
+            <>
+              <span className="text-white/38">/</span>
+              <span className="min-w-0 truncate text-white/62">{resolvedStreamLabel}</span>
+            </>
+          ) : null}
+        </div>
+
+        {/* Bottom gradient overlay */}
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/52 to-transparent px-3 pb-3 pt-10">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <EntityCardHeader
+                title={name}
+                subtitle={isCompact ? '' : room}
+                layout="eyebrow-first"
+                size={size}
+                titleClassName="leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+                subtitleClassName="text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+                className="!mb-0 min-w-0"
+                contentClassName="text-left"
+              />
+            </div>
+
+            {/* Action buttons */}
+            {!isEditMode && (
+              <div className="flex shrink-0 items-center gap-2">
+                {motionDetectionEnabled !== null ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleMotionDetection();
+                    }}
+                    aria-label={
+                      motionDetectionEnabled
+                        ? t('camera.actions.disableMotionDetection')
+                        : t('camera.actions.enableMotionDetection')
+                    }
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-white backdrop-blur-sm transition-colors ${
+                      motionDetectionEnabled
+                        ? 'bg-emerald-500/58 hover:bg-emerald-500/75'
+                        : 'bg-black/38 hover:bg-black/58'
+                    }`}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+                {/* Settings */}
                 <button
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onToggleMotionDetection();
+                    onOpenSettings();
                   }}
-                  aria-label={
-                    motionDetectionEnabled
-                      ? t('camera.actions.disableMotionDetection')
-                      : t('camera.actions.enableMotionDetection')
-                  }
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-white backdrop-blur-sm transition-colors ${
-                    motionDetectionEnabled
-                      ? 'bg-emerald-500/70 hover:bg-emerald-500/85'
-                      : 'bg-black/50 hover:bg-black/70'
-                  }`}
+                  aria-label={t('camera.actions.openSettings')}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-black/38 text-white/82 backdrop-blur-sm transition-colors hover:bg-black/58 hover:text-white"
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Settings2 className="h-3.5 w-3.5" />
                 </button>
-              ) : null}
-              {/* Settings */}
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenSettings();
-                }}
-                aria-label={t('camera.actions.openSettings')}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </BaseCard>
+      </BaseCard>
+    </div>
   );
 }

@@ -55,9 +55,26 @@ export interface HomeAssistantAutomationConfig {
   config: Record<string, unknown>;
 }
 
+export type HomeAssistantCameraStreamType = 'hls' | 'web_rtc';
+
 export interface HomeAssistantCameraCapabilities {
-  frontend_stream_types?: string[];
+  frontend_stream_types?: HomeAssistantCameraStreamType[];
 }
+
+export interface HomeAssistantCameraStream {
+  url: string;
+}
+
+export interface HomeAssistantWebRtcClientConfiguration {
+  configuration: RTCConfiguration;
+  dataChannel?: string;
+}
+
+export type HomeAssistantWebRtcOfferEvent =
+  | { type: 'session'; session_id: string }
+  | { type: 'answer'; answer: string }
+  | { type: 'candidate'; candidate: RTCIceCandidateInit }
+  | { type: 'error'; code: string; message: string };
 
 export interface HAServiceEventMap {
   entities: HassEntities;
@@ -429,6 +446,35 @@ class HomeAssistantService {
 
   async getCameraCapabilities(entityId: string): Promise<HomeAssistantCameraCapabilities> {
     return await this.entityService.getCameraCapabilities(entityId);
+  }
+
+  async getCameraStreamUrl(
+    entityId: string,
+    format: 'hls' = 'hls'
+  ): Promise<HomeAssistantCameraStream> {
+    return await this.entityService.getCameraStreamUrl(entityId, format);
+  }
+
+  async getWebRtcClientConfiguration(
+    entityId: string
+  ): Promise<HomeAssistantWebRtcClientConfiguration> {
+    return await this.entityService.getWebRtcClientConfiguration(entityId);
+  }
+
+  subscribeCameraWebRtcOffer(
+    entityId: string,
+    offer: string,
+    callback: (event: HomeAssistantWebRtcOfferEvent) => void
+  ): Promise<() => void> {
+    return this.entityService.subscribeCameraWebRtcOffer(entityId, offer, callback);
+  }
+
+  async addCameraWebRtcCandidate(
+    entityId: string,
+    sessionId: string,
+    candidate: RTCIceCandidateInit
+  ): Promise<void> {
+    await this.entityService.addCameraWebRtcCandidate(entityId, sessionId, candidate);
   }
 
   /**

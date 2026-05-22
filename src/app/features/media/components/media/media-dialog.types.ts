@@ -21,8 +21,10 @@ export interface MediaDialogProps {
   groupMembers: string[];
   availableGroupingPlayers: MediaDialogGroupingPlayer[];
   onPrevious: () => void;
+  canPreviousTrack: boolean;
   onTogglePlay: () => void;
   onNext: () => void;
+  canNextTrack: boolean;
   shuffleEnabled: boolean;
   repeatMode: 'off' | 'one' | 'all';
   onToggleShuffle: () => void;

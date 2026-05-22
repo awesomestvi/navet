@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type CSSProperties, forwardRef, type ReactNode } from 'react';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
@@ -9,6 +9,7 @@ interface RoundControlButtonProps extends ButtonHTMLAttributes<HTMLButtonElement
   size?: CardSize | 'large';
   variant?: 'neutral' | 'soft' | 'emphasis';
   iconClassName?: string;
+  iconStyle?: CSSProperties;
   className?: string;
   children: ReactNode;
 }
@@ -20,6 +21,7 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
       size = 'medium',
       variant = 'neutral',
       iconClassName = '',
+      iconStyle,
       className = '',
       children,
       ...props
@@ -53,6 +55,7 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
       >
         <span
           className={`flex h-full w-full items-center justify-center leading-none ${iconClasses} ${iconClassName}`}
+          style={iconStyle}
         >
           {children}
         </span>

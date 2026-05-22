@@ -24,12 +24,17 @@ export function useMediaPlaybackProgress({
       return;
     }
 
+    const hasMediaPosition = typeof mediaPosition === 'number';
+    const hasInitialPosition = typeof initialElapsedSeconds === 'number';
+    if (!hasMediaPosition && !hasInitialPosition) {
+      return;
+    }
+
     const positionUpdatedAt =
       typeof mediaPositionUpdatedAt === 'string'
         ? mediaPositionUpdatedAt
         : initialPositionUpdatedAt;
-    const baseElapsedSeconds =
-      typeof mediaPosition === 'number' ? mediaPosition : (initialElapsedSeconds ?? 0);
+    const baseElapsedSeconds = hasMediaPosition ? mediaPosition : (initialElapsedSeconds ?? 0);
 
     const getBaseElapsed = () => {
       if (!positionUpdatedAt) {

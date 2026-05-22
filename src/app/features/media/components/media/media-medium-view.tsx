@@ -14,6 +14,7 @@ import { MediaMarqueeText } from './media-marquee-text';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumViewProps {
   entityId: string;
@@ -32,8 +33,10 @@ interface MediaMediumViewProps {
   theme: ThemeType;
   onOpenDialog: () => void;
   onPrevious: () => void;
+  canPreviousTrack: boolean;
   onTogglePlay: () => void;
   onNext: () => void;
+  canNextTrack: boolean;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
@@ -57,8 +60,10 @@ export function MediaMediumView({
   theme,
   onOpenDialog,
   onPrevious,
+  canPreviousTrack,
   onTogglePlay,
   onNext,
+  canNextTrack,
   onToggleMute,
   onVolumeChange,
   onVolumeInteractionStart,
@@ -67,7 +72,8 @@ export function MediaMediumView({
   const { t } = useI18n();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
-  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
+  const stableArtwork = useStableMediaArtwork(artwork);
+  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
@@ -79,30 +85,31 @@ export function MediaMediumView({
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
-  const subduedFallback = !artwork;
+  const subduedFallback = !stableArtwork;
   const fallbackTitleColor =
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
+  const controlIconStyle = { color: fallbackTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(palette.highlight, 0.14),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.12)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
   };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(palette.highlight, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.14)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
+  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${palette.highlight} 0%, ${palette.vibrant} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(palette.vibrant, 0.26)}`,
+    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: palette.highlight,
-    boxShadow: `0 0 0 1px ${withAlpha(palette.highlight, 0.2)}, 0 0 14px ${withAlpha(
-      palette.vibrant,
+    backgroundColor: fallbackTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      fallbackTitleColor,
       0.32
     )}`,
   };
@@ -110,14 +117,14 @@ export function MediaMediumView({
   return (
     <div className="relative -m-3 flex flex-1 overflow-hidden">
       <MediaArtworkSurface
-        artwork={artwork}
+        artwork={stableArtwork}
         onArtworkError={onArtworkError}
         palette={palette}
         layout="split"
         artRegionClassName="w-[42%]"
         imagePaddingClassName=""
         imageClassName="object-cover object-left"
-        subduedFallback={!artwork && !isActive}
+        subduedFallback={!stableArtwork && !isActive}
       />
 
       <div className="relative z-[1] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
@@ -174,7 +181,7 @@ export function MediaMediumView({
                     onTogglePlay();
                   }}
                   className="h-9 w-9 border backdrop-blur-xl transition-colors"
-                  iconClassName="!text-white/90"
+                  iconStyle={controlIconStyle}
                   style={subduedFallback ? undefined : playButtonStyle}
                 >
                   {isPlaying ? (
@@ -203,7 +210,10 @@ export function MediaMediumView({
                   }}
                 />
               </div>
-              <div className={`mt-1 flex items-center justify-between text-xs ${subtitleTone}`}>
+              <div
+                className={`mt-1 flex items-center justify-between text-xs ${subtitleTone}`}
+                style={{ color: fallbackSubtitleColor }}
+              >
                 <span>{elapsedLabel}</span>
                 <span>{durationLabel}</span>
               </div>
@@ -220,7 +230,7 @@ export function MediaMediumView({
                   onToggleMute();
                 }}
                 className="h-8 w-8 border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                iconStyle={controlIconStyle}
                 style={neutralButtonStyle}
               >
                 {isMuted ? (
@@ -253,12 +263,13 @@ export function MediaMediumView({
                 size="small"
                 variant="neutral"
                 aria-label={t('media.previousTrack')}
+                disabled={!canPreviousTrack}
                 onClick={(event) => {
                   event.stopPropagation();
                   onPrevious();
                 }}
-                className="h-8 w-8 border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                iconStyle={controlIconStyle}
                 style={neutralButtonStyle}
               >
                 <SkipBack className={controlSizes.icon} />
@@ -269,12 +280,13 @@ export function MediaMediumView({
                 size="small"
                 variant="neutral"
                 aria-label={t('media.nextTrack')}
+                disabled={!canNextTrack}
                 onClick={(event) => {
                   event.stopPropagation();
                   onNext();
                 }}
-                className="h-8 w-8 border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                iconStyle={controlIconStyle}
                 style={neutralButtonStyle}
               >
                 <SkipForward className={controlSizes.icon} />

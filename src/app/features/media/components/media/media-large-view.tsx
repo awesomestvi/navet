@@ -14,6 +14,7 @@ import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaLargeViewProps {
   entityId: string;
@@ -32,8 +33,10 @@ interface MediaLargeViewProps {
   theme: ThemeType;
   onOpenDialog: () => void;
   onPrevious: () => void;
+  canPreviousTrack: boolean;
   onTogglePlay: () => void;
   onNext: () => void;
+  canNextTrack: boolean;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
@@ -57,8 +60,10 @@ export function MediaLargeView({
   theme,
   onOpenDialog,
   onPrevious,
+  canPreviousTrack,
   onTogglePlay,
   onNext,
+  canNextTrack,
   onToggleMute,
   onVolumeChange,
   onVolumeInteractionStart,
@@ -66,7 +71,8 @@ export function MediaLargeView({
 }: MediaLargeViewProps) {
   const { t } = useI18n();
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
-  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
+  const stableArtwork = useStableMediaArtwork(artwork);
+  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
@@ -79,34 +85,35 @@ export function MediaLargeView({
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('large');
-  const subduedFallback = !artwork && !isActive;
+  const subduedFallback = !stableArtwork && !isActive;
   const fallbackTitleColor =
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
+  const controlIconStyle = { color: fallbackTitleColor };
   const shouldRenderDecorativeArtworkLayers =
-    artwork !== null &&
-    artwork !== undefined &&
-    (import.meta.env.DEV || !isMediaPlayerProxyUrl(artwork));
+    stableArtwork !== null &&
+    stableArtwork !== undefined &&
+    (import.meta.env.DEV || !isMediaPlayerProxyUrl(stableArtwork));
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(palette.highlight, 0.14),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.12)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
   };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(palette.highlight, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(palette.highlight, 0.14)}`,
+    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(palette.highlight, 0.2) };
+  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${palette.highlight} 0%, ${palette.vibrant} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(palette.vibrant, 0.26)}`,
+    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: palette.highlight,
-    boxShadow: `0 0 0 1px ${withAlpha(palette.highlight, 0.2)}, 0 0 14px ${withAlpha(
-      palette.vibrant,
+    backgroundColor: fallbackTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      fallbackTitleColor,
       0.32
     )}`,
   };
@@ -156,22 +163,22 @@ export function MediaLargeView({
   return (
     <div className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]">
       <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
-      {artwork ? (
+      {stableArtwork ? (
         shouldRenderDecorativeArtworkLayers ? (
           <>
             <img
-              src={artwork}
+              src={stableArtwork}
               alt=""
               aria-hidden="true"
-              onError={() => onArtworkError?.(artwork)}
+              onError={() => onArtworkError?.(stableArtwork)}
               className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-58 saturate-[1.02] contrast-[0.98]"
               decoding="async"
             />
             <img
-              src={artwork}
+              src={stableArtwork}
               alt=""
               aria-hidden="true"
-              onError={() => onArtworkError?.(artwork)}
+              onError={() => onArtworkError?.(stableArtwork)}
               className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-16 blur-[26px] saturate-[1.02]"
               decoding="async"
             />
@@ -245,7 +252,10 @@ export function MediaLargeView({
                 }}
               />
             </div>
-            <div className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}>
+            <div
+              className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}
+              style={{ color: fallbackSubtitleColor }}
+            >
               <span>{elapsedLabel}</span>
               <span>{durationLabel}</span>
             </div>
@@ -259,12 +269,13 @@ export function MediaLargeView({
               size="small"
               variant="neutral"
               aria-label={t('media.previousTrack')}
+              disabled={!canPreviousTrack}
               onClick={(event) => {
                 event.stopPropagation();
                 onPrevious();
               }}
-              className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
+              className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+              iconStyle={controlIconStyle}
               style={neutralButtonStyle}
             >
               <SkipBack className={controlSizes.icon} />
@@ -281,7 +292,7 @@ export function MediaLargeView({
                   onTogglePlay();
                 }}
                 className="h-10.5 w-10.5 border backdrop-blur-xl transition-colors"
-                iconClassName="!text-white/90"
+                iconStyle={controlIconStyle}
                 style={subduedFallback ? undefined : playButtonStyle}
               >
                 {isPlaying ? (
@@ -297,12 +308,13 @@ export function MediaLargeView({
               size="small"
               variant="neutral"
               aria-label={t('media.nextTrack')}
+              disabled={!canNextTrack}
               onClick={(event) => {
                 event.stopPropagation();
                 onNext();
               }}
-              className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
+              className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+              iconStyle={controlIconStyle}
               style={neutralButtonStyle}
             >
               <SkipForward className={controlSizes.icon} />
@@ -320,7 +332,7 @@ export function MediaLargeView({
                 onToggleMute();
               }}
               className="border backdrop-blur-xl transition-colors"
-              iconClassName="!text-white/90"
+              iconStyle={controlIconStyle}
               style={neutralButtonStyle}
             >
               {isMuted ? (

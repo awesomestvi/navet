@@ -95,4 +95,53 @@ describe('useDashboardCardActions', () => {
       id: 'dashboard-entity-removed',
     });
   });
+
+  it('adds a sensor group custom card through the widget action', () => {
+    const showAutoEntity = vi.fn();
+    const addCard = vi.fn(() => ({
+      id: 'custom-sensor-group',
+      type: 'sensor-group' as const,
+      size: 'medium' as const,
+      room: 'Kitchen',
+      createdAt: 1,
+    }));
+    const addSection = vi.fn();
+    const updateCard = vi.fn();
+    const removeCard = vi.fn();
+    const hideAutoEntity = vi.fn();
+    const homeLayoutController = {
+      layout: {
+        mode: 'flow' as const,
+        sections: [],
+      },
+      addCard: vi.fn(),
+      addSection,
+    };
+
+    const { result } = renderHook(() =>
+      useDashboardCardActions({
+        activeRoom: 'Kitchen',
+        activeSection: 'dashboard',
+        isEditMode: true,
+        addCard,
+        removeCard,
+        updateCard,
+        hideAutoEntity,
+        showAutoEntity,
+        t: (key: string, values?: Record<string, unknown>) =>
+          values ? `${key}:${JSON.stringify(values)}` : key,
+        addCardTargetSectionId: null,
+        homeLayoutController,
+      })
+    );
+
+    act(() => {
+      result.current.handleAddCard('sensor-group', 'medium');
+    });
+
+    expect(addCard).toHaveBeenCalledWith('sensor-group', 'medium', 'Kitchen');
+    expect(toastSuccess).toHaveBeenCalledWith(
+      'dashboard.feedback.widgetAdded:{"type":"sensor-group","room":"Kitchen"}'
+    );
+  });
 });

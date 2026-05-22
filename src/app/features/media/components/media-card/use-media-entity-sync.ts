@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useEffect } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useRef } from 'react';
 import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import { normalizeMediaPlaybackState } from '@/app/features/media';
 
@@ -61,6 +61,8 @@ export function useMediaEntitySync({
   setSupportsGrouping,
   setGroupMembers,
 }: UseMediaEntitySyncParams) {
+  const lastPlaybackSnapshotKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (liveEntity) {
       const attrs = liveEntity.attributes;
@@ -72,14 +74,19 @@ export function useMediaEntitySync({
           : initialVolume;
       const nextMuted =
         typeof attrs.is_volume_muted === 'boolean' ? attrs.is_volume_muted : currentMuted;
-      const nextElapsed =
-        typeof attrs.media_position === 'number'
-          ? attrs.media_position
-          : (initialElapsedSeconds ?? 0);
-      const nextDuration =
-        typeof attrs.media_duration === 'number'
-          ? attrs.media_duration
-          : (initialDurationSeconds ?? 0);
+      const hasLiveElapsed = typeof attrs.media_position === 'number';
+      const nextElapsed = hasLiveElapsed
+        ? (attrs.media_position as number)
+        : (initialElapsedSeconds ?? 0);
+      const nextPositionUpdatedAt =
+        typeof attrs.media_position_updated_at === 'string' ? attrs.media_position_updated_at : '';
+      const nextPlaybackSnapshotKey = hasLiveElapsed
+        ? `${nextState}::${nextElapsed}::${nextPositionUpdatedAt}`
+        : null;
+      const hasLiveDuration = typeof attrs.media_duration === 'number';
+      const nextDuration = hasLiveDuration
+        ? (attrs.media_duration as number)
+        : (initialDurationSeconds ?? 0);
       const nextSupportedFeatures =
         typeof attrs.supported_features === 'number' ? attrs.supported_features : 0;
       const nextGroupMembers = Array.isArray(attrs.group_members)
@@ -91,12 +98,20 @@ export function useMediaEntitySync({
       const nextSupportsGrouping = hasMediaPlayerGroupingSupport(nextSupportedFeatures);
 
       setState((currentState) => (currentState === nextState ? currentState : nextState));
-      setElapsedSeconds((currentElapsedSeconds) =>
-        currentElapsedSeconds === nextElapsed ? currentElapsedSeconds : nextElapsed
-      );
-      setDurationSeconds((currentDurationSeconds) =>
-        currentDurationSeconds === nextDuration ? currentDurationSeconds : nextDuration
-      );
+      if (
+        nextPlaybackSnapshotKey !== null &&
+        lastPlaybackSnapshotKeyRef.current !== nextPlaybackSnapshotKey
+      ) {
+        lastPlaybackSnapshotKeyRef.current = nextPlaybackSnapshotKey;
+        setElapsedSeconds((currentElapsedSeconds) =>
+          currentElapsedSeconds === nextElapsed ? currentElapsedSeconds : nextElapsed
+        );
+      }
+      if (hasLiveDuration || nextDuration > 0) {
+        setDurationSeconds((currentDurationSeconds) =>
+          currentDurationSeconds === nextDuration ? currentDurationSeconds : nextDuration
+        );
+      }
       if (!isAdjustingVolume) {
         setVolume((currentVolume) => (currentVolume === nextVolume ? currentVolume : nextVolume));
         if (nextVolume > 0) {
@@ -123,13 +138,17 @@ export function useMediaEntitySync({
       initialGroupMembers.length > 0 ? initialGroupMembers : [entityId];
     const resolvedInitialElapsedSeconds = initialElapsedSeconds ?? 0;
     const resolvedInitialDurationSeconds = initialDurationSeconds ?? 0;
+    const initialPlaybackSnapshotKey = `${initialState}::${resolvedInitialElapsedSeconds}::`;
 
     setState((currentState) => (currentState === initialState ? currentState : initialState));
-    setElapsedSeconds((currentElapsedSeconds) =>
-      currentElapsedSeconds === resolvedInitialElapsedSeconds
-        ? currentElapsedSeconds
-        : resolvedInitialElapsedSeconds
-    );
+    if (lastPlaybackSnapshotKeyRef.current !== initialPlaybackSnapshotKey) {
+      lastPlaybackSnapshotKeyRef.current = initialPlaybackSnapshotKey;
+      setElapsedSeconds((currentElapsedSeconds) =>
+        currentElapsedSeconds === resolvedInitialElapsedSeconds
+          ? currentElapsedSeconds
+          : resolvedInitialElapsedSeconds
+      );
+    }
     setDurationSeconds((currentDurationSeconds) =>
       currentDurationSeconds === resolvedInitialDurationSeconds
         ? currentDurationSeconds

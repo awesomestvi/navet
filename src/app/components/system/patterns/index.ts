@@ -2,6 +2,7 @@
 // Prefer authoring new patterns in `src/app/components/patterns`.
 export {
   CardActionRow,
+  CardEmptyState,
   DashboardEmptyState,
   DashboardHeroSection,
   FieldBlock,

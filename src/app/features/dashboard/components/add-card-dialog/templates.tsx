@@ -1,4 +1,4 @@
-import { Zap as EnergyIcon } from 'lucide-react';
+import { Zap as EnergyIcon, Gauge } from 'lucide-react';
 import type { SVGProps } from 'react';
 import type { CardTemplate } from './types';
 
@@ -123,5 +123,13 @@ export const cardTemplates: CardTemplate[] = [
     icon: <MapPinIcon className="w-5 h-5" />,
     defaultSize: 'medium',
     supportedSizes: ['small', 'medium', 'large'],
+  },
+  {
+    id: 'sensor-group',
+    nameKey: 'dashboard.addCard.templates.sensorGroup.name',
+    descriptionKey: 'dashboard.addCard.templates.sensorGroup.description',
+    icon: <Gauge className="w-5 h-5" />,
+    defaultSize: 'medium',
+    supportedSizes: ['small', 'medium'],
   },
 ];

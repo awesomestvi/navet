@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { Layers2, Search, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Layers2, Search, Sparkles, X } from 'lucide-react';
 import {
   DialogShell,
   Input,
@@ -36,7 +36,7 @@ interface AddCardDialogViewProps {
   primaryColor: string;
   cardTemplates: CardTemplate[];
   selectedType: CardType | null;
-  setSelectedType: (type: CardType) => void;
+  setSelectedType: (type: CardType | null) => void;
   selectedSize: CardSize;
   setSelectedSize: (size: CardSize) => void;
   getColorValue: (color: string) => string;
@@ -211,63 +211,39 @@ export function AddCardDialogView({
             />
           </TabPanel>
 
-          <TabPanel
-            value="widgets"
-            className="space-y-6 max-sm:max-h-[24rem] max-sm:overflow-y-auto"
-          >
-            <div>
-              <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
-                {t('dashboard.addCard.chooseType')}
-              </h3>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {cardTemplates.map((template) => (
-                  <button
-                    type="button"
-                    key={template.id}
-                    onClick={() => {
-                      setSelectedType(template.id);
-                      setSelectedSize(template.defaultSize);
-                    }}
-                    className={`flex w-full items-center gap-3.5 rounded-[18px] border px-3.5 py-3 text-left transition-colors ${
-                      selectedType === template.id
-                        ? 'border-current'
-                        : `${borderColor} ${cardBg} ${hoverBg}`
-                    }`}
-                    style={{
-                      borderColor: selectedType === template.id ? accent : undefined,
-                      backgroundColor: selectedType === template.id ? `${accent}10` : undefined,
-                    }}
-                  >
-                    <div
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                      style={{
-                        backgroundColor:
-                          selectedType === template.id ? `${accent}22` : 'rgba(255,255,255,0.06)',
-                        color: selectedType === template.id ? accent : undefined,
-                      }}
-                    >
-                      <span
-                        className={`${selectedType === template.id ? '' : mutedColor} [&_svg]:h-4 [&_svg]:w-4`}
-                      >
-                        {template.icon}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className={`truncate text-sm font-semibold ${textColor}`}>
-                        {t(template.nameKey)}
-                      </h4>
-                      <p className={`mt-1.5 truncate text-xs ${mutedColor}`}>
-                        {t(template.descriptionKey)}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+          <TabPanel value="widgets" className="max-sm:max-h-[24rem] max-sm:overflow-y-auto">
+            {selectedTemplate ? (
+              <div className="animate-in slide-in-from-right-4 fade-in space-y-5 duration-200">
+                <button
+                  type="button"
+                  onClick={() => setSelectedType(null)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${borderColor} ${cardBg} ${hoverBg} ${textColor}`}
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {t('dashboard.onboarding.back')}
+                </button>
 
-            {selectedType ? (
-              <div className="space-y-6">
-                <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
+                <div
+                  className={`flex items-center gap-3.5 rounded-[18px] border px-3.5 py-3 ${borderColor}`}
+                  style={{ backgroundColor: `${accent}10`, borderColor: `${accent}55` }}
+                >
+                  <div
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${accent}22`, color: accent }}
+                  >
+                    <span className="[&_svg]:h-4 [&_svg]:w-4">{selectedTemplate.icon}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className={`truncate text-sm font-semibold ${textColor}`}>
+                      {t(selectedTemplate.nameKey)}
+                    </h3>
+                    <p className={`mt-1.5 truncate text-xs ${mutedColor}`}>
+                      {t(selectedTemplate.descriptionKey)}
+                    </p>
+                  </div>
+                </div>
+
+                <h3 className={`text-sm font-medium ${textColor}`}>
                   {t('dashboard.addCard.chooseSize')}
                 </h3>
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -309,7 +285,43 @@ export function AddCardDialogView({
                   ))}
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className="animate-in slide-in-from-left-4 fade-in duration-200">
+                <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
+                  {t('dashboard.addCard.chooseType')}
+                </h3>
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {cardTemplates.map((template) => (
+                    <button
+                      type="button"
+                      key={template.id}
+                      onClick={() => {
+                        setSelectedType(template.id);
+                        setSelectedSize(template.defaultSize);
+                      }}
+                      className={`flex w-full items-center gap-3.5 rounded-[18px] border px-3.5 py-3 text-left transition-colors ${borderColor} ${cardBg} ${hoverBg}`}
+                    >
+                      <div
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+                      >
+                        <span className={`${mutedColor} [&_svg]:h-4 [&_svg]:w-4`}>
+                          {template.icon}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`truncate text-sm font-semibold ${textColor}`}>
+                          {t(template.nameKey)}
+                        </h4>
+                        <p className={`mt-1.5 truncate text-xs ${mutedColor}`}>
+                          {t(template.descriptionKey)}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabPanel>
         </div>
 
