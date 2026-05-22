@@ -103,6 +103,8 @@ describe('CameraStreamPlayer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    document.querySelector('base')?.remove();
+    window.history.replaceState(null, '', '/');
     go2RtcConfig = null;
     MockRTCPeerConnection.instances = [];
     MockWebSocket.instances = [];
@@ -170,6 +172,54 @@ describe('CameraStreamPlayer', () => {
     await waitFor(() =>
       expect(serviceMock.getCameraStreamUrl).toHaveBeenCalledWith('camera.front', 'hls')
     );
+  });
+
+  it('loads HLS streams through the ingress-aware Home Assistant proxy', async () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+    const canPlayType = vi
+      .spyOn(HTMLVideoElement.prototype, 'canPlayType')
+      .mockReturnValue('probably');
+
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="hls"
+        posterUrl="/api/camera_proxy/camera.front"
+        homeAssistantUrl="http://homeassistant.local:8123"
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('video')?.src).toBe(
+        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.front/master.m3u8`
+      )
+    );
+    expect(canPlayType).toHaveBeenCalledWith('application/vnd.apple.mpegurl');
+  });
+
+  it('marks unsupported Home Assistant HLS streams as non-retryable', async () => {
+    const onError = vi.fn();
+    serviceMock.getCameraStreamUrl.mockRejectedValueOnce({
+      code: 'start_stream_failed',
+      message: 'camera.demo_camera does not support play stream service',
+    });
+
+    render(
+      <CameraStreamPlayer
+        entityId="camera.demo_camera"
+        kind="hls"
+        posterUrl="/api/camera_proxy/camera.demo_camera"
+        homeAssistantUrl="https://ha.example.com"
+        fitMode="cover"
+        onError={onError}
+      />
+    );
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('hls', { retryable: false }));
   });
 
   it('starts a WebRTC offer subscription and closes it on unmount', async () => {

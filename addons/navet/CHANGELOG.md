@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2
+
+- Updated Navet to `0.2.2`
+- Improved add-on login, ingress proxying, and media artwork loading
+- Add-on users should leave `hass_url` and `token` blank and sign in from the Navet login page
+- Added direct go2rtc WebRTC camera feed support outside the Home Assistant custom panel
+
 ## 0.2.1
 
 - Updated Navet to `0.2.1`

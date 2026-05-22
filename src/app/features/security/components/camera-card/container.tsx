@@ -20,6 +20,7 @@ import {
   type CameraViewMode,
   useSettingsStore,
 } from '@/app/stores/settings-store';
+import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
@@ -80,7 +81,7 @@ function resolveHomeAssistantImageUrl(
     return undefined;
   }
 
-  return imageUrl.startsWith('/') && homeAssistantUrl ? `${homeAssistantUrl}${imageUrl}` : imageUrl;
+  return resolveHomeAssistantProxyUrl(imageUrl, homeAssistantUrl) ?? imageUrl;
 }
 
 function readFrontendStreamTypes(value: unknown) {
@@ -431,19 +432,26 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     [id, updateCameraGo2RtcConfig]
   );
 
-  const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
-    setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
+  const handleStreamError = useCallback(
+    (kind: CameraImageSourceKind, options?: { retryable?: boolean }) => {
+      setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
 
-    if (streamRetryTimeoutRef.current !== null) {
-      return;
-    }
+      if (options?.retryable === false) {
+        return;
+      }
 
-    streamRetryTimeoutRef.current = window.setTimeout(() => {
-      streamRetryTimeoutRef.current = null;
-      setFailedStreamTypes([]);
-      setRefreshKey((k) => k + 1);
-    }, CAMERA_STREAM_RETRY_DELAY_MS);
-  }, []);
+      if (streamRetryTimeoutRef.current !== null) {
+        return;
+      }
+
+      streamRetryTimeoutRef.current = window.setTimeout(() => {
+        streamRetryTimeoutRef.current = null;
+        setFailedStreamTypes([]);
+        setRefreshKey((k) => k + 1);
+      }, CAMERA_STREAM_RETRY_DELAY_MS);
+    },
+    []
+  );
 
   const handleToggleMotionDetection = useCallback(() => {
     if (motionDetectionEnabled === null) {
