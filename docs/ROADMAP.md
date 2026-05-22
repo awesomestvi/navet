@@ -53,10 +53,15 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 
 ## Shipped
 
+- [x] **Home Assistant custom panel with HACS** — Navet can be installed as a HACS custom integration, registers a native Home Assistant sidebar panel at `/navet`, serves its bundled panel assets through Home Assistant, and is now the recommended Home Assistant OS/Supervised setup path
 - [x] **Public demo mode** — `/demo` renders a generated smart home environment with bundled assets and no Home Assistant connection, suitable for public previews without exposing private instances or tokens
+- [x] **Public Storybook publishing** — Storybook publishes to GitHub Pages at `/navet/storybook/` for public component, card, and UI-kit review
 - [x] **Public launch deployment hardening** — Docker and Home Assistant add-on deployments share nginx security headers; runtime config keeps Home Assistant tokens server-only; RSS proxying, imported dashboard config, external URLs, and custom button service calls validate public-facing inputs
+- [x] **Shared Docker/add-on dashboard profile sync** — Docker and add-on deployments persist the entered Home Assistant session and dashboard profile through same-origin endpoints backed by `/data`, so shared dashboard devices can pick up ongoing layout changes across browser sessions
 - [x] **Home Assistant add-on image publishing** — add-on CI/CD publishes `dev` images from `main` and manual workflow runs, plus versioned public beta images for supported architectures
 - [x] **Automation management** — Tasks section lists Home Assistant automations, shows active/disabled filters, displays last-run metadata and read-only config details, and supports trigger plus enable/disable actions
+- [x] **Dedicated section views** — media, security, tasks, locks, lights, energy, and settings have dedicated top-level dashboard views beyond the room-based Home view
+- [x] **Mobile section orbit** — mobile navigation keeps Home and Settings in the dock while exposing the other top-level sections through an orbit sheet with recent-section access
 - [x] **Security camera dashboard** — dedicated security camera dashboard model and view with camera live viewing support, entity mapping, stories, and tests
 - [x] **Energy history** — per-device and per-source consumption over time with Home Assistant Energy prefs, recorder statistics, source diagnostics, tracked-device sparklines, and drill-down to individual appliances
 - [x] **Energy dashboard refresh** — richer energy data panels, load history handling, live HA service tests, generated mock energy data, and expanded Storybook coverage
@@ -67,9 +72,10 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Media artwork reliability** — media artwork resolves across Home Assistant panels, Docker, and local development runtime paths
 - [x] **Zone-based Home screen layout** — Home view organises all devices into `hero`, `actions`, `status`, and `analytics` zone bands; per-card zone overrides persist through dashboard layout state and YAML export; `extra-large` cards use a 3 logical column x 2 row footprint for large hero-style cards; responsive grids derive rendered spans from the shared card-size registry
 - [x] **Custom accent color picker** — custom color input alongside 8 built-in accent presets in Settings → Appearance
-- [x] **Widget settings** — RSS Feed, Quick Note, and Photo Frame widgets support post-creation configuration (feed URLs, note content, photo URLs)
+- [x] **Widget settings** — RSS Feed, Quick Note, Photo Frame, Button, Energy, Map, and Sensor Group widgets support post-creation configuration for their persisted options
+- [x] **Photo Frame Home Assistant media sources** — photo widgets can use Home Assistant media-source image folders as well as manually entered image URLs
 - [x] **Configuration UI with setup wizard** — in-app onboarding and login screen
-- [x] **Multi-language interface** — English, Swedish, German, French, Spanish with locale-aware formatting
+- [x] **Multi-language interface** — English, Swedish, German, French, Spanish, Chinese, Italian, and Portuguese with locale-aware formatting
 - [x] **Room ordering** — rooms display in their natural Home Assistant area order
 - [x] **Export / import dashboard config** — YAML backup and restore of layout and preferences
 - [x] **PWA install** — manifest, service worker, offline shell, install prompt
@@ -87,6 +93,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Scene management** — view and activate Home Assistant scenes from the dashboard
 - [x] **Button card** — a fully customizable tap-to-call-service card for any HA service or script
 - [x] **HVAC card** — unified climate entity card
+- [x] **Water heater support** — `water_heater.*` entities use the climate card path for dashboard control
 - [x] **Cover card** — cover entity controls with direct drag/keyboard position adjustment, preset chips, and feature-aware open/close/stop actions
 - [x] **Lock card** — lock entity controls
 - [x] **Helper and script support** — helpers and scripts via sensor/switch card paths
@@ -95,6 +102,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Photo Frame widget** — cycling image display widget
 - [x] **Quick Note widget** — freeform text note card
 - [x] **Battery overview** — dashboard widget listing all low-battery devices sorted by charge level
+- [x] **Sensor Group widget** — configurable grouped sensor cards can collect up to six sensor readings with compact layouts, room assignment, naming, accent color, and settings dialog support
 - [x] **Low-power mode** — reduced-effects mode for RPi-class hardware
 - [x] **Deferred / batched room rendering** — offscreen rooms defer and visible rooms hydrate in batches
 - [x] **OS appearance auto-follow** — optional "Follow system appearance" mode switches between light and dark using `prefers-color-scheme`

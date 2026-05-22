@@ -78,9 +78,10 @@ Use these directories when docs need to be checked against the live implementati
 
 ### Writing or updating tests
 
-1. [../README.md](../README.md) for current test commands and active `__tests__/` directories
-2. [`../src/test/`](../src/test/) for shared test utilities
-3. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md) for store/service behavior expectations
+1. [../README.md](../README.md) for current test commands
+2. [../design-system/FEATURES.md](../design-system/FEATURES.md) for active `__tests__/` directories
+3. [`../src/test/`](../src/test/) for shared test utilities
+4. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md) for store/service behavior expectations
 
 ### Working on deployment
 
@@ -98,4 +99,4 @@ Use these directories when docs need to be checked against the live implementati
 - When the Home Assistant service split or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
 - When setup scripts or test commands change, update `README.md`
 
-Last updated: May 21, 2026
+Last updated: May 22, 2026

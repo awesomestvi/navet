@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0 - 2026-05-22
+
+Navet adds new dashboard controls and improves live card behavior while making the app load more efficiently.
+
+## New
+
+- Sensor Group widgets can now collect multiple sensor readings into one compact card with room, name, accent, and settings controls.
+- Climate cards now include preset temperature controls for faster HVAC adjustments.
+- Camera cards now make live-feed refresh behavior easier to use.
+
+## Fixed
+
+- Cover cards now support more Home Assistant cover entities and handle position controls more reliably.
+
+## Improved
+
+- Dashboard cards, widgets, and media controls load in smaller chunks so dashboards become interactive faster.
+- Energy and RSS data are cached more effectively to reduce duplicate requests.
+- Media, sensor, RSS, camera, and cover card flows have clearer controls and more consistent editing behavior.
+- Release and setup documentation now matches the current public beta, add-on, and Storybook publishing paths.
+
 ## 0.1.3 - 2026-05-21
 
 Navet fixes dashboard navigation and media artwork issues while making cards easier to control and edit.

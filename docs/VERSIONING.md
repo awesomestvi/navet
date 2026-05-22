@@ -5,8 +5,8 @@ Navet is currently in beta. Until the product contract is stable, use pre-`1.0` 
 ## Current Phase
 
 - Current release line: `0.x`
-- Current version: `0.1.3`
-- Meaning: current stable beta-line release for the `0.1.3` Home Assistant custom panel release
+- Current version: `0.2.0`
+- Meaning: current public beta release for the `0.2.0` Home Assistant custom panel and add-on release
 
 ## Scheme
 
@@ -134,7 +134,10 @@ If there are no issues in `Ready for Release`, build concise notes from every co
 ## GitHub Releases
 
 - All `v*` tags create a GitHub Release automatically.
-- Tags matching `v*-alpha.*`, `v*-beta.*`, or `v*-rc.*` are marked as prereleases. Other `v*` tags are marked as stable releases.
+- Tags matching `v*-alpha.*`, `v*-beta.*`, or `v*-rc.*` are marked as prereleases in GitHub.
+- Standalone app images publish exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
+- Add-on images publish the configured add-on version and `sha-*` for every `v*` tag; prerelease
+  tags also move add-on `beta` and `latest`.
 - GitHub Release bodies are generated from the matching `CHANGELOG.md` version section. The workflow fails if the tag has no changelog entry.
 
 ## Stable Exit

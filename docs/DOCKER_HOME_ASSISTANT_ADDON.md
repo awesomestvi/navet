@@ -114,11 +114,11 @@ Then open `http://localhost:8080`.
 The GitHub Actions publish workflow publishes multi-arch app images to GitHub Container Registry:
 
 - pushes to `main`: `ghcr.io/<owner>/navet:dev` and `ghcr.io/<owner>/navet:sha-<commit>`
-- public release tags (`v*`): exact tag, `beta`, `latest`, and `sha-*`
+- version tags (`v*`): exact tag, `beta`, `latest`, and `sha-*`
 - manual workflow runs: the requested developer tag, defaulting to `dev`, plus `sha-*`
 
-`latest` is the current public release compatibility tag. It is updated by release tags, not by
-ordinary `main` pushes.
+`latest` is the current public release compatibility tag for the standalone app image. It is updated
+by version tags, not by ordinary `main` pushes.
 
 ### GHCR Deployment
 
@@ -196,7 +196,7 @@ For Home Assistant add-on updates:
 1. Update files in this repo
 2. Bump `addons/navet/config.yaml` version
 3. Merge to `main` and wait for the workflow to publish the `dev` add-on image for testing
-4. Push a public beta prerelease tag and wait for the workflow to publish the matching add-on image tag
+4. Push a version tag and wait for the workflow to publish the matching add-on image tag
 5. Refresh the add-on repository in Home Assistant
 6. Rebuild or reinstall the add-on
 

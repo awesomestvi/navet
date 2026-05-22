@@ -112,4 +112,4 @@ Keep this page aligned with:
 - `scripts/check-storybook-standards.mjs`
 - `src/app/ui-kit/*.stories.tsx`
 
-Last updated: May 17, 2026
+Last updated: May 22, 2026

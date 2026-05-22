@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Updated Navet to `0.2.0`
+- Added Sensor Group widgets for compact multi-sensor dashboard summaries
+- Added HVAC preset temperature controls
+- Improved camera live-feed refresh behavior
+- Improved cover card support and position controls
+- Optimized dashboard loading with lazy card/widget chunks and reduced duplicate energy/RSS requests
+- Updated release, setup, roadmap, and Storybook documentation for the current public beta
+
 ## 0.1.13
 
 - Updated Navet to `0.1.3`
