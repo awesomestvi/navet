@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useAuthStore } from '@/app/stores/auth-store';
 import { haIngressAuth } from './adapters/haIngressAuth';
 import { haPanelAuth } from './adapters/haPanelAuth';
 import { legacyTokenAuth } from './adapters/legacyTokenAuth';
@@ -33,19 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.removeItem('ha_auth_config');
     localStorage.removeItem('ha-dashboard-config');
+    localStorage.removeItem('navet-auth-config');
   }, []);
 
   useEffect(() => {
-    const legacyStoreSession = useAuthStore.getState().config;
-    if (legacyStoreSession?.url && legacyStoreSession?.token) {
-      setSession({
-        hassUrl: legacyStoreSession.url,
-        accessToken: legacyStoreSession.token,
-      });
-      setReady(true);
-      return;
-    }
-
     void adapter.init().then((result) => {
       setSession(result);
       setReady(true);
@@ -63,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(next);
       },
       logout: async () => {
-        useAuthStore.getState().logout();
         setSession(null);
         await adapter.logout?.();
       },
