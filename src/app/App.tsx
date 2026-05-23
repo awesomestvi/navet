@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
@@ -9,16 +10,12 @@ import { DashboardPage } from './features/dashboard';
 import { useAccentColor, useHomeAssistant } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
-import { loadDashboardSession } from './services/dashboard-session.service';
-import { shouldSkipSharedSessionLoad } from './session/session';
 import { useErrorStore, useSettingsStore } from './stores';
-import { useAuth } from './stores/auth-store';
 import { useConfig } from './stores/config-store';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
 import {
   appErrorSelectors,
-  authSelectors,
   configSelectors,
   homeAssistantSelectors,
   settingsSelectors,
@@ -32,9 +29,9 @@ function getConnectionAttemptKey(config: { url: string; token: string }) {
 }
 
 function AppContent() {
-  const { isAuthenticated, config: authConfig } = useAuth(useShallow(authSelectors.session));
-  const login = useAuth(authSelectors.login);
-  const logout = useAuth(authSelectors.logout);
+  const { session, ready, logout } = useAuthSession();
+  const isAuthenticated = Boolean(session);
+  const authConfig = session ? { url: session.hassUrl, token: session.accessToken } : null;
   const haConfig = useConfig(configSelectors.config);
   const appError = useErrorStore(appErrorSelectors.error);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
@@ -53,7 +50,6 @@ function AppContent() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
-  const sharedSessionLoadAttempted = useRef(false);
   const failedConnectionAttemptKey = useRef<string | null>(null);
 
   const syncViewportEnvironment = useCallback(() => {
@@ -108,22 +104,6 @@ function AppContent() {
       });
     }
   }, [isAuthenticated, authConfig, haConfig, connected, connecting, appError, connect]);
-
-  useEffect(() => {
-    if (isAuthenticated || sharedSessionLoadAttempted.current || shouldSkipSharedSessionLoad()) {
-      return;
-    }
-
-    sharedSessionLoadAttempted.current = true;
-
-    void loadDashboardSession().then(({ session }) => {
-      if (!session) {
-        return;
-      }
-
-      void login(session.url, session.token);
-    });
-  }, [isAuthenticated, login]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);
@@ -186,7 +166,7 @@ function AppContent() {
         />
       ) : null}
       <Toaster />
-      {!isAuthenticated ? <LoginPage /> : <DashboardPage />}
+      {!ready || !isAuthenticated ? <LoginPage /> : <DashboardPage />}
     </>
   );
 }
@@ -194,7 +174,9 @@ function AppContent() {
 export default function App() {
   return (
     <I18nProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </I18nProvider>
   );
 }
