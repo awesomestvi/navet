@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAppStores } from '@/test/store-reset';
 import App from '../App';
 import { STORAGE_KEYS } from '../constants/storage-keys';
-import { useAuthStore } from '../stores/auth-store';
 
 const CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
@@ -248,11 +247,13 @@ describe('App Home Assistant connection recovery', () => {
 });
 
 function setAuthenticatedSession() {
-  useAuthStore.setState({
-    isAuthenticated: true,
-    config: {
-      url: 'http://192.168.68.71:8123',
-      token: 'token',
-    },
-  });
+  localStorage.setItem(
+    'navet_auth_session',
+    JSON.stringify({
+      hassUrl: 'http://192.168.68.71:8123',
+      accessToken: 'token',
+      refreshToken: 'refresh-token',
+      expiresAt: Date.now() + 3_600_000,
+    })
+  );
 }
