@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuthStore } from '@/app/stores/auth-store';
 import { haIngressAuth } from './adapters/haIngressAuth';
 import { haPanelAuth } from './adapters/haPanelAuth';
 import { legacyTokenAuth } from './adapters/legacyTokenAuth';
@@ -35,6 +36,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const legacyStoreSession = useAuthStore.getState().config;
+    if (legacyStoreSession?.url && legacyStoreSession?.token) {
+      setSession({
+        hassUrl: legacyStoreSession.url,
+        accessToken: legacyStoreSession.token,
+      });
+      setReady(true);
+      return;
+    }
+
     void adapter.init().then((result) => {
       setSession(result);
       setReady(true);
@@ -52,8 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(next);
       },
       logout: async () => {
-        await adapter.logout?.();
+        useAuthStore.getState().logout();
         setSession(null);
+        await adapter.logout?.();
       },
     }),
     [runtime, session, ready, adapter]

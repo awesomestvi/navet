@@ -34,6 +34,7 @@ function AppContent() {
   const authConfig = session ? { url: session.hassUrl, token: session.accessToken } : null;
   const haConfig = useConfig(configSelectors.config);
   const appError = useErrorStore(appErrorSelectors.error);
+  const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
@@ -77,8 +78,9 @@ function AppContent() {
 
   const resetSessionToLogin = useCallback(() => {
     failedConnectionAttemptKey.current = null;
+    clearAppError();
     logout();
-  }, [logout]);
+  }, [clearAppError, logout]);
 
   useEffect(() => {
     if (!isAuthenticated) {
