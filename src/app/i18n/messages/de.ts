@@ -1000,10 +1000,10 @@ export const deMessages = {
   'errorDisplay.backToLogin': 'Zurueck zur Anmeldung',
   'errorDisplay.connectionInterrupted': 'Wiederherstellung erforderlich',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet konnte die Home Assistant-Sitzung nicht abschliessen oder das Dashboard nicht laden. Pruefe gespeicherte URL und Token und versuche es erneut.',
+    'Navet konnte die Home Assistant-Sitzung nicht abschliessen oder das Dashboard nicht laden. Versuche die Verbindung erneut oder pruefe die haeufigen Ursachen unten.',
   'errorDisplay.commonIssues': 'Häufige Probleme:',
   'errorDisplay.issue.1': 'Das Smart-Home-System läuft nicht oder ist nicht erreichbar',
-  'errorDisplay.issue.2': 'Falsche URL oder falsches Zugriffstoken',
+  'errorDisplay.issue.2': 'Home Assistant-Sitzung ist nicht verfuegbar oder abgelaufen',
   'errorDisplay.issue.3': 'Probleme mit der Netzwerkverbindung',
   'errorDisplay.issue.4': 'CORS oder Firewall blockiert die Verbindung',
   'errorDisplay.issue.5': 'Home Assistant hat keine nutzbaren Entitäten zurückgegeben',

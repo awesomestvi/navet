@@ -15,10 +15,18 @@ describe('Home Assistant add-on config', () => {
     }
   });
 
-  it('does not expose Home Assistant URL or token options', () => {
+  it('does not expose Home Assistant URL or token as default options', () => {
     for (const config of [addonConfig, devAddonConfig]) {
-      expect(config).not.toContain('hass_url');
-      expect(config).not.toContain('token:');
+      expect(config).not.toContain('options:\n  dashboard_config_url: ""\n  hass_url:');
+      expect(config).not.toContain('options:\n  dashboard_config_url: ""\n  token:');
+    }
+  });
+
+  it('accepts stale Home Assistant URL and token keys for installed add-on migrations', () => {
+    for (const config of [addonConfig, devAddonConfig]) {
+      expect(config).toContain(
+        'schema:\n  dashboard_config_url: str?\n  hass_url: str?\n  token: password?'
+      );
     }
   });
 });

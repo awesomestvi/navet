@@ -150,7 +150,8 @@ Home Assistant-native setup.
 3. Install **Navet**.
 4. If you are a returning user, you can set `dashboard_config_url` to your exported Navet
    dashboard config file. Skip this if you are a new user. Do not add old `hass_url` or `token`
-   values; add-on Ingress now uses the existing Home Assistant session.
+   values; add-on Ingress now uses the existing Home Assistant session. Existing saved
+   `hass_url`/`token` keys are tolerated during upgrade but ignored.
 
 5. Start the add-on and open Navet from the Home Assistant sidebar through Ingress. Ingress uses
    the existing Home Assistant frontend session, so no Home Assistant URL or token is required.

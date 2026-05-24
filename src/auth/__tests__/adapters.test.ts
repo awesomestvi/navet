@@ -60,16 +60,43 @@ describe('auth adapters', () => {
 
   it('creates ingress session from Home Assistant frontend auth when available', async () => {
     const auth = createAuth(window.location.origin);
+    localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await haIngressAuth.init();
 
-    expect(getAuthMock).toHaveBeenCalledWith({ hassUrl: window.location.origin });
+    expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
     expect(session).toMatchObject({
       runtime: 'ha-ingress',
       hassUrl: window.location.origin,
       auth,
     });
+  });
+
+  it('creates ingress session without redirecting to OAuth when frontend tokens are unavailable', async () => {
+    const session = await haIngressAuth.init();
+
+    expect(getAuthMock).not.toHaveBeenCalled();
+    expect(session).toMatchObject({
+      runtime: 'ha-ingress',
+      hassUrl: window.location.origin,
+    });
+    expect(session?.auth).toBeUndefined();
+  });
+
+  it('keeps ingress auth on the proxy path when frontend tokens cannot be restored', async () => {
+    const auth = createAuth(window.location.origin);
+    localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
+    getAuthMock.mockRejectedValueOnce(new Error('stale frontend token'));
+
+    const session = await haIngressAuth.init();
+
+    expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
+    expect(session).toMatchObject({
+      runtime: 'ha-ingress',
+      hassUrl: window.location.origin,
+    });
+    expect(session?.auth).toBeUndefined();
   });
 
   it('restores persisted standalone OAuth session from the same-origin auth endpoint', async () => {

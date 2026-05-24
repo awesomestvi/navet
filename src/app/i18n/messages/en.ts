@@ -982,10 +982,10 @@ export const enMessages = {
   'errorDisplay.backToLogin': 'Back to login',
   'errorDisplay.connectionInterrupted': 'Recovery needed',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet could not complete the Home Assistant session or finish loading the dashboard. Check the saved URL and token, then try again.',
+    'Navet could not complete the Home Assistant session or finish loading the dashboard. Retry the connection or check the common causes below.',
   'errorDisplay.commonIssues': 'Common issues:',
   'errorDisplay.issue.1': 'Smart home system is not running or unreachable',
-  'errorDisplay.issue.2': 'Incorrect URL or access token',
+  'errorDisplay.issue.2': 'Home Assistant session is unavailable or expired',
   'errorDisplay.issue.3': 'Network connectivity issues',
   'errorDisplay.issue.4': 'CORS or firewall blocking the connection',
   'errorDisplay.issue.5': 'Home Assistant returned no usable entities',

@@ -1014,11 +1014,11 @@ export const itMessages = {
   'security.dashboard.noPrimaryDescription':
     'Navet ha trovato entità telecamera, ma nessuna sembra ancora una telecamera di sicurezza live.',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet ha perso la connessione o non ha completato il caricamento. Puoi riprovare o tornare al login.',
+    'Navet non ha completato la sessione Home Assistant o il caricamento della dashboard. Riprova la connessione o controlla le cause comuni qui sotto.',
   'errorDisplay.commonIssues': 'Cause comuni',
   'errorDisplay.issue.1': 'Home Assistant non è raggiungibile da questo dispositivo.',
-  'errorDisplay.issue.2': 'L’URL di connessione è cambiato.',
-  'errorDisplay.issue.3': 'Il token a lunga durata è scaduto o è stato revocato.',
+  'errorDisplay.issue.2': 'La sessione Home Assistant non è disponibile o è scaduta.',
+  'errorDisplay.issue.3': 'Problemi di connettività di rete.',
   'errorDisplay.issue.4': 'Il browser ha bloccato la connessione WebSocket.',
   'errorDisplay.issue.5': 'La rete locale o la VPN non è disponibile.',
   'errorDisplay.issue.6': 'Home Assistant è ancora in fase di avvio.',

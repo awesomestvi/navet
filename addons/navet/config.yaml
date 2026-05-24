@@ -24,3 +24,5 @@ options:
   dashboard_config_url: ""
 schema:
   dashboard_config_url: str?
+  hass_url: str?
+  token: password?
