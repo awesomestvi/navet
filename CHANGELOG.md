@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.4 - 2026-05-25
+
+Navet improves dashboard behavior for wall panels and broadens support for everyday Home Assistant devices.
+
+## New
+
+- Kiosk mode can now hide the standard sidebar and topbar for cleaner wall-panel and tablet displays.
+- Single sensors, binary sensors, scripts, scenes, and more device classes can now appear directly as dashboard cards.
+- Dashboard navigation now includes compact home-status summaries for lights, climate, media, security, and energy.
+
+## Fixed
+
+- HVAC cards now follow Home Assistant entity updates more reliably, including Nest-style climate entities and Fahrenheit setups.
+- Media playback commands now handle TV, Spotify, and Android TV integrations more reliably.
+- Sensor cards now display timestamp-style values using the configured local time instead of falling back to GMT.
+
+## Improved
+
+- Rooms can now be hidden without deleting their dashboard content.
+- Light controls now keep an accessible power toggle available when tap behavior is set to open controls.
+- Dashboard layout, room navigation, security camera grouping, and device editing are more consistent across desktop, mobile, and kiosk views.
+
 ## 0.2.3 - 2026-05-24
 
 Navet moves Home Assistant sign-in to OAuth and hardens upgrades from older token-based setups.

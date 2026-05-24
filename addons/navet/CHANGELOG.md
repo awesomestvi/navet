@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.4
+
+- Updated Navet to `0.2.4`
+- Added cleaner kiosk-mode dashboard behavior for wall panels and tablets
+- Added direct dashboard cards for single sensors, binary sensors, scripts, scenes, and more device classes
+- Added compact dashboard summaries for lights, climate, media, security, and energy
+- Fixed HVAC card updates for Nest-style climate entities and Fahrenheit setups
+- Fixed media playback commands for TV, Spotify, and Android TV integrations
+- Fixed sensor timestamp display so local time is used instead of GMT
+- Added hidden-room support without deleting dashboard content
+
 ## 0.2.3
 
 - Updated Navet to `0.2.3`

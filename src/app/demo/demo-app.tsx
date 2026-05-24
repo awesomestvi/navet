@@ -1,4 +1,15 @@
-import { Bot, ClipboardList, Clock3, Play, Zap } from 'lucide-react';
+import type { HassConfig, HassEntities } from 'home-assistant-js-websocket';
+import {
+  Bot,
+  ClipboardList,
+  Clock3,
+  Lightbulb,
+  Play,
+  ShieldCheck,
+  Speaker,
+  Thermometer,
+  Zap,
+} from 'lucide-react';
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import demoEnergyImage from '@/../docs/marketing/assets/screenshots/navet-ipad-landscape-energy.jpg';
@@ -26,9 +37,10 @@ import {
   getEnergyDashboardScenario,
   getMockEnergySourceDiagnostics,
 } from '@/app/features/energy';
-import { LightCard, SwitchCard } from '@/app/features/lighting';
+import { FanCard, LightCard, SwitchCard } from '@/app/features/lighting';
 import { MediaCard } from '@/app/features/media';
 import { PersonCard } from '@/app/features/person';
+import { SceneCard } from '@/app/features/scenes';
 import { CameraCard, CoverCard, LockCard } from '@/app/features/security';
 import { GroupedSensorCard, SensorCard } from '@/app/features/sensors';
 import { SettingsSection } from '@/app/features/settings';
@@ -38,6 +50,7 @@ import { useTheme } from '@/app/hooks';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@/app/i18n';
 import type { Section } from '@/app/navigation/sections';
+import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
@@ -79,6 +92,121 @@ const energyTrend = [
 
 const demoEnergyScenario = getEnergyDashboardScenario('default');
 const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
+
+const demoHomeAssistantConfig = {
+  latitude: 55.8708,
+  longitude: 12.8302,
+  elevation: 10,
+  radius: 100,
+  unit_system: {
+    length: 'km',
+    accumulated_precipitation: 'mm',
+    mass: 'kg',
+    pressure: 'hPa',
+    temperature: 'C',
+    volume: 'L',
+    wind_speed: 'm/s',
+  },
+  location_name: 'Navet Demo',
+  time_zone: 'Europe/Stockholm',
+  components: [],
+  config_dir: '',
+  allowlist_external_dirs: [],
+  allowlist_external_urls: [],
+  version: 'demo',
+  config_source: 'storage',
+  recovery_mode: false,
+  safe_mode: false,
+  state: 'RUNNING',
+  external_url: null,
+  internal_url: null,
+  currency: 'SEK',
+  country: 'SE',
+  language: 'en',
+} satisfies HassConfig;
+
+const demoHomeAssistantEntities: HassEntities = {
+  'sensor.front_door_sensor_battery': {
+    entity_id: 'sensor.front_door_sensor_battery',
+    state: '18',
+    attributes: {
+      friendly_name: 'Front Door Sensor',
+      device_class: 'battery',
+      unit_of_measurement: '%',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-battery-1', parent_id: null, user_id: null },
+  },
+  'sensor.kitchen_remote_battery': {
+    entity_id: 'sensor.kitchen_remote_battery',
+    state: '42',
+    attributes: {
+      friendly_name: 'Kitchen Remote',
+      device_class: 'battery',
+      unit_of_measurement: '%',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-battery-2', parent_id: null, user_id: null },
+  },
+  'sensor.living_room_motion_battery': {
+    entity_id: 'sensor.living_room_motion_battery',
+    state: '67',
+    attributes: {
+      friendly_name: 'Living Room Motion',
+      device_class: 'battery',
+      unit_of_measurement: '%',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-battery-3', parent_id: null, user_id: null },
+  },
+  'sensor.living_room_temp': {
+    entity_id: 'sensor.living_room_temp',
+    state: '22.4',
+    attributes: {
+      friendly_name: 'Living Room Temperature',
+      device_class: 'temperature',
+      unit_of_measurement: 'C',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-sensor-1', parent_id: null, user_id: null },
+  },
+  'sensor.living_room_humidity': {
+    entity_id: 'sensor.living_room_humidity',
+    state: '47',
+    attributes: {
+      friendly_name: 'Living Room Humidity',
+      device_class: 'humidity',
+      unit_of_measurement: '%',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-sensor-2', parent_id: null, user_id: null },
+  },
+  'sensor.living_room_co2': {
+    entity_id: 'sensor.living_room_co2',
+    state: '510',
+    attributes: {
+      friendly_name: 'Living Room CO2',
+      device_class: 'carbon_dioxide',
+      unit_of_measurement: 'ppm',
+    },
+    last_changed: '2026-05-16T08:00:00+00:00',
+    last_updated: '2026-05-16T08:00:00+00:00',
+    context: { id: 'demo-sensor-3', parent_id: null, user_id: null },
+  },
+};
+
+const demoSummaryItems = [
+  { id: 'energy', title: 'Energy', value: '1.4 kW', icon: Zap, color: '#f59e0b' },
+  { id: 'climate', title: 'Climate', value: '21,0-25,4°', icon: Thermometer, color: '#06b6d4' },
+  { id: 'security', title: 'Security', value: 'No Alerts', icon: ShieldCheck, color: '#14b8a6' },
+  { id: 'lights', title: 'Lights', value: '0 On', icon: Lightbulb, color: '#eab308' },
+  { id: 'media', title: 'Speakers & TVs', value: 'None Playing', icon: Speaker, color: '#94a3b8' },
+];
 
 const demoAutomations = [
   {
@@ -278,6 +406,50 @@ const demoHomeWidgets: CustomCard[] = [
       ],
     },
   },
+  {
+    id: 'demo-widget-battery',
+    type: 'battery',
+    size: 'medium',
+    room: 'Home',
+    createdAt: 5,
+    data: {
+      selectedEntityIds: [
+        'sensor.front_door_sensor_battery',
+        'sensor.kitchen_remote_battery',
+        'sensor.living_room_motion_battery',
+      ],
+    },
+  },
+  {
+    id: 'demo-widget-button',
+    type: 'button',
+    size: 'small',
+    room: 'Home',
+    createdAt: 6,
+    data: {
+      label: 'Movie Mode',
+      service: 'scene.turn_on',
+      entityId: 'scene.movie_mode',
+      icon: 'Zap',
+      tintColor: '#60a5fa',
+    },
+  },
+  {
+    id: 'demo-widget-sensor-group',
+    type: 'sensor-group',
+    size: 'medium',
+    room: 'Home',
+    createdAt: 7,
+    data: {
+      name: 'Living Room Air',
+      sensorEntityIds: [
+        'sensor.living_room_temp',
+        'sensor.living_room_humidity',
+        'sensor.living_room_co2',
+      ],
+      accentColor: 'teal',
+    },
+  },
 ];
 
 const groupedSensors = [
@@ -326,6 +498,12 @@ function useDemoDisplayDefaults() {
     document.documentElement.dataset.effectsQuality = 'high';
     document.documentElement.dataset.lowPower = 'false';
     document.documentElement.dataset.noAnimation = 'false';
+    homeAssistantStore.getState().syncPanelHass({
+      states: demoHomeAssistantEntities,
+      config: demoHomeAssistantConfig,
+      callService: async () => undefined,
+      callWS: async <T,>() => [] as T,
+    });
   }, []);
 }
 
@@ -396,180 +574,273 @@ function DashboardGrid({ children }: { children: ReactNode }) {
   );
 }
 
+function DemoSummaryRow() {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const chipClassName =
+    theme === 'light'
+      ? 'border-slate-200/80 bg-white/70 text-slate-950 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.34)]'
+      : theme === 'black'
+        ? 'border-white/10 bg-white/[0.035] text-white/90'
+        : 'border-white/10 bg-white/[0.055] text-white/90 backdrop-blur-xl';
+
+  return (
+    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+      {demoSummaryItems.map((item) => {
+        const IconComponent = item.icon;
+
+        return (
+          <div
+            key={item.id}
+            className={`inline-grid min-h-10 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-full border py-1.5 pl-2 pr-3 text-left ${chipClassName}`}
+          >
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08]"
+              style={{ color: item.color }}
+              aria-hidden="true"
+            >
+              <IconComponent className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block max-w-[8rem] truncate text-[11px] font-semibold leading-3.5">
+                {item.title}
+              </span>
+              <span className={`block truncate text-[11px] leading-3.5 ${surface.textMuted}`}>
+                {item.value}
+              </span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ProductGrid() {
   return (
-    <DashboardGrid>
-      <CardSlot size="small">
-        <LightCard
-          id="light.kitchen_island"
-          name="Kitchen island"
-          room="Kitchen"
-          initialState
-          initialBrightness={72}
-          initialTemp={3600}
-          size="small"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <HVACCard
-          id="climate.main_floor"
-          name="Main floor"
-          room="Hallway"
-          initialTemp={22}
-          initialCurrentTemp={21}
-          initialMode="heat"
-          initialAction="heating"
-          initialState
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.living_room_speaker"
-          name="Living Room Speaker"
-          room="Living Room"
-          title="Morning Mix"
-          artist="Navet Radio"
-          entityType="Speaker"
-          entityPicture={nevermindAlbumArt}
-          state="playing"
-          volume={42}
-          isMuted={false}
-          elapsedSeconds={86}
-          durationSeconds={243}
-          positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-          supportsGrouping
-          groupMembers={['Kitchen Speaker']}
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.living_room_tv"
-          name="Living Room TV"
-          room="Living Room"
-          title="Aerial"
-          artist="Navet Studio"
-          entityType="TV"
-          deviceClass="tv"
-          source="Samsung TV Plus"
-          sourceList={['Samsung TV Plus', 'HDMI 1', 'HDMI 2', 'Apple TV']}
-          state="idle"
-          volume={36}
-          isMuted={false}
-          supportsGrouping={false}
-          groupMembers={[]}
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-          simulateTvRemote
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <CoverCard
-          id="cover.living_room_blinds"
-          name="Living Room Blinds"
-          room="Living Room"
-          initialPosition={48}
-          initialDeviceClass="blind"
-          size="small"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
-      </CardSlot>
-      <CardSlot size="small">
-        <PersonCard
-          id="person.demo_alex"
-          name="Alex"
-          room="Home"
-          location="Landskrona"
-          state="home"
-          size="small"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="large">
-        <WeatherCard
-          id="weather.home"
-          location="Stockholm"
-          temperature={18}
-          feelsLikeTemperature={17}
-          condition="partlycloudy"
-          humidity={58}
-          windSpeed={12}
-          precipitation={0.4}
-          precipitationUnit="mm"
-          sunrise="05:08"
-          sunset="20:51"
-          daylight="15h 43m"
-          rainForecast="Light rain possible later"
-          forecast={forecast}
-          forecastMode="weekly"
-          highTemp={22}
-          lowTemp={13}
-          size="large"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="large">
-        <CalendarCard
-          id="calendar.home"
-          name="Family Calendar"
-          room="Home"
-          events={calendarEvents}
-          inEditMode={false}
-          size="large"
-          onSizeChange={noopCardSizeChange}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <EnergyNowCardView
-          title="Energy now"
-          currentLoadW={842}
-          todayUsageKWh={12.4}
-          trend={energyTrend}
-          accentColor="#f97316"
-          size="medium"
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <SwitchCard
-          id="switch.desk_power"
-          name="Desk power"
-          initialState
-          size="small"
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <VacuumCard
-          id="vacuum.downstairs"
-          name="Downstairs Vacuum"
-          status="docked"
-          battery={92}
-          cleanedArea="48 m²"
-          cleaningTime="42 min"
-          nextCleaning="Tomorrow"
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      {demoHomeWidgets.map((card) => (
-        <DemoWidgetCard key={card.id} card={card} />
-      ))}
-    </DashboardGrid>
+    <div className="space-y-4 md:space-y-5">
+      <DemoSummaryRow />
+      <DashboardGrid>
+        <CardSlot size="small">
+          <LightCard
+            id="light.kitchen_island"
+            name="Kitchen island"
+            room="Kitchen"
+            initialState
+            initialBrightness={72}
+            initialTemp={3600}
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <FanCard
+            id="fan.bedroom_ceiling"
+            name="Bedroom fan"
+            room="Bedroom"
+            initialState
+            initialPercentage={66}
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <HVACCard
+            id="climate.main_floor"
+            name="Main floor"
+            room="Hallway"
+            initialTemp={22}
+            initialCurrentTemp={21}
+            initialMode="heat"
+            initialAction="heating"
+            initialState
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <MediaCard
+            id="media_player.living_room_speaker"
+            name="Living Room Speaker"
+            room="Living Room"
+            title="Morning Mix"
+            artist="Navet Radio"
+            entityType="Speaker"
+            entityPicture={nevermindAlbumArt}
+            state="playing"
+            volume={42}
+            isMuted={false}
+            elapsedSeconds={86}
+            durationSeconds={243}
+            positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
+            supportsGrouping
+            groupMembers={['Kitchen Speaker']}
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <MediaCard
+            id="media_player.living_room_tv"
+            name="Living Room TV"
+            room="Living Room"
+            title="Aerial"
+            artist="Navet Studio"
+            entityType="TV"
+            deviceClass="tv"
+            source="Samsung TV Plus"
+            sourceList={['Samsung TV Plus', 'HDMI 1', 'HDMI 2', 'Apple TV']}
+            state="idle"
+            volume={36}
+            isMuted={false}
+            supportsGrouping={false}
+            groupMembers={[]}
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+            simulateTvRemote
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <CoverCard
+            id="cover.living_room_blinds"
+            name="Living Room Blinds"
+            room="Living Room"
+            initialPosition={48}
+            initialDeviceClass="blind"
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
+        </CardSlot>
+        <CardSlot size="small">
+          <PersonCard
+            id="person.demo_alex"
+            name="Alex"
+            room="Home"
+            location="Landskrona"
+            state="home"
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="large">
+          <WeatherCard
+            id="weather.home"
+            location="Stockholm"
+            temperature={18}
+            feelsLikeTemperature={17}
+            condition="partlycloudy"
+            humidity={58}
+            windSpeed={12}
+            precipitation={0.4}
+            precipitationUnit="mm"
+            sunrise="05:08"
+            sunset="20:51"
+            daylight="15h 43m"
+            rainForecast="Light rain possible later"
+            forecast={forecast}
+            forecastMode="weekly"
+            highTemp={22}
+            lowTemp={13}
+            size="large"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="large">
+          <CalendarCard
+            id="calendar.home"
+            name="Family Calendar"
+            room="Home"
+            events={calendarEvents}
+            inEditMode={false}
+            size="large"
+            onSizeChange={noopCardSizeChange}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <EnergyNowCardView
+            title="Energy now"
+            currentLoadW={842}
+            todayUsageKWh={12.4}
+            trend={energyTrend}
+            accentColor="#f97316"
+            size="medium"
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <SwitchCard
+            id="switch.desk_power"
+            name="Desk power"
+            initialState
+            size="small"
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <SwitchCard
+            id="script.goodnight"
+            name="Goodnight"
+            initialState={false}
+            entityType="script"
+            serviceDomain="script"
+            serviceAction="turn_on"
+            size="small"
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <SceneCard
+            id="scene.movie_mode"
+            name="Movie Mode"
+            room="Living Room"
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <SensorCard
+            id="sensor.entry_temperature"
+            name="Entry temperature"
+            room="Hallway"
+            value="21.6"
+            unit="C"
+            icon="thermometer"
+            subtitle="Sensor"
+            size="small"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <VacuumCard
+            id="vacuum.downstairs"
+            name="Downstairs Vacuum"
+            status="docked"
+            battery={92}
+            cleanedArea="48 m²"
+            cleaningTime="42 min"
+            nextCleaning="Tomorrow"
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        {demoHomeWidgets.map((card) => (
+          <DemoWidgetCard key={card.id} card={card} />
+        ))}
+      </DashboardGrid>
+    </div>
   );
 }
 
