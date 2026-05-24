@@ -15,8 +15,7 @@ describe('home-assistant-connection-target', () => {
   it('keeps user-entered Home Assistant URLs for non-runtime sessions', () => {
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'https://ha.example.com',
-        token: 'user-token',
+        hassUrl: 'https://ha.example.com',
       })
     ).toBe('https://ha.example.com');
   });
@@ -24,14 +23,12 @@ describe('home-assistant-connection-target', () => {
   it('uses same-origin proxy URL for matching hosted runtime Home Assistant URLs', () => {
     window.__NAVET_CONFIG__ = {
       hassUrl: 'https://ha.example.com',
-      hassToken: 'runtime-token',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'https://ha.example.com',
-        token: 'stored-user-token',
+        hassUrl: 'https://ha.example.com',
       })
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
@@ -45,24 +42,21 @@ describe('home-assistant-connection-target', () => {
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant:8123',
-        token: 'user-entered-token',
+        hassUrl: 'http://homeassistant:8123',
       })
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
 
-  it('uses the direct-port same-origin proxy URL for matching hosted runtime URLs with runtime tokens', () => {
+  it('uses the direct-port same-origin proxy URL for matching hosted runtime URLs', () => {
     window.history.replaceState(null, '', '/dashboard');
     window.__NAVET_CONFIG__ = {
       hassUrl: 'http://homeassistant:8123',
-      hassToken: 'runtime-token',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant:8123',
-        token: 'runtime-token',
+        hassUrl: 'http://homeassistant:8123',
       })
     ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
   });
@@ -82,8 +76,8 @@ describe('home-assistant-connection-target', () => {
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
 
-    expect(resolveAddonLocalEndpointUrl('/__navet_session__/default')).toBe(
-      `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_session__/default`
+    expect(resolveAddonLocalEndpointUrl('/__navet_auth__/session')).toBe(
+      `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_auth__/session`
     );
   });
 
@@ -112,19 +106,17 @@ describe('home-assistant-connection-target', () => {
     document.head.append(base);
     window.__NAVET_CONFIG__ = {
       hassUrl: 'https://ha.example.com',
-      hassToken: 'runtime-token',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'https://ha.example.com',
-        token: 'stored-user-token',
+        hassUrl: 'https://ha.example.com',
       })
     ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
   });
 
-  it('uses the ingress-aware proxy URL for add-on manual login sessions', () => {
+  it('uses the ingress-aware proxy URL for add-on ingress sessions', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
@@ -135,8 +127,8 @@ describe('home-assistant-connection-target', () => {
 
     expect(
       resolveHomeAssistantConnectionUrl({
-        url: 'http://homeassistant:8123',
-        token: 'user-entered-token',
+        runtime: 'ha-ingress',
+        hassUrl: window.location.origin,
       })
     ).toBe(`${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`);
   });

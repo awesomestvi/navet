@@ -11,15 +11,15 @@ The image is built from the repository root in CI, which allows the add-on image
 
 ## Configuration
 
-- `hass_url`: Optional Home Assistant URL. Leave blank to enter a browser-reachable Home Assistant
-  URL on the Navet login screen. The add-on still uses Home Assistant's internal Core hostname for
-  same-origin media and asset proxy requests.
-- `token`: Optional Home Assistant long-lived access token. Set this to open Navet without the login
-  form.
 - `dashboard_config_url`: Optional Navet dashboard YAML export to import on first launch in a fresh browser
 
-When `hass_url` and `token` are blank, Navet opens the login page with the internal Home Assistant
-URL prefilled. Enter a long-lived access token to connect through Ingress.
+When opened through Home Assistant Ingress, Navet uses the existing Home Assistant frontend session.
+No Home Assistant URL or manual token is configured in the add-on.
+
+Returning users: the old add-on `hass_url` and `token` options have been removed. If you open Navet
+from the Home Assistant sidebar, you should not see a separate Navet login screen. If you open the
+direct `8099` port instead, Navet is outside Ingress and will ask you to sign in with Home Assistant
+OAuth.
 
 Dashboard layout changes are saved to the add-on data directory and shared with other browsers that
 open the same Navet instance.

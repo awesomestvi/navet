@@ -77,5 +77,5 @@ fs.writeFileSync(
 );
 
 console.log(
-  `Wrote ${path.relative(process.cwd(), outputPath)} (hassUrl: ${hassUrl ? 'set' : 'missing'}, token: server-only)`
+  `Wrote ${path.relative(process.cwd(), outputPath)} (hassUrl: ${hassUrl ? 'set' : 'missing'})`
 );

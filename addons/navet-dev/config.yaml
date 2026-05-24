@@ -11,6 +11,7 @@ startup: application
 init: false
 ingress: true
 ingress_port: 8099
+homeassistant_api: true
 ports:
   8099/tcp: 8099
 ports_description:
@@ -20,10 +21,6 @@ panel_title: Navet Dev
 map:
   - addon_config:rw
 options:
-  hass_url: ""
-  token: ""
   dashboard_config_url: ""
 schema:
-  hass_url: str?
-  token: password?
   dashboard_config_url: str?

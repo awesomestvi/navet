@@ -17,6 +17,7 @@ import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from '@/app/utils/viewport';
+import { AuthProvider } from '@/auth/AuthProvider';
 import navetPanelStylesUrl from '@/styles/index.css?url';
 
 window.__NAVET_PANEL__ = true;
@@ -170,7 +171,9 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
 function HomeAssistantPanelRoot(props: HomeAssistantPanelProps) {
   return (
     <I18nProvider>
-      <PanelRuntime {...props} />
+      <AuthProvider>
+        <PanelRuntime {...props} />
+      </AuthProvider>
     </I18nProvider>
   );
 }

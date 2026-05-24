@@ -1,6 +1,5 @@
 window.__NAVET_CONFIG__ = {
   hassUrl: "${NAVET_HASS_URL_JS}",
-  hassToken: "${NAVET_HASS_TOKEN_JS}",
   dashboardConfigUrl: "${NAVET_DASHBOARD_CONFIG_URL_JS}",
   proxyBaseUrl: "/__navet_ha_proxy__"
 };

@@ -1,25 +1,18 @@
-import type {
-  Auth,
-  Connection,
-  HassConfig,
-  HassEntities,
-  HassUser,
-} from 'home-assistant-js-websocket';
+import type { Connection, HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
 import {
   callService as callHassService,
-  createConnection,
-  createLongLivedTokenAuth,
   ERR_CANNOT_CONNECT,
   ERR_CONNECTION_LOST,
   ERR_HASS_HOST_REQUIRED,
   ERR_INVALID_AUTH,
   ERR_INVALID_HTTPS_TO_HTTP,
-  getAuth,
   getUser,
   subscribeConfig,
   subscribeEntities,
 } from 'home-assistant-js-websocket';
 
+import { createHomeAssistantClient } from '@/api/homeAssistantClient';
+import type { AuthSession } from '@/auth/types';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -40,10 +33,7 @@ export interface HAConnectionEventMap {
 
 export type HAConnectionEventType = keyof HAConnectionEventMap;
 
-export interface HomeAssistantConfiguration {
-  hassUrl?: string;
-  token?: string;
-}
+export type HomeAssistantConfiguration = AuthSession;
 
 /**
  * Manages Home Assistant WebSocket connection, authentication, and reconnection logic.
@@ -74,7 +64,6 @@ class HAConnectionService {
     this.manuallyDisconnected = false;
     const attemptId = ++this.authenticationAttemptId;
 
-    let auth: Auth | undefined;
     let connection: Connection | null = null;
 
     try {
@@ -83,17 +72,8 @@ class HAConnectionService {
         this.connection = null;
       }
 
-      // Long-lived access token
-      if (configuration?.token) {
-        auth = createLongLivedTokenAuth(configuration.hassUrl, configuration.token);
-      } else {
-        // Default auth flow
-        auth = await getAuth({ hassUrl: configuration.hassUrl });
-        if (auth.expired) await auth.refreshAccessToken();
-      }
-
-      // Create connection
-      connection = await createConnection({ auth, setupRetry: 3 });
+      const client = await createHomeAssistantClient(configuration);
+      connection = client.connection;
 
       if (attemptId !== this.authenticationAttemptId) {
         connection.close();
@@ -185,7 +165,7 @@ class HAConnectionService {
   private getErrorMessage(error: unknown): string {
     const errorMessages: Record<number, string> = {
       [ERR_INVALID_AUTH]:
-        'Invalid authentication token. Please check your long-lived access token.',
+        'Invalid Home Assistant authentication. Sign in again to refresh the session.',
       [ERR_CANNOT_CONNECT]:
         'Cannot connect to Home Assistant. Check the URL and ensure it is reachable.',
       [ERR_CONNECTION_LOST]: 'Connection to Home Assistant was lost.',

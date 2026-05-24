@@ -3,8 +3,6 @@
  * Use these to prevent unnecessary re-renders
  */
 
-import type { AuthState } from './auth-store';
-import type { ConfigState } from './config-store';
 import type { ErrorStoreState } from './error-store';
 import type { HomeAssistantStore } from './home-assistant-store';
 import type {
@@ -33,9 +31,6 @@ function getEmptyCameraGo2RtcConfig(entityId: string) {
 }
 
 /**
- * Auth Store Selectors
- */
-/**
  * Global app error overlay (`ErrorDisplay`) — distinct from HA connection errors.
  */
 export const appErrorSelectors = {
@@ -43,25 +38,6 @@ export const appErrorSelectors = {
   hasError: (state: ErrorStoreState) => state.error !== null,
   setError: (state: ErrorStoreState) => state.setError,
   clearError: (state: ErrorStoreState) => state.clearError,
-};
-
-export const authSelectors = {
-  isAuthenticated: (state: AuthState) => state.isAuthenticated,
-  config: (state: AuthState) => state.config,
-  login: (state: AuthState) => state.login,
-  logout: (state: AuthState) => state.logout,
-  session: (state: AuthState) => ({ isAuthenticated: state.isAuthenticated, config: state.config }),
-};
-
-/**
- * Config Store Selectors
- */
-export const configSelectors = {
-  config: (state: ConfigState) => state.config,
-  isConfigured: (state: ConfigState) => state.isConfigured,
-  saveConfig: (state: ConfigState) => state.saveConfig,
-  testConnection: (state: ConfigState) => state.testConnection,
-  clearConfig: (state: ConfigState) => state.clearConfig,
 };
 
 /**

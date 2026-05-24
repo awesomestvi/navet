@@ -67,8 +67,6 @@ Navet uses Zustand for all shared reactive state.
 
 Current store files:
 
-- `auth-store.ts`
-- `config-store.ts`
 - `edit-mode-store.ts`
 - `error-store.ts`
 - `home-assistant-store.ts`

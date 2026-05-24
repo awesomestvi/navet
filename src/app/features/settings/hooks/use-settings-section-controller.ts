@@ -3,11 +3,9 @@ import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-opti
 import { useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { useI18n, useTheme } from '@/app/hooks';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
-import { useAuth } from '@/app/stores/auth-store';
-import { useConfig } from '@/app/stores/config-store';
 import { useNavigationStore } from '@/app/stores/navigation-store';
-import { authSelectors, configSelectors } from '@/app/stores/selectors';
 import { useThemeStore } from '@/app/stores/theme-store';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
 
@@ -32,8 +30,7 @@ export function useSettingsSectionController() {
   } = useTheme();
   const manualTheme = useThemeStore((state) => state.theme);
   const { languageOptions, t } = useI18n();
-  const config = useAuth(authSelectors.config);
-  const clearConfig = useConfig(configSelectors.clearConfig);
+  const hassUrl = useAuthBaseUrl();
   const {
     disableAnimations,
     effectsQuality,
@@ -94,7 +91,6 @@ export function useSettingsSectionController() {
     handleRestartOnboarding,
   } = useSettingsSectionActions({
     t,
-    clearConfig,
     setWallpaper,
     setActiveSection,
     setCurrentRoom,
@@ -105,7 +101,7 @@ export function useSettingsSectionController() {
 
   return {
     ambientLightBleed,
-    config,
+    config: hassUrl ? { url: hassUrl } : null,
     customPrimaryColor,
     disableAnimations,
     effectsQuality,

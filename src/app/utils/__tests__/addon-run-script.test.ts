@@ -3,50 +3,36 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const runScript = readFileSync(join(process.cwd(), 'addons/navet/run.sh'), 'utf8');
-const shellExpansionStart = '$' + '{';
-
 describe('Home Assistant add-on run script', () => {
-  it('keeps blank hass_url blank so users can enter a browser-reachable Home Assistant URL', () => {
-    expect(runScript).toContain(`HASS_URL_JS="${shellExpansionStart}HASS_URL//\\\\/\\\\\\\\}"`);
+  it('does not read Home Assistant URL or token from add-on options', () => {
+    expect(runScript).not.toContain("bashio::config 'hass_url'");
+    expect(runScript).not.toContain("bashio::config 'token'");
+    expect(runScript).not.toContain('HASS_TOKEN_JS');
   });
 
   it('defaults the add-on proxy upstream to the internal Home Assistant Core endpoint', () => {
-    expect(runScript).toContain(
-      `RESOLVED_HASS_URL="${shellExpansionStart}HASS_URL:-http://homeassistant:8123}"`
-    );
-  });
-
-  it('maps the old Supervisor Core URL to the user-token Home Assistant endpoint', () => {
-    expect(runScript).toContain(
-      `if [[ "${shellExpansionStart}RESOLVED_HASS_URL}" == "http://supervisor/core" ]]; then`
-    );
     expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant:8123"');
   });
 
-  it('normalizes configured Home Assistant URLs before writing proxy targets', () => {
-    expect(runScript).toContain(`RESOLVED_HASS_URL="${shellExpansionStart}RESOLVED_HASS_URL%/}"`);
-  });
-
   it('uses the resolved Home Assistant URL in nginx proxy_pass only', () => {
-    expect(runScript).toContain(`proxy_pass ${shellExpansionStart}RESOLVED_HASS_URL}/;`);
-    expect(runScript).not.toContain(`proxy_pass ${shellExpansionStart}HASS_URL}/;`);
+    expect(runScript).toContain(`proxy_pass \${RESOLVED_HASS_URL}/;`);
+    expect(runScript).not.toContain(`proxy_pass \${HASS_URL}/;`);
   });
 
   it('always emits the Home Assistant proxy location for add-on ingress assets and media', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
-    expect(runScript).not.toContain(`if [[ -n "${shellExpansionStart}RESOLVED_HASS_URL}" ]]; then`);
+    expect(runScript).not.toContain(`if [[ -n "\${RESOLVED_HASS_URL}" ]]; then`);
   });
 
-  it('keeps websocket auth on the Home Assistant websocket message', () => {
+  it('keeps websocket proxy auth server-side when Supervisor provides a token', () => {
     const websocketLocation = runScript.slice(
       runScript.indexOf('location = /__navet_ha_proxy__/api/websocket'),
       runScript.indexOf('location /__navet_ha_proxy__/')
     );
 
-    expect(websocketLocation).toContain(
-      `proxy_pass ${shellExpansionStart}RESOLVED_HASS_URL}/api/websocket;`
-    );
-    expect(websocketLocation).not.toContain('proxy_set_header Authorization');
+    expect(websocketLocation).toContain(`proxy_pass \${RESOLVED_HASS_URL}/api/websocket;`);
+    expect(runScript).toContain('proxy_set_header Authorization "Bearer ');
+    expect(websocketLocation).toContain(`\${PROXY_AUTH_DIRECTIVE}`);
   });
 
   it('strips forwarded proxy headers from Home Assistant proxy requests', () => {
@@ -57,12 +43,7 @@ describe('Home Assistant add-on run script', () => {
     expect(runScript).toContain('proxy_set_header X-Real-IP "";');
   });
 
-  it('rejects tokens with spaces or line breaks before writing runtime config', () => {
-    expect(runScript).toContain(
-      `if [[ "${shellExpansionStart}HASS_TOKEN}" =~ [[:space:][:cntrl:]] ]]; then`
-    );
-    expect(runScript).toContain(
-      'token must be a Home Assistant long-lived access token without spaces or line breaks'
-    );
+  it('does not write Home Assistant tokens into frontend runtime config', () => {
+    expect(runScript).not.toContain('hassToken');
   });
 });

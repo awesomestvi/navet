@@ -1,21 +1,31 @@
 import { getRuntimeConfig } from '../config/runtime-config';
-import type { SessionConfig } from '../session/session';
 
 const DEFAULT_HOME_ASSISTANT_PROXY_PATH = '/__navet_ha_proxy__';
 const HOME_ASSISTANT_INGRESS_PREFIX = '/api/hassio_ingress/';
+
+export interface HomeAssistantConnectionTarget {
+  runtime?: string;
+  hassUrl: string;
+}
 
 function normalizeUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export function isRuntimeHostedHomeAssistantSession(config: SessionConfig): boolean {
+export function isRuntimeHostedHomeAssistantSession(
+  config: HomeAssistantConnectionTarget
+): boolean {
   const runtimeConfig = getRuntimeConfig();
+
+  if (config.runtime === 'ha-ingress') {
+    return true;
+  }
 
   if (!runtimeConfig.hassUrl) {
     return false;
   }
 
-  return normalizeUrl(config.url) === normalizeUrl(runtimeConfig.hassUrl);
+  return normalizeUrl(config.hassUrl) === normalizeUrl(runtimeConfig.hassUrl);
 }
 
 function getIngressBasePathFromPathname(pathname: string): string | null {
@@ -115,11 +125,11 @@ export function resolveAddonLocalEndpointUrl(path: string): string {
   return `${window.location.origin}${resolvedPath}`;
 }
 
-export function resolveHomeAssistantConnectionUrl(config: SessionConfig): string {
+export function resolveHomeAssistantConnectionUrl(config: HomeAssistantConnectionTarget): string {
   const runtimeConfig = getRuntimeConfig();
 
   if (!isRuntimeHostedHomeAssistantSession(config)) {
-    return config.url;
+    return config.hassUrl;
   }
 
   const proxyBasePath = runtimeConfig.proxyBaseUrl ?? DEFAULT_HOME_ASSISTANT_PROXY_PATH;

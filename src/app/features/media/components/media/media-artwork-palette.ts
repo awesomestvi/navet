@@ -258,9 +258,9 @@ async function samplePaletteFromImageUrl(imageUrl: string): Promise<MediaArtwork
   return createPaletteFromImageData(imageData);
 }
 
-async function fetchArtworkObjectUrl(imageUrl: string, token?: string): Promise<string> {
+async function fetchArtworkObjectUrl(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    credentials: 'same-origin',
     mode: 'cors',
   });
   if (!response.ok) throw new Error(`Failed to fetch artwork: ${response.status}`);
@@ -269,18 +269,29 @@ async function fetchArtworkObjectUrl(imageUrl: string, token?: string): Promise<
   return URL.createObjectURL(blob);
 }
 
+function isSameOriginUrl(imageUrl: string): boolean {
+  if (typeof window === 'undefined') {
+    return imageUrl.startsWith('/');
+  }
+
+  try {
+    return new URL(imageUrl, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveArtworkPalette(
   imageUrl: string,
-  hassUrl?: string,
-  token?: string
+  hassUrl?: string
 ): Promise<MediaArtworkPalette | null> {
   if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return samplePaletteFromImageUrl(imageUrl).catch(() => null);
   }
 
-  if (!import.meta.env.DEV && isMediaPlayerProxyUrl(imageUrl)) {
+  if (isMediaPlayerProxyUrl(imageUrl)) {
     const proxiedUrl = resolveHomeAssistantProxyUrl(imageUrl, hassUrl);
-    if (!proxiedUrl || proxiedUrl === imageUrl) return null;
+    if (!proxiedUrl || (!isSameOriginUrl(proxiedUrl) && proxiedUrl === imageUrl)) return null;
     const objectUrl = await fetchArtworkObjectUrl(proxiedUrl).catch(() => null);
     if (!objectUrl) return null;
     try {
@@ -293,7 +304,7 @@ export async function resolveArtworkPalette(
   const directPalette = await samplePaletteFromImageUrl(imageUrl).catch(() => null);
   if (directPalette) return directPalette;
 
-  const objectUrl = await fetchArtworkObjectUrl(imageUrl, token).catch(() => null);
+  const objectUrl = await fetchArtworkObjectUrl(imageUrl).catch(() => null);
   if (!objectUrl) return null;
   try {
     return await samplePaletteFromImageUrl(objectUrl);

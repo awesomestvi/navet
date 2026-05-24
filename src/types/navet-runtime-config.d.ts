@@ -1,6 +1,5 @@
 interface NavetRuntimeConfig {
   hassUrl?: string;
-  hassToken?: string;
   dashboardConfigUrl?: string;
   proxyBaseUrl?: string;
 }

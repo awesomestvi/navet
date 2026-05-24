@@ -14,11 +14,11 @@ import {
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
-import { useAuth } from '@/app/stores/auth-store';
-import { authSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { BoundsFitter } from './map-bounds-fitter';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { buildMarkerIcon } from './map-marker-icon';
@@ -73,7 +73,7 @@ export const MapWidget = memo(function MapWidget({
   const theme = useThemeMode();
   const primaryColor = usePrimaryColor();
   const { t } = useI18n();
-  const authConfig = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
       disableAnimations: state.disableAnimations,
@@ -130,11 +130,11 @@ export const MapWidget = memo(function MapWidget({
         entityPicture: marker.entityPicture
           ? (resolveHomeAssistantProxyUrl(
               getCompactHomeAssistantImageUrl(marker.entityPicture),
-              authConfig?.url
+              hassUrl ?? undefined
             ) ?? undefined)
           : undefined,
       })),
-    [authConfig?.url, markers]
+    [hassUrl, markers]
   );
   const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 

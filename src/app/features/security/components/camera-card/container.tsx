@@ -11,9 +11,8 @@ import {
 import { shallow } from 'zustand/shallow';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { authSelectors, homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
   type CameraGo2RtcConfig,
@@ -21,6 +20,7 @@ import {
   useSettingsStore,
 } from '@/app/stores/settings-store';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
@@ -180,7 +180,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   size,
   isEditMode,
 }: CameraCardProps) {
-  const config = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const cameraViewMode = useSettingsStore(settingsSelectors.cameraViewModeForEntity(id));
@@ -205,7 +205,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
   const initialSnapshotUrl = readImageUrl(initialEntityPicture);
   const baseSnapshotUrl = liveEntityPicture
-    ? resolveHomeAssistantImageUrl(liveEntityPicture, config?.url)
+    ? resolveHomeAssistantImageUrl(liveEntityPicture, hassUrl ?? undefined)
     : initialSnapshotUrl;
 
   // Append cache-busting param so refresh forces a new frame from HA
@@ -477,7 +477,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
               entityId={id}
               kind={shouldRenderLiveStream}
               posterUrl={snapshotUrl}
-              homeAssistantUrl={config?.url}
+              homeAssistantUrl={hassUrl ?? undefined}
               go2RtcConfig={go2RtcConfig}
               fitMode="cover"
               onError={handleStreamError}
@@ -522,7 +522,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           isStreamCapable={isStreamCapable}
           frontendStreamTypes={frontendStreamTypes}
           hasGo2RtcFeed={hasGo2RtcFeed}
-          homeAssistantUrl={config?.url}
+          homeAssistantUrl={hassUrl ?? undefined}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onCameraViewModeChange={handleCameraViewModeChange}

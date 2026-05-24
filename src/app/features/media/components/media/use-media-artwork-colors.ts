@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import { useAuth } from '@/app/stores/auth-store';
-import { authSelectors } from '@/app/stores/selectors';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {
@@ -77,7 +75,7 @@ export function useMediaArtworkColors(
   entityId?: string,
   artworkKey?: string
 ) {
-  const authConfig = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
   const requestKey = [entityId, artwork, artworkKey].filter(Boolean).join('::');
 
@@ -116,23 +114,7 @@ export function useMediaArtworkColors(
     const existingRequest = pendingPaletteRequests.get(requestKey);
     const paletteRequest =
       existingRequest ??
-      (async () => {
-        if (entityId) {
-          const thumbnailDataUrl = await fetchMediaThumbnailDataUrl(entityId).catch(() => null);
-          if (thumbnailDataUrl) {
-            const thumbnailPalette = await resolveArtworkPalette(
-              thumbnailDataUrl,
-              authConfig?.url,
-              authConfig?.token
-            ).catch(() => null);
-            if (thumbnailPalette) {
-              return thumbnailPalette;
-            }
-          }
-        }
-
-        return resolveArtworkPalette(artwork, authConfig?.url, authConfig?.token);
-      })().finally(() => {
+      resolveArtworkPalette(artwork, hassUrl ?? undefined).finally(() => {
         pendingPaletteRequests.delete(requestKey);
       });
 
@@ -149,7 +131,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artwork, authConfig?.token, authConfig?.url, entityId, requestKey, theme]);
+  }, [artwork, hassUrl, requestKey, theme]);
 
   return colors;
 }

@@ -23,7 +23,7 @@ Current release: `0.2.1`
   Assistant add-on, or a standalone Docker container connected to your Home Assistant instance via OAuth.
 - **Easy to shape around your home.** Arrange rooms, resize cards, rename widgets, lock cards,
   reorder devices, add widgets, and keep the dashboard focused on the controls you actually use.
-- **Self-hosted by design.** Your Home Assistant URL, token, entity state, and camera feeds stay in
+- **Self-hosted by design.** Your Home Assistant URL, OAuth session, entity state, and camera feeds stay in
   your own environment.
 - **Installable app experience.** Use Navet as a PWA on supported devices for a focused dashboard
   instead of a normal browser tab.
@@ -82,6 +82,26 @@ Review the public Storybook:
 Choose the setup that matches where you want Navet to live. For Home Assistant OS and Supervised
 users, the HACS custom panel path is the recommended Home Assistant-native setup.
 
+### Returning users and OAuth login
+
+Navet no longer uses manually entered Home Assistant long-lived access tokens. If you previously
+configured `hass_url`, `token`, `ha_auth_config`, or `ha-dashboard-config`, those auth values are
+ignored and old browser auth entries are cleared when Navet starts.
+
+What you see depends on how you open Navet:
+
+- **HACS custom panel**: Navet opens inside Home Assistant and uses your existing Home Assistant
+  frontend session. You should not see a separate Navet login screen.
+- **Home Assistant add-on through Ingress**: Navet uses the authenticated Ingress session. The old
+  add-on `hass_url` and `token` options are gone; no manual token is needed.
+- **Add-on direct port `8099` or standalone Docker**: Navet behaves like a separately hosted app.
+  Enter your Home Assistant root URL, approve the OAuth login in Home Assistant, and Navet stores
+  the OAuth session for that Navet instance under `/data`.
+
+Dashboard layout and card preferences are separate from Home Assistant authentication. If you are
+moving to a fresh browser or a new add-on/container data directory, export your Navet dashboard
+config first and import it on first launch with `dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
+
 ### Home Assistant custom panel with HACS
 
 For the native Home Assistant sidebar experience, install Navet as a HACS custom integration. Home
@@ -102,7 +122,7 @@ Assistant custom panel at `/navet` with the bundled dashboard served by Home Ass
 6. Open **Navet** from the Home Assistant sidebar.
 
 Use this path when you want Navet inside Home Assistant itself. Use the add-on or Docker paths below
-only when you want a separately hosted Navet instance with shared runtime configuration.
+only when you want a separately hosted Navet instance.
 
 Existing add-on users can use the HACS custom panel when they want the normal Home Assistant
 sidebar panel experience. The add-on remains available for users who want Ingress or direct port
@@ -129,15 +149,17 @@ custom panel for the simplest Home Assistant-native setup.
 2. Refresh the add-on store.
 3. Install **Navet**.
 4. If you are a returning user, you can set `dashboard_config_url` to your exported Navet
-   dashboard config file. Skip this if you are a new user.
+   dashboard config file. Skip this if you are a new user. Do not add old `hass_url` or `token`
+   values; add-on Ingress now uses the existing Home Assistant session.
 
-5. Start the add-on and open Navet from the Home Assistant sidebar, or use the add-on's `8099`
-   direct-access port for a dashboard view without the Home Assistant sidebar.
+5. Start the add-on and open Navet from the Home Assistant sidebar through Ingress. Ingress uses
+   the existing Home Assistant frontend session, so no Home Assistant URL or token is required.
+   Direct-access port `8099` behaves like a standalone instance and uses OAuth.
 
 The `dashboard_config_url` option lets fresh browsers or Home Assistant companion-app WebViews
 bootstrap the same dashboard instead of starting from onboarding.
-After first launch, Docker and add-on deployments also keep the entered session and dashboard layout
-changes in shared same-origin storage so other browsers can pick them up.
+After first launch, Docker and add-on deployments also keep dashboard layout changes in
+same-origin storage so other browsers can pick them up.
 
 ### Standalone Docker Compose
 
@@ -152,9 +174,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:80"
-    environment:
-      NAVET_HASS_URL: http://homeassistant.local:8123
-      NAVET_HASS_TOKEN: optional-legacy-token-fallback
     volumes:
       - navet-data:/data
 
@@ -202,12 +221,13 @@ docker compose pull
 docker compose up -d
 ```
 
-`NAVET_HASS_TOKEN` is injected into Docker runtime config so Docker deployments can start without
-the login form. Do not expose it in a public static build, Vite client variable, or checked-in file,
-and use a least-privilege Home Assistant token for shared dashboard devices.
+Standalone Docker tries to suggest a Home Assistant base URL from `NAVET_HASS_URL` or common local
+hostnames, then leaves the URL field editable before OAuth starts. Navet redirects to Home Assistant
+OAuth and stores the OAuth access/refresh token bundle in the container's same-origin
+`/__navet_auth__/session` endpoint backed by `/data`, not in frontend runtime configuration.
 `NAVET_DASHBOARD_CONFIG_URL` can point fresh browsers at a Navet dashboard YAML export to restore the
 same layout on first launch.
-Docker and add-on deployments persist ongoing session and dashboard profile sync at `/data`.
+Docker and add-on deployments persist OAuth session/profile data at `/data`.
 
 Before publishing or sharing any hosted build, review the
 [public launch security checklist](docs/PUBLIC_LAUNCH_SECURITY.md).
@@ -221,7 +241,7 @@ Use the source workflow when developing Navet, testing changes, or contributing 
 - Node.js `^20.19.0` or `>=22.12.0`
 - `pnpm`
 - A running Home Assistant instance only when testing live Home Assistant behavior
-- A Home Assistant URL for OAuth login (legacy long-lived tokens are migration fallback only)
+- A Home Assistant URL for OAuth login
 
 ### Install
 
@@ -238,12 +258,12 @@ pnpm dev
 ```
 
 Open the URL Vite prints, usually `http://localhost:5173`. For live Home Assistant testing, enter
-your Home Assistant URL in the onboarding screen and completes Home Assistant OAuth authorization-code login. The app stores access + refresh tokens
-that session in browser storage, so contributors do not need a repo-root `.env` file for normal
-development.
+your Home Assistant URL on the connect screen and complete Home Assistant OAuth authorization-code
+login. Contributors do not need a repo-root `.env` file for normal development.
 
 Use `.env.example` only when you need runtime defaults for Docker or production-style preview flows.
-`NAVET_HASS_URL` and `NAVET_HASS_TOKEN` are deployment/runtime values, not required source setup.
+`NAVET_HASS_URL` is optional deployment/runtime metadata, not required source setup. Long-lived
+tokens are not part of the default development or Docker flow.
 
 For a production-style local preview:
 
@@ -314,12 +334,11 @@ Branding is separate from the code license. See:
 
 - **HACS custom panel (`ha-panel`)**: Uses Home Assistant frontend session automatically; no URL/token prompt.
 - **Home Assistant add-on Ingress (`ha-ingress`)**: Uses Ingress-hosted Home Assistant session automatically; no URL/token prompt.
-- **Standalone Docker (`standalone-oauth`)**: User enters Home Assistant base URL, then Navet redirects to Home Assistant OAuth and stores short-lived access + refresh tokens.
-- **Legacy fallback (`legacy-token`)**: Optional migration-only URL + long-lived token path.
+- **Standalone Docker (`standalone-oauth`)**: Navet suggests a Home Assistant base URL when discovery succeeds, the user can edit it, then Navet redirects to Home Assistant OAuth and stores short-lived access + refresh tokens.
 
 ### Troubleshooting
 - OAuth redirect mismatch: verify redirect URI matches the Navet origin exactly (scheme, host, and port).
 - Invalid Home Assistant URL: use the root URL (for example `https://homeassistant.local:8123`).
 - Expired/invalid refresh token: sign out and re-run OAuth login.
 - Ingress unavailable: open Navet from Home Assistant sidebar Ingress entry or switch to panel mode.
-- Legacy token migration: old `ha_auth_config` and `ha-dashboard-config` entries are cleared during auth initialization.
+- Token migration: old `ha_auth_config` and `ha-dashboard-config` entries are cleared during auth initialization.

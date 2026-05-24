@@ -1,8 +1,7 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAppStores } from '@/test/store-reset';
 import App from '../App';
-import { STORAGE_KEYS } from '../constants/storage-keys';
 
 const CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
@@ -28,7 +27,8 @@ type StubHomeAssistantService = {
   entityRegistry: Array<{ entity_id: string; area_id?: string | null }>;
 };
 
-const { homeAssistantServiceStub } = vi.hoisted(() => ({
+const { getAuthAppMock, homeAssistantServiceStub } = vi.hoisted(() => ({
+  getAuthAppMock: vi.fn(),
   homeAssistantServiceStub: {
     listeners: {
       entities: new Set<(payload: Record<string, unknown> | null) => void>(),
@@ -120,6 +120,10 @@ vi.mock('../components/shared/pwa-update-prompt', () => ({
   PwaUpdatePrompt: () => null,
 }));
 
+vi.mock('home-assistant-js-websocket', () => ({
+  getAuth: getAuthAppMock,
+}));
+
 describe('App Home Assistant connection recovery', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -143,6 +147,23 @@ describe('App Home Assistant connection recovery', () => {
     ) {
       this.connected = true;
     });
+    getAuthAppMock.mockReset();
+    getAuthAppMock.mockResolvedValue({
+      data: {
+        hassUrl: 'http://192.168.68.71:8123',
+        clientId: 'http://localhost/',
+        expires: Date.now() + 3_600_000,
+        refresh_token: 'refresh-token',
+        access_token: 'access-token',
+        expires_in: 3600,
+      },
+      wsUrl: 'ws://192.168.68.71:8123/api/websocket',
+      accessToken: 'access-token',
+      expired: false,
+      refreshAccessToken: vi.fn(),
+      revoke: vi.fn(),
+    });
+    window.history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
@@ -157,9 +178,34 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+      runtime: 'standalone-oauth',
       hassUrl: 'http://192.168.68.71:8123',
-      token: 'token',
+      auth: expect.any(Object),
+      expiresAt: expect.any(Number),
     });
+  });
+
+  it('completes OAuth callback startup without returning to the URL login form', async () => {
+    vi.useRealTimers();
+    setNoStoredSession();
+    const clientId = `${window.location.origin}/`;
+    const state = window.btoa(JSON.stringify({ hassUrl: 'http://192.168.68.71:8123', clientId }));
+    window.history.replaceState({}, '', `/?auth_callback=1&code=oauth-code&state=${state}`);
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
+    expect(screen.getByText('dashboard')).toBeInTheDocument();
+    expect(getAuthAppMock).toHaveBeenCalledWith({
+      hassUrl: 'http://192.168.68.71:8123',
+      clientId,
+      loadTokens: expect.any(Function),
+      saveTokens: expect.any(Function),
+      limitHassInstance: true,
+    });
+    expect(window.location.search).toBe('');
   });
 
   it('shows recovery when the saved Home Assistant URL does not connect within the grace period', async () => {
@@ -214,19 +260,18 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(2);
     expect(homeAssistantServiceStub.authenticate).toHaveBeenLastCalledWith({
+      runtime: 'standalone-oauth',
       hassUrl: 'http://192.168.68.71:8123',
-      token: 'token',
+      auth: expect.any(Object),
+      expiresAt: expect.any(Number),
     });
   });
 
   it('keeps Home Assistant local storage when returning to login from recovery', async () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
     localStorage.setItem('hassTokens', '{"data":"home-assistant-session"}');
-    localStorage.setItem(
-      STORAGE_KEYS.authConfig,
-      '{"url":"http://old.local:8123","token":"token"}'
-    );
-    localStorage.setItem(STORAGE_KEYS.haConfig, '{"url":"http://old.local:8123","token":"token"}');
+    localStorage.setItem('ha_auth_config', '{"url":"http://old.local:8123","token":"token"}');
+    localStorage.setItem('ha-dashboard-config', '{"url":"http://old.local:8123","token":"token"}');
     setAuthenticatedSession();
 
     await act(async () => {
@@ -241,19 +286,27 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(screen.getByText('login')).toBeInTheDocument();
     expect(localStorage.getItem('hassTokens')).toBe('{"data":"home-assistant-session"}');
-    expect(localStorage.getItem(STORAGE_KEYS.authConfig)).toBeNull();
-    expect(localStorage.getItem(STORAGE_KEYS.haConfig)).toBeNull();
+    expect(localStorage.getItem('ha_auth_config')).toBeNull();
+    expect(localStorage.getItem('ha-dashboard-config')).toBeNull();
   });
 });
 
 function setAuthenticatedSession() {
-  localStorage.setItem(
-    'navet_auth_session',
-    JSON.stringify({
-      hassUrl: 'http://192.168.68.71:8123',
-      accessToken: 'token',
-      refreshToken: 'refresh-token',
-      expiresAt: Date.now() + 3_600_000,
-    })
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        hassUrl: 'http://192.168.68.71:8123',
+        clientId: 'http://localhost/',
+        expires: Date.now() + 3_600_000,
+        refresh_token: 'refresh-token',
+        access_token: 'access-token',
+        expires_in: 3600,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
   );
+}
+
+function setNoStoredSession() {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
 }
