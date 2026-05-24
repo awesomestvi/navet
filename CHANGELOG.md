@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.3 - 2026-05-24
+
+Navet moves Home Assistant sign-in to OAuth and hardens upgrades from older token-based setups.
+
+## New
+
+- Home Assistant login now uses OAuth instead of the legacy long-lived token flow.
+
+## Fixed
+
+- Importing an older dashboard config no longer breaks the OAuth-based app session.
+- Add-on ingress websocket routing is more reliable after Home Assistant restarts.
+- Add-on installs tolerate stale `hass_url` and `token` options left over from older releases.
+
 ## 0.2.2 - 2026-05-22
 
 Navet improves Home Assistant add-on login and ingress reliability.
