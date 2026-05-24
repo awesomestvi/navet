@@ -22,5 +22,5 @@ No Home Assistant URL or manual token is configured in the add-on.
 
 Returning users: the old add-on `hass_url` and `token` options have been removed. If you open Navet
 from the Home Assistant sidebar, you should not see a separate Navet login screen. If you open the
-direct `8099` port instead, Navet is outside Ingress and will ask you to sign in with Home Assistant
-OAuth.
+optional direct port instead, Navet is outside Ingress and will ask you to sign in with
+Home Assistant OAuth. The direct host port is disabled by default to avoid add-on start conflicts.
