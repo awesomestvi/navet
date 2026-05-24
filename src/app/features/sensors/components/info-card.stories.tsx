@@ -1,19 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
-import { SensorCard } from '@/app/features/sensors';
+import { InfoCard } from '@/app/features/sensors';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
 
-function InfoCardStory(args: Omit<ComponentProps<typeof SensorCard>, 'onSizeChange'>) {
+function InfoCardStory(args: Omit<ComponentProps<typeof InfoCard>, 'onSizeChange'>) {
   return (
     <EntityCardStoryFrame size={args.size ?? 'medium'}>
-      <SensorCard {...args} onSizeChange={noopCardSizeChange} />
+      <InfoCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
 }
 
 const meta = {
-  title: 'Cards/Custom/Info Card',
+  title: 'Cards/Entity/Info',
   component: InfoCardStory,
   tags: ['autodocs'],
   argTypes: {
@@ -23,7 +23,17 @@ const meta = {
     },
     icon: {
       control: 'inline-radio',
-      options: ['gauge', 'trend-up', 'trend-down'],
+      options: [
+        'gauge',
+        'trend-up',
+        'trend-down',
+        'thermometer',
+        'droplets',
+        'wind',
+        'motion',
+        'window',
+        'alert',
+      ],
     },
   },
   args: {
@@ -41,7 +51,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Read-only custom card for showing a single sensor-like metric, status, or compact diagnostic value. Use this for display-only entities and informational surfaces rather than interactive controls.',
+          'Normal read-only entity card for Home Assistant sensor and binary_sensor values. Use this for compact numeric readings, timestamps, and passive status sensors such as motion, leak, and window state.',
       },
     },
   },
@@ -64,6 +74,150 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const Temperature: Story = {
+  args: {
+    id: 'sensor.living_room_temperature',
+    name: 'Temperature',
+    room: 'Living Room',
+    value: '21.8',
+    unit: '°C',
+    icon: 'thermometer',
+    subtitle: 'temperature',
+    deviceClass: 'temperature',
+    size: 'small',
+  },
+};
+
+export const Humidity: Story = {
+  args: {
+    id: 'sensor.living_room_humidity',
+    name: 'Humidity',
+    room: 'Living Room',
+    value: '48',
+    unit: '%',
+    icon: 'droplets',
+    subtitle: 'humidity',
+    deviceClass: 'humidity',
+    size: 'small',
+  },
+};
+
+export const AirQuality: Story = {
+  args: {
+    id: 'sensor.bedroom_co2',
+    name: 'Air Quality',
+    room: 'Bedroom',
+    value: 'Excellent',
+    unit: '',
+    icon: 'wind',
+    subtitle: 'carbon dioxide',
+    deviceClass: 'carbon_dioxide',
+    size: 'small',
+  },
+};
+
+export const Pressure: Story = {
+  args: {
+    id: 'sensor.outdoor_pressure',
+    name: 'Outdoor Pressure',
+    room: 'Outdoor',
+    value: '1009',
+    unit: 'hPa',
+    icon: 'gauge',
+    subtitle: 'pressure',
+    deviceClass: 'pressure',
+    size: 'small',
+  },
+};
+
+export const Timestamp: Story = {
+  args: {
+    id: 'sensor.sun_next_setting',
+    name: 'Sun Next setting',
+    room: 'Unassigned',
+    value: '19:29',
+    unit: '',
+    icon: 'gauge',
+    subtitle: 'timestamp',
+    deviceClass: 'timestamp',
+    size: 'small',
+  },
+};
+
+export const Motion: Story = {
+  args: {
+    id: 'binary_sensor.hall_motion',
+    name: 'Motion Sensor',
+    room: 'Hallway',
+    value: 'Clear',
+    unit: '',
+    icon: 'motion',
+    subtitle: 'motion',
+    deviceClass: 'motion',
+    status: 'clear',
+    size: 'small',
+  },
+};
+
+export const WaterLeak: Story = {
+  args: {
+    id: 'binary_sensor.bathroom_leak',
+    name: 'Water Leak',
+    room: 'Bathroom',
+    value: 'Clear',
+    unit: '',
+    icon: 'droplets',
+    subtitle: 'moisture',
+    deviceClass: 'moisture',
+    status: 'clear',
+    size: 'small',
+  },
+};
+
+export const WindowSensor: Story = {
+  args: {
+    id: 'binary_sensor.bedroom_window',
+    name: 'Window Sensor',
+    room: 'Bedroom',
+    value: 'Closed',
+    unit: '',
+    icon: 'window',
+    subtitle: 'window',
+    deviceClass: 'window',
+    status: 'clear',
+    size: 'small',
+  },
+};
+
+export const Unavailable: Story = {
+  args: {
+    id: 'sensor.garage_temperature',
+    name: 'Garage Temperature',
+    room: 'Garage',
+    value: 'unavailable',
+    unit: '',
+    icon: 'thermometer',
+    subtitle: 'temperature',
+    deviceClass: 'temperature',
+    status: 'unavailable',
+    size: 'small',
+  },
+};
+
+export const LongName: Story = {
+  args: {
+    id: 'sensor.utility_room_heat_pump_total_energy_today',
+    name: 'Utility Room Heat Pump Total Energy Today',
+    room: 'Utility Room',
+    value: '12.4',
+    unit: 'kWh',
+    icon: 'zap',
+    subtitle: 'energy',
+    deviceClass: 'energy',
+    size: 'small',
+  },
+};
 
 export const Docs: Story = {
   parameters: {

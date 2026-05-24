@@ -47,4 +47,51 @@ describe('useHADevices', () => {
     ]);
     expect(result.current.switches).toEqual([]);
   });
+
+  it('maps sensor and binary sensor entities as normal sensor devices', async () => {
+    await resetAppStores();
+    homeAssistantStore.setState({
+      entities: {
+        'sensor.kitchen_temperature': createEntity('sensor.kitchen_temperature', '21.4', {
+          friendly_name: 'Kitchen Temperature',
+          device_class: 'temperature',
+          unit_of_measurement: '°C',
+        }),
+        'binary_sensor.kitchen_motion': createEntity('binary_sensor.kitchen_motion', 'on', {
+          friendly_name: 'Kitchen Motion',
+          device_class: 'motion',
+        }),
+      },
+      entityRegistry: [
+        { entity_id: 'sensor.kitchen_temperature', area_id: 'kitchen' },
+        { entity_id: 'binary_sensor.kitchen_motion', area_id: 'kitchen' },
+      ],
+      areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
+    });
+
+    const { result } = renderHookWithProviders(() => useHADevices());
+
+    expect(result.current.sensors).toEqual([
+      expect.objectContaining({
+        id: 'sensor.kitchen_temperature',
+        name: 'Kitchen Temperature',
+        room: 'Kitchen',
+        value: '21.4',
+        unit: '°C',
+        icon: 'thermometer',
+        deviceClass: 'temperature',
+        status: 'measurement',
+      }),
+      expect.objectContaining({
+        id: 'binary_sensor.kitchen_motion',
+        name: 'Kitchen Motion',
+        room: 'Kitchen',
+        value: 'Detected',
+        unit: '',
+        icon: 'motion',
+        deviceClass: 'motion',
+        status: 'active',
+      }),
+    ]);
+  });
 });

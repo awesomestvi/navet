@@ -1,6 +1,10 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ClimateDevice } from '../../types/device.types';
-import { parseNumberish, resolveClimateTemperatureUnit } from '../ha-entity-utils';
+import {
+  parseNumberish,
+  resolveClimateTargetTemperature,
+  resolveClimateTemperatureUnit,
+} from '../ha-entity-utils';
 
 function parseSupportedHvacModes(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {
@@ -34,15 +38,16 @@ export function mapClimateDevice(
   room: string,
   fallbackTemperatureUnit?: unknown
 ): ClimateDevice {
+  const targetTemperature = resolveClimateTargetTemperature(entity);
+
   return {
     id: entityId,
     name,
     room,
     size: 'medium',
-    temperature: parseFloat(entity.attributes?.temperature) || 0,
+    temperature: targetTemperature ?? parseNumberish(entity.attributes?.current_temperature) ?? 0,
     currentTemperature:
-      parseNumberish(entity.attributes?.current_temperature) ??
-      (parseFloat(entity.attributes?.temperature ?? '0') || 0),
+      parseNumberish(entity.attributes?.current_temperature) ?? targetTemperature ?? 0,
     temperatureUnit: resolveClimateTemperatureUnit(entity, fallbackTemperatureUnit),
     mode: resolveClimateMode(entity),
     action:

@@ -84,6 +84,29 @@ describe('mapClimateDevice', () => {
     expect(device.temperatureUnit).toBe('fahrenheit');
   });
 
+  it('maps heat-cool range target temperatures without falling back to zero', () => {
+    const device = mapClimateDevice(
+      'climate.nest',
+      createClimateEntity(
+        {
+          current_temperature: 23,
+          target_temp_low: 20,
+          target_temp_high: 24,
+          hvac_action: 'cooling',
+          hvac_modes: ['heat', 'cool', 'heat_cool', 'off'],
+        },
+        'climate.nest',
+        'heat_cool'
+      ),
+      'Nest',
+      'Hallway'
+    );
+
+    expect(device.temperature).toBe(24);
+    expect(device.currentTemperature).toBe(23);
+    expect(device.mode).toBe('heat_cool');
+  });
+
   it('ignores malformed HVAC mode entries', () => {
     const device = mapClimateDevice(
       'climate.hallway',

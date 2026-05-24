@@ -13,7 +13,6 @@ const CUSTOM_WIDGET_TYPES = [
   'battery overview',
   'action',
 ] as const;
-const CUSTOM_STORY_TYPES = ['info card'] as const;
 
 function toTitleCase(value: string) {
   return value.replace(/-/g, ' ').replace(/\b\w/g, (match) => match.toUpperCase());
@@ -36,8 +35,8 @@ function EntityCardCatalogPage() {
         </h1>
         <p className={`mt-2 text-sm ${surface.textSecondary}`}>
           These are the dashboard entity card types registered in the card renderer. This catalog is
-          for runtime registry coverage, with reusable Storybook-only surfaces like the Info Card
-          grouped alongside custom cards instead of entity-card coverage.
+          for runtime registry coverage and links entity-card ownership back to feature-level
+          Storybook coverage.
         </p>
       </header>
 
@@ -97,21 +96,6 @@ function EntityCardCatalogPage() {
             </article>
           ))}
         </div>
-        <div className={`mt-3 border-t pt-3 ${surface.border}`}>
-          <p className={`text-xs font-medium uppercase tracking-[0.14em] ${surface.textMuted}`}>
-            Storybook-only custom surfaces
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {CUSTOM_STORY_TYPES.map((type) => (
-              <span
-                key={type}
-                className={`rounded-full border px-3 py-1.5 text-xs ${surface.border} ${surface.textSecondary}`}
-              >
-                {toTitleCase(type)}
-              </span>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section className={`rounded-3xl border p-4 ${surface.panelMuted} ${surface.border}`}>
@@ -146,7 +130,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Runtime inventory of dashboard card types. Use this to track which cards are runtime registered while also surfacing Storybook-only custom cards like the Info Card alongside the custom-card family.',
+          'Runtime inventory of dashboard card types. Use this to track which cards are runtime registered and where entity-card story coverage should live.',
       },
     },
   },

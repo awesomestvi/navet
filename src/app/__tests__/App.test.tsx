@@ -98,6 +98,8 @@ vi.mock('../services/home-assistant.service', () => ({
 }));
 
 vi.mock('../features/dashboard', async () => {
+  const { useLogout } =
+    await vi.importActual<typeof import('../hooks/use-logout')>('../hooks/use-logout');
   const { useStoreWithEqualityFn } =
     await vi.importActual<typeof import('zustand/traditional')>('zustand/traditional');
   const { homeAssistantStore } = await vi.importActual<
@@ -107,7 +109,15 @@ vi.mock('../features/dashboard', async () => {
   return {
     DashboardPage: () => {
       const connecting = useStoreWithEqualityFn(homeAssistantStore, (state) => state.connecting);
-      return <main>{connecting ? 'Connecting to Home Assistant...' : 'dashboard'}</main>;
+      const logout = useLogout();
+      return (
+        <main>
+          {connecting ? 'Connecting to Home Assistant...' : 'dashboard'}
+          <button type="button" onClick={logout}>
+            Logout
+          </button>
+        </main>
+      );
     },
   };
 });
@@ -318,6 +328,32 @@ describe('App Home Assistant connection recovery', () => {
     expect(localStorage.getItem('hassTokens')).toBe('{"data":"home-assistant-session"}');
     expect(localStorage.getItem('ha_auth_config')).toBeNull();
     expect(localStorage.getItem('ha-dashboard-config')).toBeNull();
+  });
+
+  it('keeps stale Home Assistant auth errors hidden after logout', async () => {
+    vi.useRealTimers();
+    setAuthenticatedSession();
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    const staleErrorListeners = [...homeAssistantServiceStub.listeners.error];
+
+    fireEvent.click(screen.getByRole('button', { name: /^logout$/i }));
+
+    await waitFor(() => expect(screen.getByText('login')).toBeInTheDocument());
+
+    act(() => {
+      staleErrorListeners.forEach((listener) => {
+        listener({
+          message: 'Invalid Home Assistant authentication. Sign in again to refresh the session.',
+        });
+      });
+    });
+
+    expect(screen.getByText('login')).toBeInTheDocument();
+    expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument();
   });
 });
 

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { useSettingsStore } from '@/app/stores';
+import type { DeviceWithType } from '@/app/types/device.types';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import type { DashboardController } from '../../hooks/use-dashboard-controller';
@@ -42,7 +43,63 @@ describe('DashboardSectionRouter kiosk mode', () => {
     expect(screen.getByText('Home dashboard')).toBeInTheDocument();
     expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
   });
+
+  it('renders the climate dashboard route', () => {
+    const controller = createController();
+    controller.activeSection = 'climate';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(screen.getByText('No Climate Devices')).toBeInTheDocument();
+    expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
+  });
+
+  it('groups climate dashboard cards by type', () => {
+    const controller = createController();
+    const livingRoomClimate = createDevice({
+      id: 'climate.living_room',
+      name: 'Living Room Thermostat',
+      room: 'Living Room',
+      type: 'climate',
+    });
+    const kitchenHumidity = createDevice({
+      id: 'sensor.kitchen_humidity',
+      name: 'Kitchen Humidity',
+      room: 'Kitchen',
+      type: 'sensors',
+      deviceClass: 'humidity',
+      value: '43',
+      unit: '%',
+    });
+
+    controller.activeSection = 'climate';
+    controller.deviceMap = new Map([
+      [livingRoomClimate.id, livingRoomClimate],
+      [kitchenHumidity.id, kitchenHumidity],
+    ]);
+    controller.availableDeviceMap = controller.deviceMap;
+    controller.cardOrders = {
+      'Living Room': [livingRoomClimate.id],
+      Kitchen: [kitchenHumidity.id],
+    };
+    controller.rooms = [ALL_ROOMS_ID, 'Living Room', 'Kitchen'];
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(screen.getByRole('heading', { name: 'Thermostats & HVAC' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();
+  });
 });
+
+function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' | 'type'>) {
+  return {
+    name: overrides.id,
+    room: 'Living Room',
+    size: 'small',
+    ...overrides,
+  } as DeviceWithType;
+}
 
 function createController(): DashboardController {
   return {
@@ -76,6 +133,7 @@ function createController(): DashboardController {
     handleRemoveEntity: vi.fn(),
     handleUpdateCard: vi.fn(),
     hiddenEntityIds: [],
+    hiddenRoomNames: [],
     homeLayout: {
       cardIds: [],
       cardSectionAssignments: {},
@@ -100,6 +158,7 @@ function createController(): DashboardController {
     onOpenDeviceSettingsDialog: vi.fn(),
     onOpenOnboarding: vi.fn(),
     onSetAllViewGrouping: vi.fn(),
+    onSetHiddenRoomNames: vi.fn(),
     onSetRoomOrder: vi.fn(),
     onToggleEditMode: vi.fn(),
     onboardingCompleted: true,

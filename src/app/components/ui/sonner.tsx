@@ -1,5 +1,5 @@
 import { CheckCircle2, Info, LoaderCircle, OctagonAlert, TriangleAlert, X } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { getThemeFocusRingClassName } from '@/app/components/system/tokens';
@@ -8,6 +8,7 @@ import { useTheme } from '@/app/hooks';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme, accentColor } = useTheme();
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const surface = getThemeSurfaceTokens(theme);
   const focusRing = getThemeFocusRingClassName(theme);
   const defaultToastClassName = cn(
@@ -21,12 +22,24 @@ const Toaster = ({ ...props }: ToasterProps) => {
     focusRing
   );
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const updateViewportMode = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateViewportMode();
+    mediaQuery.addEventListener('change', updateViewportMode);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateViewportMode);
+    };
+  }, []);
+
   return (
     <Sonner
       theme={theme === 'light' ? 'light' : 'dark'}
-      position="top-center"
-      expand
-      visibleToasts={4}
+      position={isMobileViewport ? 'bottom-center' : 'top-center'}
+      expand={!isMobileViewport}
+      visibleToasts={isMobileViewport ? 2 : 4}
       closeButton
       className="toaster group"
       icons={{
@@ -115,7 +128,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as CSSProperties,
       }}
       offset={16}
-      mobileOffset={16}
+      mobileOffset={88}
       {...props}
     />
   );

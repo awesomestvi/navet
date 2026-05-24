@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Compass, DoorOpen, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Compass, DoorOpen, type LucideIcon, Search, X } from 'lucide-react';
 import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { HeaderSearchInput } from '@/app/components/layout/header-search-input';
@@ -65,15 +65,12 @@ export const Sidebar = memo(function Sidebar({
 }: SidebarProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const { activeSection, lastNonHomeSection, recentSections, setActiveSection } =
-    useNavigationStore(
-      useShallow((state) => ({
-        activeSection: state.activeSection,
-        lastNonHomeSection: state.lastNonHomeSection,
-        recentSections: state.recentSections,
-        setActiveSection: state.setActiveSection,
-      }))
-    );
+  const { activeSection, setActiveSection } = useNavigationStore(
+    useShallow((state) => ({
+      activeSection: state.activeSection,
+      setActiveSection: state.setActiveSection,
+    }))
+  );
   const { effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
       effectsQuality: state.effectsQuality,
@@ -208,7 +205,7 @@ export const Sidebar = memo(function Sidebar({
 
       {/* Mobile Bottom Navigation */}
       <div
-        className="mobile-bottom-dock-offset fixed inset-x-0 z-50 px-[1.3125rem] transition-[transform,opacity] duration-300 md:hidden"
+        className="mobile-bottom-dock-offset fixed inset-x-0 z-50 flex justify-center px-[1.3125rem] transition-[transform,opacity] duration-300 md:hidden"
         style={{
           opacity: isMobileNavHidden ? 0 : 1,
           pointerEvents: isMobileNavHidden ? 'none' : 'auto',
@@ -218,7 +215,10 @@ export const Sidebar = memo(function Sidebar({
         }}
       >
         {isMobileSearchOpen ? (
-          <div className="flex items-center gap-[0.625rem]">
+          <div
+            className={`flex w-full max-w-[26rem] items-center gap-2 overflow-hidden rounded-[22px] border-transparent p-0.75 ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+            style={{ boxShadow: mobileDockShadow }}
+          >
             <div className="min-w-0 flex-1">
               <HeaderSearchInput
                 activeColorValue={activeColorValue ?? 'currentColor'}
@@ -245,145 +245,129 @@ export const Sidebar = memo(function Sidebar({
               size="small"
               onClick={handleToggleMobileSearch}
               label={t('common.close')}
-              className="h-12.5 w-12.5 shrink-0 border-transparent! backdrop-blur-xl"
-              style={{
-                background: searchAccessoryBackground,
-                boxShadow: mobileDockShadow,
-              }}
+              className="h-11 w-11 shrink-0 border-transparent!"
+              style={{ background: searchAccessoryBackground }}
             >
               <X className={`h-4 w-4 ${resolvedTextSecondary}`} />
             </Button>
           </div>
         ) : (
-          <div className="flex items-end justify-between gap-2.5">
-            <div
-              className={`relative overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
-              style={{ boxShadow: mobileDockShadow }}
-            >
-              {isGlass ? (
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_42%)]" />
-              ) : null}
+          <div
+            className={`relative overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+            style={{ boxShadow: mobileDockShadow }}
+          >
+            {isGlass ? (
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_42%)]" />
+            ) : null}
 
-              <div className="relative flex min-h-12.5 items-stretch gap-1 px-0.75 py-0.75">
-                {dockItems.map((item) => {
-                  const isActive = activeSection === item.section;
-                  const activeHomeRoomNavigation =
-                    item.section === 'home' && isActive ? mobileRoomNavigation : undefined;
-                  const showHomeRoomDropdown = Boolean(activeHomeRoomNavigation);
-                  const activeHomeLabel =
-                    activeHomeRoomNavigation?.activeRoom &&
-                    !isAllRooms(activeHomeRoomNavigation.activeRoom)
-                      ? activeHomeRoomNavigation.activeRoom
-                      : item.label;
-                  const ActiveHomeIcon =
-                    activeHomeRoomNavigation?.activeRoom &&
-                    !isAllRooms(activeHomeRoomNavigation.activeRoom)
-                      ? DoorOpen
-                      : item.icon;
+            <div className="relative flex min-h-12.5 items-stretch gap-1 px-0.75 py-0.75">
+              {dockItems.map((item) => {
+                const isActive = activeSection === item.section;
+                const activeHomeRoomNavigation =
+                  item.section === 'home' && isActive ? mobileRoomNavigation : undefined;
+                const showHomeRoomDropdown = Boolean(activeHomeRoomNavigation);
+                const activeHomeLabel =
+                  activeHomeRoomNavigation?.activeRoom &&
+                  !isAllRooms(activeHomeRoomNavigation.activeRoom)
+                    ? activeHomeRoomNavigation.activeRoom
+                    : item.label;
+                const ActiveHomeIcon =
+                  activeHomeRoomNavigation?.activeRoom &&
+                  !isAllRooms(activeHomeRoomNavigation.activeRoom)
+                    ? DoorOpen
+                    : item.icon;
 
-                  return showHomeRoomDropdown ? (
-                    <div
-                      key={item.section}
-                      className={`relative min-h-11 min-w-[5.1rem] shrink-0 rounded-[20px] transition-all ${getMobileTabPill(true).className}`}
-                      style={getMobileTabPill(true).style}
-                    >
-                      <button
-                        type="button"
-                        onClick={item.onClick}
-                        aria-current="page"
-                        aria-label={activeHomeLabel}
-                        className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 py-1.5 pr-7"
-                      >
-                        <ActiveHomeIcon className="h-[0.94rem] w-[0.94rem] shrink-0" />
-                        <span className="max-w-full truncate px-0.5 text-[11px] leading-none tracking-[-0.01em] font-semibold">
-                          {activeHomeLabel}
-                        </span>
-                      </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={t('dashboard.roomNav.openRooms')}
-                            className="absolute right-1 top-1/2 flex h-8 w-6 -translate-y-1/2 items-center justify-center rounded-[14px] bg-black/10"
-                          >
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="start"
-                          side="top"
-                          sideOffset={10}
-                          className="w-56 md:hidden"
-                        >
-                          {visibleMobileRooms.map((room) => {
-                            const label = getDashboardRoomLabel(room, t('dashboard.roomNav.all'));
-
-                            return (
-                              <DropdownMenuItem
-                                key={room}
-                                className={surface.textPrimary}
-                                onSelect={() => activeHomeRoomNavigation?.onRoomChange(room)}
-                              >
-                                <span className="min-w-0 flex-1 truncate">{label}</span>
-                                {activeHomeRoomNavigation?.activeRoom === room ? (
-                                  <Check className="h-4 w-4" style={{ color: activeColorValue }} />
-                                ) : null}
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ) : (
-                    <MobileDockButton
-                      key={item.section}
-                      icon={item.icon}
-                      isActive={isActive}
-                      label={item.label}
+                return showHomeRoomDropdown ? (
+                  <div
+                    key={item.section}
+                    className={`relative min-h-11 min-w-[5.1rem] shrink-0 rounded-[20px] transition-all ${getMobileTabPill(true).className}`}
+                    style={getMobileTabPill(true).style}
+                  >
+                    <button
+                      type="button"
                       onClick={item.onClick}
-                      pill={getMobileTabPill(isActive)}
-                    />
-                  );
-                })}
+                      aria-current="page"
+                      aria-label={activeHomeLabel}
+                      className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 py-1.5 pr-7"
+                    >
+                      <ActiveHomeIcon className="h-[0.94rem] w-[0.94rem] shrink-0" />
+                      <span className="max-w-full truncate px-0.5 text-[11px] leading-none tracking-[-0.01em] font-semibold">
+                        {activeHomeLabel}
+                      </span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={t('dashboard.roomNav.openRooms')}
+                          className="absolute right-1 top-1/2 flex h-8 w-6 -translate-y-1/2 items-center justify-center rounded-[14px] bg-black/10"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        side="top"
+                        sideOffset={10}
+                        className="w-56 md:hidden"
+                      >
+                        {visibleMobileRooms.map((room) => {
+                          const label = getDashboardRoomLabel(room, t('dashboard.roomNav.all'));
 
-                <MobileDockButton
-                  icon={Compass}
-                  isActive={isOrbitOpen}
-                  label={t('sidebar.orbit')}
-                  onClick={() => setIsOrbitOpen(true)}
-                  pill={getMobileTabPill(isOrbitOpen)}
-                  ariaExpanded={isOrbitOpen}
-                />
-              </div>
+                          return (
+                            <DropdownMenuItem
+                              key={room}
+                              className={surface.textPrimary}
+                              onSelect={() => activeHomeRoomNavigation?.onRoomChange(room)}
+                            >
+                              <span className="min-w-0 flex-1 truncate">{label}</span>
+                              {activeHomeRoomNavigation?.activeRoom === room ? (
+                                <Check className="h-4 w-4" style={{ color: activeColorValue }} />
+                              ) : null}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
+                  <MobileDockButton
+                    key={item.section}
+                    icon={item.icon}
+                    isActive={isActive}
+                    label={item.label}
+                    onClick={item.onClick}
+                    pill={getMobileTabPill(isActive)}
+                  />
+                );
+              })}
+
+              <MobileDockButton
+                icon={Compass}
+                isActive={isOrbitOpen}
+                label={t('sidebar.orbit')}
+                onClick={() => setIsOrbitOpen(true)}
+                pill={getMobileTabPill(isOrbitOpen)}
+                ariaExpanded={isOrbitOpen}
+              />
+              <MobileDockButton
+                icon={Search}
+                isActive={isMobileSearchOpen}
+                label={t('sidebar.search')}
+                onClick={handleToggleMobileSearch}
+                pill={getMobileTabPill(isMobileSearchOpen)}
+                ariaExpanded={isMobileSearchOpen}
+              />
             </div>
-
-            <Button
-              iconOnly
-              variant="secondary"
-              size="small"
-              onClick={handleToggleMobileSearch}
-              label={t('sidebar.search')}
-              aria-expanded={isMobileSearchOpen}
-              className="h-12.5 w-12.5 shrink-0 rounded-[999px] border-transparent! backdrop-blur-xl"
-              style={{
-                background: searchAccessoryBackground,
-                boxShadow: mobileDockShadow,
-              }}
-            >
-              <Search className={`h-[0.95rem] w-[0.95rem] ${resolvedTextSecondary}`} />
-            </Button>
           </div>
         )}
       </div>
 
       <MobileSectionOrbitSheet
         activeSection={activeSection}
-        currentRoomNavigation={mobileRoomNavigation}
         isOpen={isOrbitOpen}
-        lastNonHomeSection={lastNonHomeSection}
         onOpenChange={setIsOrbitOpen}
         onSelectSection={setActiveSection}
-        recentSections={recentSections}
       />
     </>
   );
@@ -398,7 +382,7 @@ function MobileDockButton({
   pill,
 }: {
   ariaExpanded?: boolean;
-  icon: typeof Search;
+  icon: LucideIcon;
   isActive: boolean;
   label: string;
   onClick: () => void;

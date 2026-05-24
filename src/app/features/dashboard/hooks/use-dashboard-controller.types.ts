@@ -38,6 +38,7 @@ export type DashboardController = OnboardingController &
       updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>
     ) => void;
     hiddenEntityIds: string[];
+    hiddenRoomNames: string[];
     homeLayout: ReturnType<typeof useHomeDashboardLayout>['layout'];
     homeLayoutHydrated: boolean;
     addHomeCard: ReturnType<typeof useHomeDashboardLayout>['addCard'];
@@ -59,6 +60,7 @@ export type DashboardController = OnboardingController &
     orderedCardIds: string[];
     onSetRoomOrder: (rooms: string[]) => void;
     onSetAllViewGrouping: (grouping: AllViewGrouping) => void;
+    onSetHiddenRoomNames: (rooms: string[]) => void;
     roomHiddenItemCounts: Map<string, number>;
     roomItemCounts: Map<string, number>;
     rooms: string[];

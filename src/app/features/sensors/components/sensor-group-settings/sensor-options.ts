@@ -1,5 +1,6 @@
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
+import { getSensorDeviceClass, inferSensorDisplayIcon } from '@/app/hooks/device-mappers';
+import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -16,6 +17,7 @@ interface SensorRegistryContext {
 
 interface SensorOptionBuildParams extends SensorRegistryContext {
   entities: HassEntities | null | undefined;
+  formatOptions?: Parameters<typeof formatSensorValue>[1];
 }
 
 interface SensorOptionContext {
@@ -28,6 +30,7 @@ interface ResolveSensorReadingsParams {
   entities: HassEntities | null | undefined;
   sensorEntityIds: string[];
   fallbackSensors?: SensorReading[];
+  formatOptions?: Parameters<typeof formatSensorValue>[1];
 }
 
 const SENSOR_UNAVAILABLE_STATES = new Set(['unknown', 'unavailable']);
@@ -44,18 +47,16 @@ function getDeviceRegistryMap(deviceRegistry: HomeAssistantDeviceRegistryEntry[]
   return new Map((deviceRegistry ?? []).map((device) => [device.id, device]));
 }
 
-function getSensorUnit(entity: HassEntity): string {
-  const unit =
-    entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement;
-  return typeof unit === 'string' ? unit : '';
-}
-
-function getSensorValue(entity: HassEntity): string {
+function getSensorDisplayValue(
+  entity: HassEntity,
+  formatOptions?: Parameters<typeof formatSensorValue>[1]
+): { value: string; unit: string } {
   if (SENSOR_UNAVAILABLE_STATES.has(entity.state)) {
-    return entity.state;
+    const formatted = formatSensorValue(entity, formatOptions);
+    return { value: entity.state, unit: formatted?.unit ?? '' };
   }
 
-  return entity.state;
+  return formatSensorValue(entity, formatOptions) ?? { value: entity.state, unit: '' };
 }
 
 function getSensorCategory(deviceClass: string | undefined): AvailableSensor['category'] {
@@ -85,62 +86,25 @@ export function inferSensorIcon(
   unit: string,
   entityId: string
 ): SensorIconType {
-  switch (deviceClass) {
-    case 'energy':
-    case 'power':
-      return 'zap';
-    case 'temperature':
-      return 'thermometer';
-    case 'humidity':
-      return 'droplets';
-    case 'carbon_dioxide':
-    case 'pm1':
-    case 'pm10':
-    case 'pm25':
-    case 'volatile_organic_compounds':
-    case 'wind_speed':
-      return 'wind';
-    case 'illuminance':
-      return 'sun';
-    case 'battery':
-      return 'activity';
-    default:
-      break;
-  }
-
-  const normalizedUnit = unit.toLowerCase();
-  const searchText = entityId.toLowerCase();
-  if (normalizedUnit.includes('w') || normalizedUnit.includes('kwh')) {
-    return 'zap';
-  }
-  if (normalizedUnit.includes('c') || searchText.includes('temperature')) {
-    return 'thermometer';
-  }
-  if (normalizedUnit === '%' || searchText.includes('humidity')) {
-    return 'droplets';
-  }
-
-  return 'gauge';
+  return inferSensorDisplayIcon(entityId, deviceClass, unit);
 }
 
 function mapSensorOption(
   entityId: string,
   entity: HassEntity,
-  context: SensorOptionContext
+  context: SensorOptionContext,
+  formatOptions?: Parameters<typeof formatSensorValue>[1]
 ): AvailableSensor {
   const entityEntry = context.entityRegistryMap.get(entityId);
-  const deviceClass =
-    typeof entity.attributes?.device_class === 'string'
-      ? entity.attributes.device_class.toLowerCase()
-      : undefined;
-  const unit = getSensorUnit(entity);
+  const deviceClass = getSensorDeviceClass(entity);
+  const formatted = getSensorDisplayValue(entity, formatOptions);
 
   return {
     id: entityId,
     label: getName(entity, entityEntry),
-    value: getSensorValue(entity),
-    unit,
-    icon: inferSensorIcon(deviceClass, unit, entityId),
+    value: formatted.value,
+    unit: formatted.unit,
+    icon: inferSensorIcon(deviceClass, formatted.unit, entityId),
     category: getSensorCategory(deviceClass),
     room: resolveEntityRoom(
       entityId,
@@ -157,6 +121,7 @@ export function buildAvailableSensorOptions({
   areas = [],
   deviceRegistry = [],
   entityRegistry = [],
+  formatOptions,
 }: SensorOptionBuildParams): AvailableSensor[] {
   if (!entities) {
     return [];
@@ -170,7 +135,7 @@ export function buildAvailableSensorOptions({
 
   return Object.entries(entities)
     .filter(([entityId]) => entityId.startsWith('sensor.'))
-    .map(([entityId, entity]) => mapSensorOption(entityId, entity, context))
+    .map(([entityId, entity]) => mapSensorOption(entityId, entity, context, formatOptions))
     .sort(
       (left, right) =>
         (left.room ?? '').localeCompare(right.room ?? '') ||
@@ -183,6 +148,7 @@ export function resolveSensorReadings({
   entities,
   sensorEntityIds,
   fallbackSensors = [],
+  formatOptions,
 }: ResolveSensorReadingsParams): SensorReading[] {
   return sensorEntityIds.map((entityId) => {
     const entity = entities?.[entityId];
@@ -198,11 +164,8 @@ export function resolveSensorReadings({
       };
     }
 
-    const unit = getSensorUnit(entity);
-    const deviceClass =
-      typeof entity.attributes?.device_class === 'string'
-        ? entity.attributes.device_class.toLowerCase()
-        : undefined;
+    const deviceClass = getSensorDeviceClass(entity);
+    const formatted = getSensorDisplayValue(entity, formatOptions);
 
     return {
       id: entityId,
@@ -210,9 +173,9 @@ export function resolveSensorReadings({
         typeof entity.attributes?.friendly_name === 'string'
           ? entity.attributes.friendly_name
           : entityId,
-      value: getSensorValue(entity),
-      unit,
-      icon: inferSensorIcon(deviceClass, unit, entityId),
+      value: formatted.value,
+      unit: formatted.unit,
+      icon: inferSensorIcon(deviceClass, formatted.unit, entityId),
     };
   });
 }

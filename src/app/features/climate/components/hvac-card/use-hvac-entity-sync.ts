@@ -1,5 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { type Dispatch, type SetStateAction, useEffect } from 'react';
+import { parseNumberish, resolveClimateTargetTemperature } from '@/app/hooks/ha-entity-utils';
 
 interface UseHvacEntitySyncParams {
   liveEntity: HassEntity | undefined;
@@ -26,6 +27,10 @@ function parseSupportedHvacModes(value: unknown): string[] | undefined {
 }
 
 function resolveMode(liveEntity: HassEntity, attrs: Record<string, unknown>, initialMode: string) {
+  if (typeof liveEntity.state === 'string' && liveEntity.state) {
+    return liveEntity.state;
+  }
+
   if (typeof attrs.hvac_mode === 'string') {
     return attrs.hvac_mode;
   }
@@ -33,8 +38,7 @@ function resolveMode(liveEntity: HassEntity, attrs: Record<string, unknown>, ini
   if (typeof attrs.operation_mode === 'string') {
     return attrs.operation_mode;
   }
-
-  return typeof liveEntity.state === 'string' && liveEntity.state ? liveEntity.state : initialMode;
+  return initialMode;
 }
 
 function resolveSupportedModes(liveEntity: HassEntity, attrs: Record<string, unknown>) {
@@ -64,8 +68,10 @@ export function useHvacEntitySync({
       setMode(resolveMode(liveEntity, attrs, initialMode));
       setAction(typeof attrs.hvac_action === 'string' ? attrs.hvac_action : initialAction);
       setSupportedHvacModes(resolveSupportedModes(liveEntity, attrs));
-      if (typeof attrs.temperature === 'number') setTargetTemp(attrs.temperature);
-      if (typeof attrs.current_temperature === 'number') setCurrentTemp(attrs.current_temperature);
+      const targetTemp = resolveClimateTargetTemperature(liveEntity);
+      const currentTemp = parseNumberish(attrs.current_temperature);
+      if (targetTemp !== null) setTargetTemp(targetTemp);
+      if (currentTemp !== null) setCurrentTemp(currentTemp);
       return;
     }
     setTargetTemp(initialTemp);

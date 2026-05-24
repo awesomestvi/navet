@@ -25,7 +25,9 @@ describe('resolveHvacModeControlOptions', () => {
     ]);
   });
 
-  it('ignores unsupported modes that do not have current UI controls', () => {
-    expect(resolveHvacModeControlOptions(['dry', 'auto', 'heat_cool'])).toEqual([]);
+  it('maps heat_cool to the auto range control', () => {
+    expect(resolveHvacModeControlOptions(['dry', 'auto', 'heat_cool'])).toEqual([
+      { key: 'auto', mode: 'heat_cool' },
+    ]);
   });
 });

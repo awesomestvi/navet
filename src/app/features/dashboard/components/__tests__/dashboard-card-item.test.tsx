@@ -4,16 +4,20 @@ import { renderWithProviders } from '@/test/render';
 import { useDashboardEntitiesStore } from '../../stores/dashboard-entities-store';
 import { DashboardCardItem } from '../dashboard-card-item';
 
-const { childAction } = vi.hoisted(() => ({
+const { childAction, renderCardMock } = vi.hoisted(() => ({
   childAction: vi.fn(),
+  renderCardMock: vi.fn(),
 }));
 
 vi.mock('../../utils/card-renderer', () => ({
-  renderCard: () => (
-    <button type="button" onClick={childAction}>
-      child action
-    </button>
-  ),
+  renderCard: (options: unknown) => {
+    renderCardMock(options);
+    return (
+      <button type="button" onClick={childAction}>
+        child action
+      </button>
+    );
+  },
 }));
 
 vi.mock('../widget-card', () => ({
@@ -28,6 +32,7 @@ describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
     childAction.mockClear();
+    renderCardMock.mockClear();
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
   });
 
@@ -103,5 +108,27 @@ describe('DashboardCardItem card locking', () => {
     );
 
     expect(screen.getByRole('img', { name: 'Card locked' })).toBeInTheDocument();
+  });
+
+  it('passes header subtitle overrides into entity card rendering', () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="sensor.kitchen_temperature"
+        size="small"
+        isEditMode={false}
+        handleSizeChange={vi.fn()}
+        headerSubtitleOverride="Kitchen"
+        device={{
+          id: 'sensor.kitchen_temperature',
+          name: 'Kitchen Temperature',
+          room: 'Kitchen',
+          type: 'sensors',
+        }}
+      />
+    );
+
+    expect(renderCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({ headerSubtitleOverride: 'Kitchen' })
+    );
   });
 });

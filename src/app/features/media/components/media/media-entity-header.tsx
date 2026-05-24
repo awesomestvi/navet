@@ -34,7 +34,7 @@ export function MediaEntityHeader({
         subtitleStyle={subtitleStyle}
         marginBottomClassName="mb-0"
         titleClassName="text-left"
-        subtitleClassName="text-left"
+        subtitleClassName="text-left font-normal opacity-75"
       />
     </div>
   );

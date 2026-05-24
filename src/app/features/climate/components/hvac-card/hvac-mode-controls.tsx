@@ -1,4 +1,4 @@
-import { Flame, Snowflake, Wind } from 'lucide-react';
+import { Flame, Snowflake, ThermometerSun, Wind } from 'lucide-react';
 import { memo } from 'react';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
@@ -30,12 +30,14 @@ export const HVACModeControls = memo(function HVACModeControls({
   const options = resolveHvacModeControlOptions(supportedHvacModes);
 
   const iconByMode = {
+    auto: ThermometerSun,
     cool: Snowflake,
     heat: Flame,
     fan: Wind,
   } as const;
 
   const labelByMode = {
+    auto: t('settings.appearance.systemTheme.auto'),
     cool: t('climate.mode.cool'),
     heat: t('climate.mode.heat'),
     fan: t('climate.mode.fan'),

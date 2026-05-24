@@ -137,7 +137,7 @@ Current layout ownership includes:
 - header and sidebar shell pieces
 - room navigation and room-order editing
 - mobile command/search/section sheets
-- device-section shells such as locks, media, and security
+- device-section shells such as media and security
 - section customization controls
 
 Use `layout/` when the component owns app structure or cross-feature section composition rather than

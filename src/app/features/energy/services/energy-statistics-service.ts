@@ -32,7 +32,7 @@ function normalizeStatisticTimestamp(value: unknown): number {
 
 /**
  * Fetches today's energy delta (kWh) for each entity using
- * recorder/statistics_during_period with period "day" and type "change".
+ * recorder/statistics_during_period with 5-minute type "change" buckets.
  * Returns 0 for any entity where statistics are unavailable.
  */
 export async function getEnergyStatisticsToday(
@@ -47,16 +47,18 @@ export async function getEnergyStatisticsToday(
   const response = (await connection.sendMessagePromise({
     type: 'recorder/statistics_during_period',
     start_time: startOfToday.toISOString(),
+    end_time: now.toISOString(),
     statistic_ids: entityIds,
-    period: 'day',
+    period: '5minute',
     types: ['change'],
   })) as StatisticsResponse;
 
   const result: Record<string, number> = {};
   for (const id of entityIds) {
-    const entry = (response[id] ?? [])[0];
-    const change = entry?.change;
-    result[id] = typeof change === 'number' && change >= 0 ? change : 0;
+    result[id] = (response[id] ?? []).reduce((sum, entry) => {
+      const change = entry.change;
+      return sum + (typeof change === 'number' && change >= 0 ? change : 0);
+    }, 0);
   }
   return result;
 }
@@ -89,8 +91,16 @@ export async function getEnergyStatisticsPeriods(
     month: getStartOfMonth(now),
   } as const;
 
-  const responses = await Promise.all(
-    Object.values(periods).map(
+  const responses = await Promise.all([
+    connection.sendMessagePromise({
+      type: 'recorder/statistics_during_period',
+      start_time: periods.today.toISOString(),
+      end_time: now.toISOString(),
+      statistic_ids: [entityId],
+      period: '5minute',
+      types: ['change'],
+    }) as Promise<StatisticsResponse>,
+    ...[periods.week, periods.month].map(
       (start) =>
         connection.sendMessagePromise({
           type: 'recorder/statistics_during_period',
@@ -99,8 +109,8 @@ export async function getEnergyStatisticsPeriods(
           period: 'day',
           types: ['change'],
         }) as Promise<StatisticsResponse>
-    )
-  );
+    ),
+  ]);
 
   const [todayResponse, weekResponse, monthResponse] = responses;
   const sumChanges = (response: StatisticsResponse) =>

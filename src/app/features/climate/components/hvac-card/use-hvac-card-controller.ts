@@ -15,6 +15,7 @@ import {
 } from '@/app/hooks';
 import {
   parseNumberish,
+  resolveClimateTargetTemperature,
   resolveClimateTemperatureUnit,
   resolveHomeAssistantTemperatureUnit,
 } from '@/app/hooks/ha-entity-utils';
@@ -90,6 +91,46 @@ function snapClimateTemperature(value: number, minTemp: number, maxTemp: number,
   return Number(Math.min(maxTemp, Math.max(minTemp, snappedValue)).toFixed(3));
 }
 
+function resolveClimateTemperatureServiceData(
+  entityId: string,
+  liveEntity: HassEntity | undefined,
+  nextTemp: number
+): { temperature: number } | { target_temp_low?: number; target_temp_high?: number } {
+  if (!liveEntity || entityId.startsWith('water_heater.')) {
+    return { temperature: nextTemp };
+  }
+
+  const attrs = liveEntity.attributes;
+  const targetLow = parseNumberish(attrs?.target_temp_low);
+  const targetHigh = parseNumberish(attrs?.target_temp_high);
+
+  if (targetLow === null && targetHigh === null) {
+    return { temperature: nextTemp };
+  }
+
+  const action = typeof attrs?.hvac_action === 'string' ? attrs.hvac_action.toLowerCase() : '';
+  const mode = typeof liveEntity.state === 'string' ? liveEntity.state.toLowerCase() : '';
+
+  if ((action.includes('cool') || mode === 'cool') && targetHigh !== null) {
+    return { target_temp_high: nextTemp };
+  }
+
+  if ((action.includes('heat') || mode === 'heat') && targetLow !== null) {
+    return { target_temp_low: nextTemp };
+  }
+
+  const currentTarget = resolveClimateTargetTemperature(liveEntity);
+  if (currentTarget !== null && targetLow !== null && targetHigh !== null) {
+    const delta = nextTemp - currentTarget;
+    return {
+      target_temp_low: Number((targetLow + delta).toFixed(3)),
+      target_temp_high: Number((targetHigh + delta).toFixed(3)),
+    };
+  }
+
+  return targetHigh !== null ? { target_temp_high: nextTemp } : { target_temp_low: nextTemp };
+}
+
 export function useHVACCardController({
   id,
   name,
@@ -143,6 +184,7 @@ export function useHVACCardController({
   );
   const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
   const pendingTargetTempRef = useRef<number | null>(null);
+  const deferredTargetTempRef = useRef<number | null>(null);
   const targetTempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runTemperatureAction = useServiceActionHandler();
   const runModeAction = useServiceActionHandler();
@@ -164,11 +206,13 @@ export function useHVACCardController({
           pendingTargetTempRef.current !== null &&
           Math.abs(resolvedValue - pendingTargetTempRef.current) > 0.05
         ) {
+          deferredTargetTempRef.current = resolvedValue;
           return current;
         }
 
         if (pendingTargetTempRef.current !== null) {
           pendingTargetTempRef.current = null;
+          deferredTargetTempRef.current = null;
           if (targetTempSyncTimeoutRef.current !== null) {
             clearTimeout(targetTempSyncTimeoutRef.current);
             targetTempSyncTimeoutRef.current = null;
@@ -182,20 +226,33 @@ export function useHVACCardController({
   );
 
   const { queue: queueTargetTempSync } = useHaCommandQueue((nextTemp: number) =>
-    runTemperatureAction(
-      () => homeAssistantService.setClimateTemperature(id, nextTemp),
-      t('climate.feedback.updateTemperatureFailed')
-    )
+    runTemperatureAction(async () => {
+      const serviceData = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
+      if ('temperature' in serviceData) {
+        await homeAssistantService.setClimateTemperature(id, serviceData.temperature);
+        return;
+      }
+
+      await homeAssistantService.callService('climate', 'set_temperature', serviceData, {
+        entity_id: id,
+      });
+    }, t('climate.feedback.updateTemperatureFailed'))
   );
 
   const schedulePendingTargetTemp = useCallback((nextTemp: number) => {
     pendingTargetTempRef.current = nextTemp;
+    deferredTargetTempRef.current = null;
     if (targetTempSyncTimeoutRef.current !== null) {
       clearTimeout(targetTempSyncTimeoutRef.current);
     }
     targetTempSyncTimeoutRef.current = setTimeout(() => {
       pendingTargetTempRef.current = null;
       targetTempSyncTimeoutRef.current = null;
+      const deferredTargetTemp = deferredTargetTempRef.current;
+      deferredTargetTempRef.current = null;
+      if (deferredTargetTemp !== null) {
+        setTargetTemp(deferredTargetTemp);
+      }
     }, HA_PENDING_ECHO_WINDOW_MS);
   }, []);
 
@@ -307,7 +364,6 @@ export function useHVACCardController({
     ariaLabel: `${name} ${t('climate.subtitle').toLowerCase()}`,
     ariaPressed: isOn,
     isEditMode,
-    onToggle: () => setIsOn((current) => !current),
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });

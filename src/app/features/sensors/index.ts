@@ -1,5 +1,10 @@
 export { GroupedSensorCard } from './components/grouped-sensor-card';
-export { SensorCard } from './components/sensor-card';
+export {
+  buildHomeStatusSummaryItems,
+  buildRoomStatusSummaryItems,
+} from './components/home-status-summary-model';
+export { InfoBadgeStrip } from './components/info-badge-strip';
+export { InfoCard, type InfoCardProps, SensorCard } from './components/sensor-card';
 export {
   buildAvailableSensorOptions,
   inferSensorIcon,

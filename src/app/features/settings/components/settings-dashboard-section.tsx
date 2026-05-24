@@ -1,5 +1,6 @@
 import { Download, LayoutGrid, Scale, Upload } from 'lucide-react';
 import { Button } from '@/app/components/primitives';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,42 @@ interface SettingsDashboardSectionProps {
   controller: SettingsSectionController;
 }
 
+interface OnOffPillToggleProps {
+  ariaLabel: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}
+
+function OnOffPillToggle({ ariaLabel, value, onChange }: OnOffPillToggleProps) {
+  const { t } = useI18n();
+  const options = [
+    { value: true, label: t('common.on') },
+    { value: false, label: t('common.off') },
+  ];
+
+  return (
+    <fieldset className="w-fit">
+      <legend className="sr-only">{ariaLabel}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const isActive = value === option.value;
+          return (
+            <InteractivePill
+              key={option.label}
+              active={isActive}
+              size="small"
+              onClick={() => onChange(option.value)}
+              aria-pressed={isActive}
+            >
+              {option.label}
+            </InteractivePill>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 export function SettingsDashboardSection({ controller }: SettingsDashboardSectionProps) {
   const { t } = useI18n();
   const {
@@ -26,8 +63,10 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
     handleRestartOnboarding,
     hiddenEntityIds,
     importInputRef,
+    kioskMode,
     setShowRestartOnboardingConfirm,
     setShowRevealAllConfirm,
+    showHomeSummaryBar,
     showAllEntities,
     showRestartOnboardingConfirm,
     showRevealAllConfirm,
@@ -42,6 +81,35 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
       description={t('settings.dashboard.sectionDescription')}
       styles={styles}
     >
+      <SettingsItem
+        title={t('settings.dashboard.homeSummaryBar.title')}
+        description={t('settings.dashboard.homeSummaryBar.description')}
+        styles={styles}
+      >
+        <OnOffPillToggle
+          value={showHomeSummaryBar}
+          onChange={(checked) => controller.updateSettings({ showHomeSummaryBar: checked })}
+          ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
+        />
+      </SettingsItem>
+
+      <SettingsItem
+        title={t('settings.dashboard.kioskMode.title')}
+        description={t('settings.dashboard.kioskMode.description')}
+        styles={styles}
+      >
+        <div className="flex flex-col gap-2">
+          <OnOffPillToggle
+            value={kioskMode}
+            onChange={(checked) => controller.updateSettings({ kioskMode: checked })}
+            ariaLabel={t('settings.dashboard.kioskMode.title')}
+          />
+          <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
+            {t('settings.dashboard.kioskMode.recoveryHint')}
+          </p>
+        </div>
+      </SettingsItem>
+
       <SettingsItem
         title={t('settings.dashboard.entityVisibility.title')}
         description={t('settings.dashboard.entityVisibility.description')}

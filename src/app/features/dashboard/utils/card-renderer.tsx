@@ -21,6 +21,7 @@ interface CardRendererOptions {
   size: CardSize;
   handleSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  headerSubtitleOverride?: string;
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
@@ -85,9 +86,9 @@ const GroupedSensorCard = lazy(async () => {
   return { default: module.GroupedSensorCard };
 });
 
-const SensorCard = lazy(async () => {
+const InfoCard = lazy(async () => {
   const module = await import('@/app/features/sensors');
-  return { default: module.SensorCard };
+  return { default: module.InfoCard };
 });
 
 const VacuumCard = lazy(async () => {
@@ -214,25 +215,31 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  hvac: ({ device, size, handleSizeChange, isEditMode }) => (
+  hvac: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
     <HVACCard
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      initialTemp={device.temp as number | undefined}
+      headerSubtitle={headerSubtitleOverride}
+      initialTemp={(device.temperature ?? device.temp) as number | undefined}
+      initialCurrentTemp={device.currentTemperature as number | undefined}
+      temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
       initialMode={device.mode as string | undefined}
+      initialAction={device.action as string | undefined}
       supportedHvacModes={device.supportedHvacModes as string[] | undefined}
+      initialState={(device.mode as string | undefined) !== 'off'}
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}
     />
   ),
 
-  climate: ({ device, size, handleSizeChange, isEditMode }) => (
+  climate: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
     <HVACCard
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
+      headerSubtitle={headerSubtitleOverride}
       initialTemp={device.temperature as number | undefined}
       initialCurrentTemp={device.currentTemperature as number | undefined}
       temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
@@ -424,15 +431,18 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  sensors: ({ device, size, handleSizeChange, isEditMode }) => (
-    <SensorCard
+  sensors: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
+    <InfoCard
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
       value={device.value as string}
       unit={device.unit as string}
-      icon={device.icon as 'gauge' | 'trend-up' | 'trend-down' | undefined}
-      subtitle={device.entityType as string | undefined}
+      icon={device.icon as SensorReading['icon']}
+      subtitle={headerSubtitleOverride ?? (device.entityType as string | undefined)}
+      deviceClass={device.deviceClass as string | undefined}
+      status={device.status as 'measurement' | 'active' | 'clear' | 'unavailable' | undefined}
+      lastUpdated={device.lastUpdated as string | undefined}
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}

@@ -32,6 +32,7 @@ export interface HomeAssistantEntityRegistryEntry {
   device_id?: string | null;
   name?: string | null;
   original_name?: string | null;
+  platform?: string | null;
   entity_category?: 'config' | 'diagnostic' | null;
 }
 
@@ -44,6 +45,25 @@ export interface HomeAssistantMediaSourceItem {
   can_expand?: boolean;
   can_play?: boolean;
   thumbnail?: string | null;
+}
+
+export interface HomeAssistantMediaBrowseResult {
+  title?: string;
+  media_class?: string;
+  media_content_id?: string;
+  media_content_type?: string;
+  children?: HomeAssistantMediaBrowseResult[];
+  can_expand?: boolean;
+  can_play?: boolean;
+  thumbnail?: string | null;
+}
+
+export interface HomeAssistantMediaSearchResult {
+  title?: string;
+  media_class?: string;
+  media_content_id?: string;
+  media_content_type?: string;
+  children?: HomeAssistantMediaBrowseResult[];
 }
 
 export interface HomeAssistantResolvedMediaSource {
@@ -392,6 +412,45 @@ class HomeAssistantService {
    */
   async selectMediaPlayerSource(entityId: string, source: string): Promise<void> {
     await this.entityService.selectMediaPlayerSource(entityId, source);
+  }
+
+  async playMedia(
+    entityId: string,
+    media: {
+      mediaContentId: string;
+      mediaContentType: string;
+      enqueue?: 'play' | 'next' | 'add' | 'replace';
+      announce?: boolean;
+    }
+  ): Promise<void> {
+    await this.entityService.playMedia(entityId, media);
+  }
+
+  async browseMediaPlayer(
+    entityId: string,
+    media?: { mediaContentId?: string; mediaContentType?: string }
+  ): Promise<HomeAssistantMediaBrowseResult> {
+    return await this.entityService.browseMediaPlayer(entityId, media);
+  }
+
+  async searchMediaPlayer(
+    entityId: string,
+    query: string,
+    media?: { mediaContentId?: string; mediaContentType?: string }
+  ): Promise<HomeAssistantMediaSearchResult> {
+    return await this.entityService.searchMediaPlayer(entityId, query, media);
+  }
+
+  async seekMediaPlayer(entityId: string, seekPosition: number): Promise<void> {
+    await this.entityService.seekMediaPlayer(entityId, seekPosition);
+  }
+
+  async selectMediaPlayerSoundMode(entityId: string, soundMode: string): Promise<void> {
+    await this.entityService.selectMediaPlayerSoundMode(entityId, soundMode);
+  }
+
+  async clearMediaPlayerPlaylist(entityId: string): Promise<void> {
+    await this.entityService.clearMediaPlayerPlaylist(entityId);
   }
 
   /**

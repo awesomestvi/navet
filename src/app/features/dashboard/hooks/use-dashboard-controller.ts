@@ -48,23 +48,42 @@ export function useDashboardController(): DashboardController {
     'custom'
   );
   const [roomOrder, setRoomOrder] = usePersistedState<string[]>(STORAGE_KEYS.roomOrder, []);
+  const [hiddenRoomNames, setHiddenRoomNames] = usePersistedState<string[]>(
+    STORAGE_KEYS.hiddenRooms,
+    []
+  );
 
-  const { hiddenEntityIds, hideAutoEntity, showAutoEntity } = useDashboardEntityVisibility();
+  const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
+    useDashboardEntityVisibility();
 
   const allDevices = useDevices();
-  const devices = useDashboardDevices(allDevices, hiddenEntityIds);
+  const devices = useDashboardDevices(allDevices, hiddenEntityIds, shownSensorEntityIds);
+  const countableDevices = useMemo(() => {
+    const shownSensorIds = new Set(shownSensorEntityIds);
+    return {
+      ...allDevices,
+      sensors: allDevices.sensors.filter((device) => shownSensorIds.has(device.id)),
+    };
+  }, [allDevices, shownSensorEntityIds]);
   const discoveredRooms = useRooms(devices);
 
-  const { roomItemCounts, roomHiddenItemCounts } = useDashboardRoomCounts(allDevices, devices);
+  const { roomItemCounts, roomHiddenItemCounts } = useDashboardRoomCounts(
+    countableDevices,
+    devices
+  );
 
   const { availableRooms } = useAvailableRooms(areas, discoveredRooms);
   const rooms = usePersistedRoomOrder(availableRooms, roomOrder);
+  const visibleRooms = useMemo(() => {
+    const hiddenRooms = new Set(hiddenRoomNames);
+    return rooms.filter((room) => !hiddenRooms.has(room));
+  }, [hiddenRoomNames, rooms]);
 
   const { activeRoom, changeRoom } = useRoomNavigation(ALL_ROOMS_ID);
 
   useDashboardRoomNavigation(
     activeRoom,
-    rooms,
+    visibleRooms,
     changeRoom,
     hassEntitiesHydrated,
     devicesLoaded,
@@ -163,6 +182,7 @@ export function useDashboardController(): DashboardController {
     handleRemoveEntity,
     handleUpdateCard,
     hiddenEntityIds,
+    hiddenRoomNames,
     homeLayout: homeLayoutController.layout,
     homeLayoutHydrated,
     addHomeCard: homeLayoutController.addCard,
@@ -181,6 +201,7 @@ export function useDashboardController(): DashboardController {
     lightDeviceMap,
     lightRooms,
     onSetAllViewGrouping: setAllViewGrouping,
+    onSetHiddenRoomNames: setHiddenRoomNames,
     onToggleEditMode: () => startTransition(toggleEditMode),
     onSetRoomOrder: setRoomOrder,
     orderedCardIds,

@@ -104,6 +104,7 @@ function createController(overrides: Partial<DashboardController> = {}): Dashboa
     handleRemoveEntity: vi.fn(),
     handleUpdateCard: vi.fn(),
     hiddenEntityIds: [],
+    hiddenRoomNames: [],
     homeLayout: {
       mode: 'personal',
       showHero: true,
@@ -131,6 +132,7 @@ function createController(overrides: Partial<DashboardController> = {}): Dashboa
     orderedCardIds: [],
     onSetRoomOrder: vi.fn(),
     onSetAllViewGrouping: vi.fn(),
+    onSetHiddenRoomNames: vi.fn(),
     roomHiddenItemCounts: new Map(),
     roomItemCounts: new Map(),
     rooms: [],

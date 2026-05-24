@@ -30,6 +30,11 @@ describe('sensor group options', () => {
         device_class: 'power',
         unit_of_measurement: 'W',
       }),
+      'sensor.outdoor_pressure': entity('sensor.outdoor_pressure', '1008.527251', {
+        friendly_name: 'Outdoor Pressure',
+        device_class: 'pressure',
+        unit_of_measurement: 'hPa',
+      }),
       'light.kitchen': entity('light.kitchen', 'on', {
         friendly_name: 'Kitchen Light',
       }),
@@ -49,6 +54,7 @@ describe('sensor group options', () => {
     expect(options.map((option) => option.id).sort()).toEqual([
       'sensor.grid_power',
       'sensor.kitchen_temperature',
+      'sensor.outdoor_pressure',
     ]);
     expect(options.find((option) => option.id === 'sensor.kitchen_temperature')).toMatchObject({
       label: 'Kitchen Temperature',
@@ -61,6 +67,11 @@ describe('sensor group options', () => {
     expect(options.find((option) => option.id === 'sensor.grid_power')).toMatchObject({
       icon: 'zap',
       category: 'energy',
+    });
+    expect(options.find((option) => option.id === 'sensor.outdoor_pressure')).toMatchObject({
+      value: '1009',
+      unit: 'hPa',
+      category: 'environmental',
     });
   });
 
@@ -100,6 +111,37 @@ describe('sensor group options', () => {
         unit: '%',
         icon: 'droplets',
       },
+    ]);
+  });
+
+  it('formats selected sensor readings with the same value utility as single sensor cards', () => {
+    const readings = resolveSensorReadings({
+      entities: {
+        'sensor.sun_next_setting': entity('sensor.sun_next_setting', '2026-05-24T19:29:58+00:00', {
+          friendly_name: 'Sun Next setting',
+          device_class: 'timestamp',
+        }),
+        'sensor.outdoor_pressure': entity('sensor.outdoor_pressure', '1008.527251', {
+          friendly_name: 'Outdoor Pressure',
+          device_class: 'pressure',
+          unit_of_measurement: 'hPa',
+        }),
+      },
+      sensorEntityIds: ['sensor.sun_next_setting', 'sensor.outdoor_pressure'],
+      formatOptions: { locale: 'en-US', use24HourTime: true },
+    });
+
+    expect(readings).toEqual([
+      expect.objectContaining({
+        id: 'sensor.sun_next_setting',
+        value: expect.stringMatching(/^\d{1,2}:\d{2}$/),
+        unit: '',
+      }),
+      expect.objectContaining({
+        id: 'sensor.outdoor_pressure',
+        value: '1009',
+        unit: 'hPa',
+      }),
     ]);
   });
 });

@@ -1,5 +1,5 @@
 import { Battery, Palette, Settings2, Sliders } from 'lucide-react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { type KeyboardEvent, memo, useEffect, useMemo, useState } from 'react';
 import {
   CardDialogBody,
   CardDialogHeader,
@@ -19,7 +19,6 @@ import {
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { CompactRoomSelector } from '@/app/components/shared/device-editor/compact-room-selector';
 import { CustomCardTintPicker } from '@/app/components/shared/device-editor/custom-card-tint-picker';
@@ -322,11 +321,29 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
       ? t('widgets.battery.settings.noneAvailable')
       : t('widgets.battery.settings.help');
   const isEmpty = filteredBatteries.length === 0;
+  const canOpenSettingsFromCard = Boolean(onUpdate) && !isEmpty;
+  const openSettings = () => setIsSettingsOpen(true);
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openSettings();
+    }
+  };
 
   return (
     <div className="h-full">
       <BaseCard
         size={size}
+        role={canOpenSettingsFromCard ? 'button' : undefined}
+        tabIndex={canOpenSettingsFromCard ? 0 : undefined}
+        aria-label={
+          canOpenSettingsFromCard
+            ? t('entityCardInteraction.openSettings', { name: t('widgets.battery.title') })
+            : undefined
+        }
+        onClick={canOpenSettingsFromCard ? openSettings : undefined}
+        onKeyDown={canOpenSettingsFromCard ? handleCardKeyDown : undefined}
+        interactive={canOpenSettingsFromCard}
         fullBleed
         className="transition-all duration-500"
         style={tintSurface.panelStyle}
@@ -346,26 +363,13 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
         contentClassName="h-full"
       >
         <div className="relative flex h-full min-w-0 flex-col p-3">
-          {onUpdate && !isEmpty ? (
-            <CardSettingsActionButton
-              theme={theme}
-              size={chromeSize === 'small' ? 'small' : 'medium'}
-              variant="soft"
-              className="absolute right-3 top-3 z-[3]"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsSettingsOpen(true);
-              }}
-              aria-label={t('widgets.battery.settings.title')}
-            />
-          ) : null}
           {isEmpty ? (
             <CardEmptyState
               title={emptyStateLabel}
               description={emptyStateDescription}
               icon={Battery}
               actionLabel={onUpdate ? t('widgets.battery.settings.title') : undefined}
-              onAction={onUpdate ? () => setIsSettingsOpen(true) : undefined}
+              onAction={onUpdate ? openSettings : undefined}
               actionIcon={onUpdate ? Settings2 : undefined}
               size={size}
               accentColor={tintColor ?? accentHex}

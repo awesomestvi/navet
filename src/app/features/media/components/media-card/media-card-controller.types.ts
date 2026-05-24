@@ -17,5 +17,6 @@ export interface UseMediaCardControllerParams {
   initialSupportsGrouping?: boolean;
   initialSupportsPreviousTrack?: boolean;
   initialSupportsNextTrack?: boolean;
+  initialSupportedFeatures?: number;
   initialGroupMembers?: string[];
 }

@@ -33,6 +33,7 @@ function AppContent() {
   const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
+  const disconnect = useHomeAssistant(homeAssistantSelectors.disconnect);
   const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
@@ -73,8 +74,9 @@ function AppContent() {
   useEffect(() => {
     if (!isAuthenticated) {
       failedConnectionAttemptKey.current = null;
+      disconnect();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, disconnect]);
 
   useEffect(() => {
     if (isAuthenticated && session && !connected && !connecting && !appError) {

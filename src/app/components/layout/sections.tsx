@@ -3,7 +3,6 @@ import { DashboardEmptyState } from '@/app/components/patterns';
 import { TasksSection } from '@/app/features/tasks';
 import { useI18n } from '@/app/hooks';
 
-export { LocksSection } from './locks-section';
 export { MediaSection } from './media-section';
 export { SecuritySection } from './security-section';
 export { TasksSection };

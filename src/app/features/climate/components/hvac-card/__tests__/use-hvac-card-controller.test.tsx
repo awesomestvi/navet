@@ -1,12 +1,13 @@
 import { act } from '@testing-library/react';
 import type { HassConfig, HassEntity } from 'home-assistant-js-websocket';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 
 const { runActionMock, serviceMock } = vi.hoisted(() => ({
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
   serviceMock: {
+    callService: vi.fn().mockResolvedValue(undefined),
     setClimateHvacMode: vi.fn().mockResolvedValue(undefined),
     setClimateTemperature: vi.fn().mockResolvedValue(undefined),
   },
@@ -30,10 +31,10 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { useHVACCardController } from '../use-hvac-card-controller';
 
-function createClimateEntity(attributes: Record<string, unknown>): HassEntity {
+function createClimateEntity(attributes: Record<string, unknown>, state = 'heat'): HassEntity {
   return {
     entity_id: 'climate.hallway',
-    state: 'heat',
+    state,
     attributes,
     last_changed: '2026-05-17T00:00:00.000Z',
     last_updated: '2026-05-17T00:00:00.000Z',
@@ -46,6 +47,10 @@ describe('useHVACCardController', () => {
     await resetAppStores();
     vi.clearAllMocks();
     useSettingsStore.setState({ temperatureUnit: 'fahrenheit' });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('does not double-convert Fahrenheit source temperatures for display or service calls', async () => {
@@ -148,6 +153,239 @@ describe('useHVACCardController', () => {
     });
 
     expect(serviceMock.setClimateTemperature).toHaveBeenCalledWith('climate.hallway', 73);
+  });
+
+  it('syncs numeric string temperatures from live Home Assistant entities', () => {
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity({
+          temperature: '21.5',
+          current_temperature: '20.25',
+          temperature_unit: '°C',
+        }),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 18,
+        initialCurrentTemp: 18,
+        initialMode: 'heat',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.targetTemp).toBe(21.5);
+    expect(result.current.currentTemp).toBe(20.25);
+  });
+
+  it('syncs Nest-style heat-cool target range temperatures from live entities', () => {
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity(
+          {
+            current_temperature: 23,
+            target_temp_low: 20,
+            target_temp_high: 24,
+            hvac_action: 'cooling',
+            hvac_modes: ['heat', 'cool', 'heat_cool', 'off'],
+            temperature_unit: '°C',
+          },
+          'heat_cool'
+        ),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 0,
+        initialCurrentTemp: 0,
+        initialMode: 'heat_cool',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.targetTemp).toBe(24);
+    expect(result.current.currentTemp).toBe(23);
+    expect(result.current.mode).toBe('heat_cool');
+    expect(result.current.visualMode).toBe('cool');
+  });
+
+  it('commits Nest-style cooling changes through target_temp_high', async () => {
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity(
+          {
+            current_temperature: 23,
+            target_temp_low: 20,
+            target_temp_high: 24,
+            hvac_action: 'cooling',
+            hvac_modes: ['heat', 'cool', 'heat_cool', 'off'],
+            temperature_unit: '°C',
+          },
+          'heat_cool'
+        ),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 24,
+        initialCurrentTemp: 23,
+        initialMode: 'heat_cool',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    await act(async () => {
+      result.current.commitTargetTemp(25);
+    });
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'climate',
+      'set_temperature',
+      { target_temp_high: 25 },
+      { entity_id: 'climate.hallway' }
+    );
+    expect(serviceMock.setClimateTemperature).not.toHaveBeenCalled();
+  });
+
+  it('treats the entity state as the canonical live HVAC mode', () => {
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity(
+          {
+            temperature: 21,
+            current_temperature: 20,
+            hvac_mode: 'heat',
+          },
+          'cool'
+        ),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 18,
+        initialCurrentTemp: 18,
+        initialMode: 'heat',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.mode).toBe('cool');
+
+    act(() => {
+      homeAssistantStore.setState({
+        entities: {
+          'climate.hallway': createClimateEntity(
+            {
+              temperature: 21,
+              current_temperature: 20,
+              hvac_mode: 'cool',
+            },
+            'heat'
+          ),
+        },
+      });
+    });
+
+    expect(result.current.mode).toBe('heat');
+  });
+
+  it('reconciles a clamped Home Assistant target temperature after the pending echo window', async () => {
+    vi.useFakeTimers();
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity({
+          temperature: 21,
+          current_temperature: 20,
+          temperature_unit: '°C',
+        }),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 21,
+        initialCurrentTemp: 20,
+        initialMode: 'heat',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    await act(async () => {
+      result.current.commitTargetTemp(21.5);
+    });
+
+    expect(result.current.targetTemp).toBe(21.5);
+
+    act(() => {
+      homeAssistantStore.setState({
+        entities: {
+          'climate.hallway': createClimateEntity({
+            temperature: 21,
+            current_temperature: 20,
+            temperature_unit: '°C',
+          }),
+        },
+      });
+    });
+
+    expect(result.current.targetTemp).toBe(21.5);
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    expect(result.current.targetTemp).toBe(21);
+  });
+
+  it('opens controls instead of locally toggling HVAC state in toggle-first mode', () => {
+    useSettingsStore.setState({ entityInteractionMode: 'toggle-first' });
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 21,
+        initialCurrentTemp: 20,
+        initialMode: 'cool',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+    const cardElement = document.createElement('div');
+
+    act(() => {
+      result.current.cardInteraction.cardProps.onClick?.({
+        currentTarget: cardElement,
+        target: cardElement,
+      } as never);
+    });
+
+    expect(result.current.isOn).toBe(true);
+    expect(result.current.isSettingsOpen).toBe(true);
   });
 
   it('renders active water heater operating modes with the heat visual tone', () => {

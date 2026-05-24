@@ -76,7 +76,7 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
   });
 
-  it('hides the dashboard chrome and renders the kiosk orbit in kiosk mode', () => {
+  it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', () => {
     setPath('/dashboard');
     useSettingsStore.getState().updateSettings({ kioskMode: true });
 
@@ -110,7 +110,7 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
   });
 
-  it('navigates home from the kiosk orbit', () => {
+  it('navigates home from the kiosk more menu', () => {
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('settings');
 
@@ -126,7 +126,7 @@ describe('DashboardLayout', () => {
     expect(useNavigationStore.getState().activeSection).toBe('home');
   });
 
-  it('navigates to settings from the kiosk orbit', () => {
+  it('navigates to settings from the kiosk more menu', () => {
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('home');
 
@@ -142,7 +142,7 @@ describe('DashboardLayout', () => {
     expect(useNavigationStore.getState().activeSection).toBe('settings');
   });
 
-  it('toggles customize from the kiosk orbit', () => {
+  it('toggles customize from the kiosk more menu', () => {
     const onToggleEditMode = vi.fn();
     useSettingsStore.getState().updateSettings({ kioskMode: true });
 
@@ -158,7 +158,7 @@ describe('DashboardLayout', () => {
     expect(onToggleEditMode).toHaveBeenCalledTimes(1);
   });
 
-  it('switches rooms from the kiosk orbit', () => {
+  it('switches rooms from the kiosk more menu', () => {
     const onRoomChange = vi.fn();
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('home');

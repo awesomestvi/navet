@@ -50,7 +50,12 @@ export { RoomEyebrow } from './room-eyebrow';
 export { RotaryKnob, type RotaryKnobProps } from './rotary-knob';
 export { RoundControlButton } from './round-control-button';
 export { Select, type SelectProps } from './select';
-export { SheetSurface, type SheetSurfaceProps } from './sheet-surface';
+export {
+  SheetSurface,
+  SheetSurfaceHeader,
+  type SheetSurfaceHeaderProps,
+  type SheetSurfaceProps,
+} from './sheet-surface';
 export { SlideAction, type SlideActionProps } from './slide-action';
 export { Slider } from './slider';
 export { Stepper, type StepperItem, type StepperProps } from './stepper';

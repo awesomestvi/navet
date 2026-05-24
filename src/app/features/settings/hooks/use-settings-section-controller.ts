@@ -41,6 +41,7 @@ export function useSettingsSectionController() {
     entityInteractionMode,
     ambientLightBleed,
     kioskMode,
+    showHomeSummaryBar,
     updateSettings,
   } = useSettingsStore(
     useShallow((state) => ({
@@ -53,6 +54,7 @@ export function useSettingsSectionController() {
       entityInteractionMode: state.entityInteractionMode,
       ambientLightBleed: state.ambientLightBleed,
       kioskMode: state.kioskMode,
+      showHomeSummaryBar: state.showHomeSummaryBar,
       updateSettings: state.updateSettings,
     }))
   );
@@ -135,6 +137,7 @@ export function useSettingsSectionController() {
     setShowRestartOnboardingConfirm,
     setShowRevealAllConfirm,
     setShowTerms,
+    showHomeSummaryBar,
     setTheme,
     showAllEntities,
     showLicense,

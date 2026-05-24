@@ -14,4 +14,5 @@ export interface DeviceGridProps {
   onRemoveEntity?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
   usesHideAction?: boolean;
+  getDeviceHeaderSubtitle?: (device: DeviceWithType) => string | undefined;
 }

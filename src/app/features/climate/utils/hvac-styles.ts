@@ -62,7 +62,15 @@ export const getHVACModeButtonColor = (
   isOn: boolean,
   theme?: string
 ): string => {
-  if (currentMode === buttonMode && isOn) {
+  const normalizedButtonMode = buttonMode.toLowerCase();
+  const normalizedCurrentMode = currentMode.toLowerCase();
+  const isActive =
+    normalizedCurrentMode === normalizedButtonMode ||
+    (normalizedButtonMode === 'fan' && normalizedCurrentMode === 'fan_only') ||
+    (normalizedButtonMode === 'auto' &&
+      (normalizedCurrentMode === 'auto' || normalizedCurrentMode === 'heat_cool'));
+
+  if (isActive && isOn) {
     switch (buttonMode) {
       case 'cool':
         return '!border-0 shadow-none bg-gradient-to-br from-blue-400 to-blue-600 text-white';
@@ -70,6 +78,8 @@ export const getHVACModeButtonColor = (
         return '!border-0 shadow-none bg-gradient-to-br from-orange-400 to-orange-600 text-white';
       case 'fan':
         return '!border-0 shadow-none bg-gradient-to-br from-green-400 to-green-600 text-white';
+      case 'auto':
+        return '!border-0 shadow-none bg-gradient-to-br from-cyan-400 to-blue-600 text-white';
       default:
         return theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-white/10 text-gray-200';
     }

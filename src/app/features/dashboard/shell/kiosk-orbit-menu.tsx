@@ -1,12 +1,12 @@
 import {
   Check,
   Compass,
-  GripVertical,
   Home,
   LayoutGrid,
   Lightbulb,
   type LucideIcon,
   Settings,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -14,7 +14,7 @@ import type { MobileHeaderEditActions } from '@/app/components/layout/mobile-hea
 import type { MobileRoomNavigation } from '@/app/components/layout/mobile-room-dropdown';
 import { getVisibleRoomNavRooms } from '@/app/components/layout/room-nav.utils';
 import { RoomOrderDialog } from '@/app/components/layout/room-order-dialog';
-import { InteractivePill } from '@/app/components/primitives';
+import { InteractivePill, SheetSurfaceHeader } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { getDashboardRoomLabel } from '@/app/constants/rooms';
 import { useI18n, useTheme } from '@/app/hooks';
@@ -60,7 +60,13 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
     }))
   );
   const visibleRooms =
-    activeSection === 'home' && roomNavigation ? getVisibleRoomNavRooms(roomNavigation.rooms) : [];
+    activeSection === 'home' && roomNavigation
+      ? getVisibleRoomNavRooms(
+          roomNavigation.rooms.filter(
+            (room) => !(roomNavigation.hiddenRoomNames ?? []).includes(room)
+          )
+        )
+      : [];
   const showRooms = visibleRooms.length > 0;
   const showGroupBy =
     editActions?.isEditMode &&
@@ -91,8 +97,14 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
             className={`w-[min(22rem,calc(100vw-1.5rem))] rounded-[26px] border p-3 ${surface.panel} ${surface.border} ${surface.cardShadow}`}
           >
             <div className="space-y-3">
-              <section className="space-y-2">
-                <OrbitSectionLabel>{t('sidebar.orbit')}</OrbitSectionLabel>
+              <SheetSurfaceHeader
+                eyebrow={t('sidebar.orbit')}
+                title={t('sidebar.orbitTitle')}
+                closeLabel={t('common.close')}
+                onClose={() => setIsOpen(false)}
+              />
+
+              <section>
                 <div className="grid grid-cols-2 gap-2">
                   {SECTION_ITEMS.map(({ icon: Icon, labelKey, section }) => (
                     <OrbitActionButton
@@ -161,7 +173,7 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                         ) : null}
                         {editActions.reorderRooms ? (
                           <OrbitActionButton
-                            icon={GripVertical}
+                            icon={SlidersHorizontal}
                             label={t('dashboard.roomNav.reorder')}
                             onClick={openReorderDialog}
                           />
@@ -225,10 +237,12 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
           isOpen={isReorderDialogOpen}
           onOpenChange={setIsReorderDialogOpen}
           rooms={editActions.reorderRooms.rooms}
+          hiddenRoomNames={editActions.reorderRooms.hiddenRoomNames}
           areas={editActions.reorderRooms.areas}
           roomHiddenItemCounts={editActions.reorderRooms.roomHiddenItemCounts}
           roomEntityCounts={editActions.reorderRooms.roomItemCounts}
           onRoomOrderChange={editActions.reorderRooms.onRoomOrderChange}
+          onHiddenRoomsChange={editActions.reorderRooms.onHiddenRoomsChange}
         />
       ) : null}
     </>

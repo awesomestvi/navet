@@ -111,6 +111,7 @@ export interface MediaDevice extends BaseDevice {
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;
   supportsNextTrack?: boolean;
+  supportedFeatures?: number;
   groupMembers?: string[];
 }
 
@@ -168,6 +169,9 @@ export interface SensorDevice extends BaseDevice {
   unit: string;
   icon?: SensorIconType;
   entityType?: string;
+  deviceClass?: string;
+  status?: 'measurement' | 'active' | 'clear' | 'unavailable';
+  lastUpdated?: string;
 }
 
 // Vacuum device

@@ -5,6 +5,7 @@ export interface HVACCardProps {
   id: string;
   name: string;
   room: string;
+  headerSubtitle?: string;
   initialTemp?: number;
   initialCurrentTemp?: number;
   temperatureUnit?: TemperatureUnit;

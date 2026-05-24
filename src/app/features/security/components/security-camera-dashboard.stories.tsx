@@ -182,6 +182,7 @@ const labels = {
   noPrimaryTitle: 'No live security feeds',
   noPrimaryDescription:
     'Navet found camera entities, but none look like live security cameras yet.',
+  locksTitle: 'Smart Locks',
 };
 
 interface SecurityDashboardStoryProps {

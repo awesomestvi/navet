@@ -27,6 +27,10 @@ export function formatClock(value: unknown, locale: string, use24HourTime = fals
   return getTimeFormatter(locale, use24HourTime).format(date);
 }
 
+export function formatTimestampTime(value: unknown, locale: string, use24HourTime = false): string {
+  return formatClock(value, locale, use24HourTime);
+}
+
 export function formatDaylight(sunrise: unknown, sunset: unknown): string {
   if (typeof sunrise !== 'string' || typeof sunset !== 'string') return '--';
   const sunriseDate = new Date(sunrise);

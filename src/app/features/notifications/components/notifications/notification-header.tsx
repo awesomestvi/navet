@@ -12,6 +12,7 @@ interface NotificationHeaderProps {
   theme: ThemeType;
   primaryColor: PrimaryColor;
   getColorValue: (color: PrimaryColor) => string;
+  variant?: 'full' | 'actions';
 }
 
 export function NotificationHeader({
@@ -23,9 +24,39 @@ export function NotificationHeader({
   theme,
   primaryColor,
   getColorValue,
+  variant = 'full',
 }: NotificationHeaderProps) {
   const { t } = useI18n();
   const surface = getNotificationSurfaceTokens(theme);
+
+  const actions = hasNotifications ? (
+    <div className={`flex items-center gap-2.5 border-b px-3 py-2.5 ${surface.borderClassName}`}>
+      {unreadCount > 0 && onMarkAllAsRead && (
+        <Button
+          onClick={onMarkAllAsRead}
+          variant="secondary"
+          size="small"
+          leading={<Check className="h-3.5 w-3.5" />}
+          className="min-h-8 justify-start rounded-full px-3 text-xs"
+        >
+          {t('notifications.header.markAllRead')}
+        </Button>
+      )}
+      <Button
+        onClick={onClearAll}
+        variant="secondary"
+        size="small"
+        leading={<Trash2 className="h-3.5 w-3.5" />}
+        className="min-h-8 justify-start rounded-full px-3 text-xs"
+      >
+        {t('notifications.header.clearAll')}
+      </Button>
+    </div>
+  ) : null;
+
+  if (variant === 'actions') {
+    return actions;
+  }
 
   return (
     <>
@@ -55,32 +86,7 @@ export function NotificationHeader({
       </div>
 
       {/* Actions */}
-      {hasNotifications && (
-        <div
-          className={`flex items-center gap-2.5 border-b px-3 py-2.5 ${surface.borderClassName}`}
-        >
-          {unreadCount > 0 && onMarkAllAsRead && (
-            <Button
-              onClick={onMarkAllAsRead}
-              variant="secondary"
-              size="small"
-              leading={<Check className="h-3.5 w-3.5" />}
-              className="min-h-8 justify-start rounded-full px-3 text-xs"
-            >
-              {t('notifications.header.markAllRead')}
-            </Button>
-          )}
-          <Button
-            onClick={onClearAll}
-            variant="secondary"
-            size="small"
-            leading={<Trash2 className="h-3.5 w-3.5" />}
-            className="min-h-8 justify-start rounded-full px-3 text-xs"
-          >
-            {t('notifications.header.clearAll')}
-          </Button>
-        </div>
-      )}
+      {actions}
     </>
   );
 }

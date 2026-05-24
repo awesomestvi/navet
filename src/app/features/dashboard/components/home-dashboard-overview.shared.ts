@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import {
   type CardSize,
@@ -7,6 +8,7 @@ import {
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
 import { useViewportResize } from '@/app/hooks/use-viewport-resize';
+import type { Section } from '@/app/navigation/sections';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { getLogicalViewportWidth, getVisibleViewportSize } from '@/app/utils/viewport';
 import type {
@@ -47,6 +49,9 @@ export interface HomeDashboardOverviewProps {
   onOpenAddCardDialog?: (targetSectionId?: string) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onToggleEditMode?: () => void;
+  onNavigateSection?: (section: Section) => void;
+  routineCount?: number;
+  infoBadgeStrip?: ReactNode;
 }
 
 export type HomePresentationSectionProps = {

@@ -43,4 +43,36 @@ describe('useDashboardEntitiesStore', () => {
       'custom-note',
     ]);
   });
+
+  it('keeps normal sensors hidden until explicitly shown', () => {
+    useDashboardEntitiesStore.getState().showEntity('sensor.kitchen_temperature');
+    useDashboardEntitiesStore.getState().showEntity('binary_sensor.front_window');
+    useDashboardEntitiesStore.getState().showEntity('light.kitchen');
+
+    expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
+      'sensor.kitchen_temperature',
+      'binary_sensor.front_window',
+    ]);
+
+    useDashboardEntitiesStore.getState().hideEntity('sensor.kitchen_temperature');
+
+    expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
+      'binary_sensor.front_window',
+    ]);
+    expect(useDashboardEntitiesStore.getState().hiddenEntityIds).toContain(
+      'sensor.kitchen_temperature'
+    );
+  });
+
+  it('marks sensors visible when onboarding starts with all entities', () => {
+    useDashboardEntitiesStore
+      .getState()
+      .completeOnboarding(['light.kitchen', 'sensor.power', 'binary_sensor.motion'], false);
+
+    expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
+      'sensor.power',
+      'binary_sensor.motion',
+    ]);
+    expect(useDashboardEntitiesStore.getState().hiddenEntityIds).toEqual([]);
+  });
 });
