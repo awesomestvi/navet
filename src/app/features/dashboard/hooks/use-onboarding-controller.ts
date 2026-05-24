@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { useI18n, useNavigation } from '@/app/hooks';
+import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import {
   importDashboardConfigFromFile,
   importDashboardConfigFromUrl,
@@ -129,15 +130,23 @@ export function useOnboardingController({
     async (file: File) => {
       try {
         await importDashboardConfigFromFile(file);
-        sessionStorage.setItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY, 'true');
         toast.success(t('dashboard.feedback.configRestored'));
+        if (isHomeAssistantPanelMode()) {
+          setActiveSection('home');
+          changeRoom(ALL_ROOMS_ID);
+          setDashboardArrivalVariant('import');
+          setOnboardingTransition('import');
+          return;
+        }
+
+        sessionStorage.setItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY, 'true');
         reloadWindow();
       } catch (error) {
         console.error('[OnboardingController] Config import failed:', error);
         toast.error(t('dashboard.feedback.configImportFailed'));
       }
     },
-    [t]
+    [changeRoom, setActiveSection, t]
   );
 
   const onCompleteOnboardingClose = useCallback(() => {

@@ -123,6 +123,7 @@ export const settingsSelectors = {
   temperatureUnit: (state: SettingsState) => state.temperatureUnit,
   defaultView: (state: SettingsState) => state.defaultView,
   compactMode: (state: SettingsState) => state.compactMode,
+  kioskMode: (state: SettingsState) => state.kioskMode,
   disableAnimations: (state: SettingsState) => state.disableAnimations,
   lowPowerMode: (state: SettingsState) => state.lowPowerMode,
   effectsQuality: (state: SettingsState) => state.effectsQuality,

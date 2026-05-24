@@ -141,6 +141,30 @@ describe('auth adapters', () => {
     expect(window.location.search).toBe('');
   });
 
+  it('starts standalone OAuth login without reading the optional token store first', async () => {
+    const auth = createAuth('http://homeassistant.local:8123');
+    getAuthMock.mockResolvedValueOnce(auth);
+
+    const session = await standaloneOAuthAuth.login?.({
+      hassUrl: 'http://homeassistant.local:8123/',
+    });
+
+    expect(getAuthMock).toHaveBeenCalledWith({
+      hassUrl: 'http://homeassistant.local:8123',
+      redirectUrl: window.location.origin + window.location.pathname,
+      saveTokens: expect.any(Function),
+      loadTokens: expect.any(Function),
+      limitHassInstance: true,
+    });
+    const loadTokens = getAuthMock.mock.calls[0]?.[0]?.loadTokens as () => Promise<unknown>;
+    await expect(loadTokens()).resolves.toBeNull();
+    expect(session).toMatchObject({
+      runtime: 'standalone-oauth',
+      hassUrl: 'http://homeassistant.local:8123',
+      auth,
+    });
+  });
+
   it('rejects malformed standalone OAuth callbacks and clears server-side session data', async () => {
     window.history.replaceState({}, '', '/?auth_callback=1&code=oauth-code&state=not-base64');
     const fetchMock = vi

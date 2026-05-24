@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useCustomCardsStore, useDashboardEntitiesStore } from '@/app/features/dashboard';
+import {
+  useCardZonesStore,
+  useCustomCardsStore,
+  useDashboardEntitiesStore,
+  useHomeDashboardLayoutStore,
+} from '@/app/features/dashboard';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
   exportDashboardConfig,
@@ -27,6 +32,8 @@ describe('dashboard-config import hardening', () => {
     localStorage.clear();
     useCustomCardsStore.setState(useCustomCardsStore.getInitialState(), true);
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
+    useCardZonesStore.setState(useCardZonesStore.getInitialState(), true);
+    useHomeDashboardLayoutStore.setState(useHomeDashboardLayoutStore.getInitialState(), true);
     useNavigationStore.setState(useNavigationStore.getInitialState(), true);
   });
 
@@ -103,11 +110,51 @@ describe('dashboard-config import hardening', () => {
     expect(localStorage.getItem(STORAGE_KEYS.cardSizes)).toContain('light.kitchen');
     expect(localStorage.getItem(STORAGE_KEYS.cardSizes)).not.toContain('nested');
     expect(localStorage.getItem(STORAGE_KEYS.cardOrders)).toContain('switch.kettle');
-    expect(localStorage.getItem(STORAGE_KEYS.homeDashboardLayout)).toContain('null');
+    expect(useHomeDashboardLayoutStore.getState().cardIds).toEqual([]);
     expect(useDashboardEntitiesStore.getState().lockedCardIds).toEqual([
       'light.kitchen',
       'custom-note',
     ]);
+  });
+
+  it('applies imported persisted dashboard state to live stores', () => {
+    importDashboardConfig({
+      ...baseConfig,
+      cardZones: {
+        'light.kitchen': 'actions',
+      },
+      homeDashboardLayout: {
+        mode: 'sectioned',
+        showHero: false,
+        cardIds: ['light.kitchen'],
+        sections: [
+          {
+            id: 'main',
+            title: 'Main',
+            x: 0,
+            y: 0,
+            w: 12,
+            h: 1,
+          },
+        ],
+        cardSectionAssignments: {
+          'light.kitchen': 'main',
+        },
+      },
+      roomOrder: ['Kitchen'],
+    });
+
+    expect(useCardZonesStore.getState().cardZones).toEqual({
+      'light.kitchen': 'actions',
+    });
+    expect(useHomeDashboardLayoutStore.getState()).toMatchObject({
+      mode: 'sectioned',
+      showHero: false,
+      cardIds: ['light.kitchen'],
+      cardSectionAssignments: {
+        'light.kitchen': 'main',
+      },
+    });
   });
 
   it('exports locked card ids with dashboard entity state', () => {

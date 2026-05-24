@@ -82,6 +82,11 @@ export const esMessages = {
   'settings.dashboard.sectionTitle': 'Panel',
   'settings.dashboard.sectionDescription':
     'Gestiona qué aparece en el panel y cómo se respalda esta configuración local.',
+  'settings.dashboard.kioskMode.title': 'Modo kiosco',
+  'settings.dashboard.kioskMode.description':
+    'Oculta el encabezado y la navegación para que el panel llene una pantalla de pared.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Usa el menú Orbit de abajo a la derecha para volver al inicio, abrir ajustes o personalizar el panel.',
   'settings.dashboard.entityVisibility.title': 'Visibilidad de entidades',
   'settings.dashboard.entityVisibility.description':
     'Navet ahora usa un solo modelo de visibilidad. Quita entidades desde el modo de edición y vuélvelas a agregar después desde Add Entity.',

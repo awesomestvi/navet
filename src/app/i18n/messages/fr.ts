@@ -83,6 +83,11 @@ export const frMessages = {
   'settings.dashboard.sectionTitle': 'Tableau de bord',
   'settings.dashboard.sectionDescription':
     'Gérez ce qui apparaît sur le tableau et la manière dont cette configuration locale est sauvegardée.',
+  'settings.dashboard.kioskMode.title': 'Mode kiosque',
+  'settings.dashboard.kioskMode.description':
+    'Masque l’en-tête et la navigation pour que le tableau de bord remplisse un écran mural.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Utilisez le menu Orbit en bas à droite pour revenir à l’accueil, ouvrir les paramètres ou personnaliser le tableau de bord.',
   'settings.dashboard.entityVisibility.title': 'Visibilité des entités',
   'settings.dashboard.entityVisibility.description':
     'Navet utilise maintenant un modèle unique de visibilité. Retirez des entités en mode édition, puis rajoutez-les plus tard via Add Entity.',

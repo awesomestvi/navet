@@ -7,7 +7,9 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { usePrimaryColor, useThemeMode, useWallpaper } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
+import { settingsSelectors } from '@/app/stores/selectors';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
+import { KioskOrbitMenu } from './kiosk-orbit-menu';
 import type { DashboardLayoutProps } from './types';
 
 /**
@@ -29,6 +31,7 @@ export const DashboardLayout = memo(function DashboardLayout({
       effectsQuality: state.effectsQuality,
     }))
   );
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
   const isBlack = theme === 'black';
@@ -134,32 +137,46 @@ export const DashboardLayout = memo(function DashboardLayout({
 
       {/* Content */}
       <div className="relative z-10 overflow-x-clip">
-        <Sidebar
-          activeColorValue={headerController.activeColorValue}
-          handleClearSearch={headerController.handleClearSearch}
-          handleSearchChange={headerController.handleSearchChange}
-          handleToggleMobileSearch={headerController.handleToggleMobileSearch}
-          hoverBg={headerController.hoverBg}
-          inputBg={headerController.inputBg}
-          isMobileSearchOpen={headerController.isMobileSearchOpen}
-          isSearchActive={headerController.isSearchActive}
-          isSearchFocused={headerController.isSearchFocused}
-          mobileRoomNavigation={mobileRoomNavigation}
-          mobileSearchInputRef={headerController.mobileSearchInputRef}
-          searchQuery={headerController.searchQuery}
-          setIsSearchFocused={headerController.setIsSearchFocused}
-          textPrimary={headerController.textPrimary}
-          textSecondary={headerController.textSecondary}
-        />
-
-        <div className="safe-area-pt-5 min-w-0 flex flex-col gap-3.5 overflow-x-clip p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8">
-          <Header
-            controller={headerController}
-            mobileEditActions={mobileEditActions}
+        {kioskMode ? null : (
+          <Sidebar
+            activeColorValue={headerController.activeColorValue}
+            handleClearSearch={headerController.handleClearSearch}
+            handleSearchChange={headerController.handleSearchChange}
+            handleToggleMobileSearch={headerController.handleToggleMobileSearch}
+            hoverBg={headerController.hoverBg}
+            inputBg={headerController.inputBg}
+            isMobileSearchOpen={headerController.isMobileSearchOpen}
+            isSearchActive={headerController.isSearchActive}
+            isSearchFocused={headerController.isSearchFocused}
             mobileRoomNavigation={mobileRoomNavigation}
+            mobileSearchInputRef={headerController.mobileSearchInputRef}
+            searchQuery={headerController.searchQuery}
+            setIsSearchFocused={headerController.setIsSearchFocused}
+            textPrimary={headerController.textPrimary}
+            textSecondary={headerController.textSecondary}
           />
+        )}
+
+        <div
+          data-testid="dashboard-layout-content"
+          className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${
+            kioskMode
+              ? 'gap-3 p-2 pb-24 md:gap-4 md:p-4 md:pb-24 lg:p-5 lg:pb-24'
+              : 'gap-3.5 p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8'
+          }`}
+        >
+          {kioskMode ? null : (
+            <Header
+              controller={headerController}
+              mobileEditActions={mobileEditActions}
+              mobileRoomNavigation={mobileRoomNavigation}
+            />
+          )}
           {children}
         </div>
+        {kioskMode ? (
+          <KioskOrbitMenu editActions={mobileEditActions} roomNavigation={mobileRoomNavigation} />
+        ) : null}
       </div>
     </div>
   );

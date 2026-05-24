@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
 import {
   isMediaPlayerProxyUrl,
   resolveHomeAssistantAbsoluteUrl,
@@ -37,6 +38,11 @@ function isSameOriginArtworkUrl(artworkUrl: string) {
   } catch {
     return false;
   }
+}
+
+function getHomeAssistantAuthorizationHeaders() {
+  const accessToken = homeAssistantService.getConnection()?.options?.auth?.accessToken;
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
 }
 
 export function useMediaArtworkResolution({
@@ -138,6 +144,7 @@ export function useMediaArtworkResolution({
 
       const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork), {
         credentials: 'same-origin',
+        headers: isPanelMode ? undefined : getHomeAssistantAuthorizationHeaders(),
       });
       if (!response.ok) {
         return { artworkUrl: null, requestKey };
@@ -196,6 +203,7 @@ export function useMediaArtworkResolution({
     artworkRequestKey,
     canFetchResolvedArtwork,
     entityId,
+    isPanelMode,
     needsAuthenticatedThumbnail,
     resolvedArtwork,
   ]);

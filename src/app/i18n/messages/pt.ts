@@ -80,6 +80,11 @@ export const ptMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gerencie o que aparece no painel e como esta configuração local é salva como backup.',
+  'settings.dashboard.kioskMode.title': 'Modo quiosque',
+  'settings.dashboard.kioskMode.description':
+    'Oculta o cabeçalho e a navegação para o dashboard preencher uma tela de parede.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Use o menu Orbit no canto inferior direito para voltar ao início, abrir Configurações ou personalizar o dashboard.',
   'settings.dashboard.entityVisibility.title': 'Visibilidade das entidades',
   'settings.dashboard.entityVisibility.description':
     'O Navet agora usa um único modelo de visibilidade. Remova entidades no modo de edição e adicione-as de volta depois em Adicionar Entidade.',

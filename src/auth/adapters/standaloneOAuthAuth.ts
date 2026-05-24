@@ -41,7 +41,11 @@ function saveTokens(data: AuthData | null): void {
     credentials: 'same-origin',
     headers: data ? { 'Content-Type': 'application/json' } : undefined,
     body: data ? JSON.stringify(data) : undefined,
-  });
+  }).catch(() => undefined);
+}
+
+async function noStoredTokens(): Promise<AuthData | null> {
+  return null;
 }
 
 async function clearStoredTokens(): Promise<void> {
@@ -174,7 +178,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
       hassUrl,
       redirectUrl: window.location.origin + window.location.pathname,
       saveTokens,
-      loadTokens,
+      loadTokens: noStoredTokens,
       limitHassInstance: true,
     });
 

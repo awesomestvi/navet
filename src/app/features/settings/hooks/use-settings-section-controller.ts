@@ -40,6 +40,7 @@ export function useSettingsSectionController() {
     use24HourTime,
     entityInteractionMode,
     ambientLightBleed,
+    kioskMode,
     updateSettings,
   } = useSettingsStore(
     useShallow((state) => ({
@@ -51,6 +52,7 @@ export function useSettingsSectionController() {
       use24HourTime: state.use24HourTime,
       entityInteractionMode: state.entityInteractionMode,
       ambientLightBleed: state.ambientLightBleed,
+      kioskMode: state.kioskMode,
       updateSettings: state.updateSettings,
     }))
   );
@@ -119,6 +121,7 @@ export function useSettingsSectionController() {
     handleWallpaperUpload,
     hiddenEntityIds,
     importInputRef,
+    kioskMode,
     language,
     languageOptions,
     lowPowerMode,

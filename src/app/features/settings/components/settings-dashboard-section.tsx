@@ -1,4 +1,5 @@
 import { Download, LayoutGrid, Scale, Upload } from 'lucide-react';
+import { Button } from '@/app/components/primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,27 +48,27 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
         styles={styles}
       >
         <div className="flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="small"
+            leading={<LayoutGrid className="h-4 w-4" />}
             onClick={() => setShowRevealAllConfirm(true)}
             disabled={hiddenEntityIds.length === 0}
-            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium transition-colors ${
-              hiddenEntityIds.length === 0
-                ? 'cursor-not-allowed opacity-50'
-                : `border ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`
-            }`}
+            className="rounded-full"
           >
-            <LayoutGrid className="h-4 w-4" />
-            <span>{t('settings.dashboard.entityVisibility.revealAll')}</span>
-          </button>
-          <button
+            {t('settings.dashboard.entityVisibility.revealAll')}
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="small"
+            leading={<Scale className="h-4 w-4" />}
             onClick={() => setShowRestartOnboardingConfirm(true)}
-            className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+            className="rounded-full"
           >
-            <Scale className="h-4 w-4" />
-            <span>{t('settings.dashboard.entityVisibility.restartOnboarding')}</span>
-          </button>
+            {t('settings.dashboard.entityVisibility.restartOnboarding')}
+          </Button>
         </div>
         <p className={`mt-3 text-sm leading-relaxed ${styles.subtleColor}`}>
           {t('settings.dashboard.entityVisibility.hiddenSummary', {

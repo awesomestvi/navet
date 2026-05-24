@@ -79,6 +79,11 @@ export const enMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Manage what appears on the board and how this local setup is backed up.',
+  'settings.dashboard.kioskMode.title': 'Kiosk mode',
+  'settings.dashboard.kioskMode.description':
+    'Hide the header and navigation chrome so the dashboard can fill a wall display.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Use the bottom-right orbit menu to return Home, open Settings, or customize the dashboard.',
   'settings.dashboard.entityVisibility.title': 'Entity visibility',
   'settings.dashboard.entityVisibility.description':
     'Navet now uses one visibility model. Remove entities from edit mode, then add them back later from Add Entity.',

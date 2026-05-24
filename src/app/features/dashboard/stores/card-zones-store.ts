@@ -5,6 +5,7 @@ import { ZONE_ORDERED, type ZoneName } from '../zones/zone-types';
 
 interface CardZonesStore {
   cardZones: Record<string, ZoneName>;
+  replaceCardZones: (cardZones: Record<string, unknown>) => void;
   updateCardZone: (id: string, zone: ZoneName) => void;
 }
 
@@ -75,6 +76,7 @@ export const useCardZonesStore = create<CardZonesStore>()(
   persist(
     (set) => ({
       cardZones: {},
+      replaceCardZones: (cardZones) => set({ cardZones: normalizeCardZones(cardZones) }),
       updateCardZone: (id, zone) =>
         set((state) => ({
           cardZones: {

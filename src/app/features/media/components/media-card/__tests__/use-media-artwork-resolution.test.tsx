@@ -5,9 +5,18 @@ import { renderHookWithProviders } from '@/test/render';
 const { fetchMediaThumbnailDataUrlMock } = vi.hoisted(() => ({
   fetchMediaThumbnailDataUrlMock: vi.fn(),
 }));
+const { getConnectionMock } = vi.hoisted(() => ({
+  getConnectionMock: vi.fn(),
+}));
 
 vi.mock('@/app/features/media/utils/media-thumbnail', () => ({
   fetchMediaThumbnailDataUrl: fetchMediaThumbnailDataUrlMock,
+}));
+
+vi.mock('@/app/services/home-assistant.service', () => ({
+  homeAssistantService: {
+    getConnection: getConnectionMock,
+  },
 }));
 
 import { useMediaArtworkResolution } from '../use-media-artwork-resolution';
@@ -32,6 +41,7 @@ describe('useMediaArtworkResolution', () => {
     document.querySelector('base')?.remove();
     window.history.replaceState(null, '', '/');
     fetchMediaThumbnailDataUrlMock.mockReset();
+    getConnectionMock.mockReset();
     vi.restoreAllMocks();
     window.__NAVET_PANEL__ = false;
     window.__NAVET_CONFIG__ = undefined;
@@ -235,6 +245,49 @@ describe('useMediaArtworkResolution', () => {
       {
         credentials: 'same-origin',
         headers: undefined,
+      }
+    );
+  });
+
+  it('uses the active Home Assistant OAuth token for Docker proxy artwork fetches', async () => {
+    installRuntimeProxyConfig();
+    getConnectionMock.mockReturnValue({
+      options: {
+        auth: {
+          accessToken: 'oauth-access-token',
+        },
+      },
+    });
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/docker-oauth-album-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/docker-oauth-album-art');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        headers: {
+          Authorization: 'Bearer oauth-access-token',
+        },
       }
     );
   });
