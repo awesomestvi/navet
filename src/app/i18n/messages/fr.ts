@@ -507,21 +507,11 @@ export const frMessages = {
   'login.urlLabel': 'URL de la maison connectée',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Adresse du serveur de votre maison connectée',
-  'login.tokenLabel': 'Jeton d’accès longue durée',
-  'login.tokenPlaceholder': 'Entrez votre jeton d’accès',
-  'login.tokenHelp': 'Créez-en un dans Profil -> Sécurité -> Jetons d’accès longue durée',
   'login.connect': 'Connecter',
   'login.connecting': 'Connexion...',
   'login.retrying': 'Nouvelle tentative...',
-  'login.help':
-    'Besoin d’aide ? Ouvrez votre instance de maison connectée sur /profile/security pour créer un jeton d’accès longue durée.',
   'login.footer': 'Vos identifiants sont stockes localement et jamais partages',
-  'login.showToken': 'Afficher le jeton',
-  'login.hideToken': 'Masquer le jeton',
   'login.errors.urlRequired': 'Veuillez saisir l’URL de votre maison connectée',
-  'login.errors.tokenRequired': 'Veuillez saisir votre jeton d’accès',
-  'login.errors.tokenInvalid':
-    'Saisissez un jeton d’accès longue durée sans espaces ni retours à la ligne',
   'login.errors.urlInvalid':
     'Veuillez saisir une URL valide (par ex. http://homeassistant.local:8123)',
   'login.errors.saveFailed': 'Impossible d’enregistrer la configuration',

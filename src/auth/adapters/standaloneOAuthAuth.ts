@@ -1,84 +1,213 @@
+import type { AuthData } from 'home-assistant-js-websocket';
+import { getAuth } from 'home-assistant-js-websocket';
+import { resolveAddonLocalEndpointUrl } from '@/app/utils/home-assistant-connection-target';
 import type { AuthAdapter, AuthSession } from '../types';
 
-const STORAGE_KEY = 'navet_auth_session';
+const AUTH_SESSION_ENDPOINT = '/__navet_auth__/session';
+const AUTH_CALLBACK_PARAM = 'auth_callback';
+const OAUTH_CALLBACK_PARAMS = [AUTH_CALLBACK_PARAM, 'code', 'state'];
+
+interface OAuthCallbackState {
+  hassUrl: string;
+  clientId: string | null;
+}
+
+function getAuthSessionEndpoint() {
+  return resolveAddonLocalEndpointUrl(AUTH_SESSION_ENDPOINT);
+}
+
+async function loadTokens(): Promise<AuthData | null> {
+  const response = await fetch(getAuthSessionEndpoint(), {
+    cache: 'no-store',
+    credentials: 'same-origin',
+  });
+
+  if (response.status === 204 || response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok || !response.headers.get('Content-Type')?.includes('application/json')) {
+    return null;
+  }
+
+  return (await response.json()) as AuthData;
+}
+
+function saveTokens(data: AuthData | null): void {
+  const method = data ? 'PUT' : 'DELETE';
+  void fetch(getAuthSessionEndpoint(), {
+    method,
+    cache: 'no-store',
+    credentials: 'same-origin',
+    headers: data ? { 'Content-Type': 'application/json' } : undefined,
+    body: data ? JSON.stringify(data) : undefined,
+  });
+}
+
+async function clearStoredTokens(): Promise<void> {
+  await fetch(getAuthSessionEndpoint(), {
+    method: 'DELETE',
+    cache: 'no-store',
+    credentials: 'same-origin',
+  }).catch(() => undefined);
+}
+
+function isOAuthCallbackState(value: unknown): value is OAuthCallbackState {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const state = value as Partial<OAuthCallbackState>;
+  return (
+    typeof state.hassUrl === 'string' &&
+    /^https?:\/\//.test(state.hassUrl) &&
+    (typeof state.clientId === 'string' || state.clientId === null)
+  );
+}
+
+function getOAuthCallbackState(): OAuthCallbackState | null {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get(AUTH_CALLBACK_PARAM) !== '1') {
+    return null;
+  }
+
+  const encodedState = params.get('state');
+  if (!encodedState) {
+    throw new Error('Invalid Home Assistant OAuth callback');
+  }
+
+  try {
+    const parsed = JSON.parse(window.atob(encodedState)) as unknown;
+    if (!isOAuthCallbackState(parsed)) {
+      throw new Error('Invalid callback state');
+    }
+    return parsed;
+  } catch {
+    throw new Error('Invalid Home Assistant OAuth callback');
+  }
+}
+
+function clearOAuthCallbackUrl(): void {
+  const params = new URLSearchParams(window.location.search);
+  for (const param of OAUTH_CALLBACK_PARAMS) {
+    params.delete(param);
+  }
+
+  const nextSearch = params.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState(null, '', nextUrl);
+}
 
 export const standaloneOAuthAuth: AuthAdapter = {
   kind: 'standalone-oauth',
   async init() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthSession;
+    const storedTokens = await loadTokens().catch(() => null);
+    if (storedTokens) {
+      const auth = await getAuth({
+        hassUrl: storedTokens.hassUrl,
+        loadTokens,
+        saveTokens,
+        limitHassInstance: true,
+      });
+
+      if (auth.expired) {
+        await auth.refreshAccessToken();
+      }
+
+      if (new URLSearchParams(window.location.search).get(AUTH_CALLBACK_PARAM) === '1') {
+        clearOAuthCallbackUrl();
+      }
+
+      return {
+        runtime: 'standalone-oauth',
+        hassUrl: auth.data.hassUrl,
+        auth,
+        expiresAt: auth.data.expires,
+      };
+    }
+
+    let callbackState: OAuthCallbackState | null = null;
+    try {
+      callbackState = getOAuthCallbackState();
+    } catch (error) {
+      await clearStoredTokens();
+      throw error;
+    }
+
+    if (!callbackState) return null;
+
+    const auth = await getAuth({
+      hassUrl: callbackState.hassUrl,
+      clientId: callbackState.clientId,
+      loadTokens,
+      saveTokens,
+      limitHassInstance: true,
+    }).catch(async (error: unknown) => {
+      if (callbackState) {
+        await clearStoredTokens();
+      }
+      throw error;
+    });
+
+    if (auth.expired) {
+      await auth.refreshAccessToken();
+    }
+
+    if (callbackState) {
+      clearOAuthCallbackUrl();
+    }
+
+    return {
+      runtime: 'standalone-oauth',
+      hassUrl: auth.data.hassUrl,
+      auth,
+      expiresAt: auth.data.expires,
+    };
   },
-  async login(input) {
+  async login(input): Promise<AuthSession> {
     if (!input?.hassUrl) {
       throw new Error('Home Assistant URL is required');
     }
 
-    const authUrl = new URL('/auth/authorize', input.hassUrl);
-    authUrl.searchParams.set('client_id', window.location.origin);
-    authUrl.searchParams.set('redirect_uri', `${window.location.origin}/`);
-    authUrl.searchParams.set('response_type', 'code');
+    const hassUrl = input.hassUrl.trim().replace(/\/$/, '');
+    const auth = await getAuth({
+      hassUrl,
+      redirectUrl: window.location.origin + window.location.pathname,
+      saveTokens,
+      loadTokens,
+      limitHassInstance: true,
+    });
 
-    const callbackCode = new URL(window.location.href).searchParams.get('code');
-    if (!callbackCode) {
-      window.location.assign(authUrl.toString());
-      throw new Error('OAuth redirect started');
+    if (auth.expired) {
+      await auth.refreshAccessToken();
     }
 
-    const tokenResponse = await fetch(new URL('/auth/token', input.hassUrl), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: callbackCode,
-        client_id: window.location.origin,
-      }),
-    });
-
-    if (!tokenResponse.ok) throw new Error('OAuth token exchange failed');
-    const token = (await tokenResponse.json()) as {
-      access_token: string;
-      refresh_token: string;
-      expires_in: number;
+    return {
+      runtime: 'standalone-oauth',
+      hassUrl: auth.data.hassUrl,
+      auth,
+      expiresAt: auth.data.expires,
     };
-
-    const session: AuthSession = {
-      hassUrl: input.hassUrl,
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token,
-      expiresAt: Date.now() + token.expires_in * 1000,
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    return session;
   },
   async refresh(session) {
-    if (!session.refreshToken) throw new Error('Missing refresh token');
-    const response = await fetch(new URL('/auth/token', session.hassUrl), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: session.refreshToken,
-        client_id: window.location.origin,
-      }),
-    });
-    if (!response.ok) throw new Error('Refresh failed');
-    const token = (await response.json()) as {
-      access_token: string;
-      expires_in: number;
-      refresh_token?: string;
-    };
-    const updated: AuthSession = {
+    if (!session.auth) throw new Error('Missing OAuth session');
+    await session.auth.refreshAccessToken();
+    return {
       ...session,
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token ?? session.refreshToken,
-      expiresAt: Date.now() + token.expires_in * 1000,
+      expiresAt: session.auth.data.expires,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
   },
   async logout() {
-    localStorage.removeItem(STORAGE_KEY);
+    const storedTokens = await loadTokens().catch(() => null);
+    if (storedTokens) {
+      const auth = await getAuth({
+        hassUrl: storedTokens.hassUrl,
+        loadTokens,
+        saveTokens,
+        limitHassInstance: true,
+      }).catch(() => null);
+      await Promise.resolve(auth?.revoke()).catch(() => undefined);
+    }
+    await clearStoredTokens();
   },
 };

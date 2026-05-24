@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
+import type { AuthSession } from '@/auth/types';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
@@ -11,28 +12,19 @@ import { useAccentColor, useHomeAssistant } from './hooks';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { useErrorStore, useSettingsStore } from './stores';
-import { useConfig } from './stores/config-store';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
-import {
-  appErrorSelectors,
-  configSelectors,
-  homeAssistantSelectors,
-  settingsSelectors,
-} from './stores/selectors';
+import { appErrorSelectors, homeAssistantSelectors, settingsSelectors } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
-import { resolveHomeAssistantConnectionUrl } from './utils/home-assistant-connection-target';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
-function getConnectionAttemptKey(config: { url: string; token: string }) {
-  return `${resolveHomeAssistantConnectionUrl(config)}\n${config.token}`;
+function getConnectionAttemptKey(session: AuthSession) {
+  return `${session.runtime}\n${session.hassUrl}\n${session.expiresAt ?? ''}`;
 }
 
 function AppContent() {
   const { session, ready, logout } = useAuthSession();
   const isAuthenticated = Boolean(session);
-  const authConfig = session ? { url: session.hassUrl, token: session.accessToken } : null;
-  const haConfig = useConfig(configSelectors.config);
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
@@ -60,21 +52,15 @@ function AppContent() {
   useViewportResize(syncViewportEnvironment);
 
   const retryConnect = useCallback(() => {
-    const configToUse = authConfig || haConfig;
-    if (!isAuthenticated || !configToUse) {
+    if (!isAuthenticated || !session) {
       return;
     }
     failedConnectionAttemptKey.current = null;
-    const hassUrl = resolveHomeAssistantConnectionUrl(configToUse);
-    const connectionConfig = {
-      hassUrl,
-      token: configToUse.token,
-    };
 
-    void connect(connectionConfig).catch(() => {
-      failedConnectionAttemptKey.current = getConnectionAttemptKey(configToUse);
+    void connect(session).catch(() => {
+      failedConnectionAttemptKey.current = getConnectionAttemptKey(session);
     });
-  }, [isAuthenticated, authConfig, haConfig, connect]);
+  }, [isAuthenticated, session, connect]);
 
   const resetSessionToLogin = useCallback(() => {
     failedConnectionAttemptKey.current = null;
@@ -89,23 +75,17 @@ function AppContent() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const configToUse = authConfig || haConfig;
-
-    if (isAuthenticated && configToUse && !connected && !connecting && !appError) {
-      const attemptKey = getConnectionAttemptKey(configToUse);
+    if (isAuthenticated && session && !connected && !connecting && !appError) {
+      const attemptKey = getConnectionAttemptKey(session);
       if (failedConnectionAttemptKey.current === attemptKey) {
         return;
       }
 
-      const hassUrl = resolveHomeAssistantConnectionUrl(configToUse);
-      void connect({
-        hassUrl,
-        token: configToUse.token,
-      }).catch(() => {
+      void connect(session).catch(() => {
         failedConnectionAttemptKey.current = attemptKey;
       });
     }
-  }, [isAuthenticated, authConfig, haConfig, connected, connecting, appError, connect]);
+  }, [isAuthenticated, session, connected, connecting, appError, connect]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);
@@ -155,7 +135,7 @@ function AppContent() {
   return (
     <>
       <ErrorDisplay
-        onRetry={isAuthenticated && (authConfig || haConfig) ? retryConnect : undefined}
+        onRetry={isAuthenticated && session ? retryConnect : undefined}
         onResetSession={isAuthenticated ? resetSessionToLogin : undefined}
       />
       <PwaUpdatePrompt />

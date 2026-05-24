@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
 import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
-import { useAuth } from '@/app/stores/auth-store';
-import { authSelectors } from '@/app/stores/selectors';
 import {
   isMediaPlayerProxyUrl,
   resolveHomeAssistantAbsoluteUrl,
@@ -49,7 +47,6 @@ export function useMediaArtworkResolution({
   liveArtworkKey,
   homeAssistantUrl,
 }: UseMediaArtworkResolutionParams) {
-  const authToken = useAuth(authSelectors.config)?.token;
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
   const [thumbnailArtworkUrl, setThumbnailArtworkUrl] = useState<string | null>(null);
   const latestObjectUrlRef = useRef<string | null>(null);
@@ -83,7 +80,7 @@ export function useMediaArtworkResolution({
       (isProxiedArtwork ||
         isPanelMode ||
         isSameOriginArtwork ||
-        (shouldUseDirectAuthenticatedArtwork && authToken))
+        shouldUseDirectAuthenticatedArtwork)
   );
   const canUseResolvedArtworkFallback =
     !needsAuthenticatedThumbnail ||
@@ -141,7 +138,6 @@ export function useMediaArtworkResolution({
 
       const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork), {
         credentials: 'same-origin',
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       });
       if (!response.ok) {
         return { artworkUrl: null, requestKey };
@@ -198,7 +194,6 @@ export function useMediaArtworkResolution({
     };
   }, [
     artworkRequestKey,
-    authToken,
     canFetchResolvedArtwork,
     entityId,
     needsAuthenticatedThumbnail,

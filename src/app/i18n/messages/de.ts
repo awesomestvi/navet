@@ -505,21 +505,11 @@ export const deMessages = {
   'login.urlLabel': 'Smart-Home-URL',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Die Adresse deines Smart-Home-Servers',
-  'login.tokenLabel': 'Lang lebender Zugriffstoken',
-  'login.tokenPlaceholder': 'Zugriffstoken eingeben',
-  'login.tokenHelp': 'Erstelle ihn unter Profil -> Sicherheit -> Lang lebende Zugriffstoken',
   'login.connect': 'Verbinden',
   'login.connecting': 'Verbinde...',
   'login.retrying': 'Erneuter Versuch...',
-  'login.help':
-    'Brauchst du Hilfe? Besuche deine Smart-Home-Instanz unter /profile/security, um einen lang lebenden Zugriffstoken zu erstellen.',
   'login.footer': 'Deine Zugangsdaten werden lokal gespeichert und niemals weitergegeben',
-  'login.showToken': 'Token anzeigen',
-  'login.hideToken': 'Token ausblenden',
   'login.errors.urlRequired': 'Bitte gib die URL deines Smart Homes ein',
-  'login.errors.tokenRequired': 'Bitte gib deinen Zugriffstoken ein',
-  'login.errors.tokenInvalid':
-    'Gib einen langlebigen Zugriffstoken ohne Leerzeichen oder Zeilenumbrüche ein',
   'login.errors.urlInvalid':
     'Bitte gib eine gültige URL ein (z. B. http://homeassistant.local:8123)',
   'login.errors.saveFailed': 'Konfiguration konnte nicht gespeichert werden',

@@ -1,5 +1,3 @@
-import { useAuthStore } from '@/app/stores/auth-store';
-import { useConfigStore } from '@/app/stores/config-store';
 import { useEditModeStore } from '@/app/stores/edit-mode-store';
 import { useErrorStore } from '@/app/stores/error-store';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
@@ -19,8 +17,6 @@ export async function resetAppStores() {
   localStorage.clear();
   sessionStorage.clear();
 
-  resetStore(useAuthStore);
-  resetStore(useConfigStore);
   resetStore(useEditModeStore);
   resetStore(useErrorStore);
   resetStore(homeAssistantStore);

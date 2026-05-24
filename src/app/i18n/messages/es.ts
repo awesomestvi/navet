@@ -504,21 +504,11 @@ export const esMessages = {
   'login.urlLabel': 'URL del hogar inteligente',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'La dirección del servidor de tu hogar inteligente',
-  'login.tokenLabel': 'Token de acceso de larga duración',
-  'login.tokenPlaceholder': 'Introduce tu token de acceso',
-  'login.tokenHelp': 'Crea uno en Perfil -> Seguridad -> Tokens de acceso de larga duración',
   'login.connect': 'Conectar',
   'login.connecting': 'Conectando...',
   'login.retrying': 'Reintentando...',
-  'login.help':
-    '¿Necesitas ayuda? Visita tu instancia del hogar inteligente en /profile/security para crear un token de acceso de larga duración.',
   'login.footer': 'Tus credenciales se guardan localmente y nunca se comparten',
-  'login.showToken': 'Mostrar token',
-  'login.hideToken': 'Ocultar token',
   'login.errors.urlRequired': 'Introduce la URL de tu hogar inteligente',
-  'login.errors.tokenRequired': 'Introduce tu token de acceso',
-  'login.errors.tokenInvalid':
-    'Introduce un token de acceso de larga duración sin espacios ni saltos de línea',
   'login.errors.urlInvalid':
     'Introduce una URL válida (por ejemplo, http://homeassistant.local:8123)',
   'login.errors.saveFailed': 'No se pudo guardar la configuración',

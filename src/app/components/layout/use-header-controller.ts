@@ -4,9 +4,9 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useNotifications } from '@/app/features/notifications';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
@@ -25,7 +25,7 @@ function selectPersonEntities(state: HomeAssistantStore) {
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const authConfig = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const personEntities = useHomeAssistant(selectPersonEntities, shallow);
   const user = useHomeAssistant(homeAssistantSelectors.user);
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
@@ -81,8 +81,8 @@ export function useHeaderController() {
       return entityPicture;
     }
 
-    return authConfig ? `${authConfig.url}${entityPicture}` : entityPicture;
-  }, [authConfig, personEntities, user?.name]);
+    return hassUrl ? `${hassUrl}${entityPicture}` : entityPicture;
+  }, [hassUrl, personEntities, user?.name]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),

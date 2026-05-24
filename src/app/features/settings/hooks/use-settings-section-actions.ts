@@ -10,7 +10,6 @@ import { readFileAsDataUrl, validateImageFile } from '@/app/utils/image-upload';
 
 interface SettingsSectionActionDeps {
   t: TranslateFn;
-  clearConfig: () => void;
   setWallpaper: (wallpaper: string | null) => void;
   setActiveSection: (section: 'home') => void;
   setCurrentRoom: (room: string) => void;
@@ -19,7 +18,6 @@ interface SettingsSectionActionDeps {
 
 export function useSettingsSectionActions({
   t,
-  clearConfig,
   setWallpaper,
   setActiveSection,
   setCurrentRoom,
@@ -42,7 +40,6 @@ export function useSettingsSectionActions({
 
   const handleResetConnection = () => {
     if (confirm(t('settings.feedback.resetConnectionConfirm'))) {
-      clearConfig();
       performLogout();
       toast.info(t('settings.feedback.resetConnectionSuccess'));
     }

@@ -231,8 +231,8 @@ describe('homeAssistantStore', () => {
     };
 
     await homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://ha.example.com',
-      token: 'abc',
     });
 
     expect(homeAssistantServiceStub.addListener).toHaveBeenCalledTimes(5);
@@ -244,8 +244,8 @@ describe('homeAssistantStore', () => {
 
   it('marks registries hydrated after registry service events', async () => {
     await homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://ha.example.com',
-      token: 'abc',
     });
     homeAssistantStore.setState({ registriesHydrated: false });
 
@@ -264,8 +264,8 @@ describe('homeAssistantStore', () => {
   it('debounces entity updates from the service', async () => {
     vi.useFakeTimers();
     await homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://ha.example.com',
-      token: 'abc',
     });
 
     homeAssistantServiceStub.entities = {
@@ -286,8 +286,8 @@ describe('homeAssistantStore', () => {
 
   it('disconnects and resets the store', async () => {
     await homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://ha.example.com',
-      token: 'abc',
     });
 
     homeAssistantStore.getState().disconnect();
@@ -303,8 +303,8 @@ describe('homeAssistantStore', () => {
 
     await expect(
       homeAssistantStore.getState().connect({
+        runtime: 'standalone-oauth',
         hassUrl: 'https://ha.example.com',
-        token: 'abc',
       })
     ).rejects.toThrow('bad token');
 
@@ -317,8 +317,8 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://stale-ha.example.com',
-      token: 'abc',
     });
 
     expect(homeAssistantStore.getState().connecting).toBe(true);
@@ -340,16 +340,16 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://old-ha.example.com',
-      token: 'old-token',
     });
 
     vi.advanceTimersByTime(5_000);
 
     homeAssistantServiceStub.connected = true;
     await homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://new-ha.example.com',
-      token: 'new-token',
     });
 
     vi.advanceTimersByTime(10_000);
@@ -365,8 +365,8 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      runtime: 'standalone-oauth',
       hassUrl: 'https://stale-ha.example.com',
-      token: 'abc',
     });
 
     const staleConnectionListeners = [...homeAssistantServiceStub.listeners.connection];

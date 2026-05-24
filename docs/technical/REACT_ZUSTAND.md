@@ -14,12 +14,11 @@ and the global app error overlay are Zustand stores.
 
 ### Zustand stores (`src/app/stores/`)
 
-All shared, reactive state lives here. Stores self-initialize — no provider wrappers needed.
+Shared dashboard state lives here. Authentication is centralized in `src/auth/AuthProvider.tsx`
+because it owns runtime-specific OAuth/Ingress/panel session handling.
 
 | Store | Responsibility |
 |---|---|
-| `auth-store` | `isAuthenticated`, `config`, `login`, `logout` |
-| `config-store` | HA connection config, `testConnection`, `saveConfig` |
 | `home-assistant-store` | WebSocket connection state, entities, registries |
 | `settings-store` | User preferences (persisted) |
 | `theme-store` | Theme mode, accent color, wallpaper (persisted) |

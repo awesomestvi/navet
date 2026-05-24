@@ -54,9 +54,9 @@ This project adheres to a code of conduct. By participating, you are expected to
    ```
 
    Open the URL Vite prints, usually `http://localhost:5173`. For live Home Assistant testing,
-   enter your Home Assistant URL and long-lived access token in the onboarding screen. Normal source
+   enter your Home Assistant URL and complete OAuth login. Normal source
    development does not require copying `.env.example`; the repo-root `.env` flow is for
-   Docker/add-on runtime defaults and production-style preview work.
+   optional Docker/runtime metadata and production-style preview work.
 
 ## 💻 Development Process
 

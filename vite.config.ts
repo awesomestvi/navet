@@ -10,7 +10,6 @@ import {
   loadEnv,
   type PluginOption,
   type PreviewServer,
-  type ProxyOptions,
   type ViteDevServer,
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -151,7 +150,7 @@ function rssProxyPlugin() {
   }
 }
 
-function homeAssistantPreviewProxyPlugin(hassUrl?: string, hassToken?: string) {
+function homeAssistantPreviewProxyPlugin(hassUrl?: string) {
   const normalizedHassUrl = (() => {
     if (!hassUrl) {
       return null
@@ -203,11 +202,6 @@ function homeAssistantPreviewProxyPlugin(hassUrl?: string, hassToken?: string) {
 
           const upstreamResponse = await fetch(targetUrl, {
             redirect: 'manual',
-            headers: hassToken
-              ? {
-                Authorization: `Bearer ${hassToken}`,
-              }
-              : undefined,
           })
 
           res.statusCode = upstreamResponse.status
@@ -235,27 +229,9 @@ function homeAssistantPreviewProxyPlugin(hassUrl?: string, hassToken?: string) {
   }
 }
 
-function configureHomeAssistantDevProxyAuth(hassToken?: string) {
-  const configure: ProxyOptions['configure'] = (proxy) => {
-    proxy.on('proxyReq', (proxyReq, req) => {
-      const requestAuthorization = Array.isArray(req.headers.authorization)
-        ? req.headers.authorization[0]
-        : req.headers.authorization
-      const authorization = requestAuthorization ?? (hassToken ? `Bearer ${hassToken}` : undefined)
-
-      if (authorization) {
-        proxyReq.setHeader('Authorization', authorization)
-      }
-    })
-  }
-
-  return configure
-}
-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
-  const hassToken = env.NAVET_HASS_TOKEN?.trim()
   const lifecycleEvent = process.env.npm_lifecycle_event ?? ''
   const commandLine = process.argv.join(' ')
   const isStorybook =
@@ -269,7 +245,7 @@ export default defineConfig(({ mode }) => {
     react(),
     tailwindcss(),
     rssProxyPlugin(),
-    homeAssistantPreviewProxyPlugin(hassUrl, hassToken),
+    homeAssistantPreviewProxyPlugin(hassUrl),
   ]
 
   if (!isStorybook) {
@@ -389,13 +365,11 @@ export default defineConfig(({ mode }) => {
             target: hassUrl,
             changeOrigin: true,
             secure: false,
-            configure: configureHomeAssistantDevProxyAuth(hassToken),
           },
           '/__navet_ha_proxy__': {
             target: hassUrl,
             changeOrigin: true,
             secure: false,
-            configure: configureHomeAssistantDevProxyAuth(hassToken),
             rewrite: (path) => path.replace(/^\/__navet_ha_proxy__/, ''),
           },
         }

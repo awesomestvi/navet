@@ -1,6 +1,5 @@
 import { act, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAuthStore } from '@/app/stores/auth-store';
 import { renderHookWithProviders } from '@/test/render';
 
 const { fetchMediaThumbnailDataUrlMock } = vi.hoisted(() => ({
@@ -18,7 +17,6 @@ const ARTWORK_CLEAR_TEST_DELAY_MS = 700;
 function installRuntimeProxyConfig() {
   window.__NAVET_CONFIG__ = {
     hassUrl: 'http://homeassistant.local:8123',
-    hassToken: 'runtime-token',
     proxyBaseUrl: '/__navet_ha_proxy__',
   };
 }
@@ -37,10 +35,6 @@ describe('useMediaArtworkResolution', () => {
     vi.restoreAllMocks();
     window.__NAVET_PANEL__ = false;
     window.__NAVET_CONFIG__ = undefined;
-    useAuthStore.setState({
-      config: null,
-      isAuthenticated: false,
-    });
   });
 
   it('uses authenticated websocket thumbnail data for Home Assistant media proxy artwork', async () => {
@@ -160,10 +154,6 @@ describe('useMediaArtworkResolution', () => {
 
   it('does not fetch direct Home Assistant media proxy artwork when websocket thumbnails are unavailable', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('server error'));
 
     const { result } = renderHookWithProviders(() =>
@@ -186,10 +176,6 @@ describe('useMediaArtworkResolution', () => {
   it('fetches relative Home Assistant media proxy artwork through the Docker proxy', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/docker-album-art');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -214,7 +200,7 @@ describe('useMediaArtworkResolution', () => {
       '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
   });
@@ -257,10 +243,6 @@ describe('useMediaArtworkResolution', () => {
     installIngressBase();
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/addon-album-art');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -285,7 +267,7 @@ describe('useMediaArtworkResolution', () => {
       '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
   });
@@ -294,10 +276,6 @@ describe('useMediaArtworkResolution', () => {
     installIngressBase();
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:http://navet.local/addon-absolute-album-art'
     );
@@ -325,7 +303,7 @@ describe('useMediaArtworkResolution', () => {
       '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
   });
@@ -333,10 +311,6 @@ describe('useMediaArtworkResolution', () => {
   it('fetches add-on media proxy artwork through the ingress proxy when runtime HA config is empty', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:http://navet.local/addon-direct-album-art'
     );
@@ -363,7 +337,7 @@ describe('useMediaArtworkResolution', () => {
       '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
   });
@@ -371,10 +345,6 @@ describe('useMediaArtworkResolution', () => {
   it('does not render a broken add-on ingress proxy fallback when empty-runtime artwork fetch fails', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
     const { result } = renderHookWithProviders(() =>
@@ -392,7 +362,7 @@ describe('useMediaArtworkResolution', () => {
       '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
     expect(result.current.albumArt).toBeNull();
@@ -401,10 +371,6 @@ describe('useMediaArtworkResolution', () => {
   it('fetches absolute Home Assistant media proxy artwork through the Docker proxy', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:http://navet.local/docker-absolute-album-art'
     );
@@ -432,7 +398,7 @@ describe('useMediaArtworkResolution', () => {
       '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
       {
         credentials: 'same-origin',
-        headers: { Authorization: 'Bearer session-token' },
+        headers: undefined,
       }
     );
   });
@@ -440,10 +406,6 @@ describe('useMediaArtworkResolution', () => {
   it('does not render a broken Docker proxy artwork fallback when authenticated fetch fails', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
     const { result } = renderHookWithProviders(() =>
@@ -464,10 +426,6 @@ describe('useMediaArtworkResolution', () => {
   it('does not use the Home Assistant dev proxy for authenticated artwork fetches in panel mode', async () => {
     window.__NAVET_PANEL__ = true;
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    useAuthStore.setState({
-      config: { url: 'http://homeassistant.local:8123', token: 'session-token' },
-      isAuthenticated: true,
-    });
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/panel-album-art');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -490,7 +448,7 @@ describe('useMediaArtworkResolution', () => {
     });
     expect(fetchMock).toHaveBeenCalledWith('/api/media_player_proxy/media_player.kitchen', {
       credentials: 'same-origin',
-      headers: { Authorization: 'Bearer session-token' },
+      headers: undefined,
     });
   });
 

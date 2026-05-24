@@ -4,13 +4,15 @@
 
 - Updated Navet to `0.2.2`
 - Improved add-on login, ingress proxying, and media artwork loading
-- Add-on users should leave `hass_url` and `token` blank and sign in from the Navet login page
+- Add-on users authenticate through Home Assistant Ingress without `hass_url` or `token` options
+- Direct port `8099` users now sign in with Home Assistant OAuth instead of manually configured
+  long-lived tokens
 - Added direct go2rtc WebRTC camera feed support outside the Home Assistant custom panel
 
 ## 0.2.1
 
 - Updated Navet to `0.2.1`
-- Fixed Home Assistant add-on Ingress proxy setup when `hass_url` is left blank
+- Fixed Home Assistant add-on Ingress proxy setup when Home Assistant URL config is blank
 - Added fan dashboard cards with power, percentage, oscillation, direction, preset, and speed controls
 - Added fan controls to supported HVAC card settings
 - Fixed Fahrenheit climate readings being converted twice

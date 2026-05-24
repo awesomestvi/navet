@@ -2,9 +2,8 @@ import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { Link } from '@/app/components/primitives/link';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { type PrimaryColor, type ThemeType, useI18n } from '@/app/hooks';
-import { useAuth } from '@/app/stores/auth-store';
-import { authSelectors } from '@/app/stores/selectors';
 import { sanitizeExternalUrl } from '@/app/utils/url-security';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import {
   getNotificationColor,
@@ -31,7 +30,7 @@ export function NotificationItem({
   formatTimestamp,
 }: NotificationItemProps) {
   const { t } = useI18n();
-  const config = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const surface = getNotificationSurfaceTokens(theme);
   const NotificationIcon = getNotificationIcon(notification.type);
   const primaryActionLabel =
@@ -47,7 +46,7 @@ export function NotificationItem({
   const accentColor = getNotificationColor(notification.type, primaryColor);
   const unreadIndicatorColor = getThemeColorValue(primaryColor);
   const detailsUrl = notification.detailsUrl
-    ? sanitizeExternalUrl(notification.detailsUrl, config?.url)
+    ? sanitizeExternalUrl(notification.detailsUrl, hassUrl ?? undefined)
     : null;
   const iconToneClassName =
     notification.type === 'success'
@@ -101,7 +100,7 @@ export function NotificationItem({
           <div className={`mb-3 space-y-2.5 text-sm leading-relaxed ${surface.textSecondary}`}>
             {renderNotificationMarkdown(
               notification.message,
-              config?.url,
+              hassUrl ?? undefined,
               t('notifications.imageAlt')
             )}
           </div>

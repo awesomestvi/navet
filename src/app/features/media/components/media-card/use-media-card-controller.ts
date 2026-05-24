@@ -8,9 +8,9 @@ import {
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { useAuth } from '@/app/stores/auth-store';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { authSelectors, homeAssistantSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import {
   getTvRemoteCommand,
   getTvRemoteProfile,
@@ -60,7 +60,7 @@ export function useMediaCardController({
   initialSupportsNextTrack = true,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
-  const authConfig = useAuth(authSelectors.config);
+  const hassUrl = useAuthBaseUrl();
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
@@ -230,7 +230,7 @@ export function useMediaCardController({
     artworkKey,
     liveEntityPicture,
     liveArtworkKey,
-    homeAssistantUrl: authConfig?.url,
+    homeAssistantUrl: hassUrl ?? undefined,
   });
 
   useMediaEntitySync({
