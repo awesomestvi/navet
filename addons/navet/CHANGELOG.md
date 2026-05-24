@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Updated Navet to `0.2.3`
+- Replaced legacy long-lived token login with Home Assistant OAuth
+- Fixed old dashboard config imports breaking the new OAuth session flow
+- Improved add-on ingress websocket reliability after Home Assistant restarts
+- Add-on installs now tolerate stale `hass_url` and `token` options from older releases
+
 ## 0.2.2
 
 - Updated Navet to `0.2.2`

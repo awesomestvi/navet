@@ -5,8 +5,8 @@ Navet is currently in beta. Until the product contract is stable, use pre-`1.0` 
 ## Current Phase
 
 - Current release line: `0.x`
-- Current version: `0.2.2`
-- Meaning: current public beta release for the `0.2.2` Home Assistant custom panel and add-on release
+- Current version: `0.2.3`
+- Meaning: current public beta release for the `0.2.3` Home Assistant custom panel and add-on release
 
 ## Scheme
 
@@ -28,6 +28,7 @@ Examples:
 - `0.2.0`
 - `0.2.1`
 - `0.2.2`
+- `0.2.3`
 
 ## Bump Rules
 
