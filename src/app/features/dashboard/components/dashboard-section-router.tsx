@@ -10,7 +10,8 @@ import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, ENERGY_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores';
+import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { AllViewGrid } from '../all-view-grid';
 import { DeviceGrid } from '../device-grid';
@@ -53,6 +54,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const {
     activeRoom,
@@ -289,26 +291,28 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   } else {
     sectionContent = (
       <div {...sectionStackProps}>
-        <RoomNav
-          rooms={rooms}
-          roomHiddenItemCounts={controller.roomHiddenItemCounts}
-          roomItemCounts={controller.roomItemCounts}
-          activeRoom={activeRoom}
-          onRoomChange={changeRoom}
-          allViewGrouping={isAllRooms(activeRoom) ? controller.allViewGrouping : undefined}
-          isEditMode={isEditMode}
-          onRoomOrderChange={controller.onSetRoomOrder}
-          onAllViewGroupingChange={
-            isAllRooms(activeRoom) ? controller.onSetAllViewGrouping : undefined
-          }
-          onToggleEditMode={onToggleEditMode}
-          onAddEntity={
-            isAllRooms(activeRoom) || addableEntityIds.length === 0
-              ? undefined
-              : onOpenAddEntityDialog
-          }
-          addEntityLabel={t('dashboard.addEntity.title')}
-        />
+        {kioskMode ? null : (
+          <RoomNav
+            rooms={rooms}
+            roomHiddenItemCounts={controller.roomHiddenItemCounts}
+            roomItemCounts={controller.roomItemCounts}
+            activeRoom={activeRoom}
+            onRoomChange={changeRoom}
+            allViewGrouping={isAllRooms(activeRoom) ? controller.allViewGrouping : undefined}
+            isEditMode={isEditMode}
+            onRoomOrderChange={controller.onSetRoomOrder}
+            onAllViewGroupingChange={
+              isAllRooms(activeRoom) ? controller.onSetAllViewGrouping : undefined
+            }
+            onToggleEditMode={onToggleEditMode}
+            onAddEntity={
+              isAllRooms(activeRoom) || addableEntityIds.length === 0
+                ? undefined
+                : onOpenAddEntityDialog
+            }
+            addEntityLabel={t('dashboard.addEntity.title')}
+          />
+        )}
 
         {isAllRooms(activeRoom) ? (
           <RenderProfiler id="HomeDashboardOverview">

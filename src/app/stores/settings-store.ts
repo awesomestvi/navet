@@ -33,6 +33,7 @@ export interface UserSettings {
   temperatureUnit: 'celsius' | 'fahrenheit';
   defaultView: 'all' | string;
   compactMode: boolean;
+  kioskMode: boolean;
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
@@ -65,6 +66,7 @@ export const defaultSettings: UserSettings = {
   temperatureUnit: 'fahrenheit',
   defaultView: 'all',
   compactMode: false,
+  kioskMode: false,
   disableAnimations: false,
   lowPowerMode: false,
   effectsQuality: 'high',

@@ -10,10 +10,12 @@ describe('useSettingsStore', () => {
   it('updates partial settings', () => {
     useSettingsStore.getState().updateSettings({
       compactMode: true,
+      kioskMode: true,
       temperatureUnit: 'celsius',
     });
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
+    expect(useSettingsStore.getState().kioskMode).toBe(true);
     expect(useSettingsStore.getState().temperatureUnit).toBe('celsius');
   });
 
@@ -29,7 +31,7 @@ describe('useSettingsStore', () => {
   });
 
   it('resets back to defaults', () => {
-    useSettingsStore.getState().updateSettings({ lowPowerMode: true });
+    useSettingsStore.getState().updateSettings({ kioskMode: true, lowPowerMode: true });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraFeedMode('camera.front_door', 'web_rtc');
     useSettingsStore.getState().updateCameraGo2RtcConfig('camera.front_door', {
@@ -39,6 +41,7 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().resetSettings();
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
+    expect(useSettingsStore.getState().kioskMode).toBe(defaultSettings.kioskMode);
     expect(useSettingsStore.getState().username).toBe(defaultSettings.username);
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
@@ -92,12 +95,27 @@ describe('useSettingsStore', () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
+    expect(useSettingsStore.getState().kioskMode).toBe(false);
     expect(useSettingsStore.getState().language).toBe('sv');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraFeedModes).toEqual({});
     expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({});
+  });
+
+  it('rehydrates kiosk mode from persisted settings', async () => {
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: { kioskMode: true },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().kioskMode).toBe(true);
   });
 
   it('rehydrates valid per-camera view modes only', async () => {

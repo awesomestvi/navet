@@ -83,6 +83,11 @@ export const deMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Lege fest, was auf der Fläche erscheint und wie dieses lokale Setup gesichert wird.',
+  'settings.dashboard.kioskMode.title': 'Kioskmodus',
+  'settings.dashboard.kioskMode.description':
+    'Blendet Kopfzeile und Navigation aus, damit das Dashboard eine Wandanzeige ausfüllen kann.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Nutze das Orbit-Menü unten rechts, um zur Startseite zu wechseln, Einstellungen zu öffnen oder das Dashboard anzupassen.',
   'settings.dashboard.entityVisibility.title': 'Gerätesichtbarkeit',
   'settings.dashboard.entityVisibility.description':
     'Navet verwendet jetzt ein gemeinsames Sichtbarkeitsmodell. Entferne Geräte im Bearbeitungsmodus und füge sie später über Add Entity wieder hinzu.',

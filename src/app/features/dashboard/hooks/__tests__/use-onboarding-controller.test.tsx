@@ -37,6 +37,7 @@ const ONBOARDING_CONFIG_IMPORT_REVEAL_KEY = 'navet-onboarding-config-import-reve
 
 describe('useOnboardingController', () => {
   beforeEach(async () => {
+    window.__NAVET_PANEL__ = undefined;
     await resetAppStores();
     reloadWindow.mockClear();
     toastSuccess.mockClear();
@@ -73,6 +74,22 @@ describe('useOnboardingController', () => {
 
     expect(secondRender.result.current.dashboardArrivalVariant).toBeNull();
     expect(secondRender.result.current.showImportedDashboardReveal).toBe(false);
+  });
+
+  it('reveals the imported dashboard in-place in Home Assistant panel mode', async () => {
+    window.__NAVET_PANEL__ = true;
+    const file = new File(['version: 3'], 'navet-dashboard.yaml', { type: 'text/yaml' });
+    const { result } = renderController();
+
+    await act(async () => {
+      await result.current.handleOnboardingImportDashboardConfig(file);
+    });
+
+    expect(importDashboardConfigFromFile).toHaveBeenCalledWith(file);
+    expect(sessionStorage.getItem(ONBOARDING_CONFIG_IMPORT_REVEAL_KEY)).toBeNull();
+    expect(result.current.dashboardArrivalVariant).toBe('import');
+    expect(result.current.isOnboardingClosing).toBe(true);
+    expect(reloadWindow).not.toHaveBeenCalled();
   });
 });
 

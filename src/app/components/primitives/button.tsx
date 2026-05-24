@@ -80,6 +80,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
               : theme === 'glass'
                 ? 'border-transparent bg-transparent text-white hover:bg-white/10'
                 : 'border-transparent bg-transparent text-white hover:bg-zinc-800';
+  const disabledVariantClassName =
+    variant === 'primary'
+      ? theme === 'light'
+        ? 'disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500'
+        : 'disabled:border-white/12 disabled:bg-white/10 disabled:text-white/50'
+      : variant === 'ghost'
+        ? theme === 'light'
+          ? 'disabled:border-transparent disabled:bg-transparent disabled:text-slate-400'
+          : 'disabled:border-transparent disabled:bg-transparent disabled:text-white/35'
+        : theme === 'light'
+          ? 'disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500'
+          : theme === 'black'
+            ? 'disabled:border-white/12 disabled:bg-white/6 disabled:text-white/45'
+            : theme === 'glass'
+              ? 'disabled:border-white/12 disabled:bg-white/6 disabled:text-white/45'
+              : 'disabled:border-zinc-800 disabled:bg-zinc-900/80 disabled:text-zinc-500';
 
   return (
     <button
@@ -90,7 +106,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-label={iconOnly ? label : props['aria-label']}
       title={iconOnly ? label : props.title}
       className={cn(
-        'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center border transition-[background-color,border-color,box-shadow,opacity] disabled:cursor-not-allowed disabled:shadow-none',
         iconOnly ? sizeTokens.iconOnlyClassName : sizeTokens.heightClassName,
         iconOnly ? '' : sizeTokens.paddingXClassName,
         iconOnly ? '' : navetSpacingTokens.inline.sm,
@@ -99,11 +115,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
           : navetControlTokens.button.radiusClassName,
         sizeTokens.textClassName,
         variantClassName,
+        disabledVariantClassName,
         getThemeFocusRingClassName(theme),
         className
       )}
       style={{
-        ...(variant === 'primary' ? { backgroundColor: accentColor } : {}),
+        ...(variant === 'primary' && !isDisabled ? { backgroundColor: accentColor } : {}),
         ...(iconOnly && loading ? { borderColor: accentColor } : {}),
         ...style,
       }}

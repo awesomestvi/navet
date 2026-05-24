@@ -185,6 +185,18 @@ describe('App Home Assistant connection recovery', () => {
     });
   });
 
+  it('keeps the startup loader visible while restoring auth state', async () => {
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.queryByText('login')).not.toBeInTheDocument();
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+  });
+
   it('completes OAuth callback startup without returning to the URL login form', async () => {
     vi.useRealTimers();
     setNoStoredSession();

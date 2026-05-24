@@ -92,6 +92,11 @@ export const itMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gestisci cosa appare sulla bacheca e come viene salvata la configurazione locale.',
+  'settings.dashboard.kioskMode.title': 'Modalità chiosco',
+  'settings.dashboard.kioskMode.description':
+    'Nasconde intestazione e navigazione per far riempire alla dashboard uno schermo a parete.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Usa il menu Orbit in basso a destra per tornare alla home, aprire le impostazioni o personalizzare la dashboard.',
   'settings.dashboard.entityVisibility.title': 'Visibilità entità',
   'settings.dashboard.entityVisibility.description':
     'Navet ora usa un solo modello di visibilità. Rimuovi le entità dalla modalità modifica, poi aggiungile di nuovo da Aggiungi entità.',

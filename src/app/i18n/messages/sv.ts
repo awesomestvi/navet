@@ -81,6 +81,11 @@ export const svMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Hantera vad som visas på ytan och hur den lokala konfigurationen säkerhetskopieras.',
+  'settings.dashboard.kioskMode.title': 'Kioskläge',
+  'settings.dashboard.kioskMode.description':
+    'Dölj sidhuvudet och navigationen så att dashboarden kan fylla en väggskärm.',
+  'settings.dashboard.kioskMode.recoveryHint':
+    'Använd orbit-menyn nere till höger för att gå hem, öppna inställningar eller anpassa dashboarden.',
   'settings.dashboard.entityVisibility.title': 'Enhetssynlighet',
   'settings.dashboard.entityVisibility.description':
     'Navet använder nu en gemensam synlighetsmodell. Ta bort enheter i redigeringsläget och lägg tillbaka dem senare via Add Entity.',

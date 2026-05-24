@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import {
+  notifyPersistedStateChanged,
+  PERSISTED_STATE_EVENT,
+} from '../utils/persisted-state-events';
 import { storage } from '../utils/storage';
-
-const PERSISTED_STATE_EVENT = 'navet:persisted-state';
 
 /**
  * Custom hook for persisting state to localStorage
@@ -23,7 +25,7 @@ export function usePersistedState<T>(
 
   useEffect(() => {
     storage.set(key, value);
-    window.dispatchEvent(new CustomEvent(PERSISTED_STATE_EVENT, { detail: { key, value } }));
+    notifyPersistedStateChanged(key, value);
   }, [key, value]);
 
   useEffect(() => {

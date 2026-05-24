@@ -46,6 +46,10 @@ export const zhMessages = {
   'settings.appearance.wallpaper.upload': '上传壁纸',
   'settings.appearance.wallpaper.fileHint': 'PNG、JPG，最大 5MB',
   'settings.dashboard.sectionTitle': '仪表板',
+  'settings.dashboard.kioskMode.title': '信息亭模式',
+  'settings.dashboard.kioskMode.description': '隐藏页眉和导航，让仪表板填满墙面显示屏。',
+  'settings.dashboard.kioskMode.recoveryHint':
+    '使用右下角的 Orbit 菜单返回主页、打开设置或自定义仪表板。',
   'settings.dashboard.entityVisibility.title': '实体可见性',
   'settings.dashboard.entityVisibility.revealAll': '添加回所有已移除的实体',
   'settings.dashboard.entityVisibility.restartOnboarding': '重新开始引导',

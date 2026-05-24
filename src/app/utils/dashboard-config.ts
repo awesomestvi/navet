@@ -4,8 +4,12 @@ import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
   type CardType,
+  type HomeDashboardLayoutState,
+  normalizeLayout,
+  useCardZonesStore,
   useCustomCardsStore,
   useDashboardEntitiesStore,
+  useHomeDashboardLayoutStore,
 } from '@/app/features/dashboard';
 import {
   parseButtonServiceCall,
@@ -25,6 +29,7 @@ import {
 } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
 import { getLegacyReducedEffectsFlags, resolveEffectsQuality } from '@/app/utils/effects-quality';
+import { notifyPersistedStateChanged } from '@/app/utils/persisted-state-events';
 import { storage } from '@/app/utils/storage';
 import { sanitizeExternalUrl, sanitizeImageUrl } from '@/app/utils/url-security';
 
@@ -413,6 +418,18 @@ function sanitizeStringArrayRecord(value: unknown): Record<string, string[]> {
   );
 }
 
+function sanitizeHomeDashboardLayout(value: unknown): HomeDashboardLayoutState {
+  const normalized = normalizeLayout(value);
+
+  return {
+    ...normalized,
+    sections: normalized.sections.map((section) => ({
+      ...section,
+      span: section.w,
+    })),
+  };
+}
+
 function sanitizeCustomCardData(
   type: CardType,
   data: unknown
@@ -614,6 +631,8 @@ export const importDashboardConfig = (
       typeof settings.compactMode === 'boolean'
         ? settings.compactMode
         : defaultSettings.compactMode,
+    kioskMode:
+      typeof settings.kioskMode === 'boolean' ? settings.kioskMode : defaultSettings.kioskMode,
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
     entityInteractionMode:
@@ -669,14 +688,20 @@ export const importDashboardConfig = (
       >['lightPresetConfigs']) ?? currentLightPresetState.lightPresetConfigs,
   });
 
-  storage.set(STORAGE_KEYS.cardSizes, sanitizeStringRecord(value.cardSizes));
-  storage.set(STORAGE_KEYS.cardOrders, sanitizeStringArrayRecord(value.cardOrders));
-  storage.set(STORAGE_KEYS.cardZones, sanitizeStringRecord(value.cardZones));
-  storage.set(
-    STORAGE_KEYS.homeDashboardLayout,
-    sanitizeJsonRecord(value.homeDashboardLayout) ?? null
-  );
-  storage.set(STORAGE_KEYS.roomOrder, sanitizeStringArray(value.roomOrder));
+  const cardSizes = sanitizeStringRecord(value.cardSizes);
+  const cardOrders = sanitizeStringArrayRecord(value.cardOrders);
+  const cardZones = sanitizeStringRecord(value.cardZones);
+  const homeDashboardLayout = sanitizeHomeDashboardLayout(value.homeDashboardLayout);
+  const roomOrder = sanitizeStringArray(value.roomOrder);
+
+  storage.set(STORAGE_KEYS.cardSizes, cardSizes);
+  notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, cardSizes);
+  storage.set(STORAGE_KEYS.cardOrders, cardOrders);
+  notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, cardOrders);
+  useCardZonesStore.getState().replaceCardZones(cardZones);
+  useHomeDashboardLayoutStore.getState().replaceLayout(homeDashboardLayout);
+  storage.set(STORAGE_KEYS.roomOrder, roomOrder);
+  notifyPersistedStateChanged(STORAGE_KEYS.roomOrder, roomOrder);
 };
 
 export const downloadDashboardConfig = async (): Promise<'shared' | 'downloaded'> => {

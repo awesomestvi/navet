@@ -65,6 +65,7 @@ interface UserSettings {
   temperatureUnit: 'celsius' | 'fahrenheit';
   defaultView: 'all' | string;
   compactMode: boolean;
+  kioskMode: boolean;
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;

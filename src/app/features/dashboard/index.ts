@@ -8,6 +8,7 @@ export { useDashboardWidgetRoomOptions } from './components/widgets/use-widget-r
 export { getDashboardWidgetSurfaceTokens } from './components/widgets/widget-surface-tokens';
 export { DashboardPage } from './page';
 export { DashboardLayout } from './shell';
+export { useCardZonesStore } from './stores/card-zones-store';
 export {
   type CardType,
   type CustomCard,
@@ -16,4 +17,9 @@ export {
   useCustomCardsStore,
 } from './stores/custom-cards-store';
 export { useDashboardEntitiesStore } from './stores/dashboard-entities-store';
+export {
+  type HomeDashboardLayoutState,
+  useHomeDashboardLayoutStore,
+} from './stores/home-dashboard-layout-store';
 export { DASHBOARD_CARD_TYPES, renderCard } from './utils/card-renderer';
+export { normalizeLayout } from './utils/layout-migration';

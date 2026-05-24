@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
 import type { AuthSession } from '@/auth/types';
+import { LoadingSpinner } from './components/primitives/loading-spinner';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
@@ -151,7 +152,13 @@ function AppContent() {
         />
       ) : null}
       <Toaster />
-      {!ready || !isAuthenticated ? <LoginPage /> : <DashboardPage />}
+      {!ready ? (
+        <LoadingSpinner message="Starting your dashboard..." fullScreen />
+      ) : !isAuthenticated ? (
+        <LoginPage />
+      ) : (
+        <DashboardPage />
+      )}
     </>
   );
 }

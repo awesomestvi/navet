@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { lookup } from 'node:dns/promises'
 import { readFileSync } from 'node:fs'
-import type { ServerResponse } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isIP } from 'node:net'
 import path from 'path'
 import {
@@ -229,6 +229,119 @@ function homeAssistantPreviewProxyPlugin(hassUrl?: string) {
   }
 }
 
+function authSessionStorePlugin() {
+  const maxAuthBytes = 16 * 1024
+  let authSession: string | null = null
+
+  const setNoStoreHeaders = (res: ServerResponse) => {
+    res.setHeader('Cache-Control', 'no-store')
+  }
+
+  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+    res.statusCode = statusCode
+    setNoStoreHeaders(res)
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify(payload))
+  }
+
+  const sendNoContent = (res: ServerResponse) => {
+    res.statusCode = 204
+    setNoStoreHeaders(res)
+    res.end()
+  }
+
+  const readRequestBody = async (req: IncomingMessage) => {
+    const chunks: Buffer[] = []
+    let size = 0
+
+    for await (const chunk of req) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      size += buffer.byteLength
+      if (size > maxAuthBytes) {
+        throw new Error('Auth session is too large')
+      }
+      chunks.push(buffer)
+    }
+
+    return Buffer.concat(chunks).toString('utf8')
+  }
+
+  const isValidAuthData = (value: unknown) => {
+    if (!value || typeof value !== 'object') {
+      return false
+    }
+
+    const data = value as Record<string, unknown>
+    return (
+      typeof data.hassUrl === 'string' &&
+      /^https?:\/\//.test(data.hassUrl) &&
+      (typeof data.clientId === 'string' || data.clientId === null) &&
+      typeof data.expires === 'number' &&
+      typeof data.refresh_token === 'string' &&
+      data.refresh_token.length > 0 &&
+      typeof data.access_token === 'string' &&
+      data.access_token.length > 0 &&
+      typeof data.expires_in === 'number'
+    )
+  }
+
+  const handleRequest = async (
+    req: IncomingMessage,
+    res: ServerResponse
+  ) => {
+    if (req.method === 'GET') {
+      if (!authSession) {
+        sendNoContent(res)
+        return
+      }
+
+      res.statusCode = 200
+      setNoStoreHeaders(res)
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(authSession)
+      return
+    }
+
+    if (req.method === 'PUT') {
+      try {
+        const body = await readRequestBody(req)
+        const parsed = JSON.parse(body)
+        if (!isValidAuthData(parsed)) {
+          sendJson(res, 400, { error: 'Unsupported auth session' })
+          return
+        }
+
+        authSession = JSON.stringify(parsed)
+        sendJson(res, 200, { ok: true })
+      } catch {
+        sendJson(res, 400, { error: 'Unable to save auth session' })
+      }
+      return
+    }
+
+    if (req.method === 'DELETE') {
+      authSession = null
+      sendJson(res, 200, { ok: true })
+      return
+    }
+
+    res.setHeader('Allow', 'GET, PUT, DELETE')
+    sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_auth__/session', async (req, res) => {
+      await handleRequest(req, res)
+    })
+  }
+
+  return {
+    name: 'navet-auth-session-store',
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
@@ -245,6 +358,7 @@ export default defineConfig(({ mode }) => {
     react(),
     tailwindcss(),
     rssProxyPlugin(),
+    authSessionStorePlugin(),
     homeAssistantPreviewProxyPlugin(hassUrl),
   ]
 
