@@ -94,7 +94,7 @@ What you see depends on how you open Navet:
   frontend session. You should not see a separate Navet login screen.
 - **Home Assistant add-on through Ingress**: Navet uses the authenticated Ingress session. The old
   add-on `hass_url` and `token` options are gone; no manual token is needed.
-- **Add-on direct port `8099` or standalone Docker**: Navet behaves like a separately hosted app.
+- **Add-on optional direct port or standalone Docker**: Navet behaves like a separately hosted app.
   Enter your Home Assistant root URL, approve the OAuth login in Home Assistant, and Navet stores
   the OAuth session for that Navet instance under `/data`.
 
@@ -125,15 +125,15 @@ Use this path when you want Navet inside Home Assistant itself. Use the add-on o
 only when you want a separately hosted Navet instance.
 
 Existing add-on users can use the HACS custom panel when they want the normal Home Assistant
-sidebar panel experience. The add-on remains available for users who want Ingress or direct port
-access.
+sidebar panel experience. The add-on remains available for users who want Ingress or optional direct
+port access.
 
 ### Optional Home Assistant add-on
 
-Use the add-on when you specifically want Navet hosted as a Home Assistant add-on with Ingress or
-direct access on port `8099`. For the normal Home Assistant sidebar panel experience, use the HACS
-custom panel flow above instead. New Home Assistant OS and Supervised installs should prefer the
-custom panel for the simplest Home Assistant-native setup.
+Use the add-on when you specifically want Navet hosted as a Home Assistant add-on with Ingress. For
+the normal Home Assistant sidebar panel experience, use the HACS custom panel flow above instead.
+New Home Assistant OS and Supervised installs should prefer the custom panel for the simplest
+Home Assistant-native setup.
 
 1. Add the Navet add-on repository to Home Assistant:
 
@@ -154,7 +154,8 @@ custom panel for the simplest Home Assistant-native setup.
 
 5. Start the add-on and open Navet from the Home Assistant sidebar through Ingress. Ingress uses
    the existing Home Assistant frontend session, so no Home Assistant URL or token is required.
-   Direct-access port `8099` behaves like a standalone instance and uses OAuth.
+   Optional direct port access behaves like a standalone instance and uses OAuth. The add-on no
+   longer publishes host port `8099` by default, so Ingress can start without port conflicts.
 
 The `dashboard_config_url` option lets fresh browsers or Home Assistant companion-app WebViews
 bootstrap the same dashboard instead of starting from onboarding.

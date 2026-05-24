@@ -161,10 +161,11 @@ authentication policy for that environment.
 
 ## Option 3: Optional Home Assistant Add-on
 
-Use this option when you specifically want Navet hosted as a Home Assistant add-on with Ingress or
-direct access on port `8099`. For the normal Home Assistant sidebar panel experience, use the HACS
-custom panel integration instead. New Home Assistant OS and Supervised installs should prefer the
-custom panel for the simplest Home Assistant-native setup.
+Use this option when you specifically want Navet hosted as a Home Assistant add-on with Ingress.
+For the normal Home Assistant sidebar panel experience, use the HACS custom panel integration
+instead. New Home Assistant OS and Supervised installs should prefer the custom panel for the
+simplest Home Assistant-native setup. Optional direct port access can be enabled manually when you
+need standalone OAuth behavior.
 
 ### Files in This Repo
 
@@ -192,7 +193,8 @@ The add-on:
 - Serves Navet with `nginx`
 - Handles direct RSS proxy requests through nginx `njs`
 - Uses `ingress: true`
-- Exposes optional direct browser access on `8099/tcp`
+- Keeps direct browser access optional; host port `8099` is disabled by default to avoid Ingress
+  start loops from port conflicts
 - Generates `/config.js` for optional dashboard import metadata
 - Uses Home Assistant Ingress authentication; no add-on URL/token fields are required
 - Proxies Home Assistant API and WebSocket requests through `/__navet_ha_proxy__/`
