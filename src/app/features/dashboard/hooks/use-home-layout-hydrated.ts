@@ -27,6 +27,6 @@ export function useHomeLayoutHydrated({
       return true;
     }
 
-    return cardIds.every((cardId) => availableIdSet.has(cardId));
+    return cardIds.some((cardId) => availableIdSet.has(cardId));
   }, [cardIds, availableDeviceMap, allCustomCards]);
 }

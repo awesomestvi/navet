@@ -40,7 +40,7 @@ Expected behavior after updating:
 - Custom panel users stay inside Home Assistant and use the injected Home Assistant frontend
   session. No separate Navet login is shown.
 - Add-on users who open Navet through Ingress use the authenticated Home Assistant Ingress session.
-  The old `hass_url` and `token` add-on options are no longer present or required.
+  Existing saved `hass_url` and `token` add-on values are tolerated during upgrade but ignored.
 - Add-on users who open direct port `8099`, and standalone Docker users, sign in once through Home
   Assistant OAuth. Navet asks for the Home Assistant root URL, redirects to Home Assistant for
   approval, then stores the OAuth token bundle behind the same-origin `__navet_auth__` endpoint

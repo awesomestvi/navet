@@ -23,8 +23,9 @@ function getConnectionAttemptKey(session: AuthSession) {
 }
 
 function AppContent() {
-  const { session, ready, logout } = useAuthSession();
+  const { runtime, session, ready, logout } = useAuthSession();
   const isAuthenticated = Boolean(session);
+  const canResetSessionFromError = runtime === 'standalone-oauth';
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
@@ -136,7 +137,9 @@ function AppContent() {
     <>
       <ErrorDisplay
         onRetry={isAuthenticated && session ? retryConnect : undefined}
-        onResetSession={isAuthenticated ? resetSessionToLogin : undefined}
+        onResetSession={
+          isAuthenticated && canResetSessionFromError ? resetSessionToLogin : undefined
+        }
       />
       <PwaUpdatePrompt />
       {isAuthenticated && !appError ? (

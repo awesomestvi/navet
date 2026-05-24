@@ -71,7 +71,7 @@ function writeAuth(r) {
 
     fs.writeFileSync(AUTH_PATH, JSON.stringify(parsed), 'utf8');
     sendJson(r, 200, { ok: true });
-  } catch {
+  } catch (_error) {
     sendJson(r, 400, { error: 'Unable to save auth session' });
   }
 }

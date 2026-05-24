@@ -997,10 +997,10 @@ export const esMessages = {
   'errorDisplay.backToLogin': 'Volver al inicio de sesión',
   'errorDisplay.connectionInterrupted': 'Se necesita recuperación',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet no pudo completar la sesión de Home Assistant ni cargar el panel. Comprueba la URL y el token guardados e inténtalo de nuevo.',
+    'Navet no pudo completar la sesión de Home Assistant ni cargar el panel. Reintenta la conexión o revisa las causas comunes abajo.',
   'errorDisplay.commonIssues': 'Problemas comunes:',
   'errorDisplay.issue.1': 'El sistema del hogar inteligente no está en ejecución o no es accesible',
-  'errorDisplay.issue.2': 'URL o token de acceso incorrecto',
+  'errorDisplay.issue.2': 'La sesión de Home Assistant no está disponible o ha caducado',
   'errorDisplay.issue.3': 'Problemas de conectividad de red',
   'errorDisplay.issue.4': 'CORS o el cortafuegos bloquea la conexión',
   'errorDisplay.issue.5': 'Home Assistant no devolvió entidades utilizables',

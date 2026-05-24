@@ -986,10 +986,10 @@ export const svMessages = {
   'errorDisplay.backToLogin': 'Tillbaka till inloggning',
   'errorDisplay.connectionInterrupted': 'Åtgärd behövs',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet kunde inte slutföra Home Assistant-sessionen eller ladda dashboarden. Kontrollera sparad URL och token och försök igen.',
+    'Navet kunde inte slutföra Home Assistant-sessionen eller ladda dashboarden. Försök ansluta igen eller kontrollera de vanliga orsakerna nedan.',
   'errorDisplay.commonIssues': 'Vanliga problem:',
   'errorDisplay.issue.1': 'Smarta hem-systemet kör inte eller kan inte nås',
-  'errorDisplay.issue.2': 'Fel URL eller access-token',
+  'errorDisplay.issue.2': 'Home Assistant-sessionen är inte tillgänglig eller har löpt ut',
   'errorDisplay.issue.3': 'Problem med nätverksanslutningen',
   'errorDisplay.issue.4': 'CORS eller brandvägg blockerar anslutningen',
   'errorDisplay.issue.5': 'Home Assistant returnerade inga användbara enheter',

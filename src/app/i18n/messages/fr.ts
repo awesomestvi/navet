@@ -1000,10 +1000,10 @@ export const frMessages = {
   'errorDisplay.backToLogin': 'Retour à la connexion',
   'errorDisplay.connectionInterrupted': 'Récupération nécessaire',
   'errorDisplay.connectionInterruptedDescription':
-    'Navet n’a pas pu terminer la session Home Assistant ou charger le tableau de bord. Vérifiez l’URL et le jeton enregistrés, puis réessayez.',
+    'Navet n’a pas pu terminer la session Home Assistant ou charger le tableau de bord. Réessayez la connexion ou consultez les causes fréquentes ci-dessous.',
   'errorDisplay.commonIssues': 'Problèmes fréquents :',
   'errorDisplay.issue.1': 'Le système domotique n’est pas lancé ou est inaccessible',
-  'errorDisplay.issue.2': 'URL ou jeton d’accès incorrect',
+  'errorDisplay.issue.2': 'La session Home Assistant est indisponible ou expirée',
   'errorDisplay.issue.3': 'Problèmes de connectivité réseau',
   'errorDisplay.issue.4': 'CORS ou pare-feu bloque la connexion',
   'errorDisplay.issue.5': 'Home Assistant n’a renvoyé aucune entité utilisable',

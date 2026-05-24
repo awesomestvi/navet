@@ -267,6 +267,24 @@ describe('App Home Assistant connection recovery', () => {
     });
   });
 
+  it('does not show login reset recovery in add-on ingress', async () => {
+    homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    setNoStoredSession();
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(screen.getByText(CONNECTION_TIMEOUT_MESSAGE)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /back to login/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
+  });
+
   it('keeps Home Assistant local storage when returning to login from recovery', async () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
     localStorage.setItem('hassTokens', '{"data":"home-assistant-session"}');

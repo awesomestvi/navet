@@ -991,10 +991,10 @@ export const ptMessages = {
   'errorDisplay.backToLogin': 'Voltar para o login',
   'errorDisplay.connectionInterrupted': 'Recuperação necessária',
   'errorDisplay.connectionInterruptedDescription':
-    'O Navet não conseguiu concluir a sessão do Home Assistant ou terminar de carregar o dashboard. Verifique a URL e o token salvos e tente novamente.',
+    'O Navet não conseguiu concluir a sessão do Home Assistant ou terminar de carregar o dashboard. Tente reconectar ou verifique as causas comuns abaixo.',
   'errorDisplay.commonIssues': 'Problemas comuns:',
   'errorDisplay.issue.1': 'O sistema da casa inteligente não está em execução ou não responde',
-  'errorDisplay.issue.2': 'URL ou token de acesso incorretos',
+  'errorDisplay.issue.2': 'A sessão do Home Assistant está indisponível ou expirou',
   'errorDisplay.issue.3': 'Problemas de conectividade de rede',
   'errorDisplay.issue.4': 'CORS ou firewall bloqueando a conexão',
   'errorDisplay.issue.5': 'O Home Assistant não retornou entidades utilizáveis',

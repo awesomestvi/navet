@@ -373,7 +373,7 @@ export const zhMessages = {
   'errorDisplay.connectionInterrupted': '需要恢复',
   'errorDisplay.commonIssues': '常见问题：',
   'errorDisplay.issue.1': '智能家居系统未运行或无法访问',
-  'errorDisplay.issue.2': 'URL 或访问令牌不正确',
+  'errorDisplay.issue.2': 'Home Assistant 会话不可用或已过期',
   'errorDisplay.issue.3': '网络连接问题',
   'errorDisplay.issue.4': 'CORS 或防火墙阻止了连接',
   'errorDisplay.issue.5': 'Home Assistant 未返回可用实体',
@@ -930,7 +930,8 @@ export const zhMessages = {
   'tasks.automation.details.loadFailed': '任务详情',
   'tasks.automation.details.none': '无',
   'tasks.automation.noRecentRun': '没有最近运行',
-  'errorDisplay.connectionInterruptedDescription': '错误连接说明',
+  'errorDisplay.connectionInterruptedDescription':
+    'Navet 无法完成 Home Assistant 会话或加载仪表板。请重试连接，或检查下面的常见原因。',
   'cover.ariaLabel': '覆盖设备 {name}',
   'cover.settings.deviceType': '设备类型',
   'cover.settings.description': '覆盖设备设置说明 {name}',
