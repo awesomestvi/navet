@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Edit3, GripVertical, LayoutGrid, Lightbulb } from 'lucide-react';
+import { Check, ChevronDown, Edit3, LayoutGrid, Lightbulb, SlidersHorizontal } from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -32,6 +32,7 @@ import { RoomOrderDialog } from './room-order-dialog';
 
 interface RoomNavProps {
   rooms?: string[];
+  hiddenRoomNames?: string[];
   roomHiddenItemCounts?: Map<string, number>;
   roomItemCounts?: Map<string, number>;
   activeRoom: string;
@@ -39,6 +40,7 @@ interface RoomNavProps {
   allViewGrouping?: AllViewGrouping;
   isEditMode: boolean;
   onRoomOrderChange?: (rooms: string[]) => void;
+  onHiddenRoomsChange?: (rooms: string[]) => void;
   onAllViewGroupingChange?: (grouping: AllViewGrouping) => void;
   onToggleEditMode: () => void;
   onAddEntity?: () => void;
@@ -68,6 +70,7 @@ interface RoomNavScrollbarStyle extends CSSProperties {
 
 export const RoomNav = memo(function RoomNav({
   rooms = [],
+  hiddenRoomNames = [],
   roomHiddenItemCounts = new Map(),
   roomItemCounts = new Map(),
   activeRoom,
@@ -75,6 +78,7 @@ export const RoomNav = memo(function RoomNav({
   allViewGrouping = 'custom',
   isEditMode,
   onRoomOrderChange,
+  onHiddenRoomsChange,
   onAllViewGroupingChange,
   onToggleEditMode,
   onAddEntity,
@@ -101,7 +105,10 @@ export const RoomNav = memo(function RoomNav({
   const manageableRooms = useMemo(() => {
     return getManageableRoomOrder(rooms, areas);
   }, [areas, rooms]);
-  const visibleRooms = useMemo(() => getVisibleRoomNavRooms(rooms), [rooms]);
+  const visibleRooms = useMemo(
+    () => getVisibleRoomNavRooms(rooms.filter((room) => !hiddenRoomNames.includes(room))),
+    [hiddenRoomNames, rooms]
+  );
   const textSecondary = surface.textSecondary;
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
@@ -324,7 +331,7 @@ export const RoomNav = memo(function RoomNav({
                 size="small"
                 className={actionPillClassName}
               >
-                <GripVertical className={`h-4 w-4 ${textSecondary}`} />
+                <SlidersHorizontal className={`h-4 w-4 ${textSecondary}`} />
                 <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
                   {t('dashboard.roomNav.reorder')}
                 </span>
@@ -403,10 +410,12 @@ export const RoomNav = memo(function RoomNav({
           isOpen={isReorderDialogOpen}
           onOpenChange={setIsReorderDialogOpen}
           rooms={manageableRooms}
+          hiddenRoomNames={hiddenRoomNames}
           areas={areas}
           roomHiddenItemCounts={roomHiddenItemCounts}
           roomEntityCounts={roomItemCounts}
           onRoomOrderChange={onRoomOrderChange}
+          onHiddenRoomsChange={onHiddenRoomsChange}
         />
       ) : null}
     </>

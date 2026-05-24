@@ -28,6 +28,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   onRemoveEntity,
   allowEntityRemoval = false,
   usesHideAction = false,
+  getDeviceHeaderSubtitle,
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
@@ -108,6 +109,7 @@ export const DeviceGrid = memo(function DeviceGrid({
               onRemoveEntity={onRemoveEntity}
               allowEntityRemoval={allowEntityRemoval}
               usesHideAction={usesHideAction}
+              headerSubtitleOverride={getDeviceHeaderSubtitle?.(device)}
             />
           );
         }

@@ -29,6 +29,7 @@ export interface UserSettings {
   language: AppLanguage;
   showNotifications: boolean;
   showWeatherInHeader: boolean;
+  showHomeSummaryBar: boolean;
   use24HourTime: boolean;
   temperatureUnit: 'celsius' | 'fahrenheit';
   defaultView: 'all' | string;
@@ -62,6 +63,7 @@ export const defaultSettings: UserSettings = {
   language: getNavigatorLanguage(),
   showNotifications: true,
   showWeatherInHeader: true,
+  showHomeSummaryBar: true,
   use24HourTime: false,
   temperatureUnit: 'fahrenheit',
   defaultView: 'all',

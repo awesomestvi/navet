@@ -59,20 +59,23 @@ export function SecuritySection() {
     }),
     [devices, hiddenEntityIdSet]
   );
-  const allCameraDevices = useMemo(
-    () => devices.cameras.map((device) => ({ ...device, type: 'cameras' as const })),
-    [devices.cameras]
+  const allSecurityDevices = useMemo(
+    () => [
+      ...devices.cameras.map((device) => ({ ...device, type: 'cameras' as const })),
+      ...devices.locks.map((device) => ({ ...device, type: 'locks' as const })),
+    ],
+    [devices.cameras, devices.locks]
   );
-  const allCameraDeviceMap = useMemo(
-    () => new Map(allCameraDevices.map((device) => [device.id, device])),
-    [allCameraDevices]
+  const allSecurityDeviceMap = useMemo(
+    () => new Map(allSecurityDevices.map((device) => [device.id, device])),
+    [allSecurityDevices]
   );
-  const hiddenCameraEntityIds = useMemo(
+  const hiddenSecurityEntityIds = useMemo(
     () =>
-      devices.cameras
+      allSecurityDevices
         .filter((device) => hiddenEntityIdSet.has(device.id))
         .map((device) => device.id),
-    [devices.cameras, hiddenEntityIdSet]
+    [allSecurityDevices, hiddenEntityIdSet]
   );
   const openAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(true), []);
   const closeAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(false), []);
@@ -95,7 +98,7 @@ export function SecuritySection() {
   const { cardSizes, updateCardSize } = useCardState(devices);
   const model = buildSecurityCameraDashboardModel(visibleDevices, entities);
 
-  if (devices.cameras.length === 0) {
+  if (devices.cameras.length === 0 && devices.locks.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
@@ -109,7 +112,7 @@ export function SecuritySection() {
   }
 
   const addHiddenEntityAction =
-    isEditMode && hiddenCameraEntityIds.length > 0 ? (
+    isEditMode && hiddenSecurityEntityIds.length > 0 ? (
       <InteractivePill
         intent="action"
         size="small"
@@ -130,7 +133,7 @@ export function SecuritySection() {
       className="relative"
       actions={addHiddenEntityAction}
     >
-      {model.summary.totalCameras > 0 ? (
+      {model.summary.totalCameras > 0 || model.locks.length > 0 ? (
         <SecurityCameraDashboard
           model={model}
           isEditMode={isEditMode}
@@ -144,6 +147,7 @@ export function SecuritySection() {
             stillDescription: t('security.dashboard.stillDescription'),
             noPrimaryTitle: t('security.dashboard.noPrimaryTitle'),
             noPrimaryDescription: t('security.dashboard.noPrimaryDescription'),
+            locksTitle: t('sections.locks.title'),
           }}
         />
       ) : (
@@ -166,9 +170,9 @@ export function SecuritySection() {
           onClose={closeAddEntityDialog}
           onAddEntity={handleAddEntity}
           currentRoom={ALL_ROOMS_ID}
-          deviceMap={allCameraDeviceMap}
+          deviceMap={allSecurityDeviceMap}
           addedEntityIds={[]}
-          visibleEntityIds={hiddenCameraEntityIds}
+          visibleEntityIds={hiddenSecurityEntityIds}
           title={t('dashboard.addEntity.title')}
           description={t('dashboard.addEntity.descriptionWithHidden')}
           actionLabel={t('dashboard.addEntity.action')}

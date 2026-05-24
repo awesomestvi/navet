@@ -14,6 +14,7 @@ export {
   mapMediaDevice,
   mapPersonDevice,
   mapSceneDevice,
+  mapSensorDevice,
   mapSwitchDevice,
   mapVacuumDevice,
   mapWeatherDevice,

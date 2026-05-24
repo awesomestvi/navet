@@ -4,6 +4,7 @@
 
 import type { DeviceMetric } from '../../types/device.types';
 import { toKilowattHours, toVolts, toWatts } from './numeric-utils';
+import { formatTimestampTime } from './time-format';
 
 export function inferMetricIcon(
   deviceClass: string | null,
@@ -143,16 +144,39 @@ export function formatMetricNumber(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
-export function formatSensorValue(entity: {
-  state: unknown;
-  attributes?: Record<string, unknown>;
-}): { value: string; unit: string } | null {
+export interface SensorValueFormatOptions {
+  locale?: string;
+  use24HourTime?: boolean;
+}
+
+function getSensorDeviceClass(entity: { attributes?: Record<string, unknown> }): string | null {
+  return typeof entity.attributes?.device_class === 'string'
+    ? entity.attributes.device_class.toLowerCase()
+    : null;
+}
+
+function formatNumericSensorValue(value: number, deviceClass: string | null): string {
+  if (deviceClass === 'pressure') {
+    return `${Math.round(value)}`;
+  }
+
+  return `${value}`;
+}
+
+export function formatSensorValue(
+  entity: {
+    state: unknown;
+    attributes?: Record<string, unknown>;
+  },
+  options: SensorValueFormatOptions = {}
+): { value: string; unit: string } | null {
   const unit =
     typeof entity.attributes?.unit_of_measurement === 'string'
       ? entity.attributes.unit_of_measurement
       : typeof entity.attributes?.native_unit_of_measurement === 'string'
         ? entity.attributes.native_unit_of_measurement
         : '';
+  const deviceClass = getSensorDeviceClass(entity);
 
   const candidate =
     typeof entity.state === 'string' && entity.state.length > 0
@@ -166,5 +190,17 @@ export function formatSensorValue(entity: {
           : '';
 
   if (!candidate) return null;
+  if (deviceClass === 'timestamp') {
+    return {
+      value: formatTimestampTime(candidate, options.locale ?? 'en-US', options.use24HourTime),
+      unit: '',
+    };
+  }
+
+  const numericValue = Number(candidate);
+  if (Number.isFinite(numericValue)) {
+    return { value: formatNumericSensorValue(numericValue, deviceClass), unit };
+  }
+
   return { value: candidate, unit };
 }

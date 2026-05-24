@@ -349,7 +349,7 @@ export function DialogShell({
 }
 
 export function DialogFooter({ children }: { children: ReactNode }) {
-  return <div className="mt-6 flex justify-end">{children}</div>;
+  return <div className="mt-6 flex flex-wrap justify-end gap-2">{children}</div>;
 }
 
 export function DialogDoneFooter({ label }: { label: string }) {

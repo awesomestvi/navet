@@ -57,7 +57,7 @@ Current layout ownership includes:
 - section navigation helpers
 - section customization shell/button
 - mobile command, search, and section sheets
-- reusable section layouts such as locks, media, and security
+- reusable section layouts such as media and security
 
 ## State and Data Flow
 

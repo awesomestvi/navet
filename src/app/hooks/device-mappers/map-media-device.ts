@@ -102,6 +102,7 @@ export function mapMediaDevice(
     supportsGrouping: hasMediaPlayerGroupingSupport(supportedFeatures),
     supportsPreviousTrack: hasMediaPlayerPreviousTrackSupport(supportedFeatures),
     supportsNextTrack: hasMediaPlayerNextTrackSupport(supportedFeatures),
+    supportedFeatures,
     groupMembers,
   };
 }

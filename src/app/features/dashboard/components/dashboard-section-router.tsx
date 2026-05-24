@@ -1,4 +1,4 @@
-import { Lightbulb, Plus, Sparkles } from 'lucide-react';
+import { Lightbulb, Plus, Sparkles, Thermometer } from 'lucide-react';
 import { lazy, type ReactNode, Suspense, useCallback, useMemo, useState } from 'react';
 import { getManageableRoomOrder } from '@/app/components/layout/mobile-layout-helpers';
 import { RoomNav } from '@/app/components/layout/room-nav';
@@ -9,10 +9,13 @@ import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, ENERGY_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
+import { buildRoomStatusSummaryItems, InfoBadgeStrip } from '@/app/features/sensors';
+import { useTaskRoutines } from '@/app/features/tasks';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { getDeviceRoomLabel } from '@/app/utils/device-location';
 import { AllViewGrid } from '../all-view-grid';
 import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
@@ -27,10 +30,6 @@ const SecuritySection = lazy(async () => {
 const TasksSection = lazy(async () => {
   const module = await import('@/app/components/layout/sections');
   return { default: module.TasksSection };
-});
-const LocksSection = lazy(async () => {
-  const module = await import('@/app/components/layout/locks-section');
-  return { default: module.LocksSection };
 });
 const MediaSection = lazy(async () => {
   const module = await import('@/app/components/layout/media-section');
@@ -49,13 +48,80 @@ interface DashboardSectionRouterProps {
   controller: DashboardController;
 }
 
+type ClimateDashboardGroup = 'hvac' | 'temperature' | 'humidity' | 'airQuality' | 'pressure';
+
+const CLIMATE_DASHBOARD_GROUPS = [
+  {
+    key: 'hvac',
+    titleKey: 'sections.climate.hvac.title',
+  },
+  {
+    key: 'temperature',
+    titleKey: 'sections.climate.temperature.title',
+  },
+  {
+    key: 'humidity',
+    titleKey: 'sections.climate.humidity.title',
+  },
+  {
+    key: 'airQuality',
+    titleKey: 'sections.climate.airQuality.title',
+  },
+  {
+    key: 'pressure',
+    titleKey: 'sections.climate.pressure.title',
+  },
+] as const satisfies Array<{
+  key: ClimateDashboardGroup;
+  titleKey:
+    | 'sections.climate.hvac.title'
+    | 'sections.climate.temperature.title'
+    | 'sections.climate.humidity.title'
+    | 'sections.climate.airQuality.title'
+    | 'sections.climate.pressure.title';
+}>;
+
+function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
+  return (
+    routine.enabled === true ||
+    ['active', 'on', 'scening'].includes(routine.state.trim().toLowerCase())
+  );
+}
+
+function getClimateDashboardGroup(device: DeviceWithType): ClimateDashboardGroup | null {
+  if (device.type === 'climate' || device.type === 'hvac') {
+    return 'hvac';
+  }
+
+  if (device.type !== 'sensors') {
+    return null;
+  }
+
+  switch (String(device.deviceClass ?? '').toLowerCase()) {
+    case 'temperature':
+      return 'temperature';
+    case 'humidity':
+      return 'humidity';
+    case 'air_quality':
+    case 'carbon_dioxide':
+      return 'airQuality';
+    case 'pressure':
+      return 'pressure';
+    default:
+      return null;
+  }
+}
+
 export function DashboardSectionRouter({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const routines = useTaskRoutines();
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
+  const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const {
     activeRoom,
     activeSection,
@@ -102,9 +168,81 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
       ),
     [availableDeviceMap]
   );
+  const isClimateDashboardDevice = useCallback(
+    (device: DeviceWithType) => getClimateDashboardGroup(device) !== null,
+    []
+  );
+  const climateDeviceMap = useMemo(
+    () =>
+      new Map(
+        Array.from(deviceMap.entries()).filter(([, device]) => isClimateDashboardDevice(device))
+      ),
+    [deviceMap, isClimateDashboardDevice]
+  );
+  const allClimateDeviceMap = useMemo(
+    () =>
+      new Map(
+        Array.from(availableDeviceMap.entries()).filter(([, device]) =>
+          isClimateDashboardDevice(device)
+        )
+      ),
+    [availableDeviceMap, isClimateDashboardDevice]
+  );
+  const hiddenClimateEntityIds = useMemo(
+    () =>
+      Array.from(allClimateDeviceMap.keys()).filter((entityId) => !climateDeviceMap.has(entityId)),
+    [allClimateDeviceMap, climateDeviceMap]
+  );
+  const climateSections = useMemo(() => {
+    const groupedIds: Record<ClimateDashboardGroup, string[]> = {
+      hvac: [],
+      temperature: [],
+      humidity: [],
+      airQuality: [],
+      pressure: [],
+    };
+
+    climateDeviceMap.forEach((device) => {
+      const group = getClimateDashboardGroup(device);
+      if (group) {
+        groupedIds[group].push(device.id);
+      }
+    });
+
+    return CLIMATE_DASHBOARD_GROUPS.map((group) => ({
+      ...group,
+      orderedIds: groupedIds[group.key],
+    })).filter((group) => group.orderedIds.length > 0);
+  }, [climateDeviceMap]);
+  const totalRoutineCount =
+    routines.automations.filter(isActiveRoutine).length +
+    routines.quickActions.filter(isActiveRoutine).length;
+  const roomStatusSummaryItems = useMemo(() => {
+    if (isAllRooms(activeRoom) || !showSummaryBar) {
+      return [];
+    }
+
+    const routineCount =
+      routines.automations.filter(
+        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+      ).length +
+      routines.quickActions.filter(
+        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+      ).length;
+
+    return buildRoomStatusSummaryItems(availableDeviceMap, activeRoom, { routineCount });
+  }, [activeRoom, availableDeviceMap, routines.automations, routines.quickActions, showSummaryBar]);
   const openAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(true), []);
   const closeAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(false), []);
+  const openAddClimateEntityDialog = useCallback(() => setIsAddClimateEntityDialogOpen(true), []);
+  const closeAddClimateEntityDialog = useCallback(() => setIsAddClimateEntityDialogOpen(false), []);
   const handleAddLightEntity = useCallback(
+    (entityId: string) => {
+      handleAddEntity(entityId);
+    },
+    [handleAddEntity]
+  );
+  const handleAddClimateEntity = useCallback(
     (entityId: string) => {
       handleAddEntity(entityId);
     },
@@ -192,11 +330,97 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
         <TasksSection />
       </Suspense>
     );
-  } else if (activeSection === 'locks') {
+  } else if (activeSection === 'climate') {
+    const addHiddenClimateEntityAction =
+      isEditMode && hiddenClimateEntityIds.length > 0 ? (
+        <InteractivePill
+          intent="action"
+          size="small"
+          onClick={openAddClimateEntityDialog}
+          className={`${surface.subtleBg} ${surface.hoverBg}`}
+        >
+          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+          <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
+            {t('dashboard.addEntity.title')}
+          </span>
+        </InteractivePill>
+      ) : null;
+
     sectionContent = (
-      <Suspense fallback={<LoadingSpinner />}>
-        <LocksSection />
-      </Suspense>
+      <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
+        {climateDeviceMap.size > 0 ? (
+          <SectionCustomizeShell
+            isEditMode={isEditMode}
+            onToggle={onToggleEditMode ?? (() => {})}
+            className="relative"
+            actions={addHiddenClimateEntityAction}
+          >
+            <RenderProfiler id="ClimateSection">
+              <div className="space-y-8">
+                {climateSections.map((section) => (
+                  <section key={section.key} className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+                        {t(section.titleKey)}
+                      </h2>
+                      <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+                        {section.orderedIds.length}{' '}
+                        {section.orderedIds.length === 1
+                          ? t('sections.climate.singular')
+                          : t('sections.climate.plural')}
+                      </span>
+                    </div>
+                    <DeviceGrid
+                      orderedCardIds={section.orderedIds}
+                      deviceMap={climateDeviceMap}
+                      isEditMode={isEditMode}
+                      cardSizes={cardSizes}
+                      updateCardSize={updateCardSize}
+                      onRemoveEntity={handleRemoveEntity}
+                      allowEntityRemoval
+                      usesHideAction
+                      getDeviceHeaderSubtitle={getDeviceRoomLabel}
+                    />
+                  </section>
+                ))}
+              </div>
+            </RenderProfiler>
+          </SectionCustomizeShell>
+        ) : (
+          <div className="flex h-full items-center justify-center p-6">
+            <DashboardEmptyState
+              icon={Thermometer}
+              title={t('sections.climate.emptyTitle')}
+              description={
+                hiddenClimateEntityIds.length > 0
+                  ? t('sections.climate.emptyHiddenDescription')
+                  : t('sections.climate.emptyDescription')
+              }
+              actionIcon={Thermometer}
+              actionLabel={
+                hiddenClimateEntityIds.length > 0 ? t('dashboard.addEntity.title') : undefined
+              }
+              onAction={hiddenClimateEntityIds.length > 0 ? openAddClimateEntityDialog : undefined}
+              className="w-full max-w-md"
+            />
+          </div>
+        )}
+
+        {isAddClimateEntityDialogOpen ? (
+          <AddEntityDialog
+            open={isAddClimateEntityDialogOpen}
+            onClose={closeAddClimateEntityDialog}
+            onAddEntity={handleAddClimateEntity}
+            currentRoom={ALL_ROOMS_ID}
+            deviceMap={allClimateDeviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={hiddenClimateEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={t('dashboard.addEntity.descriptionWithHidden')}
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        ) : null}
+      </div>
     );
   } else if (activeSection === 'lights') {
     const addHiddenLightEntityAction =
@@ -294,6 +518,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
         {kioskMode ? null : (
           <RoomNav
             rooms={rooms}
+            hiddenRoomNames={controller.hiddenRoomNames}
             roomHiddenItemCounts={controller.roomHiddenItemCounts}
             roomItemCounts={controller.roomItemCounts}
             activeRoom={activeRoom}
@@ -301,6 +526,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
             allViewGrouping={isAllRooms(activeRoom) ? controller.allViewGrouping : undefined}
             isEditMode={isEditMode}
             onRoomOrderChange={controller.onSetRoomOrder}
+            onHiddenRoomsChange={controller.onSetHiddenRoomNames}
             onAllViewGroupingChange={
               isAllRooms(activeRoom) ? controller.onSetAllViewGrouping : undefined
             }
@@ -338,11 +564,18 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
               onOpenAddCardDialog={controller.onOpenAddCardDialog}
               onUpdateCard={handleUpdateCard}
               onToggleEditMode={controller.onToggleEditMode}
+              onNavigateSection={controller.setActiveSection}
+              routineCount={totalRoutineCount}
             />
           </RenderProfiler>
         ) : (
           <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
-            <div className="space-y-6">
+            <div className="space-y-2 md:space-y-6">
+              <InfoBadgeStrip
+                items={roomStatusSummaryItems}
+                onNavigate={controller.setActiveSection}
+                ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
+              />
               {/* Note: Will be added later */}
               {/* <RoomOverviewPanel
                 room={activeRoom}
@@ -383,10 +616,12 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
           manageableRooms.length > 0
             ? {
                 rooms: manageableRooms,
+                hiddenRoomNames: controller.hiddenRoomNames,
                 areas,
                 roomHiddenItemCounts: controller.roomHiddenItemCounts,
                 roomItemCounts: controller.roomItemCounts,
                 onRoomOrderChange: controller.onSetRoomOrder,
+                onHiddenRoomsChange: controller.onSetHiddenRoomNames,
               }
             : undefined,
         allViewGrouping: isAllRooms(activeRoom) ? controller.allViewGrouping : undefined,
@@ -394,7 +629,12 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
           ? controller.onSetAllViewGrouping
           : undefined,
       }}
-      mobileRoomNavigation={{ activeRoom, onRoomChange: changeRoom, rooms }}
+      mobileRoomNavigation={{
+        activeRoom,
+        onRoomChange: changeRoom,
+        rooms,
+        hiddenRoomNames: controller.hiddenRoomNames,
+      }}
     >
       {sectionContent}
     </DashboardLayout>

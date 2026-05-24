@@ -213,7 +213,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                         step={displayStep}
                       />
                       <HVACModeControls
-                        mode={visualMode}
+                        mode={mode}
                         isOn={isOn}
                         onModeChange={onModeChange}
                         supportedHvacModes={supportedHvacModes}

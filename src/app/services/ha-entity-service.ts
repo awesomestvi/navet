@@ -4,6 +4,8 @@ import type {
   HomeAssistantAutomationConfig,
   HomeAssistantCameraCapabilities,
   HomeAssistantCameraStream,
+  HomeAssistantMediaBrowseResult,
+  HomeAssistantMediaSearchResult,
   HomeAssistantMediaSourceItem,
   HomeAssistantResolvedMediaSource,
   HomeAssistantWebRtcClientConfiguration,
@@ -212,6 +214,104 @@ class HAEntityService {
 
   async selectMediaPlayerSource(entityId: string, source: string): Promise<void> {
     await this.callService('media_player', 'select_source', { source }, { entity_id: entityId });
+  }
+
+  async playMedia(
+    entityId: string,
+    media: {
+      mediaContentId: string;
+      mediaContentType: string;
+      enqueue?: 'play' | 'next' | 'add' | 'replace';
+      announce?: boolean;
+    }
+  ): Promise<void> {
+    const serviceData: Record<string, unknown> = {
+      media: {
+        media_content_id: media.mediaContentId,
+        media_content_type: media.mediaContentType,
+      },
+    };
+    if (media.enqueue) {
+      serviceData.enqueue = media.enqueue;
+    }
+    if (typeof media.announce === 'boolean') {
+      serviceData.announce = media.announce;
+    }
+
+    await this.callService('media_player', 'play_media', serviceData, { entity_id: entityId });
+  }
+
+  async browseMediaPlayer(
+    entityId: string,
+    media: { mediaContentId?: string; mediaContentType?: string } = {}
+  ): Promise<HomeAssistantMediaBrowseResult> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    const serviceData: Record<string, unknown> = {};
+    if (media.mediaContentId) serviceData.media_content_id = media.mediaContentId;
+    if (media.mediaContentType) serviceData.media_content_type = media.mediaContentType;
+
+    const response = await conn.sendMessagePromise({
+      type: 'call_service',
+      domain: 'media_player',
+      service: 'browse_media',
+      service_data: serviceData,
+      target: { entity_id: entityId },
+      return_response: true,
+    });
+
+    return (response as { response?: HomeAssistantMediaBrowseResult }).response ?? {};
+  }
+
+  async searchMediaPlayer(
+    entityId: string,
+    query: string,
+    media: { mediaContentId?: string; mediaContentType?: string } = {}
+  ): Promise<HomeAssistantMediaSearchResult> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    const serviceData: Record<string, unknown> = { search_query: query };
+    if (media.mediaContentId) serviceData.media_content_id = media.mediaContentId;
+    if (media.mediaContentType) serviceData.media_content_type = media.mediaContentType;
+
+    const response = await conn.sendMessagePromise({
+      type: 'call_service',
+      domain: 'media_player',
+      service: 'search_media',
+      service_data: serviceData,
+      target: { entity_id: entityId },
+      return_response: true,
+    });
+
+    return (response as { response?: HomeAssistantMediaSearchResult }).response ?? {};
+  }
+
+  async seekMediaPlayer(entityId: string, seekPosition: number): Promise<void> {
+    await this.callService(
+      'media_player',
+      'media_seek',
+      { seek_position: Math.max(0, seekPosition) },
+      { entity_id: entityId }
+    );
+  }
+
+  async selectMediaPlayerSoundMode(entityId: string, soundMode: string): Promise<void> {
+    await this.callService(
+      'media_player',
+      'select_sound_mode',
+      { sound_mode: soundMode },
+      { entity_id: entityId }
+    );
+  }
+
+  async clearMediaPlayerPlaylist(entityId: string): Promise<void> {
+    await this.callService('media_player', 'clear_playlist', {}, { entity_id: entityId });
   }
 
   async sendRemoteCommand(entityId: string, command: string | string[]): Promise<void> {

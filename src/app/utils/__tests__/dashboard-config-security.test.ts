@@ -7,6 +7,7 @@ import {
   useHomeDashboardLayoutStore,
 } from '@/app/features/dashboard';
 import { useNavigationStore } from '@/app/stores/navigation-store';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import {
   exportDashboardConfig,
   importDashboardConfig,
@@ -35,6 +36,7 @@ describe('dashboard-config import hardening', () => {
     useCardZonesStore.setState(useCardZonesStore.getInitialState(), true);
     useHomeDashboardLayoutStore.setState(useHomeDashboardLayoutStore.getInitialState(), true);
     useNavigationStore.setState(useNavigationStore.getInitialState(), true);
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
   });
 
   it('drops unsafe custom card URLs and service calls', () => {
@@ -163,6 +165,25 @@ describe('dashboard-config import hardening', () => {
     const exported = exportDashboardConfig();
 
     expect(exported.dashboardEntities?.lockedCardIds).toEqual(['light.kitchen']);
+  });
+
+  it('round-trips the summary bar dashboard setting', () => {
+    useSettingsStore.getState().updateSettings({ showHomeSummaryBar: false });
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.settings.showHomeSummaryBar).toBe(false);
+
+    useSettingsStore.getState().updateSettings({ showHomeSummaryBar: true });
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        showHomeSummaryBar: false,
+      },
+    });
+
+    expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
   });
 
   it('can import shared profile data without replacing current navigation', () => {

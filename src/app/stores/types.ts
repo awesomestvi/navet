@@ -61,6 +61,7 @@ interface UserSettings {
   language: AppLanguage;
   showNotifications: boolean;
   showWeatherInHeader: boolean;
+  showHomeSummaryBar: boolean;
   use24HourTime: boolean;
   temperatureUnit: 'celsius' | 'fahrenheit';
   defaultView: 'all' | string;

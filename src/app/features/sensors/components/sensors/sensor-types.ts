@@ -1,9 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  AlarmSmoke,
+  CircleAlert,
+  DoorOpen,
   Droplets,
   Gauge,
+  PanelTop,
   PersonStanding,
+  ShieldCheck,
   Sun,
   Thermometer,
   TrendingDown,
@@ -22,7 +27,12 @@ export type SensorIconType =
   | 'activity'
   | 'wind'
   | 'sun'
-  | 'motion';
+  | 'motion'
+  | 'door'
+  | 'window'
+  | 'alert'
+  | 'shield'
+  | 'smoke';
 
 export interface SensorReading {
   id: string;
@@ -54,4 +64,9 @@ export const iconMap: Record<SensorIconType, LucideIcon> = {
   wind: Wind,
   sun: Sun,
   motion: PersonStanding,
+  door: DoorOpen,
+  window: PanelTop,
+  alert: CircleAlert,
+  shield: ShieldCheck,
+  smoke: AlarmSmoke,
 };

@@ -1,6 +1,6 @@
-import { GripVertical, LayoutGrid, Lightbulb, type LucideIcon } from 'lucide-react';
+import { LayoutGrid, Lightbulb, type LucideIcon, SlidersHorizontal } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
-import { Button, SheetSurface } from '@/app/components/primitives';
+import { Button, SheetSurface, SheetSurfaceHeader } from '@/app/components/primitives';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
@@ -60,18 +60,11 @@ export const MobileHeaderCommandSheet = memo(function MobileHeaderCommandSheet({
         bodyClassName="px-4"
       >
         <div className="space-y-3 pb-1">
-          <div className="flex items-center justify-between gap-3 py-1">
-            <div className="min-w-0">
-              <p
-                className={`text-[0.7rem] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-              >
-                {t('common.moreActions')}
-              </p>
-              <p className={`mt-1 text-base font-semibold ${surface.textPrimary}`}>
-                {availability?.isEditMode ? t('common.moreActions') : t('common.moreActions')}
-              </p>
-            </div>
-          </div>
+          <SheetSurfaceHeader
+            title={t('common.moreActions')}
+            closeLabel={t('common.close')}
+            onClose={() => onOpenChange(false)}
+          />
 
           <div className="space-y-2">
             {availability?.isEditMode && availability.onAddEntity ? (
@@ -85,7 +78,7 @@ export const MobileHeaderCommandSheet = memo(function MobileHeaderCommandSheet({
 
             {availability?.isEditMode && availability.reorderRooms ? (
               <MobileHeaderSheetAction
-                icon={GripVertical}
+                icon={SlidersHorizontal}
                 label={t('dashboard.roomNav.reorder')}
                 detail={t('dashboard.roomNav.reorderDialog.title')}
                 onClick={openReorderDialog}
@@ -135,10 +128,12 @@ export const MobileHeaderCommandSheet = memo(function MobileHeaderCommandSheet({
           isOpen={isReorderDialogOpen}
           onOpenChange={setIsReorderDialogOpen}
           rooms={availability.reorderRooms.rooms}
+          hiddenRoomNames={availability.reorderRooms.hiddenRoomNames}
           areas={availability.reorderRooms.areas}
           roomHiddenItemCounts={availability.reorderRooms.roomHiddenItemCounts}
           roomEntityCounts={availability.reorderRooms.roomItemCounts}
           onRoomOrderChange={availability.reorderRooms.onRoomOrderChange}
+          onHiddenRoomsChange={availability.reorderRooms.onHiddenRoomsChange}
         />
       ) : null}
     </>

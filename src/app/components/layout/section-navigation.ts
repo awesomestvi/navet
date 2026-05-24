@@ -1,12 +1,12 @@
 import {
   Clipboard,
+  Fan,
   Home,
   Lightbulb,
   Lock,
   type LucideIcon,
   Settings,
-  Tv,
-  Video,
+  Speaker,
   Zap,
 } from 'lucide-react';
 import type { TranslateFn, TranslationKey } from '@/app/i18n';
@@ -25,24 +25,24 @@ const SECTION_NAVIGATION_CONFIG: Array<{
 }> = [
   { icon: Home, labelKey: 'sidebar.home', section: 'home' },
   { icon: Zap, labelKey: 'sidebar.energy', section: 'energy' },
-  { icon: Video, labelKey: 'sidebar.security', section: 'security' },
-  { icon: Clipboard, labelKey: 'sidebar.tasks', section: 'tasks' },
-  { icon: Lock, labelKey: 'sidebar.locks', section: 'locks' },
+  { icon: Fan, labelKey: 'sidebar.climate', section: 'climate' },
+  { icon: Lock, labelKey: 'sidebar.security', section: 'security' },
   { icon: Lightbulb, labelKey: 'sidebar.lights', section: 'lights' },
-  { icon: Tv, labelKey: 'sidebar.media', section: 'media' },
+  { icon: Speaker, labelKey: 'sidebar.media', section: 'media' },
+  { icon: Clipboard, labelKey: 'sidebar.tasks', section: 'tasks' },
   { icon: Settings, labelKey: 'sidebar.settings', section: 'settings' },
 ];
 
-export const MOBILE_SECTION_DOCK_ORDER: Section[] = ['home', 'settings'];
+export const MOBILE_SECTION_DOCK_ORDER: Section[] = ['home'];
 
 export const MOBILE_SECTION_ORBIT_ORDER: Section[] = [
   'home',
+  'energy',
+  'climate',
+  'security',
   'lights',
   'media',
   'tasks',
-  'security',
-  'locks',
-  'energy',
   'settings',
 ];
 

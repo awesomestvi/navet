@@ -60,7 +60,7 @@ Planned and in-progress features. Check off items as they ship. Add new ideas to
 - [x] **Shared Docker/add-on dashboard profile sync** — Docker and add-on deployments persist the entered Home Assistant session and dashboard profile through same-origin endpoints backed by `/data`, so shared dashboard devices can pick up ongoing layout changes across browser sessions
 - [x] **Home Assistant add-on image publishing** — add-on CI/CD publishes `dev` images from `main` and manual workflow runs, plus versioned public beta images for supported architectures
 - [x] **Automation management** — Tasks section lists Home Assistant automations, shows active/disabled filters, displays last-run metadata and read-only config details, and supports trigger plus enable/disable actions
-- [x] **Dedicated section views** — media, security, tasks, locks, lights, energy, and settings have dedicated top-level dashboard views beyond the room-based Home view
+- [x] **Dedicated section views** — media, security, tasks, lights, energy, climate, and settings have dedicated top-level dashboard views beyond the room-based Home view, with locks folded into Security
 - [x] **Mobile section orbit** — mobile navigation keeps Home and Settings in the dock while exposing the other top-level sections through an orbit sheet with recent-section access
 - [x] **Security camera dashboard** — dedicated security camera dashboard model and view with camera live viewing support, entity mapping, stories, and tests
 - [x] **Energy history** — per-device and per-source consumption over time with Home Assistant Energy prefs, recorder statistics, source diagnostics, tracked-device sparklines, and drill-down to individual appliances

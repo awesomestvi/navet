@@ -31,8 +31,10 @@ export function useEnergyStatisticsPeriods(entityId?: string): EnergyPeriodTotal
       const activeConnection = connection ?? homeAssistantService.getConnection();
       if (!activeConnection) return;
       try {
-        const result = await getCachedEnergyStatistics(`periods:${statisticId}`, CACHE_TTL_MS, () =>
-          getEnergyStatisticsPeriods(activeConnection, statisticId)
+        const result = await getCachedEnergyStatistics(
+          `periods-5minute-today:${statisticId}`,
+          CACHE_TTL_MS,
+          () => getEnergyStatisticsPeriods(activeConnection, statisticId)
         );
         setTotals(result);
       } catch (error) {

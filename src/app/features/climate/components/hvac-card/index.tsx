@@ -25,6 +25,7 @@ export const HVACCard = memo(function HVACCard({
   id,
   name,
   room: _room,
+  headerSubtitle,
   initialTemp = 21,
   initialCurrentTemp = 22,
   temperatureUnit,
@@ -171,7 +172,7 @@ export const HVACCard = memo(function HVACCard({
         <div className="relative z-[2] h-full flex flex-col p-3">
           <EntityCardHeader
             title={name}
-            subtitle={t('climate.subtitle')}
+            subtitle={headerSubtitle ?? t('climate.subtitle')}
             layout="eyebrow-first"
             size={resolvedSize}
             tone={tone}

@@ -1208,19 +1208,34 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the card stays readable at the smaller supported sizes.',
     ]
   ),
-  'Cards/Custom/Info Card': doc(
-    'Storybook-only informational card surface used for compact summary or helper content in the dashboard language.',
+  'Cards/Entity/Info': doc(
+    'Read-only entity card for a single Home Assistant sensor, binary sensor, timestamp, or passive status value.',
     [
-      'A custom card pattern for passive information rather than direct device control.',
-      'How informational dashboard content can still feel aligned with the broader card system.',
+      'How numeric readings and binary status values share one visual language.',
+      'The compact icon, type eyebrow, entity name, and large value hierarchy used by info cards.',
     ],
     [
-      'Use this story when exploring passive dashboard summaries or helper surfaces.',
-      'Review it before introducing more content-only cards that overlap with this role.',
+      'Use this story when changing sensor mapping, binary status wording, or info card styling.',
+      'Keep passive entity presentation here instead of treating it as a custom widget surface.',
     ],
     [
-      'Check that information hierarchy is clear without feeling too text-heavy.',
-      'Check that the card remains lightweight enough to coexist with interactive cards.',
+      'Check that temperature, humidity, air quality, motion, leak, and window examples remain distinct.',
+      'Check that long names and unavailable states stay readable at small card sizes.',
+    ]
+  ),
+  'Cards/Entity/Info Badge Strip': doc(
+    'Navet summary strip for important dashboard areas such as energy, climate, security, lights, media, and routines.',
+    [
+      'How section-level home status is summarized without adding layout cards.',
+      'The compact chip treatment used above the home dashboard content.',
+    ],
+    [
+      'Use this story when changing summary labels, density, or section navigation targets.',
+      'Keep summaries glanceable and separate from normal dashboard card layout.',
+    ],
+    [
+      'Check that important areas remain easy to scan and tap.',
+      'Check that long labels truncate cleanly on narrow dashboard widths.',
     ]
   ),
   'Cards/Dialogs/Vacuum': doc(

@@ -121,6 +121,7 @@ describe('security camera dashboard model', () => {
     expect(model.summary.activeSirenCount).toBe(1);
     expect(model.summary.lockedCount).toBe(1);
     expect(model.summary.unlockedCount).toBe(1);
+    expect(model.locks.map((item) => item.id)).toEqual(['lock.back_door', 'lock.front_door']);
   });
 
   it('sorts camera feeds by room then name', () => {

@@ -8,11 +8,26 @@ export type TvRemoteAction =
   | 'down'
   | 'back'
   | 'channelUp'
-  | 'channelDown';
+  | 'channelDown'
+  | 'playPause';
 
-type TvRemoteProfile = 'samsung' | 'default';
+export type TvRemoteProfile = 'androidtv_remote' | 'samsungtv';
 
-const SAMSUNG_COMMANDS: Record<TvRemoteAction, string> = {
+const ANDROID_TV_REMOTE_COMMANDS: Record<TvRemoteAction, string> = {
+  up: 'DPAD_UP',
+  home: 'HOME',
+  left: 'DPAD_LEFT',
+  select: 'DPAD_CENTER',
+  right: 'DPAD_RIGHT',
+  menu: 'MENU',
+  down: 'DPAD_DOWN',
+  back: 'BACK',
+  channelUp: 'CHANNEL_UP',
+  channelDown: 'CHANNEL_DOWN',
+  playPause: 'MEDIA_PLAY_PAUSE',
+};
+
+const SAMSUNG_TV_REMOTE_COMMANDS: Record<TvRemoteAction, string> = {
   up: 'KEY_UP',
   home: 'KEY_HOME',
   left: 'KEY_LEFT',
@@ -23,33 +38,46 @@ const SAMSUNG_COMMANDS: Record<TvRemoteAction, string> = {
   back: 'KEY_RETURN',
   channelUp: 'KEY_CHUP',
   channelDown: 'KEY_CHDOWN',
+  playPause: 'KEY_PLAY',
 };
 
-const DEFAULT_COMMANDS: Record<TvRemoteAction, string> = {
-  up: 'up',
-  home: 'home',
-  left: 'left',
-  select: 'select',
-  right: 'right',
-  menu: 'menu',
-  down: 'down',
-  back: 'back',
-  channelUp: 'channel_up',
-  channelDown: 'channel_down',
-};
-
-function isSamsungRemote(remoteEntityId: string, friendlyName?: string): boolean {
-  const haystack = `${remoteEntityId} ${friendlyName ?? ''}`.toLowerCase();
-  return haystack.includes('samsung');
+interface ResolveTvRemoteProfileParams {
+  remotePlatform?: string | null;
+  mediaPlatform?: string | null;
+  remoteEntityId?: string;
+  remoteFriendlyName?: string;
 }
 
-export function getTvRemoteProfile(remoteEntityId: string, friendlyName?: string): TvRemoteProfile {
-  return isSamsungRemote(remoteEntityId, friendlyName) ? 'samsung' : 'default';
+function normalizePlatform(value?: string | null) {
+  return value?.trim().toLowerCase() ?? '';
 }
 
-export function getTvRemoteCommand(
-  profile: TvRemoteProfile,
-  action: TvRemoteAction
-): string | string[] {
-  return profile === 'samsung' ? SAMSUNG_COMMANDS[action] : DEFAULT_COMMANDS[action];
+export function resolveTvRemoteProfile({
+  remotePlatform,
+  mediaPlatform,
+  remoteEntityId,
+  remoteFriendlyName,
+}: ResolveTvRemoteProfileParams): TvRemoteProfile {
+  const platforms = [remotePlatform, mediaPlatform].map(normalizePlatform);
+
+  if (platforms.includes('samsungtv')) {
+    return 'samsungtv';
+  }
+
+  if (platforms.includes('androidtv_remote') || platforms.includes('androidtv')) {
+    return 'androidtv_remote';
+  }
+
+  const fallbackHaystack = `${remoteEntityId ?? ''} ${remoteFriendlyName ?? ''}`.toLowerCase();
+  return fallbackHaystack.includes('samsung') ? 'samsungtv' : 'androidtv_remote';
+}
+
+export function supportsTvRemotePlaybackCommand(profile: TvRemoteProfile): boolean {
+  return profile === 'androidtv_remote';
+}
+
+export function getTvRemoteCommand(profile: TvRemoteProfile, action: TvRemoteAction): string {
+  return profile === 'samsungtv'
+    ? SAMSUNG_TV_REMOTE_COMMANDS[action]
+    : ANDROID_TV_REMOTE_COMMANDS[action];
 }

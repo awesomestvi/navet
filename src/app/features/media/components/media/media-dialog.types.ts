@@ -1,3 +1,5 @@
+import type { MediaPlayerCapabilities } from '@/app/constants/media-player-features';
+
 export interface MediaDialogGroupingPlayer {
   id: string;
   name: string;
@@ -30,6 +32,15 @@ export interface MediaDialogProps {
   onToggleShuffle: () => void;
   onCycleRepeat: () => void;
   upNextTitle?: string;
+  capabilities: MediaPlayerCapabilities;
+  source?: string;
+  sourceList: string[];
+  onSelectSource: (source: string) => void;
+  soundMode?: string;
+  soundModeList: string[];
+  onSelectSoundMode: (soundMode: string) => void;
+  onSeek: (elapsedSeconds: number) => void;
+  onClearPlaylist: () => void;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;

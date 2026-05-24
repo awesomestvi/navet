@@ -77,6 +77,7 @@ interface MediaCardProps {
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;
   supportsNextTrack?: boolean;
+  supportedFeatures?: number;
   groupMembers?: string[];
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
@@ -108,6 +109,7 @@ export const MediaCard = memo(function MediaCard({
   supportsGrouping: initialSupportsGrouping,
   supportsPreviousTrack: initialSupportsPreviousTrack,
   supportsNextTrack: initialSupportsNextTrack,
+  supportedFeatures: initialSupportedFeatures,
   groupMembers: initialGroupMembers,
   size,
   onSizeChange: _onSizeChange,
@@ -121,6 +123,7 @@ export const MediaCard = memo(function MediaCard({
   const mediaSize = getCompactCardSize(size);
   const {
     albumArt: resolvedAlbumArt,
+    clearPlaylist,
     cycleRepeat,
     closeDialog,
     durationSeconds,
@@ -136,16 +139,21 @@ export const MediaCard = memo(function MediaCard({
     isPlaying,
     isMuted,
     isOpen,
+    mediaCapabilities,
     openDialog,
     remoteAvailable,
     repeatMode,
+    seekTo,
     selectSource,
+    selectSoundMode,
     availableGroupingPlayers,
     attachGroupMember,
     detachGroupMember,
     canNextTrack,
     canPreviousTrack,
     shuffleEnabled,
+    soundMode,
+    soundModeList,
     source,
     sourceList,
     supportsGrouping,
@@ -177,6 +185,7 @@ export const MediaCard = memo(function MediaCard({
     initialSupportsGrouping,
     initialSupportsPreviousTrack,
     initialSupportsNextTrack,
+    initialSupportedFeatures,
     initialGroupMembers,
   });
   const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
@@ -352,6 +361,15 @@ export const MediaCard = memo(function MediaCard({
             onVolumeInteractionEnd={endVolumeInteraction}
             onAttachGroupMember={attachGroupMember}
             onDetachGroupMember={detachGroupMember}
+            source={source}
+            sourceList={sourceList}
+            onSelectSource={selectSource}
+            capabilities={mediaCapabilities}
+            soundMode={soundMode}
+            soundModeList={soundModeList}
+            onSelectSoundMode={selectSoundMode}
+            onSeek={seekTo}
+            onClearPlaylist={clearPlaylist}
           />
         </Suspense>
       )}

@@ -66,7 +66,7 @@ export const HVACCardMediumLayout = memo(function HVACCardMediumLayout({
                   step={controller.displayStep}
                 />
                 <HVACModeControls
-                  mode={controller.visualMode}
+                  mode={controller.mode}
                   isOn={controller.isOn}
                   onModeChange={controller.setMode}
                   supportedHvacModes={controller.supportedHvacModes}

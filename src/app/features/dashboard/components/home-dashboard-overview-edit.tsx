@@ -41,6 +41,7 @@ export default function HomeDashboardOverviewEdit({
   onOpenAddCardDialog,
   onUpdateCard,
   onToggleEditMode,
+  infoBadgeStrip,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
@@ -203,6 +204,8 @@ export default function HomeDashboardOverviewEdit({
             </div>
           }
         />
+
+        {infoBadgeStrip}
 
         <DashboardEditActions isEditMode={isEditMode} onRemoveFromLayout={removeHomeCard}>
           <section

@@ -1,7 +1,11 @@
 import { lazy, memo, Suspense, useMemo } from 'react';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { useEnergyDashboard } from '@/app/features/energy';
+import { buildHomeStatusSummaryItems, InfoBadgeStrip } from '@/app/features/sensors';
 import { useAccentColor, useI18n, useThemeMode } from '@/app/hooks';
+import { useSettingsStore } from '@/app/stores';
+import { settingsSelectors } from '@/app/stores/selectors';
 import {
   buildHomeOverviewCollections,
   type HomeDashboardOverviewProps,
@@ -33,10 +37,14 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   onOpenAddCardDialog,
   onUpdateCard,
   onToggleEditMode,
+  onNavigateSection,
+  routineCount,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
   const accentColor = useAccentColor();
+  const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const { overview: energyOverview, isConfigured: isEnergyConfigured } = useEnergyDashboard();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const { allCards, flowCards, sectionCards } = useMemo(
@@ -48,6 +56,18 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       }),
     [allCustomCards, deviceMap, homeLayout]
   );
+  const statusSummaryItems = useMemo(
+    () =>
+      buildHomeStatusSummaryItems(deviceMap, {
+        gridImportTodayKWh: isEnergyConfigured ? energyOverview.totals.importTodayKWh : undefined,
+        routineCount,
+      }),
+    [deviceMap, energyOverview.totals.importTodayKWh, isEnergyConfigured, routineCount]
+  );
+  const infoBadgeStrip =
+    showHomeSummaryBar && onNavigateSection ? (
+      <InfoBadgeStrip items={statusSummaryItems} onNavigate={onNavigateSection} />
+    ) : null;
 
   if (!isEditMode) {
     return (
@@ -67,6 +87,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
         emptyTitle={t('dashboard.homeOverview.emptyTitle')}
         emptyDescription={t('dashboard.homeOverview.emptyDescription')}
         onToggleEditMode={onToggleEditMode}
+        infoBadgeStrip={infoBadgeStrip}
       />
     );
   }
@@ -95,6 +116,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
         onOpenAddCardDialog={onOpenAddCardDialog}
         onUpdateCard={onUpdateCard}
         onToggleEditMode={onToggleEditMode}
+        infoBadgeStrip={infoBadgeStrip}
       />
     </Suspense>
   );

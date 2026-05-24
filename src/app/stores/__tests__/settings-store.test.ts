@@ -11,11 +11,13 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().updateSettings({
       compactMode: true,
       kioskMode: true,
+      showHomeSummaryBar: false,
       temperatureUnit: 'celsius',
     });
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
     expect(useSettingsStore.getState().kioskMode).toBe(true);
+    expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
     expect(useSettingsStore.getState().temperatureUnit).toBe('celsius');
   });
 
@@ -42,6 +44,7 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
     expect(useSettingsStore.getState().kioskMode).toBe(defaultSettings.kioskMode);
+    expect(useSettingsStore.getState().showHomeSummaryBar).toBe(defaultSettings.showHomeSummaryBar);
     expect(useSettingsStore.getState().username).toBe(defaultSettings.username);
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});

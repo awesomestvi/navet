@@ -39,8 +39,10 @@ export function useEnergyStatisticsToday(entityIds: string[]): EnergyStatisticsT
       const activeConnection = connection ?? homeAssistantService.getConnection();
       if (!activeConnection) return;
       try {
-        const result = await getCachedEnergyStatistics(`today:${entityIdsKey}`, CACHE_TTL_MS, () =>
-          getEnergyStatisticsToday(activeConnection, resolvedEntityIds)
+        const result = await getCachedEnergyStatistics(
+          `today-5minute:${entityIdsKey}`,
+          CACHE_TTL_MS,
+          () => getEnergyStatisticsToday(activeConnection, resolvedEntityIds)
         );
         setTodayKWh(result);
         setHasLoaded(true);

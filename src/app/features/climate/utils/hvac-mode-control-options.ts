@@ -1,5 +1,5 @@
 export interface HVACModeControlOption {
-  key: 'cool' | 'heat' | 'fan';
+  key: 'cool' | 'heat' | 'fan' | 'auto';
   mode: string;
 }
 
@@ -25,6 +25,12 @@ export function resolveHvacModeControlOptions(
 
   if (supportedModes.has('heat')) {
     options.push({ key: 'heat', mode: 'heat' });
+  }
+
+  if (supportedModes.has('heat_cool')) {
+    options.push({ key: 'auto', mode: 'heat_cool' });
+  } else if (supportedModes.has('auto')) {
+    options.push({ key: 'auto', mode: 'auto' });
   }
 
   if (supportedModes.has('fan_only') || supportedModes.has('fan')) {

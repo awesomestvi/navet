@@ -8,7 +8,8 @@ import {
   resolveSensorReadings,
   type SensorReading,
 } from '@/app/features/sensors';
-import { useHomeAssistant } from '@/app/hooks';
+import { useHomeAssistant, useI18n } from '@/app/hooks';
+import { useSettingsStore } from '@/app/stores';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
@@ -128,13 +129,16 @@ function SensorGroupWidget({
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
   const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const { locale } = useI18n();
+  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const data = card.data as SensorGroupWidgetData | undefined;
   const sensorEntityIds = isStringArray(data?.sensorEntityIds)
     ? data.sensorEntityIds
     : EMPTY_SENSOR_ENTITY_IDS;
+  const formatOptions = useMemo(() => ({ locale, use24HourTime }), [locale, use24HourTime]);
   const sensors = useMemo(
-    () => resolveSensorReadings({ entities, sensorEntityIds }),
-    [entities, sensorEntityIds]
+    () => resolveSensorReadings({ entities, sensorEntityIds, formatOptions }),
+    [entities, formatOptions, sensorEntityIds]
   );
   const availableSensors = useMemo(
     () =>
@@ -143,8 +147,9 @@ function SensorGroupWidget({
         areas,
         deviceRegistry,
         entityRegistry,
+        formatOptions,
       }),
-    [areas, deviceRegistry, entities, entityRegistry]
+    [areas, deviceRegistry, entities, entityRegistry, formatOptions]
   );
   const accentColor = data?.accentColor ?? 'teal';
   const name = data?.name ?? 'Sensor group';

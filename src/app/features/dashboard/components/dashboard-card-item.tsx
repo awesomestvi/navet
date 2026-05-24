@@ -30,6 +30,7 @@ interface DashboardCardItemProps {
   allowEntityRemoval?: boolean;
   allowExtraLargeSizes?: boolean;
   usesHideAction?: boolean;
+  headerSubtitleOverride?: string;
 }
 
 const DashboardCardItemDraggable = lazy(async () => {
@@ -52,6 +53,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   allowEntityRemoval = false,
   allowExtraLargeSizes = zone === 'hero' || zone === undefined,
   usesHideAction = false,
+  headerSubtitleOverride,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
@@ -76,7 +78,13 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     toggleCardLock(id);
   };
   const renderedCard = device ? (
-    renderCard({ device, size: resolvedSize, handleSizeChange, isEditMode })
+    renderCard({
+      device,
+      size: resolvedSize,
+      handleSizeChange,
+      isEditMode,
+      headerSubtitleOverride,
+    })
   ) : card ? (
     <WidgetCard
       card={{ ...card, size: resolvedSize }}
@@ -345,6 +353,7 @@ function areDashboardCardItemPropsEqual(
     previous.onRemoveEntity === next.onRemoveEntity &&
     previous.allowEntityRemoval === next.allowEntityRemoval &&
     previous.allowExtraLargeSizes === next.allowExtraLargeSizes &&
-    previous.usesHideAction === next.usesHideAction
+    previous.usesHideAction === next.usesHideAction &&
+    previous.headerSubtitleOverride === next.headerSubtitleOverride
   );
 }

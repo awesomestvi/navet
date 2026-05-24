@@ -3,10 +3,12 @@ import type { DeviceCollection } from '../types/device.types';
 
 export const useDashboardDevices = (
   devices: DeviceCollection,
-  hiddenEntityIds: string[]
+  hiddenEntityIds: string[],
+  shownSensorEntityIds: string[] = []
 ): DeviceCollection => {
   return useMemo(() => {
     const hiddenIds = new Set(hiddenEntityIds);
+    const shownSensorIds = new Set(shownSensorEntityIds);
 
     return {
       lights: devices.lights.filter((device) => !hiddenIds.has(device.id)),
@@ -21,11 +23,13 @@ export const useDashboardDevices = (
       locks: devices.locks.filter((device) => !hiddenIds.has(device.id)),
       scenes: devices.scenes.filter((device) => !hiddenIds.has(device.id)),
       persons: devices.persons.filter((device) => !hiddenIds.has(device.id)),
-      sensors: devices.sensors.filter((device) => !hiddenIds.has(device.id)),
+      sensors: devices.sensors.filter(
+        (device) => shownSensorIds.has(device.id) && !hiddenIds.has(device.id)
+      ),
       vacuums: devices.vacuums.filter((device) => !hiddenIds.has(device.id)),
       calendars: devices.calendars.filter((device) => !hiddenIds.has(device.id)),
       cameras: devices.cameras.filter((device) => !hiddenIds.has(device.id)),
       'grouped-sensors': devices['grouped-sensors'].filter((device) => !hiddenIds.has(device.id)),
     };
-  }, [devices, hiddenEntityIds]);
+  }, [devices, hiddenEntityIds, shownSensorEntityIds]);
 };

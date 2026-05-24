@@ -201,6 +201,10 @@ const buildExportedSettings = (
       settingsState.showWeatherInHeader !== defaultSettings.showWeatherInHeader
         ? settingsState.showWeatherInHeader
         : undefined,
+    showHomeSummaryBar:
+      settingsState.showHomeSummaryBar !== defaultSettings.showHomeSummaryBar
+        ? settingsState.showHomeSummaryBar
+        : undefined,
     use24HourTime:
       settingsState.use24HourTime !== defaultSettings.use24HourTime
         ? settingsState.use24HourTime
@@ -618,6 +622,10 @@ export const importDashboardConfig = (
       typeof settings.showWeatherInHeader === 'boolean'
         ? settings.showWeatherInHeader
         : defaultSettings.showWeatherInHeader,
+    showHomeSummaryBar:
+      typeof settings.showHomeSummaryBar === 'boolean'
+        ? settings.showHomeSummaryBar
+        : defaultSettings.showHomeSummaryBar,
     use24HourTime:
       typeof settings.use24HourTime === 'boolean'
         ? settings.use24HourTime

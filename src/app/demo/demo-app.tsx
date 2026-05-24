@@ -625,6 +625,12 @@ function SecurityShot() {
           isEditMode={false}
         />
       </CardSlot>
+      <CardSlot size="small">
+        <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
+      </CardSlot>
+      <CardSlot size="small">
+        <LockCard id="lock.back_door" name="Back Door" initialState size="small" />
+      </CardSlot>
     </DashboardGrid>
   );
 }
@@ -799,19 +805,6 @@ function MediaShot() {
           onSizeChange={noopCardSizeChange}
           isEditMode={false}
         />
-      </CardSlot>
-    </DashboardGrid>
-  );
-}
-
-function LocksShot() {
-  return (
-    <DashboardGrid>
-      <CardSlot size="small">
-        <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
-      </CardSlot>
-      <CardSlot size="small">
-        <LockCard id="lock.back_door" name="Back Door" initialState size="small" />
       </CardSlot>
     </DashboardGrid>
   );
@@ -1251,7 +1244,6 @@ function DemoSectionContent({ section, activeRoom }: { section: DemoSection; act
   if (section === 'energy') return <EnergyShot />;
   if (section === 'security') return <SecurityShot />;
   if (section === 'tasks') return <TasksShot />;
-  if (section === 'locks') return <LocksShot />;
   if (section === 'lights') return <LightsShot />;
   if (section === 'media') return <MediaShot />;
   if (section === 'settings') return <SettingsShot />;
@@ -1274,7 +1266,6 @@ function sanitizeDemoSection(value: unknown): DemoSection {
     value === 'energy' ||
     value === 'security' ||
     value === 'tasks' ||
-    value === 'locks' ||
     value === 'lights' ||
     value === 'media' ||
     value === 'settings'

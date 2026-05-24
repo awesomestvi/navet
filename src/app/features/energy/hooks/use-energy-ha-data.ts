@@ -24,7 +24,7 @@ import type {
 } from '../types/energy.types';
 import { useEnergyStatisticsToday } from './use-energy-statistics-today';
 
-type EntityMap = Record<
+export type EnergyEntityMap = Record<
   string,
   {
     entity_id?: string;
@@ -48,7 +48,7 @@ function parseNumberState(state: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function getEntityFriendlyName(entities: EntityMap | null | undefined, entityId?: string) {
+function getEntityFriendlyName(entities: EnergyEntityMap | null | undefined, entityId?: string) {
   const friendlyName = entities?.[entityId ?? '']?.attributes?.friendly_name;
   return typeof friendlyName === 'string' && friendlyName.trim().length > 0
     ? friendlyName.trim()
@@ -176,7 +176,7 @@ function buildFlow(
 
 function buildConsumers(
   devices: EnergyDeviceSource[],
-  entities: EntityMap | null | undefined,
+  entities: EnergyEntityMap | null | undefined,
   todayKWh: Record<string, number>,
   homeLoadW: number
 ): EnergyConsumer[] {
@@ -216,7 +216,7 @@ function buildConsumers(
 }
 
 function getSourceDiagnosticStatus(
-  entities: EntityMap | null | undefined,
+  entities: EnergyEntityMap | null | undefined,
   entityId?: string,
   liveEntityId?: string,
   todayKWh?: number
@@ -251,7 +251,7 @@ function getSourceDiagnosticStatus(
 
 function getConfiguredDevicePowerW(
   devices: EnergyDeviceSource[],
-  entities: EntityMap | null | undefined
+  entities: EnergyEntityMap | null | undefined
 ): number {
   return devices.reduce((total, device) => {
     if (!device.powerEntityId) {
@@ -260,6 +260,74 @@ function getConfiguredDevicePowerW(
 
     return total + Math.max(0, parseW(entities?.[device.powerEntityId]?.state));
   }, 0);
+}
+
+function parseEnergyKWh(entity: EnergyEntityMap[string] | undefined): number | null {
+  const value = parseNumberState(entity?.state);
+  if (value === null) {
+    return null;
+  }
+
+  const unit = String(
+    entity?.attributes?.unit_of_measurement ?? entity?.attributes?.native_unit_of_measurement ?? ''
+  ).toLowerCase();
+
+  if (unit === 'wh') {
+    return value / 1000;
+  }
+
+  if (unit === 'mwh') {
+    return value * 1000;
+  }
+
+  return value;
+}
+
+function isLikelyDailyEnergyEntity(entity: EnergyEntityMap[string] | undefined, entityId: string) {
+  const attributes = entity?.attributes ?? {};
+  const label = `${entityId} ${String(attributes.friendly_name ?? '')}`.toLowerCase();
+
+  return (
+    label.includes('today') ||
+    label.includes('daily') ||
+    label.includes('current_day') ||
+    label.includes('this_day') ||
+    typeof attributes.last_reset === 'string'
+  );
+}
+
+export function resolveTodayEnergyKWh(
+  entities: EnergyEntityMap | null | undefined,
+  entityId: string | undefined,
+  statisticsKWh: number | undefined
+): number {
+  const statisticsValue =
+    typeof statisticsKWh === 'number' && Number.isFinite(statisticsKWh) && statisticsKWh > 0
+      ? statisticsKWh
+      : 0;
+
+  if (!entityId) {
+    return statisticsValue;
+  }
+
+  const entity = entities?.[entityId];
+  const stateValue = parseEnergyKWh(entity);
+  if (stateValue === null || stateValue < 0) {
+    return statisticsValue;
+  }
+
+  if (isLikelyDailyEnergyEntity(entity, entityId)) {
+    return Math.max(statisticsValue, stateValue);
+  }
+
+  const aheadOfRecorderBy = stateValue - statisticsValue;
+  const looksLikeCurrentDayTotal =
+    statisticsValue > 0 &&
+    stateValue <= 200 &&
+    aheadOfRecorderBy > 0 &&
+    aheadOfRecorderBy <= Math.max(2, statisticsValue * 0.25);
+
+  return looksLikeCurrentDayTotal ? stateValue : statisticsValue;
 }
 
 function createEmptyOverview(): EnergyOverview {
@@ -371,8 +439,8 @@ export function useEnergyHaData(range: EnergyRange): {
   const configEntitySelector = useCallback(
     (state: HomeAssistantStore) => {
       const entities = state.entities;
-      if (!entities || !configEntityIds.length) return null as EntityMap | null;
-      const result: EntityMap = {};
+      if (!entities || !configEntityIds.length) return null as EnergyEntityMap | null;
+      const result: EnergyEntityMap = {};
       for (const id of configEntityIds) {
         const entity = entities[id];
         if (entity) result[id] = entity;
@@ -523,19 +591,31 @@ export function useEnergyHaData(range: EnergyRange): {
           batteryPercent: batterySoc,
           importW: gridImportW,
           exportW: gridExportW,
-          importTodayKWh: config.gridImportEnergyEntityId
-            ? (todayKWh[config.gridImportEnergyEntityId] ?? 0)
-            : 0,
-          exportTodayKWh: config.gridExportEnergyEntityId
-            ? (todayKWh[config.gridExportEnergyEntityId] ?? 0)
-            : 0,
-          solarTodayKWh: config.solarEnergyEntityId
-            ? (todayKWh[config.solarEnergyEntityId] ?? 0)
-            : 0,
-          gasTodayKWh: config.gasEnergyEntityId ? (todayKWh[config.gasEnergyEntityId] ?? 0) : 0,
-          hotWaterTodayKWh: config.hotWaterEnergyEntityId
-            ? (todayKWh[config.hotWaterEnergyEntityId] ?? 0)
-            : 0,
+          importTodayKWh: resolveTodayEnergyKWh(
+            entities,
+            config.gridImportEnergyEntityId,
+            config.gridImportEnergyEntityId ? todayKWh[config.gridImportEnergyEntityId] : undefined
+          ),
+          exportTodayKWh: resolveTodayEnergyKWh(
+            entities,
+            config.gridExportEnergyEntityId,
+            config.gridExportEnergyEntityId ? todayKWh[config.gridExportEnergyEntityId] : undefined
+          ),
+          solarTodayKWh: resolveTodayEnergyKWh(
+            entities,
+            config.solarEnergyEntityId,
+            config.solarEnergyEntityId ? todayKWh[config.solarEnergyEntityId] : undefined
+          ),
+          gasTodayKWh: resolveTodayEnergyKWh(
+            entities,
+            config.gasEnergyEntityId,
+            config.gasEnergyEntityId ? todayKWh[config.gasEnergyEntityId] : undefined
+          ),
+          hotWaterTodayKWh: resolveTodayEnergyKWh(
+            entities,
+            config.hotWaterEnergyEntityId,
+            config.hotWaterEnergyEntityId ? todayKWh[config.hotWaterEnergyEntityId] : undefined
+          ),
           costToday: 0,
           projectedMonthCost: 0,
         },

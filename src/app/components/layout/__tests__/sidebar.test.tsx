@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Sidebar } from '@/app/components/layout/sidebar';
 import { useNavigationStore } from '@/app/stores';
@@ -28,17 +28,18 @@ describe('Sidebar mobile navigation', () => {
     return dock;
   }
 
-  it('renders an orbit launcher that exposes tasks, lights, and media', () => {
+  it('renders a more launcher that exposes tasks, climate, lights, and media', () => {
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
     );
     const dock = getMobileDock(container);
 
-    fireEvent.click(within(dock).getByRole('button', { name: 'Orbit' }));
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
 
     const dialog = screen.getByRole('dialog');
 
     expect(within(dialog).getByRole('button', { name: /^Tasks/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^Climate/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /^Lights/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /^Media/ })).toBeInTheDocument();
 
@@ -48,58 +49,40 @@ describe('Sidebar mobile navigation', () => {
     expect(screen.queryByText('Recent sections')).not.toBeInTheDocument();
   });
 
-  it('renders home, settings, orbit, and the floating search island in the dock', () => {
+  it('renders home, more, and search in the centered dock', () => {
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
     );
     const dock = getMobileDock(container);
 
     expect(within(dock).getByRole('button', { name: 'Living room' })).toBeInTheDocument();
-    expect(within(dock).getByRole('button', { name: 'Settings' })).toBeInTheDocument();
-    expect(within(dock).getByRole('button', { name: 'Orbit' })).toBeInTheDocument();
+    expect(within(dock).getByRole('button', { name: 'More' })).toBeInTheDocument();
     expect(within(dock).getByRole('button', { name: 'Search' })).toBeInTheDocument();
+    expect(within(dock).queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
   });
 
-  it('closes the orbit sheet after section selection', () => {
+  it('closes the more sheet after section selection', () => {
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
     );
     const dock = getMobileDock(container);
 
-    fireEvent.click(within(dock).getByRole('button', { name: 'Orbit' }));
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Media/ }));
 
     expect(useNavigationStore.getState().activeSection).toBe('media');
-    expect(screen.queryByText('Section orbit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sections')).not.toBeInTheDocument();
   });
 
-  it('surfaces recent media navigation inside orbit after returning home', () => {
-    act(() => {
-      useNavigationStore.getState().setActiveSection('media');
-    });
-
-    const { container, rerender } = renderWithProviders(
+  it('does not render recent sections or current room in the more sheet', () => {
+    const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
     );
     const dock = getMobileDock(container);
 
-    expect(useNavigationStore.getState().lastNonHomeSection).toBe('media');
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
 
-    act(() => {
-      useNavigationStore.getState().setActiveSection('home');
-    });
-    rerender(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
-
-    expect(useNavigationStore.getState().lastNonHomeSection).toBe('media');
-    fireEvent.click(within(dock).getByRole('button', { name: 'Orbit' }));
-    const dialog = screen.getByRole('dialog');
-    const recentHeading = within(dialog).getByText('Recent sections');
-    const recentSection = recentHeading.closest('section');
-
-    if (!recentSection) {
-      throw new Error('Recent sections area not found');
-    }
-
-    expect(within(recentSection).getByRole('button', { name: 'Media' })).toBeInTheDocument();
+    expect(screen.queryByText('Recent sections')).not.toBeInTheDocument();
+    expect(screen.queryByText('Current room')).not.toBeInTheDocument();
   });
 });

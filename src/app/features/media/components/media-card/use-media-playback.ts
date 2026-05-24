@@ -5,7 +5,6 @@ import { homeAssistantService } from '@/app/services/home-assistant.service';
 
 interface UseMediaPlaybackParams {
   entityId: string;
-  isPlaying: boolean;
   canPreviousTrack: boolean;
   canNextTrack: boolean;
   shuffleEnabled: boolean;
@@ -15,7 +14,6 @@ interface UseMediaPlaybackParams {
 
 export function useMediaPlayback({
   entityId,
-  isPlaying,
   canPreviousTrack,
   canNextTrack,
   shuffleEnabled,
@@ -27,10 +25,10 @@ export function useMediaPlayback({
 
   const togglePlay = useCallback(() => {
     void runAction(
-      () => homeAssistantService.updateMediaPlayerPlayback(entityId, isPlaying ? 'pause' : 'play'),
+      () => homeAssistantService.updateMediaPlayerPlayback(entityId, 'toggle'),
       t('media.feedback.updatePlaybackFailed')
     );
-  }, [entityId, isPlaying, runAction, t]);
+  }, [entityId, runAction, t]);
 
   const handlePrevious = useCallback(() => {
     if (!canPreviousTrack) return;

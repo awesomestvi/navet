@@ -1,10 +1,9 @@
 import { Gauge, Plus } from 'lucide-react';
-import { memo } from 'react';
+import { type KeyboardEvent, memo } from 'react';
 import { CardEmptyState } from '@/app/components/patterns';
 import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
-import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
@@ -96,11 +95,24 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
     onSensorsUpdate?.(newSensors);
   };
   const isEmpty = visibleSensors.length === 0;
+  const openSettings = () => setIsSettingsOpen(true);
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openSettings();
+    }
+  };
 
   return (
     <div className="h-full w-full relative">
       <BaseCard
         size={size}
+        role={isEmpty ? undefined : 'button'}
+        tabIndex={isEmpty ? undefined : 0}
+        aria-label={isEmpty ? undefined : t('entityCardInteraction.openSettings', { name })}
+        onClick={isEmpty ? undefined : openSettings}
+        onKeyDown={isEmpty ? undefined : handleCardKeyDown}
+        interactive={!isEmpty}
         className="text-left"
         frameClassName={`${cardShell.rootFrameClassName} ${shell.containerClassName}`}
         disableDefaultSheen
@@ -115,20 +127,6 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
         contentClassName="h-full"
       >
         <div className="relative h-full flex flex-col">
-          {isEmpty ? null : (
-            <CardSettingsActionButton
-              theme={theme}
-              size={size === 'small' ? 'small' : 'medium'}
-              variant="soft"
-              accentColor={emptyAccentColor}
-              className="absolute right-0 top-0 z-[3]"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsSettingsOpen(true);
-              }}
-              aria-label={t('entityCardInteraction.openSettings', { name })}
-            />
-          )}
           {isEmpty ? null : (
             <EntityCardHeader
               title={name}
@@ -155,7 +153,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
                 description={t('sensors.groupSettings.emptySelected')}
                 icon={Gauge}
                 actionLabel={t('sensors.groupSettings.addSensors')}
-                onAction={() => setIsSettingsOpen(true)}
+                onAction={openSettings}
                 actionIcon={Plus}
                 size={size}
                 accentColor={emptyAccentColor}

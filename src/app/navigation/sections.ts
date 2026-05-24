@@ -1,9 +1,9 @@
 export type Section =
   | 'home'
   | 'energy'
+  | 'climate'
   | 'security'
   | 'tasks'
-  | 'locks'
   | 'lights'
   | 'media'
   | 'settings';
@@ -11,11 +11,11 @@ export type Section =
 export const NAVIGATION_SECTIONS = [
   'home',
   'energy',
+  'climate',
   'security',
-  'tasks',
-  'locks',
   'lights',
   'media',
+  'tasks',
   'settings',
 ] as const satisfies readonly Section[];
 

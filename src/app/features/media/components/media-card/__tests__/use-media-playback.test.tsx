@@ -34,7 +34,6 @@ describe('useMediaPlayback', () => {
     const { result } = renderHookWithProviders(() =>
       useMediaPlayback({
         entityId: 'media_player.living_room',
-        isPlaying: false,
         canPreviousTrack: true,
         canNextTrack: true,
         shuffleEnabled: false,
@@ -47,7 +46,7 @@ describe('useMediaPlayback', () => {
 
     expect(serviceMock.updateMediaPlayerPlayback).toHaveBeenCalledWith(
       'media_player.living_room',
-      'play'
+      'toggle'
     );
   });
 
@@ -56,7 +55,6 @@ describe('useMediaPlayback', () => {
       ({ repeatMode }: { repeatMode: 'off' | 'one' | 'all' }) =>
         useMediaPlayback({
           entityId: 'media_player.living_room',
-          isPlaying: true,
           canPreviousTrack: true,
           canNextTrack: true,
           shuffleEnabled: false,
@@ -84,7 +82,6 @@ describe('useMediaPlayback', () => {
     const { result } = renderHookWithProviders(() =>
       useMediaPlayback({
         entityId: 'media_player.office',
-        isPlaying: true,
         canPreviousTrack: true,
         canNextTrack: true,
         shuffleEnabled: true,
@@ -102,7 +99,6 @@ describe('useMediaPlayback', () => {
     const { result } = renderHookWithProviders(() =>
       useMediaPlayback({
         entityId: 'media_player.office',
-        isPlaying: true,
         canPreviousTrack: true,
         canNextTrack: true,
         shuffleEnabled: false,
@@ -122,7 +118,6 @@ describe('useMediaPlayback', () => {
     const { result } = renderHookWithProviders(() =>
       useMediaPlayback({
         entityId: 'media_player.bedroom',
-        isPlaying: true,
         canPreviousTrack: false,
         canNextTrack: false,
         shuffleEnabled: false,

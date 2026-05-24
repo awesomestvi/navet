@@ -10,12 +10,13 @@ import {
 } from '@/app/components/ui/dropdown-menu';
 import { getDashboardRoomLabel } from '@/app/constants/rooms';
 import { useI18n, useTheme } from '@/app/hooks';
-import { getVisibleRoomNavRooms } from './room-nav.utils';
+import { filterHiddenRooms, getVisibleRoomNavRooms } from './room-nav.utils';
 
 export interface MobileRoomNavigation {
   activeRoom: string;
   onRoomChange: (room: string) => void;
   rooms: string[];
+  hiddenRoomNames?: string[];
 }
 
 interface MobileRoomDropdownProps {
@@ -31,7 +32,9 @@ export const MobileRoomDropdown = memo(function MobileRoomDropdown({
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const allLabel = t('dashboard.roomNav.all');
-  const visibleRooms = getVisibleRoomNavRooms(navigation.rooms);
+  const visibleRooms = getVisibleRoomNavRooms(
+    filterHiddenRooms(navigation.rooms, navigation.hiddenRoomNames ?? [])
+  );
   const activeLabel = getDashboardRoomLabel(navigation.activeRoom, allLabel);
   const triggerWidthClassName = compact ? 'max-w-[42vw]' : 'max-w-[68vw]';
 

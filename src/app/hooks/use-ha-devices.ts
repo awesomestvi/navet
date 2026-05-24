@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useI18n } from '../i18n';
+import { useSettingsStore } from '../stores';
 import { homeAssistantSelectors } from '../stores/selectors';
 import type {
   CameraDevice,
@@ -13,6 +14,7 @@ import type {
   MediaDevice,
   PersonDevice,
   SceneDevice,
+  SensorDevice,
   SwitchDevice,
   VacuumDevice,
 } from '../types/device.types';
@@ -27,6 +29,7 @@ import {
   mapMediaDevice,
   mapPersonDevice,
   mapSceneDevice,
+  mapSensorDevice,
   mapSwitchDevice,
   mapVacuumDevice,
 } from './ha-device-mappers';
@@ -68,7 +71,8 @@ export const useHADevices = () => {
   const homeAssistantTemperatureUnit = useHomeAssistant((state) =>
     resolveHomeAssistantTemperatureUnit(state.config)
   );
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const calendars = useCalendarDevices();
   const weather = useWeatherDevices();
 
@@ -87,6 +91,7 @@ export const useHADevices = () => {
     const covers: CoverDevice[] = [];
     const locks: LockDevice[] = [];
     const scenes: SceneDevice[] = [];
+    const sensors: SensorDevice[] = [];
     const vacuums: VacuumDevice[] = [];
     const cameras: CameraDevice[] = [];
     const indexes = buildDeviceIndexes(entities, entityRegistryMap);
@@ -181,6 +186,18 @@ export const useHADevices = () => {
           scenes.push(mapSceneDevice(entityId, entity, name, room));
           break;
 
+        case 'sensor':
+        case 'binary_sensor': {
+          const mapped = mapSensorDevice(entityId, entity, name, room, {
+            locale,
+            use24HourTime,
+          });
+          if (mapped) {
+            sensors.push(mapped);
+          }
+          break;
+        }
+
         case 'camera':
           if (shouldSuppressForVacuumDevice(entityId, entityRegistryMap, indexes)) {
             break;
@@ -212,13 +229,22 @@ export const useHADevices = () => {
       locks,
       scenes,
       persons,
-      sensors: [],
+      sensors,
       vacuums,
       calendars: [],
       cameras,
       'grouped-sensors': [],
     };
-  }, [areaMap, deviceRegistryMap, entities, entityRegistryMap, homeAssistantTemperatureUnit, t]);
+  }, [
+    areaMap,
+    deviceRegistryMap,
+    entities,
+    entityRegistryMap,
+    homeAssistantTemperatureUnit,
+    locale,
+    t,
+    use24HourTime,
+  ]);
 
   return useMemo(
     () => ({

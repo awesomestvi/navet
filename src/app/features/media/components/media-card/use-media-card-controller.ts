@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import {
+  getMediaPlayerCapabilities,
   hasMediaPlayerGroupingSupport,
   hasMediaPlayerNextTrackSupport,
   hasMediaPlayerPreviousTrackSupport,
@@ -13,7 +14,8 @@ import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import {
   getTvRemoteCommand,
-  getTvRemoteProfile,
+  resolveTvRemoteProfile,
+  supportsTvRemotePlaybackCommand,
   type TvRemoteAction,
 } from '../../tv-remote-commands';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
@@ -39,6 +41,10 @@ function selectUndefinedEntity() {
   return undefined;
 }
 
+function selectEntityRegistry(state: HomeAssistantStore) {
+  return state.entityRegistry;
+}
+
 export function useMediaCardController({
   entityId,
   entityName,
@@ -58,6 +64,7 @@ export function useMediaCardController({
   initialSupportsGrouping = false,
   initialSupportsPreviousTrack = true,
   initialSupportsNextTrack = true,
+  initialSupportedFeatures,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
   const hassUrl = useAuthBaseUrl();
@@ -71,6 +78,7 @@ export function useMediaCardController({
   const remoteEntity = useHomeAssistant(
     remoteEntityId ? homeAssistantSelectors.entity(remoteEntityId) : selectUndefinedEntity
   );
+  const entityRegistry = useHomeAssistant(selectEntityRegistry);
   const resolvedInitialState = liveEntity
     ? normalizeMediaPlaybackState(liveEntity.state, deviceClass)
     : initialState;
@@ -89,15 +97,25 @@ export function useMediaCardController({
       ? liveAttrs.media_duration
       : (initialDurationSeconds ?? 0);
   const resolvedInitialSupportedFeatures =
-    typeof liveAttrs?.supported_features === 'number' ? liveAttrs.supported_features : undefined;
+    typeof liveAttrs?.supported_features === 'number'
+      ? liveAttrs.supported_features
+      : initialSupportedFeatures;
+  const mediaCapabilities =
+    typeof resolvedInitialSupportedFeatures === 'number'
+      ? getMediaPlayerCapabilities(resolvedInitialSupportedFeatures)
+      : {
+          ...getMediaPlayerCapabilities(0),
+          canGroup: initialSupportsGrouping,
+          canMuteVolume: true,
+          canNextTrack: initialSupportsNextTrack,
+          canPlay: true,
+          canPreviousTrack: initialSupportsPreviousTrack,
+          canSetVolume: true,
+        };
   const canSetVolume =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? (resolvedInitialSupportedFeatures & 4) === 4
-      : true;
+    typeof resolvedInitialSupportedFeatures === 'number' ? mediaCapabilities.canSetVolume : true;
   const canMuteVolume =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? (resolvedInitialSupportedFeatures & 8) === 8
-      : true;
+    typeof resolvedInitialSupportedFeatures === 'number' ? mediaCapabilities.canMuteVolume : true;
   const resolvedInitialSupportsGrouping =
     typeof resolvedInitialSupportedFeatures === 'number'
       ? hasMediaPlayerGroupingSupport(resolvedInitialSupportedFeatures)
@@ -171,6 +189,15 @@ export function useMediaCardController({
     liveAttrs?.up_next_title,
     liveAttrs?.next_track,
   ].find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  const soundMode =
+    typeof liveAttrs?.sound_mode === 'string' && liveAttrs.sound_mode.trim().length > 0
+      ? liveAttrs.sound_mode
+      : undefined;
+  const soundModeList = Array.isArray(liveAttrs?.sound_mode_list)
+    ? liveAttrs.sound_mode_list.filter(
+        (value): value is string => typeof value === 'string' && value.trim().length > 0
+      )
+    : [];
 
   const {
     volume: volumeLevel,
@@ -203,7 +230,6 @@ export function useMediaCardController({
     closeDialog,
   } = useMediaPlayback({
     entityId,
-    isPlaying,
     canPreviousTrack,
     canNextTrack,
     shuffleEnabled,
@@ -278,13 +304,18 @@ export function useMediaCardController({
     t,
   });
   const remoteAvailable = isTv && Boolean(remoteEntity);
+  const remoteRegistryEntry = entityRegistry.find((entry) => entry.entity_id === remoteEntityId);
+  const mediaRegistryEntry = entityRegistry.find((entry) => entry.entity_id === entityId);
   const remoteFriendlyName =
     typeof remoteEntity?.attributes?.friendly_name === 'string'
       ? remoteEntity.attributes.friendly_name
       : undefined;
-  const remoteProfile = remoteEntityId
-    ? getTvRemoteProfile(remoteEntityId, remoteFriendlyName)
-    : 'default';
+  const remoteProfile = resolveTvRemoteProfile({
+    remotePlatform: remoteRegistryEntry?.platform,
+    mediaPlatform: mediaRegistryEntry?.platform,
+    remoteEntityId,
+    remoteFriendlyName,
+  });
 
   const selectSource = (nextSource: string) =>
     void runMediaAction(
@@ -292,11 +323,45 @@ export function useMediaCardController({
       t('media.feedback.updatePlaybackFailed')
     );
 
+  const selectSoundMode = (nextSoundMode: string) =>
+    void runMediaAction(
+      () => homeAssistantService.selectMediaPlayerSoundMode(entityId, nextSoundMode),
+      t('media.feedback.updateSoundModeFailed')
+    );
+
+  const seekTo = (nextElapsedSeconds: number) =>
+    void runMediaAction(
+      () => homeAssistantService.seekMediaPlayer(entityId, nextElapsedSeconds),
+      t('media.feedback.seekFailed')
+    );
+
+  const clearPlaylist = () =>
+    void runMediaAction(
+      () => homeAssistantService.clearMediaPlayerPlaylist(entityId),
+      t('media.feedback.clearPlaylistFailed')
+    );
+
   const toggleTvPower = () =>
     void runMediaAction(
       () => homeAssistantService.updateMediaPlayerPower(entityId, state === 'off' ? 'on' : 'off'),
       t('media.feedback.updatePlaybackFailed')
     );
+
+  const toggleTvPlayback = () => {
+    if (!remoteEntityId || !remoteAvailable || !supportsTvRemotePlaybackCommand(remoteProfile)) {
+      togglePlay();
+      return;
+    }
+
+    void runMediaAction(
+      () =>
+        homeAssistantService.sendRemoteCommand(
+          remoteEntityId,
+          getTvRemoteCommand(remoteProfile, 'playPause')
+        ),
+      t('media.feedback.updatePlaybackFailed')
+    );
+  };
 
   const sendRemoteCommand = (action: TvRemoteAction) => {
     if (!remoteEntityId) return;
@@ -327,6 +392,7 @@ export function useMediaCardController({
     handleNext,
     handlePrevious,
     handleVolumeChange,
+    mediaCapabilities,
     isOff: state === 'off',
     isMuted,
     isOpen,
@@ -334,8 +400,13 @@ export function useMediaCardController({
     remoteAvailable,
     openDialog,
     repeatMode,
+    clearPlaylist,
     selectSource,
+    selectSoundMode,
+    seekTo,
     shuffleEnabled,
+    soundMode,
+    soundModeList,
     source,
     sourceList,
     startVolumeInteraction,
@@ -345,7 +416,7 @@ export function useMediaCardController({
     cycleRepeat,
     toggleShuffle,
     toggleMute,
-    togglePlay,
+    togglePlay: isTv ? toggleTvPlayback : togglePlay,
     upNextTitle,
     volume: volumeLevel,
   };

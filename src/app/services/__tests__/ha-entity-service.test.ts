@@ -68,6 +68,108 @@ describe('HAEntityService', () => {
     );
   });
 
+  it('plays media through the Home Assistant media selector payload', async () => {
+    const connection = { id: 'connection' };
+    const service = new HAEntityService(() => connection as never);
+
+    await service.playMedia('media_player.spotify', {
+      mediaContentId: 'spotify:playlist:daily-mix',
+      mediaContentType: 'playlist',
+      enqueue: 'replace',
+      announce: true,
+    });
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      connection,
+      'media_player',
+      'play_media',
+      {
+        entity_id: 'media_player.spotify',
+        media: {
+          media_content_id: 'spotify:playlist:daily-mix',
+          media_content_type: 'playlist',
+        },
+        enqueue: 'replace',
+        announce: true,
+      },
+      { entity_id: 'media_player.spotify' }
+    );
+  });
+
+  it('seeks, selects sound mode, and clears playlist through media player services', async () => {
+    const connection = { id: 'connection' };
+    const service = new HAEntityService(() => connection as never);
+
+    await service.seekMediaPlayer('media_player.living_room', 42);
+    await service.selectMediaPlayerSoundMode('media_player.living_room', 'Movie');
+    await service.clearMediaPlayerPlaylist('media_player.living_room');
+
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      1,
+      connection,
+      'media_player',
+      'media_seek',
+      {
+        entity_id: 'media_player.living_room',
+        seek_position: 42,
+      },
+      { entity_id: 'media_player.living_room' }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      2,
+      connection,
+      'media_player',
+      'select_sound_mode',
+      {
+        entity_id: 'media_player.living_room',
+        sound_mode: 'Movie',
+      },
+      { entity_id: 'media_player.living_room' }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      3,
+      connection,
+      'media_player',
+      'clear_playlist',
+      { entity_id: 'media_player.living_room' },
+      { entity_id: 'media_player.living_room' }
+    );
+  });
+
+  it('requests browse and search media responses over websocket', async () => {
+    const browseResponse = { response: { title: 'Library', children: [] } };
+    const searchResponse = { response: { title: 'Search', children: [] } };
+    const sendMessagePromise = vi
+      .fn()
+      .mockResolvedValueOnce(browseResponse)
+      .mockResolvedValueOnce(searchResponse);
+    const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
+
+    await expect(service.browseMediaPlayer('media_player.browse')).resolves.toEqual(
+      browseResponse.response
+    );
+    await expect(service.searchMediaPlayer('media_player.search', 'Beatles')).resolves.toEqual(
+      searchResponse.response
+    );
+
+    expect(sendMessagePromise).toHaveBeenNthCalledWith(1, {
+      type: 'call_service',
+      domain: 'media_player',
+      service: 'browse_media',
+      service_data: {},
+      target: { entity_id: 'media_player.browse' },
+      return_response: true,
+    });
+    expect(sendMessagePromise).toHaveBeenNthCalledWith(2, {
+      type: 'call_service',
+      domain: 'media_player',
+      service: 'search_media',
+      service_data: { search_query: 'Beatles' },
+      target: { entity_id: 'media_player.search' },
+      return_response: true,
+    });
+  });
+
   it('requests Home Assistant camera stream URLs over websocket', async () => {
     const sendMessagePromise = vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' }));
     const service = new HAEntityService(() => ({ sendMessagePromise }) as never);

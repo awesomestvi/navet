@@ -24,11 +24,16 @@ interface SecurityCameraDashboardProps {
     stillDescription: string;
     noPrimaryTitle: string;
     noPrimaryDescription: string;
+    locksTitle: string;
   };
 }
 
 function asCameraDevice(camera: CameraDashboardModel['primaryCameras'][number]): DeviceWithType {
   return { ...camera, type: 'cameras' };
+}
+
+function asLockDevice(lock: CameraDashboardModel['locks'][number]): DeviceWithType {
+  return { ...lock, type: 'locks' };
 }
 
 function getDefaultCameraSize(index: number): CardSize {
@@ -83,6 +88,54 @@ function CameraGrid({
   );
 }
 
+function LockGrid({
+  locks,
+  cardSizes,
+  updateCardSize,
+  isEditMode,
+  onRemoveEntity,
+}: {
+  locks: CameraDashboardModel['locks'];
+  cardSizes: Record<string, CardSize>;
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+  onRemoveEntity?: (entityId: string) => void;
+}) {
+  const breakpointCols = useBreakpointCols();
+
+  return (
+    <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
+      <div
+        className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+        style={
+          {
+            ...getCardGridAutoRowsStyle(breakpointCols),
+            gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
+          } as CSSProperties
+        }
+      >
+        {locks.map((lock) => {
+          const size = cardSizes[lock.id] ?? 'small';
+
+          return (
+            <DashboardCardItem
+              key={lock.id}
+              id={lock.id}
+              device={asLockDevice(lock)}
+              size={size}
+              isEditMode={isEditMode}
+              handleSizeChange={updateCardSize}
+              onRemoveEntity={onRemoveEntity}
+              allowEntityRemoval
+              usesHideAction
+            />
+          );
+        })}
+      </div>
+    </DashboardEditActions>
+  );
+}
+
 export function SecurityCameraDashboard({
   model,
   isEditMode,
@@ -92,7 +145,8 @@ export function SecurityCameraDashboard({
   surface,
   labels,
 }: SecurityCameraDashboardProps) {
-  const { primaryCameras, stillImageCameras } = model;
+  const { primaryCameras, stillImageCameras, locks } = model;
+  const hasOtherSecurityContent = stillImageCameras.length > 0 || locks.length > 0;
 
   return (
     <div className="space-y-5 md:space-y-6">
@@ -109,7 +163,7 @@ export function SecurityCameraDashboard({
             onRemoveEntity={onRemoveEntity}
           />
         </section>
-      ) : (
+      ) : hasOtherSecurityContent ? null : (
         <section
           className={`flex min-h-52 flex-col items-center justify-center rounded-[28px] border border-dashed p-6 text-center ${surface.border} ${surface.panelMuted}`}
         >
@@ -135,6 +189,21 @@ export function SecurityCameraDashboard({
           </div>
           <CameraGrid
             cameras={stillImageCameras}
+            cardSizes={cardSizes}
+            updateCardSize={updateCardSize}
+            isEditMode={isEditMode}
+            onRemoveEntity={onRemoveEntity}
+          />
+        </section>
+      ) : null}
+
+      {locks.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+            {labels.locksTitle}
+          </h2>
+          <LockGrid
+            locks={locks}
             cardSizes={cardSizes}
             updateCardSize={updateCardSize}
             isEditMode={isEditMode}

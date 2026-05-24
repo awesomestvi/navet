@@ -119,6 +119,7 @@ export const settingsSelectors = {
   language: (state: SettingsState) => state.language,
   showNotifications: (state: SettingsState) => state.showNotifications,
   showWeatherInHeader: (state: SettingsState) => state.showWeatherInHeader,
+  showHomeSummaryBar: (state: SettingsState) => state.showHomeSummaryBar,
   use24HourTime: (state: SettingsState) => state.use24HourTime,
   temperatureUnit: (state: SettingsState) => state.temperatureUnit,
   defaultView: (state: SettingsState) => state.defaultView,
@@ -149,6 +150,7 @@ export const settingsSelectors = {
   // Combined selectors
   displaySettings: (state: SettingsState) => ({
     language: state.language,
+    showHomeSummaryBar: state.showHomeSummaryBar,
     use24HourTime: state.use24HourTime,
     temperatureUnit: state.temperatureUnit,
     compactMode: state.compactMode,

@@ -9,6 +9,7 @@ export {
   parseCalendarDate,
 } from './calendar-utils';
 export {
+  resolveClimateTargetTemperature,
   resolveClimateTemperatureUnit,
   resolveHomeAssistantTemperatureUnit,
 } from './climate-utils';
@@ -29,4 +30,4 @@ export {
   toVolts,
   toWatts,
 } from './numeric-utils';
-export { formatClock, formatDaylight } from './time-format';
+export { formatClock, formatDaylight, formatTimestampTime } from './time-format';

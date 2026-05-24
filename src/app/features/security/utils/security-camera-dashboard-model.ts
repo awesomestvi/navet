@@ -1,5 +1,5 @@
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import type { CameraDevice, DeviceCollection } from '@/app/types/device.types';
+import type { CameraDevice, DeviceCollection, LockDevice } from '@/app/types/device.types';
 
 const SECURITY_CAMERA_KEYWORDS = [
   'camera',
@@ -40,6 +40,7 @@ export interface CameraDashboardModel {
   primaryCameras: CameraDevice[];
   stillImageCameras: CameraDevice[];
   unavailableCameras: CameraDevice[];
+  locks: LockDevice[];
   summary: CameraDashboardSummary;
 }
 
@@ -81,7 +82,10 @@ export function isStillImageUtilityCamera(camera: CameraDevice): boolean {
   );
 }
 
-function compareCameras(left: CameraDevice, right: CameraDevice): number {
+function compareByRoomAndName(
+  left: Pick<CameraDevice, 'room' | 'name'>,
+  right: Pick<CameraDevice, 'room' | 'name'>
+): number {
   const roomCompare = left.room.localeCompare(right.room);
   if (roomCompare !== 0) {
     return roomCompare;
@@ -151,29 +155,31 @@ export function buildSecurityCameraDashboardModel(
   devices: Pick<DeviceCollection, 'cameras' | 'locks'>,
   entities?: HassEntities | null
 ): CameraDashboardModel {
-  const cameras = [...devices.cameras].sort(compareCameras);
+  const cameras = [...devices.cameras].sort(compareByRoomAndName);
   const unavailableCameras = cameras.filter(isUnavailableCamera);
   const availableCameras = cameras.filter((camera) => !isUnavailableCamera(camera));
   const stillImageCameras = availableCameras.filter(isStillImageUtilityCamera);
   const stillImageIds = new Set(stillImageCameras.map((camera) => camera.id));
   const primaryCameras = availableCameras.filter((camera) => !stillImageIds.has(camera.id));
+  const locks = [...devices.locks].sort(compareByRoomAndName);
   const liveCount = primaryCameras.filter(
     (camera) => camera.isStreamCapable || isLiveCamera(camera)
   ).length;
   const idleCount = primaryCameras.length - liveCount;
-  const unlockedCount = devices.locks.filter((lock) => !lock.state).length;
+  const unlockedCount = locks.filter((lock) => !lock.state).length;
 
   return {
     primaryCameras,
     stillImageCameras,
     unavailableCameras,
+    locks,
     summary: {
       totalCameras: cameras.length,
       liveCount,
       idleCount,
       unavailableCount: unavailableCameras.length,
       motionCount: getRelatedMotionCount(entities),
-      lockedCount: devices.locks.length - unlockedCount,
+      lockedCount: locks.length - unlockedCount,
       unlockedCount,
       openSensorCount: getOpenSensorCount(entities),
       activeAlarmCount: getActiveAlarmCount(entities),

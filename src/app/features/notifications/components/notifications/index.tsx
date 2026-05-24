@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useState } from 'react';
-import { SheetSurface } from '@/app/components/primitives';
+import { SheetSurface, SheetSurfaceHeader } from '@/app/components/primitives';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,16 +87,48 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
     });
   const content = (
     <>
-      <NotificationHeader
-        onClose={onClose}
-        onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
-        onClearAll={() => setShowClearAllConfirm(true)}
-        unreadCount={unreadCount}
-        hasNotifications={notifications.length > 0}
-        theme={theme}
-        primaryColor={primaryColor}
-        getColorValue={getColorValue}
-      />
+      {isMobile ? (
+        <>
+          <SheetSurfaceHeader
+            title={t('notifications.title')}
+            closeLabel={t('common.close')}
+            onClose={onClose}
+            className="px-4 pb-3"
+            titleAccessory={
+              unreadCount > 0 ? (
+                <span
+                  className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
+                  style={{ backgroundColor: getColorValue(primaryColor) }}
+                >
+                  {unreadCount}
+                </span>
+              ) : undefined
+            }
+          />
+          <NotificationHeader
+            variant="actions"
+            onClose={onClose}
+            onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
+            onClearAll={() => setShowClearAllConfirm(true)}
+            unreadCount={unreadCount}
+            hasNotifications={notifications.length > 0}
+            theme={theme}
+            primaryColor={primaryColor}
+            getColorValue={getColorValue}
+          />
+        </>
+      ) : (
+        <NotificationHeader
+          onClose={onClose}
+          onMarkAllAsRead={unreadCount > 0 ? markAllAsRead : undefined}
+          onClearAll={() => setShowClearAllConfirm(true)}
+          unreadCount={unreadCount}
+          hasNotifications={notifications.length > 0}
+          theme={theme}
+          primaryColor={primaryColor}
+          getColorValue={getColorValue}
+        />
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
         {notifications.length === 0 ? (

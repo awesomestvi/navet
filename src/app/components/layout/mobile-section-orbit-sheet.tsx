@@ -1,37 +1,23 @@
-import { ArrowLeft, Sparkles } from 'lucide-react';
 import { memo, useMemo } from 'react';
-import { Button, SheetSurface } from '@/app/components/primitives';
+import { SheetSurface, SheetSurfaceHeader } from '@/app/components/primitives';
+import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { navetTypographyTokens } from '@/app/components/system/tokens';
-import { cn } from '@/app/components/ui/utils';
-import { getDashboardRoomLabel } from '@/app/constants/rooms';
 import { type Section, useI18n, useTheme } from '@/app/hooks';
-import { MobileRoomDropdown, type MobileRoomNavigation } from './mobile-room-dropdown';
-import {
-  getOrderedSectionNavigationItems,
-  getRecentSectionNavigationItems,
-  MOBILE_SECTION_ORBIT_ORDER,
-} from './section-navigation';
+import { getOrderedSectionNavigationItems, MOBILE_SECTION_ORBIT_ORDER } from './section-navigation';
 
 interface MobileSectionOrbitSheetProps {
   activeSection: Section;
-  currentRoomNavigation?: MobileRoomNavigation;
   isOpen: boolean;
-  lastNonHomeSection: Section | null;
   onOpenChange: (open: boolean) => void;
   onSelectSection: (section: Section) => void;
-  recentSections: Section[];
 }
 
 export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
   activeSection,
-  currentRoomNavigation,
   isOpen,
-  lastNonHomeSection,
   onOpenChange,
   onSelectSection,
-  recentSections,
 }: MobileSectionOrbitSheetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -41,9 +27,6 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
     () => getOrderedSectionNavigationItems(t, MOBILE_SECTION_ORBIT_ORDER),
     [t]
   );
-  const featuredRecentSections = useMemo(() => {
-    return getRecentSectionNavigationItems(t, recentSections, lastNonHomeSection);
-  }, [lastNonHomeSection, recentSections, t]);
 
   const handleSelectSection = (section: Section) => {
     onSelectSection(section);
@@ -62,131 +45,36 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
       bodyClassName="px-4"
     >
       <div className="space-y-3 pb-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-              {t('sidebar.orbit')}
-            </p>
-            <p className={`mt-1 ${navetTypographyTokens.titleMd} ${surface.textPrimary}`}>
-              {t('sidebar.orbitTitle')}
-            </p>
-            <p className={`mt-0.5 ${navetTypographyTokens.compactHelper} ${surface.textSecondary}`}>
-              {t('sidebar.orbitDescription')}
-            </p>
-          </div>
-          <span
-            className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px]',
-              surface.subtleBg
-            )}
-          >
-            <Sparkles className={`h-5 w-5 ${surface.textSecondary}`} />
-          </span>
-        </div>
+        <SheetSurfaceHeader
+          eyebrow={t('sidebar.orbit')}
+          title={t('sidebar.orbitTitle')}
+          description={t('sidebar.orbitDescription')}
+          closeLabel={t('common.close')}
+          onClose={() => onOpenChange(false)}
+        />
 
-        {featuredRecentSections.length > 0 ? (
-          <section className="space-y-2">
-            <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-              {t('sidebar.recentSections')}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {featuredRecentSections.map((item) => (
-                <Button
-                  key={item.section}
-                  variant={activeSection === item.section ? 'primary' : 'secondary'}
-                  size="small"
-                  leading={<item.icon className="h-4 w-4 shrink-0" />}
-                  onClick={() => handleSelectSection(item.section)}
-                  className={cn(
-                    'rounded-[18px]',
-                    activeSection !== item.section && surface.textPrimary
-                  )}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="space-y-2">
-          <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-            {t('sidebar.allSections')}
-          </p>
+        <section>
           <div className="grid grid-cols-2 gap-2">
             {orbitItems.map((item) => {
               const isActive = activeSection === item.section;
 
               return (
-                <button
+                <InteractivePill
                   key={item.section}
                   type="button"
+                  active={isActive}
+                  icon={item.icon}
+                  intent="navigation"
+                  size="small"
                   onClick={() => handleSelectSection(item.section)}
-                  className={cn(
-                    'flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-colors',
-                    isActive
-                      ? 'border-transparent text-white shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)]'
-                      : `${surface.border} ${surface.hoverBg} ${surface.textPrimary}`
-                  )}
-                  style={isActive ? { backgroundColor: accentColor } : undefined}
+                  className="w-full justify-start"
                 >
-                  <span
-                    className={cn(
-                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px]',
-                      isActive ? 'bg-white/16' : surface.subtleBg
-                    )}
-                  >
-                    <item.icon
-                      className={cn(
-                        'h-[18px] w-[18px]',
-                        isActive ? 'text-white' : surface.textSecondary
-                      )}
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{item.label}</span>
-                  </span>
-                </button>
+                  <span className="truncate">{item.label}</span>
+                </InteractivePill>
               );
             })}
           </div>
         </section>
-
-        {activeSection === 'home' && currentRoomNavigation ? (
-          <section className="space-y-2 pt-1">
-            <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-              {t('sidebar.currentRoom')}
-            </p>
-            <div
-              className={`flex items-center justify-between gap-3 rounded-[20px] border px-3.5 py-2.5 ${surface.border} ${surface.hoverBg}`}
-            >
-              <div className="min-w-0">
-                <p className={`text-sm font-semibold ${surface.textPrimary}`}>
-                  {getDashboardRoomLabel(
-                    currentRoomNavigation.activeRoom,
-                    t('dashboard.roomNav.all')
-                  )}
-                </p>
-                <p className={`mt-0.5 text-xs ${surface.textSecondary}`}>
-                  {t('dashboard.roomNav.openRooms')}
-                </p>
-              </div>
-              <MobileRoomDropdown navigation={currentRoomNavigation} />
-            </div>
-          </section>
-        ) : activeSection !== 'home' ? (
-          <section className="pt-1">
-            <Button
-              variant="secondary"
-              size="small"
-              leading={<ArrowLeft className="h-4 w-4 shrink-0" />}
-              onClick={() => handleSelectSection('home')}
-              className={`w-full justify-start rounded-[18px] ${surface.textPrimary}`}
-            >
-              {t('sidebar.backToHome')}
-            </Button>
-          </section>
-        ) : null}
       </div>
     </SheetSurface>
   );

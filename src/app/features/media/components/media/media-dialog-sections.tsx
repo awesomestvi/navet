@@ -217,6 +217,8 @@ export function MediaDialogPlaybackControls({
 }
 
 interface MediaDialogVolumeControlProps {
+  canMuteVolume: boolean;
+  canSetVolume: boolean;
   controller: MediaDialogController;
   isMuted: boolean;
   isPlaying: boolean;
@@ -228,6 +230,8 @@ interface MediaDialogVolumeControlProps {
 }
 
 export function MediaDialogVolumeControl({
+  canMuteVolume,
+  canSetVolume,
   controller,
   isMuted,
   isPlaying,
@@ -239,6 +243,10 @@ export function MediaDialogVolumeControl({
 }: MediaDialogVolumeControlProps) {
   const { t } = useI18n();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
+
+  if (!canMuteVolume && !canSetVolume) {
+    return null;
+  }
 
   return (
     <div>
@@ -266,6 +274,7 @@ export function MediaDialogVolumeControl({
           size="medium"
           variant="soft"
           onClick={onToggleMute}
+          disabled={!canMuteVolume && !canSetVolume}
           aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
           className="h-10 w-10 transition-colors !border-0 text-white"
           style={isMuted ? controller.subtleControlStyle : controller.accentControlStyle}
@@ -278,6 +287,7 @@ export function MediaDialogVolumeControl({
             style={{ width: `${displayVolume}%` }}
           />
           <input
+            disabled={!canSetVolume}
             type="range"
             min="0"
             max="100"

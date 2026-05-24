@@ -76,7 +76,7 @@ const lightIcons = [
   { name: 'Circle', component: Circle, labelKey: 'iconPicker.circle' },
   { name: 'CircleDot', component: CircleDot, labelKey: 'iconPicker.circleDot' },
   { name: 'CircleDashed', component: CircleDashed, labelKey: 'iconPicker.circleDashed' },
-  { name: 'Orbit', component: Orbit, labelKey: 'iconPicker.orbit' },
+  { name: 'Orbit', component: Orbit, labelKey: 'iconPicker.more' },
 ] as const satisfies ReadonlyArray<{
   name: string;
   component: React.ComponentType<{ className?: string }>;
