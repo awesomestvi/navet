@@ -436,7 +436,7 @@ const demoHomeWidgets: CustomCard[] = [
   },
   {
     id: 'demo-widget-sensor-group',
-    type: 'sensor-group',
+    type: 'info',
     size: 'medium',
     room: 'Home',
     createdAt: 7,

@@ -1,22 +1,15 @@
-import { Component, lazy, type ReactNode, Suspense, useMemo } from 'react';
+import { Component, lazy, type ReactNode, Suspense } from 'react';
 import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { RSSCardData } from '@/app/features/rss';
-import {
-  buildAvailableSensorOptions,
-  GroupedSensorCard,
-  resolveSensorReadings,
-  type SensorReading,
-} from '@/app/features/sensors';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
-import { useSettingsStore } from '@/app/stores';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
 import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
+import type { InfoWidgetData } from './widgets/info-widget';
 import type { MapMarker } from './widgets/map-types';
 import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
+import type { UpsWidgetData } from './widgets/ups-widget';
 
 class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -45,6 +38,11 @@ const NoteWidget = lazy(async () => {
   return { default: module.NoteWidget };
 });
 
+const InfoWidget = lazy(async () => {
+  const module = await import('./widgets/info-widget');
+  return { default: module.InfoWidget };
+});
+
 const PhotoFrameWidget = lazy(async () => {
   const module = await import('./widgets/photo-frame-widget');
   return { default: module.PhotoFrameWidget };
@@ -53,6 +51,11 @@ const PhotoFrameWidget = lazy(async () => {
 const BatteryOverviewWidget = lazy(async () => {
   const module = await import('./widgets/battery-overview-widget');
   return { default: module.BatteryOverviewWidget };
+});
+
+const UpsWidget = lazy(async () => {
+  const module = await import('./widgets/ups-widget');
+  return { default: module.UpsWidget };
 });
 
 const EnergyNowDashboardWidget = lazy(async () => {
@@ -96,97 +99,11 @@ interface WidgetCardProps {
   onUpdate?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 
-type SensorGroupWidgetData = {
-  name?: string;
-  sensorEntityIds?: string[];
-  accentColor?: 'teal' | 'blue' | 'purple' | 'amber' | 'emerald';
-};
-
-const EMPTY_SENSOR_ENTITY_IDS: string[] = [];
-
 function WidgetFallback({ size }: { size: CardSize }) {
   return (
     <BaseCard size={size} className="animate-pulse bg-white/5">
       <span />
     </BaseCard>
-  );
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string');
-}
-
-function SensorGroupWidget({
-  card,
-  isEditMode,
-  onUpdate,
-}: {
-  card: CustomCard;
-  isEditMode: boolean;
-  onUpdate: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
-}) {
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
-  const { locale } = useI18n();
-  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
-  const data = card.data as SensorGroupWidgetData | undefined;
-  const sensorEntityIds = isStringArray(data?.sensorEntityIds)
-    ? data.sensorEntityIds
-    : EMPTY_SENSOR_ENTITY_IDS;
-  const formatOptions = useMemo(() => ({ locale, use24HourTime }), [locale, use24HourTime]);
-  const sensors = useMemo(
-    () => resolveSensorReadings({ entities, sensorEntityIds, formatOptions }),
-    [entities, formatOptions, sensorEntityIds]
-  );
-  const availableSensors = useMemo(
-    () =>
-      buildAvailableSensorOptions({
-        entities,
-        areas,
-        deviceRegistry,
-        entityRegistry,
-        formatOptions,
-      }),
-    [areas, deviceRegistry, entities, entityRegistry, formatOptions]
-  );
-  const accentColor = data?.accentColor ?? 'teal';
-  const name = data?.name ?? 'Sensor group';
-
-  const handleSensorsUpdate = (nextSensors: SensorReading[]) => {
-    onUpdate(card.id, {
-      data: {
-        ...card.data,
-        sensorEntityIds: nextSensors.map((sensor) => sensor.id),
-      },
-    });
-  };
-  const handleNameChange = (nextName: string) => {
-    onUpdate(card.id, {
-      data: {
-        ...card.data,
-        name: nextName,
-      },
-    });
-  };
-
-  return (
-    <GroupedSensorCard
-      id={card.id}
-      name={name}
-      room={card.room}
-      sensors={sensors}
-      size={card.size}
-      onSizeChange={() => {}}
-      isEditMode={isEditMode}
-      accentColor={accentColor}
-      availableSensors={availableSensors}
-      showRoomSelector
-      onNameChange={handleNameChange}
-      onRoomChange={(room) => onUpdate(card.id, { room })}
-      onSensorsUpdate={handleSensorsUpdate}
-    />
   );
 }
 
@@ -200,6 +117,19 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
 
   let widgetContent: React.ReactNode;
   switch (card.type) {
+    case 'info':
+      widgetContent = (
+        <InfoWidget
+          cardId={card.id}
+          size={card.size}
+          room={card.room}
+          data={card.data as InfoWidgetData | undefined}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+        />
+      );
+      break;
     case 'rss':
       widgetContent = (
         <RSSFeedCard
@@ -271,6 +201,18 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
         />
       );
       break;
+    case 'ups':
+      widgetContent = (
+        <UpsWidget
+          size={card.size}
+          room={card.room}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          data={card.data as UpsWidgetData | undefined}
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+        />
+      );
+      break;
     case 'energy-now':
       widgetContent = (
         <EnergyNowDashboardWidget
@@ -311,11 +253,6 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
             Array.isArray(card.data?.markers) ? card.data.markers.filter(isMapMarker) : undefined
           }
         />
-      );
-      break;
-    case 'sensor-group':
-      widgetContent = (
-        <SensorGroupWidget card={card} isEditMode={isEditMode} onUpdate={handleCardUpdate} />
       );
       break;
     default:

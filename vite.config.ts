@@ -4,6 +4,7 @@ import { lookup } from 'node:dns/promises'
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isIP } from 'node:net'
+import { Readable } from 'node:stream'
 import path from 'path'
 import {
   defineConfig,
@@ -13,6 +14,11 @@ import {
   type ViteDevServer,
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import {
+  createViteAuthSessionStore,
+  type HomeAssistantAuthData,
+  isValidAuthData,
+} from './scripts/vite-auth-session-store'
 import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
@@ -26,6 +32,7 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
 
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
+const AUTH_SESSION_MAX_BYTES = 16 * 1024
 
 async function assertPublicHostname(hostname: string) {
   const normalizedHostname = hostname.toLowerCase()
@@ -150,7 +157,10 @@ function rssProxyPlugin() {
   }
 }
 
-function homeAssistantPreviewProxyPlugin(hassUrl?: string) {
+function homeAssistantProxyPlugin(
+  hassUrl: string | undefined,
+  getAuthSession: () => HomeAssistantAuthData | null
+) {
   const normalizedHassUrl = (() => {
     if (!hassUrl) {
       return null
@@ -163,75 +173,109 @@ function homeAssistantPreviewProxyPlugin(hassUrl?: string) {
     }
   })()
 
-  return {
-    name: 'navet-ha-preview-proxy',
-    configurePreviewServer(server: PreviewServer) {
-      if (!normalizedHassUrl) {
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (!req.url) {
+      res.statusCode = 400
+      res.end('Missing proxy path')
+      return
+    }
+
+    try {
+      let decodedUrl = ''
+      try {
+        decodedUrl = decodeURIComponent(req.url)
+      } catch {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
         return
       }
 
+      if (req.url.includes('..') || decodedUrl.includes('..')) {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
+        return
+      }
+
+      const authSession = getAuthSession()
+      const upstreamBaseUrl = authSession?.hassUrl ?? normalizedHassUrl?.toString() ?? null
+      if (!upstreamBaseUrl) {
+        res.statusCode = 502
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Home Assistant proxy is not configured' }))
+        return
+      }
+
+      const upstreamOrigin = new URL(upstreamBaseUrl)
+      const targetUrl = new URL(req.url, upstreamOrigin)
+      if (targetUrl.origin !== upstreamOrigin.origin) {
+        res.statusCode = 400
+        res.end('Invalid proxy target')
+        return
+      }
+
+      const headers = new Headers()
+      const accept = typeof req.headers.accept === 'string' ? req.headers.accept : null
+      if (accept) {
+        headers.set('Accept', accept)
+      }
+
+      if (authSession?.access_token) {
+        headers.set('Authorization', `Bearer ${authSession.access_token}`)
+      }
+
+      const upstreamResponse = await fetch(targetUrl, {
+        redirect: 'manual',
+        headers,
+      })
+
+      res.statusCode = upstreamResponse.status
+      setSecurityHeaders(res)
+
+      const contentType = upstreamResponse.headers.get('content-type')
+      if (contentType) {
+        res.setHeader('Content-Type', contentType)
+      }
+
+      const cacheControl = upstreamResponse.headers.get('cache-control')
+      if (cacheControl) {
+        res.setHeader('Cache-Control', cacheControl)
+      }
+
+      const contentLength = upstreamResponse.headers.get('content-length')
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength)
+      }
+
+      if (!upstreamResponse.body) {
+        res.end()
+        return
+      }
+
+      Readable.fromWeb(upstreamResponse.body as globalThis.ReadableStream<Uint8Array>).pipe(res)
+    } catch {
+      res.statusCode = 502
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unable to load Home Assistant resource' }))
+    }
+  }
+
+  return {
+    name: 'navet-ha-proxy',
+    configureServer(server: ViteDevServer) {
       server.middlewares.use('/__navet_ha_proxy__', async (req, res) => {
-        if (!req.url) {
-          res.statusCode = 400
-          res.end('Missing proxy path')
-          return
-        }
-
-        try {
-          let decodedUrl = ''
-          try {
-            decodedUrl = decodeURIComponent(req.url)
-          } catch {
-            res.statusCode = 400
-            res.end('Invalid proxy path')
-            return
-          }
-
-          if (req.url.includes('..') || decodedUrl.includes('..')) {
-            res.statusCode = 400
-            res.end('Invalid proxy path')
-            return
-          }
-
-          const targetUrl = new URL(req.url, normalizedHassUrl)
-          if (targetUrl.origin !== normalizedHassUrl.origin) {
-            res.statusCode = 400
-            res.end('Invalid proxy target')
-            return
-          }
-
-          const upstreamResponse = await fetch(targetUrl, {
-            redirect: 'manual',
-          })
-
-          res.statusCode = upstreamResponse.status
-          setSecurityHeaders(res)
-
-          const contentType = upstreamResponse.headers.get('content-type')
-          if (contentType) {
-            res.setHeader('Content-Type', contentType)
-          }
-
-          const cacheControl = upstreamResponse.headers.get('cache-control')
-          if (cacheControl) {
-            res.setHeader('Cache-Control', cacheControl)
-          }
-
-          const body = Buffer.from(await upstreamResponse.arrayBuffer())
-          res.end(body)
-        } catch {
-          res.statusCode = 502
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Unable to load Home Assistant resource' }))
-        }
+        await handleRequest(req, res)
+      })
+    },
+    configurePreviewServer(server: PreviewServer) {
+      server.middlewares.use('/__navet_ha_proxy__', async (req, res) => {
+        await handleRequest(req, res)
       })
     },
   }
 }
 
 function authSessionStorePlugin() {
-  const maxAuthBytes = 16 * 1024
-  let authSession: string | null = null
+  const authSessionStore = createViteAuthSessionStore()
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -257,7 +301,7 @@ function authSessionStorePlugin() {
     for await (const chunk of req) {
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
       size += buffer.byteLength
-      if (size > maxAuthBytes) {
+      if (size > AUTH_SESSION_MAX_BYTES) {
         throw new Error('Auth session is too large')
       }
       chunks.push(buffer)
@@ -266,30 +310,12 @@ function authSessionStorePlugin() {
     return Buffer.concat(chunks).toString('utf8')
   }
 
-  const isValidAuthData = (value: unknown) => {
-    if (!value || typeof value !== 'object') {
-      return false
-    }
-
-    const data = value as Record<string, unknown>
-    return (
-      typeof data.hassUrl === 'string' &&
-      /^https?:\/\//.test(data.hassUrl) &&
-      (typeof data.clientId === 'string' || data.clientId === null) &&
-      typeof data.expires === 'number' &&
-      typeof data.refresh_token === 'string' &&
-      data.refresh_token.length > 0 &&
-      typeof data.access_token === 'string' &&
-      data.access_token.length > 0 &&
-      typeof data.expires_in === 'number'
-    )
-  }
-
   const handleRequest = async (
     req: IncomingMessage,
     res: ServerResponse
   ) => {
     if (req.method === 'GET') {
+      const authSession = authSessionStore.getSerializedSession()
       if (!authSession) {
         sendNoContent(res)
         return
@@ -311,7 +337,7 @@ function authSessionStorePlugin() {
           return
         }
 
-        authSession = JSON.stringify(parsed)
+        authSessionStore.saveAuthSession(parsed)
         sendJson(res, 200, { ok: true })
       } catch {
         sendJson(res, 400, { error: 'Unable to save auth session' })
@@ -320,7 +346,7 @@ function authSessionStorePlugin() {
     }
 
     if (req.method === 'DELETE') {
-      authSession = null
+      authSessionStore.clearAuthSession()
       sendJson(res, 200, { ok: true })
       return
     }
@@ -337,6 +363,11 @@ function authSessionStorePlugin() {
 
   return {
     name: 'navet-auth-session-store',
+    api: {
+      getAuthSession(): HomeAssistantAuthData | null {
+        return authSessionStore.getAuthSession()
+      },
+    },
     configureServer: registerMiddleware,
     configurePreviewServer: registerMiddleware,
   }
@@ -354,12 +385,21 @@ export default defineConfig(({ mode }) => {
     commandLine.includes('storybook') ||
     commandLine.includes('chromatic')
 
+  const authSessionPlugin = authSessionStorePlugin()
   const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
     rssProxyPlugin(),
-    authSessionStorePlugin(),
-    homeAssistantPreviewProxyPlugin(hassUrl),
+    authSessionPlugin,
+    homeAssistantProxyPlugin(
+      hassUrl,
+      () =>
+        (
+          authSessionPlugin as PluginOption & {
+            api?: { getAuthSession?: () => HomeAssistantAuthData | null }
+          }
+        ).api?.getAuthSession?.() ?? null
+    ),
   ]
 
   if (!isStorybook) {
@@ -479,12 +519,6 @@ export default defineConfig(({ mode }) => {
             target: hassUrl,
             changeOrigin: true,
             secure: false,
-          },
-          '/__navet_ha_proxy__': {
-            target: hassUrl,
-            changeOrigin: true,
-            secure: false,
-            rewrite: (path) => path.replace(/^\/__navet_ha_proxy__/, ''),
           },
         }
         : undefined,

@@ -14,7 +14,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { isAllRooms } from '@/app/constants/rooms';
 import { type ThemeType, useI18n } from '@/app/hooks';
 import { type DashboardLibraryCard, DashboardLibraryList } from '../dashboard-library-list';
-import type { CardTemplate, CardType } from './types';
+import type { CardTemplate, CardTemplateId } from './types';
 
 function cardSizeKey(size: CardSize): `dashboard.addCard.size.${CardSize}` {
   return `dashboard.addCard.size.${size}`;
@@ -35,8 +35,8 @@ interface AddCardDialogViewProps {
   theme: ThemeType;
   primaryColor: string;
   cardTemplates: CardTemplate[];
-  selectedType: CardType | null;
-  setSelectedType: (type: CardType | null) => void;
+  selectedType: CardTemplateId | null;
+  setSelectedType: (type: CardTemplateId | null) => void;
   selectedSize: CardSize;
   setSelectedSize: (size: CardSize) => void;
   getColorValue: (color: string) => string;

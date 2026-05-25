@@ -13,3 +13,9 @@ export interface LightBrightnessPreset {
   key: BrightnessPresetKey;
   label: string;
 }
+
+export interface LightEffectOption {
+  isOff: boolean;
+  label: string;
+  value: string;
+}

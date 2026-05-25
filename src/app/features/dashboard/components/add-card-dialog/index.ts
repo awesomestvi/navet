@@ -1,2 +1,3 @@
+export type { CardType } from '../../stores/custom-cards-store';
 export { AddCardDialogContainer } from './container';
-export type { AddCardDialogContainerProps, CardTemplate, CardType } from './types';
+export type { AddCardDialogContainerProps, CardTemplate, CardTemplateId } from './types';

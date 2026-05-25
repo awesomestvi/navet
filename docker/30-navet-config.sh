@@ -90,13 +90,11 @@ write_home_assistant_discovery
 
 export NAVET_HASS_URL NAVET_HASS_URL_JS NAVET_DASHBOARD_CONFIG_URL_JS
 
-if [ -n "${NAVET_HASS_URL}" ]; then
-  envsubst '${NAVET_HASS_URL}' \
-    < /etc/navet-nginx/default.proxy.conf.template \
-    > /etc/nginx/conf.d/default.conf
-else
-  cp /etc/navet-nginx/default.no-proxy.conf /etc/nginx/conf.d/default.conf
-fi
+envsubst '${NAVET_HASS_URL}' \
+  < /etc/navet-nginx/ha-proxy.template.js \
+  > /etc/nginx/njs/ha-proxy.js
+
+cp /etc/navet-nginx/default.conf /etc/nginx/conf.d/default.conf
 
 envsubst '${NAVET_HASS_URL_JS} ${NAVET_DASHBOARD_CONFIG_URL_JS}' \
   < /usr/share/nginx/html/config.js.template \

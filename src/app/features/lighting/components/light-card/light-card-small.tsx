@@ -6,7 +6,11 @@ import { BrightnessSlider, KelvinSlider } from '@/app/components/shared/device-e
 import { useTheme } from '@/app/hooks';
 import { LightCardActionRow } from './light-card-action-row';
 import { LightCardHeader } from './light-card-header';
-import type { HeaderIconButtonProps, LightBrightnessPreset } from './light-card-types';
+import type {
+  HeaderIconButtonProps,
+  LightBrightnessPreset,
+  LightEffectOption,
+} from './light-card-types';
 
 interface LightCardSmallProps {
   name: string;
@@ -20,12 +24,15 @@ interface LightCardSmallProps {
   minColorTemp: number;
   maxColorTemp: number;
   brightnessPresets: LightBrightnessPreset[];
+  effectOptions: LightEffectOption[];
   isOn: boolean;
   isKelvinMode: boolean;
   isColorMode: boolean;
+  currentEffect: string | null;
   activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
+  supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
@@ -33,6 +40,7 @@ interface LightCardSmallProps {
   onBrightnessChange: (value: number) => void;
   onBrightnessCommit: (value: number) => void;
   onColorChange: (color: string) => void;
+  onEffectSelect: (effect: string) => void;
   onTempChange: (temp: number) => void;
   onTempCommit: (temp: number) => void;
   iconButtonProps: HeaderIconButtonProps;
@@ -51,12 +59,15 @@ export const LightCardSmall = memo(function LightCardSmall({
   minColorTemp,
   maxColorTemp,
   brightnessPresets,
+  effectOptions,
   isOn,
   isKelvinMode,
   isColorMode,
+  currentEffect,
   activeColor,
   IconComponent,
   iconText,
+  supportsEffects,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
@@ -64,6 +75,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   onBrightnessChange,
   onBrightnessCommit,
   onColorChange,
+  onEffectSelect,
   onTempChange,
   onTempCommit,
   iconButtonProps,
@@ -72,12 +84,15 @@ export const LightCardSmall = memo(function LightCardSmall({
 }: LightCardSmallProps) {
   const { theme } = useTheme();
   const isExtraSmall = isExtraSmallCardSize(size);
-  const hasColorFeatures = supportsColorTemperature || supportsColorControl;
-  const colorButtonCount = (supportsColorTemperature ? 1 : 0) + (supportsColorControl ? 1 : 0);
-  // If color features exist: cap visible presets so total left buttons ≤ 2, rest in overflow menu.
-  // If no color features: show all presets inline.
-  const presetMaxVisible = hasColorFeatures ? Math.max(0, 2 - colorButtonCount) : undefined;
-  const presetOverflow: 'menu' | 'hide' = hasColorFeatures ? 'menu' : 'hide';
+  const inlineControlCount = (supportsColorTemperature ? 1 : 0) + (supportsColorControl ? 1 : 0);
+  const hasInlineControls = inlineControlCount > 0;
+  // When effects are available, the overflow affordance becomes the effect picker.
+  const presetMaxVisible = hasInlineControls ? Math.max(0, 2 - inlineControlCount) : undefined;
+  const presetOverflow: 'menu' | 'hide' = supportsEffects
+    ? 'hide'
+    : hasInlineControls
+      ? 'menu'
+      : 'hide';
 
   return (
     <>
@@ -156,11 +171,15 @@ export const LightCardSmall = memo(function LightCardSmall({
             isColorMode={isColorMode}
             supportsColorTemperature={supportsColorTemperature}
             supportsColorControl={supportsColorControl}
+            supportsEffects={supportsEffects}
             brightnessPresets={brightnessPresets}
+            effectOptions={effectOptions}
             brightness={brightness}
+            currentEffect={currentEffect}
             onKelvinToggle={onKelvinToggle}
             onColorActivate={onColorActivate}
             onColorChange={onColorChange}
+            onEffectSelect={onEffectSelect}
             onBrightnessCommit={onBrightnessCommit}
             showSettingsButton={showSettingsButton}
             settingsButtonProps={settingsButtonProps}

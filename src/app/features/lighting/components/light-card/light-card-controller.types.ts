@@ -2,7 +2,11 @@ import type { LucideIcon } from 'lucide-react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import type { BrightnessPresetKey } from '../../stores/light-preset-store';
-import type { HeaderIconButtonProps, LightBrightnessPreset } from './light-card-types';
+import type {
+  HeaderIconButtonProps,
+  LightBrightnessPreset,
+  LightEffectOption,
+} from './light-card-types';
 
 export interface LightCardControllerParams {
   id: string;
@@ -22,8 +26,10 @@ export interface LightCardController {
   cardInteraction: ReturnType<typeof useEntityCardInteractionController>;
   colorTemp: number;
   currentColor: string;
+  currentEffect: string | null;
   colorSwatchColor: string;
   customColor: string;
+  effectOptions: LightEffectOption[];
   iconButtonProps: HeaderIconButtonProps;
   IconComponent: LucideIcon | null;
   iconText: string | null;
@@ -37,6 +43,7 @@ export interface LightCardController {
   settingsButtonProps: HeaderIconButtonProps;
   showPresetOverflow: boolean;
   showSettingsButton: boolean;
+  supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   tempOptions: Array<{ value: number; color: string; label: string }>;
@@ -47,6 +54,7 @@ export interface LightCardController {
   onBrightnessPresetValueChange: (key: BrightnessPresetKey, value: number) => void;
   onColorChange: (color: string) => void;
   onCustomColorChange: (color: string) => void;
+  onEffectSelect: (effect: string) => void;
   onIconChange: (icon: string) => void;
   onOpenChange: (open: boolean) => void;
   onTempChange: (temp: number) => void;

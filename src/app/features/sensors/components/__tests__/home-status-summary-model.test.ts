@@ -1,3 +1,4 @@
+import { Shield } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 import type { DeviceWithType } from '@/app/types/device.types';
 import {
@@ -124,7 +125,12 @@ describe('home status summary model', () => {
     expect(items.map((item) => item.id)).toEqual(['security', 'lights', 'media']);
     expect(items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'security', value: '1 Alert', targetSection: 'security' }),
+        expect.objectContaining({
+          id: 'security',
+          value: '1 Alert',
+          icon: Shield,
+          targetSection: 'security',
+        }),
         expect.objectContaining({ id: 'media', value: '1 Playing', targetSection: 'media' }),
       ])
     );

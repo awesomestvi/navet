@@ -20,8 +20,10 @@ import { resolveAppLanguage } from '@/app/i18n/config';
 import { isSection } from '@/app/navigation/sections';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import {
+  type CameraDashboardViewMode,
   type CameraFeedMode,
   type CameraGo2RtcConfig,
+  type CameraGo2RtcDefaults,
   type CameraViewMode,
   defaultSettings,
   useSettingsStore,
@@ -116,6 +118,15 @@ function resolveCameraViewMode(value: unknown): CameraViewMode {
     : defaultSettings.cameraViewMode;
 }
 
+function resolveCameraDashboardViewMode(
+  value: unknown,
+  legacyValue: unknown = undefined
+): CameraDashboardViewMode {
+  return typeof value === 'string' && cameraViewModes.has(value as CameraViewMode)
+    ? (value as CameraDashboardViewMode)
+    : resolveCameraViewMode(legacyValue);
+}
+
 function resolveCameraViewModes(value: unknown): Record<string, CameraViewMode> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
@@ -165,6 +176,24 @@ function resolveCameraGo2RtcConfigs(value: unknown): Record<string, CameraGo2Rtc
         },
       ])
   );
+}
+
+function resolveCameraGo2RtcDefaults(value: unknown): CameraGo2RtcDefaults {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return defaultSettings.cameraGo2RtcDefaults;
+  }
+
+  const defaults = value as Partial<CameraGo2RtcDefaults>;
+  return {
+    serverUrl:
+      typeof defaults.serverUrl === 'string'
+        ? defaults.serverUrl.trim()
+        : defaultSettings.cameraGo2RtcDefaults.serverUrl,
+    streamNamingMode:
+      defaults.streamNamingMode === 'entity_id' || defaults.streamNamingMode === 'short_entity_id'
+        ? defaults.streamNamingMode
+        : defaultSettings.cameraGo2RtcDefaults.streamNamingMode,
+  };
 }
 
 function areArraysEqual<T>(left: T[], right: T[]) {
@@ -228,9 +257,9 @@ const buildExportedSettings = (
       settingsState.entityInteractionMode !== defaultSettings.entityInteractionMode
         ? settingsState.entityInteractionMode
         : undefined,
-    cameraViewMode:
-      settingsState.cameraViewMode !== defaultSettings.cameraViewMode
-        ? settingsState.cameraViewMode
+    cameraDashboardViewMode:
+      settingsState.cameraDashboardViewMode !== defaultSettings.cameraDashboardViewMode
+        ? settingsState.cameraDashboardViewMode
         : undefined,
     cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
     cameraFeedModes: pruneEmptyRecord(settingsState.cameraFeedModes),
@@ -317,14 +346,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const cardTypes = new Set<CardType>([
+  'info',
   'rss',
   'photo',
   'note',
   'battery',
+  'ups',
   'energy-now',
   'button',
   'map',
-  'sensor-group',
 ]);
 const cardSizes = new Set(['small', 'medium', 'large', 'extra-large']);
 const MAX_IMPORTED_CARDS = 200;
@@ -448,7 +478,7 @@ function sanitizeHomeDashboardLayout(value: unknown): HomeDashboardLayoutState {
 }
 
 function sanitizeCustomCardData(
-  type: CardType,
+  type: CardType | 'sensor-group',
   data: unknown
 ): Record<string, unknown> | undefined {
   if (!isRecord(data)) {
@@ -534,6 +564,42 @@ function sanitizeCustomCardData(
     });
   }
 
+  if (type === 'info') {
+    const primaryEntityId = stringValue(data.entityId, 160);
+    const validatedPrimaryEntityId =
+      primaryEntityId &&
+      (primaryEntityId.startsWith('sensor.') || primaryEntityId.startsWith('binary_sensor.'))
+        ? primaryEntityId
+        : undefined;
+
+    return omitUndefinedEntries({
+      name: stringValue(data.name, 80),
+      sensorEntityIds: sanitizeStringArray(data.sensorEntityIds, 6).filter(
+        (entityId) => entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')
+      ),
+      entityId: validatedPrimaryEntityId,
+      accentColor:
+        data.accentColor === 'teal' ||
+        data.accentColor === 'blue' ||
+        data.accentColor === 'purple' ||
+        data.accentColor === 'amber' ||
+        data.accentColor === 'emerald'
+          ? data.accentColor
+          : undefined,
+    });
+  }
+
+  if (type === 'ups') {
+    return omitUndefinedEntries({
+      deviceId: stringValue(data.deviceId, 160),
+      statusEntityId: stringValue(data.statusEntityId, 160),
+      metricEntityIds: sanitizeStringArray(data.metricEntityIds, 6).filter((entityId) =>
+        entityId.startsWith('sensor.')
+      ),
+      tintColor: stringValue(data.tintColor, 40),
+    });
+  }
+
   return sanitizeJsonRecord(data);
 }
 
@@ -544,11 +610,14 @@ function sanitizeImportedCustomCards(value: unknown) {
 
   return value.slice(0, MAX_IMPORTED_CARDS).flatMap((card) => {
     if (!isRecord(card) || !cardTypes.has(card.type as CardType)) {
-      return [];
+      if (!isRecord(card) || card.type !== 'sensor-group') {
+        return [];
+      }
     }
 
     const id = stringValue(card.id, 160);
-    const type = card.type as CardType;
+    const legacyType = card.type as CardType | 'sensor-group';
+    const type: CardType = legacyType === 'sensor-group' ? 'info' : legacyType;
     const room = stringValue(card.room) ?? ALL_ROOMS_ID;
     const size = cardSizes.has(card.size as string) ? (card.size as CardSize) : 'medium';
     if (!id) {
@@ -561,7 +630,7 @@ function sanitizeImportedCustomCards(value: unknown) {
         type,
         size,
         room,
-        data: sanitizeCustomCardData(type, card.data),
+        data: sanitizeCustomCardData(legacyType, card.data),
         createdAt: typeof card.createdAt === 'number' ? card.createdAt : Date.now(),
       },
     ];
@@ -639,6 +708,10 @@ export const importDashboardConfig = (
       typeof settings.showHomeSummaryBar === 'boolean'
         ? settings.showHomeSummaryBar
         : defaultSettings.showHomeSummaryBar,
+    keepDeviceAwake:
+      typeof settings.keepDeviceAwake === 'boolean'
+        ? settings.keepDeviceAwake
+        : defaultSettings.keepDeviceAwake,
     use24HourTime:
       typeof settings.use24HourTime === 'boolean'
         ? settings.use24HourTime
@@ -661,9 +734,14 @@ export const importDashboardConfig = (
       settings.entityInteractionMode === 'toggle-first'
         ? settings.entityInteractionMode
         : defaultSettings.entityInteractionMode,
+    cameraDashboardViewMode: resolveCameraDashboardViewMode(
+      settings.cameraDashboardViewMode,
+      settings.cameraViewMode
+    ),
     cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
     cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
     cameraFeedModes: resolveCameraFeedModes(settings.cameraFeedModes),
+    cameraGo2RtcDefaults: resolveCameraGo2RtcDefaults(settings.cameraGo2RtcDefaults),
     cameraGo2RtcConfigs: resolveCameraGo2RtcConfigs(settings.cameraGo2RtcConfigs),
     weatherForecastMode:
       settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'

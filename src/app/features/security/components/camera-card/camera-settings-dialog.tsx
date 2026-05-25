@@ -28,7 +28,10 @@ import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type {
   CameraFeedMode,
   CameraGo2RtcConfig,
+  CameraGo2RtcDefaults,
+  CameraGo2RtcStreamNamingMode,
   CameraViewMode,
+  ResolvedCameraGo2RtcConfig,
 } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { CameraStreamType } from './camera-view-mode';
@@ -47,12 +50,16 @@ interface CameraSettingsDialogProps {
   cameraViewMode: CameraViewMode;
   cameraFeedMode: CameraFeedMode;
   go2RtcConfig: CameraGo2RtcConfig;
+  go2RtcDefaults: CameraGo2RtcDefaults;
+  resolvedGo2RtcConfig: ResolvedCameraGo2RtcConfig;
   frontendStreamTypes: readonly CameraStreamType[];
   hasGo2RtcFeed: boolean;
   hasMjpegStream: boolean;
   hasSnapshot: boolean;
+  lowPowerMode: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
   onCameraFeedModeChange: (mode: CameraFeedMode) => void;
+  onGo2RtcDefaultsChange: (defaults: CameraGo2RtcDefaults) => void;
   onGo2RtcConfigChange: (config: CameraGo2RtcConfig) => void;
 }
 
@@ -192,6 +199,10 @@ function NumberRow({
 
 const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['auto', 'live', 'snapshot'];
 const CAMERA_FEED_OPTIONS: CameraFeedMode[] = ['auto', 'go2rtc', 'web_rtc', 'hls', 'mjpeg'];
+const CAMERA_GO2RTC_STREAM_NAMING_OPTIONS: CameraGo2RtcStreamNamingMode[] = [
+  'entity_id',
+  'short_entity_id',
+];
 
 function CameraViewModeRow({
   value,
@@ -199,6 +210,7 @@ function CameraViewModeRow({
   hasGo2RtcFeed,
   hasMjpegStream,
   hasSnapshot,
+  lowPowerMode,
   onChange,
 }: {
   value: CameraViewMode;
@@ -206,6 +218,7 @@ function CameraViewModeRow({
   hasGo2RtcFeed: boolean;
   hasMjpegStream: boolean;
   hasSnapshot: boolean;
+  lowPowerMode: boolean;
   onChange: (mode: CameraViewMode) => void;
 }) {
   const { t } = useI18n();
@@ -240,6 +253,11 @@ function CameraViewModeRow({
       <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
         {t('camera.settings.viewMode.description')}
       </p>
+      {lowPowerMode ? (
+        <p className="mt-2 px-1 text-xs leading-relaxed text-amber-200/78">
+          {t('camera.settings.viewMode.lowPowerNote')}
+        </p>
+      ) : null}
     </DialogSectionRow>
   );
 }
@@ -309,13 +327,107 @@ function CameraFeedModeRow({
   );
 }
 
-function Go2RtcSettingsRow({
+function Go2RtcDefaultsRow({
   entityId,
   value,
   onChange,
 }: {
   entityId: string;
+  value: CameraGo2RtcDefaults;
+  onChange: (defaults: CameraGo2RtcDefaults) => void;
+}) {
+  const { t } = useI18n();
+  const serverUrlInputId = `${entityId}-go2rtc-default-server-url`;
+
+  return (
+    <DialogSectionRow label={t('camera.settings.go2rtc.defaults')}>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <label
+            htmlFor={serverUrlInputId}
+            className="block px-1 text-xs font-medium text-white/76"
+          >
+            {t('camera.settings.go2rtc.defaultServerUrl')}
+          </label>
+          <Input
+            id={serverUrlInputId}
+            value={value.serverUrl}
+            onChange={(event) => onChange({ ...value, serverUrl: event.target.value })}
+            placeholder="http://homeassistant.local:11984"
+            size="small"
+            variant="soft"
+            spellCheck={false}
+          />
+        </div>
+        <div className="space-y-2">
+          <p className="px-1 text-xs font-medium text-white/76">
+            {t('camera.settings.go2rtc.streamNamingMode')}
+          </p>
+          <div className="inline-flex flex-wrap items-center gap-1">
+            {CAMERA_GO2RTC_STREAM_NAMING_OPTIONS.map((mode) => (
+              <CardDialogChoicePill
+                key={mode}
+                active={mode === value.streamNamingMode}
+                onClick={() => onChange({ ...value, streamNamingMode: mode })}
+                size="compact"
+                aria-pressed={mode === value.streamNamingMode}
+              >
+                {t(`camera.settings.go2rtc.streamNamingMode.${mode}` as TranslationKey)}
+              </CardDialogChoicePill>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5 px-1 text-xs leading-relaxed text-white/58">
+        <p>{t('camera.settings.go2rtc.defaults.description')}</p>
+        <p>{t('camera.settings.go2rtc.description.addon')}</p>
+        <p>{t('camera.settings.go2rtc.description.standalone')}</p>
+      </div>
+    </DialogSectionRow>
+  );
+}
+
+function Go2RtcStatusRow({ resolvedConfig }: { resolvedConfig: ResolvedCameraGo2RtcConfig }) {
+  const { t } = useI18n();
+
+  return (
+    <DialogSectionRow label={t('camera.settings.go2rtc.activeSource')}>
+      <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+        <p className="text-sm font-medium text-white">
+          {t(`camera.settings.go2rtc.source.${resolvedConfig.source}` as TranslationKey)}
+        </p>
+        <p className="text-xs leading-relaxed text-white/58">
+          {t(`camera.settings.go2rtc.sourceDescription.${resolvedConfig.source}` as TranslationKey)}
+        </p>
+        {resolvedConfig.hasFeed ? (
+          <div className="space-y-1 text-xs text-white/72">
+            {!resolvedConfig.usesEmbeddedPanel ? (
+              <p>
+                {t('camera.settings.go2rtc.serverUrl')}: {resolvedConfig.serverUrl}
+              </p>
+            ) : null}
+            <p>
+              {t('camera.settings.go2rtc.streamName')}: {resolvedConfig.streamName}
+              {resolvedConfig.streamNameWasInferred
+                ? ` (${t('camera.settings.go2rtc.streamName.inferred')})`
+                : ''}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </DialogSectionRow>
+  );
+}
+
+function Go2RtcOverrideRow({
+  entityId,
+  value,
+  resolvedConfig,
+  onChange,
+}: {
+  entityId: string;
   value: CameraGo2RtcConfig;
+  resolvedConfig: ResolvedCameraGo2RtcConfig;
   onChange: (config: CameraGo2RtcConfig) => void;
 }) {
   const { t } = useI18n();
@@ -323,7 +435,7 @@ function Go2RtcSettingsRow({
   const streamNameInputId = `${entityId}-go2rtc-stream-name`;
 
   return (
-    <DialogSectionRow label={t('camera.settings.go2rtc')}>
+    <DialogSectionRow label={t('camera.settings.go2rtc.override')}>
       <div className="space-y-3">
         <div className="space-y-1.5">
           <label
@@ -336,7 +448,7 @@ function Go2RtcSettingsRow({
             id={serverUrlInputId}
             value={value.serverUrl}
             onChange={(event) => onChange({ ...value, serverUrl: event.target.value })}
-            placeholder="http://homeassistant.local:11984"
+            placeholder={resolvedConfig.serverUrl || 'http://homeassistant.local:11984'}
             size="small"
             variant="soft"
             spellCheck={false}
@@ -353,7 +465,7 @@ function Go2RtcSettingsRow({
             id={streamNameInputId}
             value={value.streamName}
             onChange={(event) => onChange({ ...value, streamName: event.target.value })}
-            placeholder={entityId}
+            placeholder={resolvedConfig.streamName || entityId}
             size="small"
             variant="soft"
             spellCheck={false}
@@ -361,8 +473,10 @@ function Go2RtcSettingsRow({
         </div>
       </div>
       <div className="mt-3 space-y-1.5 px-1 text-xs leading-relaxed text-white/58">
-        <p>{t('camera.settings.go2rtc.description.addon')}</p>
-        <p>{t('camera.settings.go2rtc.description.standalone')}</p>
+        <p>{t('camera.settings.go2rtc.override.description')}</p>
+        {isHomeAssistantPanelMode() ? (
+          <p>{t('camera.settings.go2rtc.description.customPanel')}</p>
+        ) : null}
       </div>
     </DialogSectionRow>
   );
@@ -377,12 +491,16 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   cameraViewMode,
   cameraFeedMode,
   go2RtcConfig,
+  go2RtcDefaults,
+  resolvedGo2RtcConfig,
   frontendStreamTypes,
   hasGo2RtcFeed,
   hasMjpegStream,
   hasSnapshot,
+  lowPowerMode,
   onCameraViewModeChange,
   onCameraFeedModeChange,
+  onGo2RtcDefaultsChange,
   onGo2RtcConfigChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
@@ -409,7 +527,6 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
   const numbers = siblingEntities.filter((s) => s.id.startsWith('number.'));
   const hasControls = switches.length > 0 || selects.length > 0 || numbers.length > 0;
-  const showGo2RtcTab = !isHomeAssistantPanelMode();
 
   return (
     <DialogShell
@@ -436,15 +553,13 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               >
                 Controls
               </CardDialogTabTrigger>
-              {showGo2RtcTab ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'go2rtc'}
-                  icon={RadioTower}
-                  onClick={() => setActiveTab('go2rtc')}
-                >
-                  go2rtc
-                </CardDialogTabTrigger>
-              ) : null}
+              <CardDialogTabTrigger
+                active={activeTab === 'go2rtc'}
+                icon={RadioTower}
+                onClick={() => setActiveTab('go2rtc')}
+              >
+                go2rtc
+              </CardDialogTabTrigger>
             </CardDialogTabList>
 
             <TabPanel value="controls" className="mt-5 space-y-6">
@@ -454,6 +569,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
                 hasGo2RtcFeed={hasGo2RtcFeed}
                 hasMjpegStream={hasMjpegStream}
                 hasSnapshot={hasSnapshot}
+                lowPowerMode={lowPowerMode}
                 onChange={onCameraViewModeChange}
               />
               <CameraFeedModeRow
@@ -531,15 +647,20 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               )}
             </TabPanel>
 
-            {showGo2RtcTab ? (
-              <TabPanel value="go2rtc" className="mt-5">
-                <Go2RtcSettingsRow
-                  entityId={entityId}
-                  value={go2RtcConfig}
-                  onChange={onGo2RtcConfigChange}
-                />
-              </TabPanel>
-            ) : null}
+            <TabPanel value="go2rtc" className="mt-5 space-y-6">
+              <Go2RtcStatusRow resolvedConfig={resolvedGo2RtcConfig} />
+              <Go2RtcDefaultsRow
+                entityId={entityId}
+                value={go2RtcDefaults}
+                onChange={onGo2RtcDefaultsChange}
+              />
+              <Go2RtcOverrideRow
+                entityId={entityId}
+                value={go2RtcConfig}
+                resolvedConfig={resolvedGo2RtcConfig}
+                onChange={onGo2RtcConfigChange}
+              />
+            </TabPanel>
           </Tabs>
 
           <DialogDoneFooter label={t('common.done')} />

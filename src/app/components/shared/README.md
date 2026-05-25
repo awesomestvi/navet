@@ -21,11 +21,32 @@ behavior.
 - `card-settings-action-button.tsx`
   Card-specific wrapper around `RoundControlButton` with dashboard/card-edit semantics.
 
+- `card-action-control-sizes.ts`
+  Shared card action sizing constants for dashboard edit controls.
+
 - `card-edit-action-button.tsx`
   Positioning and sizing helper for editable dashboard cards.
 
+- `card-content-layout.tsx`
+  App-specific metric/action layout shared by several entity cards.
+
+- `card-error-boundary.tsx`
+  Dashboard card failure containment for app-owned card surfaces.
+
 - `card-size-selector.tsx`
   Dashboard card editing control, not a generic primitive.
+
+- `card-size.ts`
+  Dashboard card size registry, rendered footprint helpers, and shared card grid metrics.
+
+- `dnd-transform-style.ts`
+  Drag-and-drop transform helper for dashboard card ordering.
+
+- `edit-card-controls.ts`
+  Shared edit-control placement and styling helpers for dashboard cards.
+
+- `entity-card-interaction-controller.ts`
+  App-level entity-card interaction policy for toggle-first, controls-first, and settings flows.
 
 - `entity-room-selector.tsx`
   Shared UI, but directly coupled to Home Assistant area/entity registries and update flows.
@@ -47,6 +68,10 @@ behavior.
 
 - `tiny-card-watermark.tsx`
   Card-specific visual helper that is still intentionally narrow.
+
+- `theme/`
+  Shared app surface-token and theme helper layer. These helpers are reused broadly but remain
+  coupled to Navet's app theme model rather than being generic primitives.
 
 - `device-editor/`
   Shared app composition layer for settings and editor flows. Reuses primitives internally, but

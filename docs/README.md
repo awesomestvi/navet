@@ -6,7 +6,7 @@ the docs that are meant to describe the current codebase rather than historical 
 ## Start Here
 
 - [../README.md](../README.md): project overview, setup, commands, testing workflow, and architecture summary
-- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): shared-state rules, store boundaries, and service-to-store flow
+- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): shared-state rules, auth-provider boundaries, store boundaries, and service-to-store flow
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md): Storybook taxonomy, story placement, fixture rules, and review checklist
 - [../design-system/README.md](../design-system/README.md): shared UI layers, Storybook workflow, and theme/token guidance
 - [../design-system/FEATURES.md](../design-system/FEATURES.md): current feature inventory, section ownership, and test/story coverage map
@@ -22,7 +22,7 @@ the docs that are meant to describe the current codebase rather than historical 
 
 ### Architecture and implementation
 
-- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand-only shared state guidance
+- [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand shared-state guidance and runtime auth-provider boundaries
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md): Storybook workflow and story authoring guide
 - [PUBLIC_LAUNCH_SECURITY.md](PUBLIC_LAUNCH_SECURITY.md): security gates and deployment hardening for public releases
 - [../design-system/README.md](../design-system/README.md): UI-layer boundaries and Storybook-first workflow
@@ -51,6 +51,7 @@ Use these directories when docs need to be checked against the live implementati
 - [`src/app/stores/`](../src/app/stores/): Zustand stores and selectors
 - [`src/app/services/`](../src/app/services/): Home Assistant facade plus connection, entity, and registry services
 - [`src/app/storybook/`](../src/app/storybook/): shared Storybook frames and docs helpers
+- [`src/auth/`](../src/auth/): runtime-specific OAuth, Ingress, and Home Assistant panel auth adapters
 - [`src/test/`](../src/test/): shared Vitest helpers, stubs, and browser mocks
 
 ## Recommended Reading Paths
@@ -99,4 +100,4 @@ Use these directories when docs need to be checked against the live implementati
 - When the Home Assistant service split or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
 - When setup scripts or test commands change, update `README.md`
 
-Last updated: May 22, 2026
+Last updated: May 25, 2026

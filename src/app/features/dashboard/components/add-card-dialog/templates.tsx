@@ -1,5 +1,7 @@
-import { Zap as EnergyIcon, Gauge } from 'lucide-react';
+import { Zap as EnergyIcon, Gauge, Sparkles } from 'lucide-react';
 import type { SVGProps } from 'react';
+import type { TranslateFn } from '@/app/hooks';
+import type { ButtonWidgetData } from '../widgets/button-widget';
 import type { CardTemplate } from './types';
 
 function BatteryIcon(props: SVGProps<SVGSVGElement>) {
@@ -8,6 +10,19 @@ function BatteryIcon(props: SVGProps<SVGSVGElement>) {
       <title>Battery</title>
       <rect x="2" y="7" width="16" height="10" rx="2" />
       <path d="M22 11v2" />
+    </svg>
+  );
+}
+
+function UpsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <title>UPS</title>
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <path d="M8 8h8" />
+      <path d="M8 12h4" />
+      <path d="M16 10v4" />
+      <path d="M14 12h4" />
     </svg>
   );
 }
@@ -67,69 +82,108 @@ function MapPinIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export const cardTemplates: CardTemplate[] = [
-  {
-    id: 'rss',
-    nameKey: 'dashboard.addCard.templates.rss.name',
-    descriptionKey: 'dashboard.addCard.templates.rss.description',
-    icon: <Newspaper className="w-5 h-5" />,
-    defaultSize: 'large',
-    supportedSizes: ['medium', 'large'],
-  },
-  {
-    id: 'photo',
-    nameKey: 'dashboard.addCard.templates.photo.name',
-    descriptionKey: 'dashboard.addCard.templates.photo.description',
-    icon: <Image className="w-5 h-5" />,
-    defaultSize: 'large',
-    supportedSizes: ['small', 'medium', 'large', 'extra-large'],
-  },
-  {
-    id: 'note',
-    nameKey: 'dashboard.addCard.templates.note.name',
-    descriptionKey: 'dashboard.addCard.templates.note.description',
-    icon: <StickyNote className="w-5 h-5" />,
-    defaultSize: 'medium',
-    supportedSizes: ['small', 'medium', 'large', 'extra-large'],
-  },
-  {
-    id: 'battery',
-    nameKey: 'dashboard.addCard.templates.battery.name',
-    descriptionKey: 'dashboard.addCard.templates.battery.description',
-    icon: <BatteryIcon className="w-5 h-5" />,
-    defaultSize: 'large',
-    supportedSizes: ['small', 'medium', 'large'],
-  },
-  {
-    id: 'energy-now',
-    nameKey: 'dashboard.addCard.templates.energyNow.name',
-    descriptionKey: 'dashboard.addCard.templates.energyNow.description',
-    icon: <EnergyIcon className="w-5 h-5" />,
-    defaultSize: 'medium',
-    supportedSizes: ['small', 'medium', 'large'],
-  },
-  {
-    id: 'button',
-    nameKey: 'dashboard.addCard.templates.button.name',
-    descriptionKey: 'dashboard.addCard.templates.button.description',
-    icon: <Zap className="w-5 h-5" />,
-    defaultSize: 'small',
-    supportedSizes: ['tiny', 'extra-small', 'small'],
-  },
-  {
-    id: 'map',
-    nameKey: 'dashboard.addCard.templates.map.name',
-    descriptionKey: 'dashboard.addCard.templates.map.description',
-    icon: <MapPinIcon className="w-5 h-5" />,
-    defaultSize: 'medium',
-    supportedSizes: ['small', 'medium', 'large'],
-  },
-  {
-    id: 'sensor-group',
-    nameKey: 'dashboard.addCard.templates.sensorGroup.name',
-    descriptionKey: 'dashboard.addCard.templates.sensorGroup.description',
-    icon: <Gauge className="w-5 h-5" />,
-    defaultSize: 'medium',
-    supportedSizes: ['small', 'medium'],
-  },
-];
+function createScenePresetData(t: TranslateFn): Record<string, unknown> {
+  const data = {
+    label: t('deviceType.scene'),
+    service: 'scene.turn_on',
+    icon: 'Sparkles',
+  } satisfies ButtonWidgetData & Record<string, unknown>;
+
+  return data;
+}
+
+export function createCardTemplates(t: TranslateFn): CardTemplate[] {
+  return [
+    {
+      id: 'info',
+      cardType: 'info',
+      nameKey: 'dashboard.addCard.templates.info.name',
+      descriptionKey: 'dashboard.addCard.templates.info.description',
+      icon: <Gauge className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+    {
+      id: 'rss',
+      cardType: 'rss',
+      nameKey: 'dashboard.addCard.templates.rss.name',
+      descriptionKey: 'dashboard.addCard.templates.rss.description',
+      icon: <Newspaper className="w-5 h-5" />,
+      defaultSize: 'large',
+      supportedSizes: ['medium', 'large'],
+    },
+    {
+      id: 'photo',
+      cardType: 'photo',
+      nameKey: 'dashboard.addCard.templates.photo.name',
+      descriptionKey: 'dashboard.addCard.templates.photo.description',
+      icon: <Image className="w-5 h-5" />,
+      defaultSize: 'large',
+      supportedSizes: ['small', 'medium', 'large', 'extra-large'],
+    },
+    {
+      id: 'note',
+      cardType: 'note',
+      nameKey: 'dashboard.addCard.templates.note.name',
+      descriptionKey: 'dashboard.addCard.templates.note.description',
+      icon: <StickyNote className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large', 'extra-large'],
+    },
+    {
+      id: 'battery',
+      cardType: 'battery',
+      nameKey: 'dashboard.addCard.templates.battery.name',
+      descriptionKey: 'dashboard.addCard.templates.battery.description',
+      icon: <BatteryIcon className="w-5 h-5" />,
+      defaultSize: 'large',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+    {
+      id: 'ups',
+      cardType: 'ups',
+      nameKey: 'dashboard.addCard.templates.ups.name',
+      descriptionKey: 'dashboard.addCard.templates.ups.description',
+      icon: <UpsIcon className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+    {
+      id: 'energy-now',
+      cardType: 'energy-now',
+      nameKey: 'dashboard.addCard.templates.energyNow.name',
+      descriptionKey: 'dashboard.addCard.templates.energyNow.description',
+      icon: <EnergyIcon className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+    {
+      id: 'button',
+      cardType: 'button',
+      nameKey: 'dashboard.addCard.templates.button.name',
+      descriptionKey: 'dashboard.addCard.templates.button.description',
+      icon: <Zap className="w-5 h-5" />,
+      defaultSize: 'small',
+      supportedSizes: ['tiny', 'extra-small', 'small'],
+    },
+    {
+      id: 'scene',
+      cardType: 'button',
+      nameKey: 'dashboard.addCard.templates.scene.name',
+      descriptionKey: 'dashboard.addCard.templates.scene.description',
+      icon: <Sparkles className="w-5 h-5" />,
+      defaultSize: 'small',
+      supportedSizes: ['tiny', 'extra-small', 'small'],
+      initialData: createScenePresetData(t),
+    },
+    {
+      id: 'map',
+      cardType: 'map',
+      nameKey: 'dashboard.addCard.templates.map.name',
+      descriptionKey: 'dashboard.addCard.templates.map.description',
+      icon: <MapPinIcon className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+  ];
+}

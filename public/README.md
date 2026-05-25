@@ -15,9 +15,9 @@ This folder contains all official Navet logo files and brand assets.
 - **favicon.svg** (32x32) - Modern SVG favicon for web browsers
 - **favicon-32x32.svg** (32x32) - Alternative 32px favicon
 - **apple-touch-icon.svg** (180x180) - Source artwork for iOS home screen icon
-- **apple-touch-icon.png** (180x180) - Rasterized iOS home screen icon
-- **pwa-192.png** (192x192) - PWA install icon
-- **pwa-512.png** (512x512) - Large PWA install icon
+- **apple-touch-icon.png** (360x360) - Rasterized iOS home screen icon
+- **pwa-192.png** - PWA install icon referenced by the web manifest as 192x192
+- **pwa-512.png** - Large PWA install icon referenced by the web manifest as 512x512
 
 ## Logo Concept
 
@@ -92,7 +92,7 @@ The Navet logo represents **"the hub"** - a central node with 8 radiating connec
 
 ## Technical Specs
 
-- **Format:** SVG (Scalable Vector Graphics)
+- **Format:** SVG for vector logos and PNG for raster install icons
 - **Color Space:** sRGB
 - **Minimum Size:** 32px (favicon), 60px (full logo)
 - **Recommended Clear Space:** 10% of logo width/height
@@ -108,4 +108,4 @@ They are governed by Navet brand usage rules:
 
 ---
 
-**Last Updated:** March 5, 2026
+**Last Updated:** May 25, 2026

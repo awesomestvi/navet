@@ -2,11 +2,11 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import { useLightMemoryStore } from '../../stores/light-memory-store';
 import { useLightBrightnessSync } from './use-light-brightness-sync';
 import { useLightColorSync } from './use-light-color-sync';
-import { useLightHomeAssistantSync, useLightServiceSync } from './use-light-home-assistant-sync';
+import type { LightUpdateOptions } from './use-light-home-assistant-sync';
+import { useLightHomeAssistantSync } from './use-light-home-assistant-sync';
 
 interface UseLightRuntimeStateParams {
   id: string;
-  isHomeAssistantLight: boolean;
   isOn: boolean;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
   initialBrightness: number;
@@ -16,11 +16,11 @@ interface UseLightRuntimeStateParams {
   maxColorTemp: number;
   supportsColorTemperature: boolean;
   rememberLightState: (id: string, state: { brightness?: number; colorTemp?: number }) => void;
+  syncLightWithHomeAssistant: (options: LightUpdateOptions) => Promise<void>;
 }
 
 export function useLightRuntimeState({
   id,
-  isHomeAssistantLight,
   isOn,
   setIsOn,
   initialBrightness,
@@ -30,8 +30,8 @@ export function useLightRuntimeState({
   maxColorTemp,
   supportsColorTemperature,
   rememberLightState,
+  syncLightWithHomeAssistant,
 }: UseLightRuntimeStateParams) {
-  const syncLightWithHomeAssistant = useLightServiceSync({ id, isHomeAssistantLight });
   const rememberedState = useLightMemoryStore.getState().getRememberedState(id);
 
   const {

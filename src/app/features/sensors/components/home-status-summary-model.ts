@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Clipboard, Fan, Lightbulb, Lock, Speaker, Zap } from 'lucide-react';
+import { Clipboard, Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
 import type { Section } from '@/app/navigation/sections';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { getDeviceRoomLabel } from '@/app/utils/device-location';
@@ -179,7 +179,7 @@ function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | 
     id: 'security',
     title: 'Security',
     value: alertCount === 0 ? 'No Alerts' : alertCount === 1 ? '1 Alert' : `${alertCount} Alerts`,
-    icon: Lock,
+    icon: Shield,
     iconColor: alertCount === 0 ? '#2dd4bf' : '#f87171',
     targetSection: 'security',
   };

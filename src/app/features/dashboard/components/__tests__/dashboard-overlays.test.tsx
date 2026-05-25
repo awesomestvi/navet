@@ -4,8 +4,13 @@ import { I18nProvider } from '@/app/i18n/i18n-provider';
 import type { DashboardController } from '../../hooks/use-dashboard-controller';
 import { DashboardOverlays } from '../dashboard-overlays';
 
+const addCardDialogSpy = vi.fn();
+
 vi.mock('../add-card-dialog', () => ({
-  AddCardDialogContainer: () => <div data-testid="add-card-dialog" />,
+  AddCardDialogContainer: (props: unknown) => {
+    addCardDialogSpy(props);
+    return <div data-testid="add-card-dialog" />;
+  },
 }));
 
 vi.mock('../add-entity-dialog', () => ({
@@ -53,6 +58,34 @@ function renderOverlays(controller: Partial<DashboardController>) {
 }
 
 describe('DashboardOverlays', () => {
+  it('includes sensor entities in the add-card library', () => {
+    addCardDialogSpy.mockClear();
+
+    renderOverlays({
+      showAddCardDialog: true,
+      availableDeviceMap: new Map([
+        [
+          'sensor.kitchen_temperature',
+          {
+            id: 'sensor.kitchen_temperature',
+            name: 'Kitchen temperature',
+            room: 'Kitchen',
+            type: 'sensors',
+            entityType: 'temperature',
+          },
+        ],
+      ]),
+    });
+
+    const props = addCardDialogSpy.mock.calls[0]?.[0] as {
+      libraryCards?: Array<{ id: string }>;
+    };
+
+    expect(props.libraryCards).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'sensor.kitchen_temperature' })])
+    );
+  });
+
   it('does not build add-card library items while the add-card dialog is closed', () => {
     const availableDeviceMap = new Map();
     const values = vi.fn(() => {

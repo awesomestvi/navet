@@ -5,7 +5,12 @@ import { BrightnessPresetsInline } from '@/app/components/shared/device-editor';
 import { useTheme } from '@/app/hooks';
 import { CustomColorTrigger } from './custom-color-trigger';
 import { KelvinColorTrigger } from './kelvin-color-trigger';
-import type { HeaderIconButtonProps, LightBrightnessPreset } from './light-card-types';
+import type {
+  HeaderIconButtonProps,
+  LightBrightnessPreset,
+  LightEffectOption,
+} from './light-card-types';
+import { LightEffectPicker } from './light-effect-picker';
 
 interface LightCardActionRowProps {
   size: 'small' | 'medium';
@@ -17,11 +22,15 @@ interface LightCardActionRowProps {
   isColorMode: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
+  supportsEffects: boolean;
   brightnessPresets: LightBrightnessPreset[];
+  effectOptions: LightEffectOption[];
   brightness: number;
+  currentEffect: string | null;
   onKelvinToggle: () => void;
   onColorActivate: () => void;
   onColorChange: (color: string) => void;
+  onEffectSelect: (effect: string) => void;
   onBrightnessCommit: (value: number) => void;
   showSettingsButton: boolean;
   settingsButtonProps: HeaderIconButtonProps;
@@ -39,11 +48,15 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   isColorMode,
   supportsColorTemperature,
   supportsColorControl,
+  supportsEffects,
   brightnessPresets,
+  effectOptions,
   brightness,
+  currentEffect,
   onKelvinToggle,
   onColorActivate,
   onColorChange,
+  onEffectSelect,
   onBrightnessCommit,
   showSettingsButton,
   settingsButtonProps,
@@ -70,6 +83,17 @@ export const LightCardActionRow = memo(function LightCardActionRow({
           isActive={isColorMode}
           onActivate={onColorActivate}
           onColorChange={onColorChange}
+        />
+      )}
+
+      {supportsEffects && effectOptions.length > 0 && (
+        <LightEffectPicker
+          currentEffect={currentEffect}
+          isOn={isOn}
+          onSelect={onEffectSelect}
+          options={effectOptions}
+          size={size}
+          variant="compact"
         />
       )}
 

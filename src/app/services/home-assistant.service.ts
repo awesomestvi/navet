@@ -343,6 +343,7 @@ class HomeAssistantService {
       rgbColor?: [number, number, number];
       hsColor?: [number, number];
       xyColor?: [number, number];
+      effect?: string;
     }
   ): Promise<void> {
     await this.entityService.updateLight(entityId, options);

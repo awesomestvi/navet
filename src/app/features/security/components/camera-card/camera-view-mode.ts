@@ -14,6 +14,49 @@ export interface CameraImageSource {
   isFallback: boolean;
 }
 
+export function resolveDashboardCameraViewMode({
+  cameraDashboardViewMode,
+  hasCameraViewModeOverride,
+  lowPowerMode,
+  hasSnapshot,
+  preferSnapshotPreview,
+}: {
+  cameraDashboardViewMode: CameraViewMode;
+  hasCameraViewModeOverride: boolean;
+  lowPowerMode: boolean;
+  hasSnapshot: boolean;
+  preferSnapshotPreview: boolean;
+}): CameraViewMode {
+  if (lowPowerMode && hasSnapshot) {
+    return 'snapshot';
+  }
+
+  if (
+    preferSnapshotPreview &&
+    hasSnapshot &&
+    !hasCameraViewModeOverride &&
+    cameraDashboardViewMode === 'live'
+  ) {
+    return 'snapshot';
+  }
+
+  return cameraDashboardViewMode;
+}
+
+export function resolveViewerInitialCameraViewMode({
+  isStreamCapable,
+  hasSnapshot,
+}: {
+  isStreamCapable: boolean;
+  hasSnapshot: boolean;
+}): CameraViewMode {
+  if (isStreamCapable) {
+    return 'live';
+  }
+
+  return hasSnapshot ? 'snapshot' : 'auto';
+}
+
 export function appendCameraCacheBuster(url: string | undefined, refreshKey: number) {
   if (!url) {
     return undefined;
@@ -51,14 +94,12 @@ function hasUsableStreamType(
 const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['go2rtc', 'web_rtc', 'hls', 'mjpeg'];
 
 function getLiveFeedOrder(cameraFeedMode: CameraFeedMode): CameraSelectableFeedKind[] {
+  const autoLiveFeedOrder = AUTO_LIVE_FEED_ORDER;
   if (cameraFeedMode === 'auto') {
-    return AUTO_LIVE_FEED_ORDER;
+    return autoLiveFeedOrder;
   }
 
-  return [
-    cameraFeedMode,
-    ...AUTO_LIVE_FEED_ORDER.filter((feedKind) => feedKind !== cameraFeedMode),
-  ];
+  return [cameraFeedMode, ...autoLiveFeedOrder.filter((feedKind) => feedKind !== cameraFeedMode)];
 }
 
 export function selectCameraImageSource({

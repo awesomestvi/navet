@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
-import { useTheme } from '@/app/hooks';
-import { cardTemplates } from './templates';
-import type { AddCardDialogContainerProps, CardType } from './types';
+import { useI18n, useTheme } from '@/app/hooks';
+import { createCardTemplates } from './templates';
+import type { AddCardDialogContainerProps, CardTemplateId } from './types';
 import { AddCardDialogView } from './view';
 
 export function AddCardDialogContainer({
@@ -15,15 +15,17 @@ export function AddCardDialogContainer({
   libraryCards,
   showCardsTab = true,
 }: AddCardDialogContainerProps) {
+  const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>(
     showCardsTab ? 'cards' : 'widgets'
   );
   const [libraryQuery, setLibraryQuery] = useState('');
   const [recentlyAddedLibraryCardIds, setRecentlyAddedLibraryCardIds] = useState<string[]>([]);
-  const [selectedType, setSelectedType] = useState<CardType | null>(null);
+  const [selectedType, setSelectedType] = useState<CardTemplateId | null>(null);
   const [selectedSize, setSelectedSize] = useState<CardSize>('medium');
   const resolveColorValue = (color: string) => getThemeColorValue(color as typeof primaryColor);
+  const cardTemplates = useMemo(() => createCardTemplates(t), [t]);
 
   useEffect(() => {
     if (!open) {
@@ -38,11 +40,12 @@ export function AddCardDialogContainer({
   }, [open, showCardsTab]);
 
   const handleAdd = () => {
-    if (selectedType) {
-      onAddCard(selectedType, selectedSize);
-      setSelectedType(null);
-      setSelectedSize('medium');
-    }
+    const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
+    if (!selectedTemplate) return;
+
+    onAddCard(selectedTemplate, selectedSize);
+    setSelectedType(null);
+    setSelectedSize('medium');
   };
 
   const handleAddFromLibrary = (cardId: string) => {

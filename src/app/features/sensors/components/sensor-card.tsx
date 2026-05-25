@@ -16,7 +16,9 @@ import {
 import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
 import { useSettingsStore } from '@/app/stores';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
+import { SensorHistorySparkline } from './sensor-history-sparkline';
 import { SensorSettingsDialog } from './sensor-settings-dialog';
 import type { SensorIconType } from './sensors';
 import { useSensorCardAppearance } from './use-sensor-card-appearance';
@@ -35,6 +37,9 @@ export interface InfoCardProps {
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  onOpenSettings?: () => void;
+  disableBuiltInSettingsDialog?: boolean;
+  sparklineData?: SensorStatisticsPoint[];
 }
 
 export const InfoCard = memo(function InfoCard({
@@ -51,6 +56,9 @@ export const InfoCard = memo(function InfoCard({
   size,
   onSizeChange: _onSizeChange,
   isEditMode: _isEditMode,
+  onOpenSettings,
+  disableBuiltInSettingsDialog = false,
+  sparklineData,
 }: InfoCardProps) {
   const { theme } = useTheme();
   const { locale, t } = useI18n();
@@ -106,7 +114,21 @@ export const InfoCard = memo(function InfoCard({
     theme === 'light' ? toneClasses.value.replace('300', '700') : toneClasses.value;
   const unitText = displayModel.unit ? ` ${displayModel.unit}` : '';
   const chromeSize = isVeryCompact ? size : isSmall ? 'small' : 'medium';
-  const openSettings = () => setIsSettingsOpen(true);
+  const shouldShowSparkline =
+    !isVeryCompact &&
+    !isSmall &&
+    displayModel.status !== 'unavailable' &&
+    (sparklineData?.length ?? 0) >= 2;
+  const openSettings = () => {
+    if (onOpenSettings) {
+      onOpenSettings();
+      return;
+    }
+
+    if (!disableBuiltInSettingsDialog) {
+      setIsSettingsOpen(true);
+    }
+  };
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -146,9 +168,29 @@ export const InfoCard = memo(function InfoCard({
         frameClassName={cardShell.rootFrameClassName}
         disableDefaultSheen={theme !== 'light'}
         contentClassName="flex items-end"
+        underlay={
+          shouldShowSparkline ? (
+            <SensorHistorySparkline
+              data={sparklineData ?? []}
+              accentColor={displayModel.baseColor}
+              height={size === 'large' ? 152 : 126}
+            />
+          ) : null
+        }
+        overlay={
+          shouldShowSparkline ? (
+            <div
+              className={`pointer-events-none absolute inset-0 ${
+                theme === 'light'
+                  ? 'bg-linear-to-b from-white/12 via-white/2 to-white/0'
+                  : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
+              }`}
+            />
+          ) : null
+        }
       >
         <div
-          className={`min-w-0 truncate font-light leading-none tracking-normal ${valueColor} ${
+          className={`relative z-10 min-w-0 truncate font-light leading-none tracking-normal ${valueColor} ${
             isVeryCompact ? 'text-2xl' : isSmall ? 'text-3xl' : 'text-4xl'
           }`}
           title={`${displayModel.value}${unitText}`}
@@ -162,7 +204,7 @@ export const InfoCard = memo(function InfoCard({
         </div>
       </BaseCard>
 
-      {isSettingsOpen ? (
+      {!disableBuiltInSettingsDialog && isSettingsOpen ? (
         <SensorSettingsDialog
           entityId={id}
           isOpen={isSettingsOpen}

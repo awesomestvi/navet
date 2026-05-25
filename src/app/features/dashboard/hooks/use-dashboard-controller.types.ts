@@ -2,7 +2,7 @@ import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { useCardState, useDeviceMap } from '@/app/hooks';
 import type { Section } from '@/app/navigation/sections';
 import type { AllViewGrouping } from '../all-view-grid';
-import type { CardType } from '../components/add-card-dialog';
+import type { CardTemplate } from '../components/add-card-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
 import type { ZoneName } from '../zones/zone-types';
 import type { useCardOrdering } from './use-card-ordering';
@@ -28,7 +28,7 @@ export type DashboardController = OnboardingController &
     deviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
     connecting: boolean;
     devicesLoaded: boolean;
-    handleAddCard: (type: CardType, size: CardSize) => void;
+    handleAddCard: (template: CardTemplate, size: CardSize) => void;
     handleAddLibraryCard: (cardId: string) => void;
     handleAddEntity: (entityId: string) => void;
     handleDeleteCard: (cardId: string) => void;

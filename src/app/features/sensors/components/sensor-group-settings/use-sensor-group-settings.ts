@@ -39,25 +39,23 @@ export function useSensorGroupSettings({
 
   const handleAddSensor = useCallback(
     (sensor: AvailableSensor) => {
-      if (selectedSensors.length >= maxSensors) {
-        return;
-      }
-
       const alreadySelected = selectedSensors.some((current) => current.id === sensor.id);
       if (alreadySelected) {
         return;
       }
 
-      const nextSensors = [
-        ...selectedSensors,
-        {
-          id: sensor.id,
-          label: sensor.label,
-          value: sensor.value,
-          unit: sensor.unit,
-          icon: sensor.icon,
-        },
-      ];
+      if (selectedSensors.length >= maxSensors && maxSensors !== 1) {
+        return;
+      }
+
+      const nextSensor = {
+        id: sensor.id,
+        label: sensor.label,
+        value: sensor.value,
+        unit: sensor.unit,
+        icon: sensor.icon,
+      };
+      const nextSensors = maxSensors === 1 ? [nextSensor] : [...selectedSensors, nextSensor];
 
       setSelectedSensors(nextSensors);
       onSensorsUpdate(nextSensors);

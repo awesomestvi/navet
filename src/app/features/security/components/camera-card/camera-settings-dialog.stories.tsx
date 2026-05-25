@@ -3,6 +3,7 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
+import { resolveCameraGo2RtcConfig } from '@/app/stores/settings-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';
@@ -60,15 +61,33 @@ const meta = {
     cameraViewMode: 'live',
     cameraFeedMode: 'auto',
     go2RtcConfig: {
-      serverUrl: 'http://homeassistant.local:11984',
-      streamName: 'camera.front_door',
+      serverUrl: '',
+      streamName: '',
     },
+    go2RtcDefaults: {
+      serverUrl: 'http://homeassistant.local:11984',
+      streamNamingMode: 'entity_id',
+    },
+    resolvedGo2RtcConfig: resolveCameraGo2RtcConfig({
+      entityId: 'camera.front_door',
+      defaults: {
+        serverUrl: 'http://homeassistant.local:11984',
+        streamNamingMode: 'entity_id',
+      },
+      override: {
+        serverUrl: '',
+        streamName: '',
+      },
+      canUseEmbeddedPanel: false,
+    }),
     frontendStreamTypes: ['web_rtc', 'hls'],
     hasGo2RtcFeed: true,
     hasMjpegStream: true,
     hasSnapshot: true,
+    lowPowerMode: false,
     onCameraViewModeChange: () => undefined,
     onCameraFeedModeChange: () => undefined,
+    onGo2RtcDefaultsChange: () => undefined,
     onGo2RtcConfigChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;

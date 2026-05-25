@@ -32,10 +32,12 @@ export function useSettingsSectionController() {
   const { languageOptions, t } = useI18n();
   const hassUrl = useAuthBaseUrl();
   const {
+    cameraGo2RtcDefaults,
     disableAnimations,
     effectsQuality,
     lowPowerMode,
     language,
+    keepDeviceAwake,
     temperatureUnit,
     use24HourTime,
     entityInteractionMode,
@@ -48,7 +50,9 @@ export function useSettingsSectionController() {
       disableAnimations: state.disableAnimations,
       effectsQuality: state.effectsQuality,
       lowPowerMode: state.lowPowerMode,
+      cameraGo2RtcDefaults: state.cameraGo2RtcDefaults,
       language: state.language,
+      keepDeviceAwake: state.keepDeviceAwake,
       temperatureUnit: state.temperatureUnit,
       use24HourTime: state.use24HourTime,
       entityInteractionMode: state.entityInteractionMode,
@@ -105,6 +109,7 @@ export function useSettingsSectionController() {
 
   return {
     ambientLightBleed,
+    cameraGo2RtcDefaults,
     config: hassUrl ? { url: hassUrl } : null,
     customPrimaryColor,
     disableAnimations,
@@ -124,6 +129,7 @@ export function useSettingsSectionController() {
     hiddenEntityIds,
     importInputRef,
     kioskMode,
+    keepDeviceAwake,
     language,
     languageOptions,
     lowPowerMode,

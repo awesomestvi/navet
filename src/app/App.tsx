@@ -10,6 +10,7 @@ import { Toaster } from './components/ui/sonner';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
 import { useAccentColor, useHomeAssistant } from './hooks';
+import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { useErrorStore, useSettingsStore } from './stores';
@@ -35,7 +36,7 @@ function AppContent() {
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
   const disconnect = useHomeAssistant(homeAssistantSelectors.disconnect);
   const accentColor = useAccentColor();
-  const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
+  const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
   const resolvedEffectsQuality = resolveEffectsQuality(
@@ -53,6 +54,7 @@ function AppContent() {
   }, []);
 
   useViewportResize(syncViewportEnvironment);
+  useKeepDeviceAwake(isAuthenticated && keepDeviceAwake);
 
   const retryConnect = useCallback(() => {
     if (!isAuthenticated || !session) {

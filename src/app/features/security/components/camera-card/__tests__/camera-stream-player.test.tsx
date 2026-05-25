@@ -2,7 +2,7 @@ import { render, waitFor } from '@testing-library/react';
 import type { HassConfig } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { CameraStreamPlayer } from '../camera-stream-player';
+import { CameraStreamPlayer, resolveGo2RtcWebSocketUrl } from '../camera-stream-player';
 
 vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: {
@@ -300,5 +300,17 @@ describe('CameraStreamPlayer', () => {
       )
     );
     expect(go2RtcConfig).toBeNull();
+  });
+
+  it('normalizes go2rtc server inputs into websocket endpoints', () => {
+    expect(
+      resolveGo2RtcWebSocketUrl({ serverUrl: 'go2rtc.local:1984', streamName: 'front_door' })
+    ).toBe('ws://go2rtc.local:1984/api/ws?src=front_door');
+    expect(
+      resolveGo2RtcWebSocketUrl({
+        serverUrl: 'https://go2rtc.local',
+        streamName: 'camera.front_door',
+      })
+    ).toBe('wss://go2rtc.local/api/ws?src=camera.front_door');
   });
 });

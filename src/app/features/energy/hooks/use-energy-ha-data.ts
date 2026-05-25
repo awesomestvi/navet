@@ -354,6 +354,20 @@ function createEmptyOverview(): EnergyOverview {
   };
 }
 
+type HaWsErrorLike = {
+  code?: unknown;
+  message?: unknown;
+};
+
+export function isMissingEnergyPrefsError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const { code, message } = error as HaWsErrorLike;
+  return code === 'not_found' && message === 'No prefs';
+}
+
 /**
  * Reads live HA entity states for each configured source and builds an
  * EnergyOverview. When no energy sources are configured yet, it returns an
@@ -392,7 +406,9 @@ export function useEnergyHaData(range: EnergyRange): {
           setHaSourceConfig(mapPrefsToConfig(prefs));
         }
       } catch (error) {
-        console.error('[EnergyHaData] Failed to fetch Home Assistant energy prefs:', error);
+        if (!isMissingEnergyPrefsError(error)) {
+          console.error('[EnergyHaData] Failed to fetch Home Assistant energy prefs:', error);
+        }
         if (!cancelled) {
           setHaSourceConfig(null);
         }

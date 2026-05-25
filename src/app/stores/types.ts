@@ -2,8 +2,10 @@ import type { CardSize } from '../components/shared/card-size-selector';
 import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
+  CameraDashboardViewMode,
   CameraFeedMode,
   CameraGo2RtcConfig,
+  CameraGo2RtcDefaults,
   CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -62,6 +64,7 @@ interface UserSettings {
   showNotifications: boolean;
   showWeatherInHeader: boolean;
   showHomeSummaryBar: boolean;
+  keepDeviceAwake: boolean;
   use24HourTime: boolean;
   temperatureUnit: 'celsius' | 'fahrenheit';
   defaultView: 'all' | string;
@@ -71,9 +74,11 @@ interface UserSettings {
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
   entityInteractionMode: EntityInteractionMode;
+  cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
   cameraFeedModes: Record<string, CameraFeedMode>;
+  cameraGo2RtcDefaults: CameraGo2RtcDefaults;
   cameraGo2RtcConfigs: Record<string, CameraGo2RtcConfig>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
@@ -84,20 +89,22 @@ export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
+  updateCameraGo2RtcDefaults: (defaults: CameraGo2RtcDefaults) => void;
   updateCameraGo2RtcConfig: (entityId: string, config: CameraGo2RtcConfig) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
 
 export type CardType =
+  | 'info'
   | 'rss'
   | 'photo'
   | 'note'
   | 'battery'
+  | 'ups'
   | 'energy-now'
   | 'button'
-  | 'map'
-  | 'sensor-group';
+  | 'map';
 
 export interface CustomCard {
   id: string;

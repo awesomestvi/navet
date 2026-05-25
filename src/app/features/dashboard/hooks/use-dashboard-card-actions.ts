@@ -3,14 +3,19 @@ import { toast } from 'sonner';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
 import type { TranslateFn } from '@/app/hooks';
-import type { CardType } from '../components/add-card-dialog';
+import type { CardTemplate, CardType } from '../components/add-card-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
 
 interface UseDashboardCardActionsParams {
   activeRoom: string;
   activeSection: string;
   isEditMode: boolean;
-  addCard: (type: CardType, size: CardSize, room: string) => CustomCard;
+  addCard: (
+    type: CardType,
+    size: CardSize,
+    room: string,
+    data?: Record<string, unknown>
+  ) => CustomCard;
   removeCard: (cardId: string) => void;
   updateCard: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
   hideAutoEntity: (entityId: string) => void;
@@ -42,7 +47,7 @@ export function useDashboardCardActions({
   homeLayoutController,
 }: UseDashboardCardActionsParams) {
   const handleAddCard = useCallback(
-    (type: CardType, size: CardSize) => {
+    (template: CardTemplate, size: CardSize) => {
       const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
       const isEnergyDashboardTarget = activeSection === 'energy';
       const targetRoom = isHomeCanvasTarget
@@ -50,7 +55,7 @@ export function useDashboardCardActions({
         : isEnergyDashboardTarget
           ? ENERGY_WIDGET_ROOM
           : activeRoom;
-      const newCard = addCard(type, size, targetRoom);
+      const newCard = addCard(template.cardType, size, targetRoom, template.initialData);
       const targetRoomLabel = isHomeCanvasTarget
         ? t('dashboard.roomNav.all')
         : isEnergyDashboardTarget
@@ -74,7 +79,12 @@ export function useDashboardCardActions({
         }
       }
 
-      toast.success(t('dashboard.feedback.widgetAdded', { type, room: targetRoomLabel }));
+      toast.success(
+        t('dashboard.feedback.widgetAdded', {
+          type: t(template.nameKey),
+          room: targetRoomLabel,
+        })
+      );
     },
     [
       activeRoom,
