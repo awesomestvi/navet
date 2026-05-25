@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5
+
+- Updated Navet to `0.2.5`
+- Fixed dashboard config imports so Home cards restore correctly from recent exports
+- Fixed Home dashboards getting stuck on "Still loading devices" after stale imported card ids or removing the final card
+- Improved Home summary spacing when the dashboard is empty or showing cards
+
 ## 0.2.4
 
 - Updated Navet to `0.2.4`
