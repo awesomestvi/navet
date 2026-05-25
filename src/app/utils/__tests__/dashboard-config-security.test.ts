@@ -159,6 +159,55 @@ describe('dashboard-config import hardening', () => {
     });
   });
 
+  it('imports home dashboard layout from legacy persisted storage wrappers', () => {
+    importDashboardConfig({
+      ...baseConfig,
+      customCards: [
+        {
+          id: 'custom-note',
+          type: 'note',
+          size: 'medium',
+          room: '__home__',
+          createdAt: 1,
+        },
+      ],
+      homeDashboardLayout: {
+        state: {
+          mode: 'flow',
+          showHero: true,
+          cardIds: ['custom-note'],
+          sections: [],
+          cardSectionAssignments: {},
+        },
+        version: 0,
+      },
+    });
+
+    expect(useHomeDashboardLayoutStore.getState().cardIds).toEqual(['custom-note']);
+  });
+
+  it('exports home dashboard layout without the persisted storage wrapper', () => {
+    useHomeDashboardLayoutStore.getState().replaceLayout({
+      mode: 'flow',
+      showHero: true,
+      cardIds: ['light.kitchen'],
+      sections: [],
+      cardSectionAssignments: {},
+    });
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.homeDashboardLayout).toMatchObject({
+      mode: 'flow',
+      showHero: true,
+      cardIds: ['light.kitchen'],
+      sections: [],
+      cardSectionAssignments: {},
+    });
+    expect(exported.homeDashboardLayout).not.toHaveProperty('state');
+    expect(exported.homeDashboardLayout).not.toHaveProperty('version');
+  });
+
   it('exports locked card ids with dashboard entity state', () => {
     useDashboardEntitiesStore.getState().lockCard('light.kitchen');
 

@@ -23,6 +23,7 @@ interface UseDashboardCardActionsParams {
       sections: Array<{ id: string }>;
     };
     addCard: (cardId: string, sectionId?: string) => void;
+    removeCard: (cardId: string) => void;
     addSection: () => string;
   };
 }
@@ -89,9 +90,10 @@ export function useDashboardCardActions({
   const handleDeleteCard = useCallback(
     (cardId: string) => {
       removeCard(cardId);
+      homeLayoutController.removeCard(cardId);
       toast.success(t('dashboard.feedback.widgetDeleted'));
     },
-    [removeCard, t]
+    [homeLayoutController, removeCard, t]
   );
 
   const handleAddLibraryCard = useCallback(

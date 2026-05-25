@@ -34,4 +34,16 @@ describe('useHomeLayoutHydrated', () => {
 
     expect(result.current).toBe(true);
   });
+
+  it('does not block when imported card ids do not match the current device map', () => {
+    const { result } = renderHook(() =>
+      useHomeLayoutHydrated({
+        cardIds: ['water_heater.demo_water_heater', 'weather.old_entity'],
+        availableDeviceMap: new Map([['light.kitchen', {}]]),
+        allCustomCards: [],
+      })
+    );
+
+    expect(result.current).toBe(true);
+  });
 });

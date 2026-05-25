@@ -71,24 +71,26 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
 
   if (!isEditMode) {
     return (
-      <HomePresentation
-        flowCards={flowCards}
-        sections={sectionCards}
-        allCards={allCards}
-        cardSizes={cardSizes}
-        updateCardSize={updateCardSize}
-        onUpdateCard={onUpdateCard}
-        showHero={homeLayout.showHero}
-        isSectioned={homeLayout.mode === 'sectioned'}
-        gridCols={sectionGridCols}
-        isPortraitHome={isPortraitHome}
-        accentColor={accentColor}
-        surface={surface}
-        emptyTitle={t('dashboard.homeOverview.emptyTitle')}
-        emptyDescription={t('dashboard.homeOverview.emptyDescription')}
-        onToggleEditMode={onToggleEditMode}
-        infoBadgeStrip={infoBadgeStrip}
-      />
+      <div className="space-y-3 lg:space-y-4">
+        {infoBadgeStrip}
+        <HomePresentation
+          flowCards={flowCards}
+          sections={sectionCards}
+          allCards={allCards}
+          cardSizes={cardSizes}
+          updateCardSize={updateCardSize}
+          onUpdateCard={onUpdateCard}
+          showHero={homeLayout.showHero}
+          isSectioned={homeLayout.mode === 'sectioned'}
+          gridCols={sectionGridCols}
+          isPortraitHome={isPortraitHome}
+          accentColor={accentColor}
+          surface={surface}
+          emptyTitle={t('dashboard.homeOverview.emptyTitle')}
+          emptyDescription={t('dashboard.homeOverview.emptyDescription')}
+          onToggleEditMode={onToggleEditMode}
+        />
+      </div>
     );
   }
 

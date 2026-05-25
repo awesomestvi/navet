@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
 
 interface UseHomeLayoutHydratedParams {
@@ -8,25 +7,12 @@ interface UseHomeLayoutHydratedParams {
 }
 
 export function useHomeLayoutHydrated({
-  cardIds,
-  availableDeviceMap,
-  allCustomCards,
+  cardIds: _cardIds,
+  availableDeviceMap: _availableDeviceMap,
+  allCustomCards: _allCustomCards,
 }: UseHomeLayoutHydratedParams) {
-  return useMemo(() => {
-    if (cardIds.length === 0) {
-      return true;
-    }
-
-    // Use availableDeviceMap (all HA entities, unfiltered by hidden state) so that a blank
-    // dashboard with all entities hidden does not block hydration indefinitely.
-    const availableIdSet = new Set([
-      ...availableDeviceMap.keys(),
-      ...allCustomCards.map((card) => card.id),
-    ]);
-    if (availableIdSet.size === 0) {
-      return true;
-    }
-
-    return cardIds.some((cardId) => availableIdSet.has(cardId));
-  }, [cardIds, availableDeviceMap, allCustomCards]);
+  // Stale imports can contain card ids from another Home Assistant instance or demo data.
+  // The Home overview filters unavailable ids while rendering, so a stale layout should
+  // not block the whole dashboard behind the recovery error.
+  return true;
 }
