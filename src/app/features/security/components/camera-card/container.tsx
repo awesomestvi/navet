@@ -31,6 +31,7 @@ import {
   type CameraImageSourceKind,
   type CameraStreamType,
   getCameraAutoRefreshInterval,
+  normalizeCameraSnapshotUrl,
   readCameraStreamTypes,
   resolveCameraMjpegStreamUrl,
   resolveDashboardCameraViewMode,
@@ -218,9 +219,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const liveEntityPicture =
     readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
   const initialSnapshotUrl = readImageUrl(initialEntityPicture);
-  const baseSnapshotUrl = liveEntityPicture
-    ? resolveHomeAssistantImageUrl(liveEntityPicture, hassUrl ?? undefined)
-    : initialSnapshotUrl;
+  const baseSnapshotUrl = normalizeCameraSnapshotUrl(
+    liveEntityPicture
+      ? resolveHomeAssistantImageUrl(liveEntityPicture, hassUrl ?? undefined)
+      : initialSnapshotUrl
+  );
 
   // Append cache-busting param so refresh forces a new frame from HA
   const snapshotUrl = appendCameraCacheBuster(baseSnapshotUrl, refreshKey);

@@ -65,6 +65,29 @@ export function appendCameraCacheBuster(url: string | undefined, refreshKey: num
   return `${url}${url.includes('?') ? '&' : '?'}_t=${refreshKey}`;
 }
 
+export function normalizeCameraSnapshotUrl(url: string | undefined) {
+  if (!url) {
+    return undefined;
+  }
+
+  try {
+    const resolvedUrl = new URL(url, window.location.origin);
+    if (
+      resolvedUrl.pathname.includes('/api/camera_proxy/') ||
+      resolvedUrl.pathname.includes('/api/camera_proxy_stream/')
+    ) {
+      resolvedUrl.search = '';
+      return resolvedUrl.origin === window.location.origin
+        ? `${resolvedUrl.pathname}${resolvedUrl.hash}`
+        : resolvedUrl.toString();
+    }
+  } catch {
+    return url;
+  }
+
+  return url;
+}
+
 export function resolveCameraMjpegStreamUrl(snapshotUrl: string | undefined) {
   if (!snapshotUrl?.includes('/api/camera_proxy/')) {
     return undefined;

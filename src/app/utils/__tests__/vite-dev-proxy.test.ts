@@ -16,6 +16,12 @@ describe('vite Home Assistant proxy', () => {
     expect(viteConfig).toContain('Readable.fromWeb(upstreamResponse.body');
   });
 
+  it('requires an OAuth session instead of falling back to NAVET_HASS_URL', () => {
+    expect(viteConfig).toContain(`const upstreamBaseUrl = authSession?.hassUrl ?? null`);
+    expect(viteConfig).toContain(`Home Assistant OAuth session is required`);
+    expect(viteConfig).not.toContain(`normalizedHassUrl?.toString()`);
+  });
+
   it('does not rely on the unauthenticated Vite proxy for /__navet_ha_proxy__', () => {
     expect(viteConfig).not.toContain("'/__navet_ha_proxy__': {");
   });

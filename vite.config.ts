@@ -157,22 +157,7 @@ function rssProxyPlugin() {
   }
 }
 
-function homeAssistantProxyPlugin(
-  hassUrl: string | undefined,
-  getAuthSession: () => HomeAssistantAuthData | null
-) {
-  const normalizedHassUrl = (() => {
-    if (!hassUrl) {
-      return null
-    }
-
-    try {
-      return new URL(hassUrl)
-    } catch {
-      return null
-    }
-  })()
-
+function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | null) {
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
       res.statusCode = 400
@@ -197,11 +182,11 @@ function homeAssistantProxyPlugin(
       }
 
       const authSession = getAuthSession()
-      const upstreamBaseUrl = authSession?.hassUrl ?? normalizedHassUrl?.toString() ?? null
+      const upstreamBaseUrl = authSession?.hassUrl ?? null
       if (!upstreamBaseUrl) {
         res.statusCode = 502
         res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'Home Assistant proxy is not configured' }))
+        res.end(JSON.stringify({ error: 'Home Assistant OAuth session is required' }))
         return
       }
 
@@ -392,7 +377,6 @@ export default defineConfig(({ mode }) => {
     rssProxyPlugin(),
     authSessionPlugin,
     homeAssistantProxyPlugin(
-      hassUrl,
       () =>
         (
           authSessionPlugin as PluginOption & {

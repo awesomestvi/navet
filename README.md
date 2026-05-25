@@ -277,11 +277,15 @@ pnpm preview
 
 ```bash
 pnpm dev
+pnpm check:docker
 pnpm check:stories
 pnpm check:ui-kit
 pnpm test
 pnpm storybook
 ```
+
+`pnpm check:docker` builds the standalone image and runs `nginx -t` through the real container
+entrypoint so generated `njs` and nginx config issues are caught before deployment.
 
 CI also runs `pnpm check`, `pnpm typecheck`, and `pnpm build`. Follow the repository instructions for
 when to run those locally.

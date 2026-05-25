@@ -59,7 +59,31 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: true,
     });
 
-    expect(changeRoom).toHaveBeenCalledWith('Unassigned');
+    expect(changeRoom).toHaveBeenCalledWith(ALL_ROOMS_ID);
+  });
+
+  it('keeps in-session room removal on a neighboring valid room', () => {
+    const { changeRoom, rerender } = renderRoomNavigation();
+
+    rerender({
+      ...defaultProps,
+      activeRoom: 'Living Room',
+      rooms: ['Kitchen', 'Living Room'],
+      hassEntitiesHydrated: true,
+      devicesLoaded: true,
+      registriesHydrated: true,
+    });
+
+    rerender({
+      ...defaultProps,
+      activeRoom: 'Living Room',
+      rooms: ['Kitchen'],
+      hassEntitiesHydrated: true,
+      devicesLoaded: true,
+      registriesHydrated: true,
+    });
+
+    expect(changeRoom).toHaveBeenCalledWith('Kitchen');
   });
 
   it('keeps all rooms stable regardless of room list changes', () => {

@@ -6,7 +6,7 @@ Navet is currently in beta. Until the product contract is stable, use pre-`1.0` 
 
 - Current release line: `0.x`
 - Current version: `0.2.5`
-- Meaning: current public beta release for the `0.2.5` Home Assistant custom panel and add-on release
+- Meaning: current public beta release line for the standalone app image, Home Assistant custom panel, and Home Assistant add-on surfaces that ship from the same tagged version
 
 ## Scheme
 
@@ -54,6 +54,7 @@ Examples:
 - `package.json` is the canonical app version
 - the in-app Settings -> Project screen reads the version from `package.json` through [app-version.ts](../src/app/constants/app-version.ts)
 - `CHANGELOG.md` is the source of truth for HACS-visible GitHub Release notes
+- `custom_components/navet/manifest.json` and `addons/navet/config.yaml` must stay aligned with the tagged release version when those surfaces are included in a release
 
 ## Release Flow
 
@@ -141,9 +142,10 @@ If there are no issues in `Ready for Release`, build concise notes from every co
 
 - All `v*` tags create a GitHub Release automatically.
 - Tags matching `v*-alpha.*`, `v*-beta.*`, or `v*-rc.*` are marked as prereleases in GitHub.
-- Standalone app images publish exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
+- Standalone app images publish the exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
 - Add-on images publish the configured add-on version and `sha-*` for every `v*` tag; prerelease
   tags also move add-on `beta` and `latest`.
+- HACS/custom panel users consume the same tagged GitHub Release through the bundled frontend assets and matching integration manifest version.
 - GitHub Release bodies are generated from the matching `CHANGELOG.md` version section. The workflow fails if the tag has no changelog entry.
 
 ## Stable Exit

@@ -201,6 +201,32 @@ describe('CameraStreamPlayer', () => {
     expect(canPlayType).toHaveBeenCalledWith('application/vnd.apple.mpegurl');
   });
 
+  it('loads absolute same-origin HLS streams through the ingress-aware Home Assistant proxy', async () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+    serviceMock.getCameraStreamUrl.mockResolvedValueOnce({
+      url: `${window.location.origin}/api/hls/camera.front/master.m3u8`,
+    });
+
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="hls"
+        posterUrl="/api/camera_proxy/camera.front"
+        homeAssistantUrl={window.location.origin}
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('video')?.src).toBe(
+        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.front/master.m3u8`
+      )
+    );
+  });
+
   it('marks unsupported Home Assistant HLS streams as non-retryable', async () => {
     const onError = vi.fn();
     serviceMock.getCameraStreamUrl.mockRejectedValueOnce({

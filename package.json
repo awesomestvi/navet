@@ -32,6 +32,7 @@
     "check": "biome check ./src",
     "check:stories": "node scripts/check-storybook-standards.mjs",
     "check:ui-kit": "node scripts/check-ui-kit-boundaries.mjs",
+    "check:docker": "node scripts/check-docker-runtime.mjs",
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",
     "check:commitmsg": "node scripts/check-commit-message.mjs",
     "check:fix": "biome check --apply ./src",
