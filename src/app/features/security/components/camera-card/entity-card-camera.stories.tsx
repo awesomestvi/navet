@@ -11,7 +11,7 @@ type CameraCardStoryArgs = Omit<ComponentProps<typeof CameraCard>, 'onSizeChange
   cameraViewMode?: CameraViewMode;
 };
 
-function CameraCardStory({ cameraViewMode = 'live', ...args }: CameraCardStoryArgs) {
+function CameraCardStory({ cameraViewMode = 'snapshot', ...args }: CameraCardStoryArgs) {
   useEffect(() => {
     useSettingsStore.getState().updateCameraViewMode(args.id, cameraViewMode);
   }, [args.id, cameraViewMode]);
@@ -40,7 +40,7 @@ const meta = {
     entityPicture: cameraSampleImage,
     supportedFeatures: 2,
     isStreamCapable: true,
-    cameraViewMode: 'live',
+    cameraViewMode: 'snapshot',
     size: 'medium',
     isEditMode: false,
   },

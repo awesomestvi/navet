@@ -21,7 +21,7 @@ This project adheres to a code of conduct. By participating, you are expected to
 ### Prerequisites
 
 - Node.js `^20.19.0` or `>=22.12.0`
-- pnpm 10
+- pnpm 11, via the pinned `packageManager` entry in `package.json`
 - Git
 - Basic knowledge of React, TypeScript, and Tailwind CSS
 

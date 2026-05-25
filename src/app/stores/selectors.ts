@@ -5,6 +5,7 @@
 
 import type { ErrorStoreState } from './error-store';
 import type { HomeAssistantStore } from './home-assistant-store';
+import { type CameraGo2RtcConfig, getEmptyCameraGo2RtcConfig } from './settings-store';
 import type {
   CustomCardsState,
   EditModeState,
@@ -14,18 +15,19 @@ import type {
   ThemeState,
 } from './types';
 
-const emptyCameraGo2RtcConfigByEntityId = new Map<
-  string,
-  { serverUrl: string; streamName: string }
->();
+const EMPTY_CAMERA_GO2RTC_CONFIG = getEmptyCameraGo2RtcConfig();
+const emptyCameraGo2RtcConfigByEntityId = new Map<string, CameraGo2RtcConfig>();
+function hasOwnKey(record: object, key: PropertyKey) {
+  return typeof key === 'string' && Object.keys(record).includes(key);
+}
 
-function getEmptyCameraGo2RtcConfig(entityId: string) {
+function getCachedEmptyCameraGo2RtcConfig(entityId: string) {
   const cached = emptyCameraGo2RtcConfigByEntityId.get(entityId);
   if (cached) {
     return cached;
   }
 
-  const config = { serverUrl: '', streamName: entityId };
+  const config = { ...EMPTY_CAMERA_GO2RTC_CONFIG };
   emptyCameraGo2RtcConfigByEntityId.set(entityId, config);
   return config;
 }
@@ -120,6 +122,7 @@ export const settingsSelectors = {
   showNotifications: (state: SettingsState) => state.showNotifications,
   showWeatherInHeader: (state: SettingsState) => state.showWeatherInHeader,
   showHomeSummaryBar: (state: SettingsState) => state.showHomeSummaryBar,
+  keepDeviceAwake: (state: SettingsState) => state.keepDeviceAwake,
   use24HourTime: (state: SettingsState) => state.use24HourTime,
   temperatureUnit: (state: SettingsState) => state.temperatureUnit,
   defaultView: (state: SettingsState) => state.defaultView,
@@ -129,13 +132,19 @@ export const settingsSelectors = {
   lowPowerMode: (state: SettingsState) => state.lowPowerMode,
   effectsQuality: (state: SettingsState) => state.effectsQuality,
   entityInteractionMode: (state: SettingsState) => state.entityInteractionMode,
-  cameraViewMode: (state: SettingsState) => state.cameraViewMode,
+  cameraDashboardViewMode: (state: SettingsState) => state.cameraDashboardViewMode,
+  cameraViewMode: (state: SettingsState) => state.cameraDashboardViewMode,
+  cameraDashboardViewModeForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
+  hasCameraViewModeOverrideForEntity: (entityId: string) => (state: SettingsState) =>
+    hasOwnKey(state.cameraViewModes, entityId),
   cameraViewModeForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraViewModes[entityId] ?? 'live',
+    state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
   cameraFeedModeForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraFeedModes[entityId] ?? 'auto',
+  cameraGo2RtcDefaults: (state: SettingsState) => state.cameraGo2RtcDefaults,
   cameraGo2RtcConfigForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraGo2RtcConfigs[entityId] ?? getEmptyCameraGo2RtcConfig(entityId),
+    state.cameraGo2RtcConfigs[entityId] ?? getCachedEmptyCameraGo2RtcConfig(entityId),
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
@@ -144,6 +153,7 @@ export const settingsSelectors = {
   updateSettings: (state: SettingsState) => state.updateSettings,
   updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
   updateCameraFeedMode: (state: SettingsState) => state.updateCameraFeedMode,
+  updateCameraGo2RtcDefaults: (state: SettingsState) => state.updateCameraGo2RtcDefaults,
   updateCameraGo2RtcConfig: (state: SettingsState) => state.updateCameraGo2RtcConfig,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
@@ -151,6 +161,7 @@ export const settingsSelectors = {
   displaySettings: (state: SettingsState) => ({
     language: state.language,
     showHomeSummaryBar: state.showHomeSummaryBar,
+    keepDeviceAwake: state.keepDeviceAwake,
     use24HourTime: state.use24HourTime,
     temperatureUnit: state.temperatureUnit,
     compactMode: state.compactMode,
@@ -158,7 +169,9 @@ export const settingsSelectors = {
     lowPowerMode: state.lowPowerMode,
     effectsQuality: state.effectsQuality,
     entityInteractionMode: state.entityInteractionMode,
-    cameraViewMode: state.cameraViewMode,
+    cameraDashboardViewMode: state.cameraDashboardViewMode,
+    cameraViewMode: state.cameraDashboardViewMode,
+    cameraGo2RtcDefaults: state.cameraGo2RtcDefaults,
     ambientLightBleed: state.ambientLightBleed,
     weatherForecastMode: state.weatherForecastMode,
     weatherMetricIds: state.weatherMetricIds,

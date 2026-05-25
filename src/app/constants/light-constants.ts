@@ -1,4 +1,4 @@
-import { Moon, Sparkles, Sun } from 'lucide-react';
+import { Sun, SunDim, SunMedium } from 'lucide-react';
 
 export const TEMP_OPTIONS = [
   { value: 2200, color: '#FFB366', label: 'Relax' },
@@ -23,8 +23,8 @@ export const PRESET_COLORS = [
 
 export const BRIGHTNESS_PRESET_DEFINITIONS = [
   { key: 'bright', icon: Sun, defaultBrightness: 100, label: 'Bright' },
-  { key: 'dim', icon: Moon, defaultBrightness: 50, label: 'Dim' },
-  { key: 'night', icon: Sparkles, defaultBrightness: 25, label: 'Night' },
+  { key: 'dim', icon: SunMedium, defaultBrightness: 50, label: 'Dim' },
+  { key: 'night', icon: SunDim, defaultBrightness: 25, label: 'Night' },
 ] as const;
 
 export type BrightnessPresetKey = (typeof BRIGHTNESS_PRESET_DEFINITIONS)[number]['key'];

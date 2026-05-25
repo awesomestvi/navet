@@ -279,8 +279,8 @@ function getAllowedSizes(
     if (card.type === 'map') {
       return ['small', 'medium', 'large'];
     }
-    if (card.type === 'sensor-group') {
-      return ['small', 'medium'];
+    if (card.type === 'ups') {
+      return ['small', 'medium', 'large'];
     }
     return ['small', 'medium', 'large'];
   }

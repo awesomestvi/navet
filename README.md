@@ -13,7 +13,7 @@ Navet turns Home Assistant into a dedicated smart home control surface. Use it f
 rooms you touch every day: lights, media, cameras, locks, energy, automations, weather, calendars,
 sensors, and custom dashboard widgets.
 
-Current release: `0.2.4`
+Current release: `0.2.5`
 
 ## Why Navet
 
@@ -34,8 +34,8 @@ Current release: `0.2.4`
 
 - Room-based navigation with an `All` overview and per-room views
 - Editable entity cards with ordering, room assignment, visibility, card locking, and card sizing
-- Custom widgets for notes, photos, RSS/news, battery status, energy, buttons, and maps, including
-  editable names and per-widget settings
+- Custom widgets for notes, photos, RSS/news, battery status, energy, buttons, maps, and sensor
+  groups, including editable names and per-widget settings
 - Import/export support for local dashboard configuration
 
 ### Smart home sections

@@ -30,6 +30,9 @@ vi.mock('@/app/hooks', () => ({
         },
       })
   ),
+  useI18n: vi.fn(() => ({
+    t: (key: string) => key,
+  })),
 }));
 
 vi.mock('../../hooks/use-brightness-presets', () => ({
@@ -63,6 +66,18 @@ vi.mock('../use-light-on-state-sync', () => ({
 
 vi.mock('../use-light-runtime-state', () => ({
   useLightRuntimeState: vi.fn(() => lightRuntimeState),
+}));
+
+vi.mock('../use-light-effect-sync', () => ({
+  useLightEffectSync: vi.fn(() => ({
+    currentEffect: 'Rainbow',
+    effectOptions: [
+      { isOff: true, label: 'No effect', value: '__navet_no_effect__' },
+      { isOff: false, label: 'Rainbow', value: 'Rainbow' },
+    ],
+    onEffectSelect: vi.fn(),
+    supportsEffects: true,
+  })),
 }));
 
 vi.mock('../use-light-preset-actions', () => ({
@@ -104,7 +119,9 @@ describe('useLightCardController', () => {
 
     expect(result.current.brightness).toBe(70);
     expect(result.current.currentColor).toBe('#ffeeaa');
+    expect(result.current.currentEffect).toBe('Rainbow');
     expect(result.current.IconComponent).toBe(Lightbulb);
+    expect(result.current.supportsEffects).toBe(true);
     expect(result.current.showSettingsButton).toBe(true);
   });
 

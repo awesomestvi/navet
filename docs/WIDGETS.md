@@ -17,6 +17,7 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 - Energy Now
 - Button
 - Map
+- Sensor Group
 
 ### Core Behavior
 
@@ -47,6 +48,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - `energy-now`: `small`, `medium`, `large`
 - `button`: `tiny`, `extra-small`, `small`
 - `map`: `small`, `medium`, `large`
+- `sensor-group`: `small`, `medium`
 
 ## Add and Manage Widgets
 
@@ -97,6 +99,7 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - Battery Overview: read-only overview of battery entities.
 - Energy Now: full-bleed live usage chart with current power overlaid on top, plus a settings dialog for choosing configured energy sources or matching energy-usage sensors/entities.
 - Map: live person and `device_tracker` markers from Home Assistant, plus tint configuration.
+- Sensor Group: up to six selected sensor readings with persisted name, room assignment, and accent color.
 
 ## Architecture and File Map
 
@@ -122,12 +125,15 @@ These files define widget type ids, labels, defaults, and supported sizes.
 - `src/app/features/dashboard/components/widgets/energy-now-dashboard-widget.tsx`
 - `src/app/features/dashboard/components/widgets/map-widget.tsx`
 - RSS widget component lives in `src/app/features/rss/components/rss-feed-card/`
+- Sensor Group widget rendering uses `src/app/features/sensors/components/grouped-sensor-card.tsx`
+  and settings logic from `src/app/features/sensors/components/sensor-group-settings/`
 
 ### Widget Store
 
 - `src/app/features/dashboard/stores/custom-cards-store.ts`
 
 Store responsibilities:
+
 - persist cards
 - add/remove/update cards
 - persist custom widget names through the card data payload
@@ -139,7 +145,15 @@ Store responsibilities:
 ## Type Reference
 
 ```ts
-type CardType = 'rss' | 'photo' | 'note' | 'battery' | 'energy-now' | 'button' | 'map';
+type CardType =
+  | 'rss'
+  | 'photo'
+  | 'note'
+  | 'battery'
+  | 'energy-now'
+  | 'button'
+  | 'map'
+  | 'sensor-group';
 
 type CardSize =
   | 'tiny'

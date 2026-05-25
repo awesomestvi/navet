@@ -186,6 +186,45 @@ describe('dashboard-config import hardening', () => {
     expect(useHomeDashboardLayoutStore.getState().cardIds).toEqual(['custom-note']);
   });
 
+  it('imports legacy sensor-group cards as canonical info cards', () => {
+    importDashboardConfig({
+      ...baseConfig,
+      customCards: [
+        {
+          id: 'custom-sensor-group',
+          type: 'sensor-group',
+          size: 'medium',
+          room: 'Kitchen',
+          createdAt: 1,
+          data: {
+            name: 'Kitchen sensors',
+            sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
+            accentColor: 'teal',
+          },
+        },
+      ],
+    });
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: 'custom-sensor-group',
+        type: 'info',
+        data: {
+          name: 'Kitchen sensors',
+          sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
+          accentColor: 'teal',
+        },
+      }),
+    ]);
+
+    expect(exportDashboardConfig().customCards).toEqual([
+      expect.objectContaining({
+        id: 'custom-sensor-group',
+        type: 'info',
+      }),
+    ]);
+  });
+
   it('exports home dashboard layout without the persisted storage wrapper', () => {
     useHomeDashboardLayoutStore.getState().replaceLayout({
       mode: 'flow',
@@ -233,6 +272,25 @@ describe('dashboard-config import hardening', () => {
     });
 
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
+  });
+
+  it('round-trips the camera dashboard preview default', () => {
+    useSettingsStore.getState().updateSettings({ cameraDashboardViewMode: 'auto' });
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.settings.cameraDashboardViewMode).toBe('auto');
+
+    useSettingsStore.getState().updateSettings({ cameraDashboardViewMode: 'snapshot' });
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        cameraDashboardViewMode: 'auto',
+      },
+    });
+
+    expect(useSettingsStore.getState().cameraDashboardViewMode).toBe('auto');
   });
 
   it('can import shared profile data without replacing current navigation', () => {

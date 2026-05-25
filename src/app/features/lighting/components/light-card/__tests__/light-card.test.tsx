@@ -32,6 +32,23 @@ function createLightEntity(state: 'on' | 'off' = 'on'): HassEntity {
   } as HassEntity;
 }
 
+function createEffectLightEntity(effect?: string): HassEntity {
+  return {
+    entity_id: 'light.desk_lamp',
+    state: 'on',
+    attributes: {
+      brightness: 166,
+      friendly_name: 'Desk Lamp',
+      supported_color_modes: ['brightness'],
+      effect_list: ['Rainbow', 'Fire'],
+      effect,
+    },
+    last_changed: '2026-05-25T00:00:00.000Z',
+    last_updated: '2026-05-25T00:00:00.000Z',
+    context: { id: 'ctx', parent_id: null, user_id: null },
+  } as HassEntity;
+}
+
 describe('LightCard', () => {
   beforeEach(async () => {
     await resetAppStores();
@@ -74,5 +91,61 @@ describe('LightCard', () => {
 
     expect(serviceMock.updateLight).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Controls')).toBeInTheDocument();
+  });
+
+  it('shows the effect picker on medium cards and sends effect selections to Home Assistant', async () => {
+    homeAssistantStore.setState({
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createEffectLightEntity('Rainbow'),
+      },
+    });
+
+    renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Choose light effect' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Fire' }));
+
+    expect(serviceMock.updateLight).toHaveBeenCalledWith('light.desk_lamp', {
+      state: 'on',
+      effect: 'Fire',
+    });
+  });
+
+  it('keeps effect selection out of the extra-small quick actions', () => {
+    homeAssistantStore.setState({
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createEffectLightEntity(),
+      },
+    });
+
+    renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Choose light effect' })).not.toBeInTheDocument();
   });
 });

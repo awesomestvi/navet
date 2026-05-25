@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { useEffect } from 'react';
 import { expect } from 'storybook/test';
 import { LightCard } from '@/app/features/lighting';
+import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import type { PrimaryColor, ThemeMode } from '@/app/stores/theme-store';
 import { useThemeStore } from '@/app/stores/theme-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
@@ -164,4 +165,48 @@ export const Docs: Story = {
   parameters: {
     docsOnly: true,
   },
+};
+
+function EffectEntityDecorator({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const previousState = homeAssistantStore.getState();
+
+    homeAssistantStore.setState({
+      ...previousState,
+      connection: {} as never,
+      entities: {
+        ...(previousState.entities ?? {}),
+        'light.living_room': {
+          entity_id: 'light.living_room',
+          state: 'on',
+          attributes: {
+            friendly_name: 'Living Room',
+            brightness: 166,
+            supported_color_modes: ['brightness'],
+            effect: 'Rainbow',
+            effect_list: ['Rainbow', 'Fire', 'Twinkle'],
+          },
+          last_changed: '2026-05-25T00:00:00.000Z',
+          last_updated: '2026-05-25T00:00:00.000Z',
+          context: { id: 'ctx', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    return () => {
+      homeAssistantStore.setState(previousState);
+    };
+  }, []);
+
+  return <>{children}</>;
+}
+
+export const WithEffects: Story = {
+  decorators: [
+    (Story) => (
+      <EffectEntityDecorator>
+        <Story />
+      </EffectEntityDecorator>
+    ),
+  ],
 };

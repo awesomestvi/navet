@@ -32,6 +32,29 @@ describe('HAEntityService', () => {
     );
   });
 
+  it('forwards light effects through the Home Assistant light turn_on service', async () => {
+    const connection = { id: 'connection' };
+    const service = new HAEntityService(() => connection as never);
+
+    await service.updateLight('light.wled', {
+      state: 'on',
+      brightnessPct: 60,
+      effect: 'Rainbow',
+    });
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      connection,
+      'light',
+      'turn_on',
+      {
+        entity_id: 'light.wled',
+        brightness_pct: 60,
+        effect: 'Rainbow',
+      },
+      { entity_id: 'light.wled' }
+    );
+  });
+
   it('sets water heater operation mode through the Home Assistant water heater service', async () => {
     const connection = { id: 'connection' };
     const service = new HAEntityService(() => connection as never);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Moon, Sparkles, Sun } from 'lucide-react';
+import { Sun, SunDim, SunMedium } from 'lucide-react';
 import { useState } from 'react';
 import { expect, within } from 'storybook/test';
 import { Button } from '@/app/components/primitives/button';
@@ -20,8 +20,8 @@ function LightSettingsDialogStory() {
 
   const presets: LightBrightnessPreset[] = [
     { key: 'bright', brightness: 100, label: 'Bright', icon: Sun },
-    { key: 'dim', brightness: 50, label: 'Dim', icon: Moon },
-    { key: 'night', brightness: 25, label: 'Night', icon: Sparkles },
+    { key: 'dim', brightness: 50, label: 'Dim', icon: SunMedium },
+    { key: 'night', brightness: 25, label: 'Night', icon: SunDim },
   ];
 
   return (
@@ -39,6 +39,8 @@ function LightSettingsDialogStory() {
         isOn
         supportsColorTemperature
         supportsColorControl
+        currentEffect={null}
+        effectOptions={[]}
         minColorTemp={2200}
         maxColorTemp={6400}
         tempOptions={TEMP_OPTIONS}
@@ -49,10 +51,12 @@ function LightSettingsDialogStory() {
         brightness={brightness}
         selectedIcon={selectedIcon}
         tintColor={tintColor}
+        supportsEffects={false}
         onTempChange={setColorTemp}
         onTempCommit={setColorTemp}
         onColorChange={setSelectedColor}
         onCustomColorChange={setCustomColor}
+        onEffectSelect={() => {}}
         onBrightnessChange={setBrightness}
         applyBrightnessPresetsToAll
         onApplyBrightnessPresetsToAllChange={() => {}}

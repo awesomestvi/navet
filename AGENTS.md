@@ -59,7 +59,7 @@ style paths in Storybook configuration.
 | Framework | React 19, TypeScript 6 (strict) |
 | Build | Vite 8, pnpm |
 | Styling | Tailwind CSS 4.3, Radix UI |
-| State | Zustand 5 (all shared state) |
+| State | Zustand 5 (shared app state) |
 | HA Integration | home-assistant-js-websocket |
 | Linting / Format | Biome 2 |
 
@@ -69,7 +69,7 @@ style paths in Storybook configuration.
 
 ```
 src/app/
-  features/        # 16 domain modules — each owns its hooks, stores, components
+  features/        # 17 domain modules — each owns its hooks, stores, components
   components/
     ui/            # Radix UI wrappers (buttons, dialogs, selects …)
     layout/        # Header, sidebar, navigation
@@ -80,7 +80,7 @@ src/app/
     figma/         # Design integration components
   config/          # App-level configuration helpers
   constants/       # Shared constants
-  stores/          # All Zustand stores (auth, config, HA, settings, theme, navigation …)
+  stores/          # Shared app Zustand stores (HA, settings, theme, navigation …)
   pwa/             # PWA update state and install/update support
   services/        # HomeAssistantService — WebSocket + HA API
   hooks/           # Shared hook modules (useHomeAssistant, useDeviceMap, useCardState …)
@@ -89,7 +89,7 @@ src/app/
     theme-generators/
   session/         # Config serialization helpers
   utils/           # Pure helpers (storage, effects-quality, colors, dashboard-config)
-  i18n/            # Translation files (en, sv, de, fr, es)
+  i18n/            # Translation files (en, sv, de, fr, es, it, pt, zh)
   marketing/       # Marketing/public-site support modules
   navigation/      # Section type and helpers
   storybook/       # Shared Storybook utilities (story-frames, story-docs)
@@ -167,8 +167,10 @@ These rules apply to all code written for this project. Follow them before writi
 
 ### State Management
 
-- **All shared state is Zustand.** Do not introduce React Context for reactive state.
-- Context is only for infrastructure without reactive state (e.g. `I18nProvider` in `src/app/i18n/`).
+- **All shared app state is Zustand.** Do not introduce React Context for general reactive app state.
+- Runtime auth/session handling lives in `src/auth/AuthProvider.tsx` because it owns OAuth, Ingress,
+  and Home Assistant panel adapters. Context is otherwise only for infrastructure without general
+  shared app state (e.g. `I18nProvider` in `src/app/i18n/`).
 - Use selectors from `src/app/stores/selectors.ts` to subscribe to the minimum slice needed.
 - Persisted stores use `persist` middleware with `createJSONStorage(() => localStorage)` and a
   `merge` function that validates before rehydrating. Never use raw `window.localStorage` in stores.
@@ -178,8 +180,6 @@ These rules apply to all code written for this project. Follow them before writi
 
 | Store | Responsibility |
 |---|---|
-| `auth-store` | `isAuthenticated`, `config`, `login`, `logout` |
-| `config-store` | HA connection config, `testConnection`, `saveConfig` |
 | `home-assistant-store` | WebSocket connection state, entities, registries |
 | `settings-store` | User preferences (persisted) |
 | `theme-store` | Theme mode, accent color, wallpaper (persisted) |
@@ -259,7 +259,7 @@ copy all service state on every event.
 
 - When moving or renaming files referenced by docs, update the active docs in the same change.
 - Keep these current: `README.md`, `docs/README.md`, `design-system/README.md`, `design-system/FEATURES.md`.
-- Treat `docs/archive/status/*` as historical snapshots — do not rewrite them.
+- Treat `docs/archive/*` as historical snapshots — do not rewrite them.
 - If you add or reorganize stories, run `pnpm check:stories` and keep Storybook titles, coverage, and colocated story ownership valid.
 
 ---
@@ -270,8 +270,8 @@ copy all service state on every event.
 - GitHub Pages deploys the demo at `/navet/demo/` and Storybook at `/navet/storybook/`.
 - Pushes to `main` publish only developer app images: `ghcr.io/awesomestvi/navet:dev` and `sha-*`.
 - Manual Publish workflow runs are for developer hardware testing and default to the `dev` app image tag.
-- Public beta app images publish only from `v*-alpha.*`, `v*-beta.*`, and `v*-rc.*` tags. They update the exact tag, `beta`, `latest`, and `sha-*`.
-- Home Assistant add-on images publish `dev` and `sha-*` on `main` pushes or manual workflow runs, and add-on version, `beta`, `latest`, and `sha-*` on public beta tags.
+- Standalone app images publish the exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
+- Home Assistant add-on images publish `dev` and `sha-*` on `main` pushes or dev-channel manual workflow runs. Versioned add-on publishes emit the configured add-on version and `sha-*`; prerelease tags also update `beta` and `latest`.
 - There is no stable channel yet. Treat `latest` as the current public beta compatibility tag because existing users already consume it.
 
 ---

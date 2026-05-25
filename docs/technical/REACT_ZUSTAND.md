@@ -4,9 +4,11 @@ Current state-management guidance for Navet.
 
 ## Summary
 
-Navet uses **Zustand exclusively** for all shared client state. React Context is reserved only
-for cross-cutting infrastructure concerns that have no reactive state of their own. Auth, config,
-and the global app error overlay are Zustand stores.
+Navet uses **Zustand exclusively** for shared app state that drives rendering. Runtime
+authentication/session handling lives outside the store layer in `src/auth/AuthProvider.tsx`,
+because it owns OAuth, Ingress, and Home Assistant panel adapters. React Context is reserved for
+that runtime auth infrastructure and other cross-cutting providers that are not general-purpose
+shared UI state.
 
 ---
 
@@ -14,8 +16,8 @@ and the global app error overlay are Zustand stores.
 
 ### Zustand stores (`src/app/stores/`)
 
-Shared dashboard state lives here. Authentication is centralized in `src/auth/AuthProvider.tsx`
-because it owns runtime-specific OAuth/Ingress/panel session handling.
+Shared app and dashboard state lives here. Runtime auth/session state is centralized in
+`src/auth/AuthProvider.tsx` rather than represented as `auth-store` or `config-store` files.
 
 | Store | Responsibility |
 |---|---|
@@ -27,9 +29,18 @@ because it owns runtime-specific OAuth/Ingress/panel session handling.
 | `search-store` | Search query and filtered device ids |
 | `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
 
-### React Context
+### Runtime auth context
 
-Only used for providers that have no reactive state of their own:
+Runtime authentication is the main exception to the shared-state store rule:
+
+- `AuthProvider` (`src/auth/AuthProvider.tsx`) — runtime-specific OAuth, Ingress, and panel
+  session handling
+- `useAuthSession`, `useAuthBaseUrl`, and `useAuthLogout` expose the current auth session,
+  Home Assistant base URL, and logout action to app code
+
+### Other React Context
+
+Only used for providers that have no general shared app state of their own:
 
 - `I18nProvider` (`src/app/i18n/`) — locale loading and translation function
 
@@ -37,16 +48,19 @@ Only used for providers that have no reactive state of their own:
 
 ## Rules
 
-### All shared state goes in Zustand
+### All shared app state goes in Zustand
 
 Do not introduce new React Context for state that drives rendering. If many components need to
-read or write the same value, put it in a store.
+read or write the same app preference, dashboard state, or Home Assistant-derived state, put it in
+a store.
 
 ### Expose stores through hook modules
 
-Stores should be consumed via hook wrappers (`useAuth`, `useConfig`, `useHomeAssistant`, etc.)
-rather than imported and called directly with `useXyzStore(selector)` outside of `src/app/hooks/`
-and `src/app/stores/`.
+Stores should be consumed through the existing app hooks and typed store hooks. Use wrappers such as
+`useHomeAssistant` for Home Assistant state, and use exported store hooks such as
+`useSettingsStore(selector)` with selectors from `src/app/stores/selectors.ts` for direct store
+subscriptions. Runtime auth is consumed through `useAuthSession`, `useAuthBaseUrl`, and
+`useAuthLogout` from `src/auth/AuthProvider.tsx`.
 
 ### Prefer typed selectors
 

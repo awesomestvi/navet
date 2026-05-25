@@ -5,6 +5,12 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { renderWithProviders } from '@/test/render';
 import { WidgetCard } from '../widget-card';
 
+const sensorHistoryMock = vi.hoisted(() => ({
+  useSensorStatisticsHistory: vi.fn(),
+}));
+
+vi.mock('@/app/features/sensors/hooks/use-sensor-statistics-history', () => sensorHistoryMock);
+
 function entity(
   entityId: string,
   state: string,
@@ -33,8 +39,13 @@ const entities: HassEntities = {
   }),
 };
 
-describe('WidgetCard sensor group', () => {
+describe('WidgetCard info widget', () => {
   beforeEach(() => {
+    sensorHistoryMock.useSensorStatisticsHistory.mockReturnValue({
+      points: [],
+      canFetch: false,
+      hasHistory: false,
+    });
     homeAssistantStore.setState({
       ...homeAssistantStore.getInitialState(),
       entities,
@@ -52,13 +63,13 @@ describe('WidgetCard sensor group', () => {
     });
   });
 
-  it('renders persisted sensor entity ids as live readings', () => {
+  it('renders persisted sensor entity ids as live readings', async () => {
     renderWithProviders(
       <WidgetCard
         isEditMode
         card={{
-          id: 'custom-sensor-group',
-          type: 'sensor-group',
+          id: 'custom-info',
+          type: 'info',
           size: 'medium',
           room: 'Kitchen',
           data: {
@@ -69,19 +80,72 @@ describe('WidgetCard sensor group', () => {
       />
     );
 
-    expect(screen.getByText('Widget')).toBeInTheDocument();
-    expect(screen.getByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(await screen.findByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(screen.getByText('Temperature')).toBeInTheDocument();
     expect(screen.getByText('21.4')).toBeInTheDocument();
     expect(screen.getByText('°C')).toBeInTheDocument();
   });
 
-  it('shows a card-specific empty state when no sensors are selected', () => {
+  it('renders an info card with a sparkline when a single numeric sensor has recorder history', async () => {
+    sensorHistoryMock.useSensorStatisticsHistory.mockReturnValue({
+      points: [
+        { value: 20.8, timestampMs: 1, endTimestampMs: 2, minValue: 20.1, maxValue: 21.1 },
+        { value: 21.4, timestampMs: 2, endTimestampMs: 3, minValue: 21.1, maxValue: 21.6 },
+      ],
+      canFetch: true,
+      hasHistory: true,
+    });
+
     renderWithProviders(
       <WidgetCard
         isEditMode={false}
         card={{
-          id: 'custom-sensor-group',
-          type: 'sensor-group',
+          id: 'custom-info',
+          type: 'info',
+          size: 'medium',
+          room: 'Kitchen',
+          data: {
+            sensorEntityIds: ['sensor.kitchen_temperature'],
+          },
+          createdAt: 1,
+        }}
+      />
+    );
+
+    expect(await screen.findByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(screen.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
+  });
+
+  it('renders a collection layout from the info widget when multiple sensors are selected', async () => {
+    renderWithProviders(
+      <WidgetCard
+        isEditMode={false}
+        card={{
+          id: 'custom-info',
+          type: 'info',
+          size: 'medium',
+          room: 'Kitchen',
+          data: {
+            sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
+            name: 'Kitchen sensors',
+          },
+          createdAt: 1,
+        }}
+      />
+    );
+
+    expect(await screen.findByText('Kitchen sensors')).toBeInTheDocument();
+    expect(screen.getByText('Widget')).toBeInTheDocument();
+    expect(screen.queryByTestId('sensor-history-sparkline')).not.toBeInTheDocument();
+  });
+
+  it('shows a card-specific empty state when no sensors are selected', async () => {
+    renderWithProviders(
+      <WidgetCard
+        isEditMode={false}
+        card={{
+          id: 'custom-info',
+          type: 'info',
           size: 'medium',
           room: 'Kitchen',
           createdAt: 1,
@@ -90,20 +154,21 @@ describe('WidgetCard sensor group', () => {
     );
 
     expect(screen.queryByText('Widget')).not.toBeInTheDocument();
-    expect(screen.getByText('No sensors selected')).toBeInTheDocument();
-    expect(screen.getByText('Search and add sensors below')).toBeInTheDocument();
+    expect(await screen.findByText('Info')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Open settings for Sensor group' })
+      screen.getByText('Pin any sensor or binary sensor as a standalone info card.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Open settings for Info' })
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add Sensors' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
 
-    expect(screen.getByText('Sensor group')).toBeInTheDocument();
-    expect(screen.getByText('Widget')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Info' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search sensors...')).toBeInTheDocument();
   });
 
-  it('updates the custom card name and room from the settings header', () => {
+  it('updates the custom card name and room from the settings header', async () => {
     const onUpdate = vi.fn();
 
     renderWithProviders(
@@ -111,8 +176,8 @@ describe('WidgetCard sensor group', () => {
         isEditMode
         onUpdate={onUpdate}
         card={{
-          id: 'custom-sensor-group',
-          type: 'sensor-group',
+          id: 'custom-info',
+          type: 'info',
           size: 'medium',
           room: 'Kitchen',
           createdAt: 1,
@@ -120,23 +185,23 @@ describe('WidgetCard sensor group', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add Sensors' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Sensor group' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Info' }));
     fireEvent.change(screen.getByLabelText('Card name'), {
       target: { value: 'Kitchen sensors' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save card name' }));
     fireEvent.change(screen.getByLabelText('Room'), { target: { value: '__home__' } });
 
-    expect(onUpdate).toHaveBeenCalledWith('custom-sensor-group', {
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
         name: 'Kitchen sensors',
       },
     });
-    expect(onUpdate).toHaveBeenCalledWith('custom-sensor-group', { room: '__home__' });
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', { room: '__home__' });
   });
 
-  it('updates selected sensor entity ids as sensors are added', () => {
+  it('updates selected sensor entity ids as sensors are added', async () => {
     const onUpdate = vi.fn();
 
     renderWithProviders(
@@ -144,8 +209,8 @@ describe('WidgetCard sensor group', () => {
         isEditMode
         onUpdate={onUpdate}
         card={{
-          id: 'custom-sensor-group',
-          type: 'sensor-group',
+          id: 'custom-info',
+          type: 'info',
           size: 'medium',
           room: 'Kitchen',
           createdAt: 1,
@@ -153,11 +218,11 @@ describe('WidgetCard sensor group', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add Sensors' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
     fireEvent.focus(screen.getByPlaceholderText('Search sensors...'));
     fireEvent.mouseDown(screen.getByRole('button', { name: /Kitchen Humidity/i }));
 
-    expect(onUpdate).toHaveBeenCalledWith('custom-sensor-group', {
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
         sensorEntityIds: ['sensor.kitchen_humidity'],
       },
@@ -165,9 +230,43 @@ describe('WidgetCard sensor group', () => {
 
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Remove sensor' }));
 
-    expect(onUpdate).toHaveBeenCalledWith('custom-sensor-group', {
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
         sensorEntityIds: [],
+      },
+    });
+  });
+
+  it('persists unified info widget sensor ids when sensors are added', async () => {
+    const onUpdate = vi.fn();
+
+    renderWithProviders(
+      <WidgetCard
+        isEditMode
+        onUpdate={onUpdate}
+        card={{
+          id: 'custom-info',
+          type: 'info',
+          size: 'medium',
+          room: 'Kitchen',
+          createdAt: 1,
+        }}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
+    fireEvent.focus(screen.getByPlaceholderText('Search sensors...'));
+    fireEvent.mouseDown(screen.getByRole('button', { name: /Kitchen Temperature/i }));
+    fireEvent.mouseDown(screen.getByRole('button', { name: /Kitchen Humidity/i }));
+
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', {
+      data: {
+        sensorEntityIds: ['sensor.kitchen_temperature'],
+      },
+    });
+    expect(onUpdate).toHaveBeenCalledWith('custom-info', {
+      data: {
+        sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
       },
     });
   });

@@ -1,5 +1,9 @@
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { getSensorDeviceClass, inferSensorDisplayIcon } from '@/app/hooks/device-mappers';
+import {
+  formatBinarySensorState,
+  getSensorDeviceClass,
+  inferSensorDisplayIcon,
+} from '@/app/hooks/device-mappers';
 import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import type {
   HomeAssistantAreaRegistryEntry,
@@ -18,6 +22,7 @@ interface SensorRegistryContext {
 interface SensorOptionBuildParams extends SensorRegistryContext {
   entities: HassEntities | null | undefined;
   formatOptions?: Parameters<typeof formatSensorValue>[1];
+  includeBinarySensors?: boolean;
 }
 
 interface SensorOptionContext {
@@ -48,9 +53,16 @@ function getDeviceRegistryMap(deviceRegistry: HomeAssistantDeviceRegistryEntry[]
 }
 
 function getSensorDisplayValue(
+  entityId: string,
   entity: HassEntity,
   formatOptions?: Parameters<typeof formatSensorValue>[1]
 ): { value: string; unit: string } {
+  const deviceClass = getSensorDeviceClass(entity);
+  if (entityId.startsWith('binary_sensor.')) {
+    const status = formatBinarySensorState(entity.state, deviceClass);
+    return { value: status.value, unit: '' };
+  }
+
   if (SENSOR_UNAVAILABLE_STATES.has(entity.state)) {
     const formatted = formatSensorValue(entity, formatOptions);
     return { value: entity.state, unit: formatted?.unit ?? '' };
@@ -97,7 +109,7 @@ function mapSensorOption(
 ): AvailableSensor {
   const entityEntry = context.entityRegistryMap.get(entityId);
   const deviceClass = getSensorDeviceClass(entity);
-  const formatted = getSensorDisplayValue(entity, formatOptions);
+  const formatted = getSensorDisplayValue(entityId, entity, formatOptions);
 
   return {
     id: entityId,
@@ -122,6 +134,7 @@ export function buildAvailableSensorOptions({
   deviceRegistry = [],
   entityRegistry = [],
   formatOptions,
+  includeBinarySensors = false,
 }: SensorOptionBuildParams): AvailableSensor[] {
   if (!entities) {
     return [];
@@ -134,7 +147,11 @@ export function buildAvailableSensorOptions({
   };
 
   return Object.entries(entities)
-    .filter(([entityId]) => entityId.startsWith('sensor.'))
+    .filter(
+      ([entityId]) =>
+        entityId.startsWith('sensor.') ||
+        (includeBinarySensors && entityId.startsWith('binary_sensor.'))
+    )
     .map(([entityId, entity]) => mapSensorOption(entityId, entity, context, formatOptions))
     .sort(
       (left, right) =>
@@ -165,7 +182,7 @@ export function resolveSensorReadings({
     }
 
     const deviceClass = getSensorDeviceClass(entity);
-    const formatted = getSensorDisplayValue(entity, formatOptions);
+    const formatted = getSensorDisplayValue(entityId, entity, formatOptions);
 
     return {
       id: entityId,

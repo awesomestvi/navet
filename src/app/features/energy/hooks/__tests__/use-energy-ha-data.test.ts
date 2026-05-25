@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { type EnergyEntityMap, resolveTodayEnergyKWh } from '../use-energy-ha-data';
+import {
+  type EnergyEntityMap,
+  isMissingEnergyPrefsError,
+  resolveTodayEnergyKWh,
+} from '../use-energy-ha-data';
 
 function entities(map: EnergyEntityMap) {
   return map;
@@ -58,5 +62,17 @@ describe('resolveTodayEnergyKWh', () => {
         14
       )
     ).toBe(14.89);
+  });
+});
+
+describe('isMissingEnergyPrefsError', () => {
+  it('treats Home Assistant no-prefs responses as an expected empty state', () => {
+    expect(isMissingEnergyPrefsError({ code: 'not_found', message: 'No prefs' })).toBe(true);
+  });
+
+  it('does not hide other websocket errors', () => {
+    expect(isMissingEnergyPrefsError({ code: 'not_found', message: 'Something else' })).toBe(false);
+    expect(isMissingEnergyPrefsError({ code: 'unknown_error', message: 'No prefs' })).toBe(false);
+    expect(isMissingEnergyPrefsError(null)).toBe(false);
   });
 });

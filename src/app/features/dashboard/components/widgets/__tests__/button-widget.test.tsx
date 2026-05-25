@@ -45,6 +45,30 @@ describe('ButtonWidget', () => {
     expect(onCardClick).not.toHaveBeenCalled();
   });
 
+  it('runs a scene preset button with the prefilled scene service and entity id', async () => {
+    renderWithProviders(
+      <ButtonWidget
+        data={{
+          label: 'Scene',
+          service: 'scene.turn_on',
+          entityId: 'scene.goodnight',
+          icon: 'Sparkles',
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scene' }));
+
+    await waitFor(() => {
+      expect(homeAssistantService.callService).toHaveBeenCalledWith(
+        'scene',
+        'turn_on',
+        {},
+        { entity_id: 'scene.goodnight' }
+      );
+    });
+  });
+
   it('does not open the settings dialog just because an unconfigured card mounts', () => {
     const { rerender } = renderWithProviders(<ButtonWidget data={{ label: 'Movie Mode' }} />);
 

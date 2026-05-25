@@ -8,14 +8,15 @@ export { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM } from '@/app/constants/rooms';
 import type { ZoneName } from '../zones/zone-types';
 
 export type CardType =
+  | 'info'
   | 'rss'
   | 'photo'
   | 'note'
   | 'battery'
+  | 'ups'
   | 'energy-now'
   | 'button'
-  | 'map'
-  | 'sensor-group';
+  | 'map';
 
 export interface CustomCard {
   id: string;
@@ -28,32 +29,78 @@ export interface CustomCard {
   createdAt: number;
 }
 
-function normalizeCustomCard(card: CustomCard): CustomCard {
-  if (
-    card.type === 'photo' &&
-    card.size !== 'small' &&
-    card.size !== 'medium' &&
-    card.size !== 'large' &&
-    card.size !== 'extra-large'
-  ) {
-    return { ...card, size: 'large' };
+type LegacyCardType = CardType | 'sensor-group';
+type NormalizableCustomCard = Omit<CustomCard, 'type'> & { type: LegacyCardType };
+
+function normalizeInfoCardData(data: Record<string, unknown> | undefined) {
+  if (!data) {
+    return data;
   }
+
+  const sensorEntityIds = Array.isArray(data.sensorEntityIds)
+    ? data.sensorEntityIds.filter((value): value is string => typeof value === 'string')
+    : [];
+  const legacyEntityId = typeof data.entityId === 'string' ? data.entityId : undefined;
+  const normalizedSensorEntityIds =
+    sensorEntityIds.length > 0
+      ? sensorEntityIds
+      : legacyEntityId
+        ? [legacyEntityId]
+        : sensorEntityIds;
 
   if (
-    card.type === 'note' &&
-    card.size !== 'small' &&
-    card.size !== 'medium' &&
-    card.size !== 'large' &&
-    card.size !== 'extra-large'
+    normalizedSensorEntityIds.length === sensorEntityIds.length &&
+    normalizedSensorEntityIds.every((value, index) => value === sensorEntityIds[index]) &&
+    !legacyEntityId
   ) {
-    return { ...card, size: 'medium' };
+    return data;
   }
 
-  if (card.type === 'sensor-group' && card.size !== 'small' && card.size !== 'medium') {
-    return { ...card, size: 'medium' };
+  return {
+    ...data,
+    sensorEntityIds: normalizedSensorEntityIds,
+    entityId: legacyEntityId,
+  };
+}
+
+export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
+  const normalizedType = card.type === 'sensor-group' ? 'info' : card.type;
+  const normalizedData = normalizedType === 'info' ? normalizeInfoCardData(card.data) : card.data;
+  const normalizedCard =
+    normalizedType === card.type && normalizedData === card.data
+      ? (card as CustomCard)
+      : { ...card, type: normalizedType, data: normalizedData };
+
+  if (
+    normalizedCard.type === 'photo' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large' &&
+    normalizedCard.size !== 'extra-large'
+  ) {
+    return { ...normalizedCard, size: 'large' };
   }
 
-  return card;
+  if (
+    normalizedCard.type === 'note' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large' &&
+    normalizedCard.size !== 'extra-large'
+  ) {
+    return { ...normalizedCard, size: 'medium' };
+  }
+
+  if (
+    normalizedCard.type === 'info' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large'
+  ) {
+    return { ...normalizedCard, size: 'medium' };
+  }
+
+  return normalizedCard;
 }
 
 interface CustomCardsState {
@@ -129,9 +176,10 @@ export const useCustomCardsStore = create<CustomCardsState>()(
             )
             .map((card) => ({
               ...card,
-              type: card.type === 'news' ? 'rss' : card.type,
+              type:
+                card.type === 'news' ? 'rss' : card.type === 'sensor-group' ? 'info' : card.type,
             }))
-            .map((card) => normalizeCustomCard(card as CustomCard)),
+            .map((card) => normalizeCustomCard(card as NormalizableCustomCard)),
         };
       },
     }

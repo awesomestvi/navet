@@ -27,7 +27,8 @@ import { PRESET_COLORS } from '@/app/constants/light-constants';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { BrightnessPresetKey } from '../../stores/light-preset-store';
-import type { LightBrightnessPreset } from './light-card-types';
+import type { LightBrightnessPreset, LightEffectOption } from './light-card-types';
+import { LightEffectPicker } from './light-effect-picker';
 
 interface LightSettingsDialogProps {
   entityId: string;
@@ -41,16 +42,20 @@ interface LightSettingsDialogProps {
   maxColorTemp: number;
   tempOptions: Array<{ value: number; color: string; label: string }>;
   brightnessPresets: LightBrightnessPreset[];
+  currentEffect: string | null;
+  effectOptions: LightEffectOption[];
   colorTemp: number;
   selectedColor: string | null;
   customColor: string;
   brightness: number;
   selectedIcon: string;
   tintColor: string;
+  supportsEffects: boolean;
   onTempChange: (temp: number) => void;
   onTempCommit?: (temp: number) => void;
   onColorChange: (color: string) => void;
   onCustomColorChange: (color: string) => void;
+  onEffectSelect: (effect: string) => void;
   onBrightnessChange: (brightness: number) => void;
   /** When set, slider drag uses `onBrightnessChange`; release uses this (matches card + HA). */
   onBrightnessCommit?: (brightness: number) => void;
@@ -74,16 +79,20 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   maxColorTemp,
   tempOptions,
   brightnessPresets,
+  currentEffect,
+  effectOptions,
   colorTemp,
   selectedColor,
   customColor,
   brightness,
   selectedIcon,
   tintColor,
+  supportsEffects,
   onTempChange,
   onTempCommit,
   onColorChange,
   onCustomColorChange,
+  onEffectSelect,
   onBrightnessChange,
   onBrightnessCommit,
   applyBrightnessPresetsToAll,
@@ -177,6 +186,15 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                 isOn={isOn}
                 onBrightnessChange={onBrightnessCommit ?? onBrightnessChange}
               />
+              {supportsEffects && effectOptions.length > 0 && (
+                <LightEffectPicker
+                  currentEffect={currentEffect}
+                  isOn={isOn}
+                  onSelect={onEffectSelect}
+                  options={effectOptions}
+                  variant="dialog"
+                />
+              )}
             </TabPanel>
 
             <TabPanel value="card" className="mt-5 space-y-6">

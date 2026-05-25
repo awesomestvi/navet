@@ -3,7 +3,11 @@ import { memo } from 'react';
 import { BrightnessSlider, KelvinSlider } from '@/app/components/shared/device-editor';
 import { LightCardActionRow } from './light-card-action-row';
 import { LightCardHeader } from './light-card-header';
-import type { HeaderIconButtonProps, LightBrightnessPreset } from './light-card-types';
+import type {
+  HeaderIconButtonProps,
+  LightBrightnessPreset,
+  LightEffectOption,
+} from './light-card-types';
 
 interface LightCardMediumProps {
   name: string;
@@ -15,12 +19,15 @@ interface LightCardMediumProps {
   minColorTemp: number;
   maxColorTemp: number;
   brightnessPresets: LightBrightnessPreset[];
+  effectOptions: LightEffectOption[];
   isOn: boolean;
   isKelvinMode: boolean;
   isColorMode: boolean;
+  currentEffect: string | null;
   activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
+  supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
   onKelvinToggle: () => void;
@@ -28,6 +35,7 @@ interface LightCardMediumProps {
   onBrightnessChange: (value: number) => void;
   onBrightnessCommit: (value: number) => void;
   onColorChange: (color: string) => void;
+  onEffectSelect: (effect: string) => void;
   onTempChange: (temp: number) => void;
   onTempCommit: (temp: number) => void;
   iconButtonProps: HeaderIconButtonProps;
@@ -46,12 +54,15 @@ export const LightCardMedium = memo(function LightCardMedium({
   minColorTemp,
   maxColorTemp,
   brightnessPresets,
+  effectOptions,
   isOn,
   isKelvinMode,
   isColorMode,
+  currentEffect,
   activeColor,
   IconComponent,
   iconText,
+  supportsEffects,
   supportsColorControl,
   supportsColorTemperature,
   onKelvinToggle,
@@ -59,6 +70,7 @@ export const LightCardMedium = memo(function LightCardMedium({
   onBrightnessChange,
   onBrightnessCommit,
   onColorChange,
+  onEffectSelect,
   onTempChange,
   onTempCommit,
   iconButtonProps,
@@ -66,6 +78,8 @@ export const LightCardMedium = memo(function LightCardMedium({
   showSettingsButton,
   showPresetOverflow,
 }: LightCardMediumProps) {
+  const inlineControlCount = (supportsColorTemperature ? 1 : 0) + (supportsColorControl ? 1 : 0);
+
   return (
     <>
       <LightCardHeader
@@ -114,16 +128,20 @@ export const LightCardMedium = memo(function LightCardMedium({
           isColorMode={isColorMode}
           supportsColorTemperature={supportsColorTemperature}
           supportsColorControl={supportsColorControl}
+          supportsEffects={supportsEffects}
           brightnessPresets={brightnessPresets}
+          effectOptions={effectOptions}
           brightness={brightness}
+          currentEffect={currentEffect}
           onKelvinToggle={onKelvinToggle}
           onColorActivate={onColorActivate}
           onColorChange={onColorChange}
+          onEffectSelect={onEffectSelect}
           onBrightnessCommit={onBrightnessCommit}
           showSettingsButton={showSettingsButton}
           settingsButtonProps={settingsButtonProps}
-          presetMaxVisible={showPresetOverflow ? 3 : undefined}
-          presetOverflow={showPresetOverflow ? 'menu' : 'hide'}
+          presetMaxVisible={showPresetOverflow ? Math.max(0, 3 - inlineControlCount) : undefined}
+          presetOverflow={supportsEffects ? 'hide' : showPresetOverflow ? 'menu' : 'hide'}
         />
       </div>
     </>

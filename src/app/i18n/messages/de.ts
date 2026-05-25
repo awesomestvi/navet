@@ -91,6 +91,25 @@ export const deMessages = {
     'Blendet Kopfzeile und Navigation aus, damit das Dashboard eine Wandanzeige ausfüllen kann.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Nutze das Mehr-Menü unten rechts, um zur Startseite zu wechseln, Einstellungen zu öffnen oder das Dashboard anzupassen.',
+  'settings.dashboard.keepAwake.title': 'Gerät wach halten',
+  'settings.dashboard.keepAwake.description':
+    'Versucht zu verhindern, dass gemeinsame Bildschirme in den Ruhezustand gehen, während Navet geöffnet ist.',
+  'settings.dashboard.keepAwake.caveat':
+    'Experimentell. Navet versucht zuerst Browser Wake Lock und fällt bei Bedarf auf lautloses Audio zurück.',
+  'settings.dashboard.keepAwake.statusLabel': 'Wachhalte-Status',
+  'settings.dashboard.keepAwake.experimental': 'Experimentell',
+  'settings.dashboard.keepAwake.bestEffort':
+    'Nur als Best-Effort. Manche eingebetteten Browser und schwächeren Displays können trotzdem einschlafen oder Autoplay blockieren.',
+  'settings.dashboard.keepAwake.activateFallback': 'Tippen, um Audio-Fallback zu aktivieren',
+  'settings.dashboard.keepAwake.activationHint':
+    'Einige Geräte benötigen einen ersten Tipp, bevor lautloses Audio den Bildschirm wach halten kann.',
+  'settings.dashboard.keepAwake.status.wake-lock': 'Aktiv über Browser Wake Lock',
+  'settings.dashboard.keepAwake.status.audio-fallback': 'Aktiv über lautlosen Audio-Fallback',
+  'settings.dashboard.keepAwake.status.pending-activation':
+    'Wartet auf einen Tipp, um den Audio-Fallback zu starten',
+  'settings.dashboard.keepAwake.status.blocked': 'Von diesem Browser oder Gerät blockiert',
+  'settings.dashboard.keepAwake.status.unsupported':
+    'Von diesem Browser oder Gerät nicht unterstützt',
   'settings.dashboard.entityVisibility.title': 'Gerätesichtbarkeit',
   'settings.dashboard.entityVisibility.description':
     'Navet verwendet jetzt ein gemeinsames Sichtbarkeitsmodell. Entferne Geräte im Bearbeitungsmodus und füge sie später über Add Entity wieder hinzu.',
@@ -132,6 +151,9 @@ export const deMessages = {
   'settings.interaction.cardBehavior.title': 'Kartenverhalten',
   'settings.interaction.cardBehavior.description':
     'Wähle, ob ein Kartentipp sofort handeln oder zuerst die Detailsteuerung öffnen soll.',
+  'settings.interaction.cameraStreams.title': 'Camera live streams',
+  'settings.interaction.cameraStreams.description':
+    'Set the default go2rtc server and stream naming strategy Navet should use for Home Assistant cameras.',
   'settings.dashboard.backup.title': 'Lokales Konfigurationsbackup',
   'settings.dashboard.backup.description':
     'Exportiere eine wiederverwendbare Momentaufnahme deines Dashboard-Layouts und stelle sie später auf einem anderen Gerät wieder her.',
@@ -497,6 +519,10 @@ export const deMessages = {
   'lighting.brightnessPresetField': 'Helligkeitsvorgabe {preset}',
   'lighting.lightColor': 'Lichtfarbe',
   'lighting.colorTemperature': 'Farbtemperatur',
+  'lighting.effects': 'Effekte',
+  'lighting.noEffect': 'Kein Effekt',
+  'lighting.effectPicker': 'Lichteffekt wählen',
+  'lighting.effect.current': 'Aktueller Effekt: {effect}',
   'lighting.lightIcon': 'Lichtsymbol',
   'lighting.iconInputPlaceholder': 'sun-medium oder 💡',
   'lighting.iconInputHelp': 'Geben Sie einen Lucide-Iconnamen ein oder fügen Sie ein Emoji ein.',
@@ -1136,6 +1162,28 @@ export const deMessages = {
   'widgets.battery.settings.selectAll': 'Alle auswählen',
   'widgets.battery.settings.clearAll': 'Auswahl löschen',
   'widgets.battery.settings.noneAvailable': 'Noch keine Batteriesensoren verfügbar.',
+  'widgets.ups.title': 'UPS Monitor',
+  'widgets.ups.noDevices': 'No UPS sensors found',
+  'widgets.ups.missingDeviceTitle': 'UPS device unavailable',
+  'widgets.ups.missingDeviceDescription':
+    'This card lost its configured UPS sensors. Open settings to choose another device.',
+  'widgets.ups.settings.title': 'UPS settings',
+  'widgets.ups.settings.device': 'UPS device',
+  'widgets.ups.settings.deviceHelp': 'Choose which discovered UPS device this card should show.',
+  'widgets.ups.settings.status': 'Status source',
+  'widgets.ups.settings.statusHelp': 'Choose the entity that represents UPS status.',
+  'widgets.ups.settings.metrics': 'Visible metrics',
+  'widgets.ups.settings.metricsHelp': 'Choose which UPS metrics to show on this card.',
+  'widgets.ups.settings.resetDefaults': 'Reset defaults',
+  'widgets.ups.settings.noneAvailable': 'No UPS-capable sensor groups available yet.',
+  'widgets.ups.settings.noStatusSource': 'No status sensor available',
+  'widgets.ups.metrics.battery': 'Battery',
+  'widgets.ups.metrics.load': 'Load',
+  'widgets.ups.metrics.inputVoltage': 'Input voltage',
+  'widgets.ups.metrics.outputVoltage': 'Output voltage',
+  'widgets.ups.metrics.runtime': 'Runtime',
+  'widgets.ups.status.unavailable': 'Unavailable',
+  'widgets.ups.status.noStatus': 'No status',
   'widgets.energyNow.settings.title': 'Energiekarte',
   'widgets.energyNow.settings.sources': 'Energieentitäten',
   'widgets.energyNow.settings.help':
@@ -1159,15 +1207,24 @@ export const deMessages = {
   'widgets.button.unconfigured': 'Tippen zum Einrichten',
   'widgets.button.invalidServiceData': 'Dienstdaten müssen ein gültiges JSON-Objekt sein',
   'widgets.button.callFailed': '{service} konnte nicht aufgerufen werden',
+  'dashboard.addCard.templates.info.name': 'Info',
+  'dashboard.addCard.templates.info.description':
+    'Pin any sensor or binary sensor as a standalone info card.',
   'dashboard.addCard.templates.battery.name': 'Akkuübersicht',
   'dashboard.addCard.templates.battery.description':
     'Alle Akkusensoren nach Ladestand sortiert, niedrigste zuerst.',
+  'dashboard.addCard.templates.ups.name': 'UPS Monitor',
+  'dashboard.addCard.templates.ups.description':
+    'Monitor battery, load, status, voltage, and runtime from a discovered UPS device.',
   'dashboard.addCard.templates.energyNow.name': 'Energie jetzt',
   'dashboard.addCard.templates.energyNow.description':
     'Vollflachige Live-Verbrauchskurve mit aktueller Leistung im Fokus.',
   'dashboard.addCard.templates.button.name': 'Aktionsschaltfläche',
   'dashboard.addCard.templates.button.description':
     'Tippen zum Auslösen eines Home Assistant-Dienstes, einer Szene oder eines Skripts.',
+  'dashboard.addCard.templates.scene.name': 'Szene',
+  'dashboard.addCard.templates.scene.description':
+    'Erstelle einen Szenenauslöser mit einem Tippen, bei dem scene.turn_on bereits vorausgefüllt ist.',
   'widgets.map.title': 'Tracker',
   'widgets.map.eyebrow': 'Live',
   'widgets.map.noTrackers': 'Keine GPS-Daten',
@@ -1233,6 +1290,8 @@ export const deMessages = {
   'camera.settings.viewMode.snapshot': 'Snapshot',
   'camera.settings.viewMode.description':
     'Live prefers go2rtc when available, then Home Assistant WebRTC/HLS, with MJPEG and snapshot fallback. Auto refreshes snapshots. Snapshot refreshes only when requested.',
+  'camera.settings.viewMode.lowPowerNote':
+    'Low power mode forces dashboard camera previews to snapshots until it is turned off.',
   'camera.settings.feedMode': 'Live feed',
   'camera.settings.feedMode.auto': 'Auto',
   'camera.settings.feedMode.go2rtc': 'go2rtc',
@@ -1242,8 +1301,32 @@ export const deMessages = {
   'camera.settings.feedMode.description':
     'Auto prefers go2rtc when available, then Home Assistant WebRTC, HLS, and MJPEG. Choose a feed to try it first while keeping fallback available.',
   'camera.settings.go2rtc': 'go2rtc',
+  'camera.settings.go2rtc.defaults': 'Default go2rtc settings',
+  'camera.settings.go2rtc.defaultServerUrl': 'Default server URL',
   'camera.settings.go2rtc.serverUrl': 'Server URL',
   'camera.settings.go2rtc.streamName': 'Stream name',
+  'camera.settings.go2rtc.streamName.inferred': 'inferred',
+  'camera.settings.go2rtc.streamNamingMode': 'Default stream naming',
+  'camera.settings.go2rtc.streamNamingMode.entity_id': 'Use camera.front_door',
+  'camera.settings.go2rtc.streamNamingMode.short_entity_id': 'Use front_door',
+  'camera.settings.go2rtc.defaults.description':
+    'These defaults apply to cameras without a direct override. Per-camera stream names can still override the inherited default.',
+  'camera.settings.go2rtc.activeSource': 'Active source',
+  'camera.settings.go2rtc.source.unavailable': 'Home Assistant native fallback',
+  'camera.settings.go2rtc.source.embedded_panel': 'Embedded Home Assistant go2rtc',
+  'camera.settings.go2rtc.source.per_camera_override': 'Per-camera go2rtc override',
+  'camera.settings.go2rtc.source.global_default': 'Inherited global go2rtc server',
+  'camera.settings.go2rtc.sourceDescription.unavailable':
+    'No go2rtc server is configured right now, so Navet will use Home Assistant WebRTC, HLS, MJPEG, and snapshot fallbacks when available.',
+  'camera.settings.go2rtc.sourceDescription.embedded_panel':
+    'Navet is using the WebRTC custom card already loaded in Home Assistant for this camera.',
+  'camera.settings.go2rtc.sourceDescription.per_camera_override':
+    'This camera is using its own go2rtc server or stream name instead of the global defaults.',
+  'camera.settings.go2rtc.sourceDescription.global_default':
+    'This camera inherits the shared go2rtc server and naming strategy from settings.',
+  'camera.settings.go2rtc.override': 'Per-camera override',
+  'camera.settings.go2rtc.override.description':
+    'Leave these fields blank to inherit the default server and inferred stream name. Fill one or both to override this camera only.',
   'camera.settings.go2rtc.description.addon':
     'Home Assistant OS or add-on users: enable the go2rtc debug UI in Home Assistant, then use your Home Assistant host with port 11984, for example http://homeassistant.local:11984. The stream name is usually the camera entity id, such as camera.front_door.',
   'camera.settings.go2rtc.description.customPanel':

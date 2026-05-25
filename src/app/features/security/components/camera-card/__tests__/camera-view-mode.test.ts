@@ -5,11 +5,37 @@ import {
   CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS,
   getCameraAutoRefreshInterval,
   resolveCameraMjpegStreamUrl,
+  resolveDashboardCameraViewMode,
+  resolveViewerInitialCameraViewMode,
   selectCameraImageSource,
 } from '../camera-view-mode';
 
 describe('camera view mode helpers', () => {
+  it('prefers WebRTC before MJPEG in standalone live auto mode', () => {
+    window.__NAVET_PANEL__ = false;
+
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
+      hasGo2RtcFeed: false,
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: ['hls', 'web_rtc'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(),
+    });
+
+    expect(source).toEqual({
+      url: undefined,
+      kind: 'web_rtc',
+      isFallback: false,
+    });
+  });
+
   it('prefers go2rtc for live cameras when the custom card is available', () => {
+    window.__NAVET_PANEL__ = false;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -29,7 +55,9 @@ describe('camera view mode helpers', () => {
     });
   });
 
-  it('prefers WebRTC for live cameras when Home Assistant advertises it', () => {
+  it('prefers WebRTC for panel live cameras when Home Assistant advertises it', () => {
+    window.__NAVET_PANEL__ = true;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -50,6 +78,8 @@ describe('camera view mode helpers', () => {
   });
 
   it('falls live mode back from WebRTC to HLS', () => {
+    window.__NAVET_PANEL__ = true;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -70,6 +100,8 @@ describe('camera view mode helpers', () => {
   });
 
   it('falls live mode back from HLS to MJPEG', () => {
+    window.__NAVET_PANEL__ = true;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -90,6 +122,8 @@ describe('camera view mode helpers', () => {
   });
 
   it('falls live mode back to snapshots when streaming is unavailable', () => {
+    window.__NAVET_PANEL__ = false;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -144,6 +178,8 @@ describe('camera view mode helpers', () => {
   });
 
   it('falls back to snapshots after stream errors and uses live fallback refresh timing', () => {
+    window.__NAVET_PANEL__ = false;
+
     const source = selectCameraImageSource({
       cameraViewMode: 'live',
       cameraFeedMode: 'auto',
@@ -217,5 +253,71 @@ describe('camera view mode helpers', () => {
     expect(resolveCameraMjpegStreamUrl('/api/camera_proxy/camera.front')).toBe(
       '/api/camera_proxy_stream/camera.front'
     );
+  });
+
+  it('defaults dashboard cards to snapshot previews in low power mode when snapshots exist', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: false,
+        lowPowerMode: true,
+        hasSnapshot: true,
+        preferSnapshotPreview: false,
+      })
+    ).toBe('snapshot');
+  });
+
+  it('defaults standalone dashboard previews to snapshots when the camera has no explicit override', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: false,
+        lowPowerMode: false,
+        hasSnapshot: true,
+        preferSnapshotPreview: true,
+      })
+    ).toBe('snapshot');
+  });
+
+  it('keeps an explicit dashboard preview override in standalone mode', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: true,
+        lowPowerMode: false,
+        hasSnapshot: true,
+        preferSnapshotPreview: true,
+      })
+    ).toBe('live');
+  });
+
+  it('keeps the saved dashboard preview mode when low power mode has no snapshot to fall back to', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: false,
+        lowPowerMode: true,
+        hasSnapshot: false,
+        preferSnapshotPreview: true,
+      })
+    ).toBe('live');
+  });
+
+  it('opens the viewer live when streaming is available even if the dashboard preview is snapshot', () => {
+    expect(
+      resolveViewerInitialCameraViewMode({
+        isStreamCapable: true,
+        hasSnapshot: true,
+      })
+    ).toBe('live');
+  });
+
+  it('keeps snapshot-only cameras on snapshots in the viewer', () => {
+    expect(
+      resolveViewerInitialCameraViewMode({
+        isStreamCapable: false,
+        hasSnapshot: true,
+      })
+    ).toBe('snapshot');
   });
 });

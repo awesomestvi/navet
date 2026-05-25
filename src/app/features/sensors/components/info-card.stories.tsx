@@ -205,6 +205,41 @@ export const Unavailable: Story = {
   },
 };
 
+export const WithSparkline: Story = {
+  args: {
+    id: 'sensor.living_room_temperature',
+    name: 'Living Room Temperature',
+    room: 'Living Room',
+    value: '21.4',
+    unit: '°C',
+    icon: 'thermometer',
+    subtitle: 'temperature',
+    deviceClass: 'temperature',
+    size: 'medium',
+    sparklineData: [
+      { value: 20.4, timestampMs: 1, endTimestampMs: 2, minValue: 20.1, maxValue: 20.7 },
+      { value: 20.8, timestampMs: 2, endTimestampMs: 3, minValue: 20.6, maxValue: 21 },
+      { value: 21.1, timestampMs: 3, endTimestampMs: 4, minValue: 20.9, maxValue: 21.3 },
+      { value: 21.4, timestampMs: 4, endTimestampMs: 5, minValue: 21.2, maxValue: 21.6 },
+    ],
+  },
+};
+
+export const WithNoHistory: Story = {
+  args: {
+    id: 'sensor.garage_temperature',
+    name: 'Garage Temperature',
+    room: 'Garage',
+    value: '21.4',
+    unit: '°C',
+    icon: 'thermometer',
+    subtitle: 'temperature',
+    deviceClass: 'temperature',
+    size: 'medium',
+    sparklineData: [],
+  },
+};
+
 export const LongName: Story = {
   args: {
     id: 'sensor.utility_room_heat_pump_total_energy_today',

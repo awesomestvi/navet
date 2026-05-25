@@ -86,9 +86,10 @@ class HAEntityService {
       rgbColor?: [number, number, number];
       hsColor?: [number, number];
       xyColor?: [number, number];
+      effect?: string;
     }
   ): Promise<void> {
-    const { state = 'on', brightnessPct, kelvin, rgbColor, hsColor, xyColor } = options;
+    const { state = 'on', brightnessPct, kelvin, rgbColor, hsColor, xyColor, effect } = options;
 
     if (state === 'off') {
       await this.callService('light', 'turn_off', {}, { entity_id: entityId });
@@ -116,6 +117,9 @@ class HAEntityService {
         Math.max(0, Math.min(1, xyColor[0])),
         Math.max(0, Math.min(1, xyColor[1])),
       ];
+    }
+    if (typeof effect === 'string' && effect.trim().length > 0) {
+      serviceData.effect = effect.trim();
     }
 
     await this.callService('light', 'turn_on', serviceData, { entity_id: entityId });

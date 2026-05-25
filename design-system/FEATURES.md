@@ -107,11 +107,11 @@ The current primary section model is:
 
 - `home`
 - `energy`
+- `climate`
 - `security`
-- `tasks`
-- `locks`
 - `lights`
 - `media`
+- `tasks`
 - `settings`
 
 Section routing and lazy loading are coordinated by
@@ -121,11 +121,11 @@ Section routing and lazy loading are coordinated by
 
 - `home`: room-driven dashboard overview, editable zone-based home canvas, and home widgets
 - `energy`: energy dashboard, setup wizard, drilldown flow, and energy-only custom widget band
+- `climate`: grouped HVAC, temperature, humidity, air-quality, and pressure surfaces
 - `security`: camera-first section built on the shared device-section shell
-- `tasks`: Home Assistant automation/task summaries grouped into sections
-- `locks`: lock-focused section built on the shared device-section shell
 - `lights`: all-lights overview using the dashboard all-view grid in custom grouping mode
 - `media`: grouped media section with audio and TV-specific presentation
+- `tasks`: Home Assistant automation/task summaries grouped into sections
 - `settings`: appearance, localization, dashboard, interaction, project, and system settings
 
 ## Dashboard
@@ -164,6 +164,7 @@ Current `CardType` values for dashboard/section widgets:
 - `energy-now`
 - `button`
 - `map`
+- `sensor-group`
 
 Home-widget implementations currently live under
 [`src/app/features/dashboard/components/widgets/`](../src/app/features/dashboard/components/widgets).
@@ -245,6 +246,7 @@ Default placement and fallback resolution live in:
 ### `security`
 
 - camera cards, lock cards, and security-specific surface tokens
+- locks are security-owned card behavior rather than a separate top-level section
 - cover cards include direct drag/keyboard position controls via `CoverPositionGestureSurface`,
   preset chips, and feature-aware open/close/stop actions
 - key path: [`src/app/features/security/components/`](../src/app/features/security/components)
@@ -317,11 +319,14 @@ Vitest is the preferred path for:
 
 Current co-located `__tests__/` directories:
 
+- `src/api/__tests__/`
 - `src/app/__tests__/`
 - `src/app/components/layout/__tests__/`
 - `src/app/components/primitives/__tests__/`
 - `src/app/components/shared/theme/__tests__/`
 - `src/app/components/system/tokens/__tests__/`
+- `src/app/constants/__tests__/`
+- `src/app/features/auth/__tests__/`
 - `src/app/features/calendar/components/calendar/__tests__/`
 - `src/app/features/climate/components/hvac-card/__tests__/`
 - `src/app/features/climate/components/hvac-settings-dialog/__tests__/`
@@ -335,10 +340,13 @@ Current co-located `__tests__/` directories:
 - `src/app/features/dashboard/utils/__tests__/`
 - `src/app/features/energy/components/dashboard/__tests__/`
 - `src/app/features/energy/components/energy-setup-wizard/__tests__/`
+- `src/app/features/energy/hooks/__tests__/`
 - `src/app/features/energy/services/__tests__/`
 - `src/app/features/energy/utils/__tests__/`
 - `src/app/features/lighting/components/__tests__/`
+- `src/app/features/lighting/components/fan-card/__tests__/`
 - `src/app/features/lighting/components/light-card/__tests__/`
+- `src/app/features/media/__tests__/`
 - `src/app/features/media/components/media-card/__tests__/`
 - `src/app/features/media/components/media/__tests__/`
 - `src/app/features/rss/components/rss-feed-card/__tests__/`
@@ -346,6 +354,7 @@ Current co-located `__tests__/` directories:
 - `src/app/features/security/components/camera-card/__tests__/`
 - `src/app/features/security/components/cover-card/__tests__/`
 - `src/app/features/security/utils/__tests__/`
+- `src/app/features/sensors/components/__tests__/`
 - `src/app/features/sensors/components/sensor-group-settings/__tests__/`
 - `src/app/features/tasks/components/__tests__/`
 - `src/app/features/tasks/utils/__tests__/`
@@ -357,6 +366,7 @@ Current co-located `__tests__/` directories:
 - `src/app/session/__tests__/`
 - `src/app/stores/__tests__/`
 - `src/app/utils/__tests__/`
+- `src/auth/__tests__/`
 
 Shared test harness support lives in [`src/test/`](../src/test).
 

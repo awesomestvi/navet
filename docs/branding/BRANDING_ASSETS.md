@@ -51,6 +51,11 @@ A quick visual reference for all Navet brand assets.
 
 **Best for:** iOS home screen • Safari tabs • iOS shortcuts
 
+### 6. Raster Install Icons
+**Files:** `/public/apple-touch-icon.png`, `/public/pwa-192.png`, `/public/pwa-512.png`
+
+**Best for:** iOS home screen installs • Android PWA prompts • Desktop PWA installs
+
 ---
 
 ## 🎨 Color Palette
@@ -75,6 +80,7 @@ End:   #ea580c (Tailwind orange-600)
 | Horizontal (Light) | `logo-horizontal-light.svg` | 200×60 | Dark backgrounds |
 | Favicon | `favicon.svg` | 32×32 | Browser tabs |
 | Apple Icon | `apple-touch-icon.svg` | 180×180 | iOS home screen |
+| Raster Install Icons | `apple-touch-icon.png`, `pwa-192.png`, `pwa-512.png` | manifest/install assets | PWA installs |
 
 ---
 
@@ -110,4 +116,4 @@ import logo from '/logo.svg';
 
 **All assets are located in `/public/` directory**
 
-*Last Updated: April 8, 2026*
+*Last Updated: May 25, 2026*

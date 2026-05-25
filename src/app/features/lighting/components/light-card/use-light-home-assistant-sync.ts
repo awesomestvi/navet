@@ -5,13 +5,14 @@ import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { useLightMemoryStore } from '../../stores/light-memory-store';
 import { clampKelvin, clampPercentage } from './light-card-utils';
 
-interface LightUpdateOptions {
+export interface LightUpdateOptions {
   state?: 'on' | 'off';
   brightnessPct?: number;
   kelvin?: number;
   rgbColor?: [number, number, number];
   hsColor?: [number, number];
   xyColor?: [number, number];
+  effect?: string;
 }
 
 interface UseLightServiceSyncParams {
