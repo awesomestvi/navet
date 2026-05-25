@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.5 - 2026-05-25
+
+Navet fixes dashboard restore and empty Home dashboard behavior for users updating from `0.2.4`.
+
+## Fixed
+
+- Imported dashboard configs now restore Home cards correctly, including configs exported with the older persisted layout wrapper.
+- Home no longer gets stuck on "Still loading devices" when an imported layout contains stale demo or unavailable card ids.
+- Removing the final Home card now leaves the empty dashboard state instead of a loading recovery error.
+- Home summary chips now sit outside the empty-state card and keep spacing consistent with the card grid.
+
 ## 0.2.4 - 2026-05-25
 
 Navet improves dashboard behavior for wall panels and broadens support for everyday Home Assistant devices.
