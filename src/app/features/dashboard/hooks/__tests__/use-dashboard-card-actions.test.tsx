@@ -26,6 +26,7 @@ describe('useDashboardCardActions', () => {
         sections: [],
       },
       addCard: vi.fn(),
+      removeCard: vi.fn(),
       addSection,
     };
 
@@ -67,6 +68,7 @@ describe('useDashboardCardActions', () => {
         sections: [],
       },
       addCard: vi.fn(),
+      removeCard: vi.fn(),
       addSection,
     };
 
@@ -115,6 +117,7 @@ describe('useDashboardCardActions', () => {
         sections: [],
       },
       addCard: vi.fn(),
+      removeCard: vi.fn(),
       addSection,
     };
 
@@ -143,5 +146,47 @@ describe('useDashboardCardActions', () => {
     expect(toastSuccess).toHaveBeenCalledWith(
       'dashboard.feedback.widgetAdded:{"type":"sensor-group","room":"Kitchen"}'
     );
+  });
+
+  it('removes deleted custom widgets from the home layout', () => {
+    const showAutoEntity = vi.fn();
+    const addCard = vi.fn();
+    const addSection = vi.fn();
+    const updateCard = vi.fn();
+    const removeCard = vi.fn();
+    const hideAutoEntity = vi.fn();
+    const homeLayoutController = {
+      layout: {
+        mode: 'flow' as const,
+        sections: [],
+      },
+      addCard: vi.fn(),
+      removeCard: vi.fn(),
+      addSection,
+    };
+
+    const { result } = renderHook(() =>
+      useDashboardCardActions({
+        activeRoom: 'All',
+        activeSection: 'home',
+        isEditMode: true,
+        addCard,
+        removeCard,
+        updateCard,
+        hideAutoEntity,
+        showAutoEntity,
+        t: (key: string) => key,
+        addCardTargetSectionId: null,
+        homeLayoutController,
+      })
+    );
+
+    act(() => {
+      result.current.handleDeleteCard('custom-note');
+    });
+
+    expect(removeCard).toHaveBeenCalledWith('custom-note');
+    expect(homeLayoutController.removeCard).toHaveBeenCalledWith('custom-note');
+    expect(toastSuccess).toHaveBeenCalledWith('dashboard.feedback.widgetDeleted');
   });
 });

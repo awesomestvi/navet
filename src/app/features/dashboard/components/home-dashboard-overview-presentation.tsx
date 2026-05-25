@@ -1,5 +1,5 @@
 import { Wand2 } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useMemo } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 import { DashboardEmptyState } from '@/app/components/patterns';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -36,7 +36,6 @@ interface HomePresentationProps {
   emptyTitle: string;
   emptyDescription: string;
   onToggleEditMode?: () => void;
-  infoBadgeStrip?: ReactNode;
 }
 
 export function HomePresentation({
@@ -55,7 +54,6 @@ export function HomePresentation({
   emptyTitle,
   emptyDescription,
   onToggleEditMode,
-  infoBadgeStrip,
 }: HomePresentationProps) {
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
   const nonEmptySections = useMemo(
@@ -111,42 +109,35 @@ export function HomePresentation({
 
   if (!hasCards) {
     return (
-      <div className="space-y-2 py-4 md:space-y-4">
-        {infoBadgeStrip}
-        <DashboardEmptyState
-          title={emptyTitle}
-          description={emptyDescription}
-          surface={surface}
-          accentColor={accentColor}
-          actionLabel="Edit dashboard"
-          onAction={onToggleEditMode}
-          actionIcon={Wand2}
-          className="mx-auto max-w-3xl"
-        />
-      </div>
+      <DashboardEmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        surface={surface}
+        accentColor={accentColor}
+        actionLabel="Edit dashboard"
+        onAction={onToggleEditMode}
+        actionIcon={Wand2}
+        className="mx-auto max-w-3xl"
+      />
     );
   }
 
   if (!isSectioned) {
     return (
-      <div className="space-y-2 md:space-y-4">
-        {infoBadgeStrip}
-        <PresentationCardGrid
-          cardIds={flowCards}
-          gridCols={gridCols}
-          allCards={allCards}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          onUpdateCard={onUpdateCard}
-          showHero={showHero}
-        />
-      </div>
+      <PresentationCardGrid
+        cardIds={flowCards}
+        gridCols={gridCols}
+        allCards={allCards}
+        cardSizes={cardSizes}
+        updateCardSize={updateCardSize}
+        onUpdateCard={onUpdateCard}
+        showHero={showHero}
+      />
     );
   }
 
   return (
     <div className="space-y-3 md:space-y-8">
-      {infoBadgeStrip}
       <div className="flex flex-col gap-6">
         {presentationRowLayouts.map(({ rowLayouts, rowStacks }, rowIndex) => (
           <div

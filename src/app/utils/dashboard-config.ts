@@ -254,6 +254,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const navigationState = useNavigationStore.getState();
   const customCardsState = useCustomCardsStore.getState();
   const dashboardEntitiesState = useDashboardEntitiesStore.getState();
+  const homeDashboardLayoutState = useHomeDashboardLayoutStore.getState();
   const lightPresetState = useLightPresetStore.getState();
 
   return {
@@ -301,7 +302,13 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
     cardZones: pruneEmptyRecord(
       parseStoredJson<Record<string, string>>(STORAGE_KEYS.cardZones, {})
     ),
-    homeDashboardLayout: parseStoredJson(STORAGE_KEYS.homeDashboardLayout, undefined),
+    homeDashboardLayout: {
+      mode: homeDashboardLayoutState.mode,
+      showHero: homeDashboardLayoutState.showHero,
+      cardIds: homeDashboardLayoutState.cardIds,
+      sections: homeDashboardLayoutState.sections,
+      cardSectionAssignments: homeDashboardLayoutState.cardSectionAssignments,
+    },
     roomOrder: pruneEmptyArray(parseStoredJson<string[]>(STORAGE_KEYS.roomOrder, [])),
   };
 };
@@ -423,7 +430,13 @@ function sanitizeStringArrayRecord(value: unknown): Record<string, string[]> {
 }
 
 function sanitizeHomeDashboardLayout(value: unknown): HomeDashboardLayoutState {
-  const normalized = normalizeLayout(value);
+  const importedLayout =
+    isRecord(value) &&
+    isRecord(value.state) &&
+    ('cardIds' in value.state || 'sections' in value.state)
+      ? value.state
+      : value;
+  const normalized = normalizeLayout(importedLayout);
 
   return {
     ...normalized,
