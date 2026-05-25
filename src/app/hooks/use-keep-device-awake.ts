@@ -102,7 +102,9 @@ function getOrCreateAudioElement() {
   const audio = new Audio(SILENT_AUDIO_URL);
   audio.loop = true;
   audio.preload = 'auto';
-  audio.setAttribute('playsinline', '');
+  if (typeof audio.setAttribute === 'function') {
+    audio.setAttribute('playsinline', '');
+  }
   audio.crossOrigin = 'anonymous';
   audioElement = audio;
   return audio;
