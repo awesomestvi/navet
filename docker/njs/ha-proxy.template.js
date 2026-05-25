@@ -2,7 +2,6 @@ import fs from 'fs';
 
 const AUTH_PATH = '/data/navet-auth-session.json';
 const PROXY_PREFIX = '/__navet_ha_proxy__';
-const FALLBACK_HASS_URL = '__NAVET_HASS_URL__';
 
 function isValidAuthData(value) {
   return (
@@ -27,26 +26,36 @@ function readStoredAuth() {
     const content = fs.readFileSync(AUTH_PATH, 'utf8');
     const parsed = JSON.parse(content);
     return isValidAuthData(parsed) ? parsed : null;
-  } catch {
+  } catch (error) {
     return null;
   }
 }
 
 function resolveBaseUrl() {
-  return normalizeBaseUrl(readStoredAuth()?.hassUrl ?? FALLBACK_HASS_URL);
+  const auth = readStoredAuth();
+  if (auth && typeof auth.hassUrl === 'string') {
+    return normalizeBaseUrl(auth.hassUrl);
+  }
+
+  return '';
 }
 
 function resolveAccessToken() {
   const auth = readStoredAuth();
-  return auth?.access_token ?? '';
+  if (auth && typeof auth.access_token === 'string') {
+    return auth.access_token;
+  }
+
+  return '';
 }
 
 function stripProxyPrefix(requestUri) {
-  const parts = String(requestUri ?? '').split('?');
-  const path = parts[0] ?? '';
-  const query = parts[1] ? `?${parts[1]}` : '';
-  const proxiedPath = path.startsWith(PROXY_PREFIX) ? path.slice(PROXY_PREFIX.length) || '/' : path;
-  return `${proxiedPath}${query}`;
+  const parts = String(requestUri || '').split('?');
+  const path = parts.length > 0 ? parts[0] : '';
+  const query = parts.length > 1 && parts[1] ? '?' + parts[1] : '';
+  const hasPrefix = path.indexOf(PROXY_PREFIX) === 0;
+  const proxiedPath = hasPrefix ? path.slice(PROXY_PREFIX.length) || '/' : path;
+  return proxiedPath + query;
 }
 
 function upstream_url(r) {
@@ -55,7 +64,7 @@ function upstream_url(r) {
     return '';
   }
 
-  return `${baseUrl}${stripProxyPrefix(r.variables.request_uri)}`;
+  return baseUrl + stripProxyPrefix(r.variables.request_uri);
 }
 
 function websocket_url(_r) {
@@ -64,12 +73,22 @@ function websocket_url(_r) {
     return '';
   }
 
-  return `${baseUrl}/api/websocket`;
+  return baseUrl + '/api/websocket';
 }
 
-function authorization_header(_r) {
+function authorization_header(r) {
+  const requestAuthorization =
+    r &&
+    r.headersIn &&
+    typeof r.headersIn.Authorization === 'string'
+      ? r.headersIn.Authorization.trim()
+      : '';
+  if (requestAuthorization) {
+    return requestAuthorization;
+  }
+
   const accessToken = resolveAccessToken();
-  return accessToken ? `Bearer ${accessToken}` : '';
+  return accessToken ? 'Bearer ' + accessToken : '';
 }
 
 export default {

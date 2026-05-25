@@ -21,13 +21,35 @@ function createIngressProxyAuth(hassUrl: string): Auth {
   return new Auth(data);
 }
 
+function createHostedProxyAuth(sourceAuth: Auth, hassUrl: string): Auth {
+  const proxyAuth = new Auth({
+    ...sourceAuth.data,
+    hassUrl,
+  });
+
+  proxyAuth.refreshAccessToken = async () => {
+    await sourceAuth.refreshAccessToken();
+    proxyAuth.data = {
+      ...sourceAuth.data,
+      hassUrl,
+    };
+  };
+
+  proxyAuth.revoke = async () => {
+    await sourceAuth.revoke();
+  };
+
+  return proxyAuth;
+}
+
 async function resolveAuth(session: AuthSession): Promise<Auth> {
   if (session.auth) {
-    session.auth.data.hassUrl = session.hassUrl;
     if (session.auth.expired) {
       await session.auth.refreshAccessToken();
     }
-    return session.auth;
+    return session.hassUrl === session.auth.data.hassUrl
+      ? session.auth
+      : createHostedProxyAuth(session.auth, session.hassUrl);
   }
 
   if (session.runtime === 'ha-ingress') {

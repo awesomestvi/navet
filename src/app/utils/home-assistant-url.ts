@@ -138,6 +138,7 @@ export function resolveHomeAssistantProxyUrl(
     const resolvedHassUrl = new URL(hassUrl);
     const currentOrigin =
       typeof window !== 'undefined' ? window.location.origin : resolvedHassUrl.origin;
+    const sameOriginPath = `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
 
     if (
       isHomeAssistantPanelMode() &&
@@ -149,7 +150,31 @@ export function resolveHomeAssistantProxyUrl(
     }
 
     if (resolvedResourceUrl.origin === currentOrigin) {
-      return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
+      if (resolvedResourceUrl.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+        if (options.proxyAvailable === false) {
+          return null;
+        }
+
+        return `${resolveIngressAwarePath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
+      }
+
+      if (resolvedResourceUrl.pathname.includes('/api/hassio_ingress/')) {
+        return sameOriginPath;
+      }
+
+      if (isHomeAssistantRelativeUrl(resolvedResourceUrl.pathname)) {
+        if (isHomeAssistantPanelMode()) {
+          return sameOriginPath;
+        }
+
+        if (options.proxyAvailable === false) {
+          return sanitizeImageUrl(resourceUrl);
+        }
+
+        return `${resolveProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
+      }
+
+      return sameOriginPath;
     }
 
     if (resolvedResourceUrl.origin !== resolvedHassUrl.origin) {

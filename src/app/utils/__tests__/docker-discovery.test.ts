@@ -39,6 +39,8 @@ describe('Docker Home Assistant discovery', () => {
     expect(nginxConfig).toContain('proxy_set_header Authorization $navet_ha_proxy_auth_header;');
     expect(haProxyScript).toContain("const AUTH_PATH = '/data/navet-auth-session.json';");
     expect(haProxyScript).toContain('access_token');
-    expect(haProxyScript).toContain('FALLBACK_HASS_URL');
+    expect(haProxyScript).toContain("typeof r.headersIn.Authorization === 'string'");
+    expect(haProxyScript).not.toContain('FALLBACK_HASS_URL');
+    expect(haProxyScript).toContain("return '';");
   });
 });

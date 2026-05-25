@@ -4,6 +4,7 @@ import {
   CAMERA_AUTO_REFRESH_INTERVAL_MS,
   CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS,
   getCameraAutoRefreshInterval,
+  normalizeCameraSnapshotUrl,
   resolveCameraMjpegStreamUrl,
   resolveDashboardCameraViewMode,
   resolveViewerInitialCameraViewMode,
@@ -252,6 +253,20 @@ describe('camera view mode helpers', () => {
     );
     expect(resolveCameraMjpegStreamUrl('/api/camera_proxy/camera.front')).toBe(
       '/api/camera_proxy_stream/camera.front'
+    );
+  });
+
+  it('normalizes Home Assistant camera proxy URLs before appending refresh tokens', () => {
+    expect(normalizeCameraSnapshotUrl('/api/camera_proxy/camera.front?token=abc')).toBe(
+      '/api/camera_proxy/camera.front'
+    );
+    expect(
+      normalizeCameraSnapshotUrl(
+        'https://ha.example.test/__navet_ha_proxy__/api/camera_proxy/camera.front?token=abc'
+      )
+    ).toBe('https://ha.example.test/__navet_ha_proxy__/api/camera_proxy/camera.front');
+    expect(normalizeCameraSnapshotUrl('https://cdn.example.test/camera.jpg?version=2')).toBe(
+      'https://cdn.example.test/camera.jpg?version=2'
     );
   });
 

@@ -30,17 +30,16 @@ export function useDashboardRoomNavigation(
     const previousRooms = previousRoomsRef.current;
     const removedRoomIndex = previousRooms.indexOf(activeRoom);
     const nextRoom =
-      (removedRoomIndex >= 0
+      removedRoomIndex >= 0
         ? (previousRooms
             .slice(removedRoomIndex + 1)
             .find((room) => room !== activeRoom && rooms.includes(room)) ??
           previousRooms
             .slice(0, removedRoomIndex)
             .reverse()
-            .find((room) => room !== activeRoom && rooms.includes(room)))
-        : undefined) ??
-      rooms[0] ??
-      ALL_ROOMS_ID;
+            .find((room) => room !== activeRoom && rooms.includes(room)) ??
+          ALL_ROOMS_ID)
+        : ALL_ROOMS_ID;
 
     changeRoom(nextRoom);
     previousRoomsRef.current = rooms;

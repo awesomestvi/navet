@@ -98,6 +98,7 @@ Use these directories when docs need to be checked against the live implementati
 - When top-level sections, shared stores, widget types, dashboard edit behavior, or test locations change, update `README.md`, `docs/WIDGETS.md`, and `design-system/FEATURES.md`
 - When Storybook ownership, UI-layer boundaries, token helpers, or `ui-kit/` exports change, update `design-system/README.md` and `STORYBOOK_WORKFLOW.md`
 - When the Home Assistant service split or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
+- When auth runtimes, OAuth behavior, or deployment defaults change, update `README.md`, `DOCKER_HOME_ASSISTANT_ADDON.md`, and `VERSIONING.md`
 - When setup scripts or test commands change, update `README.md`
 
-Last updated: May 25, 2026
+Last updated: May 26, 2026

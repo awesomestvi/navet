@@ -59,12 +59,21 @@ The custom panel deployment path is:
 3. Add the Navet integration from Settings -> Devices & services
 4. Open the Navet sidebar panel at `/navet`
 
-The Docker and add-on deployment path is:
+The Docker and add-on runtime model is:
 
-1. Build the app to static files
-2. Serve it with `nginx`
-3. Generate `/config.js` for optional dashboard/profile metadata
-4. Expose it directly or through Home Assistant Ingress
+1. CI builds the Vite app into static assets
+2. The published container image serves those assets with `nginx`
+3. The entrypoint generates `/config.js` for optional dashboard/profile metadata
+4. The runtime is exposed directly or through Home Assistant Ingress depending on the deployment surface
+
+For local Docker packaging validation before deploying, run:
+
+```bash
+pnpm check:docker
+```
+
+This builds the standalone image and runs `nginx -t` through the real container entrypoint so
+generated `njs` and nginx config issues fail locally instead of after the container boots.
 
 ## Option 1: Home Assistant Custom Panel
 
@@ -200,6 +209,9 @@ The add-on:
 - Proxies Home Assistant API and WebSocket requests through `/__navet_ha_proxy__/`
 - Optionally imports a shared dashboard YAML export on first launch
 
+When direct port access is enabled manually, the add-on behaves like the standalone container for
+auth: the user enters the Home Assistant root URL and completes the OAuth authorization-code flow.
+
 The repository also includes **Navet Dev**, a separate add-on entry with slug `navet_dev`. It uses
 the same published add-on image name as the regular add-on, but sets `version: "dev"` so Home
 Assistant pulls `ghcr.io/awesomestvi/{arch}-navet-addon:dev`.
@@ -292,6 +304,7 @@ The CI workflow runs on all branch pushes and pull requests. It currently:
 ## Public Release Notes
 
 - Keep Docker and add-on image tags aligned with `package.json` and `addons/navet/config.yaml`
+- Keep the HACS/custom panel manifest version aligned with `package.json` for tagged releases
 - Prefer documented release tags for public users over asking them to track `main`
 - Keep token-based login out of Docker and add-on default flows
 
