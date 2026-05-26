@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { oauthSessionFixture } from '@/test/fixtures/home-assistant/auth/oauth';
+import { signedPathFixture } from '@/test/fixtures/home-assistant/auth/signed-path';
 import { homeAssistantUrlFixtures } from '@/test/fixtures/home-assistant/resources/urls';
 import { resetRuntimeContextForTests } from '../../runtime/runtime-detector';
 import { HomeAssistantResourceResolver } from '../resource-resolver';
@@ -42,6 +43,30 @@ describe('HomeAssistantResourceResolver', () => {
 
     expect(resource.url).toBe(`/__navet_ha_proxy__${homeAssistantUrlFixtures.signedImageServe}`);
     expect(resource.authStrategy).toBe('same_origin');
+  });
+
+  it('resolves standalone OAuth resources to signed direct Home Assistant URLs when available', async () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const signPath = async (path: string) =>
+      path === signedPathFixture.sourceWebSocketCommand.path ? signedPathFixture.path : null;
+    const resolver = new HomeAssistantResourceResolver(
+      () => ({
+        runtime: oauthSessionFixture.runtime,
+        authMode: oauthSessionFixture.authMode,
+        haBaseUrl: oauthSessionFixture.haBaseUrl,
+        hassUrl: oauthSessionFixture.hassUrl,
+      }),
+      signPath
+    );
+
+    const resource = await resolver.resolve({
+      kind: 'absolute_url',
+      url: homeAssistantUrlFixtures.relativeImageServe,
+    });
+
+    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedPathFixture.path}`);
+    expect(resource.authStrategy).toBe('none');
   });
 
   it('rewrites absolute Home Assistant URLs through ingress-aware proxy paths', () => {

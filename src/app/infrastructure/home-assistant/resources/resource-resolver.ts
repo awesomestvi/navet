@@ -17,6 +17,7 @@ const HOME_ASSISTANT_RELATIVE_PREFIXES = [
   '/image/',
 ];
 const DEFAULT_CACHE_TTL_MS = 60_000;
+const SIGNED_PATH_EXPIRY_SECONDS = 30;
 
 function isAbsoluteHttpUrl(value: string) {
   return value.startsWith('http://') || value.startsWith('https://');
@@ -35,6 +36,40 @@ function resolveProxyPath(path: string) {
   return resolveIngressAwarePath(`${HOME_ASSISTANT_PROXY_PATH}${path}`);
 }
 
+function extractSignablePath(resourceUrl: string, haBaseUrl: string | null) {
+  if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+    return stripProxyPath(resourceUrl);
+  }
+
+  const proxyIndex = resourceUrl.indexOf(`${HOME_ASSISTANT_PROXY_PATH}/`);
+  if (proxyIndex >= 0) {
+    return stripProxyPath(resourceUrl.slice(proxyIndex));
+  }
+
+  if (resourceUrl.startsWith('/') && isHomeAssistantRelativeUrl(resourceUrl)) {
+    return resourceUrl;
+  }
+
+  if (!isAbsoluteHttpUrl(resourceUrl) || !haBaseUrl) {
+    return null;
+  }
+
+  try {
+    const resource = new URL(resourceUrl);
+    const homeAssistant = new URL(haBaseUrl);
+    if (
+      resource.origin !== homeAssistant.origin ||
+      !isHomeAssistantRelativeUrl(resource.pathname)
+    ) {
+      return null;
+    }
+
+    return `${resource.pathname}${resource.search}`;
+  } catch {
+    return null;
+  }
+}
+
 function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBustKey']) {
   if (cacheBustKey === undefined || cacheBustKey === null) {
     return url;
@@ -47,7 +82,10 @@ function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBust
 export class HomeAssistantResourceResolver {
   private cache = new ResourceCache();
 
-  constructor(private getSession: () => AuthSession | null) {}
+  constructor(
+    private getSession: () => AuthSession | null,
+    private signPath?: (path: string, expiresSeconds?: number) => Promise<string | null>
+  ) {}
 
   private buildResolvedRequest(
     url: string,
@@ -378,6 +416,44 @@ export class HomeAssistantResourceResolver {
   }
 
   async resolve(ref: HaResourceRef, options: ResolveOptions = {}): Promise<ResolvedMediaResource> {
-    return this.resolveSync(ref, options);
+    const resource = this.resolveSync(ref, options);
+    const runtime = getRuntimeContext();
+    const session = this.getSession();
+    const haBaseUrl = session?.haBaseUrl ?? runtime.haBaseUrl;
+
+    if (
+      (runtime.kind !== 'standalone' && runtime.kind !== 'dev') ||
+      session?.authMode !== 'oauth' ||
+      !this.signPath ||
+      resource.authStrategy !== 'same_origin' ||
+      !resource.url ||
+      !haBaseUrl
+    ) {
+      return resource;
+    }
+
+    const signablePath = extractSignablePath(resource.url, haBaseUrl);
+    if (!signablePath) {
+      return resource;
+    }
+
+    try {
+      const signedPath = await this.signPath(signablePath, SIGNED_PATH_EXPIRY_SECONDS);
+      if (!signedPath) {
+        return resource;
+      }
+
+      return {
+        ...resource,
+        url: `${haBaseUrl}${signedPath}`,
+        authStrategy: 'none',
+        metadata: {
+          ...resource.metadata,
+          source: 'ha_signed_path',
+        },
+      };
+    } catch {
+      return resource;
+    }
   }
 }

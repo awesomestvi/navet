@@ -1,11 +1,16 @@
+import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { authSessionManager } from './auth/auth-session-manager';
 import { CameraMediaService } from './media/camera-media-service';
 import { MediaArtworkService } from './media/media-artwork-service';
 import { HomeAssistantResourceResolver } from './resources/resource-resolver';
 import { HomeAssistantHttpGateway } from './transport/http-gateway';
 
-export const homeAssistantResourceResolver = new HomeAssistantResourceResolver(() =>
-  authSessionManager.getSession()
+export const homeAssistantResourceResolver = new HomeAssistantResourceResolver(
+  () => authSessionManager.getSession(),
+  async (path, expiresSeconds) => {
+    const signed = await homeAssistantService.signPath(path, expiresSeconds);
+    return signed.path;
+  }
 );
 
 export const homeAssistantHttpGateway = new HomeAssistantHttpGateway(() =>

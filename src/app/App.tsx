@@ -13,6 +13,7 @@ import { useAccentColor, useHomeAssistant } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
+import { INVALID_HOME_ASSISTANT_AUTH_MESSAGE } from './services/ha-connection.service';
 import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
@@ -22,6 +23,14 @@ import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function getConnectionAttemptKey(session: AuthSession) {
   return `${session.runtime}\n${session.hassUrl}\n${session.expiresAt ?? ''}`;
+}
+
+function createIngressProxyRecoverySession(session: AuthSession): AuthSession {
+  return {
+    ...session,
+    auth: undefined,
+    expiresAt: undefined,
+  };
 }
 
 function AppContent() {
@@ -48,6 +57,8 @@ function AppContent() {
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const failedConnectionAttemptKey = useRef<string | null>(null);
+  const ingressInvalidAuthRecoveryInFlight = useRef(false);
+  const isInvalidHomeAssistantAuth = appError?.message === INVALID_HOME_ASSISTANT_AUTH_MESSAGE;
 
   const syncViewportEnvironment = useCallback(() => {
     syncViewportCssVars();
@@ -56,7 +67,36 @@ function AppContent() {
   useViewportResize(syncViewportEnvironment);
   useKeepDeviceAwake(isAuthenticated && keepDeviceAwake);
 
+  const recoverIngressSession = useCallback(() => {
+    if (
+      runtime !== 'ha-ingress' ||
+      ingressInvalidAuthRecoveryInFlight.current ||
+      !isAuthenticated ||
+      !session
+    ) {
+      return;
+    }
+
+    ingressInvalidAuthRecoveryInFlight.current = true;
+    failedConnectionAttemptKey.current = null;
+    const recoverySession = createIngressProxyRecoverySession(session);
+
+    void connect(recoverySession)
+      .then(() => {
+        clearAppError();
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        ingressInvalidAuthRecoveryInFlight.current = false;
+      });
+  }, [runtime, isAuthenticated, session, connect, clearAppError]);
+
   const retryConnect = useCallback(() => {
+    if (runtime === 'ha-ingress') {
+      recoverIngressSession();
+      return;
+    }
+
     if (!isAuthenticated || !session) {
       return;
     }
@@ -65,7 +105,7 @@ function AppContent() {
     void connect(session).catch(() => {
       failedConnectionAttemptKey.current = getConnectionAttemptKey(session);
     });
-  }, [isAuthenticated, session, connect]);
+  }, [runtime, recoverIngressSession, isAuthenticated, session, connect]);
 
   const resetSessionToLogin = useCallback(() => {
     failedConnectionAttemptKey.current = null;
@@ -79,6 +119,26 @@ function AppContent() {
       disconnect();
     }
   }, [isAuthenticated, disconnect]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !canResetSessionFromError) {
+      return;
+    }
+
+    if (appError?.message !== INVALID_HOME_ASSISTANT_AUTH_MESSAGE) {
+      return;
+    }
+
+    resetSessionToLogin();
+  }, [appError, canResetSessionFromError, isAuthenticated, resetSessionToLogin]);
+
+  useEffect(() => {
+    if (!isAuthenticated || runtime !== 'ha-ingress' || !isInvalidHomeAssistantAuth) {
+      return;
+    }
+
+    recoverIngressSession();
+  }, [isAuthenticated, runtime, isInvalidHomeAssistantAuth, recoverIngressSession]);
 
   useEffect(() => {
     if (isAuthenticated && session && !connected && !connecting && !appError) {

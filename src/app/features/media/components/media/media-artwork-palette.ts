@@ -281,12 +281,39 @@ function isSameOriginUrl(imageUrl: string): boolean {
   }
 }
 
+function isSignedHomeAssistantUrl(imageUrl: string): boolean {
+  try {
+    const resolvedUrl = new URL(imageUrl, window.location.origin);
+    return (
+      resolvedUrl.searchParams.has('authSig') &&
+      (resolvedUrl.pathname.includes('/api/media_player_proxy/') ||
+        resolvedUrl.pathname.includes('/api/image/serve/') ||
+        resolvedUrl.pathname.includes('/api/camera_proxy/'))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveArtworkPalette(
   imageUrl: string,
   hassUrl?: string
 ): Promise<MediaArtworkPalette | null> {
   if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return samplePaletteFromImageUrl(imageUrl).catch(() => null);
+  }
+
+  if (isSignedHomeAssistantUrl(imageUrl)) {
+    const directPalette = await samplePaletteFromImageUrl(imageUrl).catch(() => null);
+    if (directPalette) return directPalette;
+
+    const objectUrl = await fetchArtworkObjectUrl(imageUrl).catch(() => null);
+    if (!objectUrl) return null;
+    try {
+      return await samplePaletteFromImageUrl(objectUrl);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
   if (isMediaPlayerProxyUrl(imageUrl)) {

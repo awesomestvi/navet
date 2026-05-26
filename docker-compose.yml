@@ -4,8 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: navet:local
-    env_file:
-      - .env
     ports:
       - "8080:80"
     volumes:

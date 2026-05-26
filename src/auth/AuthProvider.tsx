@@ -18,7 +18,7 @@ interface AuthContextValue {
   haBaseUrl: string | null;
   login: (input?: { hassUrl?: string; haBaseUrl?: string }) => Promise<void>;
   logout: () => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<AuthSession | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -116,8 +116,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       refresh: async () => {
         const nextSnapshot = await authSessionManager.refresh();
+        const nextSession = authSessionManager.getSession();
         setSnapshot(nextSnapshot);
-        setSession(authSessionManager.getSession());
+        setSession(nextSession);
+        return nextSession;
       },
     }),
     [runtime, snapshot, session, ready, error]

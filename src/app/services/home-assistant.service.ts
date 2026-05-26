@@ -85,6 +85,10 @@ export interface HomeAssistantCameraStream {
   url: string;
 }
 
+export interface HomeAssistantSignedPath {
+  path: string;
+}
+
 export interface HomeAssistantWebRtcClientConfiguration {
   configuration: RTCConfiguration;
   dataChannel?: string;
@@ -517,6 +521,19 @@ class HomeAssistantService {
     format: 'hls' = 'hls'
   ): Promise<HomeAssistantCameraStream> {
     return await this.entityService.getCameraStreamUrl(entityId, format);
+  }
+
+  async signPath(path: string, expires = 30): Promise<HomeAssistantSignedPath> {
+    const conn = this.getConnection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return (await conn.sendMessagePromise({
+      type: 'auth/sign_path',
+      path,
+      expires,
+    })) as HomeAssistantSignedPath;
   }
 
   async getWebRtcClientConfiguration(
