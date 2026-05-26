@@ -201,6 +201,7 @@ export const homeAssistantSelectors = {
   connection: (state: HomeAssistantStore) => state.connection,
   error: (state: HomeAssistantStore) => state.error,
   connect: (state: HomeAssistantStore) => state.connect,
+  syncPanelHass: (state: HomeAssistantStore) => state.syncPanelHass,
   disconnect: (state: HomeAssistantStore) => state.disconnect,
   clearError: (state: HomeAssistantStore) => state.clearError,
 };

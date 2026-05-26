@@ -107,6 +107,11 @@ export class AuthSessionManager {
     return this.getSnapshot();
   }
 
+  replaceSession(session: AuthSession | null): AuthSessionSnapshot {
+    this.updateSession(session);
+    return this.getSnapshot();
+  }
+
   async logout(): Promise<void> {
     this.updateSession(null);
     await this.adapter.logout?.();

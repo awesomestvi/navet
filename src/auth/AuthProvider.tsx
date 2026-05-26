@@ -19,6 +19,7 @@ interface AuthContextValue {
   login: (input?: { hassUrl?: string; haBaseUrl?: string }) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<AuthSession | null>;
+  replaceSession: (session: AuthSession | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -120,6 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSnapshot(nextSnapshot);
         setSession(nextSession);
         return nextSession;
+      },
+      replaceSession: (nextSession) => {
+        const nextSnapshot = authSessionManager.replaceSession(nextSession);
+        setSnapshot(nextSnapshot);
+        setSession(nextSession);
       },
     }),
     [runtime, snapshot, session, ready, error]

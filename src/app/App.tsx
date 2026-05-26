@@ -13,6 +13,7 @@ import { useAccentColor, useHomeAssistant } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
+import { resolveParentHomeAssistantBridge } from './infrastructure/home-assistant/runtime/parent-hass-bridge';
 import { INVALID_HOME_ASSISTANT_AUTH_MESSAGE } from './services/ha-connection.service';
 import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
@@ -34,7 +35,7 @@ function createIngressProxyRecoverySession(session: AuthSession): AuthSession {
 }
 
 function AppContent() {
-  const { runtime, session, ready, logout } = useAuthSession();
+  const { runtime, session, ready, logout, replaceSession } = useAuthSession();
   const isAuthenticated = Boolean(session);
   const canResetSessionFromError = runtime === 'standalone-oauth';
   const appError = useErrorStore(appErrorSelectors.error);
@@ -44,6 +45,7 @@ function AppContent() {
   const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
   const connect = useHomeAssistant(homeAssistantSelectors.connect);
   const disconnect = useHomeAssistant(homeAssistantSelectors.disconnect);
+  const syncPanelHass = useHomeAssistant(homeAssistantSelectors.syncPanelHass);
   const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
@@ -80,6 +82,7 @@ function AppContent() {
     ingressInvalidAuthRecoveryInFlight.current = true;
     failedConnectionAttemptKey.current = null;
     const recoverySession = createIngressProxyRecoverySession(session);
+    replaceSession(recoverySession);
 
     void connect(recoverySession)
       .then(() => {
@@ -89,7 +92,7 @@ function AppContent() {
       .finally(() => {
         ingressInvalidAuthRecoveryInFlight.current = false;
       });
-  }, [runtime, isAuthenticated, session, connect, clearAppError]);
+  }, [runtime, isAuthenticated, session, replaceSession, connect, clearAppError]);
 
   const retryConnect = useCallback(() => {
     if (runtime === 'ha-ingress') {
@@ -141,7 +144,45 @@ function AppContent() {
   }, [isAuthenticated, runtime, isInvalidHomeAssistantAuth, recoverIngressSession]);
 
   useEffect(() => {
+    if (!isAuthenticated || runtime !== 'ha-ingress') {
+      return;
+    }
+
+    const syncParentHass = () => {
+      const parentHass = resolveParentHomeAssistantBridge();
+      if (parentHass) {
+        syncPanelHass(parentHass);
+        clearAppError();
+        failedConnectionAttemptKey.current = null;
+        return true;
+      }
+
+      return false;
+    };
+
+    if (syncParentHass()) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      syncParentHass();
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isAuthenticated, runtime, syncPanelHass, clearAppError]);
+
+  useEffect(() => {
     if (isAuthenticated && session && !connected && !connecting && !appError) {
+      if (runtime === 'ha-ingress') {
+        const parentHass = resolveParentHomeAssistantBridge();
+        if (parentHass) {
+          syncPanelHass(parentHass);
+          return;
+        }
+      }
+
       const attemptKey = getConnectionAttemptKey(session);
       if (failedConnectionAttemptKey.current === attemptKey) {
         return;
@@ -151,7 +192,7 @@ function AppContent() {
         failedConnectionAttemptKey.current = attemptKey;
       });
     }
-  }, [isAuthenticated, session, connected, connecting, appError, connect]);
+  }, [isAuthenticated, session, connected, connecting, appError, runtime, syncPanelHass, connect]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);

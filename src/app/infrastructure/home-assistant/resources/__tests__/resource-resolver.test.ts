@@ -88,6 +88,26 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('same_origin');
   });
 
+  it('does not double-proxy ingress-prefixed Home Assistant camera snapshots', () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}${homeAssistantUrlFixtures.ingressBasePath}/`;
+    document.head.append(base);
+    window.history.replaceState({}, '', `${homeAssistantUrlFixtures.ingressBasePath}/security`);
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const resolver = new HomeAssistantResourceResolver(() => null);
+
+    const ingressSnapshotUrl = `${homeAssistantUrlFixtures.ingressBasePath}${homeAssistantUrlFixtures.staleProxyCameraSnapshot}`;
+    const resource = resolver.resolveSync({
+      kind: 'camera_snapshot',
+      entityId: 'camera.front_door',
+      rawPath: ingressSnapshotUrl,
+    });
+
+    expect(resource.url).toBe(ingressSnapshotUrl);
+    expect(resource.authStrategy).toBe('same_origin');
+  });
+
   it('strips stale proxy paths in panel mode and keeps same-origin HA access', () => {
     window.__NAVET_PANEL__ = true;
     resetRuntimeContextForTests();
