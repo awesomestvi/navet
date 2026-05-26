@@ -1,6 +1,8 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { buttonEntityFixtures } from '@/test/fixtures/home-assistant/entities/button';
+import { sceneEntityFixtures } from '@/test/fixtures/home-assistant/entities/scene';
 import { renderWithProviders } from '@/test/render';
 import { ButtonWidget } from '../button-widget';
 
@@ -16,7 +18,7 @@ describe('ButtonWidget', () => {
     vi.mocked(homeAssistantService.callService).mockResolvedValue(undefined);
   });
 
-  it('runs the configured action without bubbling to the card container', async () => {
+  it('runs the configured Home Assistant action without bubbling to the card container', async () => {
     const onCardClick = vi.fn();
 
     renderWithProviders(
@@ -25,7 +27,7 @@ describe('ButtonWidget', () => {
           data={{
             label: 'Movie Mode',
             service: 'scene.turn_on',
-            entityId: 'scene.movie_mode',
+            entityId: sceneEntityFixtures.normal.entity_id,
             icon: 'Film',
           }}
         />
@@ -39,33 +41,52 @@ describe('ButtonWidget', () => {
         'scene',
         'turn_on',
         {},
-        { entity_id: 'scene.movie_mode' }
+        { entity_id: sceneEntityFixtures.normal.entity_id }
       );
     });
     expect(onCardClick).not.toHaveBeenCalled();
   });
 
-  it('runs a scene preset button with the prefilled scene service and entity id', async () => {
+  it('passes through additional Home Assistant service data for button-style actions', async () => {
     renderWithProviders(
       <ButtonWidget
         data={{
-          label: 'Scene',
-          service: 'scene.turn_on',
-          entityId: 'scene.goodnight',
-          icon: 'Sparkles',
+          label: 'Doorbell Chime',
+          service: 'button.press',
+          entityId: buttonEntityFixtures.normal.entity_id,
+          serviceData: { volume: 'high' },
+          icon: 'Bell',
         }}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Scene' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Doorbell Chime' }));
 
     await waitFor(() => {
       expect(homeAssistantService.callService).toHaveBeenCalledWith(
-        'scene',
-        'turn_on',
-        {},
-        { entity_id: 'scene.goodnight' }
+        'button',
+        'press',
+        { volume: 'high' },
+        { entity_id: buttonEntityFixtures.normal.entity_id }
       );
+    });
+  });
+
+  it('ignores malformed service definitions instead of issuing invalid Home Assistant calls', async () => {
+    renderWithProviders(
+      <ButtonWidget
+        data={{
+          label: 'Unsafe',
+          service: 'javascript:alert(1)',
+          entityId: sceneEntityFixtures.normal.entity_id,
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unsafe' }));
+
+    await waitFor(() => {
+      expect(homeAssistantService.callService).not.toHaveBeenCalled();
     });
   });
 

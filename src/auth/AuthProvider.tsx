@@ -1,33 +1,32 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { haIngressAuth } from './adapters/haIngressAuth';
-import { haPanelAuth } from './adapters/haPanelAuth';
-import { standaloneOAuthAuth } from './adapters/standaloneOAuthAuth';
-import { type AuthRuntime, detectAuthRuntime } from './runtime';
-import type { AuthAdapter, AuthSession } from './types';
+import {
+  type AuthSessionSnapshot,
+  authSessionManager,
+} from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import { toLegacyAuthRuntime } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
+import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import type { AuthRuntime } from './runtime';
+import type { AuthSession } from './types';
 
 interface AuthContextValue {
   runtime: AuthRuntime;
+  snapshot: AuthSessionSnapshot;
   session: AuthSession | null;
   ready: boolean;
   error: string | null;
   hassUrl: string | null;
-  login: (input?: { hassUrl?: string }) => Promise<void>;
+  haBaseUrl: string | null;
+  login: (input?: { hassUrl?: string; haBaseUrl?: string }) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ADAPTERS: Record<AuthRuntime, AuthAdapter> = {
-  'ha-panel': haPanelAuth,
-  'ha-ingress': haIngressAuth,
-  'standalone-oauth': standaloneOAuthAuth,
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const runtime = detectAuthRuntime();
-  const adapter = ADAPTERS[runtime];
+  const runtime = toLegacyAuthRuntime(getRuntimeContext().kind);
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [snapshot, setSnapshot] = useState<AuthSessionSnapshot>(authSessionManager.getSnapshot());
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +41,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     setReady(false);
     setError(null);
-    void adapter
+    const unsubscribe = authSessionManager.subscribe((nextSnapshot, nextSession) => {
+      if (cancelled) {
+        return;
+      }
+
+      setSnapshot(nextSnapshot);
+      setSession(nextSession);
+    });
+
+    void authSessionManager
       .init()
-      .then((result) => {
+      .then((nextSnapshot) => {
         if (cancelled) return;
-        setSession(result);
+        setSnapshot(nextSnapshot);
+        setSession(authSessionManager.getSession());
       })
       .catch((err) => {
         if (cancelled) return;
@@ -59,20 +68,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
+      unsubscribe();
     };
-  }, [adapter]);
+  }, []);
 
   useEffect(() => {
-    if (!session?.expiresAt || !adapter.refresh) {
+    if (!session?.expiresAt || snapshot.authMode !== 'oauth') {
       return;
     }
 
     const delay = Math.max(5_000, session.expiresAt - Date.now() - 60_000);
     const timeoutId = window.setTimeout(() => {
-      void adapter
-        .refresh?.(session)
-        .then((nextSession) => {
-          setSession(nextSession);
+      void authSessionManager
+        .refresh()
+        .then((nextSnapshot) => {
+          setSnapshot(nextSnapshot);
+          setSession(authSessionManager.getSession());
           setError(null);
         })
         .catch((err) => {
@@ -82,32 +93,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, delay);
 
     return () => window.clearTimeout(timeoutId);
-  }, [adapter, session]);
+  }, [session, snapshot.authMode]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       runtime,
+      snapshot,
       session,
       ready,
       error,
       hassUrl: session?.hassUrl ?? null,
+      haBaseUrl: session?.haBaseUrl ?? null,
       login: async (input) => {
-        if (!adapter.login) return;
-        const next = await adapter.login(input);
-        setSession(next);
+        const nextSnapshot = await authSessionManager.login(input);
+        setSnapshot(nextSnapshot);
+        setSession(authSessionManager.getSession());
         setError(null);
       },
       logout: async () => {
         setSession(null);
-        await adapter.logout?.();
+        await authSessionManager.logout();
       },
       refresh: async () => {
-        if (!session || !adapter.refresh) return;
-        const next = await adapter.refresh(session);
-        setSession(next);
+        const nextSnapshot = await authSessionManager.refresh();
+        setSnapshot(nextSnapshot);
+        setSession(authSessionManager.getSession());
       },
     }),
-    [runtime, session, ready, error, adapter]
+    [runtime, snapshot, session, ready, error]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -120,7 +133,7 @@ export function useAuthSession() {
 }
 
 export function useAuthBaseUrl() {
-  return useContext(AuthContext)?.hassUrl ?? null;
+  return useContext(AuthContext)?.haBaseUrl ?? null;
 }
 
 export function useAuthLogout() {

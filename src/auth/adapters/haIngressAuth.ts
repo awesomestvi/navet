@@ -52,6 +52,8 @@ export const haIngressAuth: AuthAdapter = {
 
         return {
           runtime: 'ha-ingress',
+          authMode: 'ingress_session',
+          haBaseUrl: hassUrl,
           hassUrl,
           auth,
           expiresAt: auth.data.expires,
@@ -65,6 +67,8 @@ export const haIngressAuth: AuthAdapter = {
 
     return {
       runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     };
   },

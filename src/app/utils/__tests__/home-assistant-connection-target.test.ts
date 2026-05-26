@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import {
   resolveAddonLocalEndpointUrl,
   resolveHomeAssistantConnectionUrl,
@@ -10,6 +11,7 @@ describe('home-assistant-connection-target', () => {
     window.__NAVET_CONFIG__ = undefined;
     document.querySelector('base')?.remove();
     window.history.replaceState(null, '', '/');
+    resetRuntimeContextForTests();
   });
 
   it('keeps user-entered Home Assistant URLs for non-runtime sessions', () => {
@@ -25,6 +27,7 @@ describe('home-assistant-connection-target', () => {
       hassUrl: 'https://ha.example.com',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
+    resetRuntimeContextForTests();
 
     expect(
       resolveHomeAssistantConnectionUrl({
@@ -39,6 +42,7 @@ describe('home-assistant-connection-target', () => {
       hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
+    resetRuntimeContextForTests();
 
     expect(
       resolveHomeAssistantConnectionUrl({
@@ -53,6 +57,7 @@ describe('home-assistant-connection-target', () => {
       hassUrl: 'http://homeassistant:8123',
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
+    resetRuntimeContextForTests();
 
     expect(
       resolveHomeAssistantConnectionUrl({
@@ -65,6 +70,7 @@ describe('home-assistant-connection-target', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/addon-slug/`;
     document.head.append(base);
+    resetRuntimeContextForTests();
 
     expect(resolveIngressAwarePath('/__navet_ha_proxy__')).toBe(
       '/api/hassio_ingress/addon-slug/__navet_ha_proxy__'
@@ -75,6 +81,7 @@ describe('home-assistant-connection-target', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
+    resetRuntimeContextForTests();
 
     expect(resolveAddonLocalEndpointUrl('/__navet_auth__/session')).toBe(
       `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_auth__/session`

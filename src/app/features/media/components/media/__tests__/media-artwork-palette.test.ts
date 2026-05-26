@@ -7,8 +7,13 @@ describe('resolveArtworkPalette', () => {
     window.history.replaceState(null, '', '/');
   });
 
-  it('does not fetch cross-origin Home Assistant media proxy artwork directly', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch');
+  it('routes cross-origin Home Assistant media proxy artwork through the same-origin proxy', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('not image', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    );
 
     await expect(
       resolveArtworkPalette(
@@ -16,7 +21,13 @@ describe('resolveArtworkPalette', () => {
       )
     ).resolves.toBeNull();
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen',
+      {
+        credentials: 'same-origin',
+        mode: 'cors',
+      }
+    );
   });
 
   it('fetches Home Assistant media proxy artwork through the same-origin proxy when available', async () => {

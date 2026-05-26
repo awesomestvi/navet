@@ -1,6 +1,7 @@
 import type { HassConfig, HassEntity, HassUser } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HomeAssistantPanelHass } from '@/app/services/home-assistant-panel-adapter';
+import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
 import { resetAppStores } from '@/test/store-reset';
 
 type StubEntityListener = (payload: Record<string, unknown> | null) => void;
@@ -66,18 +67,18 @@ const panelUser = {
 } as HassUser;
 
 function createPanelEntity(state: string): HassEntity {
-  return {
-    entity_id: 'light.kitchen',
-    state,
-    last_changed: '2026-05-18T00:00:00.000Z',
-    last_updated: '2026-05-18T00:00:00.000Z',
-    attributes: {},
-    context: {
-      id: 'context-1',
-      user_id: 'panel-user',
-      parent_id: null,
-    },
+  const entity = lightEntityFactory({
+    friendly_name: 'Kitchen',
+  });
+  entity.entity_id = 'light.kitchen';
+  entity.state = state;
+  entity.attributes = {};
+  entity.context = {
+    id: 'context-1',
+    user_id: 'panel-user',
+    parent_id: null,
   };
+  return entity;
 }
 
 function createPanelHass(state: string): HomeAssistantPanelHass {
@@ -227,11 +228,13 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.connected = true;
     homeAssistantServiceStub.config = { location_name: 'Home' };
     homeAssistantServiceStub.entities = {
-      'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
+      'light.kitchen': createPanelEntity('on'),
     };
 
     await homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     });
 
@@ -245,6 +248,8 @@ describe('homeAssistantStore', () => {
   it('marks registries hydrated after registry service events', async () => {
     await homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     });
     homeAssistantStore.setState({ registriesHydrated: false });
@@ -265,15 +270,17 @@ describe('homeAssistantStore', () => {
     vi.useFakeTimers();
     await homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     });
 
     homeAssistantServiceStub.entities = {
-      'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
+      'light.kitchen': createPanelEntity('on'),
     };
     homeAssistantServiceStub.listeners.entities.forEach((listener) => {
       listener({
-        'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
+        'light.kitchen': createPanelEntity('on'),
       });
     });
 
@@ -287,6 +294,8 @@ describe('homeAssistantStore', () => {
   it('disconnects and resets the store', async () => {
     await homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     });
 
@@ -304,6 +313,8 @@ describe('homeAssistantStore', () => {
     await expect(
       homeAssistantStore.getState().connect({
         runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'https://ha.example.com',
         hassUrl: 'https://ha.example.com',
       })
     ).rejects.toThrow('bad token');
@@ -318,6 +329,8 @@ describe('homeAssistantStore', () => {
 
     void homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://stale-ha.example.com',
       hassUrl: 'https://stale-ha.example.com',
     });
 
@@ -341,6 +354,8 @@ describe('homeAssistantStore', () => {
 
     void homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://old-ha.example.com',
       hassUrl: 'https://old-ha.example.com',
     });
 
@@ -349,6 +364,8 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.connected = true;
     await homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://new-ha.example.com',
       hassUrl: 'https://new-ha.example.com',
     });
 
@@ -366,6 +383,8 @@ describe('homeAssistantStore', () => {
 
     void homeAssistantStore.getState().connect({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://stale-ha.example.com',
       hassUrl: 'https://stale-ha.example.com',
     });
 

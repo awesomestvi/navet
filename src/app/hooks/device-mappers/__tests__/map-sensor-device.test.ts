@@ -1,28 +1,20 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
+import {
+  binarySensorEntityFactory,
+  binarySensorEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/binary-sensor';
+import {
+  sensorEntityFactory,
+  sensorEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/sensor';
 import {
   formatBinarySensorState,
   inferSensorDisplayIcon,
   mapSensorDevice,
 } from '../map-sensor-device';
 
-function entity(
-  entityId: string,
-  state: string,
-  attributes: Record<string, unknown> = {}
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    last_changed: '2026-05-24T08:15:00.000Z',
-    last_updated: '2026-05-24T08:15:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
-
 describe('mapSensorDevice', () => {
-  it('formats binary sensor states by device class', () => {
+  it('formats documented binary sensor states by device class', () => {
     expect(formatBinarySensorState('on', 'motion')).toEqual({
       value: 'Detected',
       isActive: true,
@@ -38,9 +30,13 @@ describe('mapSensorDevice', () => {
       isActive: true,
     });
     expect(formatBinarySensorState('off', 'problem')).toEqual({ value: 'OK', isActive: false });
+    expect(formatBinarySensorState('unknown', 'motion')).toEqual({
+      value: 'unknown',
+      isActive: false,
+    });
   });
 
-  it('infers sensor icons from device class and fallback text', () => {
+  it('infers display icons from Home Assistant device classes and unit fallbacks', () => {
     expect(inferSensorDisplayIcon('sensor.room_temperature', 'temperature', '°C')).toBe(
       'thermometer'
     );
@@ -50,18 +46,24 @@ describe('mapSensorDevice', () => {
     expect(inferSensorDisplayIcon('sensor.grid_power', undefined, 'W')).toBe('zap');
   });
 
-  it('maps numeric and binary entities to normal sensor devices', () => {
+  it('maps numeric and binary entities to user-visible sensor devices', () => {
+    const humidity = sensorEntityFactory({
+      friendly_name: 'Living Room Humidity',
+      device_class: 'humidity',
+      unit_of_measurement: '%',
+    });
+    humidity.entity_id = 'sensor.living_room_humidity';
+    humidity.state = '48';
+
+    const leak = binarySensorEntityFactory({
+      friendly_name: 'Bathroom Leak',
+      device_class: 'moisture',
+    });
+    leak.entity_id = 'binary_sensor.bathroom_leak';
+    leak.state = 'off';
+
     expect(
-      mapSensorDevice(
-        'sensor.living_room_humidity',
-        entity('sensor.living_room_humidity', '48', {
-          friendly_name: 'Living Room Humidity',
-          device_class: 'humidity',
-          unit_of_measurement: '%',
-        }),
-        'Living Room Humidity',
-        'Living Room'
-      )
+      mapSensorDevice(humidity.entity_id, humidity, 'Living Room Humidity', 'Living Room')
     ).toEqual(
       expect.objectContaining({
         id: 'sensor.living_room_humidity',
@@ -72,17 +74,7 @@ describe('mapSensorDevice', () => {
       })
     );
 
-    expect(
-      mapSensorDevice(
-        'binary_sensor.bathroom_leak',
-        entity('binary_sensor.bathroom_leak', 'off', {
-          friendly_name: 'Bathroom Leak',
-          device_class: 'moisture',
-        }),
-        'Bathroom Leak',
-        'Bathroom'
-      )
-    ).toEqual(
+    expect(mapSensorDevice(leak.entity_id, leak, 'Bathroom Leak', 'Bathroom')).toEqual(
       expect.objectContaining({
         id: 'binary_sensor.bathroom_leak',
         value: 'Clear',
@@ -93,15 +85,55 @@ describe('mapSensorDevice', () => {
     );
   });
 
-  it('formats timestamp and pressure sensor values for card display', () => {
+  it('marks unknown and unavailable Home Assistant states as unavailable', () => {
+    const unknownSensor = sensorEntityFixtures.unknown;
+    const unavailableBinary = binarySensorEntityFixtures.unavailable;
+
+    expect(
+      mapSensorDevice(unknownSensor.entity_id, unknownSensor, 'Kitchen Temperature', 'Kitchen')
+    ).toEqual(
+      expect.objectContaining({
+        value: 'unknown',
+        status: 'unavailable',
+      })
+    );
+
     expect(
       mapSensorDevice(
-        'sensor.sun_next_setting',
-        entity('sensor.sun_next_setting', '2026-05-24T19:29:58+00:00', {
-          friendly_name: 'Sun Next setting',
-          device_class: 'timestamp',
-        }),
-        'Sun Next setting',
+        unavailableBinary.entity_id,
+        unavailableBinary,
+        'Front Door Motion',
+        'Entrance'
+      )
+    ).toEqual(
+      expect.objectContaining({
+        value: 'unavailable',
+        status: 'unavailable',
+      })
+    );
+  });
+
+  it('formats timestamp and pressure values using documented sensor conventions', () => {
+    const timestampSensor = sensorEntityFactory({
+      friendly_name: 'Sun Next Setting',
+      device_class: 'timestamp',
+    });
+    timestampSensor.entity_id = 'sensor.sun_next_setting';
+    timestampSensor.state = '2026-05-24T19:29:58+00:00';
+
+    const pressureSensor = sensorEntityFactory({
+      friendly_name: 'Outdoor Pressure',
+      device_class: 'pressure',
+      unit_of_measurement: 'hPa',
+    });
+    pressureSensor.entity_id = 'sensor.outdoor_pressure';
+    pressureSensor.state = '1008.527251';
+
+    expect(
+      mapSensorDevice(
+        timestampSensor.entity_id,
+        timestampSensor,
+        'Sun Next Setting',
         'Unassigned',
         { locale: 'en-US', use24HourTime: true }
       )
@@ -113,16 +145,7 @@ describe('mapSensorDevice', () => {
     );
 
     expect(
-      mapSensorDevice(
-        'sensor.outdoor_pressure',
-        entity('sensor.outdoor_pressure', '1008.527251', {
-          friendly_name: 'Outdoor Pressure',
-          device_class: 'pressure',
-          unit_of_measurement: 'hPa',
-        }),
-        'Outdoor Pressure',
-        'Outdoor'
-      )
+      mapSensorDevice(pressureSensor.entity_id, pressureSensor, 'Outdoor Pressure', 'Outdoor')
     ).toEqual(
       expect.objectContaining({
         value: '1009',

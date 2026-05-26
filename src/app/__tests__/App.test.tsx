@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { resetAppStores } from '@/test/store-reset';
 import App from '../App';
 
@@ -174,10 +175,16 @@ describe('App Home Assistant connection recovery', () => {
       revoke: vi.fn(),
     });
     window.history.replaceState({}, '', '/');
+    window.__NAVET_PANEL__ = undefined;
+    window.__NAVET_CONFIG__ = undefined;
+    resetRuntimeContextForTests();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    window.__NAVET_PANEL__ = undefined;
+    window.__NAVET_CONFIG__ = undefined;
+    resetRuntimeContextForTests();
   });
 
   it('starts a connection attempt for a saved authenticated session', async () => {
@@ -189,6 +196,8 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://192.168.68.71:8123',
       hassUrl: 'http://192.168.68.71:8123',
       auth: expect.any(Object),
       expiresAt: expect.any(Number),
@@ -283,6 +292,8 @@ describe('App Home Assistant connection recovery', () => {
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(2);
     expect(homeAssistantServiceStub.authenticate).toHaveBeenLastCalledWith({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://192.168.68.71:8123',
       hassUrl: 'http://192.168.68.71:8123',
       auth: expect.any(Object),
       expiresAt: expect.any(Number),
@@ -292,6 +303,7 @@ describe('App Home Assistant connection recovery', () => {
   it('does not show login reset recovery in add-on ingress', async () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
     window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    resetRuntimeContextForTests();
     setNoStoredSession();
 
     await act(async () => {

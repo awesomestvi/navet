@@ -42,7 +42,6 @@ describe('CameraStreamPlayer timeout fallback', () => {
         entityId="camera.front"
         kind="hls"
         posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="https://ha.example.com"
         fitMode="cover"
         onError={onError}
       />

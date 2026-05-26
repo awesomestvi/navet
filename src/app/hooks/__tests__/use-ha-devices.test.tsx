@@ -1,36 +1,23 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { binarySensorEntityFixtures } from '@/test/fixtures/home-assistant/entities/binary-sensor';
+import { fanEntityFactory, fanEntityFixtures } from '@/test/fixtures/home-assistant/entities/fan';
+import {
+  sensorEntityFactory,
+  sensorEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/sensor';
 import { renderHookWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { useHADevices } from '../use-ha-devices';
 
-function createEntity(
-  entityId: string,
-  state: string,
-  attributes: Record<string, unknown> = {}
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
-
 describe('useHADevices', () => {
-  it('maps Home Assistant fan entities as addable fan devices', async () => {
+  it('maps Home Assistant fan entities as addable fan devices with registry-derived room names', async () => {
     await resetAppStores();
     homeAssistantStore.setState({
       entities: {
-        'fan.hallway': createEntity('fan.hallway', 'on', {
-          friendly_name: 'Hallway Fan',
-          percentage: 50,
-        }),
+        [fanEntityFixtures.normal.entity_id]: fanEntityFixtures.normal,
       },
-      entityRegistry: [{ entity_id: 'fan.hallway', area_id: 'hallway' }],
+      entityRegistry: [{ entity_id: fanEntityFixtures.normal.entity_id, area_id: 'hallway' }],
       areas: [{ area_id: 'hallway', name: 'Hallway' }],
     });
 
@@ -38,33 +25,28 @@ describe('useHADevices', () => {
 
     expect(result.current.fans).toEqual([
       expect.objectContaining({
-        id: 'fan.hallway',
-        name: 'Hallway Fan',
+        id: fanEntityFixtures.normal.entity_id,
+        name: 'Bedroom Fan',
         room: 'Hallway',
         state: true,
-        percentage: 50,
+        percentage: 66,
       }),
     ]);
     expect(result.current.switches).toEqual([]);
   });
 
-  it('maps sensor and binary sensor entities as normal sensor devices', async () => {
+  it('maps sensor and binary_sensor entities from realistic Home Assistant payloads', async () => {
     await resetAppStores();
+    const temperatureSensor = sensorEntityFactory();
+    const motionSensor = binarySensorEntityFixtures.normal;
     homeAssistantStore.setState({
       entities: {
-        'sensor.kitchen_temperature': createEntity('sensor.kitchen_temperature', '21.4', {
-          friendly_name: 'Kitchen Temperature',
-          device_class: 'temperature',
-          unit_of_measurement: '°C',
-        }),
-        'binary_sensor.kitchen_motion': createEntity('binary_sensor.kitchen_motion', 'on', {
-          friendly_name: 'Kitchen Motion',
-          device_class: 'motion',
-        }),
+        [temperatureSensor.entity_id]: temperatureSensor,
+        [motionSensor.entity_id]: motionSensor,
       },
       entityRegistry: [
-        { entity_id: 'sensor.kitchen_temperature', area_id: 'kitchen' },
-        { entity_id: 'binary_sensor.kitchen_motion', area_id: 'kitchen' },
+        { entity_id: temperatureSensor.entity_id, area_id: 'kitchen' },
+        { entity_id: motionSensor.entity_id, area_id: 'kitchen' },
       ],
       areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
     });
@@ -73,7 +55,7 @@ describe('useHADevices', () => {
 
     expect(result.current.sensors).toEqual([
       expect.objectContaining({
-        id: 'sensor.kitchen_temperature',
+        id: temperatureSensor.entity_id,
         name: 'Kitchen Temperature',
         room: 'Kitchen',
         value: '21.4',
@@ -83,8 +65,8 @@ describe('useHADevices', () => {
         status: 'measurement',
       }),
       expect.objectContaining({
-        id: 'binary_sensor.kitchen_motion',
-        name: 'Kitchen Motion',
+        id: binarySensorEntityFixtures.normal.entity_id,
+        name: 'Front Door Motion',
         room: 'Kitchen',
         value: 'Detected',
         unit: '',
@@ -93,5 +75,75 @@ describe('useHADevices', () => {
         status: 'active',
       }),
     ]);
+  });
+
+  it('preserves unavailable and unknown Home Assistant entity states in mapped devices', async () => {
+    await resetAppStores();
+    const unavailableFan = fanEntityFactory();
+    unavailableFan.state = 'unavailable';
+    homeAssistantStore.setState({
+      entities: {
+        [unavailableFan.entity_id]: unavailableFan,
+        [sensorEntityFixtures.unknown.entity_id]: sensorEntityFixtures.unknown,
+      },
+      entityRegistry: [
+        { entity_id: unavailableFan.entity_id, area_id: 'office' },
+        { entity_id: sensorEntityFixtures.unknown.entity_id, area_id: 'office' },
+      ],
+      areas: [{ area_id: 'office', name: 'Office' }],
+    });
+
+    const { result } = renderHookWithProviders(() => useHADevices());
+
+    expect(result.current.fans[0]).toEqual(
+      expect.objectContaining({
+        id: unavailableFan.entity_id,
+        room: 'Office',
+        state: false,
+      })
+    );
+    expect(result.current.sensors[0]).toEqual(
+      expect.objectContaining({
+        id: sensorEntityFixtures.unknown.entity_id,
+        room: 'Office',
+        value: 'unknown',
+        status: 'unavailable',
+      })
+    );
+  });
+
+  it('tolerates missing optional and malformed-but-plausible Home Assistant attributes', async () => {
+    await resetAppStores();
+    homeAssistantStore.setState({
+      entities: {
+        [sensorEntityFixtures.missingOptionalAttributes.entity_id]:
+          sensorEntityFixtures.missingOptionalAttributes,
+        [fanEntityFixtures.malformedButPlausible.entity_id]:
+          fanEntityFixtures.malformedButPlausible,
+      },
+      entityRegistry: [
+        {
+          entity_id: sensorEntityFixtures.missingOptionalAttributes.entity_id,
+          area_id: 'utility',
+        },
+        { entity_id: fanEntityFixtures.malformedButPlausible.entity_id, area_id: 'utility' },
+      ],
+      areas: [{ area_id: 'utility', name: 'Utility' }],
+    });
+
+    const { result } = renderHookWithProviders(() => useHADevices());
+
+    expect(result.current.sensors[0]).toEqual(
+      expect.objectContaining({
+        id: sensorEntityFixtures.missingOptionalAttributes.entity_id,
+        room: 'Utility',
+      })
+    );
+    expect(result.current.fans[0]).toEqual(
+      expect.objectContaining({
+        id: fanEntityFixtures.malformedButPlausible.entity_id,
+        room: 'Utility',
+      })
+    );
   });
 });

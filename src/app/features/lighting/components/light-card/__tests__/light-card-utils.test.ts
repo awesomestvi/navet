@@ -1,5 +1,5 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
+import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
 import {
   clampKelvin,
   clampPercentage,
@@ -13,16 +13,16 @@ import {
 } from '../light-card-utils';
 
 // Minimal HassEntity factory for tests
-function makeEntity(overrides: Partial<HassEntity> = {}): HassEntity {
-  return {
-    entity_id: 'light.test',
-    state: 'on',
-    attributes: {},
-    context: { id: '', parent_id: null, user_id: null },
-    last_changed: '',
-    last_updated: '',
-    ...overrides,
-  } as HassEntity;
+function makeEntity(
+  overrides: { entity_id?: string; state?: string; attributes?: Record<string, unknown> } = {}
+) {
+  const entity = lightEntityFactory();
+  entity.entity_id = overrides.entity_id ?? 'light.test';
+  entity.state = (overrides.state as 'on' | 'off') ?? 'on';
+  if (overrides.attributes !== undefined) {
+    entity.attributes = overrides.attributes;
+  }
+  return entity;
 }
 
 // ─── clampPercentage ───────────────────────────────────────────────────────

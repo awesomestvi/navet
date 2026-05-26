@@ -1,6 +1,7 @@
 import { act } from '@testing-library/react';
-import type { HassConfig, HassEntity } from 'home-assistant-js-websocket';
+import type { HassConfig } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { climateEntityFactory } from '@/test/fixtures/home-assistant/entities/climate';
 import { renderHookWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 
@@ -31,15 +32,17 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { useHVACCardController } from '../use-hvac-card-controller';
 
-function createClimateEntity(attributes: Record<string, unknown>, state = 'heat'): HassEntity {
-  return {
-    entity_id: 'climate.hallway',
-    state,
-    attributes,
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
+function createClimateEntity(attributes: Record<string, unknown>, state = 'heat') {
+  const entity = climateEntityFactory(attributes);
+  entity.entity_id = 'climate.hallway';
+  entity.state = state;
+  if (
+    ('target_temp_low' in attributes || 'target_temp_high' in attributes) &&
+    !('temperature' in attributes)
+  ) {
+    delete (entity.attributes as Record<string, unknown>).temperature;
+  }
+  return entity;
 }
 
 describe('useHVACCardController', () => {

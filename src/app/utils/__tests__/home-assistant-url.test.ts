@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import { homeAssistantUrlFixtures } from '@/test/fixtures/home-assistant/resources/urls';
 import {
   resolveHomeAssistantAbsoluteUrl,
   resolveHomeAssistantProxyUrl,
@@ -8,6 +10,8 @@ describe('home-assistant-url', () => {
   beforeEach(() => {
     document.querySelector('base')?.remove();
     window.__NAVET_PANEL__ = false;
+    window.__NAVET_CONFIG__ = undefined;
+    resetRuntimeContextForTests();
   });
 
   it('keeps safe app asset paths for absolute artwork resolution', () => {
@@ -23,8 +27,8 @@ describe('home-assistant-url', () => {
   });
 
   it('still proxies Home Assistant media paths in development', () => {
-    expect(resolveHomeAssistantProxyUrl('/api/media_player_proxy/media_player.living_room')).toBe(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room'
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeMediaArtwork)).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
     );
   });
 
@@ -32,9 +36,10 @@ describe('home-assistant-url', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/addon-slug/`;
     document.head.append(base);
+    resetRuntimeContextForTests();
 
-    expect(resolveHomeAssistantProxyUrl('/api/media_player_proxy/media_player.living_room')).toBe(
-      '/api/hassio_ingress/addon-slug/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room'
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeMediaArtwork)).toBe(
+      `/api/hassio_ingress/addon-slug/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
     );
   });
 
@@ -45,13 +50,13 @@ describe('home-assistant-url', () => {
         'https://ha.example.test',
         { proxyAvailable: false }
       )
-    ).toBe('https://ha.example.test/api/media_player_proxy/media_player.living_room');
+    ).toBe(`https://ha.example.test${homeAssistantUrlFixtures.relativeMediaArtwork}`);
   });
 
   it('does not keep stale Home Assistant proxy paths when proxy generation is disabled', () => {
     expect(
       resolveHomeAssistantProxyUrl(
-        '/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room',
+        homeAssistantUrlFixtures.staleProxyMediaArtwork,
         'https://ha.example.test',
         { proxyAvailable: false }
       )
@@ -59,58 +64,84 @@ describe('home-assistant-url', () => {
   });
 
   it('proxies absolute Home Assistant media URLs when they match the configured Home Assistant URL', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.absoluteHaMediaArtwork)).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
+    );
+  });
+
+  it('still proxies absolute Home Assistant-style media URLs when ingress is hosted on a different origin', () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/addon-slug/`;
+    document.head.append(base);
+    window.__NAVET_CONFIG__ = { hassUrl: window.location.origin };
+    resetRuntimeContextForTests();
+
     expect(
       resolveHomeAssistantProxyUrl(
-        'https://ha.example.test/api/media_player_proxy/media_player.living_room',
-        'https://ha.example.test'
+        'http://homeassistant:8123/api/media_player_proxy/media_player.living_room'
       )
-    ).toBe('/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room');
+    ).toBe(
+      `/api/hassio_ingress/addon-slug/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
+    );
   });
 
   it('keeps matching absolute Home Assistant media URLs direct when proxy generation is disabled', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
     expect(
       resolveHomeAssistantProxyUrl(
-        'https://ha.example.test/api/media_player_proxy/media_player.living_room',
+        homeAssistantUrlFixtures.absoluteHaMediaArtwork,
         'https://ha.example.test',
         { proxyAvailable: false }
       )
-    ).toBe('https://ha.example.test/api/media_player_proxy/media_player.living_room');
+    ).toBe(`https://ha.example.test${homeAssistantUrlFixtures.relativeMediaArtwork}`);
   });
 
   it('keeps Home Assistant image API paths same-origin in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
-    expect(resolveHomeAssistantProxyUrl('/api/image/serve/image-id/512x512')).toBe(
-      '/api/image/serve/image-id/512x512'
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeImageServe)).toBe(
+      homeAssistantUrlFixtures.relativeImageServe
     );
   });
 
   it('strips stale Home Assistant proxy image paths in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
     expect(
-      resolveHomeAssistantProxyUrl('/__navet_ha_proxy__/api/image/serve/image-id/512x512')
-    ).toBe('/api/image/serve/image-id/512x512');
+      resolveHomeAssistantProxyUrl(
+        `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeImageServe}`
+      )
+    ).toBe(homeAssistantUrlFixtures.relativeImageServe);
   });
 
   it('strips stale Home Assistant proxy image paths for absolute resolution in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
     expect(
-      resolveHomeAssistantAbsoluteUrl('/__navet_ha_proxy__/api/image/serve/image-id/512x512')
-    ).toBe('/api/image/serve/image-id/512x512');
+      resolveHomeAssistantAbsoluteUrl(
+        `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeImageServe}`
+      )
+    ).toBe(homeAssistantUrlFixtures.relativeImageServe);
   });
 
   it('keeps Home Assistant media proxy paths same-origin in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
-    expect(resolveHomeAssistantProxyUrl('/api/media_player_proxy/media_player.living_room')).toBe(
-      '/api/media_player_proxy/media_player.living_room'
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeMediaArtwork)).toBe(
+      homeAssistantUrlFixtures.relativeMediaArtwork
     );
   });
 
   it('keeps safe app asset paths unchanged in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
     expect(resolveHomeAssistantProxyUrl('/navet/demo/assets/album.jpg')).toBe(
       '/navet/demo/assets/album.jpg'
@@ -119,6 +150,7 @@ describe('home-assistant-url', () => {
 
   it('keeps external image URLs sanitized in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
     expect(resolveHomeAssistantProxyUrl('https://cdn.example.test/album.jpg')).toBe(
       'https://cdn.example.test/album.jpg'
@@ -127,54 +159,80 @@ describe('home-assistant-url', () => {
 
   it('keeps absolute Home Assistant URLs same-origin in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
 
-    expect(
-      resolveHomeAssistantProxyUrl(
-        'https://ha.example.test/api/image/serve/image-id/512x512?authSig=abc',
-        'https://ha.example.test'
-      )
-    ).toBe('/api/image/serve/image-id/512x512?authSig=abc');
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.absoluteHaSignedImage)).toBe(
+      homeAssistantUrlFixtures.signedImageServe
+    );
   });
 
   it('strips stale absolute Home Assistant proxy URLs in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
     expect(
       resolveHomeAssistantProxyUrl(
-        `${window.location.origin}/__navet_ha_proxy__/api/image/serve/image-id/512x512`,
-        window.location.origin
+        `${window.location.origin}/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeImageServe}`
       )
-    ).toBe('/api/image/serve/image-id/512x512');
+    ).toBe(homeAssistantUrlFixtures.relativeImageServe);
   });
 
   it('strips stale configured Home Assistant proxy media URLs in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
 
     expect(
-      resolveHomeAssistantProxyUrl(
-        'https://ha.example.test/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room',
-        'https://ha.example.test'
-      )
-    ).toBe('/api/media_player_proxy/media_player.living_room');
+      resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.absoluteIngressProxyMediaArtwork)
+    ).toBe(homeAssistantUrlFixtures.relativeMediaArtwork);
   });
 
   it('keeps relative Home Assistant URLs same-origin for absolute resolution in panel mode', () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
 
-    expect(
-      resolveHomeAssistantAbsoluteUrl(
-        '/api/image/serve/image-id/512x512',
-        'https://ha.example.test'
-      )
-    ).toBe('/api/image/serve/image-id/512x512');
+    expect(resolveHomeAssistantAbsoluteUrl(homeAssistantUrlFixtures.relativeImageServe)).toBe(
+      homeAssistantUrlFixtures.relativeImageServe
+    );
   });
 
   it('proxies Home Assistant media paths for hosted runtime artwork resolution', () => {
-    expect(
-      resolveHomeAssistantProxyUrl(
-        '/api/media_player_proxy/media_player.living_room',
-        'https://ha.example.test'
-      )
-    ).toBe('/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room');
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeMediaArtwork)).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
+    );
+  });
+
+  it('proxies Home Assistant camera snapshot paths in hosted runtimes', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
+
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeCameraSnapshot)).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeCameraSnapshot}`
+    );
+  });
+
+  it('proxies Home Assistant camera stream paths in hosted runtimes', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
+    resetRuntimeContextForTests();
+
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeCameraStream)).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeCameraStream}`
+    );
+  });
+
+  it('keeps signed Home Assistant image paths stable in panel mode', () => {
+    window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
+
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.signedImageServe)).toBe(
+      homeAssistantUrlFixtures.signedImageServe
+    );
+  });
+
+  it('returns null for unsafe or unavailable resource URLs', () => {
+    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.unsafeJavascriptUrl)).toBeNull();
   });
 });

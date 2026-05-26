@@ -1,5 +1,9 @@
 import type { Auth } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import { ingressSessionFixture } from '@/test/fixtures/home-assistant/auth/ingress';
+import { oauthSessionFixture } from '@/test/fixtures/home-assistant/auth/oauth';
+import { panelSessionFixture } from '@/test/fixtures/home-assistant/auth/panel';
 import { createHomeAssistantClient } from '../homeAssistantClient';
 
 const { createConnectionMock, getAuthMock } = vi.hoisted(() => ({
@@ -49,21 +53,25 @@ describe('createHomeAssistantClient', () => {
     window.history.replaceState({}, '', '/');
     createConnectionMock.mockResolvedValue({ id: 'connection' });
     window.__NAVET_CONFIG__ = undefined;
+    resetRuntimeContextForTests();
   });
 
   it('does not start OAuth for an auth-less add-on ingress session', async () => {
-    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    window.history.replaceState({}, '', ingressSessionFixture.ingressPath);
+    resetRuntimeContextForTests();
 
     await createHomeAssistantClient({
-      runtime: 'ha-ingress',
-      hassUrl: window.location.origin,
+      runtime: ingressSessionFixture.runtime,
+      authMode: ingressSessionFixture.authMode,
+      haBaseUrl: ingressSessionFixture.haBaseUrl,
+      hassUrl: ingressSessionFixture.hassUrl,
     });
 
     expect(getAuthMock).not.toHaveBeenCalled();
     expect(createConnectionMock).toHaveBeenCalledWith({
       auth: expect.objectContaining({
         data: expect.objectContaining({
-          hassUrl: `${window.location.origin}/api/hassio_ingress/navet/__navet_ha_proxy__`,
+          hassUrl: `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`,
           clientId: null,
         }),
       }),
@@ -73,15 +81,16 @@ describe('createHomeAssistantClient', () => {
 
   it('keeps standalone OAuth persistence pointed at Home Assistant while proxying the connection', async () => {
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant.local:8123',
+      hassUrl: oauthSessionFixture.haBaseUrl,
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
+    resetRuntimeContextForTests();
 
     const refreshAccessToken = vi.fn();
     const revoke = vi.fn();
     const auth = {
       data: {
-        hassUrl: 'http://homeassistant.local:8123',
+        hassUrl: oauthSessionFixture.haBaseUrl,
         clientId: `${window.location.origin}/`,
         expires: Date.now() + 3_600_000,
         refresh_token: 'refresh-token',
@@ -102,8 +111,10 @@ describe('createHomeAssistantClient', () => {
     } as Auth;
 
     await createHomeAssistantClient({
-      runtime: 'standalone-oauth',
-      hassUrl: 'http://homeassistant.local:8123',
+      runtime: oauthSessionFixture.runtime,
+      authMode: oauthSessionFixture.authMode,
+      haBaseUrl: oauthSessionFixture.haBaseUrl,
+      hassUrl: oauthSessionFixture.hassUrl,
       auth,
       expiresAt: auth.data.expires,
     });
@@ -117,19 +128,20 @@ describe('createHomeAssistantClient', () => {
       }),
       setupRetry: 3,
     });
-    expect(auth.data.hassUrl).toBe('http://homeassistant.local:8123');
+    expect(auth.data.hassUrl).toBe(oauthSessionFixture.haBaseUrl);
     expect(refreshAccessToken).not.toHaveBeenCalled();
   });
 
   it('refreshes standalone proxy auth through the original OAuth session', async () => {
     window.__NAVET_CONFIG__ = {
-      hassUrl: 'http://homeassistant.local:8123',
+      hassUrl: oauthSessionFixture.haBaseUrl,
       proxyBaseUrl: '/__navet_ha_proxy__',
     };
+    resetRuntimeContextForTests();
 
     const auth = {
       data: {
-        hassUrl: 'http://homeassistant.local:8123',
+        hassUrl: oauthSessionFixture.haBaseUrl,
         clientId: `${window.location.origin}/`,
         expires: Date.now() - 1,
         refresh_token: 'refresh-token',
@@ -156,14 +168,16 @@ describe('createHomeAssistantClient', () => {
     } as Auth;
 
     await createHomeAssistantClient({
-      runtime: 'standalone-oauth',
-      hassUrl: 'http://homeassistant.local:8123',
+      runtime: oauthSessionFixture.runtime,
+      authMode: oauthSessionFixture.authMode,
+      haBaseUrl: oauthSessionFixture.haBaseUrl,
+      hassUrl: oauthSessionFixture.hassUrl,
       auth,
       expiresAt: auth.data.expires,
     });
 
     expect(auth.refreshAccessToken).toHaveBeenCalled();
-    expect(auth.data.hassUrl).toBe('http://homeassistant.local:8123');
+    expect(auth.data.hassUrl).toBe(oauthSessionFixture.haBaseUrl);
     expect(createConnectionMock).toHaveBeenCalledWith({
       auth: expect.objectContaining({
         data: expect.objectContaining({
@@ -173,5 +187,36 @@ describe('createHomeAssistantClient', () => {
       }),
       setupRetry: 3,
     });
+  });
+
+  it('keeps panel-auth sessions same-origin when no proxy session is needed', async () => {
+    window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
+    getAuthMock.mockResolvedValue({
+      id: 'panel-auth',
+    });
+
+    await createHomeAssistantClient({
+      runtime: panelSessionFixture.runtime,
+      authMode: panelSessionFixture.authMode,
+      haBaseUrl: panelSessionFixture.haBaseUrl,
+      hassUrl: panelSessionFixture.hassUrl,
+    });
+
+    expect(getAuthMock).toHaveBeenCalledWith({ hassUrl: panelSessionFixture.haBaseUrl });
+  });
+
+  it('surfaces invalid Home Assistant auth errors instead of mutating them', async () => {
+    const error = new Error('auth_invalid');
+    getAuthMock.mockRejectedValueOnce(error);
+
+    await expect(
+      createHomeAssistantClient({
+        runtime: panelSessionFixture.runtime,
+        authMode: panelSessionFixture.authMode,
+        haBaseUrl: panelSessionFixture.haBaseUrl,
+        hassUrl: panelSessionFixture.hassUrl,
+      })
+    ).rejects.toThrow('auth_invalid');
   });
 });

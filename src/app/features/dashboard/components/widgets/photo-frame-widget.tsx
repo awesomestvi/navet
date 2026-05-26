@@ -4,7 +4,6 @@ import { BaseCard, RoundControlButton } from '@/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
 import { usePhotoFrameSources } from './use-photo-frame-sources';
@@ -74,7 +73,6 @@ export function PhotoFrameWidget({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const rooms = useAreaRooms();
-  const hassUrl = useAuthBaseUrl();
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,7 +83,6 @@ export function PhotoFrameWidget({
     sourceMode: resolvedSourceMode,
     photoUrls,
     mediaSourceId,
-    hassUrl: hassUrl ?? undefined,
   });
 
   const photoCount = hasCustomPhotos ? activePhotoUrls.length : mockPhotos.length;

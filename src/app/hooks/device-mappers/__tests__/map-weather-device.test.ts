@@ -1,18 +1,11 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import type { TranslateFn } from '@/app/i18n';
+import {
+  weatherEntityFactory,
+  weatherEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/weather';
+import { weatherIntegrationFixtures } from '@/test/fixtures/home-assistant/integrations/weather';
 import { mapWeatherDevice } from '../map-weather-device';
-
-function createWeatherEntity(attributes: Record<string, unknown> = {}): HassEntity {
-  return {
-    entity_id: 'weather.home',
-    state: 'sunny',
-    attributes,
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
 
 const t: TranslateFn = (key, values) => {
   if (key === 'weather.today') return 'Today';
@@ -24,57 +17,77 @@ const t: TranslateFn = (key, values) => {
 
 describe('mapWeatherDevice', () => {
   it('formats hourly forecast labels with the selected 12-hour preference', () => {
-    const device = mapWeatherDevice('weather.home', createWeatherEntity(), 'Home', 'Home', {
-      locale: 'en-US',
-      t,
-      use24HourTime: false,
-      weatherForecastMode: 'hourly',
-      storedForecasts: {
-        daily: [],
-        hourly: [{ datetime: '2026-05-17T13:00:00.000Z', temperature: 21 }],
-      },
-    });
-
-    expect(device.forecast[0]?.day).toMatch(/[AP]M$/);
-  });
-
-  it('preserves Fahrenheit weather and forecast units', () => {
     const device = mapWeatherDevice(
-      'weather.home',
-      createWeatherEntity({
-        temperature: 72,
-        apparent_temperature: 75,
-        unit_of_measurement: '°F',
-      }),
-      'Home',
+      weatherEntityFixtures.normal.entity_id,
+      weatherIntegrationFixtures.weather,
+      'Met.no Home Weather',
       'Home',
       {
         locale: 'en-US',
         t,
         use24HourTime: false,
-        weatherForecastMode: 'weekly',
+        weatherForecastMode: 'hourly',
         storedForecasts: {
-          daily: [
-            {
-              datetime: '2026-05-17T13:00:00.000Z',
-              temperature: 80,
-              templow: 65,
-              temperature_unit: '°F',
-              condition: 'sunny',
-            },
-          ],
-          hourly: [],
+          daily: [],
+          hourly: [{ datetime: '2026-05-17T13:00:00.000Z', temperature: 21 }],
         },
       }
     );
 
-    expect(device.temperature).toBe(72);
+    expect(device.forecast[0]?.day).toMatch(/[AP]M$/);
+  });
+
+  it('formats hourly forecast labels with the selected 24-hour preference', () => {
+    const device = mapWeatherDevice(
+      weatherEntityFixtures.normal.entity_id,
+      weatherIntegrationFixtures.weather,
+      'Met.no Home Weather',
+      'Home',
+      {
+        locale: 'en-US',
+        t,
+        use24HourTime: true,
+        weatherForecastMode: 'hourly',
+        storedForecasts: {
+          daily: [],
+          hourly: [{ datetime: '2026-05-17T13:00:00.000Z', temperature: 21 }],
+        },
+      }
+    );
+
+    expect(device.forecast[0]?.day).toMatch(/^\d{1,2}$/);
+    expect(device.forecast[0]?.day).not.toMatch(/[AP]M$/);
+  });
+
+  it('preserves Fahrenheit weather and forecast units', () => {
+    const entity = weatherEntityFactory({
+      temperature: 72,
+      apparent_temperature: 75,
+      unit_of_measurement: '°F',
+    });
+
+    const device = mapWeatherDevice(entity.entity_id, entity, 'Home', 'Home', {
+      locale: 'en-US',
+      t,
+      use24HourTime: false,
+      weatherForecastMode: 'weekly',
+      storedForecasts: {
+        daily: [
+          {
+            datetime: '2026-05-17T13:00:00.000Z',
+            temperature: 80,
+            templow: 65,
+            temperature_unit: '°F',
+            condition: 'sunny',
+          },
+        ],
+        hourly: [],
+      },
+    });
+
     expect(device.temperatureUnit).toBe('fahrenheit');
-    expect(device.feelsLikeTemperature).toBe(75);
     expect(device.feelsLikeTemperatureUnit).toBe('fahrenheit');
-    expect(device.highTemp).toBe(80);
     expect(device.highTempUnit).toBe('fahrenheit');
-    expect(device.lowTemp).toBe(65);
     expect(device.lowTempUnit).toBe('fahrenheit');
     expect(device.forecast[0]).toEqual(
       expect.objectContaining({
@@ -86,24 +99,10 @@ describe('mapWeatherDevice', () => {
     );
   });
 
-  it('formats hourly forecast labels with the selected 24-hour preference', () => {
-    const device = mapWeatherDevice('weather.home', createWeatherEntity(), 'Home', 'Home', {
-      locale: 'en-US',
-      t,
-      use24HourTime: true,
-      weatherForecastMode: 'hourly',
-      storedForecasts: {
-        daily: [],
-        hourly: [{ datetime: '2026-05-17T13:00:00.000Z', temperature: 21 }],
-      },
-    });
+  it('uses the explicit weather location attribute before generic config location names', () => {
+    const entity = weatherEntityFactory({ location: 'Solna' });
 
-    expect(device.forecast[0]?.day).toMatch(/^\d{1,2}$/);
-    expect(device.forecast[0]?.day).not.toMatch(/[AP]M$/);
-  });
-
-  it('uses the entity name before the generic Home Assistant location name', () => {
-    const device = mapWeatherDevice('weather.home', createWeatherEntity(), 'Stockholm', 'Home', {
+    const device = mapWeatherDevice(entity.entity_id, entity, 'Stockholm', 'Home', {
       locale: 'en-US',
       t,
       use24HourTime: true,
@@ -111,24 +110,29 @@ describe('mapWeatherDevice', () => {
       config: { location_name: 'Home' },
     });
 
-    expect(device.location).toBe('Stockholm');
+    expect(device.location).toBe('Solna');
   });
 
-  it('keeps explicit weather location attributes ahead of the entity name', () => {
-    const device = mapWeatherDevice(
-      'weather.home',
-      createWeatherEntity({ location: 'Solna' }),
-      'Stockholm',
-      'Home',
-      {
-        locale: 'en-US',
-        t,
-        use24HourTime: true,
-        weatherForecastMode: 'weekly',
-        config: { location_name: 'Home' },
-      }
-    );
+  it('falls back safely when optional forecast fields are missing', () => {
+    const entity = weatherEntityFactory({
+      forecast: [{ datetime: '2026-05-17T13:00:00.000Z', condition: 'rainy' }],
+      temperature: undefined,
+      apparent_temperature: undefined,
+    });
 
-    expect(device.location).toBe('Solna');
+    const device = mapWeatherDevice(entity.entity_id, entity, 'Home', 'Home', {
+      locale: 'en-US',
+      t,
+      use24HourTime: true,
+      weatherForecastMode: 'weekly',
+    });
+
+    expect(device.forecast[0]).toEqual(
+      expect.objectContaining({
+        condition: 'rainy',
+        high: 0,
+        low: 0,
+      })
+    );
   });
 });

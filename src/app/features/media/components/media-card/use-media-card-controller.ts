@@ -11,7 +11,6 @@ import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks'
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import {
   getTvRemoteCommand,
   resolveTvRemoteProfile,
@@ -67,7 +66,6 @@ export function useMediaCardController({
   initialSupportedFeatures,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
-  const hassUrl = useAuthBaseUrl();
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
@@ -256,7 +254,6 @@ export function useMediaCardController({
     artworkKey,
     liveEntityPicture,
     liveArtworkKey,
-    homeAssistantUrl: hassUrl ?? undefined,
   });
 
   useMediaEntitySync({

@@ -1,6 +1,7 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import type { CameraDevice, LockDevice } from '@/app/types/device.types';
+import { makeHassEntityFixture } from '@/test/fixtures/home-assistant/shared';
 import {
   buildSecurityCameraDashboardModel,
   isStillImageUtilityCamera,
@@ -33,17 +34,6 @@ function lock(overrides: Partial<LockDevice> & Pick<LockDevice, 'id' | 'name'>):
     room: overrides.room ?? 'Entrance',
     size: overrides.size ?? 'small',
     state: overrides.state ?? true,
-  };
-}
-
-function entity(state: string, attributes: Record<string, unknown> = {}): HassEntity {
-  return {
-    entity_id: 'binary_sensor.placeholder',
-    state,
-    attributes,
-    last_changed: '2026-05-15T18:00:00.000Z',
-    last_updated: '2026-05-15T18:00:00.000Z',
-    context: { id: 'context', parent_id: null, user_id: null },
   };
 }
 
@@ -84,16 +74,30 @@ describe('security camera dashboard model', () => {
 
   it('derives related security status from locks and binary sensors', () => {
     const entities = {
-      'binary_sensor.entry_motion': entity('on', {
-        device_class: 'motion',
-        friendly_name: 'Entry Motion',
+      'binary_sensor.entry_motion': makeHassEntityFixture({
+        entityId: 'binary_sensor.entry_motion',
+        state: 'on',
+        attributes: {
+          device_class: 'motion',
+          friendly_name: 'Entry Motion',
+        },
       }),
-      'binary_sensor.patio_door': entity('on', {
-        device_class: 'door',
-        friendly_name: 'Patio Door',
+      'binary_sensor.patio_door': makeHassEntityFixture({
+        entityId: 'binary_sensor.patio_door',
+        state: 'on',
+        attributes: {
+          device_class: 'door',
+          friendly_name: 'Patio Door',
+        },
       }),
-      'alarm_control_panel.home': entity('armed_home'),
-      'siren.hallway': entity('on'),
+      'alarm_control_panel.home': makeHassEntityFixture({
+        entityId: 'alarm_control_panel.home',
+        state: 'armed_home',
+      }),
+      'siren.hallway': makeHassEntityFixture({
+        entityId: 'siren.hallway',
+        state: 'on',
+      }),
     } satisfies HassEntities;
 
     const model = buildSecurityCameraDashboardModel(

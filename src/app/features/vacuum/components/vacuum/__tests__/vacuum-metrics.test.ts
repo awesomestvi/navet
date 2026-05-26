@@ -1,30 +1,25 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
+import { vacuumEntityFactory } from '@/test/fixtures/home-assistant/entities/vacuum';
 import { resolveVacuumGlanceMetrics } from '../vacuum-metrics';
-
-function entity(state: string, attributes: Record<string, unknown> = {}): HassEntity {
-  return {
-    entity_id: 'sensor.test',
-    state,
-    attributes,
-    last_changed: '',
-    last_updated: '',
-    context: { id: '', parent_id: null, user_id: null },
-  } as HassEntity;
-}
 
 describe('resolveVacuumGlanceMetrics', () => {
   it('reads direct vacuum attributes first', () => {
+    const vacuumEntity = vacuumEntityFactory({
+      battery_level: 82,
+      next_cleaning: 'Every weekday 09:00',
+      water_level: 63,
+      bin_level: 41,
+    });
+    vacuumEntity.entity_id = 'vacuum.roborock';
+    vacuumEntity.state = 'docked';
+
     const metrics = resolveVacuumGlanceMetrics({
       vacuumEntityId: 'vacuum.roborock',
       fallbackBattery: 10,
-      vacuumEntity: entity('docked', {
-        battery_level: 82,
-        next_cleaning: 'Every weekday 09:00',
-        water_level: 63,
-        bin_level: 41,
-      }),
+      vacuumEntity,
     });
 
     expect(metrics).toEqual({
@@ -36,11 +31,33 @@ describe('resolveVacuumGlanceMetrics', () => {
   });
 
   it('discovers related water and bin sensors from the entity registry', () => {
+    const vacuum = vacuumEntityFactory();
+    vacuum.entity_id = 'vacuum.roborock';
+    vacuum.state = 'docked';
+    const waterSensor = sensorEntityFactory({
+      friendly_name: 'Water tank',
+      unit_of_measurement: '%',
+    });
+    waterSensor.entity_id = 'sensor.roborock_water_tank';
+    waterSensor.state = '17';
+    const dustbinSensor = sensorEntityFactory({
+      friendly_name: 'Dustbin',
+      unit_of_measurement: '%',
+    });
+    dustbinSensor.entity_id = 'sensor.roborock_dustbin';
+    dustbinSensor.state = '91';
+    const unrelatedWaterSensor = sensorEntityFactory({
+      friendly_name: 'Water tank',
+      unit_of_measurement: '%',
+    });
+    unrelatedWaterSensor.entity_id = 'sensor.unrelated_water';
+    unrelatedWaterSensor.state = '100';
+
     const entities = {
-      'vacuum.roborock': entity('docked'),
-      'sensor.roborock_water_tank': entity('17'),
-      'sensor.roborock_dustbin': entity('91'),
-      'sensor.unrelated_water': entity('100'),
+      'vacuum.roborock': vacuum,
+      'sensor.roborock_water_tank': waterSensor,
+      'sensor.roborock_dustbin': dustbinSensor,
+      'sensor.unrelated_water': unrelatedWaterSensor,
     } as HassEntities;
     const entityRegistry: HomeAssistantEntityRegistryEntry[] = [
       { entity_id: 'vacuum.roborock', device_id: 'device-vacuum' },

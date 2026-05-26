@@ -6,7 +6,7 @@ CONFIG_FILE="${CONFIG_DIR}/config.js"
 NGINX_CONF="/etc/nginx/http.d/default.conf"
 
 DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
-RESOLVED_HASS_URL="http://homeassistant:8123"
+RESOLVED_HASS_PROXY_BASE="http://supervisor/core"
 
 mkdir -p /data
 chown nginx:nginx /data 2>/dev/null || true
@@ -44,7 +44,7 @@ server {
   include /etc/nginx/snippets/navet-profile-store.conf;
 
   location = /__navet_ha_proxy__/api/websocket {
-    proxy_pass ${RESOLVED_HASS_URL}/api/websocket;
+    proxy_pass ${RESOLVED_HASS_PROXY_BASE}/websocket;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
     proxy_set_header Forwarded "";
@@ -63,7 +63,7 @@ ${PROXY_AUTH_DIRECTIVE}
     if (\$uri ~ "\.\.") {
       return 400;
     }
-    proxy_pass ${RESOLVED_HASS_URL}/;
+    proxy_pass ${RESOLVED_HASS_PROXY_BASE}/;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
     proxy_set_header Forwarded "";

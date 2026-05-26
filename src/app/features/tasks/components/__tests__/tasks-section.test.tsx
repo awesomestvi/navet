@@ -1,9 +1,13 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { automationEntityFactory } from '@/test/fixtures/home-assistant/entities/automation';
+import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
+import { sceneEntityFactory } from '@/test/fixtures/home-assistant/entities/scene';
+import { scriptEntityFactory } from '@/test/fixtures/home-assistant/entities/script';
+import { makeHassEntityFixture } from '@/test/fixtures/home-assistant/shared';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
-import { makeHassEntity } from '../../test-utils';
 
 const { callServiceMock } = vi.hoisted(() => ({
   callServiceMock: vi.fn().mockResolvedValue(undefined),
@@ -39,6 +43,50 @@ vi.mock('@/app/services/home-assistant.service', async () => {
 import { TasksSection } from '../../index';
 
 function setRoutineEntities() {
+  const automationCoffee = automationEntityFactory({
+    friendly_name: 'Brew coffee',
+    description: 'Starts the coffee machine before breakfast.',
+    mode: 'single',
+    current: 1,
+  });
+  automationCoffee.entity_id = 'automation.coffee';
+
+  const automationNight = automationEntityFactory({
+    friendly_name: 'Night mode',
+    description: undefined,
+    last_triggered: undefined,
+  });
+  automationNight.entity_id = 'automation.night';
+  automationNight.state = 'off';
+
+  const movieScene = sceneEntityFactory({
+    friendly_name: 'Movie time',
+  });
+  movieScene.entity_id = 'scene.movie';
+
+  const goodnightScript = scriptEntityFactory({
+    friendly_name: 'Good night',
+  });
+  goodnightScript.entity_id = 'script.goodnight';
+
+  const sunEntity = makeHassEntityFixture({
+    entityId: 'sun.sun',
+    state: 'below_horizon',
+    attributes: { friendly_name: 'Sun' },
+  });
+
+  const kitchenLight = lightEntityFactory({
+    friendly_name: 'Kitchen light',
+  });
+  kitchenLight.entity_id = 'light.kitchen';
+  kitchenLight.state = 'off';
+
+  const counterLight = lightEntityFactory({
+    friendly_name: 'Counter light',
+  });
+  counterLight.entity_id = 'light.counter';
+  counterLight.state = 'off';
+
   homeAssistantStore.setState({
     ...homeAssistantStore.getState(),
     connected: true,
@@ -46,59 +94,13 @@ function setRoutineEntities() {
     deviceRegistry: [{ id: 'device-1', area_id: 'kitchen' }],
     entityRegistry: [{ entity_id: 'automation.coffee', device_id: 'device-1' }],
     entities: {
-      'automation.coffee': makeHassEntity({
-        entity_id: 'automation.coffee',
-        state: 'on',
-        attributes: {
-          friendly_name: 'Brew coffee',
-          last_triggered: '2026-05-04T07:15:00.000Z',
-          description: 'Starts the coffee machine before breakfast.',
-          mode: 'single',
-          current: 1,
-        },
-      }),
-      'automation.night': makeHassEntity({
-        entity_id: 'automation.night',
-        state: 'off',
-        attributes: {
-          friendly_name: 'Night mode',
-        },
-      }),
-      'scene.movie': makeHassEntity({
-        entity_id: 'scene.movie',
-        state: 'scening',
-        attributes: {
-          friendly_name: 'Movie time',
-        },
-      }),
-      'script.goodnight': makeHassEntity({
-        entity_id: 'script.goodnight',
-        state: 'off',
-        attributes: {
-          friendly_name: 'Good night',
-        },
-      }),
-      'sun.sun': makeHassEntity({
-        entity_id: 'sun.sun',
-        state: 'below_horizon',
-        attributes: {
-          friendly_name: 'Sun',
-        },
-      }),
-      'light.kitchen': makeHassEntity({
-        entity_id: 'light.kitchen',
-        state: 'off',
-        attributes: {
-          friendly_name: 'Kitchen light',
-        },
-      }),
-      'light.counter': makeHassEntity({
-        entity_id: 'light.counter',
-        state: 'off',
-        attributes: {
-          friendly_name: 'Counter light',
-        },
-      }),
+      [automationCoffee.entity_id]: automationCoffee,
+      [automationNight.entity_id]: automationNight,
+      [movieScene.entity_id]: movieScene,
+      [goodnightScript.entity_id]: goodnightScript,
+      [sunEntity.entity_id]: sunEntity,
+      [kitchenLight.entity_id]: kitchenLight,
+      [counterLight.entity_id]: counterLight,
     },
   });
 }
@@ -128,7 +130,7 @@ describe('TasksSection', () => {
     expect(screen.queryByRole('button', { name: 'Create routine' })).not.toBeInTheDocument();
   });
 
-  it('renders automations and Home Assistant scripts', () => {
+  it('renders automations, scenes, and scripts from Home Assistant entities', () => {
     setRoutineEntities();
 
     renderWithProviders(<TasksSection />);
@@ -145,7 +147,7 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Good night').length).toBeGreaterThan(0);
   });
 
-  it('filters automations with active and off pills', () => {
+  it('filters automations with active and disabled pills', () => {
     setRoutineEntities();
 
     renderWithProviders(<TasksSection />);
@@ -168,7 +170,7 @@ describe('TasksSection', () => {
     expect(screen.getByText('Night mode')).toBeInTheDocument();
   });
 
-  it('shows a quiet reconnect warning while preserving runnable routines', () => {
+  it('shows a reconnect warning while preserving runnable Home Assistant routines', () => {
     setRoutineEntities();
     homeAssistantStore.setState({
       ...homeAssistantStore.getState(),
@@ -181,7 +183,7 @@ describe('TasksSection', () => {
     expect(screen.getByRole('button', { name: 'Run Movie time' })).toBeInTheDocument();
   });
 
-  it('wires routine actions through Home Assistant services', async () => {
+  it('routes routine actions through documented Home Assistant services', async () => {
     setRoutineEntities();
 
     renderWithProviders(<TasksSection />);

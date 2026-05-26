@@ -1,78 +1,18 @@
-import { isHomeAssistantPanelMode } from '../runtime/app-mode';
-import { resolveIngressAwarePath } from './home-assistant-connection-target';
-import { isSafeRelativePath, sanitizeImageUrl } from './url-security';
+import { homeAssistantResourceResolver } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
 
 const HOME_ASSISTANT_PROXY_PATH = '/__navet_ha_proxy__';
-const HOME_ASSISTANT_RELATIVE_PREFIXES = [
-  '/api/',
-  '/local/',
-  '/media/',
-  '/auth/',
-  '/static/',
-  '/hls/',
-  '/image/',
-];
-
-function isAbsoluteHttpUrl(value: string) {
-  return value.startsWith('http://') || value.startsWith('https://');
-}
-
-function isHomeAssistantRelativeUrl(value: string) {
-  return HOME_ASSISTANT_RELATIVE_PREFIXES.some((prefix) => value.startsWith(prefix));
-}
-
-function resolveProxyPath(path: string) {
-  return resolveIngressAwarePath(`${HOME_ASSISTANT_PROXY_PATH}${path}`);
-}
-
-function stripHomeAssistantProxyPath(path: string) {
-  const unproxiedPath = path.slice(HOME_ASSISTANT_PROXY_PATH.length);
-  return unproxiedPath.startsWith('/') ? unproxiedPath : `/${unproxiedPath}`;
-}
 
 interface ResolveHomeAssistantProxyUrlOptions {
   proxyAvailable?: boolean;
 }
 
-export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, hassUrl?: string) {
-  if (!resourceUrl) {
-    return null;
-  }
-
-  const safeImageUrl = sanitizeImageUrl(resourceUrl, undefined, {
-    allowBlob: true,
-    allowDataImage: true,
+export function resolveHomeAssistantAbsoluteUrl(resourceUrl: string, _hassUrl?: string) {
+  const resource = homeAssistantResourceResolver.resolveSync({
+    kind: 'absolute_url',
+    url: resourceUrl,
   });
-  if (safeImageUrl && safeImageUrl !== resourceUrl) {
-    return safeImageUrl;
-  }
 
-  if (resourceUrl.startsWith('blob:') || resourceUrl.startsWith('data:')) {
-    return safeImageUrl;
-  }
-
-  if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH) && isHomeAssistantPanelMode()) {
-    const [proxyPath = '', proxyQuery = ''] = resourceUrl.split('?');
-    return `${stripHomeAssistantProxyPath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
-  }
-
-  if (
-    resourceUrl.startsWith('/') &&
-    isSafeRelativePath(resourceUrl) &&
-    isHomeAssistantRelativeUrl(resourceUrl)
-  ) {
-    if (isHomeAssistantPanelMode()) {
-      return resourceUrl;
-    }
-
-    return hassUrl ? `${hassUrl}${resourceUrl}` : resourceUrl;
-  }
-
-  if (resourceUrl.startsWith('/') && isSafeRelativePath(resourceUrl)) {
-    return resourceUrl;
-  }
-
-  return sanitizeImageUrl(resourceUrl) ?? null;
+  return resource.url ?? null;
 }
 
 export function resolveHomeAssistantProxyUrl(
@@ -80,122 +20,51 @@ export function resolveHomeAssistantProxyUrl(
   hassUrl?: string,
   options: ResolveHomeAssistantProxyUrlOptions = {}
 ) {
-  if (!resourceUrl) {
-    return null;
-  }
-
-  const safeImageUrl = sanitizeImageUrl(resourceUrl, undefined, {
-    allowBlob: true,
-    allowDataImage: true,
-  });
-  if (resourceUrl.startsWith('blob:') || resourceUrl.startsWith('data:')) {
-    return safeImageUrl;
-  }
-
-  if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
-    const [proxyPath = '', proxyQuery = ''] = resourceUrl.split('?');
-    if (isHomeAssistantPanelMode()) {
-      return `${stripHomeAssistantProxyPath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
-    }
-
-    if (options.proxyAvailable === false) {
+  if (options.proxyAvailable === false) {
+    if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
       return null;
     }
 
-    return `${resolveIngressAwarePath(proxyPath)}${proxyQuery ? `?${proxyQuery}` : ''}`;
-  }
-
-  if (
-    resourceUrl.startsWith('/') &&
-    isSafeRelativePath(resourceUrl) &&
-    isHomeAssistantRelativeUrl(resourceUrl)
-  ) {
-    if (isHomeAssistantPanelMode()) {
-      return resourceUrl;
-    }
-
-    if (options.proxyAvailable === false) {
+    if (
+      resourceUrl.startsWith('/api/') ||
+      resourceUrl.startsWith('/image/') ||
+      resourceUrl.startsWith('/local/') ||
+      resourceUrl.startsWith('/media/') ||
+      resourceUrl.startsWith('/hls/')
+    ) {
       return hassUrl ? `${hassUrl}${resourceUrl}` : null;
     }
 
-    return resolveProxyPath(resourceUrl);
+    if (resourceUrl.startsWith('http://') || resourceUrl.startsWith('https://')) {
+      return resourceUrl;
+    }
   }
 
-  if (resourceUrl.startsWith('/') && isSafeRelativePath(resourceUrl)) {
-    return resourceUrl;
-  }
-
-  if (!isAbsoluteHttpUrl(resourceUrl)) {
-    return null;
-  }
-
-  if (!hassUrl) {
-    return resourceUrl;
-  }
-
-  try {
-    const resolvedResourceUrl = new URL(resourceUrl);
-    const resolvedHassUrl = new URL(hassUrl);
-    const currentOrigin =
-      typeof window !== 'undefined' ? window.location.origin : resolvedHassUrl.origin;
-    const sameOriginPath = `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
-
-    if (
-      isHomeAssistantPanelMode() &&
-      resolvedResourceUrl.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH) &&
-      (resolvedResourceUrl.origin === currentOrigin ||
-        resolvedResourceUrl.origin === resolvedHassUrl.origin)
-    ) {
-      return `${stripHomeAssistantProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
+  const resource = homeAssistantResourceResolver.resolveSync(
+    {
+      kind:
+        resourceUrl.includes('/api/camera_proxy/') ||
+        resourceUrl.includes('/api/camera_proxy_stream/')
+          ? 'camera_snapshot'
+          : 'absolute_url',
+      ...(resourceUrl.includes('/api/camera_proxy/') ||
+      resourceUrl.includes('/api/camera_proxy_stream/')
+        ? { entityId: resourceUrl, rawPath: resourceUrl }
+        : { url: resourceUrl }),
+    } as
+      | { kind: 'camera_snapshot'; entityId: string; rawPath: string }
+      | { kind: 'absolute_url'; url: string },
+    {
+      allowDirect: options.proxyAvailable === false,
     }
+  );
 
-    if (resolvedResourceUrl.origin === currentOrigin) {
-      if (resolvedResourceUrl.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
-        if (options.proxyAvailable === false) {
-          return null;
-        }
-
-        return `${resolveIngressAwarePath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
-      }
-
-      if (resolvedResourceUrl.pathname.includes('/api/hassio_ingress/')) {
-        return sameOriginPath;
-      }
-
-      if (isHomeAssistantRelativeUrl(resolvedResourceUrl.pathname)) {
-        if (isHomeAssistantPanelMode()) {
-          return sameOriginPath;
-        }
-
-        if (options.proxyAvailable === false) {
-          return sanitizeImageUrl(resourceUrl);
-        }
-
-        return `${resolveProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
-      }
-
-      return sameOriginPath;
-    }
-
-    if (resolvedResourceUrl.origin !== resolvedHassUrl.origin) {
-      return sanitizeImageUrl(resourceUrl);
-    }
-
-    if (isHomeAssistantPanelMode()) {
-      return `${resolvedResourceUrl.pathname}${resolvedResourceUrl.search}`;
-    }
-
-    if (options.proxyAvailable === false) {
-      return sanitizeImageUrl(resourceUrl);
-    }
-
-    return `${resolveProxyPath(resolvedResourceUrl.pathname)}${resolvedResourceUrl.search}`;
-  } catch (error) {
-    console.error('[HomeAssistantURL] URL resolution failed:', error);
-    return resourceUrl;
-  }
+  return resource.url ?? null;
 }
 
 export function isMediaPlayerProxyUrl(resourceUrl: string) {
-  return resourceUrl.includes('/api/media_player_proxy/');
+  return (
+    resourceUrl.includes('/api/media_player_proxy/') ||
+    resourceUrl.includes(`${HOME_ASSISTANT_PROXY_PATH}/api/media_player_proxy/`)
+  );
 }

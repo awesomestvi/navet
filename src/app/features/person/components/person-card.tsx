@@ -6,7 +6,7 @@ import { type CardSize, getStandardCardPadding } from '@/app/components/shared/c
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
+import { resolveHomeAssistantAbsoluteUrl } from '@/app/utils/home-assistant-url';
 import { getPersonCardSurfaceTokens } from './person-card-surface-tokens';
 
 interface PersonCardProps {
@@ -87,7 +87,6 @@ export const PersonCard = memo(function PersonCard({
   const { t } = useI18n();
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
-  const hassUrl = useAuthBaseUrl();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
 
   const liveState: 'home' | 'away' =
@@ -113,9 +112,9 @@ export const PersonCard = memo(function PersonCard({
   const cardColors = liveState === 'home' ? colors.person.home : colors.person.away;
   const surface = getPersonCardSurfaceTokens(theme, liveState);
   const padding = getStandardCardPadding(size);
-  const resolvedEntityPicture = liveEntityPicture?.startsWith('/')
-    ? `${hassUrl ?? ''}${liveEntityPicture}`
-    : liveEntityPicture;
+  const resolvedEntityPicture = liveEntityPicture
+    ? (resolveHomeAssistantAbsoluteUrl(liveEntityPicture) ?? undefined)
+    : undefined;
   const hasPortrait = Boolean(resolvedEntityPicture);
   const isTiny = size === 'tiny';
   const isExtraSmall = size === 'extra-small';

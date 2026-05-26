@@ -1,5 +1,6 @@
 import type { AuthData, Connection } from 'home-assistant-js-websocket';
 import { Auth, createConnection, getAuth } from 'home-assistant-js-websocket';
+import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { resolveHomeAssistantConnectionUrl } from '@/app/utils/home-assistant-connection-target';
 import type { AuthSession } from '@/auth/types';
 
@@ -43,20 +44,22 @@ function createHostedProxyAuth(sourceAuth: Auth, hassUrl: string): Auth {
 }
 
 async function resolveAuth(session: AuthSession): Promise<Auth> {
+  const targetHassUrl = session.hassUrl;
+
   if (session.auth) {
     if (session.auth.expired) {
       await session.auth.refreshAccessToken();
     }
-    return session.hassUrl === session.auth.data.hassUrl
+    return targetHassUrl === session.auth.data.hassUrl
       ? session.auth
-      : createHostedProxyAuth(session.auth, session.hassUrl);
+      : createHostedProxyAuth(session.auth, targetHassUrl);
   }
 
   if (session.runtime === 'ha-ingress') {
-    return createIngressProxyAuth(session.hassUrl);
+    return createIngressProxyAuth(targetHassUrl);
   }
 
-  return getAuth({ hassUrl: session.hassUrl });
+  return getAuth({ hassUrl: session.haBaseUrl });
 }
 
 export async function createHomeAssistantClient(
@@ -64,7 +67,7 @@ export async function createHomeAssistantClient(
 ): Promise<HomeAssistantClient> {
   const connectionUrl = resolveHomeAssistantConnectionUrl({
     runtime: session.runtime,
-    hassUrl: session.hassUrl,
+    hassUrl: session.haBaseUrl,
   });
   const auth = await resolveAuth({ ...session, hassUrl: connectionUrl });
   const connection = await createConnection({ auth, setupRetry: 3 });
@@ -73,5 +76,5 @@ export async function createHomeAssistantClient(
 }
 
 export function getHomeAssistantBaseUrl(session: AuthSession | null): string | null {
-  return session?.hassUrl ?? null;
+  return session?.haBaseUrl ?? getRuntimeContext().haBaseUrl ?? null;
 }

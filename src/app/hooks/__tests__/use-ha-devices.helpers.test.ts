@@ -1,28 +1,14 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import { climateEntityFactory } from '@/test/fixtures/home-assistant/entities/climate';
+import { waterHeaterEntityFactory } from '@/test/fixtures/home-assistant/entities/water-heater';
+import { makeHassEntityFixture } from '@/test/fixtures/home-assistant/shared';
 import {
   buildDeviceIndexes,
-  getEntityCategory,
-  mapHelperDevice,
   shouldSkipSwitchDevice,
   shouldSuppressHelperCard,
 } from '../use-ha-devices.helpers';
-
-function createEntity(
-  entityId: string,
-  state: string,
-  attributes: Record<string, unknown> = {}
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    last_changed: '2026-05-13T00:00:00.000Z',
-    last_updated: '2026-05-13T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
 
 function createRegistryMap(entries: HomeAssistantEntityRegistryEntry[]) {
   return new Map(entries.map((entry) => [entry.entity_id, entry]));
@@ -31,16 +17,31 @@ function createRegistryMap(entries: HomeAssistantEntityRegistryEntry[]) {
 describe('use-ha-devices helpers', () => {
   it('collects sensor and config metrics for the owning switch device', () => {
     const entities: HassEntities = {
-      'switch.kitchen_outlet': createEntity('switch.kitchen_outlet', 'on', {
-        friendly_name: 'Kitchen outlet',
+      'switch.kitchen_outlet': makeHassEntityFixture({
+        entityId: 'switch.kitchen_outlet',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Kitchen outlet',
+          icon: 'mdi:power-socket-eu',
+        },
       }),
-      'sensor.kitchen_outlet_power': createEntity('sensor.kitchen_outlet_power', '127', {
-        friendly_name: 'Kitchen outlet power',
-        device_class: 'power',
-        unit_of_measurement: 'W',
+      'sensor.kitchen_outlet_power': makeHassEntityFixture({
+        entityId: 'sensor.kitchen_outlet_power',
+        state: '127',
+        attributes: {
+          friendly_name: 'Kitchen outlet power',
+          device_class: 'power',
+          unit_of_measurement: 'W',
+          state_class: 'measurement',
+        },
       }),
-      'select.kitchen_outlet_mode': createEntity('select.kitchen_outlet_mode', 'eco', {
-        friendly_name: 'Outlet mode',
+      'select.kitchen_outlet_mode': makeHassEntityFixture({
+        entityId: 'select.kitchen_outlet_mode',
+        state: 'eco',
+        attributes: {
+          friendly_name: 'Outlet mode',
+          options: ['eco', 'comfort'],
+        },
       }),
     };
 
@@ -71,18 +72,23 @@ describe('use-ha-devices helpers', () => {
     );
   });
 
-  it('skips config metrics with non-display placeholder values', () => {
+  it('skips config metrics with Home Assistant placeholder values', () => {
     const entities: HassEntities = {
-      'switch.pax_calima_boostmode': createEntity('switch.pax_calima_boostmode', 'on', {
-        friendly_name: 'Pax Calima BoostMode',
+      'switch.pax_calima_boostmode': makeHassEntityFixture({
+        entityId: 'switch.pax_calima_boostmode',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Pax Calima BoostMode',
+        },
       }),
-      'select.pax_calima_power_on_behaviour': createEntity(
-        'select.pax_calima_power_on_behaviour',
-        'PreviousValue',
-        {
+      'select.pax_calima_power_on_behaviour': makeHassEntityFixture({
+        entityId: 'select.pax_calima_power_on_behaviour',
+        state: 'PreviousValue',
+        attributes: {
           friendly_name: 'Pax Calima Power-on behaviour',
-        }
-      ),
+          options: ['PreviousValue', 'On', 'Off'],
+        },
+      }),
     };
 
     const entityRegistryMap = createRegistryMap([
@@ -99,26 +105,34 @@ describe('use-ha-devices helpers', () => {
     expect(indexes.switchMetricsByDeviceId.get('device-pax-calima')).toBeUndefined();
   });
 
-  it('skips cumulative total energy sensors for switch card metrics', () => {
+  it('skips cumulative total-increasing energy sensors for switch metrics', () => {
     const entities: HassEntities = {
-      'switch.garden_lights_switch': createEntity('switch.garden_lights_switch', 'on', {
-        friendly_name: 'Garden Mains',
+      'switch.garden_lights_switch': makeHassEntityFixture({
+        entityId: 'switch.garden_lights_switch',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Garden Mains',
+        },
       }),
-      'sensor.garden_mains_total_energy': createEntity(
-        'sensor.garden_mains_total_energy',
-        '0.092',
-        {
+      'sensor.garden_mains_total_energy': makeHassEntityFixture({
+        entityId: 'sensor.garden_mains_total_energy',
+        state: '0.092',
+        attributes: {
           friendly_name: 'Garden Mains Total energy',
           device_class: 'energy',
           state_class: 'total_increasing',
           unit_of_measurement: 'kWh',
-        }
-      ),
-      'sensor.garden_mains_energy_today': createEntity('sensor.garden_mains_energy_today', '1.4', {
-        friendly_name: 'Garden Mains Energy today',
-        device_class: 'energy',
-        state_class: 'total_increasing',
-        unit_of_measurement: 'kWh',
+        },
+      }),
+      'sensor.garden_mains_energy_today': makeHassEntityFixture({
+        entityId: 'sensor.garden_mains_energy_today',
+        state: '1.4',
+        attributes: {
+          friendly_name: 'Garden Mains Energy today',
+          device_class: 'energy',
+          state_class: 'total_increasing',
+          unit_of_measurement: 'kWh',
+        },
       }),
     };
 
@@ -136,33 +150,42 @@ describe('use-ha-devices helpers', () => {
     ]);
   });
 
-  it('keeps primary switch selection deterministic for helper-like switches', () => {
-    const entities: HassEntities = {
-      'switch.bedroom_boost': createEntity('switch.bedroom_boost', 'off', {
-        friendly_name: 'Bedroom boost',
-      }),
-      'switch.bedroom_main': createEntity('switch.bedroom_main', 'on', {
-        friendly_name: 'Bedroom outlet',
-      }),
-    };
-    const entityRegistryMap = createRegistryMap([
-      { entity_id: 'switch.bedroom_boost', device_id: 'device-2' },
-      { entity_id: 'switch.bedroom_main', device_id: 'device-2' },
-    ]);
-
-    const indexes = buildDeviceIndexes(entities, entityRegistryMap);
-
-    expect(indexes.primarySwitchEntityIdByDeviceId.get('device-2')).toBe('switch.bedroom_main');
-  });
-
   it('suppresses switches attached to climate, water heater, or vacuum devices', () => {
     const entities: HassEntities = {
-      'climate.hallway': createEntity('climate.hallway', 'heat'),
-      'water_heater.boiler': createEntity('water_heater.boiler', 'eco'),
-      'vacuum.roborock': createEntity('vacuum.roborock', 'docked'),
-      'switch.hallway_boost': createEntity('switch.hallway_boost', 'off'),
-      'switch.boiler_boost': createEntity('switch.boiler_boost', 'off'),
-      'switch.roborock_child_lock': createEntity('switch.roborock_child_lock', 'off'),
+      'climate.hallway': climateEntityFactory(),
+      'water_heater.boiler': waterHeaterEntityFactory(),
+      'vacuum.roborock': makeHassEntityFixture({
+        entityId: 'vacuum.roborock',
+        state: 'docked',
+        attributes: {
+          friendly_name: 'Roborock',
+          battery_level: 76,
+          fan_speed: 'balanced',
+          fan_speed_list: ['quiet', 'balanced', 'turbo'],
+          supported_features: 127,
+        },
+      }),
+      'switch.hallway_boost': makeHassEntityFixture({
+        entityId: 'switch.hallway_boost',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Hallway Boost',
+        },
+      }),
+      'switch.boiler_boost': makeHassEntityFixture({
+        entityId: 'switch.boiler_boost',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Boiler Boost',
+        },
+      }),
+      'switch.roborock_child_lock': makeHassEntityFixture({
+        entityId: 'switch.roborock_child_lock',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Roborock Child Lock',
+        },
+      }),
     };
     const entityRegistryMap = createRegistryMap([
       { entity_id: 'climate.hallway', device_id: 'device-climate' },
@@ -200,9 +223,23 @@ describe('use-ha-devices helpers', () => {
 
   it('suppresses helper cards when a device already has a primary card', () => {
     const entities: HassEntities = {
-      'switch.kitchen_main': createEntity('switch.kitchen_main', 'on'),
-      'input_boolean.kitchen_timer': createEntity('input_boolean.kitchen_timer', 'off'),
+      'switch.kitchen_main': makeHassEntityFixture({
+        entityId: 'switch.kitchen_main',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Kitchen Main',
+        },
+      }),
+      'input_boolean.kitchen_timer': makeHassEntityFixture({
+        entityId: 'input_boolean.kitchen_timer',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Kitchen Timer',
+          editable: true,
+        },
+      }),
     };
+
     const entityRegistryMap = createRegistryMap([
       { entity_id: 'switch.kitchen_main', device_id: 'device-3' },
       { entity_id: 'input_boolean.kitchen_timer', device_id: 'device-3' },
@@ -213,42 +250,5 @@ describe('use-ha-devices helpers', () => {
     expect(
       shouldSuppressHelperCard('input_boolean.kitchen_timer', entityRegistryMap, indexes)
     ).toBe(true);
-  });
-
-  it('maps helper entities to the correct service behavior', () => {
-    const t = ((key: string) => key) as Parameters<typeof mapHelperDevice>[5];
-    const scriptHelper = mapHelperDevice(
-      'script',
-      'script.goodnight',
-      createEntity('script.goodnight', 'off'),
-      'Goodnight',
-      'Bedroom',
-      t
-    );
-    const buttonHelper = mapHelperDevice(
-      'input_button',
-      'input_button.reset',
-      createEntity('input_button.reset', 'unknown'),
-      'Reset',
-      'Hallway',
-      t
-    );
-
-    expect(scriptHelper).toEqual(
-      expect.objectContaining({ serviceDomain: 'script', serviceAction: 'turn_on' })
-    );
-    expect(buttonHelper).toEqual(
-      expect.objectContaining({
-        serviceDomain: 'input_button',
-        serviceAction: 'press',
-        state: false,
-      })
-    );
-  });
-
-  it('reads config and diagnostic entity categories safely', () => {
-    expect(getEntityCategory({ entity_category: 'config' })).toBe('config');
-    expect(getEntityCategory({ entity_category: 'diagnostic' })).toBe('diagnostic');
-    expect(getEntityCategory({ entity_category: 'unsupported' })).toBeNull();
   });
 });

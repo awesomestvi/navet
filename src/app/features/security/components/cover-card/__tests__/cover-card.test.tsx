@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@/app/i18n/i18n-provider';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { coverEntityFactory } from '@/test/fixtures/home-assistant/entities/cover';
 import { CoverCard } from '../index';
 
 const { callServiceMock, toastErrorMock } = vi.hoisted(() => ({
@@ -66,18 +66,17 @@ function renderCoverCard(props: Partial<ComponentProps<typeof CoverCard>> = {}) 
   );
 }
 
-function createCoverEntity(position: number | null, state = 'open'): HassEntity {
-  return {
-    entity_id: 'cover.living_room_blind',
-    state,
-    attributes: {
-      ...(position === null ? {} : { current_position: position }),
-      supported_features: ALL_COVER_FEATURES,
-    },
-    last_changed: '2026-05-22T00:00:00.000Z',
-    last_updated: '2026-05-22T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
+function createCoverEntity(position: number | null, state = 'open') {
+  const entity = coverEntityFactory({
+    current_position: position === null ? undefined : position,
+    supported_features: ALL_COVER_FEATURES,
+  });
+  entity.entity_id = 'cover.living_room_blind';
+  entity.state = state;
+  if (position === null) {
+    delete (entity.attributes as Record<string, unknown>).current_position;
+  }
+  return entity;
 }
 
 function setLiveCoverPosition(position: number, state = 'open') {
@@ -105,7 +104,7 @@ function setLiveCoverTiltPosition(position: number, state = 'open') {
           current_tilt_position: position,
           supported_features: ALL_TILT_COVER_FEATURES,
         },
-      } as HassEntity,
+      },
     },
   });
 }

@@ -1,14 +1,13 @@
 import { useEffect, useRef } from 'react';
+import { homeAssistantResourceResolver } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { CameraGo2RtcConfig } from '@/app/stores/settings-store';
-import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
 interface CameraStreamPlayerProps {
   entityId: string;
   kind: Extract<CameraImageSourceKind, 'go2rtc' | 'hls' | 'web_rtc'>;
   posterUrl: string | undefined;
-  homeAssistantUrl: string | undefined;
   go2RtcConfig?: CameraGo2RtcConfig;
   fitMode: 'cover' | 'contain';
   onLoad?: () => void;
@@ -24,10 +23,6 @@ const videoFitClassNames = {
 
 interface CameraStreamErrorOptions {
   retryable?: boolean;
-}
-
-function resolveHomeAssistantUrl(url: string, homeAssistantUrl: string | undefined) {
-  return resolveHomeAssistantProxyUrl(url, homeAssistantUrl) ?? url;
 }
 
 function isHomeAssistantCameraStreamUnsupportedError(error: unknown) {
@@ -76,7 +71,6 @@ function scheduleStreamLoadTimeout(
 function HlsCameraPlayer({
   entityId,
   posterUrl,
-  homeAssistantUrl,
   fitMode,
   onLoad,
   onError,
@@ -124,7 +118,15 @@ function HlsCameraPlayer({
           return;
         }
 
-        const streamUrl = resolveHomeAssistantUrl(stream.url, homeAssistantUrl);
+        const streamUrl =
+          (
+            await homeAssistantResourceResolver.resolve({
+              kind: 'camera_stream',
+              entityId,
+              stream: 'hls',
+              rawPath: stream.url,
+            })
+          ).url ?? stream.url;
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = streamUrl;
           await video.play().catch(() => undefined);
@@ -183,7 +185,7 @@ function HlsCameraPlayer({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanUp();
     };
-  }, [entityId, homeAssistantUrl, onError, posterUrl]);
+  }, [entityId, onError, posterUrl]);
 
   return (
     <video
@@ -204,7 +206,7 @@ function WebRtcCameraPlayer({
   fitMode,
   onLoad,
   onError,
-}: Omit<CameraStreamPlayerProps, 'kind' | 'homeAssistantUrl'>) {
+}: Omit<CameraStreamPlayerProps, 'kind'>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
 
@@ -423,7 +425,7 @@ function Go2RtcDirectCameraPlayer({
   fitMode,
   onLoad,
   onError,
-}: Omit<CameraStreamPlayerProps, 'kind' | 'homeAssistantUrl' | 'entityId'>) {
+}: Omit<CameraStreamPlayerProps, 'kind' | 'entityId'>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
 
@@ -619,7 +621,7 @@ function Go2RtcCustomCardPlayer({
   entityId,
   fitMode,
   onError,
-}: Omit<CameraStreamPlayerProps, 'kind' | 'homeAssistantUrl' | 'posterUrl' | 'onLoad'>) {
+}: Omit<CameraStreamPlayerProps, 'kind' | 'posterUrl' | 'onLoad'>) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -657,7 +659,7 @@ function Go2RtcCustomCardPlayer({
   return <div ref={containerRef} className="h-full w-full" />;
 }
 
-function Go2RtcCameraPlayer(props: Omit<CameraStreamPlayerProps, 'kind' | 'homeAssistantUrl'>) {
+function Go2RtcCameraPlayer(props: Omit<CameraStreamPlayerProps, 'kind'>) {
   if (resolveGo2RtcWebSocketUrl(props.go2RtcConfig)) {
     return <Go2RtcDirectCameraPlayer {...props} />;
   }
