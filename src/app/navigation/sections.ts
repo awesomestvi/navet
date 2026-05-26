@@ -22,6 +22,8 @@ export const NAVIGATION_SECTIONS = [
 export const isSection = (value: unknown): value is Section =>
   typeof value === 'string' && NAVIGATION_SECTIONS.includes(value as Section);
 
+const HOME_ASSISTANT_INGRESS_PREFIX = '/api/hassio_ingress/';
+
 // Read the <base href> injected by nginx for HA Ingress support.
 // Returns '/' when running standalone (no base tag or base href='/').
 const getBasePath = (): string => {
@@ -38,6 +40,21 @@ const getDemoPathPrefix = (pathname: string): string | null => {
   return `/${segments.slice(0, demoSegmentIndex + 1).join('/')}`;
 };
 
+const getIngressSectionFromPath = (pathname: string): Section | null => {
+  const ingressStart = pathname.indexOf(HOME_ASSISTANT_INGRESS_PREFIX);
+  if (ingressStart === -1) {
+    return null;
+  }
+
+  const pathAfterIngressPrefix = pathname.slice(
+    ingressStart + HOME_ASSISTANT_INGRESS_PREFIX.length
+  );
+  const segments = pathAfterIngressPrefix.split('/').filter(Boolean);
+  const section = segments[1] ?? '';
+
+  return isSection(section) ? section : 'home';
+};
+
 export const sectionToPath = (section: Section): string => {
   if (typeof window !== 'undefined') {
     const demoPathPrefix = getDemoPathPrefix(window.location.pathname);
@@ -51,6 +68,11 @@ export const sectionToPath = (section: Section): string => {
 };
 
 export const pathToSection = (pathname: string): Section => {
+  const ingressSection = getIngressSectionFromPath(pathname);
+  if (ingressSection) {
+    return ingressSection;
+  }
+
   const pathSegments = pathname.split('/').filter(Boolean);
   const demoSegmentIndex = pathSegments.indexOf('demo');
   if (demoSegmentIndex !== -1) {

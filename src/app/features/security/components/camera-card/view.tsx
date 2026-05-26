@@ -6,6 +6,7 @@ import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-s
 import { useI18n } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import type { CameraViewMode } from '@/app/stores/settings-store';
+import { CameraSnapshotImage } from './camera-snapshot-image';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
 interface CameraCardViewProps {
@@ -136,12 +137,10 @@ export function CameraCardView({
           streamElement && !isUnavailable ? (
             streamElement
           ) : imageUrl && !isUnavailable ? (
-            <img
-              key={imageUrl}
+            <CameraSnapshotImage
               src={imageUrl}
               alt={name}
               className="absolute inset-0 h-full w-full object-cover"
-              draggable={false}
               onError={onImageError}
             />
           ) : (

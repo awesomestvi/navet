@@ -32,6 +32,15 @@ function stripProxyPath(path: string) {
   return unproxiedPath.startsWith('/') ? unproxiedPath : `/${unproxiedPath}`;
 }
 
+function getEmbeddedProxyPath(path: string) {
+  const proxyIndex = path.indexOf(`${HOME_ASSISTANT_PROXY_PATH}/`);
+  if (proxyIndex === -1) {
+    return null;
+  }
+
+  return path.slice(proxyIndex);
+}
+
 function resolveProxyPath(path: string) {
   return resolveIngressAwarePath(`${HOME_ASSISTANT_PROXY_PATH}${path}`);
 }
@@ -163,6 +172,22 @@ export class HomeAssistantResourceResolver {
         isSafeRelativePath(resourceUrl) &&
         isHomeAssistantRelativeUrl(resourceUrl)
       ) {
+        const embeddedProxyPath = getEmbeddedProxyPath(resourceUrl);
+
+        if (embeddedProxyPath) {
+          return {
+            id: resourceUrl,
+            kind: 'image',
+            url: toUrlWithCacheBust(
+              runtime.kind === 'ha_panel' ? stripProxyPath(embeddedProxyPath) : resourceUrl,
+              options.cacheBustKey
+            ),
+            cacheKey,
+            authStrategy: runtime.kind === 'ha_panel' ? 'panel_bridge' : 'same_origin',
+            metadata: { source: 'ha_proxy_embedded_relative' },
+          };
+        }
+
         if (runtime.kind === 'ha_panel') {
           return {
             id: resourceUrl,

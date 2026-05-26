@@ -27,6 +27,7 @@ type StubHomeAssistantService = {
   areas: Array<{ area_id: string; name: string }>;
   deviceRegistry: Array<{ id: string; area_id?: string | null }>;
   entityRegistry: Array<{ entity_id: string; area_id?: string | null }>;
+  setPanelHass: ReturnType<typeof vi.fn>;
 };
 
 const { getAuthAppMock, homeAssistantServiceStub } = vi.hoisted(() => ({
@@ -91,6 +92,21 @@ const { getAuthAppMock, homeAssistantServiceStub } = vi.hoisted(() => ({
     getConnection: vi.fn(function (this: StubHomeAssistantService) {
       return this.connection;
     }),
+    setPanelHass: vi.fn(function (
+      this: StubHomeAssistantService,
+      hass: {
+        states: Record<string, unknown>;
+        config: Record<string, unknown>;
+        user?: unknown;
+        connection?: unknown;
+      }
+    ) {
+      this.connected = true;
+      this.config = hass.config;
+      this.entities = hass.states;
+      this.user = hass.user ?? null;
+      this.connection = hass.connection ?? { id: 'panel-connection' };
+    }),
     loadRegistries: vi.fn(async () => {}),
   },
 }));
@@ -134,6 +150,7 @@ vi.mock('../components/shared/pwa-update-prompt', () => ({
 
 vi.mock('home-assistant-js-websocket', () => ({
   getAuth: getAuthAppMock,
+  callService: vi.fn(),
 }));
 
 describe('App Home Assistant connection recovery', () => {
@@ -159,6 +176,7 @@ describe('App Home Assistant connection recovery', () => {
     ) {
       this.connected = true;
     });
+    homeAssistantServiceStub.setPanelHass.mockClear();
     getAuthAppMock.mockReset();
     getAuthAppMock.mockResolvedValue({
       data: {
@@ -178,6 +196,10 @@ describe('App Home Assistant connection recovery', () => {
     window.history.replaceState({}, '', '/');
     window.__NAVET_PANEL__ = undefined;
     window.__NAVET_CONFIG__ = undefined;
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: window,
+    });
     resetRuntimeContextForTests();
   });
 
@@ -185,6 +207,10 @@ describe('App Home Assistant connection recovery', () => {
     vi.useRealTimers();
     window.__NAVET_PANEL__ = undefined;
     window.__NAVET_CONFIG__ = undefined;
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: window,
+    });
     resetRuntimeContextForTests();
   });
 
@@ -395,6 +421,45 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.getByText(CONNECTION_TIMEOUT_MESSAGE)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back to login/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
+  });
+
+  it('reuses the parent Home Assistant frontend connection in ingress before opening a new websocket', async () => {
+    vi.useRealTimers();
+    setNoStoredSession();
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    resetRuntimeContextForTests();
+
+    const parentDocument = document.implementation.createHTMLDocument('ha-parent');
+    const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
+      hass?: Record<string, unknown>;
+    };
+    homeAssistantRoot.hass = {
+      states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
+      config: { location_name: 'Parent Home' },
+      user: { name: 'Parent User' },
+      connection: {
+        sendMessagePromise: vi.fn(async () => ({ ok: true })),
+        subscribeMessage: vi.fn(async () => vi.fn()),
+      },
+      callService: vi.fn(async () => undefined),
+      callWS: vi.fn(async () => ({ ok: true })),
+    };
+    parentDocument.body.append(homeAssistantRoot);
+
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: {
+        document: parentDocument,
+      },
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(homeAssistantServiceStub.setPanelHass).toHaveBeenCalled());
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+    expect(screen.getByText('dashboard')).toBeInTheDocument();
   });
 
   it('recovers from invalid ingress auth by rebuilding the session instead of retrying the stale auth handle', async () => {

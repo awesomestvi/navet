@@ -10,6 +10,7 @@ import type {
   CameraGo2RtcConfig,
   CameraViewMode,
 } from '@/app/stores/settings-store';
+import { CameraSnapshotImage } from './camera-snapshot-image';
 import { CameraStreamPlayer } from './camera-stream-player';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
 
@@ -176,12 +177,10 @@ export function CameraLiveViewer({
               onError={handleStreamError}
             />
           ) : sourceUrl && !isUnavailable ? (
-            <img
-              key={sourceUrl}
+            <CameraSnapshotImage
               src={sourceUrl}
               alt={name}
               className="h-full w-full object-contain"
-              draggable={false}
               onError={() => handleStreamError(source.kind)}
             />
           ) : (
