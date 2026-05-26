@@ -3,7 +3,7 @@
  * Used for off/disabled states across all domains
  */
 
-import type { ThemeMode as ThemeType } from '../../stores/theme-store';
+import type { ThemeMode as ThemeType } from '@/app/stores/theme-store';
 
 export interface InactiveThemeTone {
   gradient: string;

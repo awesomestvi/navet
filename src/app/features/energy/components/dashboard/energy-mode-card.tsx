@@ -2,8 +2,8 @@ import { BatteryCharging, Gauge, Leaf, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyDashboardMode } from '@/app/features/energy/types/energy.types';
 import { useTheme } from '@/app/hooks';
-import type { EnergyDashboardMode } from '../../types/energy.types';
 
 interface EnergyModeCardProps {
   mode: EnergyDashboardMode;

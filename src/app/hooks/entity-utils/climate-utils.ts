@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { normalizeTemperatureUnit } from '../../utils/temperature';
+import { normalizeTemperatureUnit } from '@/app/utils/temperature';
 import { parseNumberish } from './numeric-utils';
 
 export function resolveHomeAssistantTemperatureUnit(

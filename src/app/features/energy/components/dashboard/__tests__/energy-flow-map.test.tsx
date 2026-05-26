@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { getEnergyDashboardScenario } from '@/app/features/energy/data/mock-energy-dashboard';
 import { I18nProvider } from '@/app/i18n';
 import { useThemeStore } from '@/app/stores/theme-store';
-import { getEnergyDashboardScenario } from '../../../data/mock-energy-dashboard';
 import { EnergyFlowMap } from '../energy-flow-map';
 
 function renderFlowMap(storyId: string, staticBeams = false) {

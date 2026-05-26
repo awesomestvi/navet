@@ -2,11 +2,11 @@ import { screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
+import type { DashboardController } from '@/app/features/dashboard/hooks/use-dashboard-controller';
 import { useSettingsStore } from '@/app/stores';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
-import type { DashboardController } from '../../hooks/use-dashboard-controller';
 import { DashboardSectionRouter } from '../dashboard-section-router';
 
 vi.mock('@/app/components/layout/room-nav', () => ({

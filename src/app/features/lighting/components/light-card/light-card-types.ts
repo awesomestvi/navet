@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
-import type { BrightnessPresetKey } from '../../stores/light-preset-store';
+import type { BrightnessPresetKey } from '@/app/features/lighting/stores/light-preset-store';
 
 export type HeaderIconButtonProps = Pick<
   ButtonHTMLAttributes<HTMLButtonElement>,

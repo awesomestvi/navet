@@ -9,8 +9,8 @@ import {
   getCardStateSurfaceTokens,
 } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { CardWrapper } from '@/app/components/ui/card-wrapper';
+import { getHvacTemperatureStatusLabel } from '@/app/features/climate/utils/hvac-temperature-status-label';
 import { useI18n, useTheme } from '@/app/hooks';
-import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACSettingsDialog } from '../hvac-settings-dialog';
 import type { HVACCardProps } from './hvac-card.types';
 import { HVACGauge } from './hvac-gauge';

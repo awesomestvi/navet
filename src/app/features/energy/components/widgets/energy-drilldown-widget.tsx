@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyNode } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergyNode } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface EnergyDrilldownWidgetProps {

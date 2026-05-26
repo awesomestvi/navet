@@ -5,11 +5,7 @@
  * derives a MediaArtworkPalette from the winning candidates.
  */
 
-import {
-  isMediaPlayerProxyUrl,
-  resolveHomeAssistantProxyUrl,
-} from '@/app/utils/home-assistant-url';
-import type { MediaArtworkPalette } from './use-media-artwork-colors';
+import type { MediaArtworkPalette, MediaArtworkPaletteSource } from './use-media-artwork-colors';
 
 // --- Color math helpers -------------------------------------------------------
 
@@ -269,67 +265,44 @@ async function fetchArtworkObjectUrl(imageUrl: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
-function isSameOriginUrl(imageUrl: string): boolean {
-  if (typeof window === 'undefined') {
-    return imageUrl.startsWith('/');
+function normalizePaletteSource(
+  input: MediaArtworkPaletteSource | string | null | undefined
+): MediaArtworkPaletteSource | null {
+  if (!input) {
+    return null;
   }
 
-  try {
-    return new URL(imageUrl, window.location.origin).origin === window.location.origin;
-  } catch {
-    return false;
+  if (typeof input === 'string') {
+    return {
+      url: input,
+      authStrategy: 'none',
+    };
   }
-}
 
-function isSignedHomeAssistantUrl(imageUrl: string): boolean {
-  try {
-    const resolvedUrl = new URL(imageUrl, window.location.origin);
-    return (
-      resolvedUrl.searchParams.has('authSig') &&
-      (resolvedUrl.pathname.includes('/api/media_player_proxy/') ||
-        resolvedUrl.pathname.includes('/api/image/serve/') ||
-        resolvedUrl.pathname.includes('/api/camera_proxy/'))
-    );
-  } catch {
-    return false;
-  }
+  return input.url ? input : null;
 }
 
 export async function resolveArtworkPalette(
-  imageUrl: string,
+  input: MediaArtworkPaletteSource | string | null | undefined,
   hassUrl?: string
 ): Promise<MediaArtworkPalette | null> {
+  void hassUrl;
+  const source = normalizePaletteSource(input);
+  const imageUrl = source?.url;
+  if (!imageUrl) {
+    return null;
+  }
+
   if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
     return samplePaletteFromImageUrl(imageUrl).catch(() => null);
   }
 
-  if (isSignedHomeAssistantUrl(imageUrl)) {
-    const directPalette = await samplePaletteFromImageUrl(imageUrl).catch(() => null);
-    if (directPalette) return directPalette;
-
-    const objectUrl = await fetchArtworkObjectUrl(imageUrl).catch(() => null);
-    if (!objectUrl) return null;
-    try {
-      return await samplePaletteFromImageUrl(objectUrl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  }
-
-  if (isMediaPlayerProxyUrl(imageUrl)) {
-    const proxiedUrl = resolveHomeAssistantProxyUrl(imageUrl, hassUrl);
-    if (!proxiedUrl || (!isSameOriginUrl(proxiedUrl) && proxiedUrl === imageUrl)) return null;
-    const objectUrl = await fetchArtworkObjectUrl(proxiedUrl).catch(() => null);
-    if (!objectUrl) return null;
-    try {
-      return await samplePaletteFromImageUrl(objectUrl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  }
-
   const directPalette = await samplePaletteFromImageUrl(imageUrl).catch(() => null);
   if (directPalette) return directPalette;
+
+  if (source.authStrategy === 'none') {
+    return null;
+  }
 
   const objectUrl = await fetchArtworkObjectUrl(imageUrl).catch(() => null);
   if (!objectUrl) return null;

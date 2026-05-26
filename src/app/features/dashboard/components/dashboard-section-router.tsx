@@ -119,6 +119,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   const areas = useHomeAssistant(homeAssistantSelectors.areas);
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const routines = useTaskRoutines();
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
@@ -230,8 +231,18 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
         (routine) => routine.room === activeRoom && isActiveRoutine(routine)
       ).length;
 
-    return buildRoomStatusSummaryItems(availableDeviceMap, activeRoom, { routineCount });
-  }, [activeRoom, availableDeviceMap, routines.automations, routines.quickActions, showSummaryBar]);
+    return buildRoomStatusSummaryItems(availableDeviceMap, activeRoom, {
+      routineCount,
+      temperatureUnit,
+    });
+  }, [
+    activeRoom,
+    availableDeviceMap,
+    routines.automations,
+    routines.quickActions,
+    showSummaryBar,
+    temperatureUnit,
+  ]);
   const openAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(true), []);
   const closeAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(false), []);
   const openAddClimateEntityDialog = useCallback(() => setIsAddClimateEntityDialogOpen(true), []);

@@ -2,7 +2,7 @@
  * Metric and sensor utilities
  */
 
-import type { DeviceMetric } from '../../types/device.types';
+import type { DeviceMetric } from '@/app/types/device.types';
 import { toKilowattHours, toVolts, toWatts } from './numeric-utils';
 import { formatTimestampTime } from './time-format';
 

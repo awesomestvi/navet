@@ -6,19 +6,25 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { MediaVisualizerButton } from './media-visualizer-button';
-import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+import {
+  getMediaArtworkPaletteSource,
+  useMediaArtworkColors,
+  withAlpha,
+} from './use-media-artwork-colors';
 import { useMediaVolumeMode } from './use-media-volume-mode';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumVerticalViewProps {
   entityId: string;
   artwork?: string | null;
+  artworkResource?: ResolvedMediaResource | null;
   onArtworkError?: (imageUrl?: string | null) => void;
   entityName: string;
   entityTypeKey: MediaEntityTypeKey;
@@ -44,6 +50,7 @@ interface MediaMediumVerticalViewProps {
 export function MediaMediumVerticalView({
   entityId,
   artwork,
+  artworkResource,
   onArtworkError,
   entityName,
   entityTypeKey,
@@ -71,7 +78,8 @@ export function MediaMediumVerticalView({
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
-  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
+  const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
+  const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,

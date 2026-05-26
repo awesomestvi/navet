@@ -3,6 +3,12 @@ import { Clipboard, Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
 import type { Section } from '@/app/navigation/sections';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { getDeviceRoomLabel } from '@/app/utils/device-location';
+import {
+  convertTemperatureUnitValue,
+  formatDisplayTemperature,
+  normalizeTemperatureUnit,
+  type TemperatureUnit,
+} from '@/app/utils/temperature';
 
 export interface HomeStatusSummaryItem {
   id: string;
@@ -16,6 +22,7 @@ export interface HomeStatusSummaryItem {
 export interface StatusSummaryOptions {
   gridImportTodayKWh?: number;
   routineCount?: number;
+  temperatureUnit?: TemperatureUnit;
 }
 
 function getNumber(value: unknown): number | null {
@@ -208,35 +215,79 @@ function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
   };
 }
 
-function getClimateSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | null {
+function isAmbientTemperatureSensor(
+  device: DeviceWithType
+): device is DeviceWithType & { type: 'sensors' } {
+  if (device.type !== 'sensors') {
+    return false;
+  }
+
+  if (String(device.deviceClass ?? '').toLowerCase() !== 'temperature') {
+    return false;
+  }
+
+  const searchText = `${device.id} ${device.name} ${device.room}`.toLowerCase();
+
+  return !/\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather)\b/.test(
+    searchText
+  );
+}
+
+function formatClimateSummaryValue(values: number[]): string {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  if (min === max) {
+    return `${formatDisplayTemperature(Math.round(min))}°`;
+  }
+
+  return `${formatDisplayTemperature(min).replace('.', ',')}–${formatDisplayTemperature(max).replace('.', ',')}°`;
+}
+
+function getClimateSummary(
+  devices: DeviceWithType[],
+  options: StatusSummaryOptions = {}
+): HomeStatusSummaryItem | null {
   const climateDevices = devices.filter(
-    (device) => device.type === 'climate' || device.type === 'hvac'
-  );
-  const temperatureSensors = devices.filter(
     (device) =>
-      device.type === 'sensors' && String(device.deviceClass ?? '').toLowerCase() === 'temperature'
+      (device.type === 'climate' && device.serviceDomain !== 'water_heater') ||
+      device.type === 'hvac'
   );
+  const temperatureSensors = devices.filter(isAmbientTemperatureSensor);
   const values = [
-    ...climateDevices.flatMap((device) => [
-      getNumber(device.currentTemperature),
-      getNumber(device.temperature),
-      getNumber(device.temp),
-    ]),
-    ...temperatureSensors.map((device) => getNumber(device.value)),
+    ...climateDevices.map((device) => {
+      const value =
+        device.type === 'climate'
+          ? (getNumber(device.currentTemperature) ?? getNumber(device.temperature))
+          : getNumber(device.temp);
+      if (value === null) {
+        return null;
+      }
+
+      const sourceUnit =
+        device.type === 'climate' ? normalizeTemperatureUnit(device.temperatureUnit) : undefined;
+      return convertTemperatureUnitValue(value, sourceUnit, options.temperatureUnit ?? 'celsius');
+    }),
+    ...temperatureSensors.map((device) => {
+      const value = getNumber(device.value);
+      if (value === null) {
+        return null;
+      }
+
+      return convertTemperatureUnitValue(
+        value,
+        normalizeTemperatureUnit(device.unit),
+        options.temperatureUnit ?? 'celsius'
+      );
+    }),
   ].filter((value): value is number => value !== null);
 
   if (climateDevices.length === 0 && values.length === 0) {
     return null;
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
   const value =
-    values.length === 0
-      ? `${climateDevices.length} Active`
-      : min === max
-        ? `${Math.round(min)}°`
-        : `${min.toFixed(1).replace('.', ',')}–${max.toFixed(1).replace('.', ',')}°`;
+    values.length === 0 ? `${climateDevices.length} Active` : formatClimateSummaryValue(values);
 
   return {
     id: 'climate',
@@ -278,7 +329,7 @@ function buildStatusSummaryItems(
 ): HomeStatusSummaryItem[] {
   return [
     getEnergySummary(devices, options),
-    getClimateSummary(devices),
+    getClimateSummary(devices, options),
     getSecuritySummary(devices),
     getLightSummary(devices),
     getMediaSummary(devices),

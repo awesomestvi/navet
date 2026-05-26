@@ -4,14 +4,14 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getHVACGaugeSurfaceTokens } from '@/app/components/shared/theme/hvac-card-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
-import { useI18n, useTheme } from '@/app/hooks';
-import { getTemperatureUnitSymbol, type TemperatureUnit } from '@/app/utils/temperature';
 import {
   getHVACBackgroundGlowColor,
   getHVACGaugeColor,
   getHVACGlowColor,
   getHVACTextShadow,
-} from '../../utils/hvac-styles';
+} from '@/app/features/climate/utils/hvac-styles';
+import { useI18n, useTheme } from '@/app/hooks';
+import { getTemperatureUnitSymbol, type TemperatureUnit } from '@/app/utils/temperature';
 
 interface HVACGaugeProps {
   id: string;

@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import type { BrightnessPresetKey } from '../../stores/light-preset-store';
+import type { BrightnessPresetKey } from '@/app/features/lighting/stores/light-preset-store';
 import type {
   HeaderIconButtonProps,
   LightBrightnessPreset,

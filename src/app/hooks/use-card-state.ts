@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CardSize } from '../components/shared/card-size-selector';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { DeviceCollection } from '../types/device.types';
-import { PERSISTED_STATE_EVENT } from '../utils/persisted-state-events';
+import {
+  notifyPersistedStateChanged,
+  PERSISTED_STATE_EVENT,
+} from '../utils/persisted-state-events';
 import { storage } from '../utils/storage';
 
 const CALENDAR_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
@@ -69,6 +72,7 @@ export const useCardState = (
   // Persist to localStorage whenever cardSizes changes
   useEffect(() => {
     storage.set(STORAGE_KEYS[storageKey], cardSizes);
+    notifyPersistedStateChanged(STORAGE_KEYS[storageKey], cardSizes);
   }, [cardSizes, storageKey]);
 
   useEffect(() => {

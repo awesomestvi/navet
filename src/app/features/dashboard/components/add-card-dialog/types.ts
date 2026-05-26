@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import type { CardType } from '@/app/features/dashboard/stores/custom-cards-store';
 import type { TranslationKey } from '@/app/i18n';
-import type { CardType } from '../../stores/custom-cards-store';
 import type { DashboardLibraryCard } from '../dashboard-library-list';
 
 export interface AddCardDialogContainerProps {

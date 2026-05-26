@@ -9,7 +9,7 @@ import {
   getAccentThemeTone,
   type PresetPrimaryColor,
 } from '@/app/components/shared/theme/theme-colors';
-import type { ThemeMode as ThemeType } from '../../stores/theme-store';
+import type { ThemeMode as ThemeType } from '@/app/stores/theme-store';
 import type { InactiveThemeTone } from './get-inactive-tone';
 
 interface DomainTheme {

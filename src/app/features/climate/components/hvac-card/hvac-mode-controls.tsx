@@ -3,10 +3,10 @@ import { memo } from 'react';
 import { RoundControlButton } from '@/app/components/primitives/round-control-button';
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { resolveHvacModeControlOptions } from '@/app/features/climate/utils/hvac-mode-control-options';
+import { getHVACModeButtonColor } from '@/app/features/climate/utils/hvac-styles';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import { resolveHvacModeControlOptions } from '../../utils/hvac-mode-control-options';
-import { getHVACModeButtonColor } from '../../utils/hvac-styles';
 
 interface HVACModeControlsProps {
   mode: string;

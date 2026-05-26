@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { FanDevice } from '../../types/device.types';
+import type { FanDevice } from '@/app/types/device.types';
 import { parseNumberish } from '../ha-entity-utils';
 
 function readStringList(value: unknown): string[] | undefined {

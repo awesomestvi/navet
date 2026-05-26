@@ -1,8 +1,8 @@
 import { Bath, Heater } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyConsumer } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface EnergyFocusZonesWidgetProps {

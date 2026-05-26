@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
-import type { EnergyBreakdownDatum } from '../../types/energy.types';
+import type { EnergyBreakdownDatum } from '@/app/features/energy/types/energy.types';
 import { EnergyBarChart } from '../charts/energy-bar-chart';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 

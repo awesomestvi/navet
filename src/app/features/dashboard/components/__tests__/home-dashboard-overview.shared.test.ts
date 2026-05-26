@@ -4,9 +4,9 @@ import {
   getDashboardCardFootprint,
   PHONE_SMALL_CARD_TARGET_WIDTH_PX,
 } from '@/app/components/shared/card-size-selector';
+import type { HomeDashboardLayoutState } from '@/app/features/dashboard/hooks/use-home-dashboard-layout';
 import { useDashboardDevices } from '@/app/hooks/use-dashboard-devices';
 import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
-import type { HomeDashboardLayoutState } from '../../hooks/use-home-dashboard-layout';
 import {
   buildHomeOverviewCollections,
   getCardGridGapPx,

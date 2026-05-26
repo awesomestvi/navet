@@ -28,11 +28,7 @@ export function useStableMediaArtwork(artwork: string | null | undefined) {
         setStableArtwork(artwork);
       }
     };
-    image.onerror = () => {
-      if (!cancelled) {
-        setStableArtwork(artwork);
-      }
-    };
+    image.onerror = () => undefined;
     image.src = artwork;
 
     return () => {

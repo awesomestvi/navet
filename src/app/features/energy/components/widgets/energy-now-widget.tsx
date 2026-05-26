@@ -1,8 +1,8 @@
 import { Bolt } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergySeriesPoint } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergySeriesPoint } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 

@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { SceneDevice } from '../../types/device.types';
+import type { SceneDevice } from '@/app/types/device.types';
 
 export function mapSceneDevice(
   entityId: string,

@@ -3,8 +3,8 @@ import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getEnergyInsightSurfaceTokens } from '@/app/components/shared/theme/energy-widget-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyInsight, EnergyWhatChanged } from '@/app/features/energy/types/energy.types';
 import { useTheme } from '@/app/hooks';
-import type { EnergyInsight, EnergyWhatChanged } from '../../types/energy.types';
 
 interface EnergyInsightCardProps {
   title: string;

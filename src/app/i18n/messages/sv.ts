@@ -827,6 +827,11 @@ export const svMessages = {
   'pwa.reload': 'Ladda om',
   'pwa.refreshApp': 'Uppdatera appen',
   'pwa.later': 'Senare',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Kort flyttat till {room}',
   'entityRoomSelector.updateFailed': 'Det gick inte att uppdatera rummet',
   'entityRoomSelector.createAction': 'Skapa rum...',

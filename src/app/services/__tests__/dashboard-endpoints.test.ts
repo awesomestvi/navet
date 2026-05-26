@@ -31,6 +31,7 @@ describe('dashboard add-on endpoints', () => {
         {
           cache: 'no-store',
           credentials: 'same-origin',
+          headers: new Headers(),
         }
       );
     } finally {
@@ -38,11 +39,42 @@ describe('dashboard add-on endpoints', () => {
     }
   });
 
-  it('classifies bad shared-profile writes as permanent failures', async () => {
+  it('sends If-None-Match when an ETag is available', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 304,
+        headers: { ETag: '"etag-2"', 'Last-Modified': 'Tue, 02 Jan 2024 12:00:00 GMT' },
+      })
+    );
+
+    await expect(loadDashboardProfile({ etag: '"etag-1"' })).resolves.toEqual({
+      available: true,
+      profile: null,
+      notModified: true,
+      etag: '"etag-2"',
+      lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(`${window.location.origin}/__navet_profile__/default`, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: expect.any(Headers),
+    });
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual(
+      expect.objectContaining({
+        get: expect.any(Function),
+      })
+    );
+    expect(
+      ((fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers).get('If-None-Match')
+    ).toBe('"etag-1"');
+  });
+
+  it('classifies bad shared-profile writes as permanent failures and returns metadata', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'Unsupported dashboard profile' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ETag: '"etag-3"' },
       })
     );
 
@@ -64,12 +96,15 @@ describe('dashboard add-on endpoints', () => {
     ).resolves.toEqual({
       saved: false,
       permanentFailure: true,
+      etag: '"etag-3"',
+      lastModified: null,
     });
 
     expect(fetchMock).toHaveBeenCalledWith(`${window.location.origin}/__navet_profile__/default`, {
       method: 'PUT',
       cache: 'no-store',
       credentials: 'same-origin',
+      keepalive: undefined,
       headers: {
         'Content-Type': 'application/json',
       },

@@ -26,6 +26,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@docker': path.resolve(__dirname, './docker'),
+      '@scripts': path.resolve(__dirname, './scripts'),
       'virtual:pwa-register': path.resolve(__dirname, './src/test/mocks/virtual-pwa-register.ts'),
     },
   },

@@ -123,6 +123,7 @@ export const MediaCard = memo(function MediaCard({
   const mediaSize = getCompactCardSize(size);
   const {
     albumArt: resolvedAlbumArt,
+    artworkResource,
     clearPlaylist,
     cycleRepeat,
     closeDialog,
@@ -226,6 +227,7 @@ export const MediaCard = memo(function MediaCard({
   const mediaIdentityProps = {
     entityId: id,
     artwork: resolvedAlbumArt,
+    artworkResource,
     onArtworkError: handleArtworkError,
     entityName: name,
     entityTypeKey: mediaEntityTypeKey,
@@ -334,6 +336,7 @@ export const MediaCard = memo(function MediaCard({
             isOpen={isOpen}
             onOpenChange={closeDialog}
             artwork={resolvedAlbumArt}
+            artworkResource={artworkResource}
             onArtworkError={handleArtworkError}
             title={displayTitle}
             artist={displayArtist}

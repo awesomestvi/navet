@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { getMockEnergyOverview } from '../../data/mock-energy-dashboard';
+import { getMockEnergyOverview } from '@/app/features/energy/data/mock-energy-dashboard';
 import { EnergyConsumersWidget } from './energy-consumers-widget';
 
 const overview = getMockEnergyOverview('day');

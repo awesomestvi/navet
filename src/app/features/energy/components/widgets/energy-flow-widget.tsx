@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { FLOW_TO_NODE_ID, FLOW_TONE_ACCENT } from '@/app/features/energy/data/energy-constants';
+import type { EnergyFlowDatum } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import { FLOW_TO_NODE_ID, FLOW_TONE_ACCENT } from '../../data/energy-constants';
-import type { EnergyFlowDatum } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 

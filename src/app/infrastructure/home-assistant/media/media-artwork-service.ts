@@ -11,6 +11,43 @@ interface ObjectUrlEntry {
   url: string;
 }
 
+async function isRenderableImageBlob(blob: Blob): Promise<boolean> {
+  if (!blob.type.startsWith('image/')) {
+    return false;
+  }
+
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(blob);
+      bitmap.close();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  if (typeof Image === 'undefined') {
+    return true;
+  }
+
+  const previewUrl = URL.createObjectURL(blob);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('image decode failed'));
+      image.src = previewUrl;
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    URL.revokeObjectURL(previewUrl);
+  }
+}
+
 export class MediaArtworkService {
   private objectUrlCache = new Map<string, ObjectUrlEntry>();
   private negativeCache = new Map<string, number>();
@@ -132,7 +169,7 @@ export class MediaArtworkService {
         cache: 'force-cache',
       });
 
-      if (!blob.type.startsWith('image/')) {
+      if (!(await isRenderableImageBlob(blob))) {
         this.negativeCache.set(fingerprint, Date.now() + NEGATIVE_CACHE_TTL_MS);
         return {
           ...resolved,

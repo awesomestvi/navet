@@ -59,6 +59,10 @@ describe('useMediaArtworkResolution', () => {
     };
     artworkServiceForTest.objectUrlCache.clear();
     artworkServiceForTest.negativeCache.clear();
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn().mockResolvedValue({ close: vi.fn() } as unknown as ImageBitmap)
+    );
   });
 
   it('uses authenticated websocket thumbnail data for Home Assistant media proxy artwork', async () => {
@@ -74,6 +78,11 @@ describe('useMediaArtworkResolution', () => {
 
     await waitFor(() => {
       expect(result.current.albumArt).toBe('data:image/jpeg;base64,album-art');
+    });
+    expect(result.current.artworkResource).toMatchObject({
+      kind: 'image',
+      url: 'data:image/jpeg;base64,album-art',
+      authStrategy: 'none',
     });
     expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
   });
@@ -236,6 +245,11 @@ describe('useMediaArtworkResolution', () => {
 
     await waitFor(() => {
       expect(result.current.albumArt).toBe('blob:http://navet.local/docker-album-art');
+    });
+    expect(result.current.artworkResource).toMatchObject({
+      kind: 'image',
+      url: 'blob:http://navet.local/docker-album-art',
+      authStrategy: 'none',
     });
     expectFetchUrl(fetchMock, '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen');
   });
@@ -402,6 +416,36 @@ describe('useMediaArtworkResolution', () => {
 
     await waitFor(() => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+    });
+    expect(result.current.albumArt).toBeNull();
+  });
+
+  it('does not render proxy artwork when the response body fails image decode despite returning 200', async () => {
+    installIngressBase();
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    const createImageBitmapMock = vi.fn().mockRejectedValue(new Error('decode failed'));
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('broken image bytes', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
+    });
+    await waitFor(() => {
+      expect(createImageBitmapMock).toHaveBeenCalled();
     });
     expect(result.current.albumArt).toBeNull();
   });

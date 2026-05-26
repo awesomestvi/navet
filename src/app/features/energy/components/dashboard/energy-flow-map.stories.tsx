@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { getEnergyDashboardScenario } from '../../data/mock-energy-dashboard';
+import { getEnergyDashboardScenario } from '@/app/features/energy/data/mock-energy-dashboard';
 import { EnergyFlowMap } from './energy-flow-map';
 
 const scenario = getEnergyDashboardScenario('default').dashboard;

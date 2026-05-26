@@ -24,7 +24,9 @@
 
     /* Paths */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@docker/*": ["./docker/*"],
+      "@scripts/*": ["./scripts/*"]
     },
 
     /* Type declarations */

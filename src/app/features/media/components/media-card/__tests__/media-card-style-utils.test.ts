@@ -3,8 +3,8 @@ import {
   clampMediaPercent,
   getMediaDisplayVolume,
   getMediaProgressPercent,
-} from '../../media/media-card-style-utils';
-import { withAlpha } from '../../media/use-media-artwork-colors';
+} from '@/app/features/media/components/media/media-card-style-utils';
+import { withAlpha } from '@/app/features/media/components/media/use-media-artwork-colors';
 
 describe('media card style utils', () => {
   it('clamps percentage values to the media control range', () => {

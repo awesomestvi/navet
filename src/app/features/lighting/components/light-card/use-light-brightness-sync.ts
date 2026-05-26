@@ -1,7 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useHaCommandQueue } from '@/app/hooks';
-import { useLightMemoryStore } from '../../stores/light-memory-store';
 import { clampPercentage, getBrightnessPercent } from './light-card-utils';
 
 type SyncLightOptions = {

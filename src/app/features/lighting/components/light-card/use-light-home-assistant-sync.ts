@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useI18n } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { useLightMemoryStore } from '../../stores/light-memory-store';
 import { clampKelvin, clampPercentage } from './light-card-utils';
 
 export interface LightUpdateOptions {

@@ -1,4 +1,4 @@
-import { getHVACModeButtonColor } from '../../utils/hvac-styles';
+import { getHVACModeButtonColor } from '@/app/features/climate/utils/hvac-styles';
 
 export function getHVACSettingsDialogStyles(mode: string, isOn: boolean) {
   const modeSurface = getModeSurface(mode, isOn);

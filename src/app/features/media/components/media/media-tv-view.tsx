@@ -7,9 +7,9 @@ import { CardSettingsActionButton } from '@/app/components/shared/card-settings-
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getMediaTVViewSurfaceTokens } from '@/app/components/shared/theme/media-tv-view-surface-tokens';
+import type { TvRemoteAction } from '@/app/features/media/tv-remote-commands';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import type { TvRemoteAction } from '../../tv-remote-commands';
 import { TvControlButton } from './tv-control-button';
 import { getTvDpadLayout, TvDpad } from './tv-dpad';
 import { TvSourceSelector } from './tv-source-selector';

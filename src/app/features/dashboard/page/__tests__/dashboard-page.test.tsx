@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DashboardController } from '@/app/features/dashboard/hooks/use-dashboard-controller.types';
 import { useErrorStore } from '@/app/stores';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
-import type { DashboardController } from '../../hooks/use-dashboard-controller.types';
 
 const { getControllerMock } = vi.hoisted(() => ({
   getControllerMock: vi.fn(),

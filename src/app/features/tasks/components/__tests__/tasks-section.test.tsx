@@ -40,7 +40,7 @@ vi.mock('@/app/services/home-assistant.service', async () => {
   };
 });
 
-import { TasksSection } from '../../index';
+import { TasksSection } from '@/app/features/tasks/index';
 
 function setRoutineEntities() {
   const automationCoffee = automationEntityFactory({

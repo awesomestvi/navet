@@ -40,6 +40,7 @@ vi.mock('@/auth/AuthProvider', () => ({
 vi.mock('../use-media-artwork-resolution', () => ({
   useMediaArtworkResolution: () => ({
     albumArt: null,
+    artworkResource: null,
     handleArtworkError: vi.fn(),
   }),
 }));

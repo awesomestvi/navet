@@ -1,14 +1,18 @@
 import { memo, useMemo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@/app/hooks';
-import { ENERGY_SOURCE_ACCENTS } from '../../data/energy-constants';
-import type { EnergyConsumer, EnergyDashboardNode, EnergyFlow } from '../../types/energy.types';
+import { ENERGY_SOURCE_ACCENTS } from '@/app/features/energy/data/energy-constants';
+import type {
+  EnergyConsumer,
+  EnergyDashboardNode,
+  EnergyFlow,
+} from '@/app/features/energy/types/energy.types';
 import {
   formatEnergyNodeValue,
   formatEnergyPercent,
   formatEnergyValue,
-} from '../../utils/energy-formatters';
+} from '@/app/features/energy/utils/energy-formatters';
+import { useTheme } from '@/app/hooks';
 import { EnergyBeam } from './energy-beam';
 import { EnergyNode } from './energy-node';
 

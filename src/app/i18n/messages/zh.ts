@@ -853,6 +853,11 @@ export const zhMessages = {
   'pwa.reload': '重新加载',
   'pwa.refreshApp': '刷新应用',
   'pwa.later': '稍后',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': '房间 {room}',
   'entityRoomSelector.updateFailed': '房间',
   'entityRoomSelector.createAction': '房间操作',

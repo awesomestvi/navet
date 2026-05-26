@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { CardTemplate } from '../../components/add-card-dialog';
+import type { CardTemplate } from '@/app/features/dashboard/components/add-card-dialog/index';
 import { useDashboardCardActions } from '../use-dashboard-card-actions';
 
 const { toastSuccess } = vi.hoisted(() => ({

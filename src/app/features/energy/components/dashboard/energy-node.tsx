@@ -2,9 +2,12 @@ import { Battery, Flame, Home, Leaf, SunMedium, TowerControl } from 'lucide-reac
 import { type CSSProperties, memo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type {
+  EnergyDashboardNode,
+  EnergyFlowSourceType,
+} from '@/app/features/energy/types/energy.types';
+import { formatEnergyNodeValue } from '@/app/features/energy/utils/energy-formatters';
 import { useTheme } from '@/app/hooks';
-import type { EnergyDashboardNode, EnergyFlowSourceType } from '../../types/energy.types';
-import { formatEnergyNodeValue } from '../../utils/energy-formatters';
 
 interface EnergyNodeProps {
   node: EnergyDashboardNode;

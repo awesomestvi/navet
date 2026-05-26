@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergySeriesPoint } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergySeriesPoint } from '../../types/energy.types';
 import { EnergyAreaChart } from '../charts/energy-area-chart';
 import { EnergyBarChart } from '../charts/energy-bar-chart';
 import { EnergyWidgetShell } from '../energy-widget-shell';

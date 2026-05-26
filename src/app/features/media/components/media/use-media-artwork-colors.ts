@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {
@@ -8,6 +9,13 @@ export interface MediaArtworkPalette {
   darkMuted: string;
   highlight: string;
   gradientEnd: string;
+}
+
+export interface MediaArtworkPaletteSource {
+  url?: string | null;
+  cacheKey?: string;
+  authStrategy?: ResolvedMediaResource['authStrategy'];
+  source?: string;
 }
 
 const FALLBACK_COLORS: Record<ThemeType, MediaArtworkPalette> = {
@@ -45,6 +53,29 @@ const paletteCache = new Map<string, MediaArtworkPalette>();
 const pendingPaletteRequests = new Map<string, Promise<MediaArtworkPalette | null>>();
 const ARTWORK_PALETTE_CLEAR_DELAY_MS = 700;
 
+export function getMediaArtworkPaletteSource(
+  artwork: string | null | undefined,
+  artworkResource?: ResolvedMediaResource | null
+): MediaArtworkPaletteSource | null {
+  if (!artwork) {
+    return null;
+  }
+
+  if (artworkResource?.url === artwork) {
+    return {
+      url: artwork,
+      cacheKey: artworkResource.cacheKey,
+      authStrategy: artworkResource.authStrategy,
+      source: artworkResource.metadata?.source,
+    };
+  }
+
+  return {
+    url: artwork,
+    authStrategy: 'none',
+  };
+}
+
 export function withAlpha(color: string, alpha: number) {
   const hexValue = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (hexValue) {
@@ -69,16 +100,19 @@ export function withAlpha(color: string, alpha: number) {
 }
 
 export function useMediaArtworkColors(
-  artwork: string | null | undefined,
+  artworkSource: MediaArtworkPaletteSource | null | undefined,
   theme: ThemeType,
   entityId?: string,
   artworkKey?: string
 ) {
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
-  const requestKey = [entityId, artwork, artworkKey].filter(Boolean).join('::');
+  const artworkUrl = artworkSource?.url ?? null;
+  const requestKey = [entityId, artworkSource?.cacheKey ?? artworkUrl, artworkKey]
+    .filter(Boolean)
+    .join('::');
 
   useEffect(() => {
-    if (!artwork) {
+    if (!artworkUrl) {
       const timeoutId = window.setTimeout(() => {
         setColors(FALLBACK_COLORS[theme]);
       }, ARTWORK_PALETTE_CLEAR_DELAY_MS);
@@ -112,7 +146,7 @@ export function useMediaArtworkColors(
     const existingRequest = pendingPaletteRequests.get(requestKey);
     const paletteRequest =
       existingRequest ??
-      resolveArtworkPalette(artwork).finally(() => {
+      resolveArtworkPalette(artworkSource).finally(() => {
         pendingPaletteRequests.delete(requestKey);
       });
 
@@ -129,7 +163,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artwork, requestKey, theme]);
+  }, [artworkSource, artworkUrl, requestKey, theme]);
 
   return colors;
 }

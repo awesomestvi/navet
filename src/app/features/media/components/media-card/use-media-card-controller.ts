@@ -7,16 +7,16 @@ import {
   hasMediaPlayerPreviousTrackSupport,
 } from '@/app/constants/media-player-features';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
-import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import {
   getTvRemoteCommand,
   resolveTvRemoteProfile,
   supportsTvRemotePlaybackCommand,
   type TvRemoteAction,
-} from '../../tv-remote-commands';
+} from '@/app/features/media/tv-remote-commands';
+import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
@@ -249,7 +249,7 @@ export function useMediaCardController({
     readyToPlayLabel: t('media.readyToPlay'),
   });
 
-  const { albumArt, handleArtworkError } = useMediaArtworkResolution({
+  const { albumArt, artworkResource, handleArtworkError } = useMediaArtworkResolution({
     entityId,
     artworkKey,
     liveEntityPicture,
@@ -374,6 +374,7 @@ export function useMediaCardController({
   return {
     albumArt,
     attachGroupMember,
+    artworkResource,
     availableGroupingPlayers,
     canNextTrack,
     canPreviousTrack,

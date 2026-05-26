@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { LockDevice } from '../../types/device.types';
+import type { LockDevice } from '@/app/types/device.types';
 
 export function mapLockDevice(
   entityId: string,

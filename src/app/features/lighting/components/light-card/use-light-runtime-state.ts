@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { useLightMemoryStore } from '../../stores/light-memory-store';
+import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useLightBrightnessSync } from './use-light-brightness-sync';
 import { useLightColorSync } from './use-light-color-sync';
 import type { LightUpdateOptions } from './use-light-home-assistant-sync';
