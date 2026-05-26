@@ -32,10 +32,7 @@ describe('useMediaArtworkColors', () => {
     await waitFor(() => {
       expect(result.current.dominant).toBe('rgb(120, 100, 90)');
     });
-    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith(
-      'data:image/jpeg;base64,track-a',
-      undefined
-    );
+    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith('data:image/jpeg;base64,track-a');
   });
 
   it('samples an already resolved blob artwork source', async () => {
@@ -54,10 +51,7 @@ describe('useMediaArtworkColors', () => {
     await waitFor(() => {
       expect(result.current.dominant).toBe('rgb(80, 90, 100)');
     });
-    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith(
-      'blob:http://navet.local/album-art',
-      undefined
-    );
+    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith('blob:http://navet.local/album-art');
   });
 
   it('keeps fallback colors when resolved artwork cannot be sampled', async () => {

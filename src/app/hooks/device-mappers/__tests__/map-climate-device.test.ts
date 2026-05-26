@@ -1,169 +1,114 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
+import {
+  climateEntityFactory,
+  climateEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/climate';
+import { waterHeaterEntityFactory } from '@/test/fixtures/home-assistant/entities/water-heater';
 import { mapClimateDevice } from '../map-climate-device';
 
-function createClimateEntity(
-  attributes: Record<string, unknown>,
-  entityId = 'climate.hallway',
-  state = 'heat'
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
-
 describe('mapClimateDevice', () => {
-  it('preserves supported Home Assistant HVAC modes', () => {
+  it('preserves documented Home Assistant hvac_modes', () => {
     const device = mapClimateDevice(
-      'climate.hallway',
-      createClimateEntity({
-        temperature: 21,
-        current_temperature: 20,
-        hvac_modes: ['heat', 'cool', 'fan_only'],
-      }),
-      'Hallway',
+      climateEntityFixtures.normal.entity_id,
+      climateEntityFixtures.normal,
+      'Hallway Thermostat',
       'Hallway'
     );
 
-    expect(device.supportedHvacModes).toEqual(['heat', 'cool', 'fan_only']);
+    expect(device.supportedHvacModes).toEqual(['heat', 'cool', 'heat_cool', 'off']);
   });
 
-  it('preserves Home Assistant Fahrenheit climate units', () => {
-    const device = mapClimateDevice(
-      'climate.hallway',
-      createClimateEntity({
-        temperature: 72,
-        current_temperature: 70,
-        unit_of_measurement: '°F',
-      }),
-      'Hallway',
-      'Hallway'
-    );
+  it('preserves Fahrenheit units from unit_of_measurement', () => {
+    const entity = climateEntityFactory({
+      temperature: 72,
+      current_temperature: 70,
+      unit_of_measurement: '°F',
+    });
+
+    const device = mapClimateDevice(entity.entity_id, entity, 'Hallway', 'Hallway');
 
     expect(device.temperature).toBe(72);
     expect(device.currentTemperature).toBe(70);
     expect(device.temperatureUnit).toBe('fahrenheit');
   });
 
-  it('resolves native Home Assistant Fahrenheit climate units', () => {
-    const device = mapClimateDevice(
-      'climate.hallway',
-      createClimateEntity({
-        temperature: 72,
-        current_temperature: 70,
-        native_temperature_unit: '°F',
-      }),
-      'Hallway',
-      'Hallway'
-    );
+  it('resolves native_temperature_unit when the standard unit is absent', () => {
+    const entity = climateEntityFactory({
+      temperature: 72,
+      current_temperature: 70,
+      native_temperature_unit: '°F',
+      unit_of_measurement: undefined,
+    });
 
-    expect(device.temperature).toBe(72);
-    expect(device.currentTemperature).toBe(70);
+    const device = mapClimateDevice(entity.entity_id, entity, 'Hallway', 'Hallway');
+
     expect(device.temperatureUnit).toBe('fahrenheit');
   });
 
   it('falls back to the Home Assistant config temperature unit', () => {
-    const device = mapClimateDevice(
-      'climate.hallway',
-      createClimateEntity({
-        temperature: 72,
-        current_temperature: 70,
-      }),
-      'Hallway',
-      'Hallway',
-      '°F'
-    );
+    const entity = climateEntityFactory({
+      temperature: 72,
+      current_temperature: 70,
+      unit_of_measurement: undefined,
+      native_temperature_unit: undefined,
+    });
 
-    expect(device.temperature).toBe(72);
-    expect(device.currentTemperature).toBe(70);
+    const device = mapClimateDevice(entity.entity_id, entity, 'Hallway', 'Hallway', '°F');
+
     expect(device.temperatureUnit).toBe('fahrenheit');
   });
 
-  it('maps heat-cool range target temperatures without falling back to zero', () => {
-    const device = mapClimateDevice(
-      'climate.nest',
-      createClimateEntity(
-        {
-          current_temperature: 23,
-          target_temp_low: 20,
-          target_temp_high: 24,
-          hvac_action: 'cooling',
-          hvac_modes: ['heat', 'cool', 'heat_cool', 'off'],
-        },
-        'climate.nest',
-        'heat_cool'
-      ),
-      'Nest',
-      'Hallway'
-    );
+  it('maps heat_cool target ranges from target_temp_high and target_temp_low', () => {
+    const entity = climateEntityFactory({
+      temperature: undefined,
+      current_temperature: 23,
+      target_temp_low: 20,
+      target_temp_high: 24,
+      hvac_action: 'cooling',
+      hvac_modes: ['heat', 'cool', 'heat_cool', 'off'],
+    });
+    entity.state = 'heat_cool';
+
+    const device = mapClimateDevice(entity.entity_id, entity, 'Nest', 'Hallway');
 
     expect(device.temperature).toBe(24);
     expect(device.currentTemperature).toBe(23);
     expect(device.mode).toBe('heat_cool');
+    expect(device.action).toBe('cooling');
   });
 
-  it('ignores malformed HVAC mode entries', () => {
-    const device = mapClimateDevice(
-      'climate.hallway',
-      createClimateEntity({
-        temperature: 21,
-        current_temperature: 20,
-        hvac_modes: ['heat', 1, null, 'cool'],
-      }),
-      'Hallway',
-      'Hallway'
-    );
+  it('filters malformed hvac_modes without crashing', () => {
+    const entity = climateEntityFactory({
+      hvac_modes: ['heat', 1, null, 'cool'],
+    });
+
+    const device = mapClimateDevice(entity.entity_id, entity, 'Hallway', 'Hallway');
 
     expect(device.supportedHvacModes).toEqual(['heat', 'cool']);
   });
 
-  it('maps Home Assistant water heaters as climate card devices', () => {
-    const device = mapClimateDevice(
-      'water_heater.boiler',
-      createClimateEntity(
-        {
-          temperature: 55,
-          current_temperature: 48,
-          operation_list: ['eco', 'performance', 'off'],
-        },
-        'water_heater.boiler',
-        'eco'
-      ),
-      'Boiler',
-      'Utility'
-    );
+  it('maps water_heater operation_list through the climate card contract', () => {
+    const entity = waterHeaterEntityFactory();
+    const device = mapClimateDevice(entity.entity_id, entity, 'Boiler', 'Utility');
 
     expect(device).toEqual(
       expect.objectContaining({
-        id: 'water_heater.boiler',
+        id: entity.entity_id,
         temperature: 55,
         currentTemperature: 48,
-        mode: 'eco',
+        mode: entity.state,
         supportedHvacModes: ['eco', 'performance', 'off'],
         serviceDomain: 'water_heater',
       })
     );
   });
 
-  it('does not fall back to generic climate mode controls for water heaters', () => {
-    const device = mapClimateDevice(
-      'water_heater.boiler',
-      createClimateEntity(
-        {
-          temperature: 55,
-          current_temperature: 48,
-        },
-        'water_heater.boiler',
-        'eco'
-      ),
-      'Boiler',
-      'Utility'
-    );
+  it('does not invent generic climate modes for water heaters without operation_list', () => {
+    const entity = waterHeaterEntityFactory({
+      operation_list: undefined,
+    });
+
+    const device = mapClimateDevice(entity.entity_id, entity, 'Boiler', 'Utility');
 
     expect(device.supportedHvacModes).toEqual([]);
   });

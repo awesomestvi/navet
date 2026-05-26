@@ -1,18 +1,18 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
 import { renderHookWithProviders } from '@/test/render';
 import { LIGHT_EFFECT_NONE } from '../light-card-effect-utils';
 import { useLightEffectSync } from '../use-light-effect-sync';
 
 function makeEntity(effectList?: unknown, effect?: unknown) {
-  return {
-    entity_id: 'light.wled',
-    state: 'on',
-    attributes: {
-      effect_list: effectList,
-      effect,
-    },
-  } as never;
+  const entity = lightEntityFactory({
+    effect_list: effectList,
+    effect,
+  });
+  entity.entity_id = 'light.wled';
+  entity.state = 'on';
+  return entity as never;
 }
 
 describe('useLightEffectSync', () => {

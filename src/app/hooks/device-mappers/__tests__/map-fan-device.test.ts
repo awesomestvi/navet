@@ -1,43 +1,66 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
+import { fanEntityFactory, fanEntityFixtures } from '@/test/fixtures/home-assistant/entities/fan';
 import { mapFanDevice } from '../map-fan-device';
 
-function createEntity(
-  entityId: string,
-  state: string,
-  attributes: Record<string, unknown> = {}
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
-}
-
 describe('mapFanDevice', () => {
-  it('maps Home Assistant fan control fields', () => {
-    const device = mapFanDevice(
-      'fan.hallway',
-      createEntity('fan.hallway', 'on', {
-        percentage: 66,
-        preset_mode: 'auto',
-        preset_modes: ['auto', 'sleep'],
-      }),
-      'Hallway Fan',
-      'Hallway'
-    );
+  it('maps documented Home Assistant fan control fields', () => {
+    const entity = fanEntityFactory({
+      percentage: 66,
+      preset_mode: 'auto',
+      preset_modes: ['auto', 'sleep'],
+    });
+
+    const device = mapFanDevice(entity.entity_id, entity, 'Hallway Fan', 'Hallway');
 
     expect(device).toEqual(
       expect.objectContaining({
-        id: 'fan.hallway',
+        id: entity.entity_id,
         state: true,
         percentage: 66,
         presetMode: 'auto',
         presetModes: ['auto', 'sleep'],
       })
     );
+  });
+
+  it('treats unavailable fans as off without crashing on missing optional attributes', () => {
+    const entity = fanEntityFixtures.unavailable;
+
+    const device = mapFanDevice(entity.entity_id, entity, 'Bedroom Fan', 'Bedroom');
+
+    expect(device).toMatchObject({
+      state: false,
+      percentage: 66,
+      presetMode: undefined,
+      presetModes: ['auto', 'sleep'],
+    });
+  });
+
+  it('filters malformed preset mode arrays and clamps out-of-range percentages', () => {
+    const entity = fanEntityFactory({
+      percentage: 140,
+      preset_mode: 42,
+      preset_modes: ['auto', 1, 'sleep', null],
+    });
+
+    const device = mapFanDevice(entity.entity_id, entity, 'Bedroom Fan', 'Bedroom');
+
+    expect(device).toMatchObject({
+      percentage: 100,
+      presetMode: undefined,
+      presetModes: ['auto', 'sleep'],
+    });
+  });
+
+  it('falls back safely when optional percentage and preset attributes are absent', () => {
+    const entity = fanEntityFixtures.missingOptionalAttributes;
+
+    const device = mapFanDevice(entity.entity_id, entity, 'Bedroom Fan', 'Bedroom');
+
+    expect(device).toMatchObject({
+      percentage: 0,
+      presetMode: undefined,
+      presetModes: undefined,
+    });
   });
 });

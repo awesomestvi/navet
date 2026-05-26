@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { mediaPlayerEntityFactory } from '@/test/fixtures/home-assistant/entities/media-player';
 import { useMediaDisplayFields } from '../use-media-display-fields';
 
 const baseParams = {
@@ -13,38 +14,42 @@ const baseParams = {
 
 describe('useMediaDisplayFields', () => {
   it('includes changing media metadata in the artwork key for stable content ids', () => {
+    const firstEntity = mediaPlayerEntityFactory({
+      entity_picture: '/api/media_player_proxy/media_player.kitchen',
+      media_content_id: 'spotify:context:playlist:daily-mix',
+      media_title: 'First song',
+      media_artist: 'First artist',
+      media_album_name: 'First album',
+    });
+    const secondEntity = mediaPlayerEntityFactory({
+      entity_picture: '/api/media_player_proxy/media_player.kitchen',
+      media_content_id: 'spotify:context:playlist:daily-mix',
+      media_title: 'Second song',
+      media_artist: 'Second artist',
+      media_album_name: 'Second album',
+    });
     const first = useMediaDisplayFields({
       ...baseParams,
-      liveAttrs: {
-        entity_picture: '/api/media_player_proxy/media_player.kitchen',
-        media_content_id: 'spotify:context:playlist:daily-mix',
-        media_title: 'First song',
-        media_artist: 'First artist',
-        media_album_name: 'First album',
-      },
+      liveAttrs: firstEntity.attributes,
     });
     const second = useMediaDisplayFields({
       ...baseParams,
-      liveAttrs: {
-        entity_picture: '/api/media_player_proxy/media_player.kitchen',
-        media_content_id: 'spotify:context:playlist:daily-mix',
-        media_title: 'Second song',
-        media_artist: 'Second artist',
-        media_album_name: 'Second album',
-      },
+      liveAttrs: secondEntity.attributes,
     });
 
     expect(first.liveArtworkKey).not.toBe(second.liveArtworkKey);
   });
 
   it('uses entity_picture_local as live artwork when entity_picture is unavailable', () => {
+    const entity = mediaPlayerEntityFactory({
+      entity_picture_local: '/api/media_player_proxy/media_player.kitchen_local',
+      entity_picture: undefined,
+      media_title: 'Local artwork song',
+    });
     const fields = useMediaDisplayFields({
       ...baseParams,
       entityPicture: '/api/media_player_proxy/media_player.fallback',
-      liveAttrs: {
-        entity_picture_local: '/api/media_player_proxy/media_player.kitchen_local',
-        media_title: 'Local artwork song',
-      },
+      liveAttrs: entity.attributes,
     });
 
     expect(fields.liveEntityPicture).toBe('/api/media_player_proxy/media_player.kitchen_local');
@@ -52,13 +57,15 @@ describe('useMediaDisplayFields', () => {
   });
 
   it('uses media_image_url as live artwork when proxy picture attributes are unavailable', () => {
+    const entity = mediaPlayerEntityFactory({
+      entity_picture: undefined,
+      media_image_url: 'https://cdn.example.test/album.jpg',
+      media_title: 'Remote artwork song',
+    });
     const fields = useMediaDisplayFields({
       ...baseParams,
       entityPicture: '/api/media_player_proxy/media_player.fallback',
-      liveAttrs: {
-        media_image_url: 'https://cdn.example.test/album.jpg',
-        media_title: 'Remote artwork song',
-      },
+      liveAttrs: entity.attributes,
     });
 
     expect(fields.liveEntityPicture).toBe('https://cdn.example.test/album.jpg');

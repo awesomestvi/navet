@@ -49,6 +49,8 @@ describe('HAConnectionService', () => {
     const service = new HAConnectionService();
     const session = {
       runtime: 'standalone-oauth' as const,
+      authMode: 'oauth' as const,
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     };
 
@@ -56,6 +58,53 @@ describe('HAConnectionService', () => {
 
     expect(createHomeAssistantClientMock).toHaveBeenCalledWith(session);
     expect(service.getConnection()).toBe(connection);
+  });
+
+  it('subscribes to Home Assistant config and entity updates and emits connection lifecycle events', async () => {
+    const connection = createConnection();
+    createHomeAssistantClientMock.mockResolvedValueOnce({ connection });
+
+    const service = new HAConnectionService();
+    const connectionEvents: Array<{ connected: boolean; reconnecting: boolean }> = [];
+    const configEvents: unknown[] = [];
+    const entityEvents: unknown[] = [];
+
+    service.addListener('connection', ({ connected, reconnecting }) => {
+      connectionEvents.push({ connected, reconnecting });
+    });
+    service.addListener('config', (config) => configEvents.push(config));
+    service.addListener('entities', (entities) => entityEvents.push(entities));
+
+    await service.authenticate({
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    const configCallback = subscribeConfigMock.mock.calls[0]?.[1] as
+      | ((value: unknown) => void)
+      | undefined;
+    const entitiesCallback = subscribeEntitiesMock.mock.calls[0]?.[1] as
+      | ((value: unknown) => void)
+      | undefined;
+
+    configCallback?.({ location_name: 'Home' });
+    entitiesCallback?.({ 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } });
+    connectionListeners.get('ready')?.(connection);
+    connectionListeners.get('disconnected')?.(connection);
+
+    expect(getUserMock).toHaveBeenCalledWith(connection);
+    expect(subscribeConfigMock).toHaveBeenCalledTimes(1);
+    expect(subscribeEntitiesMock).toHaveBeenCalledTimes(1);
+    expect(configEvents).toEqual([{ location_name: 'Home' }]);
+    expect(entityEvents).toEqual([
+      { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
+    ]);
+    expect(connectionEvents).toEqual([
+      { connected: true, reconnecting: false },
+      { connected: false, reconnecting: true },
+    ]);
   });
 
   it('does not schedule another authentication attempt after invalid auth', async () => {
@@ -67,6 +116,8 @@ describe('HAConnectionService', () => {
     await expect(
       service.authenticate({
         runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'https://ha.example.com',
         hassUrl: 'https://ha.example.com',
       })
     ).rejects.toThrow(
@@ -88,6 +139,8 @@ describe('HAConnectionService', () => {
 
     await service.authenticate({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
     });
 
@@ -113,10 +166,14 @@ describe('HAConnectionService', () => {
 
     const firstAuthenticate = service.authenticate({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://old-ha.example.com',
       hassUrl: 'https://old-ha.example.com',
     });
     const secondAuthenticate = service.authenticate({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://new-ha.example.com',
       hassUrl: 'https://new-ha.example.com',
     });
 
@@ -131,6 +188,33 @@ describe('HAConnectionService', () => {
     expect(service.getConnection()).toBe(secondConnection);
     expect(firstConnection.close).toHaveBeenCalled();
     expect(secondConnection.close).not.toHaveBeenCalled();
+  });
+
+  it('disconnects cleanly without announcing a reconnect', async () => {
+    const connection = createConnection();
+    createHomeAssistantClientMock.mockResolvedValueOnce({ connection });
+
+    const service = new HAConnectionService();
+    const connectionEvents: Array<{ connected: boolean; reconnecting: boolean }> = [];
+    service.addListener('connection', ({ connected, reconnecting }) => {
+      connectionEvents.push({ connected, reconnecting });
+    });
+
+    await service.authenticate({
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    service.disconnect();
+
+    expect(connection.close).toHaveBeenCalled();
+    expect(connectionEvents[connectionEvents.length - 1]).toEqual({
+      connected: false,
+      reconnecting: false,
+    });
+    expect(service.getConnection()).toBeNull();
   });
 });
 

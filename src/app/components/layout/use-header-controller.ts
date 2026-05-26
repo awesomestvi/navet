@@ -6,7 +6,7 @@ import { useNotifications } from '@/app/features/notifications';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
+import { resolveHomeAssistantAbsoluteUrl } from '@/app/utils/home-assistant-url';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
@@ -25,7 +25,6 @@ function selectPersonEntities(state: HomeAssistantStore) {
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const hassUrl = useAuthBaseUrl();
   const personEntities = useHomeAssistant(selectPersonEntities, shallow);
   const user = useHomeAssistant(homeAssistantSelectors.user);
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
@@ -77,12 +76,8 @@ export function useHeaderController() {
       return null;
     }
 
-    if (entityPicture.startsWith('http://') || entityPicture.startsWith('https://')) {
-      return entityPicture;
-    }
-
-    return hassUrl ? `${hassUrl}${entityPicture}` : entityPicture;
-  }, [hassUrl, personEntities, user?.name]);
+    return resolveHomeAssistantAbsoluteUrl(entityPicture);
+  }, [personEntities, user?.name]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),

@@ -1,5 +1,8 @@
 import type { Auth } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ingressSessionFixture } from '@/test/fixtures/home-assistant/auth/ingress';
+import { oauthSessionFixture } from '@/test/fixtures/home-assistant/auth/oauth';
+import { panelSessionFixture } from '@/test/fixtures/home-assistant/auth/panel';
 import { haIngressAuth } from '../adapters/haIngressAuth';
 import { haPanelAuth } from '../adapters/haPanelAuth';
 import { standaloneOAuthAuth } from '../adapters/standaloneOAuthAuth';
@@ -39,6 +42,19 @@ function setOAuthCallbackUrl(hassUrl = 'https://ha.example.com') {
   return { clientId, hassUrl };
 }
 
+function createStoredTokenResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
+  return new Response(
+    JSON.stringify({
+      ...oauthSessionFixture.tokenPayload,
+      hassUrl,
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
+
 describe('auth adapters', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -52,14 +68,16 @@ describe('auth adapters', () => {
   it('creates panel session without token data', async () => {
     const session = await haPanelAuth.init();
     expect(session).toMatchObject({
-      runtime: 'ha-panel',
+      runtime: panelSessionFixture.runtime,
+      authMode: panelSessionFixture.authMode,
+      haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     });
     expect(session?.auth).toBeUndefined();
   });
 
   it('creates ingress session from Home Assistant frontend auth when available', async () => {
-    const auth = createAuth(window.location.origin);
+    const auth = createAuth(ingressSessionFixture.haBaseUrl);
     localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
     getAuthMock.mockResolvedValueOnce(auth);
 
@@ -68,6 +86,8 @@ describe('auth adapters', () => {
     expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
     expect(session).toMatchObject({
       runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
       auth,
     });
@@ -79,13 +99,15 @@ describe('auth adapters', () => {
     expect(getAuthMock).not.toHaveBeenCalled();
     expect(session).toMatchObject({
       runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     });
     expect(session?.auth).toBeUndefined();
   });
 
   it('keeps ingress auth on the proxy path when frontend tokens cannot be restored', async () => {
-    const auth = createAuth(window.location.origin);
+    const auth = createAuth(ingressSessionFixture.haBaseUrl);
     localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
     getAuthMock.mockRejectedValueOnce(new Error('stale frontend token'));
 
@@ -94,26 +116,25 @@ describe('auth adapters', () => {
     expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
     expect(session).toMatchObject({
       runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     });
     expect(session?.auth).toBeUndefined();
   });
 
   it('restores persisted standalone OAuth session from the same-origin auth endpoint', async () => {
-    const auth = createAuth();
-    vi.spyOn(window, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(auth.data), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    );
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    vi.spyOn(window, 'fetch').mockResolvedValue(createStoredTokenResponse());
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await standaloneOAuthAuth.init();
 
     expect(session).toMatchObject({
       runtime: 'standalone-oauth',
-      hassUrl: 'https://ha.example.com',
+      authMode: 'oauth',
+      haBaseUrl: oauthSessionFixture.haBaseUrl,
+      hassUrl: oauthSessionFixture.hassUrl,
       auth,
     });
   });
@@ -135,6 +156,8 @@ describe('auth adapters', () => {
     });
     expect(session).toMatchObject({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: hassUrl,
       hassUrl,
       auth,
     });
@@ -160,6 +183,8 @@ describe('auth adapters', () => {
     await expect(loadTokens()).resolves.toBeNull();
     expect(session).toMatchObject({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://homeassistant.local:8123',
       hassUrl: 'http://homeassistant.local:8123',
       auth,
     });
@@ -189,6 +214,8 @@ describe('auth adapters', () => {
 
     const refreshed = await standaloneOAuthAuth.refresh?.({
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
       auth,
       expiresAt: auth.data.expires,
@@ -202,12 +229,7 @@ describe('auth adapters', () => {
     const auth = createAuth();
     const fetchMock = vi
       .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(auth.data), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
+      .mockResolvedValueOnce(createStoredTokenResponse(auth.data.hassUrl))
       .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     getAuthMock.mockResolvedValueOnce(auth);
 

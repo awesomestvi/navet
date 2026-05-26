@@ -11,7 +11,6 @@ interface UsePhotoFrameSourcesOptions {
   sourceMode?: PhotoFrameSourceMode;
   photoUrls?: string[];
   mediaSourceId?: string;
-  hassUrl?: string;
 }
 
 function isImageMediaClass(mediaClass: string | undefined) {
@@ -22,17 +21,17 @@ function canExpandMediaClass(mediaClass: string | undefined) {
   return mediaClass === 'directory' || mediaClass === 'album' || mediaClass === 'app';
 }
 
-async function resolveMediaSourceImageUrl(mediaContentId: string, hassUrl?: string) {
+async function resolveMediaSourceImageUrl(mediaContentId: string) {
   const resolved = await homeAssistantService.resolveMediaSource(mediaContentId);
 
   if (!resolved.url) {
     return null;
   }
 
-  return resolveHomeAssistantProxyUrl(resolved.url, hassUrl) ?? resolved.url;
+  return resolveHomeAssistantProxyUrl(resolved.url) ?? resolved.url;
 }
 
-async function collectMediaSourceImageUrls(mediaSourceId: string, hassUrl?: string) {
+async function collectMediaSourceImageUrls(mediaSourceId: string) {
   const collectedUrls: string[] = [];
   const queue = [{ mediaContentId: mediaSourceId, depth: 0 }];
   const seen = new Set<string>();
@@ -49,7 +48,7 @@ async function collectMediaSourceImageUrls(mediaSourceId: string, hassUrl?: stri
     const mediaChildren = media.children ?? [];
 
     if (isImageMediaClass(media.media_class)) {
-      const imageUrl = await resolveMediaSourceImageUrl(media.media_content_id, hassUrl);
+      const imageUrl = await resolveMediaSourceImageUrl(media.media_content_id);
       if (imageUrl) {
         collectedUrls.push(imageUrl);
       }
@@ -62,7 +61,7 @@ async function collectMediaSourceImageUrls(mediaSourceId: string, hassUrl?: stri
       }
 
       if (isImageMediaClass(child.media_class)) {
-        const imageUrl = await resolveMediaSourceImageUrl(child.media_content_id, hassUrl);
+        const imageUrl = await resolveMediaSourceImageUrl(child.media_content_id);
         if (imageUrl) {
           collectedUrls.push(imageUrl);
         }
@@ -85,7 +84,6 @@ export function usePhotoFrameSources({
   sourceMode,
   photoUrls,
   mediaSourceId,
-  hassUrl,
 }: UsePhotoFrameSourcesOptions) {
   const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
   const manualPhotoUrls = (photoUrls ?? [])
@@ -107,7 +105,7 @@ export function usePhotoFrameSources({
 
     let cancelled = false;
 
-    void collectMediaSourceImageUrls(trimmedMediaSourceId, hassUrl)
+    void collectMediaSourceImageUrls(trimmedMediaSourceId)
       .then((urls) => {
         if (!cancelled) {
           setHomeAssistantPhotoUrls(urls);
@@ -122,7 +120,7 @@ export function usePhotoFrameSources({
     return () => {
       cancelled = true;
     };
-  }, [hassUrl, mediaSourceId, resolvedSourceMode]);
+  }, [mediaSourceId, resolvedSourceMode]);
 
   const activePhotoUrls =
     resolvedSourceMode === 'home-assistant' ? homeAssistantPhotoUrls : manualPhotoUrls;

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { homeAssistantWebSocketFixtures } from '@/test/fixtures/home-assistant/api/websocket';
 import HAEntityService from '../ha-entity-service';
 
 const { callServiceMock } = vi.hoisted(() => ({
@@ -194,12 +195,14 @@ describe('HAEntityService', () => {
   });
 
   it('requests Home Assistant camera stream URLs over websocket', async () => {
-    const sendMessagePromise = vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' }));
+    const sendMessagePromise = vi.fn(
+      async () => homeAssistantWebSocketFixtures.cameraStreamResult.result
+    );
     const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
 
-    await expect(service.getCameraStreamUrl('camera.front')).resolves.toEqual({
-      url: '/api/hls/camera.front/master.m3u8',
-    });
+    await expect(service.getCameraStreamUrl('camera.front')).resolves.toEqual(
+      homeAssistantWebSocketFixtures.cameraStreamResult.result
+    );
 
     expect(sendMessagePromise).toHaveBeenCalledWith({
       type: 'camera/stream',
@@ -208,14 +211,31 @@ describe('HAEntityService', () => {
     });
   });
 
-  it('requests Home Assistant WebRTC client configuration over websocket', async () => {
-    const configuration = { iceServers: [] };
-    const sendMessagePromise = vi.fn(async () => ({ configuration }));
+  it('requests Home Assistant camera frontend capabilities over websocket', async () => {
+    const sendMessagePromise = vi.fn(
+      async () => homeAssistantWebSocketFixtures.cameraCapabilitiesResult.result
+    );
     const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
 
-    await expect(service.getWebRtcClientConfiguration('camera.front')).resolves.toEqual({
-      configuration,
+    await expect(service.getCameraCapabilities('camera.front')).resolves.toEqual(
+      homeAssistantWebSocketFixtures.cameraCapabilitiesResult.result
+    );
+
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'camera/capabilities',
+      entity_id: 'camera.front',
     });
+  });
+
+  it('requests Home Assistant WebRTC client configuration over websocket', async () => {
+    const sendMessagePromise = vi.fn(
+      async () => homeAssistantWebSocketFixtures.webRtcClientConfigResult.result
+    );
+    const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
+
+    await expect(service.getWebRtcClientConfiguration('camera.front')).resolves.toEqual(
+      homeAssistantWebSocketFixtures.webRtcClientConfigResult.result
+    );
 
     expect(sendMessagePromise).toHaveBeenCalledWith({
       type: 'camera/webrtc/get_client_config',

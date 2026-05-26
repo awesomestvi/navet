@@ -1,5 +1,6 @@
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { renderHookWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { useOnboardingController } from '../use-onboarding-controller';
@@ -38,6 +39,8 @@ const ONBOARDING_CONFIG_IMPORT_REVEAL_KEY = 'navet-onboarding-config-import-reve
 describe('useOnboardingController', () => {
   beforeEach(async () => {
     window.__NAVET_PANEL__ = undefined;
+    sessionStorage.clear();
+    resetRuntimeContextForTests();
     await resetAppStores();
     reloadWindow.mockClear();
     toastSuccess.mockClear();
@@ -78,6 +81,7 @@ describe('useOnboardingController', () => {
 
   it('reveals the imported dashboard in-place in Home Assistant panel mode', async () => {
     window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
     const file = new File(['version: 3'], 'navet-dashboard.yaml', { type: 'text/yaml' });
     const { result } = renderController();
 

@@ -11,11 +11,12 @@ describe('Home Assistant add-on run script', () => {
   });
 
   it('defaults the add-on proxy upstream to the internal Home Assistant Core endpoint', () => {
-    expect(runScript).toContain('RESOLVED_HASS_URL="http://homeassistant:8123"');
+    expect(runScript).toContain('RESOLVED_HASS_PROXY_BASE="http://supervisor/core"');
   });
 
   it('uses the resolved Home Assistant URL in nginx proxy_pass only', () => {
-    expect(runScript).toContain(`proxy_pass \${RESOLVED_HASS_URL}/;`);
+    expect(runScript).toContain(`proxy_pass \${RESOLVED_HASS_PROXY_BASE}/;`);
+    expect(runScript).toContain(`proxy_pass \${RESOLVED_HASS_PROXY_BASE}/websocket;`);
     expect(runScript).not.toContain(`proxy_pass \${HASS_URL}/;`);
   });
 
@@ -30,7 +31,7 @@ describe('Home Assistant add-on run script', () => {
       runScript.indexOf('location /__navet_ha_proxy__/')
     );
 
-    expect(websocketLocation).toContain(`proxy_pass \${RESOLVED_HASS_URL}/api/websocket;`);
+    expect(websocketLocation).toContain(`proxy_pass \${RESOLVED_HASS_PROXY_BASE}/websocket;`);
     expect(runScript).toContain('proxy_set_header Authorization "Bearer ');
     expect(websocketLocation).toContain(`\${PROXY_AUTH_DIRECTIVE}`);
   });

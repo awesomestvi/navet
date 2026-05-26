@@ -18,7 +18,6 @@ import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { BoundsFitter } from './map-bounds-fitter';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { buildMarkerIcon } from './map-marker-icon';
@@ -73,7 +72,6 @@ export const MapWidget = memo(function MapWidget({
   const theme = useThemeMode();
   const primaryColor = usePrimaryColor();
   const { t } = useI18n();
-  const hassUrl = useAuthBaseUrl();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
       disableAnimations: state.disableAnimations,
@@ -128,13 +126,11 @@ export const MapWidget = memo(function MapWidget({
       markers.map((marker) => ({
         ...marker,
         entityPicture: marker.entityPicture
-          ? (resolveHomeAssistantProxyUrl(
-              getCompactHomeAssistantImageUrl(marker.entityPicture),
-              hassUrl ?? undefined
-            ) ?? undefined)
+          ? (resolveHomeAssistantProxyUrl(getCompactHomeAssistantImageUrl(marker.entityPicture)) ??
+            undefined)
           : undefined,
       })),
-    [hassUrl, markers]
+    [markers]
   );
   const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 

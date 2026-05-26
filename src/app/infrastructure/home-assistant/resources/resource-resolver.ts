@@ -1,0 +1,383 @@
+import { resolveIngressAwarePath } from '@/app/utils/home-assistant-connection-target';
+import { isSafeRelativePath, sanitizeImageUrl } from '@/app/utils/url-security';
+import type { AuthSession } from '@/auth/types';
+import { getRuntimeContext } from '../runtime/runtime-detector';
+import type { ResolvedRequest } from '../transport/transport-types';
+import { ResourceCache } from './resource-cache';
+import type { HaResourceRef, ResolvedMediaResource, ResolveOptions } from './resource-types';
+
+const HOME_ASSISTANT_PROXY_PATH = '/__navet_ha_proxy__';
+const HOME_ASSISTANT_RELATIVE_PREFIXES = [
+  '/api/',
+  '/local/',
+  '/media/',
+  '/auth/',
+  '/static/',
+  '/hls/',
+  '/image/',
+];
+const DEFAULT_CACHE_TTL_MS = 60_000;
+
+function isAbsoluteHttpUrl(value: string) {
+  return value.startsWith('http://') || value.startsWith('https://');
+}
+
+function isHomeAssistantRelativeUrl(value: string) {
+  return HOME_ASSISTANT_RELATIVE_PREFIXES.some((prefix) => value.startsWith(prefix));
+}
+
+function stripProxyPath(path: string) {
+  const unproxiedPath = path.slice(HOME_ASSISTANT_PROXY_PATH.length);
+  return unproxiedPath.startsWith('/') ? unproxiedPath : `/${unproxiedPath}`;
+}
+
+function resolveProxyPath(path: string) {
+  return resolveIngressAwarePath(`${HOME_ASSISTANT_PROXY_PATH}${path}`);
+}
+
+function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBustKey']) {
+  if (cacheBustKey === undefined || cacheBustKey === null) {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_t=${encodeURIComponent(String(cacheBustKey))}`;
+}
+
+export class HomeAssistantResourceResolver {
+  private cache = new ResourceCache();
+
+  constructor(private getSession: () => AuthSession | null) {}
+
+  private buildResolvedRequest(
+    url: string,
+    authStrategy: ResolvedMediaResource['authStrategy']
+  ): ResolvedRequest {
+    return {
+      url,
+      authStrategy,
+      cache: 'force-cache',
+    };
+  }
+
+  resolveRequest(ref: HaResourceRef, options: ResolveOptions = {}): ResolvedRequest | null {
+    const resource = this.resolveSync(ref, options);
+    if (!resource.url) {
+      return null;
+    }
+
+    return this.buildResolvedRequest(resource.url, resource.authStrategy);
+  }
+
+  resolveSync(ref: HaResourceRef, options: ResolveOptions = {}): ResolvedMediaResource {
+    const runtime = getRuntimeContext();
+    const session = this.getSession();
+    const haBaseUrl = session?.haBaseUrl ?? runtime.haBaseUrl;
+    const cacheKey = JSON.stringify([
+      runtime.kind,
+      runtime.appBasePath,
+      haBaseUrl,
+      ref,
+      options.cacheBustKey,
+      options.preferProxy,
+      options.allowDirect,
+    ]);
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const resolvePath = (resourceUrl: string): ResolvedMediaResource => {
+      const safeImageUrl = sanitizeImageUrl(resourceUrl, undefined, {
+        allowBlob: true,
+        allowDataImage: true,
+      });
+
+      if (resourceUrl.startsWith('blob:') || resourceUrl.startsWith('data:')) {
+        return {
+          id: resourceUrl,
+          kind: 'image',
+          url: safeImageUrl ?? undefined,
+          cacheKey,
+          authStrategy: 'none',
+          metadata: { source: 'inline' },
+        };
+      }
+
+      if (resourceUrl.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+        const resolvedUrl =
+          runtime.kind === 'ha_panel'
+            ? stripProxyPath(resourceUrl)
+            : resolveIngressAwarePath(resourceUrl);
+
+        return {
+          id: resourceUrl,
+          kind: 'image',
+          url: toUrlWithCacheBust(resolvedUrl, options.cacheBustKey),
+          cacheKey,
+          authStrategy: runtime.kind === 'ha_panel' ? 'panel_bridge' : 'same_origin',
+          metadata: { source: 'ha_proxy' },
+        };
+      }
+
+      if (
+        resourceUrl.startsWith('/') &&
+        isSafeRelativePath(resourceUrl) &&
+        isHomeAssistantRelativeUrl(resourceUrl)
+      ) {
+        if (runtime.kind === 'ha_panel') {
+          return {
+            id: resourceUrl,
+            kind: 'image',
+            url: toUrlWithCacheBust(resourceUrl, options.cacheBustKey),
+            cacheKey,
+            authStrategy: 'panel_bridge',
+            metadata: { source: 'ha_panel_relative' },
+          };
+        }
+
+        if (runtime.supportsSameOriginHaProxy && options.allowDirect !== true) {
+          return {
+            id: resourceUrl,
+            kind: 'image',
+            url: toUrlWithCacheBust(resolveProxyPath(resourceUrl), options.cacheBustKey),
+            cacheKey,
+            authStrategy: 'same_origin',
+            metadata: { source: 'ha_proxy_relative' },
+          };
+        }
+
+        return {
+          id: resourceUrl,
+          kind: 'image',
+          url: haBaseUrl
+            ? toUrlWithCacheBust(`${haBaseUrl}${resourceUrl}`, options.cacheBustKey)
+            : undefined,
+          cacheKey,
+          authStrategy: 'bearer',
+          metadata: { source: 'ha_absolute_relative' },
+        };
+      }
+
+      if (resourceUrl.startsWith('/') && isSafeRelativePath(resourceUrl)) {
+        return {
+          id: resourceUrl,
+          kind: 'image',
+          url: toUrlWithCacheBust(resourceUrl, options.cacheBustKey),
+          cacheKey,
+          authStrategy: 'none',
+          metadata: { source: 'app_relative' },
+        };
+      }
+
+      if (isAbsoluteHttpUrl(resourceUrl)) {
+        const sanitized = sanitizeImageUrl(resourceUrl) ?? undefined;
+        if (!sanitized) {
+          return {
+            id: resourceUrl,
+            kind: 'unavailable',
+            cacheKey,
+            authStrategy: 'none',
+          };
+        }
+
+        try {
+          const resource = new URL(sanitized);
+          const appOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+          const sameOrigin = resource.origin === appOrigin;
+          const sameHaOrigin = haBaseUrl ? resource.origin === new URL(haBaseUrl).origin : false;
+
+          if (sameOrigin && resource.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+            return {
+              id: sanitized,
+              kind: 'image',
+              url: toUrlWithCacheBust(
+                runtime.kind === 'ha_panel'
+                  ? `${stripProxyPath(resource.pathname)}${resource.search}`
+                  : `${resolveIngressAwarePath(resource.pathname)}${resource.search}`,
+                options.cacheBustKey
+              ),
+              cacheKey,
+              authStrategy: runtime.kind === 'ha_panel' ? 'panel_bridge' : 'same_origin',
+              metadata: { source: 'app_proxy_absolute' },
+            };
+          }
+
+          if (resource.pathname.startsWith(HOME_ASSISTANT_PROXY_PATH)) {
+            if (runtime.kind === 'ha_panel') {
+              return {
+                id: sanitized,
+                kind: 'image',
+                url: toUrlWithCacheBust(
+                  `${stripProxyPath(resource.pathname)}${resource.search}`,
+                  options.cacheBustKey
+                ),
+                cacheKey,
+                authStrategy: 'panel_bridge',
+                metadata: { source: 'ha_panel_cross_origin_proxy' },
+              };
+            }
+
+            if (runtime.supportsSameOriginHaProxy && options.allowDirect !== true) {
+              return {
+                id: sanitized,
+                kind: 'image',
+                url: toUrlWithCacheBust(
+                  `${resolveIngressAwarePath(resource.pathname)}${resource.search}`,
+                  options.cacheBustKey
+                ),
+                cacheKey,
+                authStrategy: 'same_origin',
+                metadata: { source: 'cross_origin_proxy' },
+              };
+            }
+          }
+
+          if (sameOrigin || !sameHaOrigin) {
+            if (isHomeAssistantRelativeUrl(resource.pathname)) {
+              if (runtime.kind === 'ha_panel') {
+                return {
+                  id: sanitized,
+                  kind: 'image',
+                  url: toUrlWithCacheBust(
+                    `${resource.pathname}${resource.search}`,
+                    options.cacheBustKey
+                  ),
+                  cacheKey,
+                  authStrategy: 'panel_bridge',
+                  metadata: { source: 'ha_panel_cross_origin_relative' },
+                };
+              }
+
+              if (runtime.supportsSameOriginHaProxy && options.allowDirect !== true) {
+                return {
+                  id: sanitized,
+                  kind: 'image',
+                  url: toUrlWithCacheBust(
+                    `${resolveProxyPath(resource.pathname)}${resource.search}`,
+                    options.cacheBustKey
+                  ),
+                  cacheKey,
+                  authStrategy: 'same_origin',
+                  metadata: { source: 'ha_proxy_cross_origin_relative' },
+                };
+              }
+
+              return {
+                id: sanitized,
+                kind: 'image',
+                url: sameHaOrigin ? toUrlWithCacheBust(sanitized, options.cacheBustKey) : undefined,
+                cacheKey,
+                authStrategy: 'bearer',
+                metadata: { source: 'ha_direct_cross_origin_relative' },
+              };
+            }
+
+            return {
+              id: sanitized,
+              kind: 'image',
+              url: toUrlWithCacheBust(sanitized, options.cacheBustKey),
+              cacheKey,
+              authStrategy: 'none',
+              metadata: { source: sameOrigin ? 'same_origin_absolute' : 'external' },
+            };
+          }
+
+          if (runtime.kind === 'ha_panel') {
+            return {
+              id: sanitized,
+              kind: 'image',
+              url: toUrlWithCacheBust(
+                `${resource.pathname}${resource.search}`,
+                options.cacheBustKey
+              ),
+              cacheKey,
+              authStrategy: 'panel_bridge',
+              metadata: { source: 'ha_panel_absolute' },
+            };
+          }
+
+          if (runtime.supportsSameOriginHaProxy && options.allowDirect !== true) {
+            return {
+              id: sanitized,
+              kind: 'image',
+              url: toUrlWithCacheBust(
+                `${resolveProxyPath(resource.pathname)}${resource.search}`,
+                options.cacheBustKey
+              ),
+              cacheKey,
+              authStrategy: 'same_origin',
+              metadata: { source: 'ha_proxy_absolute' },
+            };
+          }
+
+          return {
+            id: sanitized,
+            kind: 'image',
+            url: toUrlWithCacheBust(sanitized, options.cacheBustKey),
+            cacheKey,
+            authStrategy: 'bearer',
+            metadata: { source: 'ha_direct_absolute' },
+          };
+        } catch {
+          return {
+            id: sanitized,
+            kind: 'image',
+            url: toUrlWithCacheBust(sanitized, options.cacheBustKey),
+            cacheKey,
+            authStrategy: 'none',
+            metadata: { source: 'sanitized_absolute' },
+          };
+        }
+      }
+
+      return {
+        id: resourceUrl,
+        kind: 'unavailable',
+        cacheKey,
+        authStrategy: 'none',
+      };
+    };
+
+    let resource: ResolvedMediaResource;
+
+    switch (ref.kind) {
+      case 'absolute_url':
+        resource = resolvePath(ref.url);
+        break;
+      case 'media_source':
+        resource = {
+          id: ref.mediaContentId,
+          kind: 'unavailable',
+          cacheKey,
+          authStrategy: 'same_origin',
+        };
+        break;
+      case 'camera_stream':
+        resource = {
+          id: `${ref.entityId}:${ref.stream}:${ref.rawPath ?? ''}`,
+          kind:
+            ref.stream === 'hls'
+              ? 'hls_stream'
+              : ref.stream === 'web_rtc'
+                ? 'webrtc_stream'
+                : 'mjpeg_stream',
+          url: ref.rawPath ? resolvePath(ref.rawPath).url : undefined,
+          cacheKey,
+          authStrategy: ref.stream === 'mjpeg' ? 'same_origin' : 'none',
+          metadata: { source: ref.stream },
+        };
+        break;
+      default:
+        resource = resolvePath(ref.rawPath);
+        break;
+    }
+
+    this.cache.set(cacheKey, resource, DEFAULT_CACHE_TTL_MS);
+    return resource;
+  }
+
+  async resolve(ref: HaResourceRef, options: ResolveOptions = {}): Promise<ResolvedMediaResource> {
+    return this.resolveSync(ref, options);
+  }
+}

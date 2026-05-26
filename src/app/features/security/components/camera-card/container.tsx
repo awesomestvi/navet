@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { shallow } from 'zustand/shallow';
+import { useCameraPlaybackPlan } from '@/app/features/security/hooks/use-camera-playback-plan';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
@@ -22,12 +23,13 @@ import {
   useSettingsStore,
 } from '@/app/stores/settings-store';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
-import { useAuthBaseUrl, useAuthSession } from '@/auth/AuthProvider';
+import { useAuthSession } from '@/auth/AuthProvider';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
 import {
   appendCameraCacheBuster,
+  type CameraImageSource,
   type CameraImageSourceKind,
   type CameraStreamType,
   getCameraAutoRefreshInterval,
@@ -36,7 +38,6 @@ import {
   resolveCameraMjpegStreamUrl,
   resolveDashboardCameraViewMode,
   resolveViewerInitialCameraViewMode,
-  selectCameraImageSource,
 } from './camera-view-mode';
 import type { CameraCardProps } from './types';
 import { CameraCardView } from './view';
@@ -78,15 +79,12 @@ function readImageUrl(value: unknown): string | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function resolveHomeAssistantImageUrl(
-  imageUrl: string | undefined,
-  homeAssistantUrl: string | undefined
-) {
+function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
   if (!imageUrl) {
     return undefined;
   }
 
-  return resolveHomeAssistantProxyUrl(imageUrl, homeAssistantUrl) ?? imageUrl;
+  return resolveHomeAssistantProxyUrl(imageUrl) ?? imageUrl;
 }
 
 function readFrontendStreamTypes(value: unknown) {
@@ -185,7 +183,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   size,
   isEditMode,
 }: CameraCardProps) {
-  const hassUrl = useAuthBaseUrl();
   const { runtime } = useAuthSession();
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
@@ -220,9 +217,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
   const initialSnapshotUrl = readImageUrl(initialEntityPicture);
   const baseSnapshotUrl = normalizeCameraSnapshotUrl(
-    liveEntityPicture
-      ? resolveHomeAssistantImageUrl(liveEntityPicture, hassUrl ?? undefined)
-      : initialSnapshotUrl
+    liveEntityPicture ? resolveHomeAssistantImageUrl(liveEntityPicture) : initialSnapshotUrl
   );
 
   // Append cache-busting param so refresh forces a new frame from HA
@@ -274,17 +269,35 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     preferSnapshotPreview: runtime === 'standalone-oauth',
   });
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
-  const imageSource = selectCameraImageSource({
-    cameraViewMode: effectiveDashboardCameraViewMode,
-    cameraFeedMode,
-    hasGo2RtcFeed,
+  const playbackPlan = useCameraPlaybackPlan({
+    entityId: id,
+    preferredMode: effectiveDashboardCameraViewMode,
+    preferredTransport: cameraFeedMode,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
+    hasGo2RtcFeed,
     isUnavailable,
     isRunning,
-    failedStreamTypes: failedStreamTypeSet,
+    failedTransports: failedStreamTypeSet,
   });
+  const imageSource: CameraImageSource =
+    playbackPlan?.primary.kind === 'webrtc_stream'
+      ? {
+          url: undefined,
+          kind:
+            playbackPlan.primary.metadata?.source === 'go2rtc' ? 'go2rtc' : ('web_rtc' as const),
+          isFallback: false,
+        }
+      : playbackPlan?.primary.kind === 'hls_stream'
+        ? { url: undefined, kind: 'hls' as const, isFallback: false }
+        : playbackPlan?.primary.kind === 'mjpeg_stream'
+          ? { url: playbackPlan.primary.url, kind: 'mjpeg' as const, isFallback: false }
+          : {
+              url: playbackPlan?.primary.url ?? snapshotUrl,
+              kind: 'snapshot' as const,
+              isFallback: effectiveDashboardCameraViewMode === 'live',
+            };
   const refreshIntervalMs = getCameraAutoRefreshInterval({
     cameraViewMode: effectiveDashboardCameraViewMode,
     imageSourceKind: imageSource.kind,
@@ -532,7 +545,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
               entityId={id}
               kind={shouldRenderLiveStream}
               posterUrl={snapshotUrl}
-              homeAssistantUrl={hassUrl ?? undefined}
               go2RtcConfig={resolvedGo2RtcConfig}
               fitMode="cover"
               onError={handleStreamError}
@@ -577,7 +589,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           isStreamCapable={isStreamCapable}
           frontendStreamTypes={frontendStreamTypes}
           hasGo2RtcFeed={hasGo2RtcFeed}
-          homeAssistantUrl={hassUrl ?? undefined}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onCameraViewModeChange={setViewerCameraViewMode}

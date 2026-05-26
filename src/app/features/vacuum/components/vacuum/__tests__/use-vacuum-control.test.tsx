@@ -1,5 +1,8 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { vacuumEntityFixtures } from '@/test/fixtures/home-assistant/entities/vacuum';
+import { dreameFixtures } from '@/test/fixtures/home-assistant/integrations/dreame';
+import { roborockFixtures } from '@/test/fixtures/home-assistant/integrations/roborock';
 import { renderHookWithProviders } from '@/test/render';
 
 const { runActionMock, serviceMock } = vi.hoisted(() => ({
@@ -21,9 +24,12 @@ vi.mock('@/app/services/home-assistant.service', () => ({
 import { useVacuumControl } from '../use-vacuum-control';
 
 describe('useVacuumControl', () => {
-  it('starts cleaning through Home Assistant', () => {
+  it('starts cleaning through the documented Home Assistant vacuum.start service', () => {
     const { result } = renderHookWithProviders(() =>
-      useVacuumControl({ entityId: 'vacuum.roborock', initialStatus: 'idle' })
+      useVacuumControl({
+        entityId: roborockFixtures.vacuum.entity_id,
+        initialStatus: 'idle',
+      })
     );
 
     act(() => result.current.handleStartCleaning());
@@ -32,13 +38,16 @@ describe('useVacuumControl', () => {
       'vacuum',
       'start',
       {},
-      { entity_id: 'vacuum.roborock' }
+      { entity_id: roborockFixtures.vacuum.entity_id }
     );
   });
 
-  it('pauses cleaning through Home Assistant', () => {
+  it('pauses cleaning through the documented Home Assistant vacuum.pause service', () => {
     const { result } = renderHookWithProviders(() =>
-      useVacuumControl({ entityId: 'vacuum.roborock', initialStatus: 'cleaning' })
+      useVacuumControl({
+        entityId: dreameFixtures.vacuum.entity_id,
+        initialStatus: 'cleaning',
+      })
     );
 
     act(() => result.current.handlePause());
@@ -47,13 +56,16 @@ describe('useVacuumControl', () => {
       'vacuum',
       'pause',
       {},
-      { entity_id: 'vacuum.roborock' }
+      { entity_id: dreameFixtures.vacuum.entity_id }
     );
   });
 
-  it('returns the vacuum to dock through Home Assistant', () => {
+  it('returns the vacuum to base through the documented Home Assistant service', () => {
     const { result } = renderHookWithProviders(() =>
-      useVacuumControl({ entityId: 'vacuum.roborock', initialStatus: 'cleaning' })
+      useVacuumControl({
+        entityId: vacuumEntityFixtures.normal.entity_id,
+        initialStatus: 'cleaning',
+      })
     );
 
     act(() => result.current.handleReturnHome());
@@ -62,7 +74,7 @@ describe('useVacuumControl', () => {
       'vacuum',
       'return_to_base',
       {},
-      { entity_id: 'vacuum.roborock' }
+      { entity_id: vacuumEntityFixtures.normal.entity_id }
     );
   });
 });

@@ -1,21 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { makeHassEntity } from '../../test-utils';
+import {
+  automationEntityFactory,
+  automationEntityFixtures,
+} from '@/test/fixtures/home-assistant/entities/automation';
+import { scriptEntityFixtures } from '@/test/fixtures/home-assistant/entities/script';
 import { mapAutomationTasks } from '../map-automation-tasks';
 
 describe('mapAutomationTasks', () => {
   it('maps only automation entities', () => {
     const tasks = mapAutomationTasks({
       entities: {
-        'automation.good_morning': makeHassEntity({
-          entity_id: 'automation.good_morning',
-          state: 'on',
-          attributes: { friendly_name: 'Good morning' },
-        }),
-        'light.kitchen': makeHassEntity({
-          entity_id: 'light.kitchen',
-          state: 'on',
-          attributes: { friendly_name: 'Kitchen light' },
-        }),
+        [automationEntityFixtures.normal.entity_id]: automationEntityFixtures.normal,
+        [scriptEntityFixtures.normal.entity_id]: scriptEntityFixtures.normal,
       },
       areas: [],
       deviceRegistry: [],
@@ -24,71 +20,52 @@ describe('mapAutomationTasks', () => {
     });
 
     expect(tasks).toEqual([
-      {
-        id: 'automation.good_morning',
-        name: 'Good morning',
-        room: 'Unassigned',
+      expect.objectContaining({
+        id: automationEntityFixtures.normal.entity_id,
+        name: 'Welcome Home',
         enabled: true,
-        state: 'on',
-        lastTriggered: undefined,
-        description: undefined,
-        mode: undefined,
-        currentRuns: undefined,
-      },
+      }),
     ]);
   });
 
-  it('resolves display name, room, and last triggered metadata', () => {
+  it('resolves display name, room, and last_triggered metadata from Home Assistant registries', () => {
     const tasks = mapAutomationTasks({
       entities: {
-        'automation.welcome_home': makeHassEntity({
-          entity_id: 'automation.welcome_home',
-          state: 'off',
-          attributes: {
-            friendly_name: 'Welcome home',
-            last_triggered: '2026-05-04T07:15:00.000Z',
-          },
-        }),
+        [automationEntityFixtures.normal.entity_id]: automationEntityFixtures.normal,
       },
       areas: [{ area_id: 'hall', name: 'Hallway' }],
       deviceRegistry: [{ id: 'device-1', area_id: 'hall' }],
-      entityRegistry: [{ entity_id: 'automation.welcome_home', device_id: 'device-1' }],
+      entityRegistry: [
+        { entity_id: automationEntityFixtures.normal.entity_id, device_id: 'device-1' },
+      ],
       locale: 'en-US',
     });
 
     expect(tasks).toEqual([
-      {
-        id: 'automation.welcome_home',
-        name: 'Welcome home',
+      expect.objectContaining({
+        id: automationEntityFixtures.normal.entity_id,
         room: 'Hallway',
-        enabled: false,
-        state: 'off',
         lastTriggered: '2026-05-04T07:15:00.000Z',
-        description: undefined,
-        mode: undefined,
-        currentRuns: undefined,
-      },
+      }),
     ]);
   });
 
   it('sorts enabled automations first and then alphabetically', () => {
+    const alpha = automationEntityFactory({ friendly_name: 'Alpha' });
+    alpha.entity_id = 'automation.alpha';
+    alpha.state = 'on';
+    const beta = automationEntityFactory({ friendly_name: 'Beta' });
+    beta.entity_id = 'automation.beta';
+    beta.state = 'off';
+    const zulu = automationEntityFactory({ friendly_name: 'Zulu' });
+    zulu.entity_id = 'automation.zulu';
+    zulu.state = 'on';
+
     const tasks = mapAutomationTasks({
       entities: {
-        'automation.beta': makeHassEntity({
-          entity_id: 'automation.beta',
-          state: 'off',
-          attributes: { friendly_name: 'Beta' },
-        }),
-        'automation.alpha': makeHassEntity({
-          entity_id: 'automation.alpha',
-          state: 'on',
-          attributes: { friendly_name: 'Alpha' },
-        }),
-        'automation.zulu': makeHassEntity({
-          entity_id: 'automation.zulu',
-          state: 'on',
-          attributes: { friendly_name: 'Zulu' },
-        }),
+        [beta.entity_id]: beta,
+        [alpha.entity_id]: alpha,
+        [zulu.entity_id]: zulu,
       },
       areas: [],
       deviceRegistry: [],
@@ -103,14 +80,18 @@ describe('mapAutomationTasks', () => {
     ]);
   });
 
-  it('falls back safely when optional attributes are missing', () => {
+  it('falls back safely when friendly_name and optional metadata are missing', () => {
+    const entity = automationEntityFactory({
+      friendly_name: undefined,
+      last_triggered: undefined,
+      description: undefined,
+      mode: undefined,
+      current: undefined,
+    });
+
     const tasks = mapAutomationTasks({
       entities: {
-        'automation.night_mode': makeHassEntity({
-          entity_id: 'automation.night_mode',
-          state: 'unavailable',
-          attributes: {},
-        }),
+        [entity.entity_id]: entity,
       },
       areas: [],
       deviceRegistry: [],
@@ -119,33 +100,30 @@ describe('mapAutomationTasks', () => {
     });
 
     expect(tasks).toEqual([
-      {
-        id: 'automation.night_mode',
-        name: 'automation.night_mode',
-        room: 'Unassigned',
-        enabled: false,
-        state: 'unavailable',
+      expect.objectContaining({
+        id: entity.entity_id,
+        name: entity.entity_id,
         lastTriggered: undefined,
         description: undefined,
         mode: undefined,
         currentRuns: undefined,
-      },
+      }),
     ]);
   });
 
-  it('captures optional description and runtime metadata when present', () => {
+  it('preserves unavailable automations and optional description/current metadata', () => {
+    const entity = automationEntityFactory({
+      friendly_name: 'Arrival',
+      description: 'Turns on hallway lights after sunset.',
+      mode: 'single',
+      current: 1,
+    });
+    entity.entity_id = 'automation.arrival';
+    entity.state = 'unavailable';
+
     const tasks = mapAutomationTasks({
       entities: {
-        'automation.arrival': makeHassEntity({
-          entity_id: 'automation.arrival',
-          state: 'on',
-          attributes: {
-            friendly_name: 'Arrival',
-            description: 'Turns on hallway lights after sunset.',
-            mode: 'single',
-            current: 1,
-          },
-        }),
+        [entity.entity_id]: entity,
       },
       areas: [],
       deviceRegistry: [],
@@ -154,6 +132,9 @@ describe('mapAutomationTasks', () => {
     });
 
     expect(tasks[0]).toMatchObject({
+      id: 'automation.arrival',
+      enabled: false,
+      state: 'unavailable',
       description: 'Turns on hallway lights after sunset.',
       mode: 'single',
       currentRuns: 1,

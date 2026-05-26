@@ -1,25 +1,12 @@
 import { waitFor } from '@testing-library/react';
-import type { Connection, HassEntity } from 'home-assistant-js-websocket';
+import type { Connection } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { binarySensorEntityFactory } from '@/test/fixtures/home-assistant/entities/binary-sensor';
+import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
 import { renderHookWithProviders } from '@/test/render';
 import { useSensorStatisticsHistory } from '../use-sensor-statistics-history';
-
-function entity(
-  entityId: string,
-  state: string,
-  attributes: HassEntity['attributes'] = {}
-): HassEntity {
-  return {
-    entity_id: entityId,
-    state,
-    attributes,
-    context: { id: 'context', parent_id: null, user_id: null },
-    last_changed: '2026-05-21T00:00:00.000Z',
-    last_updated: '2026-05-21T00:00:00.000Z',
-  };
-}
 
 describe('useSensorStatisticsHistory', () => {
   beforeEach(() => {
@@ -51,16 +38,20 @@ describe('useSensorStatisticsHistory', () => {
       }),
     } as unknown as Connection;
 
+    const temperatureSensor = sensorEntityFactory({
+      friendly_name: 'Kitchen Temperature',
+      device_class: 'temperature',
+      unit_of_measurement: '°C',
+    });
+    temperatureSensor.entity_id = 'sensor.kitchen_temperature';
+    temperatureSensor.state = '21.3';
+
     vi.spyOn(homeAssistantService, 'getConnection').mockReturnValue(connection);
     homeAssistantStore.setState({
       ...homeAssistantStore.getInitialState(),
       connection,
       entities: {
-        'sensor.kitchen_temperature': entity('sensor.kitchen_temperature', '21.3', {
-          friendly_name: 'Kitchen Temperature',
-          device_class: 'temperature',
-          unit_of_measurement: '°C',
-        }),
+        'sensor.kitchen_temperature': temperatureSensor,
       },
     });
 
@@ -81,21 +72,31 @@ describe('useSensorStatisticsHistory', () => {
       sendMessagePromise: vi.fn(),
     } as unknown as Connection;
 
+    const motionSensor = binarySensorEntityFactory({
+      device_class: 'motion',
+    });
+    motionSensor.entity_id = 'binary_sensor.hall_motion';
+    motionSensor.state = 'on';
+    const timestampSensor = sensorEntityFactory({
+      device_class: 'timestamp',
+    });
+    timestampSensor.entity_id = 'sensor.sun_next_setting';
+    timestampSensor.state = '2026-05-25T19:29:00.000Z';
+    const unavailableTemperature = sensorEntityFactory({
+      device_class: 'temperature',
+      unit_of_measurement: '°C',
+    });
+    unavailableTemperature.entity_id = 'sensor.garage_temperature';
+    unavailableTemperature.state = 'unavailable';
+
     vi.spyOn(homeAssistantService, 'getConnection').mockReturnValue(connection);
     homeAssistantStore.setState({
       ...homeAssistantStore.getInitialState(),
       connection,
       entities: {
-        'binary_sensor.hall_motion': entity('binary_sensor.hall_motion', 'on', {
-          device_class: 'motion',
-        }),
-        'sensor.sun_next_setting': entity('sensor.sun_next_setting', '2026-05-25T19:29:00.000Z', {
-          device_class: 'timestamp',
-        }),
-        'sensor.garage_temperature': entity('sensor.garage_temperature', 'unavailable', {
-          device_class: 'temperature',
-          unit_of_measurement: '°C',
-        }),
+        'binary_sensor.hall_motion': motionSensor,
+        'sensor.sun_next_setting': timestampSensor,
+        'sensor.garage_temperature': unavailableTemperature,
       },
     });
 

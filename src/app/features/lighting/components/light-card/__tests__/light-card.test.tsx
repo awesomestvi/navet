@@ -1,8 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { useSettingsStore } from '@/app/stores/settings-store';
+import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { LightCard } from '..';
@@ -17,36 +17,28 @@ vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
 }));
 
-function createLightEntity(state: 'on' | 'off' = 'on'): HassEntity {
-  return {
-    entity_id: 'light.desk_lamp',
-    state,
-    attributes: {
-      brightness: 166,
-      friendly_name: 'Desk Lamp',
-      supported_color_modes: ['brightness'],
-    },
-    last_changed: '2026-05-25T00:00:00.000Z',
-    last_updated: '2026-05-25T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
+function createLightEntity(state: 'on' | 'off' = 'on') {
+  const entity = lightEntityFactory({
+    friendly_name: 'Desk Lamp',
+    brightness: 166,
+    supported_color_modes: ['brightness'],
+  });
+  entity.entity_id = 'light.desk_lamp';
+  entity.state = state;
+  return entity;
 }
 
-function createEffectLightEntity(effect?: string): HassEntity {
-  return {
-    entity_id: 'light.desk_lamp',
-    state: 'on',
-    attributes: {
-      brightness: 166,
-      friendly_name: 'Desk Lamp',
-      supported_color_modes: ['brightness'],
-      effect_list: ['Rainbow', 'Fire'],
-      effect,
-    },
-    last_changed: '2026-05-25T00:00:00.000Z',
-    last_updated: '2026-05-25T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
+function createEffectLightEntity(effect?: string) {
+  const entity = lightEntityFactory({
+    friendly_name: 'Desk Lamp',
+    brightness: 166,
+    supported_color_modes: ['brightness'],
+    effect_list: ['Rainbow', 'Fire'],
+    effect,
+  });
+  entity.entity_id = 'light.desk_lamp';
+  entity.state = 'on';
+  return entity;
 }
 
 describe('LightCard', () => {

@@ -1,7 +1,12 @@
 import { render, waitFor } from '@testing-library/react';
 import type { HassConfig } from 'home-assistant-js-websocket';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { cameraEntityFixtures } from '@/test/fixtures/home-assistant/entities/camera';
+import { frigateFixtures } from '@/test/fixtures/home-assistant/integrations/frigate';
+import { onvifFixtures } from '@/test/fixtures/home-assistant/integrations/onvif';
+import { reolinkFixtures } from '@/test/fixtures/home-assistant/integrations/reolink';
 import { CameraStreamPlayer, resolveGo2RtcWebSocketUrl } from '../camera-stream-player';
 
 vi.mock('@/app/services/home-assistant.service', () => ({
@@ -114,7 +119,7 @@ describe('CameraStreamPlayer', () => {
       callService: vi.fn(),
       callWS: vi.fn(),
     });
-    serviceMock.getCameraStreamUrl.mockResolvedValue({ url: '/api/hls/camera.front/master.m3u8' });
+    serviceMock.getCameraStreamUrl.mockResolvedValue({ url: reolinkFixtures.hlsStreamUrl });
     serviceMock.getWebRtcClientConfiguration.mockResolvedValue({ configuration: {} });
     serviceMock.subscribeCameraWebRtcOffer.mockResolvedValue(vi.fn());
     Object.defineProperty(HTMLMediaElement.prototype, 'play', {
@@ -159,10 +164,9 @@ describe('CameraStreamPlayer', () => {
   it('requests an HLS stream URL and renders a video element', async () => {
     const { container } = render(
       <CameraStreamPlayer
-        entityId="camera.front"
+        entityId={cameraEntityFixtures.normal.entity_id}
         kind="hls"
-        posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="https://ha.example.com"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
         fitMode="cover"
         onError={vi.fn()}
       />
@@ -170,7 +174,10 @@ describe('CameraStreamPlayer', () => {
 
     expect(container.querySelector('video')).toBeTruthy();
     await waitFor(() =>
-      expect(serviceMock.getCameraStreamUrl).toHaveBeenCalledWith('camera.front', 'hls')
+      expect(serviceMock.getCameraStreamUrl).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'hls'
+      )
     );
   });
 
@@ -178,6 +185,7 @@ describe('CameraStreamPlayer', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
+    resetRuntimeContextForTests();
     const canPlayType = vi
       .spyOn(HTMLVideoElement.prototype, 'canPlayType')
       .mockReturnValue('probably');
@@ -187,7 +195,6 @@ describe('CameraStreamPlayer', () => {
         entityId="camera.front"
         kind="hls"
         posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="http://homeassistant.local:8123"
         fitMode="cover"
         onError={vi.fn()}
       />
@@ -195,7 +202,7 @@ describe('CameraStreamPlayer', () => {
 
     await waitFor(() =>
       expect(container.querySelector('video')?.src).toBe(
-        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.front/master.m3u8`
+        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.reolink_driveway/master.m3u8`
       )
     );
     expect(canPlayType).toHaveBeenCalledWith('application/vnd.apple.mpegurl');
@@ -205,8 +212,9 @@ describe('CameraStreamPlayer', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
     document.head.append(base);
+    resetRuntimeContextForTests();
     serviceMock.getCameraStreamUrl.mockResolvedValueOnce({
-      url: `${window.location.origin}/api/hls/camera.front/master.m3u8`,
+      url: `${window.location.origin}/api/hls/camera.front_door/master.m3u8`,
     });
 
     const { container } = render(
@@ -214,7 +222,6 @@ describe('CameraStreamPlayer', () => {
         entityId="camera.front"
         kind="hls"
         posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl={window.location.origin}
         fitMode="cover"
         onError={vi.fn()}
       />
@@ -222,7 +229,33 @@ describe('CameraStreamPlayer', () => {
 
     await waitFor(() =>
       expect(container.querySelector('video')?.src).toBe(
-        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.front/master.m3u8`
+        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.front_door/master.m3u8`
+      )
+    );
+  });
+
+  it('loads internal Home Assistant absolute HLS streams through the ingress-aware Home Assistant proxy', async () => {
+    const base = document.createElement('base');
+    base.href = `${window.location.origin}/api/hassio_ingress/navet_dev/`;
+    document.head.append(base);
+    resetRuntimeContextForTests();
+    serviceMock.getCameraStreamUrl.mockResolvedValueOnce({
+      url: onvifFixtures.hlsStreamUrl,
+    });
+
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="hls"
+        posterUrl="/api/camera_proxy/camera.front"
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('video')?.src).toBe(
+        `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/hls/camera.gate/master.m3u8`
       )
     );
   });
@@ -236,10 +269,9 @@ describe('CameraStreamPlayer', () => {
 
     render(
       <CameraStreamPlayer
-        entityId="camera.demo_camera"
+        entityId={frigateFixtures.camera.entity_id}
         kind="hls"
-        posterUrl="/api/camera_proxy/camera.demo_camera"
-        homeAssistantUrl="https://ha.example.com"
+        posterUrl={frigateFixtures.camera.attributes.entity_picture as string}
         fitMode="cover"
         onError={onError}
       />
@@ -254,10 +286,9 @@ describe('CameraStreamPlayer', () => {
 
     const { unmount } = render(
       <CameraStreamPlayer
-        entityId="camera.front"
+        entityId={cameraEntityFixtures.normal.entity_id}
         kind="web_rtc"
-        posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="https://ha.example.com"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
         fitMode="contain"
         onError={vi.fn()}
       />
@@ -265,7 +296,7 @@ describe('CameraStreamPlayer', () => {
 
     await waitFor(() =>
       expect(serviceMock.subscribeCameraWebRtcOffer).toHaveBeenCalledWith(
-        'camera.front',
+        cameraEntityFixtures.normal.entity_id,
         'offer-sdp',
         expect.any(Function)
       )
@@ -280,10 +311,9 @@ describe('CameraStreamPlayer', () => {
   it('embeds the go2rtc WebRTC custom card when available', async () => {
     const { container } = render(
       <CameraStreamPlayer
-        entityId="camera.front"
+        entityId={cameraEntityFixtures.normal.entity_id}
         kind="go2rtc"
-        posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="https://ha.example.com"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
         fitMode="cover"
         onError={vi.fn()}
       />
@@ -293,7 +323,7 @@ describe('CameraStreamPlayer', () => {
       expect(go2RtcConfig).toEqual(
         expect.objectContaining({
           type: 'custom:webrtc-camera',
-          entity: 'camera.front',
+          entity: cameraEntityFixtures.normal.entity_id,
           mode: 'webrtc',
         })
       )
@@ -304,10 +334,9 @@ describe('CameraStreamPlayer', () => {
   it('connects directly to a configured go2rtc WebSocket feed before using the custom card', async () => {
     render(
       <CameraStreamPlayer
-        entityId="camera.front"
+        entityId={cameraEntityFixtures.normal.entity_id}
         kind="go2rtc"
-        posterUrl="/api/camera_proxy/camera.front"
-        homeAssistantUrl="https://ha.example.com"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
         go2RtcConfig={{ serverUrl: 'http://go2rtc.local:1984', streamName: 'front_door' }}
         fitMode="cover"
         onError={vi.fn()}

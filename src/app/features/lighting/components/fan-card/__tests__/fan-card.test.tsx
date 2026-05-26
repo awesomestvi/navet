@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { fanEntityFactory } from '@/test/fixtures/home-assistant/entities/fan';
 import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { FanCard } from '..';
@@ -16,18 +16,14 @@ vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
 }));
 
-function createFanEntity(percentage: number, state = 'on'): HassEntity {
-  return {
-    entity_id: 'fan.ceiling_fan',
-    state,
-    attributes: {
-      friendly_name: 'Ceiling Fan',
-      percentage,
-    },
-    last_changed: '2026-05-17T00:00:00.000Z',
-    last_updated: '2026-05-17T00:00:00.000Z',
-    context: { id: 'ctx', parent_id: null, user_id: null },
-  } as HassEntity;
+function createFanEntity(percentage: number, state = 'on') {
+  const entity = fanEntityFactory({
+    friendly_name: 'Ceiling Fan',
+    percentage,
+  });
+  entity.entity_id = 'fan.ceiling_fan';
+  entity.state = state;
+  return entity;
 }
 
 describe('FanCard', () => {

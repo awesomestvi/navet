@@ -1,13 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getRuntimeConfig } from '@/app/config/runtime-config';
-import { fetchMediaThumbnailDataUrl } from '@/app/features/media/utils/media-thumbnail';
-import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import {
-  isMediaPlayerProxyUrl,
-  resolveHomeAssistantAbsoluteUrl,
-  resolveHomeAssistantProxyUrl,
-} from '@/app/utils/home-assistant-url';
+import { useCallback, useEffect, useState } from 'react';
+import { useMediaArtwork } from '@/app/features/media/hooks/use-media-artwork';
 
 interface UseMediaArtworkResolutionParams {
   entityId: string;
@@ -20,193 +12,39 @@ interface UseMediaArtworkResolutionParams {
 
 const ARTWORK_CLEAR_DELAY_MS = 700;
 
-function resolveArtworkFetchUrl(artworkUrl: string) {
-  try {
-    const url = new URL(artworkUrl, window.location.origin);
-    if (url.origin !== window.location.origin) {
-      return url.toString();
-    }
-    return `${url.pathname}${url.search}${url.hash}`;
-  } catch {
-    return artworkUrl;
-  }
-}
-
-function isSameOriginArtworkUrl(artworkUrl: string) {
-  try {
-    return new URL(artworkUrl, window.location.origin).origin === window.location.origin;
-  } catch {
-    return false;
-  }
-}
-
-function getHomeAssistantAuthorizationHeaders() {
-  const accessToken = homeAssistantService.getConnection()?.options?.auth?.accessToken;
-  return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-}
-
 export function useMediaArtworkResolution({
   entityId,
   artworkKey,
   artworkVersionKey,
   liveEntityPicture,
   liveArtworkKey,
-  homeAssistantUrl,
+  homeAssistantUrl: _homeAssistantUrl,
 }: UseMediaArtworkResolutionParams) {
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
-  const [thumbnailArtworkUrl, setThumbnailArtworkUrl] = useState<string | null>(null);
-  const latestObjectUrlRef = useRef<string | null>(null);
-
   const artworkRequestKey = [entityId, liveArtworkKey ?? artworkKey, artworkVersionKey]
     .filter(Boolean)
     .join('::');
-  const isPanelMode = isHomeAssistantPanelMode();
-  const isAddonMode = isHomeAssistantAddonMode();
-  const runtimeConfig = getRuntimeConfig();
-  const hasRuntimeHomeAssistantProxy = Boolean(runtimeConfig.hassUrl && runtimeConfig.proxyBaseUrl);
-  const hasHomeAssistantProxy = isAddonMode || hasRuntimeHomeAssistantProxy;
-  const shouldUseDirectDevArtwork =
-    import.meta.env.DEV && !isPanelMode && !isAddonMode && !hasHomeAssistantProxy;
-  const shouldUseDirectAuthenticatedArtwork =
-    !isPanelMode && !hasHomeAssistantProxy && !shouldUseDirectDevArtwork;
-  const resolvedArtwork = liveEntityPicture
-    ? shouldUseDirectDevArtwork || shouldUseDirectAuthenticatedArtwork
-      ? resolveHomeAssistantAbsoluteUrl(liveEntityPicture, homeAssistantUrl)
-      : resolveHomeAssistantProxyUrl(liveEntityPicture, homeAssistantUrl, {
-          proxyAvailable: hasHomeAssistantProxy,
-        })
-    : null;
-  const needsAuthenticatedThumbnail = Boolean(
-    resolvedArtwork && isMediaPlayerProxyUrl(resolvedArtwork)
-  );
-  const isSameOriginArtwork = Boolean(resolvedArtwork && isSameOriginArtworkUrl(resolvedArtwork));
-  const isProxiedArtwork = Boolean(resolvedArtwork?.includes('/__navet_ha_proxy__/'));
-  const canFetchResolvedArtwork = Boolean(
-    resolvedArtwork &&
-      (isProxiedArtwork ||
-        isPanelMode ||
-        isSameOriginArtwork ||
-        shouldUseDirectAuthenticatedArtwork)
-  );
-  const canUseResolvedArtworkFallback =
-    !needsAuthenticatedThumbnail ||
-    shouldUseDirectDevArtwork ||
-    isPanelMode ||
-    (isSameOriginArtwork && !isProxiedArtwork);
-  const fallbackArtwork =
-    thumbnailArtworkUrl ?? (canUseResolvedArtworkFallback ? resolvedArtwork : null);
+  const artworkResource = useMediaArtwork({
+    entityId,
+    attrs: {
+      entity_picture: liveEntityPicture,
+    },
+    fallbackPicture: liveEntityPicture,
+    artworkKey: artworkRequestKey,
+  });
+  const fallbackArtwork = artworkResource?.kind === 'image' ? (artworkResource.url ?? null) : null;
 
   useEffect(() => {
-    let cancelled = false;
-
-    if (!resolvedArtwork) {
+    if (!fallbackArtwork) {
       const timeoutId = window.setTimeout(() => {
-        if (cancelled) {
-          return;
-        }
-
-        setThumbnailArtworkUrl((previousArtworkUrl) => {
-          if (previousArtworkUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(previousArtworkUrl);
-          }
-          latestObjectUrlRef.current = null;
-          return null;
-        });
+        setFailedArtworkUrl(null);
       }, ARTWORK_CLEAR_DELAY_MS);
 
       return () => {
-        cancelled = true;
         window.clearTimeout(timeoutId);
       };
     }
-
-    if (!needsAuthenticatedThumbnail) {
-      setThumbnailArtworkUrl((previousArtworkUrl) => {
-        if (previousArtworkUrl?.startsWith('blob:')) {
-          URL.revokeObjectURL(previousArtworkUrl);
-        }
-        latestObjectUrlRef.current = null;
-        return null;
-      });
-      return;
-    }
-
-    const loadAuthenticatedArtwork = async () => {
-      const requestKey = artworkRequestKey;
-      const thumbnailDataUrl = await fetchMediaThumbnailDataUrl(entityId).catch(() => null);
-      if (thumbnailDataUrl) {
-        return { artworkUrl: thumbnailDataUrl, requestKey };
-      }
-
-      if (!canFetchResolvedArtwork) {
-        return { artworkUrl: null, requestKey };
-      }
-
-      const response = await fetch(resolveArtworkFetchUrl(resolvedArtwork), {
-        credentials: 'same-origin',
-        headers: isPanelMode ? undefined : getHomeAssistantAuthorizationHeaders(),
-      });
-      if (!response.ok) {
-        return { artworkUrl: null, requestKey };
-      }
-
-      const blob = await response.blob();
-      if (!blob.type.startsWith('image/')) {
-        return { artworkUrl: null, requestKey };
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
-      return { artworkUrl: objectUrl, requestKey };
-    };
-
-    void loadAuthenticatedArtwork()
-      .then(({ artworkUrl }) => {
-        if (cancelled) {
-          if (artworkUrl?.startsWith('blob:')) {
-            URL.revokeObjectURL(artworkUrl);
-          }
-          return;
-        }
-
-        setThumbnailArtworkUrl((previousArtworkUrl) => {
-          if (
-            previousArtworkUrl?.startsWith('blob:') &&
-            previousArtworkUrl !== artworkUrl &&
-            previousArtworkUrl === latestObjectUrlRef.current
-          ) {
-            URL.revokeObjectURL(previousArtworkUrl);
-          }
-
-          latestObjectUrlRef.current = artworkUrl?.startsWith('blob:') ? artworkUrl : null;
-          return artworkUrl;
-        });
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setThumbnailArtworkUrl((previousArtworkUrl) => {
-            if (
-              previousArtworkUrl?.startsWith('blob:') &&
-              previousArtworkUrl === latestObjectUrlRef.current
-            ) {
-              URL.revokeObjectURL(previousArtworkUrl);
-            }
-            latestObjectUrlRef.current = null;
-            return null;
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    artworkRequestKey,
-    canFetchResolvedArtwork,
-    entityId,
-    isPanelMode,
-    needsAuthenticatedThumbnail,
-    resolvedArtwork,
-  ]);
+  }, [fallbackArtwork]);
 
   // Clear the failed URL only when the track/content actually changes — never on error state changes.
   // Previously this effect also depended on failedArtworkUrl, which caused a reset loop:

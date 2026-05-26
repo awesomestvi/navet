@@ -2,6 +2,7 @@ import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DialogShell } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { useCameraPlaybackPlan } from '@/app/features/security/hooks/use-camera-playback-plan';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import type {
@@ -11,7 +12,6 @@ import type {
 } from '@/app/stores/settings-store';
 import { CameraStreamPlayer } from './camera-stream-player';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
-import { selectCameraImageSource } from './camera-view-mode';
 
 interface CameraLiveViewerProps {
   isOpen: boolean;
@@ -29,7 +29,6 @@ interface CameraLiveViewerProps {
   isStreamCapable: boolean;
   frontendStreamTypes: readonly CameraStreamType[];
   hasGo2RtcFeed: boolean;
-  homeAssistantUrl: string | undefined;
   onRefresh: () => void;
   onOpenSettings: () => void;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
@@ -83,7 +82,6 @@ export function CameraLiveViewer({
   isStreamCapable,
   frontendStreamTypes,
   hasGo2RtcFeed,
-  homeAssistantUrl,
   onRefresh,
   onOpenSettings,
   onCameraViewModeChange,
@@ -94,17 +92,35 @@ export function CameraLiveViewer({
   const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
   const streamFailureResetKey = `${isOpen}:${cameraViewMode}:${cameraFeedMode}:${go2RtcConfig.serverUrl}:${go2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
-  const source = selectCameraImageSource({
-    cameraViewMode,
-    cameraFeedMode,
-    hasGo2RtcFeed,
+  const playbackPlan = useCameraPlaybackPlan({
+    entityId,
+    preferredMode: cameraViewMode,
+    preferredTransport: cameraFeedMode,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
+    hasGo2RtcFeed,
     isUnavailable,
     isRunning,
-    failedStreamTypes: failedStreamTypeSet,
+    failedTransports: failedStreamTypeSet,
   });
+  const source =
+    playbackPlan?.primary.kind === 'webrtc_stream'
+      ? {
+          url: undefined,
+          kind:
+            playbackPlan.primary.metadata?.source === 'go2rtc' ? 'go2rtc' : ('web_rtc' as const),
+          isFallback: false,
+        }
+      : playbackPlan?.primary.kind === 'hls_stream'
+        ? { url: undefined, kind: 'hls' as const, isFallback: false }
+        : playbackPlan?.primary.kind === 'mjpeg_stream'
+          ? { url: playbackPlan.primary.url, kind: 'mjpeg' as const, isFallback: false }
+          : {
+              url: playbackPlan?.primary.url ?? snapshotUrl,
+              kind: 'snapshot' as const,
+              isFallback: cameraViewMode === 'live',
+            };
   const sourceUrl = source.url;
   const videoStreamKind =
     source.kind === 'go2rtc' || source.kind === 'hls' || source.kind === 'web_rtc'
@@ -155,7 +171,6 @@ export function CameraLiveViewer({
               entityId={entityId}
               kind={videoStreamKind}
               posterUrl={snapshotUrl}
-              homeAssistantUrl={homeAssistantUrl}
               go2RtcConfig={go2RtcConfig}
               fitMode="contain"
               onError={handleStreamError}

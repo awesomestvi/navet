@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {
@@ -75,7 +74,6 @@ export function useMediaArtworkColors(
   entityId?: string,
   artworkKey?: string
 ) {
-  const hassUrl = useAuthBaseUrl();
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
   const requestKey = [entityId, artwork, artworkKey].filter(Boolean).join('::');
 
@@ -114,7 +112,7 @@ export function useMediaArtworkColors(
     const existingRequest = pendingPaletteRequests.get(requestKey);
     const paletteRequest =
       existingRequest ??
-      resolveArtworkPalette(artwork, hassUrl ?? undefined).finally(() => {
+      resolveArtworkPalette(artwork).finally(() => {
         pendingPaletteRequests.delete(requestKey);
       });
 
@@ -131,7 +129,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artwork, hassUrl, requestKey, theme]);
+  }, [artwork, requestKey, theme]);
 
   return colors;
 }

@@ -124,6 +124,8 @@ export const standaloneOAuthAuth: AuthAdapter = {
 
       return {
         runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: auth.data.hassUrl,
         hassUrl: auth.data.hassUrl,
         auth,
         expiresAt: auth.data.expires,
@@ -163,6 +165,8 @@ export const standaloneOAuthAuth: AuthAdapter = {
 
     return {
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: auth.data.hassUrl,
       hassUrl: auth.data.hassUrl,
       auth,
       expiresAt: auth.data.expires,
@@ -188,6 +192,8 @@ export const standaloneOAuthAuth: AuthAdapter = {
 
     return {
       runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: auth.data.hassUrl,
       hassUrl: auth.data.hassUrl,
       auth,
       expiresAt: auth.data.expires,
