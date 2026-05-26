@@ -79,6 +79,56 @@ describe('createHomeAssistantClient', () => {
     });
   });
 
+  it('falls back to ingress proxy auth when a reused frontend token has expired', async () => {
+    window.history.replaceState({}, '', ingressSessionFixture.ingressPath);
+    resetRuntimeContextForTests();
+
+    const refreshAccessToken = vi.fn(async () => {
+      throw new Error('expired frontend token');
+    });
+    const auth = {
+      data: {
+        hassUrl: ingressSessionFixture.haBaseUrl,
+        clientId: `${window.location.origin}/`,
+        expires: Date.now() - 1,
+        refresh_token: 'refresh-token',
+        access_token: 'stale-token',
+        expires_in: 3600,
+      },
+      refreshAccessToken,
+      revoke: vi.fn(),
+      get wsUrl() {
+        return `ws${this.data.hassUrl.slice(4)}/api/websocket`;
+      },
+      get accessToken() {
+        return this.data.access_token;
+      },
+      get expired() {
+        return Date.now() > this.data.expires;
+      },
+    } as Auth;
+
+    await createHomeAssistantClient({
+      runtime: ingressSessionFixture.runtime,
+      authMode: ingressSessionFixture.authMode,
+      haBaseUrl: ingressSessionFixture.haBaseUrl,
+      hassUrl: ingressSessionFixture.hassUrl,
+      auth,
+      expiresAt: auth.data.expires,
+    });
+
+    expect(refreshAccessToken).toHaveBeenCalled();
+    expect(createConnectionMock).toHaveBeenCalledWith({
+      auth: expect.objectContaining({
+        data: expect.objectContaining({
+          hassUrl: `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`,
+          clientId: null,
+        }),
+      }),
+      setupRetry: 3,
+    });
+  });
+
   it('keeps standalone OAuth persistence pointed at Home Assistant while proxying the connection', async () => {
     window.__NAVET_CONFIG__ = {
       hassUrl: oauthSessionFixture.haBaseUrl,

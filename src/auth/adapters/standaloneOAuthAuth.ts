@@ -6,21 +6,50 @@ import type { AuthAdapter, AuthSession } from '../types';
 const AUTH_SESSION_ENDPOINT = '/__navet_auth__/session';
 const AUTH_CALLBACK_PARAM = 'auth_callback';
 const OAUTH_CALLBACK_PARAMS = [AUTH_CALLBACK_PARAM, 'code', 'state'];
-
-interface OAuthCallbackState {
-  hassUrl: string;
-  clientId: string | null;
-}
+const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
+const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
 
 function getAuthSessionEndpoint() {
   return resolveAddonLocalEndpointUrl(AUTH_SESSION_ENDPOINT);
 }
 
-async function loadTokens(): Promise<AuthData | null> {
-  const response = await fetch(getAuthSessionEndpoint(), {
-    cache: 'no-store',
-    credentials: 'same-origin',
+async function fetchAuthSessionResponse(timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS) {
+  const controller = new AbortController();
+  let timeoutId: number | null = null;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutId = window.setTimeout(() => {
+      controller.abort();
+      resolve(null);
+    }, timeoutMs);
   });
+
+  try {
+    return await Promise.race([
+      fetch(getAuthSessionEndpoint(), {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        signal: controller.signal,
+      }),
+      timeoutPromise,
+    ]);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return null;
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+}
+
+async function loadTokens(): Promise<AuthData | null> {
+  const response = await fetchAuthSessionResponse();
+  if (response === null) {
+    return null;
+  }
 
   if (response.status === 204 || response.status === 404) {
     return null;
@@ -31,6 +60,18 @@ async function loadTokens(): Promise<AuthData | null> {
   }
 
   return (await response.json()) as AuthData;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error('Timed out restoring Home Assistant session'));
+    }, timeoutMs);
+
+    void promise.then(resolve, reject).finally(() => {
+      window.clearTimeout(timeoutId);
+    });
+  });
 }
 
 function saveTokens(data: AuthData | null): void {
@@ -56,39 +97,8 @@ async function clearStoredTokens(): Promise<void> {
   }).catch(() => undefined);
 }
 
-function isOAuthCallbackState(value: unknown): value is OAuthCallbackState {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const state = value as Partial<OAuthCallbackState>;
-  return (
-    typeof state.hassUrl === 'string' &&
-    /^https?:\/\//.test(state.hassUrl) &&
-    (typeof state.clientId === 'string' || state.clientId === null)
-  );
-}
-
-function getOAuthCallbackState(): OAuthCallbackState | null {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get(AUTH_CALLBACK_PARAM) !== '1') {
-    return null;
-  }
-
-  const encodedState = params.get('state');
-  if (!encodedState) {
-    throw new Error('Invalid Home Assistant OAuth callback');
-  }
-
-  try {
-    const parsed = JSON.parse(window.atob(encodedState)) as unknown;
-    if (!isOAuthCallbackState(parsed)) {
-      throw new Error('Invalid callback state');
-    }
-    return parsed;
-  } catch {
-    throw new Error('Invalid Home Assistant OAuth callback');
-  }
+function hasOAuthCallback() {
+  return new URLSearchParams(window.location.search).get(AUTH_CALLBACK_PARAM) === '1';
 }
 
 function clearOAuthCallbackUrl(): void {
@@ -105,22 +115,20 @@ function clearOAuthCallbackUrl(): void {
 export const standaloneOAuthAuth: AuthAdapter = {
   kind: 'standalone-oauth',
   async init() {
-    const storedTokens = await loadTokens().catch(() => null);
-    if (storedTokens) {
+    if (hasOAuthCallback()) {
       const auth = await getAuth({
-        hassUrl: storedTokens.hassUrl,
         loadTokens,
         saveTokens,
-        limitHassInstance: true,
+      }).catch(async (error: unknown) => {
+        await clearStoredTokens();
+        throw error;
       });
 
       if (auth.expired) {
         await auth.refreshAccessToken();
       }
 
-      if (new URLSearchParams(window.location.search).get(AUTH_CALLBACK_PARAM) === '1') {
-        clearOAuthCallbackUrl();
-      }
+      clearOAuthCallbackUrl();
 
       return {
         runtime: 'standalone-oauth',
@@ -132,45 +140,38 @@ export const standaloneOAuthAuth: AuthAdapter = {
       };
     }
 
-    let callbackState: OAuthCallbackState | null = null;
+    const storedTokens = await loadTokens().catch(() => null);
+    if (!storedTokens) {
+      return null;
+    }
+
     try {
-      callbackState = getOAuthCallbackState();
-    } catch (error) {
-      await clearStoredTokens();
-      throw error;
-    }
+      const auth = await withTimeout(
+        getAuth({
+          hassUrl: storedTokens.hassUrl,
+          loadTokens,
+          saveTokens,
+          limitHassInstance: true,
+        }),
+        STORED_SESSION_RESTORE_TIMEOUT_MS
+      );
 
-    if (!callbackState) return null;
-
-    const auth = await getAuth({
-      hassUrl: callbackState.hassUrl,
-      clientId: callbackState.clientId,
-      loadTokens,
-      saveTokens,
-      limitHassInstance: true,
-    }).catch(async (error: unknown) => {
-      if (callbackState) {
-        await clearStoredTokens();
+      if (auth.expired) {
+        await withTimeout(auth.refreshAccessToken(), STORED_SESSION_RESTORE_TIMEOUT_MS);
       }
-      throw error;
-    });
 
-    if (auth.expired) {
-      await auth.refreshAccessToken();
+      return {
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: auth.data.hassUrl,
+        hassUrl: auth.data.hassUrl,
+        auth,
+        expiresAt: auth.data.expires,
+      };
+    } catch {
+      await clearStoredTokens().catch(() => undefined);
+      return null;
     }
-
-    if (callbackState) {
-      clearOAuthCallbackUrl();
-    }
-
-    return {
-      runtime: 'standalone-oauth',
-      authMode: 'oauth',
-      haBaseUrl: auth.data.hassUrl,
-      hassUrl: auth.data.hassUrl,
-      auth,
-      expiresAt: auth.data.expires,
-    };
   },
   async login(input): Promise<AuthSession> {
     if (!input?.hassUrl) {

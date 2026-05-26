@@ -34,6 +34,8 @@ export interface HAConnectionEventMap {
 export type HAConnectionEventType = keyof HAConnectionEventMap;
 
 export type HomeAssistantConfiguration = AuthSession;
+export const INVALID_HOME_ASSISTANT_AUTH_MESSAGE =
+  'Invalid Home Assistant authentication. Sign in again to refresh the session.';
 
 /**
  * Manages Home Assistant WebSocket connection, authentication, and reconnection logic.
@@ -164,8 +166,7 @@ class HAConnectionService {
    */
   private getErrorMessage(error: unknown): string {
     const errorMessages: Record<number, string> = {
-      [ERR_INVALID_AUTH]:
-        'Invalid Home Assistant authentication. Sign in again to refresh the session.',
+      [ERR_INVALID_AUTH]: INVALID_HOME_ASSISTANT_AUTH_MESSAGE,
       [ERR_CANNOT_CONNECT]:
         'Cannot connect to Home Assistant. Check the URL and ensure it is reachable.',
       [ERR_CONNECTION_LOST]: 'Connection to Home Assistant was lost.',

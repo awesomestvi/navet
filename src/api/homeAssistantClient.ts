@@ -48,7 +48,14 @@ async function resolveAuth(session: AuthSession): Promise<Auth> {
 
   if (session.auth) {
     if (session.auth.expired) {
-      await session.auth.refreshAccessToken();
+      try {
+        await session.auth.refreshAccessToken();
+      } catch (error) {
+        if (session.runtime === 'ha-ingress') {
+          return createIngressProxyAuth(targetHassUrl);
+        }
+        throw error;
+      }
     }
     return targetHassUrl === session.auth.data.hassUrl
       ? session.auth

@@ -8,6 +8,11 @@ export interface DashboardProfileLoadResult {
   profile: DashboardConfigPayload | null;
 }
 
+export interface DashboardProfileSaveResult {
+  saved: boolean;
+  permanentFailure: boolean;
+}
+
 export async function loadDashboardProfile(): Promise<DashboardProfileLoadResult> {
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINT), {
@@ -40,7 +45,9 @@ export async function loadDashboardProfile(): Promise<DashboardProfileLoadResult
   }
 }
 
-export async function saveDashboardProfile(profile: DashboardConfigPayload): Promise<boolean> {
+export async function saveDashboardProfile(
+  profile: DashboardConfigPayload
+): Promise<DashboardProfileSaveResult> {
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINT), {
       method: 'PUT',
@@ -52,9 +59,15 @@ export async function saveDashboardProfile(profile: DashboardConfigPayload): Pro
       body: JSON.stringify(profile),
     });
 
-    return response.ok;
+    return {
+      saved: response.ok,
+      permanentFailure: response.status === 400 || response.status === 413,
+    };
   } catch (error) {
     console.warn('[DashboardProfile] Unable to save shared dashboard profile:', error);
-    return false;
+    return {
+      saved: false,
+      permanentFailure: false,
+    };
   }
 }

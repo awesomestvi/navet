@@ -6,6 +6,7 @@ import App from '../App';
 
 const CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
+const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
 
 type StubListenerMap = {
   entities: Set<(payload: Record<string, unknown> | null) => void>;
@@ -204,7 +205,7 @@ describe('App Home Assistant connection recovery', () => {
     });
   });
 
-  it('keeps the startup loader visible while restoring auth state', async () => {
+  it('falls back to the Home Assistant login when auth bootstrap stalls', async () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
 
     await act(async () => {
@@ -214,6 +215,13 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
     expect(screen.queryByText('login')).not.toBeInTheDocument();
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS);
+    });
+
+    expect(screen.getByText('login')).toBeInTheDocument();
+    expect(screen.queryByText('Starting your dashboard...')).not.toBeInTheDocument();
   });
 
   it('completes OAuth callback startup without returning to the URL login form', async () => {
@@ -230,13 +238,67 @@ describe('App Home Assistant connection recovery', () => {
     await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
     expect(screen.getByText('dashboard')).toBeInTheDocument();
     expect(getAuthAppMock).toHaveBeenCalledWith({
-      hassUrl: 'http://192.168.68.71:8123',
-      clientId,
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
-      limitHassInstance: true,
     });
     expect(window.location.search).toBe('');
+  });
+
+  it('keeps OAuth callback startup ahead of a stale persisted standalone session', async () => {
+    vi.useRealTimers();
+    const clientId = `${window.location.origin}/`;
+    const state = window.btoa(JSON.stringify({ hassUrl: 'http://192.168.68.71:8123', clientId }));
+    window.history.replaceState({}, '', `/?auth_callback=1&code=oauth-code&state=${state}`);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          hassUrl: 'http://192.168.68.55:8123',
+          clientId,
+          expires: Date.now() + 3_600_000,
+          refresh_token: 'stale-refresh-token',
+          access_token: 'stale-access-token',
+          expires_in: 3600,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+    getAuthAppMock.mockResolvedValueOnce({
+      data: {
+        hassUrl: 'http://192.168.68.99:8123',
+        clientId,
+        expires: Date.now() + 3_600_000,
+        refresh_token: 'fresh-refresh-token',
+        access_token: 'fresh-access-token',
+        expires_in: 3600,
+      },
+      wsUrl: 'ws://192.168.68.99:8123/api/websocket',
+      accessToken: 'fresh-access-token',
+      expired: false,
+      refreshAccessToken: vi.fn(),
+      revoke: vi.fn(),
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
+    expect(screen.getByText('dashboard')).toBeInTheDocument();
+    expect(getAuthAppMock).toHaveBeenCalledWith({
+      loadTokens: expect.any(Function),
+      saveTokens: expect.any(Function),
+    });
+    expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://192.168.68.99:8123',
+      hassUrl: 'http://192.168.68.99:8123',
+      auth: expect.any(Object),
+      expiresAt: expect.any(Number),
+    });
   });
 
   it('shows recovery when the saved Home Assistant URL does not connect within the grace period', async () => {
@@ -255,6 +317,22 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(screen.getByText(CONNECTION_TIMEOUT_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();
+    expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled();
+  });
+
+  it('returns to login when a saved standalone session becomes invalid', async () => {
+    vi.useRealTimers();
+    homeAssistantServiceStub.authenticate.mockRejectedValueOnce(
+      new Error('Invalid Home Assistant authentication. Sign in again to refresh the session.')
+    );
+    setAuthenticatedSession();
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.getByText('login')).toBeInTheDocument());
+    expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument();
     expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled();
   });
 
@@ -317,6 +395,74 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.getByText(CONNECTION_TIMEOUT_MESSAGE)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /back to login/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
+  });
+
+  it('recovers from invalid ingress auth by rebuilding the session instead of retrying the stale auth handle', async () => {
+    vi.useRealTimers();
+    homeAssistantServiceStub.authenticate
+      .mockRejectedValueOnce(
+        new Error('Invalid Home Assistant authentication. Sign in again to refresh the session.')
+      )
+      .mockImplementationOnce(async function (this: StubHomeAssistantService) {
+        this.connected = true;
+      })
+      .mockImplementationOnce(async function (this: StubHomeAssistantService) {
+        this.connected = true;
+      });
+    getAuthAppMock.mockResolvedValueOnce({
+      data: {
+        hassUrl: 'http://192.168.68.71:8123',
+        clientId: `${window.location.origin}/`,
+        expires: Date.now() + 3_600_000,
+        refresh_token: 'refresh-token',
+        access_token: 'access-token',
+        expires_in: 3600,
+      },
+      wsUrl: 'ws://192.168.68.71:8123/api/websocket',
+      accessToken: 'access-token',
+      expired: false,
+      refreshAccessToken: vi.fn(),
+      revoke: vi.fn(),
+    });
+    localStorage.setItem(
+      'hassTokens',
+      JSON.stringify({
+        data: {
+          hassUrl: 'http://192.168.68.71:8123',
+          clientId: `${window.location.origin}/`,
+          expires: Date.now() + 3_600_000,
+          refresh_token: 'refresh-token',
+          access_token: 'access-token',
+          expires_in: 3600,
+        },
+      })
+    );
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    resetRuntimeContextForTests();
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(2));
+    const authenticateCalls = homeAssistantServiceStub.authenticate.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+
+    expect(authenticateCalls[0]?.[0]).toMatchObject({
+      runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      auth: expect.any(Object),
+    });
+    expect(authenticateCalls[1]?.[0]).toMatchObject({
+      runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+    });
+    expect(authenticateCalls[1]?.[0]?.auth).toBeUndefined();
+    expect(getAuthAppMock).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument()
+    );
   });
 
   it('keeps Home Assistant local storage when returning to login from recovery', async () => {

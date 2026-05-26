@@ -4,6 +4,7 @@ import { storage } from '@/app/utils/storage';
 import type { AuthAdapter, AuthSession } from '../types';
 
 const HOME_ASSISTANT_TOKENS_KEY = 'hassTokens';
+const INGRESS_AUTH_RESTORE_TIMEOUT_MS = 3_000;
 
 function isAuthData(value: unknown): value is AuthData {
   if (!value || typeof value !== 'object') {
@@ -22,17 +23,55 @@ function isAuthData(value: unknown): value is AuthData {
   );
 }
 
-function readHomeAssistantFrontendTokens(): AuthData | null {
-  const stored = storage.get<unknown>(HOME_ASSISTANT_TOKENS_KEY, null);
-  if (isAuthData(stored)) {
-    return stored;
+function readStoredTokens(storageArea: Storage): unknown {
+  if (storageArea === window.localStorage) {
+    return storage.get<unknown>(HOME_ASSISTANT_TOKENS_KEY, null);
   }
 
-  if (stored && typeof stored === 'object' && 'data' in stored && isAuthData(stored.data)) {
-    return stored.data;
+  return JSON.parse(storageArea.getItem(HOME_ASSISTANT_TOKENS_KEY) ?? 'null');
+}
+
+function readHomeAssistantFrontendTokens(): AuthData | null {
+  const storages = [
+    () => window.localStorage,
+    () => window.sessionStorage,
+    () => window.parent?.localStorage,
+    () => window.parent?.sessionStorage,
+  ];
+
+  for (const getStorage of storages) {
+    try {
+      const storageArea = getStorage();
+      if (!storageArea) {
+        continue;
+      }
+
+      const stored = readStoredTokens(storageArea);
+      if (isAuthData(stored)) {
+        return stored;
+      }
+
+      if (stored && typeof stored === 'object' && 'data' in stored && isAuthData(stored.data)) {
+        return stored.data;
+      }
+    } catch {
+      // Ignore unavailable or cross-context storage and continue checking.
+    }
   }
 
   return null;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error('Timed out restoring Home Assistant ingress session'));
+    }, timeoutMs);
+
+    void promise.then(resolve, reject).finally(() => {
+      window.clearTimeout(timeoutId);
+    });
+  });
 }
 
 export const haIngressAuth: AuthAdapter = {
@@ -43,11 +82,14 @@ export const haIngressAuth: AuthAdapter = {
 
     if (frontendTokens) {
       try {
-        const auth = await getAuth({
-          loadTokens: async () => frontendTokens,
-        });
+        const auth = await withTimeout(
+          getAuth({
+            loadTokens: async () => frontendTokens,
+          }),
+          INGRESS_AUTH_RESTORE_TIMEOUT_MS
+        );
         if (auth.expired) {
-          await auth.refreshAccessToken();
+          await withTimeout(auth.refreshAccessToken(), INGRESS_AUTH_RESTORE_TIMEOUT_MS);
         }
 
         return {
@@ -71,5 +113,15 @@ export const haIngressAuth: AuthAdapter = {
       haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     };
+  },
+  async refresh() {
+    return (
+      (await this.init()) ?? {
+        runtime: 'ha-ingress',
+        authMode: 'ingress_session',
+        haBaseUrl: window.location.origin,
+        hassUrl: window.location.origin,
+      }
+    );
   },
 };

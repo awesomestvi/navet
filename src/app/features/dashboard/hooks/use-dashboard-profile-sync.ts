@@ -153,8 +153,11 @@ export function useDashboardProfileSync() {
       savingRef.current = true;
 
       void saveDashboardProfile(profile)
-        .then((saved) => {
+        .then(({ saved, permanentFailure }) => {
           if (!saved) {
+            if (permanentFailure) {
+              profileSyncAvailableRef.current = false;
+            }
             return;
           }
 
