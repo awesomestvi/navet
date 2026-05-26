@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 - 2026-05-27
+
+Navet expands dashboard widgets and device controls while making Home Assistant sign-in and proxy-backed resources more reliable.
+
+## New
+
+- UPS widgets can now show battery, status, load, runtime, and related power details directly on the dashboard.
+- Sensor cards and widgets can now show recorder-backed history sparklines for easier at-a-glance trends.
+- Dashboard settings now include a keep-device-awake option for shared displays and wall panels.
+
+## Fixed
+
+- Hosted Home Assistant sessions recover more reliably after OAuth redirects, stale stored tokens, and same-origin resource requests.
+- Ingress sessions now reuse the parent Home Assistant connection instead of opening conflicting fallback sessions and websockets.
+- Camera snapshots and other Home Assistant proxy-backed resources now keep stable URLs, reducing flicker and failed authenticated loads.
+
+## Improved
+
+- Light cards now expose effect controls more clearly and keep effect state in sync more reliably.
+- Camera settings, live stream handling, and snapshot behavior are more predictable across dashboard and hosted setups.
+- Dashboard profile syncing is quieter and more reliable, with fewer unnecessary saves and better conflict handling.
+
 ## 0.2.5 - 2026-05-25
 
 Navet fixes dashboard restore and empty Home dashboard behavior for users updating from `0.2.4`.

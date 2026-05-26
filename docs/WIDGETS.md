@@ -10,14 +10,15 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 
 ### Current Built-in Widgets
 
+- Info
 - RSS Feed
 - Photo Frame
 - Quick Note
 - Battery Overview
+- UPS Status
 - Energy Now
 - Button
 - Map
-- Sensor Group
 
 ### Core Behavior
 
@@ -30,6 +31,7 @@ Custom widgets let users place non-entity cards on the dashboard and keep their 
 - Widgets can be assigned to rooms and participate in the home overview zone layout
 - Locked widget cards stay visible but ignore accidental taps outside edit mode, using the same
   `lockedCardIds` dashboard entity state as entity cards
+- Scene shortcuts are implemented as preconfigured Button widgets with `scene.turn_on` defaults
 
 Room assignment details:
 
@@ -48,7 +50,8 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - `energy-now`: `small`, `medium`, `large`
 - `button`: `tiny`, `extra-small`, `small`
 - `map`: `small`, `medium`, `large`
-- `sensor-group`: `small`, `medium`
+- `info`: `small`, `medium`, `large`
+- `ups`: `small`, `medium`, `large`
 
 ## Add and Manage Widgets
 
@@ -95,11 +98,15 @@ The Add Card dialog defines widget size support in `src/app/features/dashboard/c
 - Quick Note: inline note editing with persisted content.
 - RSS Feed: source/provider and tint configuration.
 - Photo Frame: image URLs, shuffle mode, and tint configuration.
-- Button: action label/icon/service/entity/service-data configuration.
+- Button: action label/icon/service/entity/service-data configuration. Scene shortcuts use the same
+  widget type with `scene.turn_on` prefilled.
+- Info: one or several sensor/binary-sensor readings with persisted name, room assignment, and
+  accent color.
 - Battery Overview: read-only overview of battery entities.
+- UPS Status: detected UPS device selection, status source selection, metric selection, room
+  assignment, and tint configuration.
 - Energy Now: full-bleed live usage chart with current power overlaid on top, plus a settings dialog for choosing configured energy sources or matching energy-usage sensors/entities.
 - Map: live person and `device_tracker` markers from Home Assistant, plus tint configuration.
-- Sensor Group: up to six selected sensor readings with persisted name, room assignment, and accent color.
 
 ## Architecture and File Map
 
@@ -120,13 +127,16 @@ These files define widget type ids, labels, defaults, and supported sizes.
 
 - `src/app/features/dashboard/components/widgets/button-widget.tsx`
 - `src/app/features/dashboard/components/widgets/note-widget.tsx`
+- `src/app/features/dashboard/components/widgets/info-widget.tsx`
 - `src/app/features/dashboard/components/widgets/photo-frame-widget.tsx`
 - `src/app/features/dashboard/components/widgets/battery-overview-widget.tsx`
+- `src/app/features/dashboard/components/widgets/ups-widget.tsx`
 - `src/app/features/dashboard/components/widgets/energy-now-dashboard-widget.tsx`
 - `src/app/features/dashboard/components/widgets/map-widget.tsx`
 - RSS widget component lives in `src/app/features/rss/components/rss-feed-card/`
-- Sensor Group widget rendering uses `src/app/features/sensors/components/grouped-sensor-card.tsx`
-  and settings logic from `src/app/features/sensors/components/sensor-group-settings/`
+- Info widget rendering composes `InfoCard` and `GroupedSensorCard` from
+  `src/app/features/sensors/components/`, with settings logic from
+  `src/app/features/sensors/components/sensor-group-settings/`
 
 ### Widget Store
 
@@ -140,20 +150,22 @@ Store responsibilities:
 - normalize invalid migrated sizes
 - preserve home-zone overrides and shared room sentinels used by the home and energy sections
 - migrate legacy widget types (`news` -> `rss`)
+- migrate legacy sensor widgets (`sensor-group` -> `info`)
 - drop removed legacy custom-card types (`weather`, `calendar`, `presence`, `sparkline`) during migration
 
 ## Type Reference
 
 ```ts
 type CardType =
+  | 'info'
   | 'rss'
   | 'photo'
   | 'note'
   | 'battery'
+  | 'ups'
   | 'energy-now'
   | 'button'
-  | 'map'
-  | 'sensor-group';
+  | 'map';
 
 type CardSize =
   | 'tiny'
@@ -184,5 +196,6 @@ Docker/add-on profile synchronization.
 
 ## Legacy Notes
 
+- Legacy `sensor-group` widgets are migrated to `info` widgets on load.
 - Legacy custom weather/calendar cards are no longer part of the widget system.
 - Legacy presence/sparkline custom cards are removed and filtered out during persisted data migration.
