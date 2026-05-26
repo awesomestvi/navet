@@ -1,14 +1,17 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { type ReactNode, useEffect } from 'react';
-import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
-import type { ThemeMode } from '@/app/stores/theme-store';
-import { useThemeStore } from '@/app/stores/theme-store';
 import {
   getEnergyDashboardScenario,
   getMockEnergySourceDiagnostics,
-} from '../../data/mock-energy-dashboard';
-import type { EnergyOverview, EnergySourceDiagnostic } from '../../types/energy.types';
-import { buildEnergyDashboardModel } from '../../utils/build-energy-dashboard-model';
+} from '@/app/features/energy/data/mock-energy-dashboard';
+import type {
+  EnergyOverview,
+  EnergySourceDiagnostic,
+} from '@/app/features/energy/types/energy.types';
+import { buildEnergyDashboardModel } from '@/app/features/energy/utils/build-energy-dashboard-model';
+import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
+import type { ThemeMode } from '@/app/stores/theme-store';
+import { useThemeStore } from '@/app/stores/theme-store';
 import { EnergyDashboardPage } from './energy-dashboard-page';
 
 function ThemeDecorator({ theme, children }: { theme: ThemeMode; children: ReactNode }) {

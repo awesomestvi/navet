@@ -1,7 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { TranslateFn } from '../../i18n';
-import type { WeatherDevice } from '../../types/device.types';
-import { normalizeTemperatureUnit, type TemperatureUnit } from '../../utils/temperature';
+import type { TranslateFn } from '@/app/i18n/index';
+import type { WeatherDevice } from '@/app/types/device.types';
+import { normalizeTemperatureUnit, type TemperatureUnit } from '@/app/utils/temperature';
 import {
   formatClock,
   formatDaylight,

@@ -1,4 +1,5 @@
 import type { MediaPlayerCapabilities } from '@/app/constants/media-player-features';
+import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
 
 export interface MediaDialogGroupingPlayer {
   id: string;
@@ -11,6 +12,7 @@ export interface MediaDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   artwork?: string | null;
+  artworkResource?: ResolvedMediaResource | null;
   onArtworkError?: (imageUrl?: string | null) => void;
   title: string;
   artist: string;

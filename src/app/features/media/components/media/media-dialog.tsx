@@ -4,6 +4,7 @@ import { useMediaDialogController } from './use-media-dialog-controller';
 
 export function MediaDialog({
   artwork,
+  artworkResource,
   artist,
   durationSeconds,
   elapsedSeconds,
@@ -15,6 +16,7 @@ export function MediaDialog({
 }: MediaDialogProps) {
   const controller = useMediaDialogController({
     artwork,
+    artworkResource,
     artist,
     durationSeconds,
     elapsedSeconds,
@@ -28,6 +30,7 @@ export function MediaDialog({
     <MediaDialogContent
       {...props}
       artwork={artwork}
+      artworkResource={artworkResource}
       artist={artist}
       controller={controller}
       durationSeconds={durationSeconds}

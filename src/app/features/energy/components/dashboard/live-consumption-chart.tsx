@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
-import type { EnergyRangeSnapshot } from '../../types/energy.types';
+import type { EnergyRangeSnapshot } from '@/app/features/energy/types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 

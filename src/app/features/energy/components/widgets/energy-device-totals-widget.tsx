@@ -1,9 +1,9 @@
 import { PlugZap } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { useEnergyLoadHistory } from '@/app/features/energy/hooks/use-energy-load-history';
+import type { EnergyConsumer } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import { useEnergyLoadHistory } from '../../hooks/use-energy-load-history';
-import type { EnergyConsumer } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 

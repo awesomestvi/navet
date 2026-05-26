@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMediaArtwork } from '@/app/features/media/hooks/use-media-artwork';
+import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
 
 interface UseMediaArtworkResolutionParams {
   entityId: string;
@@ -63,5 +64,10 @@ export function useMediaArtworkResolution({
     setFailedArtworkUrl(imageUrl);
   }, []);
 
-  return { albumArt, handleArtworkError };
+  const visibleArtworkResource: ResolvedMediaResource | null =
+    albumArt && artworkResource?.kind === 'image' && artworkResource.url === albumArt
+      ? artworkResource
+      : null;
+
+  return { albumArt, artworkResource: visibleArtworkResource, handleArtworkError };
 }

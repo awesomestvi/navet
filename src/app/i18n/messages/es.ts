@@ -835,6 +835,11 @@ export const esMessages = {
   'pwa.reload': 'Recargar',
   'pwa.refreshApp': 'Actualizar la app',
   'pwa.later': 'Más tarde',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Tarjeta movida a {room}',
   'entityRoomSelector.updateFailed': 'No se pudo actualizar la habitación',
   'entityRoomSelector.createAction': 'Crear habitación...',

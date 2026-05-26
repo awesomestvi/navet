@@ -175,6 +175,130 @@ describe('home status summary model', () => {
     ]);
   });
 
+  it('uses ambient climate readings instead of thermostat targets in the climate summary', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'climate.hallway',
+            type: 'climate',
+            currentTemperature: 20,
+            temperature: 60.1,
+            mode: 'heat',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '20°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
+  it('ignores water-heater temperatures in the climate summary strip', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'climate.hallway',
+            type: 'climate',
+            currentTemperature: 20,
+            temperature: 21,
+            mode: 'heat',
+          }),
+          device({
+            id: 'water_heater.boiler',
+            type: 'climate',
+            currentTemperature: 60.1,
+            temperature: 60.1,
+            mode: 'eco',
+            serviceDomain: 'water_heater',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '20°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
+  it('ignores boiler temperature sensors in the climate summary strip', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'sensor.living_room_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '20',
+            unit: '°C',
+            name: 'Living Room Temperature',
+          }),
+          device({
+            id: 'sensor.boiler_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '60.1',
+            unit: '°C',
+            name: 'Boiler Temperature',
+            room: 'Utility',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '20°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
+  it('ignores outside temperature sensors in the climate summary strip', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'climate.hallway',
+            type: 'climate',
+            currentTemperature: 20,
+            temperature: 21,
+            temperatureUnit: 'celsius',
+            mode: 'heat',
+          }),
+          device({
+            id: 'sensor.outside_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '60.08',
+            unit: '°F',
+            name: 'Outside Temperature',
+            room: 'Outside',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '20°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
   it('can include room-scoped automation routines in room summaries', () => {
     const items = buildRoomStatusSummaryItems(new Map(), 'Kitchen', { routineCount: 2 });
 

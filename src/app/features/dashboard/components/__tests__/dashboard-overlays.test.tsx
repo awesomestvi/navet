@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { DashboardController } from '@/app/features/dashboard/hooks/use-dashboard-controller';
 import { I18nProvider } from '@/app/i18n/i18n-provider';
-import type { DashboardController } from '../../hooks/use-dashboard-controller';
 import { DashboardOverlays } from '../dashboard-overlays';
 
 const addCardDialogSpy = vi.fn();

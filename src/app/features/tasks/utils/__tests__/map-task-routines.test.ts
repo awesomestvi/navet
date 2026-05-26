@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeHassEntity } from '../../test-utils';
+import { makeHassEntity } from '@/app/features/tasks/test-utils';
 import { mapTaskRoutines } from '../map-task-routines';
 
 describe('mapTaskRoutines', () => {

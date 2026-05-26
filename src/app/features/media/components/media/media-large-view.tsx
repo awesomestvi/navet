@@ -6,6 +6,7 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
+import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
 import { isMediaPlayerProxyUrl } from '@/app/utils/home-assistant-url';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { getMediaDisplayVolume, getMediaProgressPercent } from './media-card-style-utils';
@@ -13,12 +14,17 @@ import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
-import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+import {
+  getMediaArtworkPaletteSource,
+  useMediaArtworkColors,
+  withAlpha,
+} from './use-media-artwork-colors';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaLargeViewProps {
   entityId: string;
   artwork?: string | null;
+  artworkResource?: ResolvedMediaResource | null;
   onArtworkError?: (imageUrl?: string | null) => void;
   title: string;
   artist: string;
@@ -46,6 +52,7 @@ interface MediaLargeViewProps {
 export function MediaLargeView({
   entityId,
   artwork,
+  artworkResource,
   onArtworkError,
   title,
   artist,
@@ -72,7 +79,8 @@ export function MediaLargeView({
   const { t } = useI18n();
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
-  const palette = useMediaArtworkColors(stableArtwork, theme, entityId, `${title}::${artist}`);
+  const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
+  const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,

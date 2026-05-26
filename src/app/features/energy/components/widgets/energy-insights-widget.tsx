@@ -1,8 +1,8 @@
 import { Gauge } from 'lucide-react';
 import { memo } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyInsight } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergyInsight } from '../../types/energy.types';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 const SEVERITY_CLASS: Record<EnergyInsight['severity'], string> = {

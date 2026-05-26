@@ -44,6 +44,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const theme = useThemeMode();
   const accentColor = useAccentColor();
   const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const { overview: energyOverview, isConfigured: isEnergyConfigured } = useEnergyDashboard();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
@@ -61,8 +62,15 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       buildHomeStatusSummaryItems(deviceMap, {
         gridImportTodayKWh: isEnergyConfigured ? energyOverview.totals.importTodayKWh : undefined,
         routineCount,
+        temperatureUnit,
       }),
-    [deviceMap, energyOverview.totals.importTodayKWh, isEnergyConfigured, routineCount]
+    [
+      deviceMap,
+      energyOverview.totals.importTodayKWh,
+      isEnergyConfigured,
+      routineCount,
+      temperatureUnit,
+    ]
   );
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (

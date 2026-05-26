@@ -2,11 +2,16 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useTheme } from '@/app/hooks';
 import type { MediaDialogProps } from './media-dialog.types';
 import { formatMediaTime } from './media-time';
-import { useMediaArtworkColors, withAlpha } from './use-media-artwork-colors';
+import {
+  getMediaArtworkPaletteSource,
+  useMediaArtworkColors,
+  withAlpha,
+} from './use-media-artwork-colors';
 
 type MediaDialogControllerInput = Pick<
   MediaDialogProps,
   | 'artwork'
+  | 'artworkResource'
   | 'artist'
   | 'durationSeconds'
   | 'elapsedSeconds'
@@ -18,6 +23,7 @@ type MediaDialogControllerInput = Pick<
 
 export function useMediaDialogController({
   artwork,
+  artworkResource,
   artist,
   durationSeconds,
   elapsedSeconds,
@@ -29,7 +35,8 @@ export function useMediaDialogController({
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
-  const palette = useMediaArtworkColors(artwork, theme, entityId, `${title}::${artist}`);
+  const paletteArtwork = getMediaArtworkPaletteSource(artwork, artworkResource);
+  const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
   const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const displayDuration = durationSeconds > 0 ? formatMediaTime(durationSeconds) : '--:--';
   const dialogSurfaceStyle = {

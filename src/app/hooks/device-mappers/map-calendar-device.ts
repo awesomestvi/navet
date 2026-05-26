@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { TranslateFn } from '../../i18n';
-import type { CalendarDevice } from '../../types/device.types';
+import type { TranslateFn } from '@/app/i18n/index';
+import type { CalendarDevice } from '@/app/types/device.types';
 import {
   formatCalendarTime,
   inferCalendarEventType,

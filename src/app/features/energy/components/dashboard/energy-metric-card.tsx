@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergySummaryMetric } from '@/app/features/energy/types/energy.types';
 import { useTheme } from '@/app/hooks';
-import type { EnergySummaryMetric } from '../../types/energy.types';
 
 interface EnergyMetricCardProps {
   metric: EnergySummaryMetric;

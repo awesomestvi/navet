@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { getMediaControlSurfaceTokens } from '@/app/components/shared/theme/media-widget-surface-tokens';
+import type { TvRemoteAction } from '@/app/features/media/tv-remote-commands';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import type { TvRemoteAction } from '../../tv-remote-commands';
 import { TvControlButton } from './tv-control-button';
 
 type TvDpadLayoutConfig = {

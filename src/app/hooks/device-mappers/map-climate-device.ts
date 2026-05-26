@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { ClimateDevice } from '../../types/device.types';
+import type { ClimateDevice } from '@/app/types/device.types';
 import {
   parseNumberish,
   resolveClimateTargetTemperature,

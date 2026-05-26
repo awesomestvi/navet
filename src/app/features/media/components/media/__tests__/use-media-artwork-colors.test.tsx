@@ -26,13 +26,20 @@ describe('useMediaArtworkColors', () => {
     });
 
     const { result } = renderHook(() =>
-      useMediaArtworkColors('data:image/jpeg;base64,track-a', 'glass', 'media_player.kitchen')
+      useMediaArtworkColors(
+        { url: 'data:image/jpeg;base64,track-a', authStrategy: 'none' },
+        'glass',
+        'media_player.kitchen'
+      )
     );
 
     await waitFor(() => {
       expect(result.current.dominant).toBe('rgb(120, 100, 90)');
     });
-    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith('data:image/jpeg;base64,track-a');
+    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith({
+      url: 'data:image/jpeg;base64,track-a',
+      authStrategy: 'none',
+    });
   });
 
   it('samples an already resolved blob artwork source', async () => {
@@ -45,13 +52,25 @@ describe('useMediaArtworkColors', () => {
     });
 
     const { result } = renderHook(() =>
-      useMediaArtworkColors('blob:http://navet.local/album-art', 'glass', 'media_player.living')
+      useMediaArtworkColors(
+        {
+          url: 'blob:http://navet.local/album-art',
+          cacheKey: 'media_player.living::blob:http://navet.local/album-art',
+          authStrategy: 'none',
+        },
+        'glass',
+        'media_player.living'
+      )
     );
 
     await waitFor(() => {
       expect(result.current.dominant).toBe('rgb(80, 90, 100)');
     });
-    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith('blob:http://navet.local/album-art');
+    expect(resolveArtworkPaletteMock).toHaveBeenCalledWith({
+      url: 'blob:http://navet.local/album-art',
+      cacheKey: 'media_player.living::blob:http://navet.local/album-art',
+      authStrategy: 'none',
+    });
   });
 
   it('keeps fallback colors when resolved artwork cannot be sampled', async () => {
@@ -59,7 +78,12 @@ describe('useMediaArtworkColors', () => {
 
     const { result } = renderHook(() =>
       useMediaArtworkColors(
-        'http://homeassistant.local:8123/api/media_player_proxy/media_player.kitchen',
+        {
+          url: 'blob:http://navet.local/resolved-artwork',
+          cacheKey: 'media_player.bathroom::track-a',
+          authStrategy: 'none',
+          source: 'artwork_object_url',
+        },
         'glass',
         'media_player.bathroom'
       )

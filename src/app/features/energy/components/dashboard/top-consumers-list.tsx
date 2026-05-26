@@ -1,9 +1,12 @@
 import { memo } from 'react';
 import { Text } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergyConsumer } from '@/app/features/energy/types/energy.types';
+import {
+  formatEnergyPercent,
+  formatEnergyValue,
+} from '@/app/features/energy/utils/energy-formatters';
 import { useTheme } from '@/app/hooks';
-import type { EnergyConsumer } from '../../types/energy.types';
-import { formatEnergyPercent, formatEnergyValue } from '../../utils/energy-formatters';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
 interface TopConsumersListProps {

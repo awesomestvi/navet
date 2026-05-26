@@ -3,7 +3,10 @@ import { HOME_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import type { Device, DeviceCollection } from '@/app/types/device.types';
 import { getDeviceRoomLabel } from '@/app/utils/device-location';
-import { PERSISTED_STATE_EVENT } from '@/app/utils/persisted-state-events';
+import {
+  notifyPersistedStateChanged,
+  PERSISTED_STATE_EVENT,
+} from '@/app/utils/persisted-state-events';
 import { storage } from '@/app/utils/storage';
 import type { CustomCard } from './use-custom-cards';
 
@@ -135,6 +138,7 @@ export const useCardOrdering = (
 
   useEffect(() => {
     storage.set(STORAGE_KEYS.cardOrders, cardOrders);
+    notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, cardOrders);
   }, [cardOrders]);
 
   useEffect(() => {

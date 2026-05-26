@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { TranslateFn } from '../../i18n';
-import type { PersonDevice } from '../../types/device.types';
+import type { TranslateFn } from '@/app/i18n/index';
+import type { PersonDevice } from '@/app/types/device.types';
 
 export function mapPersonDevice(
   entityId: string,

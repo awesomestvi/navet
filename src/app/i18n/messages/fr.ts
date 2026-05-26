@@ -836,6 +836,11 @@ export const frMessages = {
   'pwa.reload': 'Recharger',
   'pwa.refreshApp': "Actualiser l'application",
   'pwa.later': 'Plus tard',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Carte deplacee vers {room}',
   'entityRoomSelector.updateFailed': 'Impossible de mettre à jour la pièce',
   'entityRoomSelector.createAction': 'Créer une pièce...',

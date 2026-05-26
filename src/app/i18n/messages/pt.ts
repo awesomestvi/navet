@@ -828,6 +828,11 @@ export const ptMessages = {
   'pwa.reload': 'Recarregar',
   'pwa.refreshApp': 'Atualizar app',
   'pwa.later': 'Mais tarde',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Card movido para {room}',
   'entityRoomSelector.updateFailed': 'Não foi possível atualizar o cômodo',
   'entityRoomSelector.createAction': 'Criar cômodo...',

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { oauthSessionFixture } from '@/test/fixtures/home-assistant/auth/oauth';
 import { signedPathFixture } from '@/test/fixtures/home-assistant/auth/signed-path';
 import { homeAssistantUrlFixtures } from '@/test/fixtures/home-assistant/resources/urls';
-import { resetRuntimeContextForTests } from '../../runtime/runtime-detector';
 import { HomeAssistantResourceResolver } from '../resource-resolver';
 
 describe('HomeAssistantResourceResolver', () => {

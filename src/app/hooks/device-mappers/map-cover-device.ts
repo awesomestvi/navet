@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { CoverDevice } from '../../types/device.types';
+import type { CoverDevice } from '@/app/types/device.types';
 import { parseNumberish } from '../ha-entity-utils';
 
 function normalizeCoverPosition(value: unknown) {

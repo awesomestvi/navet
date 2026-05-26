@@ -3,7 +3,7 @@
  */
 
 import type { HassEntity } from 'home-assistant-js-websocket';
-import { UNKNOWN_ROOM_LABEL } from '../../utils/device-location';
+import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 
 export function getName(entity: HassEntity, registryEntry?: { name?: string | null }): string {
   if (typeof registryEntry?.name === 'string' && registryEntry.name.trim().length > 0) {

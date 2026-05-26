@@ -455,6 +455,8 @@ export default defineConfig(({ mode }) => {
       alias: {
         // Alias @ to the src directory
         '@': path.resolve(__dirname, './src'),
+        '@docker': path.resolve(__dirname, './docker'),
+        '@scripts': path.resolve(__dirname, './scripts'),
         ...(isStorybook
           ? {
             'virtual:pwa-register': path.resolve(

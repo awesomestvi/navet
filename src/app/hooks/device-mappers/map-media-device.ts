@@ -3,9 +3,9 @@ import {
   hasMediaPlayerGroupingSupport,
   hasMediaPlayerNextTrackSupport,
   hasMediaPlayerPreviousTrackSupport,
-} from '../../constants/media-player-features';
-import type { TranslateFn } from '../../i18n';
-import type { MediaDevice } from '../../types/device.types';
+} from '@/app/constants/media-player-features';
+import type { TranslateFn } from '@/app/i18n/index';
+import type { MediaDevice } from '@/app/types/device.types';
 import { formatMediaEntityType, parseNumberish } from '../ha-entity-utils';
 
 export function mapMediaDevice(

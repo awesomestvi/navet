@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronUp, Minus, Plus, Volume2, VolumeX } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import type { TvRemoteAction } from '@/app/features/media/tv-remote-commands';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import type { TvRemoteAction } from '../../tv-remote-commands';
 import { TvControlButton } from './tv-control-button';
 
 interface TvVolumeControlsProps {

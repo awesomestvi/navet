@@ -1,5 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { CameraDevice } from '../../types/device.types';
+import type { CameraDevice } from '@/app/types/device.types';
 
 const CAMERA_FEATURE_STREAM = 2;
 

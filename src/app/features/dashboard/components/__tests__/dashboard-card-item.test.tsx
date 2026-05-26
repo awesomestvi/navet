@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDashboardEntitiesStore } from '@/app/features/dashboard/stores/dashboard-entities-store';
 import { renderWithProviders } from '@/test/render';
-import { useDashboardEntitiesStore } from '../../stores/dashboard-entities-store';
 import { DashboardCardItem } from '../dashboard-card-item';
 
 const { childAction, renderCardMock } = vi.hoisted(() => ({

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { BrightnessPresetKey } from '../../stores/light-preset-store';
-import { useLightPresetStore } from '../../stores/light-preset-store';
+import type { BrightnessPresetKey } from '@/app/features/lighting/stores/light-preset-store';
+import { useLightPresetStore } from '@/app/features/lighting/stores/light-preset-store';
 
 export function useLightPresetActions(id: string) {
   const [applyBrightnessPresetsToAll, setApplyBrightnessPresetsToAll] = useState(false);

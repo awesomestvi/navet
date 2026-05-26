@@ -4,7 +4,7 @@
  */
 
 import { resolvePrimaryColorToken } from '@/app/components/shared/theme/theme-colors';
-import type { PrimaryColor, ThemeMode as ThemeType } from '../../stores/theme-store';
+import type { PrimaryColor, ThemeMode as ThemeType } from '@/app/stores/theme-store';
 import {
   generateCalendarTheme,
   generateCoverTheme,

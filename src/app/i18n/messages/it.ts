@@ -1048,6 +1048,11 @@ export const itMessages = {
   'pwa.reload': 'Ricarica',
   'pwa.refreshApp': 'Aggiorna app',
   'pwa.later': 'Più tardi',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Spostata in {room}',
   'entityRoomSelector.updateFailed': 'Impossibile aggiornare la stanza',
   'entityRoomSelector.createAction': 'Crea stanza',

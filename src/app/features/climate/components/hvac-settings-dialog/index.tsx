@@ -11,6 +11,9 @@ import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
 import { CustomScrollbar, DialogSectionRow } from '@/app/components/shared/device-editor';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { getHVACGaugeColor } from '@/app/features/climate/utils/hvac-styles';
+import { convertCelsiusPresetToSourceUnit } from '@/app/features/climate/utils/hvac-temperature-presets';
+import { getHvacTemperatureStatusLabel } from '@/app/features/climate/utils/hvac-temperature-status-label';
 import { useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { settingsSelectors } from '@/app/stores/selectors';
@@ -22,9 +25,6 @@ import {
   formatTemperatureFromSourceUnit,
   formatTemperatureValueFromSourceUnit,
 } from '@/app/utils/temperature';
-import { getHVACGaugeColor } from '../../utils/hvac-styles';
-import { convertCelsiusPresetToSourceUnit } from '../../utils/hvac-temperature-presets';
-import { getHvacTemperatureStatusLabel } from '../../utils/hvac-temperature-status-label';
 import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { HVACModeControls } from '../hvac-card/hvac-mode-controls';
 import { HVACTempControls } from '../hvac-card/hvac-temp-controls';

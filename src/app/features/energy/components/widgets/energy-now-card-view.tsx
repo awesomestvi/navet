@@ -7,8 +7,8 @@ import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { EnergySeriesPoint } from '@/app/features/energy/types/energy.types';
 import { useI18n, useTheme } from '@/app/hooks';
-import type { EnergySeriesPoint } from '../../types/energy.types';
 import { EnergySparkline } from '../charts/energy-sparkline';
 import { EnergyNowGradientOverlays } from './energy-now-gradient-overlays';
 

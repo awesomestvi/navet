@@ -1,7 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { TranslateFn } from '../../i18n';
-import type { HomeAssistantEntityRegistryEntry } from '../../services/home-assistant.service';
-import type { DeviceMetric, SwitchDevice } from '../../types/device.types';
+import type { TranslateFn } from '@/app/i18n/index';
+import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import type { DeviceMetric, SwitchDevice } from '@/app/types/device.types';
 import { formatEntityType, parseNumberish } from '../ha-entity-utils';
 
 function getEntityCategory(

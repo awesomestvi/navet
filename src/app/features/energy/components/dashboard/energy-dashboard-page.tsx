@@ -3,16 +3,19 @@ import { memo } from 'react';
 import { TabList, Tabs, TabTrigger, Text } from '@/app/components/primitives';
 import { themeColorValues } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@/app/hooks';
-import { useEnergyLoadHistory } from '../../hooks/use-energy-load-history';
+import { useEnergyLoadHistory } from '@/app/features/energy/hooks/use-energy-load-history';
 import type {
   EnergyConsumer,
   EnergyDashboardModel,
   EnergyRange,
   EnergySeriesPoint,
   EnergySourceDiagnostic,
-} from '../../types/energy.types';
-import { formatEnergyPercent, formatEnergyValue } from '../../utils/energy-formatters';
+} from '@/app/features/energy/types/energy.types';
+import {
+  formatEnergyPercent,
+  formatEnergyValue,
+} from '@/app/features/energy/utils/energy-formatters';
+import { useI18n, useTheme } from '@/app/hooks';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
 
 interface EnergyDashboardPageProps {

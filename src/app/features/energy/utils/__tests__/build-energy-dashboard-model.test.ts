@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMockEnergyOverview } from '../../data/mock-energy-dashboard';
+import { getMockEnergyOverview } from '@/app/features/energy/data/mock-energy-dashboard';
 import {
   buildEnergyDashboardModel,
   getEnergyModeSummary,

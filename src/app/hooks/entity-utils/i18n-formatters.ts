@@ -2,7 +2,7 @@
  * i18n-dependent entity formatters
  */
 
-import type { TranslationKey } from '../../i18n';
+import type { TranslationKey } from '@/app/i18n/index';
 
 type TFunc = (key: TranslationKey, values?: Record<string, string | number>) => string;
 

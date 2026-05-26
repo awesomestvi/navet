@@ -820,6 +820,11 @@ export const enMessages = {
   'pwa.reload': 'Reload',
   'pwa.refreshApp': 'Refresh app',
   'pwa.later': 'Later',
+  'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
+  'dashboard.profileSync.conflictDescription':
+    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+  'dashboard.profileSync.keepMine': 'Keep mine',
+  'dashboard.profileSync.loadRemote': 'Load remote',
   'entityRoomSelector.movedTo': 'Card moved to {room}',
   'entityRoomSelector.updateFailed': 'Unable to update room',
   'entityRoomSelector.createAction': 'Create room...',

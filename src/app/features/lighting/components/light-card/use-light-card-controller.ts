@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { useBrightnessPresets } from '@/app/features/lighting/hooks/use-brightness-presets';
+import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useHomeAssistant } from '@/app/hooks';
 import { useCardSettingsDialog } from '@/app/hooks/use-card-settings-dialog';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { useBrightnessPresets } from '../../hooks/use-brightness-presets';
-import { useLightMemoryStore } from '../../stores/light-memory-store';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
 import { useLightCardDisplay } from './use-light-card-display';

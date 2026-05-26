@@ -24,9 +24,9 @@ import {
 } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { PRESET_COLORS } from '@/app/constants/light-constants';
+import type { BrightnessPresetKey } from '@/app/features/lighting/stores/light-preset-store';
 import { useI18n, useTheme } from '@/app/hooks';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
-import type { BrightnessPresetKey } from '../../stores/light-preset-store';
 import type { LightBrightnessPreset, LightEffectOption } from './light-card-types';
 import { LightEffectPicker } from './light-effect-picker';
 
