@@ -157,17 +157,21 @@ Important paths:
 
 Current `CardType` values for dashboard/section widgets:
 
+- `info`
 - `rss`
 - `photo`
 - `note`
 - `battery`
+- `ups`
 - `energy-now`
 - `button`
 - `map`
-- `sensor-group`
 
-Home-widget implementations currently live under
+Most home-widget implementations currently live under
 [`src/app/features/dashboard/components/widgets/`](../src/app/features/dashboard/components/widgets).
+RSS is owned by [`src/app/features/rss/components/rss-feed-card/`](../src/app/features/rss/components/rss-feed-card),
+and sensor-backed Info widget behavior composes pieces from
+[`src/app/features/sensors/components/`](../src/app/features/sensors/components).
 
 The widget store also uses special room sentinels:
 
@@ -182,7 +186,8 @@ Home widgets may additionally persist zone overrides via
 Home-room navigation is assembled from two sources:
 
 - Home Assistant areas via [`src/app/hooks/use-area-rooms.ts`](../src/app/hooks/use-area-rooms.ts)
-- discovered device rooms via [`src/app/hooks/use-devices.ts`](../src/app/hooks/use-devices.ts)
+- discovered device rooms merged by
+  [`src/app/features/dashboard/hooks/use-available-rooms.ts`](../src/app/features/dashboard/hooks/use-available-rooms.ts)
 
 This keeps the room list stable when registry-backed area names exist while still surfacing devices
 whose room can only be inferred from entity metadata.
@@ -250,6 +255,14 @@ Default placement and fallback resolution live in:
 - cover cards include direct drag/keyboard position controls via `CoverPositionGestureSurface`,
   preset chips, and feature-aware open/close/stop actions
 - key path: [`src/app/features/security/components/`](../src/app/features/security/components)
+
+### `sensors`
+
+- sensor cards, grouped sensor displays, history sparklines, home-status summaries, and the shared
+  settings flow used by Info widgets
+- key paths:
+  - [`src/app/features/sensors/components/`](../src/app/features/sensors/components)
+  - [`src/app/features/sensors/hooks/`](../src/app/features/sensors/hooks)
 
 ### `settings`
 
@@ -355,15 +368,16 @@ Current co-located `__tests__/` directories:
 - `src/app/features/security/components/cover-card/__tests__/`
 - `src/app/features/security/utils/__tests__/`
 - `src/app/features/sensors/components/__tests__/`
+- `src/app/features/sensors/hooks/__tests__/`
 - `src/app/features/sensors/components/sensor-group-settings/__tests__/`
 - `src/app/features/tasks/components/__tests__/`
 - `src/app/features/tasks/utils/__tests__/`
 - `src/app/features/vacuum/components/vacuum/__tests__/`
 - `src/app/hooks/__tests__/`
 - `src/app/hooks/device-mappers/__tests__/`
+- `src/app/infrastructure/home-assistant/resources/__tests__/`
 - `src/app/runtime/__tests__/`
 - `src/app/services/__tests__/`
-- `src/app/session/__tests__/`
 - `src/app/stores/__tests__/`
 - `src/app/utils/__tests__/`
 - `src/auth/__tests__/`

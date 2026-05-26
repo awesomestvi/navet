@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Updated Navet to `0.3.0`
+- Added UPS widgets, sensor history sparklines, and a keep-device-awake dashboard setting
+- Fixed hosted OAuth session recovery and ingress Home Assistant connection reuse
+- Improved Home Assistant proxy handling for camera snapshots and other authenticated resources
+- Refined light effect controls, camera behavior, and dashboard profile sync reliability
+
 ## 0.2.5
 
 - Updated Navet to `0.2.5`
