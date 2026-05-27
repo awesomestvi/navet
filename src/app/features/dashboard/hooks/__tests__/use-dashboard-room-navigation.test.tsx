@@ -1,45 +1,77 @@
-import { renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { useDashboardRoomNavigation } from '../use-dashboard-room-navigation';
 
 interface HookProps {
   activeRoom: string;
+  preferredRoom: string;
   rooms: string[];
   hassEntitiesHydrated: boolean;
   devicesLoaded: boolean;
   registriesHydrated: boolean;
+  connected: boolean;
+  connecting: boolean;
+  standaloneMode: boolean;
 }
 
 const defaultProps: HookProps = {
   activeRoom: 'Kitchen',
+  preferredRoom: 'Kitchen',
   rooms: ['Kitchen', 'Living Room'],
   hassEntitiesHydrated: true,
   devicesLoaded: true,
   registriesHydrated: true,
+  connected: true,
+  connecting: false,
+  standaloneMode: false,
 };
 
 function renderRoomNavigation(props: Partial<HookProps> = {}) {
   const changeRoom = vi.fn();
+  const fallbackRoom = vi.fn();
   const view = renderHook(
-    ({ activeRoom, rooms, hassEntitiesHydrated, devicesLoaded, registriesHydrated }: HookProps) =>
+    ({
+      activeRoom,
+      preferredRoom,
+      rooms,
+      hassEntitiesHydrated,
+      devicesLoaded,
+      registriesHydrated,
+      connected,
+      connecting,
+      standaloneMode,
+    }: HookProps) =>
       useDashboardRoomNavigation(
         activeRoom,
+        preferredRoom,
         rooms,
         changeRoom,
+        fallbackRoom,
         hassEntitiesHydrated,
         devicesLoaded,
-        registriesHydrated
+        registriesHydrated,
+        connected,
+        connecting,
+        standaloneMode
       ),
     { initialProps: { ...defaultProps, ...props } }
   );
 
-  return { ...view, changeRoom };
+  return { ...view, changeRoom, fallbackRoom };
 }
 
 describe('useDashboardRoomNavigation', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('keeps the selected room while registries are not hydrated', () => {
-    const { changeRoom, rerender } = renderRoomNavigation();
+    const { fallbackRoom, rerender } = renderRoomNavigation();
 
     rerender({
       ...defaultProps,
@@ -47,11 +79,11 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: false,
     });
 
-    expect(changeRoom).not.toHaveBeenCalled();
+    expect(fallbackRoom).not.toHaveBeenCalled();
   });
 
   it('falls back once registries are hydrated and the selected room is still missing', () => {
-    const { changeRoom, rerender } = renderRoomNavigation();
+    const { fallbackRoom, rerender } = renderRoomNavigation();
 
     rerender({
       ...defaultProps,
@@ -59,15 +91,16 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: true,
     });
 
-    expect(changeRoom).toHaveBeenCalledWith(ALL_ROOMS_ID);
+    expect(fallbackRoom).toHaveBeenCalledWith(ALL_ROOMS_ID);
   });
 
   it('keeps in-session room removal on a neighboring valid room', () => {
-    const { changeRoom, rerender } = renderRoomNavigation();
+    const { fallbackRoom, rerender } = renderRoomNavigation();
 
     rerender({
       ...defaultProps,
       activeRoom: 'Living Room',
+      preferredRoom: 'Living Room',
       rooms: ['Kitchen', 'Living Room'],
       hassEntitiesHydrated: true,
       devicesLoaded: true,
@@ -83,29 +116,31 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: true,
     });
 
-    expect(changeRoom).toHaveBeenCalledWith('Kitchen');
+    expect(fallbackRoom).toHaveBeenCalledWith('Kitchen');
   });
 
   it('keeps all rooms stable regardless of room list changes', () => {
-    const { changeRoom, rerender } = renderRoomNavigation({
+    const { fallbackRoom, rerender } = renderRoomNavigation({
       activeRoom: ALL_ROOMS_ID,
+      preferredRoom: ALL_ROOMS_ID,
       rooms: ['Kitchen'],
     });
 
     rerender({
       ...defaultProps,
       activeRoom: ALL_ROOMS_ID,
+      preferredRoom: ALL_ROOMS_ID,
       rooms: [],
       hassEntitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: true,
     });
 
-    expect(changeRoom).not.toHaveBeenCalled();
+    expect(fallbackRoom).not.toHaveBeenCalled();
   });
 
   it('does not fall back for empty rooms before hydration completes', () => {
-    const { changeRoom, rerender } = renderRoomNavigation();
+    const { fallbackRoom, rerender } = renderRoomNavigation();
 
     rerender({
       ...defaultProps,
@@ -115,11 +150,11 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: false,
     });
 
-    expect(changeRoom).not.toHaveBeenCalled();
+    expect(fallbackRoom).not.toHaveBeenCalled();
   });
 
   it('falls back to all rooms when hydrated rooms are empty', () => {
-    const { changeRoom, rerender } = renderRoomNavigation();
+    const { fallbackRoom, rerender } = renderRoomNavigation();
 
     rerender({
       ...defaultProps,
@@ -129,6 +164,81 @@ describe('useDashboardRoomNavigation', () => {
       registriesHydrated: true,
     });
 
-    expect(changeRoom).toHaveBeenCalledWith(ALL_ROOMS_ID);
+    expect(fallbackRoom).toHaveBeenCalledWith(ALL_ROOMS_ID);
+  });
+
+  it('keeps the preferred standalone room through a reconnect grace period', () => {
+    const { fallbackRoom, rerender } = renderRoomNavigation({
+      standaloneMode: true,
+      connected: false,
+      connecting: true,
+    });
+
+    rerender({
+      ...defaultProps,
+      standaloneMode: true,
+      connected: true,
+      connecting: false,
+      rooms: ['Living Room'],
+    });
+
+    expect(fallbackRoom).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    expect(fallbackRoom).toHaveBeenCalledWith('Living Room');
+  });
+
+  it('restores the preferred standalone room when it returns after reconnect', () => {
+    const { changeRoom, fallbackRoom, rerender } = renderRoomNavigation({
+      standaloneMode: true,
+      connected: false,
+      connecting: true,
+      activeRoom: 'Living Room',
+      preferredRoom: 'Kitchen',
+      rooms: ['Living Room'],
+    });
+
+    rerender({
+      ...defaultProps,
+      standaloneMode: true,
+      connected: true,
+      connecting: false,
+      activeRoom: 'Living Room',
+      preferredRoom: 'Kitchen',
+      rooms: ['Kitchen', 'Living Room'],
+    });
+
+    expect(changeRoom).toHaveBeenCalledWith('Kitchen');
+    expect(fallbackRoom).not.toHaveBeenCalled();
+  });
+
+  it('keeps the preferred standalone room across visibility restore churn', () => {
+    const { fallbackRoom, rerender } = renderRoomNavigation({
+      standaloneMode: true,
+    });
+
+    act(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'hidden',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'visible',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    rerender({
+      ...defaultProps,
+      standaloneMode: true,
+      rooms: ['Living Room'],
+    });
+
+    expect(fallbackRoom).not.toHaveBeenCalled();
   });
 });

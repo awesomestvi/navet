@@ -14,6 +14,7 @@ import {
   useRoomNavigation,
 } from '@/app/hooks';
 import { useDevices, useRooms } from '@/app/hooks/use-devices';
+import { isStandaloneMode } from '@/app/runtime/app-mode';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
 import type { AllViewGrouping } from '../all-view-grid';
@@ -79,15 +80,21 @@ export function useDashboardController(): DashboardController {
     return rooms.filter((room) => !hiddenRooms.has(room));
   }, [hiddenRoomNames, rooms]);
 
-  const { activeRoom, changeRoom } = useRoomNavigation(ALL_ROOMS_ID);
+  const { activeRoom, preferredRoom, changeRoom, fallbackRoom } = useRoomNavigation(ALL_ROOMS_ID);
+  const standaloneMode = isStandaloneMode();
 
   useDashboardRoomNavigation(
     activeRoom,
+    preferredRoom,
     visibleRooms,
     changeRoom,
+    fallbackRoom,
     hassEntitiesHydrated,
     devicesLoaded,
-    registriesHydrated
+    registriesHydrated,
+    connected,
+    connecting,
+    standaloneMode
   );
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
 

@@ -66,6 +66,7 @@ describe('useNavigationStore', () => {
       JSON.stringify({
         state: {
           currentRoom: 'Kitchen',
+          lastExplicitRoom: 'Office',
           activeSection: 'lights',
           recentSections: ['tasks', 'lights', 'invalid'],
           lastNonHomeSection: 'tasks',
@@ -77,9 +78,27 @@ describe('useNavigationStore', () => {
     await useNavigationStore.persist.rehydrate();
 
     expect(useNavigationStore.getState().currentRoom).toBe('Kitchen');
+    expect(useNavigationStore.getState().lastExplicitRoom).toBe('Office');
     expect(useNavigationStore.getState().activeSection).toBe('home');
     expect(useNavigationStore.getState().recentSections).toEqual(['tasks', 'lights']);
     expect(useNavigationStore.getState().lastNonHomeSection).toBe('tasks');
+  });
+
+  it('falls back to the current room when persisted explicit room is missing', async () => {
+    localStorage.setItem(
+      'ha-dashboard-navigation',
+      JSON.stringify({
+        state: {
+          currentRoom: 'Kitchen',
+          recentSections: ['tasks'],
+        },
+        version: 0,
+      })
+    );
+
+    await useNavigationStore.persist.rehydrate();
+
+    expect(useNavigationStore.getState().lastExplicitRoom).toBe('Kitchen');
   });
 
   it('drops invalid persisted section history entries', async () => {
@@ -120,6 +139,16 @@ describe('useNavigationStore', () => {
     expect(useNavigationStore.getState().recentSections).toBe(previousRecentSections);
     expect(useNavigationStore.getState().lastNonHomeSection).toBe(previousLastNonHomeSection);
     stopSync();
+  });
+
+  it('keeps the last explicit room when fallback room changes internally', () => {
+    const store = useNavigationStore.getState();
+
+    store.setCurrentRoom('Kitchen');
+    store.setCurrentRoom('Living Room', { explicit: false });
+
+    expect(useNavigationStore.getState().currentRoom).toBe('Living Room');
+    expect(useNavigationStore.getState().lastExplicitRoom).toBe('Kitchen');
   });
 
   it('does not rewrite MRU state when popstate navigates to home', () => {
