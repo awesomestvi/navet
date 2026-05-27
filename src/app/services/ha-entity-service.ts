@@ -4,6 +4,7 @@ import type {
   HomeAssistantAutomationConfig,
   HomeAssistantCameraCapabilities,
   HomeAssistantCameraStream,
+  HomeAssistantCameraStreamType,
   HomeAssistantMediaBrowseResult,
   HomeAssistantMediaSearchResult,
   HomeAssistantMediaSourceItem,
@@ -386,7 +387,7 @@ class HAEntityService {
 
   async getCameraStreamUrl(
     entityId: string,
-    format: 'hls' = 'hls'
+    format: HomeAssistantCameraStreamType = 'hls'
   ): Promise<HomeAssistantCameraStream> {
     const conn = this.connection();
     if (!conn) {

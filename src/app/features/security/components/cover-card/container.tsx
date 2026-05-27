@@ -3,7 +3,7 @@ import { useEntityCardInteractionController } from '@/app/components/shared/enti
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { parseNumberish } from '@/app/hooks/ha-entity-utils';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEVICE_CLASS_CONFIG } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
@@ -170,7 +170,12 @@ export const CoverCardContainer = memo(function CoverCardContainer({
 
   const callCoverService = useCallback(
     (service: string, serviceData: Record<string, unknown> = {}) =>
-      homeAssistantService.callService('cover', service, serviceData, { entity_id: id }),
+      dispatchEntityAction({
+        entityId: id,
+        domain: 'cover',
+        service,
+        serviceData,
+      }),
     [id]
   );
 

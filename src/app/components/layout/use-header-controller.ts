@@ -3,9 +3,9 @@ import { shallow } from 'zustand/shallow';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useNotifications } from '@/app/features/notifications';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
+import type { IntegrationStore } from '@/app/stores/integration-store';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { resolveHomeAssistantAbsoluteUrl } from '@/app/utils/home-assistant-url';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
@@ -15,7 +15,7 @@ export type HeaderController = ReturnType<typeof useHeaderController>;
 // Narrow to only person.* entities — the only domain this controller needs.
 // Defined at module scope so the selector reference is stable and shallow equality
 // can do its job: no re-render unless a person entity actually changes.
-function selectPersonEntities(state: HomeAssistantStore) {
+function selectPersonEntities(state: IntegrationStore) {
   if (!state.entities) return null;
   return Object.fromEntries(
     Object.entries(state.entities).filter(([id]) => id.startsWith('person.'))
@@ -25,8 +25,8 @@ function selectPersonEntities(state: HomeAssistantStore) {
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const personEntities = useHomeAssistant(selectPersonEntities, shallow);
-  const user = useHomeAssistant(homeAssistantSelectors.user);
+  const personEntities = useIntegrationStore(selectPersonEntities, shallow);
+  const user = useIntegrationStore(integrationSelectors.user);
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -73,11 +73,11 @@ export function useHeaderController() {
     })?.attributes?.entity_picture;
 
     if (typeof entityPicture !== 'string' || !entityPicture) {
-      return null;
+      return user?.avatarUrl ?? null;
     }
 
     return resolveHomeAssistantAbsoluteUrl(entityPicture);
-  }, [personEntities, user?.name]);
+  }, [personEntities, user?.avatarUrl, user?.name]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),

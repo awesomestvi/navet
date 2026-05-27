@@ -1,6 +1,8 @@
 import type { Auth } from 'home-assistant-js-websocket';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { haIngressAuth } from '@/auth/adapters/haIngressAuth';
 import { haPanelAuth } from '@/auth/adapters/haPanelAuth';
+import { homeyOAuthAuth } from '@/auth/adapters/homeyOAuthAuth';
 import { standaloneOAuthAuth } from '@/auth/adapters/standaloneOAuthAuth';
 import type { AuthAdapter, AuthSession } from '@/auth/types';
 import {
@@ -10,7 +12,10 @@ import {
 } from '../runtime/runtime-context';
 import { getRuntimeContext } from '../runtime/runtime-detector';
 
+const STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
+
 export interface AuthSessionSnapshot {
+  providerId: IntegrationProviderId;
   runtime: NavetRuntimeKind;
   authMode: RuntimeAuthMode;
   haBaseUrl: string | null;
@@ -28,11 +33,16 @@ const LEGACY_ADAPTERS: Record<ReturnType<typeof toLegacyAuthRuntime>, AuthAdapte
   'standalone-oauth': standaloneOAuthAuth,
 };
 
+const PROVIDER_ADAPTERS: Partial<Record<IntegrationProviderId, AuthAdapter>> = {
+  homey: homeyOAuthAuth,
+};
+
 function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
   const runtime = getRuntimeContext().kind;
 
   if (!session) {
     return {
+      providerId: 'home_assistant',
       runtime,
       authMode: getRuntimeContext().authMode,
       haBaseUrl: getRuntimeContext().haBaseUrl,
@@ -41,6 +51,7 @@ function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
   }
 
   return {
+    providerId: session.providerId,
     runtime,
     authMode: session.authMode,
     haBaseUrl: session.haBaseUrl,
@@ -51,12 +62,55 @@ function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
   };
 }
 
+function readStoredIntegrationSession(): AuthSession | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(STORED_INTEGRATION_SESSION_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as AuthSession;
+    if (!parsed || typeof parsed !== 'object' || parsed.providerId !== 'openhab') {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredIntegrationSession(session: AuthSession | null): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (!session || session.providerId !== 'openhab') {
+    window.localStorage.removeItem(STORED_INTEGRATION_SESSION_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(STORED_INTEGRATION_SESSION_KEY, JSON.stringify(session));
+}
+
 export class AuthSessionManager {
   private session: AuthSession | null = null;
   private listeners = new Set<AuthStateListener>();
 
   private get adapter(): AuthAdapter {
     return LEGACY_ADAPTERS[toLegacyAuthRuntime(getRuntimeContext().kind)];
+  }
+
+  private getAdapterForProvider(providerId: IntegrationProviderId | undefined): AuthAdapter {
+    if (providerId && PROVIDER_ADAPTERS[providerId]) {
+      return PROVIDER_ADAPTERS[providerId];
+    }
+
+    return this.adapter;
   }
 
   getSession() {
@@ -69,6 +123,7 @@ export class AuthSessionManager {
 
   private updateSession(session: AuthSession | null) {
     this.session = session;
+    writeStoredIntegrationSession(session);
     const snapshot = buildSnapshot(session);
     for (const listener of this.listeners) {
       listener(snapshot, session);
@@ -76,18 +131,32 @@ export class AuthSessionManager {
   }
 
   async init(): Promise<AuthSessionSnapshot> {
-    const nextSession = await this.adapter.init();
+    const legacyStoredSession = readStoredIntegrationSession();
+    const nextSession =
+      legacyStoredSession ??
+      (await this.getAdapterForProvider(undefined).init()) ??
+      (await this.getAdapterForProvider('homey').init());
     this.updateSession(nextSession);
     return this.getSnapshot();
   }
 
-  async login(input?: { haBaseUrl?: string; hassUrl?: string }): Promise<AuthSessionSnapshot> {
-    if (!this.adapter.login) {
+  async login(input?: {
+    haBaseUrl?: string;
+    hassUrl?: string;
+    accessToken?: string;
+    providerId?: IntegrationProviderId;
+  }): Promise<AuthSessionSnapshot> {
+    const targetProviderId = input?.providerId;
+    const adapter = this.getAdapterForProvider(targetProviderId);
+
+    if (!adapter.login) {
       throw new Error('Login is not available in this runtime');
     }
 
-    const nextSession = await this.adapter.login({
+    const nextSession = await adapter.login({
       hassUrl: input?.haBaseUrl ?? input?.hassUrl,
+      accessToken: input?.accessToken,
+      providerId: input?.providerId,
     });
     this.updateSession(nextSession);
     return this.getSnapshot();
@@ -98,11 +167,13 @@ export class AuthSessionManager {
       return this.getSnapshot();
     }
 
-    if (!this.adapter.refresh) {
+    const adapter = this.getAdapterForProvider(this.session.providerId);
+
+    if (!adapter.refresh) {
       return this.getSnapshot();
     }
 
-    const nextSession = await this.adapter.refresh(this.session);
+    const nextSession = await adapter.refresh(this.session);
     this.updateSession(nextSession);
     return this.getSnapshot();
   }
@@ -113,8 +184,11 @@ export class AuthSessionManager {
   }
 
   async logout(): Promise<void> {
+    const adapter = this.session
+      ? this.getAdapterForProvider(this.session.providerId)
+      : this.adapter;
     this.updateSession(null);
-    await this.adapter.logout?.();
+    await adapter.logout?.();
   }
 
   subscribe(listener: AuthStateListener): () => void {

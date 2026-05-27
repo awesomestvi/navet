@@ -19,6 +19,7 @@ import type {
   VacuumDevice,
 } from '../types/device.types';
 import { haEntityStructureEqual } from '../utils/ha-entity-structure-equal';
+import { createProviderScopedMetadata } from '../utils/provider-ids';
 import {
   mapCameraDevice,
   mapClimateDevice,
@@ -50,6 +51,13 @@ import { useHomeAssistant } from './use-home-assistant';
 import { useWeatherDevices } from './use-weather-devices';
 
 export { useCalendarDevices, useWeatherDevices };
+
+function withProviderMetadata<T extends { id: string }>(device: T): T {
+  return {
+    ...device,
+    ...createProviderScopedMetadata('home_assistant', device.id),
+  };
+}
 
 function useRegistryRoomResolver() {
   const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
@@ -110,11 +118,11 @@ export const useHADevices = () => {
 
       switch (domain) {
         case 'light':
-          lights.push(mapLightDevice(entityId, entity, name, room));
+          lights.push(withProviderMetadata(mapLightDevice(entityId, entity, name, room)));
           break;
 
         case 'fan':
-          fans.push(mapFanDevice(entityId, entity, name, room));
+          fans.push(withProviderMetadata(mapFanDevice(entityId, entity, name, room)));
           break;
 
         case 'switch': {
@@ -135,7 +143,7 @@ export const useHADevices = () => {
             deviceMetrics
           );
           if (mapped) {
-            switches.push(mapped);
+            switches.push(withProviderMetadata(mapped));
           }
           break;
         }
@@ -155,35 +163,37 @@ export const useHADevices = () => {
             break;
           }
 
-          helpers.push(helperDevice);
+          helpers.push(withProviderMetadata(helperDevice));
           break;
         }
 
         case 'climate':
         case 'water_heater':
           climate.push(
-            mapClimateDevice(entityId, entity, name, room, homeAssistantTemperatureUnit)
+            withProviderMetadata(
+              mapClimateDevice(entityId, entity, name, room, homeAssistantTemperatureUnit)
+            )
           );
           break;
 
         case 'media_player':
-          media.push(mapMediaDevice(entityId, entity, name, room, t));
+          media.push(withProviderMetadata(mapMediaDevice(entityId, entity, name, room, t)));
           break;
 
         case 'person':
-          persons.push(mapPersonDevice(entityId, entity, name, room, t));
+          persons.push(withProviderMetadata(mapPersonDevice(entityId, entity, name, room, t)));
           break;
 
         case 'cover':
-          covers.push(mapCoverDevice(entityId, entity, name, room));
+          covers.push(withProviderMetadata(mapCoverDevice(entityId, entity, name, room)));
           break;
 
         case 'lock':
-          locks.push(mapLockDevice(entityId, entity, name, room));
+          locks.push(withProviderMetadata(mapLockDevice(entityId, entity, name, room)));
           break;
 
         case 'scene':
-          scenes.push(mapSceneDevice(entityId, entity, name, room));
+          scenes.push(withProviderMetadata(mapSceneDevice(entityId, entity, name, room)));
           break;
 
         case 'sensor':
@@ -193,7 +203,7 @@ export const useHADevices = () => {
             use24HourTime,
           });
           if (mapped) {
-            sensors.push(mapped);
+            sensors.push(withProviderMetadata(mapped));
           }
           break;
         }
@@ -203,11 +213,11 @@ export const useHADevices = () => {
             break;
           }
 
-          cameras.push(mapCameraDevice(entityId, entity, name, room));
+          cameras.push(withProviderMetadata(mapCameraDevice(entityId, entity, name, room)));
           break;
 
         case 'vacuum':
-          vacuums.push(mapVacuumDevice(entityId, entity, name, room));
+          vacuums.push(withProviderMetadata(mapVacuumDevice(entityId, entity, name, room)));
           break;
 
         case 'calendar':

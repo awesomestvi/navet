@@ -13,8 +13,16 @@ const { serviceMock } = vi.hoisted(() => ({
   },
 }));
 
+const { dispatchEntityActionMock } = vi.hoisted(() => ({
+  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
+}));
+
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityAction: dispatchEntityActionMock,
 }));
 
 function createLightEntity(state: 'on' | 'off' = 'on') {
@@ -139,5 +147,62 @@ describe('LightCard', () => {
     );
 
     expect(screen.queryByRole('button', { name: 'Choose light effect' })).not.toBeInTheDocument();
+  });
+
+  it('routes Homey light toggles through the integration action dispatcher', () => {
+    renderWithProviders(
+      <LightCard
+        id="homey:light_1"
+        name="Desk Lamp"
+        room="Office"
+        providerId="homey"
+        initialState={true}
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Desk Lamp' }));
+
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      providerId: 'homey',
+      entityId: 'homey:light_1',
+      domain: 'light',
+      service: 'turn_off',
+    });
+    expect(serviceMock.updateLight).not.toHaveBeenCalled();
+  });
+
+  it('turns on a Homey light without sending unsupported HA-only light options', () => {
+    renderWithProviders(
+      <LightCard
+        id="homey:light_1"
+        name="Desk Lamp"
+        room="Office"
+        providerId="homey"
+        initialState={false}
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Desk Lamp' }));
+
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      providerId: 'homey',
+      entityId: 'homey:light_1',
+      domain: 'light',
+      service: 'turn_on',
+      serviceData: {
+        brightness_pct: 65,
+        kelvin: 3000,
+      },
+    });
   });
 });

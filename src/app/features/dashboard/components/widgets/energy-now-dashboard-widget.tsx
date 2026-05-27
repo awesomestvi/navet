@@ -7,7 +7,6 @@ import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-c
 import { EnergyNowCardView, useEnergyDashboard, useEnergyLoadHistory } from '@/app/features/energy';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { EnergyNowSettingsDialog, type EnergySourceOption } from './energy-now-settings-dialog';
-import { EnergyNowStatusWidget } from './energy-now-status-widget';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
 interface EnergyNowDashboardWidgetProps {
@@ -119,7 +118,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
       theme={theme}
     />
   );
-  const emptyCard = (
+  const renderEmptyCard = (description: string, withSettingsAction = true) => (
     <BaseCard
       size={size}
       fullBleed
@@ -143,13 +142,11 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
       <div className="relative z-[2] h-full p-4">
         <CardEmptyState
           title={t('dashboard.addCard.templates.energyNow.name')}
-          description={
-            isConfigured ? t('widgets.energyNow.settings.sources') : t('energy.setup.panelTitle')
-          }
+          description={description}
           icon={Zap}
-          actionLabel={t('widgets.energyNow.settings.sources')}
-          onAction={() => setIsSettingsOpen(true)}
-          actionIcon={Settings2}
+          actionLabel={withSettingsAction ? t('widgets.energyNow.settings.sources') : undefined}
+          onAction={withSettingsAction ? () => setIsSettingsOpen(true) : undefined}
+          actionIcon={withSettingsAction ? Settings2 : undefined}
           size={size}
           accentColor={tintColor ?? accentColor}
         />
@@ -158,19 +155,19 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   );
 
   if (!isConnected) {
-    return <EnergyNowStatusWidget message={t('network.disconnectedDescription')} />;
+    return renderEmptyCard(t('network.disconnectedDescription'), false);
   }
 
   if (!isConfigured) {
     if (isCustomCard) {
       return (
         <>
-          {emptyCard}
+          {renderEmptyCard(t('energy.setup.panelTitle'))}
           {settingsDialog}
         </>
       );
     }
-    return <EnergyNowStatusWidget message={t('energy.setup.panelDescription')} />;
+    return renderEmptyCard(t('energy.setup.panelDescription'), false);
   }
 
   const isEmpty = isCustomCard ? !selectedSourceId : false;
@@ -178,7 +175,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   return (
     <>
       {isEmpty ? (
-        emptyCard
+        renderEmptyCard(t('widgets.energyNow.settings.sources'))
       ) : onUpdate ? (
         <button
           type="button"

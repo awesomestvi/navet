@@ -24,7 +24,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type {
   CameraFeedMode,
   CameraGo2RtcConfig,
@@ -72,12 +72,11 @@ function getDisplayName(entityId: string, entity: HassEntity): string {
 
 function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string; isOn: boolean }) {
   const handleToggle = useCallback(async () => {
-    await homeAssistantService.callService(
-      'switch',
-      isOn ? 'turn_off' : 'turn_on',
-      {},
-      { entity_id: entityId }
-    );
+    await dispatchEntityAction({
+      entityId,
+      domain: 'switch',
+      service: isOn ? 'turn_off' : 'turn_on',
+    });
   }, [entityId, isOn]);
 
   return (
@@ -109,12 +108,12 @@ function SelectRow({
 }) {
   const handleSelect = useCallback(
     async (option: string) => {
-      await homeAssistantService.callService(
-        'select',
-        'select_option',
-        { option },
-        { entity_id: entityId }
-      );
+      await dispatchEntityAction({
+        entityId,
+        domain: 'select',
+        service: 'select_option',
+        serviceData: { option },
+      });
     },
     [entityId]
   );
@@ -163,12 +162,12 @@ function NumberRow({
 
   const handleChange = useCallback(
     async (newValue: number) => {
-      await homeAssistantService.callService(
-        'number',
-        'set_value',
-        { value: newValue },
-        { entity_id: entityId }
-      );
+      await dispatchEntityAction({
+        entityId,
+        domain: 'number',
+        service: 'set_value',
+        serviceData: { value: newValue },
+      });
     },
     [entityId]
   );

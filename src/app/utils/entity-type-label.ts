@@ -3,7 +3,12 @@ export function getEntityTypeLabel(entityId?: string) {
     return '';
   }
 
-  const domain = entityId.split('.')[0] ?? '';
+  const separatorIndex = entityId.indexOf('.');
+  if (separatorIndex <= 0 || separatorIndex === entityId.length - 1) {
+    return '';
+  }
+
+  const domain = entityId.slice(0, separatorIndex).trim();
   if (!domain) {
     return '';
   }

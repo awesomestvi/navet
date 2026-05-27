@@ -24,6 +24,7 @@ export function useSwitchCardController({
   id,
   name,
   size,
+  providerId,
   initialState = false,
   entityType,
   serviceDomain,
@@ -94,6 +95,7 @@ export function useSwitchCardController({
   const hasControlsDialog = true;
   const handleToggle = useSwitchToggleAction({
     id,
+    providerId,
     isOn,
     setIsOn,
     resetTimerRef,

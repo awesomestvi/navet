@@ -12,6 +12,7 @@ import {
   useThemeMode,
 } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
@@ -160,7 +161,11 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
     setIsTriggering(true);
     void runAction(
       () =>
-        homeAssistantService.callService('automation', 'trigger', {}, { entity_id: automation.id }),
+        dispatchEntityAction({
+          entityId: automation.id,
+          domain: 'automation',
+          service: 'trigger',
+        }),
       t('tasks.automation.triggerFailed', { name: automation.name })
     ).finally(() => {
       setIsTriggering(false);
@@ -171,12 +176,11 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
     setIsUpdatingEnabled(true);
     void runAction(
       () =>
-        homeAssistantService.callService(
-          'automation',
-          nextEnabled ? 'turn_on' : 'turn_off',
-          {},
-          { entity_id: automation.id }
-        ),
+        dispatchEntityAction({
+          entityId: automation.id,
+          domain: 'automation',
+          service: nextEnabled ? 'turn_on' : 'turn_off',
+        }),
       nextEnabled
         ? t('tasks.automation.enableFailed', { name: automation.name })
         : t('tasks.automation.disableFailed', { name: automation.name })

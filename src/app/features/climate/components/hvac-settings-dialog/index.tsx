@@ -15,7 +15,7 @@ import { getHVACGaugeColor } from '@/app/features/climate/utils/hvac-styles';
 import { convertCelsiusPresetToSourceUnit } from '@/app/features/climate/utils/hvac-temperature-presets';
 import { getHvacTemperatureStatusLabel } from '@/app/features/climate/utils/hvac-temperature-status-label';
 import { useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
@@ -337,56 +337,60 @@ function ClimateSiblingControlRow({
 
   const handlePress = useCallback(async () => {
     if (domain === 'fan') {
-      await homeAssistantService.callService(
-        'fan',
-        isOn ? 'turn_off' : 'turn_on',
-        {},
-        {
-          entity_id: entityId,
-        }
-      );
+      await dispatchEntityAction({
+        entityId,
+        domain: 'fan',
+        service: isOn ? 'turn_off' : 'turn_on',
+      });
       return;
     }
 
     if (domain === 'button' || domain === 'input_button') {
-      await homeAssistantService.callService(domain, 'press', {}, { entity_id: entityId });
+      await dispatchEntityAction({
+        entityId,
+        domain,
+        service: 'press',
+      });
       return;
     }
 
     if (domain === 'script') {
-      await homeAssistantService.callService('script', 'turn_on', {}, { entity_id: entityId });
+      await dispatchEntityAction({
+        entityId,
+        domain: 'script',
+        service: 'turn_on',
+      });
       return;
     }
 
     const serviceDomain = domain === 'input_boolean' ? 'input_boolean' : 'switch';
-    await homeAssistantService.callService(
-      serviceDomain,
-      isOn ? 'turn_off' : 'turn_on',
-      {},
-      { entity_id: entityId }
-    );
+    await dispatchEntityAction({
+      entityId,
+      domain: serviceDomain,
+      service: isOn ? 'turn_off' : 'turn_on',
+    });
   }, [domain, entityId, isOn]);
 
   const setFanPercentage = useCallback(
     async (percentage: number) => {
-      await homeAssistantService.callService(
-        'fan',
-        'set_percentage',
-        { percentage: clampFanPercentage(percentage) },
-        { entity_id: entityId }
-      );
+      await dispatchEntityAction({
+        entityId,
+        domain: 'fan',
+        service: 'set_percentage',
+        serviceData: { percentage: clampFanPercentage(percentage) },
+      });
     },
     [entityId]
   );
 
   const setFanPresetMode = useCallback(
     async (presetMode: string) => {
-      await homeAssistantService.callService(
-        'fan',
-        'set_preset_mode',
-        { preset_mode: presetMode },
-        { entity_id: entityId }
-      );
+      await dispatchEntityAction({
+        entityId,
+        domain: 'fan',
+        service: 'set_preset_mode',
+        serviceData: { preset_mode: presetMode },
+      });
     },
     [entityId]
   );

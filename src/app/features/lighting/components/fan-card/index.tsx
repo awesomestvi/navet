@@ -14,8 +14,9 @@ import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-st
 import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { parseNumberish } from '@/app/hooks/ha-entity-utils';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { getLightCardSurfaceTokens } from '../light-card/light-card-surface-tokens';
 import { SwitchSettingsDialog } from '../switch-settings-dialog';
 import { useSwitchCardAppearance } from '../use-switch-card-appearance';
@@ -24,6 +25,7 @@ interface FanCardProps {
   id: string;
   name: string;
   room: string;
+  providerId?: IntegrationProviderId;
   initialState?: boolean;
   initialPercentage?: number;
   size: CardSize;
@@ -92,6 +94,7 @@ export const FanCard = memo(function FanCard({
   id,
   name,
   room: _room,
+  providerId,
   initialState = false,
   initialPercentage = 0,
   size,
@@ -134,19 +137,19 @@ export const FanCard = memo(function FanCard({
 
       void runAction(
         () =>
-          homeAssistantService.callService(
-            'fan',
-            nextIsOn ? 'turn_on' : 'turn_off',
-            {},
-            { entity_id: id }
-          ),
+          dispatchEntityAction({
+            providerId,
+            entityId: id,
+            domain: 'fan',
+            service: nextIsOn ? 'turn_on' : 'turn_off',
+          }),
         t('lighting.feedback.updateSwitchFailed'),
         {
           onError: () => setIsOn(!nextIsOn),
         }
       );
     },
-    [id, runAction, t]
+    [id, providerId, runAction, t]
   );
 
   const updateSpeed = useCallback(
@@ -156,19 +159,20 @@ export const FanCard = memo(function FanCard({
       setPercentage(nextPercentage);
       void runAction(
         () =>
-          homeAssistantService.callService(
-            'fan',
-            'set_percentage',
-            { percentage: nextPercentage },
-            { entity_id: id }
-          ),
+          dispatchEntityAction({
+            providerId,
+            entityId: id,
+            domain: 'fan',
+            service: 'set_percentage',
+            serviceData: { percentage: nextPercentage },
+          }),
         t('lighting.feedback.updateSwitchFailed'),
         {
           onError: () => setPercentage(percentage),
         }
       );
     },
-    [id, percentage, runAction, t]
+    [id, percentage, providerId, runAction, t]
   );
 
   const cardInteraction = useEntityCardInteractionController({

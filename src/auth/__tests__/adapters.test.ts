@@ -407,6 +407,7 @@ describe('auth adapters', () => {
     auth.data.expires = Date.now() - 1;
 
     const refreshed = await standaloneOAuthAuth.refresh?.({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',

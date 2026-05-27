@@ -5,6 +5,7 @@ import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-s
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { LightCardMedium } from './light-card-medium';
 import { LightCardSmall } from './light-card-small';
@@ -17,6 +18,7 @@ interface LightCardProps {
   id: string;
   name: string;
   room: string;
+  providerId?: IntegrationProviderId;
   initialState?: boolean;
   initialBrightness?: number;
   initialTemp?: number;
@@ -33,6 +35,7 @@ export const LightCard = memo(function LightCard({
   id,
   name,
   room,
+  providerId,
   initialState = false,
   initialBrightness = 0,
   initialTemp = 4000,
@@ -66,6 +69,7 @@ export const LightCard = memo(function LightCard({
     id,
     name,
     room,
+    providerId,
     initialState,
     initialBrightness,
     initialTemp,

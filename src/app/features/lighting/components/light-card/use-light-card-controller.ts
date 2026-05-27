@@ -18,6 +18,7 @@ export function useLightCardController({
   id,
   name,
   room: _room,
+  providerId,
   initialState,
   initialBrightness,
   initialTemp,
@@ -51,10 +52,10 @@ export function useLightCardController({
     tempOptions,
     IconComponent,
     iconText,
-  } = useLightCardDisplay({ selectedIcon, size, liveEntity });
+  } = useLightCardDisplay({ selectedIcon, size, providerId, liveEntity, initialTemp });
 
   useLightOnStateSync({ initialState, liveEntity, setIsOn });
-  const syncLightWithHomeAssistant = useLightServiceSync({ id, isHomeAssistantLight });
+  const syncLightWithHomeAssistant = useLightServiceSync({ id, providerId, isHomeAssistantLight });
 
   const {
     brightness,

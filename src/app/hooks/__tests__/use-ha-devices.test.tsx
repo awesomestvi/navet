@@ -26,6 +26,9 @@ describe('useHADevices', () => {
     expect(result.current.fans).toEqual([
       expect.objectContaining({
         id: fanEntityFixtures.normal.entity_id,
+        nativeId: fanEntityFixtures.normal.entity_id,
+        canonicalId: `home_assistant:${fanEntityFixtures.normal.entity_id}`,
+        providerId: 'home_assistant',
         name: 'Bedroom Fan',
         room: 'Hallway',
         state: true,
@@ -56,6 +59,9 @@ describe('useHADevices', () => {
     expect(result.current.sensors).toEqual([
       expect.objectContaining({
         id: temperatureSensor.entity_id,
+        nativeId: temperatureSensor.entity_id,
+        canonicalId: `home_assistant:${temperatureSensor.entity_id}`,
+        providerId: 'home_assistant',
         name: 'Kitchen Temperature',
         room: 'Kitchen',
         value: '21.4',
@@ -66,6 +72,9 @@ describe('useHADevices', () => {
       }),
       expect.objectContaining({
         id: binarySensorEntityFixtures.normal.entity_id,
+        nativeId: binarySensorEntityFixtures.normal.entity_id,
+        canonicalId: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
+        providerId: 'home_assistant',
         name: 'Front Door Motion',
         room: 'Kitchen',
         value: 'Detected',

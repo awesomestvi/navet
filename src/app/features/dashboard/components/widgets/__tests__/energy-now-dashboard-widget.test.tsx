@@ -79,4 +79,34 @@ describe('EnergyNowDashboardWidget', () => {
     expect(screen.getByRole('button', { name: 'Energy entities' })).toBeInTheDocument();
     expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
   });
+
+  it('uses the card empty state when Home Assistant is disconnected', () => {
+    energyDashboardMock.useEnergyDashboard.mockReturnValue({
+      overview: {
+        totals: {
+          currentLoadW: 0,
+          solarTodayKWh: 0,
+          solarW: 0,
+          importTodayKWh: 0,
+          importW: 0,
+        },
+        topConsumers: [],
+      },
+      currentLoadStatisticId: undefined,
+      todayTotalUsageKWh: 0,
+      isConnected: false,
+      isConfigured: true,
+    });
+
+    renderWithProviders(<EnergyNowDashboardWidget />);
+
+    expect(screen.getByText('Energy Now')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Navet cannot reach Home Assistant right now. Cached UI is still available while it reconnects.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Energy entities' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
+  });
 });

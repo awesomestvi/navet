@@ -9,6 +9,7 @@ import {
   resolveLightIconComponent,
 } from '@/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import {
   getSupportedColorTemperatureRange,
   supportsColorSelection,
@@ -18,7 +19,9 @@ import {
 interface UseLightCardDisplayParams {
   selectedIcon: string;
   size: CardSize;
+  providerId?: IntegrationProviderId;
   liveEntity: HassEntity | undefined;
+  initialTemp: number;
 }
 
 interface UseLightCardDisplayResult {
@@ -36,10 +39,15 @@ interface UseLightCardDisplayResult {
 export function useLightCardDisplay({
   selectedIcon,
   size,
+  providerId,
   liveEntity,
+  initialTemp,
 }: UseLightCardDisplayParams): UseLightCardDisplayResult {
-  const supportsColorTemperature = supportsColorTemperatureControl(liveEntity);
-  const supportsColorControl = supportsColorSelection(liveEntity);
+  const isHomeAssistantProvider = !providerId || providerId === 'home_assistant';
+  const supportsColorTemperature = isHomeAssistantProvider
+    ? supportsColorTemperatureControl(liveEntity)
+    : initialTemp > 0;
+  const supportsColorControl = isHomeAssistantProvider && supportsColorSelection(liveEntity);
   const { max: maxColorTemp, min: minColorTemp } = getSupportedColorTemperatureRange(liveEntity);
 
   const tempOptions = useMemo(

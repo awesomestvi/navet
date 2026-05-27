@@ -14,6 +14,7 @@ export function DashboardPage() {
   const { t } = useI18n();
   const appError = useErrorStore(appErrorSelectors.error);
   const setAppError = useErrorStore(appErrorSelectors.setError);
+  const clearAppError = useErrorStore(appErrorSelectors.clearError);
   useDashboardProfileSync();
   const controller = useDashboardController();
   const isDashboardReady =
@@ -30,6 +31,16 @@ export function DashboardPage() {
 
     setAppError(t('dashboard.loadingRecovery.title'), t('dashboard.loadingRecovery.description'));
   }, [appError, isWaitingForDashboard, setAppError, t]);
+
+  useEffect(() => {
+    if (!isDashboardReady || !appError) {
+      return;
+    }
+
+    if (appError.message === t('dashboard.loadingRecovery.title')) {
+      clearAppError();
+    }
+  }, [appError, clearAppError, isDashboardReady, t]);
 
   if (!isDashboardReady) {
     return controller.connecting ? (

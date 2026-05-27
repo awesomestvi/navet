@@ -2,7 +2,7 @@ import type { AuthData, Connection } from 'home-assistant-js-websocket';
 import { Auth, createConnection, getAuth } from 'home-assistant-js-websocket';
 import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { resolveHomeAssistantConnectionUrl } from '@/app/utils/home-assistant-connection-target';
-import type { AuthSession } from '@/auth/types';
+import type { HomeAssistantAuthSession } from '@/auth/types';
 
 export interface HomeAssistantClient {
   auth: Auth;
@@ -43,7 +43,7 @@ function createHostedProxyAuth(sourceAuth: Auth, hassUrl: string): Auth {
   return proxyAuth;
 }
 
-async function resolveAuth(session: AuthSession): Promise<Auth> {
+async function resolveAuth(session: HomeAssistantAuthSession): Promise<Auth> {
   const targetHassUrl = session.hassUrl;
 
   if (session.auth) {
@@ -70,7 +70,7 @@ async function resolveAuth(session: AuthSession): Promise<Auth> {
 }
 
 export async function createHomeAssistantClient(
-  session: AuthSession
+  session: HomeAssistantAuthSession
 ): Promise<HomeAssistantClient> {
   const connectionUrl = resolveHomeAssistantConnectionUrl({
     runtime: session.runtime,
@@ -82,6 +82,6 @@ export async function createHomeAssistantClient(
   return { auth, connection };
 }
 
-export function getHomeAssistantBaseUrl(session: AuthSession | null): string | null {
+export function getHomeAssistantBaseUrl(session: HomeAssistantAuthSession | null): string | null {
   return session?.haBaseUrl ?? getRuntimeContext().haBaseUrl ?? null;
 }

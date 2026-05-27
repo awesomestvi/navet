@@ -1,32 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
-import type { AuthSession } from '@/auth/types';
+import type { AuthSession, HomeAssistantAuthSession } from '@/auth/types';
 import { LoadingSpinner } from './components/primitives/loading-spinner';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
 import { Toaster } from './components/ui/sonner';
+import { HomeySelectionPage } from './features/auth/homey-selection-page';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
-import { useAccentColor, useHomeAssistant } from './hooks';
+import {
+  useAccentColor,
+  useCurrentIntegrationConnectionState,
+  useCurrentIntegrationStore,
+} from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { resolveParentHomeAssistantBridge } from './infrastructure/home-assistant/runtime/parent-hass-bridge';
 import { INVALID_HOME_ASSISTANT_AUTH_MESSAGE } from './services/ha-connection.service';
+import {
+  bootstrapIntegrationSession,
+  teardownIntegrationSession,
+} from './services/integration-bootstrap.service';
 import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
-import { appErrorSelectors, homeAssistantSelectors, settingsSelectors } from './stores/selectors';
+import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function getConnectionAttemptKey(session: AuthSession) {
-  return `${session.runtime}\n${session.hassUrl}\n${session.expiresAt ?? ''}`;
+  return `${session.providerId}\n${session.runtime}\n${session.hassUrl}\n${session.expiresAt ?? ''}`;
 }
 
-function createIngressProxyRecoverySession(session: AuthSession): AuthSession {
+function createIngressProxyRecoverySession(
+  session: HomeAssistantAuthSession
+): HomeAssistantAuthSession {
   return {
     ...session,
     auth: undefined,
@@ -35,17 +46,17 @@ function createIngressProxyRecoverySession(session: AuthSession): AuthSession {
 }
 
 function AppContent() {
-  const { runtime, session, ready, logout, replaceSession } = useAuthSession();
+  const { providerId, runtime, session, ready, logout, replaceSession } = useAuthSession();
   const isAuthenticated = Boolean(session);
+  const needsHomeySelection =
+    session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
   const canResetSessionFromError = runtime === 'standalone-oauth';
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
-  const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
-  const reconnecting = useHomeAssistant(homeAssistantSelectors.reconnecting);
-  const connect = useHomeAssistant(homeAssistantSelectors.connect);
-  const disconnect = useHomeAssistant(homeAssistantSelectors.disconnect);
-  const syncPanelHass = useHomeAssistant(homeAssistantSelectors.syncPanelHass);
+  const { connected, connecting, reconnecting } = useCurrentIntegrationConnectionState();
+  const connect = useCurrentIntegrationStore(integrationSelectors.connect);
+  const disconnect = useCurrentIntegrationStore(integrationSelectors.disconnect);
+  const syncPanelHass = useCurrentIntegrationStore(integrationSelectors.syncPanelHass);
   const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
@@ -74,7 +85,8 @@ function AppContent() {
       runtime !== 'ha-ingress' ||
       ingressInvalidAuthRecoveryInFlight.current ||
       !isAuthenticated ||
-      !session
+      !session ||
+      session.providerId !== 'home_assistant'
     ) {
       return;
     }
@@ -100,7 +112,7 @@ function AppContent() {
       return;
     }
 
-    if (!isAuthenticated || !session) {
+    if (!isAuthenticated || !session || session.providerId !== 'home_assistant') {
       return;
     }
     failedConnectionAttemptKey.current = null;
@@ -119,9 +131,10 @@ function AppContent() {
   useEffect(() => {
     if (!isAuthenticated) {
       failedConnectionAttemptKey.current = null;
+      teardownIntegrationSession(providerId);
       disconnect();
     }
-  }, [isAuthenticated, disconnect]);
+  }, [isAuthenticated, providerId, disconnect]);
 
   useEffect(() => {
     if (!isAuthenticated || !canResetSessionFromError) {
@@ -175,6 +188,22 @@ function AppContent() {
 
   useEffect(() => {
     if (isAuthenticated && session && !connected && !connecting && !appError) {
+      if (session.providerId === 'homey' && session.needsHomeySelection) {
+        return;
+      }
+
+      if (session.providerId === 'homey') {
+        const attemptKey = getConnectionAttemptKey(session);
+        if (failedConnectionAttemptKey.current === attemptKey) {
+          return;
+        }
+
+        void bootstrapIntegrationSession(session).catch(() => {
+          failedConnectionAttemptKey.current = attemptKey;
+        });
+        return;
+      }
+
       if (runtime === 'ha-ingress') {
         const parentHass = resolveParentHomeAssistantBridge();
         if (parentHass) {
@@ -185,6 +214,10 @@ function AppContent() {
 
       const attemptKey = getConnectionAttemptKey(session);
       if (failedConnectionAttemptKey.current === attemptKey) {
+        return;
+      }
+
+      if (session.providerId !== 'home_assistant') {
         return;
       }
 
@@ -248,7 +281,7 @@ function AppContent() {
         }
       />
       <PwaUpdatePrompt />
-      {isAuthenticated && !appError ? (
+      {isAuthenticated && !appError && !needsHomeySelection ? (
         <NetworkStatusBanner
           connected={connected}
           connecting={connecting}
@@ -261,6 +294,8 @@ function AppContent() {
         <LoadingSpinner message="Starting your dashboard..." fullScreen />
       ) : !isAuthenticated ? (
         <LoginPage />
+      ) : needsHomeySelection ? (
+        <HomeySelectionPage />
       ) : (
         <DashboardPage />
       )}

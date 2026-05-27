@@ -25,4 +25,15 @@ describe('vite Home Assistant proxy', () => {
   it('does not rely on the unauthenticated Vite proxy for /__navet_ha_proxy__', () => {
     expect(viteConfig).not.toContain("'/__navet_ha_proxy__': {");
   });
+
+  it('forwards Homey proxy requests through the Homey session store', () => {
+    expect(viteConfig).toContain('function homeyProxyPlugin(');
+    expect(viteConfig).toContain('const homeySessionPlugin = homeySessionStorePlugin()');
+    expect(viteConfig).toContain('getHomeySession(): HomeySessionData | null');
+    expect(viteConfig).toContain("server.middlewares.use('/__navet_homey_proxy__'");
+    expect(viteConfig).toContain("server.middlewares.use('/__navet_homey__/session'");
+    expect(viteConfig).toContain("server.middlewares.use('/__navet_homey__/authorize'");
+    expect(viteConfig).toContain("server.middlewares.use('/__navet_homey__/session/select'");
+    expect(viteConfig).toContain(`headers.set('Authorization', \`Bearer \${sessionToken}\`)`);
+  });
 });

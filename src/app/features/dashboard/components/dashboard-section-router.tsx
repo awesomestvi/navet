@@ -11,9 +11,9 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { ALL_ROOMS_ID, ENERGY_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
 import { buildRoomStatusSummaryItems, InfoBadgeStrip } from '@/app/features/sensors';
 import { useTaskRoutines } from '@/app/features/tasks';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { getDeviceRoomLabel } from '@/app/utils/device-location';
 import { AllViewGrid } from '../all-view-grid';
@@ -116,7 +116,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const areas = useIntegrationStore(integrationSelectors.areas);
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);

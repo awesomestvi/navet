@@ -52,6 +52,7 @@ describe('HomeAssistantResourceResolver', () => {
       path === signedPathFixture.sourceWebSocketCommand.path ? signedPathFixture.path : null;
     const resolver = new HomeAssistantResourceResolver(
       () => ({
+        providerId: 'home_assistant',
         runtime: oauthSessionFixture.runtime,
         authMode: oauthSessionFixture.authMode,
         haBaseUrl: oauthSessionFixture.haBaseUrl,

@@ -20,6 +20,7 @@ import {
   resolveHomeAssistantTemperatureUnit,
 } from '@/app/hooks/ha-entity-utils';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
@@ -134,6 +135,7 @@ function resolveClimateTemperatureServiceData(
 export function useHVACCardController({
   id,
   name,
+  providerId,
   initialTemp = 21,
   initialCurrentTemp = 22,
   sourceTemperatureUnit,
@@ -147,6 +149,7 @@ export function useHVACCardController({
   HVACCardProps,
   | 'id'
   | 'name'
+  | 'providerId'
   | 'initialTemp'
   | 'initialCurrentTemp'
   | 'temperatureUnit'
@@ -233,8 +236,12 @@ export function useHVACCardController({
         return;
       }
 
-      await homeAssistantService.callService('climate', 'set_temperature', serviceData, {
-        entity_id: id,
+      await dispatchEntityAction({
+        providerId,
+        entityId: id,
+        domain: 'climate',
+        service: 'set_temperature',
+        serviceData,
       });
     }, t('climate.feedback.updateTemperatureFailed'))
   );

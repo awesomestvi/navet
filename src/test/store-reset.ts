@@ -1,3 +1,4 @@
+import { homeyService } from '@/app/services/homey.service';
 import { useEditModeStore } from '@/app/stores/edit-mode-store';
 import { useErrorStore } from '@/app/stores/error-store';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
@@ -20,6 +21,8 @@ export async function resetAppStores() {
   resetStore(useEditModeStore);
   resetStore(useErrorStore);
   resetStore(homeAssistantStore);
+  homeyService.setClient(null);
+  homeyService.resetSnapshot();
   resetStore(useNavigationStore);
   resetStore(useSearchStore);
   resetStore(useSettingsStore);

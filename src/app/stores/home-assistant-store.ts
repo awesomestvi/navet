@@ -1,4 +1,4 @@
-import type { Connection, HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
+import type { Connection, HassConfig, HassEntities } from 'home-assistant-js-websocket';
 import { createStore } from 'zustand/vanilla';
 import {
   type HomeAssistantAreaRegistryEntry,
@@ -8,13 +8,14 @@ import {
   homeAssistantService,
 } from '../services/home-assistant.service';
 import type { HomeAssistantPanelHass } from '../services/home-assistant-panel-adapter';
+import type { IntegrationUser } from '../types/integration-user';
 import { useErrorStore } from './error-store';
 
 interface HomeAssistantState {
   connected: boolean;
   config: HassConfig | null;
   entities: HassEntities | null;
-  user: HassUser | null;
+  user: IntegrationUser | null;
   areas: HomeAssistantAreaRegistryEntry[];
   deviceRegistry: HomeAssistantDeviceRegistryEntry[];
   entityRegistry: HomeAssistantEntityRegistryEntry[];

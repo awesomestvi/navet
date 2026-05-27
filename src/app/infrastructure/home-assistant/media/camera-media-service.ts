@@ -1,4 +1,7 @@
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import type {
+  HomeAssistantCameraStream,
+  HomeAssistantCameraStreamType,
+} from '@/app/services/home-assistant.service';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
 import type { ResolvedMediaResource } from '../resources/resource-types';
@@ -44,7 +47,13 @@ function getFeedOrder(preferredTransport: CameraPlaybackPlanInput['preferredTran
 }
 
 export class CameraMediaService {
-  constructor(private resolver: HomeAssistantResourceResolver) {}
+  constructor(
+    private resolver: HomeAssistantResourceResolver,
+    private getCameraStream: (
+      entityId: string,
+      format: HomeAssistantCameraStreamType
+    ) => Promise<HomeAssistantCameraStream>
+  ) {}
 
   async getPlaybackPlan(input: CameraPlaybackPlanInput): Promise<CameraPlaybackPlan> {
     const failedTransports = input.failedTransports ?? new Set();
@@ -118,7 +127,7 @@ export class CameraMediaService {
           continue;
         }
 
-        const stream = await homeAssistantService.getCameraStreamUrl(input.entityId, 'hls');
+        const stream = await this.getCameraStream(input.entityId, 'hls');
         const resolvedStream = await this.resolver.resolve({
           kind: 'camera_stream',
           entityId: input.entityId,

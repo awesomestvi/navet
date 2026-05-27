@@ -6,6 +6,8 @@ services:
     image: navet:local
     ports:
       - "8080:80"
+    env_file:
+      - .env
     volumes:
       - navet-data:/data
     restart: unless-stopped

@@ -61,6 +61,7 @@ describe('createHomeAssistantClient', () => {
     resetRuntimeContextForTests();
 
     await createHomeAssistantClient({
+      providerId: 'home_assistant',
       runtime: ingressSessionFixture.runtime,
       authMode: ingressSessionFixture.authMode,
       haBaseUrl: ingressSessionFixture.haBaseUrl,
@@ -109,6 +110,7 @@ describe('createHomeAssistantClient', () => {
     } as Auth;
 
     await createHomeAssistantClient({
+      providerId: 'home_assistant',
       runtime: ingressSessionFixture.runtime,
       authMode: ingressSessionFixture.authMode,
       haBaseUrl: ingressSessionFixture.haBaseUrl,
@@ -161,6 +163,7 @@ describe('createHomeAssistantClient', () => {
     } as Auth;
 
     await createHomeAssistantClient({
+      providerId: 'home_assistant',
       runtime: oauthSessionFixture.runtime,
       authMode: oauthSessionFixture.authMode,
       haBaseUrl: oauthSessionFixture.haBaseUrl,
@@ -218,6 +221,7 @@ describe('createHomeAssistantClient', () => {
     } as Auth;
 
     await createHomeAssistantClient({
+      providerId: 'home_assistant',
       runtime: oauthSessionFixture.runtime,
       authMode: oauthSessionFixture.authMode,
       haBaseUrl: oauthSessionFixture.haBaseUrl,
@@ -247,6 +251,7 @@ describe('createHomeAssistantClient', () => {
     });
 
     await createHomeAssistantClient({
+      providerId: 'home_assistant',
       runtime: panelSessionFixture.runtime,
       authMode: panelSessionFixture.authMode,
       haBaseUrl: panelSessionFixture.haBaseUrl,
@@ -262,6 +267,7 @@ describe('createHomeAssistantClient', () => {
 
     await expect(
       createHomeAssistantClient({
+        providerId: 'home_assistant',
         runtime: panelSessionFixture.runtime,
         authMode: panelSessionFixture.authMode,
         haBaseUrl: panelSessionFixture.haBaseUrl,

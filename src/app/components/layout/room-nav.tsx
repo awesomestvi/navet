@@ -24,8 +24,8 @@ import {
 import { cn } from '@/app/components/ui/utils';
 import { isAllRooms } from '@/app/constants/rooms';
 import type { AllViewGrouping } from '@/app/features/dashboard';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { getManageableRoomOrder } from './mobile-layout-helpers';
 import { getVisibleRoomNavRooms } from './room-nav.utils';
 import { RoomOrderDialog } from './room-order-dialog';
@@ -86,7 +86,7 @@ export const RoomNav = memo(function RoomNav({
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const areas = useIntegrationStore(integrationSelectors.areas);
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const [isScrollbarDragging, setIsScrollbarDragging] = useState(false);

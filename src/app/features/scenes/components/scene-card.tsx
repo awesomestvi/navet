@@ -16,12 +16,14 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface SceneCardProps {
   id: string;
   name: string;
   room: string;
+  providerId?: IntegrationProviderId;
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
@@ -31,6 +33,7 @@ export const SceneCard = memo(function SceneCard({
   id,
   name,
   room,
+  providerId,
   size,
   onSizeChange: _onSizeChange,
   isEditMode,
@@ -57,7 +60,13 @@ export const SceneCard = memo(function SceneCard({
 
     setIsActivating(true);
     void runAction(
-      () => homeAssistantService.callService('scene', 'turn_on', {}, { entity_id: id }),
+      () =>
+        dispatchEntityAction({
+          providerId,
+          entityId: id,
+          domain: 'scene',
+          service: 'turn_on',
+        }),
       t('scene.activateFailed')
     ).finally(() => {
       setIsActivating(false);

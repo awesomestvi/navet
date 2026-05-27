@@ -1,6 +1,6 @@
 # Navet
 
-A polished Home Assistant dashboard for wall panels, tablets, phones, and desktop screens.
+A polished smart-home dashboard for Home Assistant and Homey wall panels, tablets, phones, and desktop screens.
 
 ![Navet dashboard demo on iPad frame](docs/marketing/assets/use-cases/navet-ipad-frame-dashboard.jpg)
 
@@ -9,9 +9,9 @@ A polished Home Assistant dashboard for wall panels, tablets, phones, and deskto
 [Get started](#get-started) ·
 [Security notes](docs/PUBLIC_LAUNCH_SECURITY.md)
 
-Navet turns Home Assistant into a dedicated smart home control surface. Use it for the devices and
-rooms you touch every day: lights, media, cameras, locks, energy, automations, weather, calendars,
-sensors, and custom dashboard widgets.
+Navet turns Home Assistant and Homey into a dedicated smart home control surface. Use it for the
+devices and rooms you touch every day: lights, media, cameras, locks, energy, automations, weather,
+calendars, sensors, and custom dashboard widgets.
 
 Current release: `0.3.0`
 
@@ -19,12 +19,12 @@ Current release: `0.3.0`
 
 - **Made for shared screens.** Navet is designed for wall panels, tablets, family devices, and
   always-on dashboard displays.
-- **Works with your Home Assistant setup.** Run it as a native Home Assistant custom panel, a Home
-  Assistant add-on, or a standalone Docker container connected to your Home Assistant instance via OAuth.
+- **Works with your smart-home setup.** Run it as a native Home Assistant custom panel, a Home
+  Assistant add-on, or a standalone Docker container connected to Home Assistant or Homey via OAuth.
 - **Easy to shape around your home.** Arrange rooms, resize cards, rename widgets, lock cards,
   reorder devices, add widgets, and keep the dashboard focused on the controls you actually use.
-- **Self-hosted by design.** Your Home Assistant URL, OAuth session, entity state, and camera feeds stay in
-  your own environment.
+- **Self-hosted by design.** Your Home Assistant or Homey OAuth session, entity state, and proxied
+  resources stay in your own environment.
 - **Installable app experience.** Use Navet as a PWA on supported devices for a focused dashboard
   instead of a normal browser tab.
 
@@ -82,6 +82,8 @@ Review the public Storybook:
 Choose the setup that matches where you want Navet to live. For Home Assistant OS and Supervised
 users, the HACS custom panel path is the recommended Home Assistant-native setup.
 
+Homey users should use the standalone Docker path. Navet does not ship as a Homey app in v1.
+
 ### Returning users and OAuth login
 
 Navet no longer uses manually entered Home Assistant long-lived access tokens. If you previously
@@ -97,6 +99,8 @@ What you see depends on how you open Navet:
 - **Add-on optional direct port or standalone Docker**: Navet behaves like a separately hosted app.
   Enter your Home Assistant root URL, approve the OAuth login in Home Assistant, and Navet stores
   the OAuth session for that Navet instance under `/data`.
+- **Standalone Docker with Homey**: Choose **Homey** on the connect screen, approve Athom OAuth,
+  then pick which Homey Navet should use when your account has more than one.
 
 Dashboard layout and card preferences are separate from Home Assistant authentication. If you are
 moving to a fresh browser or a new add-on/container data directory, export your Navet dashboard
@@ -193,6 +197,23 @@ Start Navet:
 docker compose up -d
 ```
 
+To offer Navet to Homey users, add Homey OAuth credentials to the container environment:
+
+```yaml
+services:
+  navet:
+    environment:
+      NAVET_HOMEY_CLIENT_ID: your-athom-client-id
+      NAVET_HOMEY_CLIENT_SECRET: your-athom-client-secret
+```
+
+Navet derives the Homey OAuth callback URL from the current Navet origin by default. In the common
+case, the only values you need to set are `NAVET_HOMEY_CLIENT_ID` and
+`NAVET_HOMEY_CLIENT_SECRET`.
+
+Set `NAVET_HOMEY_REDIRECT_URI` only when Navet is reached through a different public URL than the
+one it can infer from the incoming request, such as some reverse-proxy or tunnel setups.
+
 Open:
 
 ```text
@@ -227,6 +248,9 @@ Standalone Docker tries to suggest a Home Assistant base URL from `NAVET_HASS_UR
 hostnames, then leaves the URL field editable before OAuth starts. Navet redirects to Home Assistant
 OAuth and stores the OAuth access/refresh token bundle in the container's same-origin
 `/__navet_auth__/session` endpoint backed by `/data`, not in frontend runtime configuration.
+When users choose **Homey**, Navet redirects through Athom OAuth, stores the Homey session bundle in
+`/__navet_homey__/session`, and proxies Homey API calls through the same container so browser code
+never needs direct Homey credentials.
 `NAVET_DASHBOARD_CONFIG_URL` can point fresh browsers at a Navet dashboard YAML export to restore the
 same layout on first launch.
 Docker and add-on deployments persist OAuth session/profile data at `/data`.
@@ -243,7 +267,8 @@ Use the source workflow when developing Navet, testing changes, or contributing 
 - Node.js `^20.19.0` or `>=22.12.0`
 - `pnpm`
 - A running Home Assistant instance only when testing live Home Assistant behavior
-- A Home Assistant URL for OAuth login
+- A Home Assistant URL for Home Assistant OAuth testing
+- Homey developer OAuth credentials only when testing Homey OAuth locally
 
 ### Install
 
@@ -261,11 +286,15 @@ pnpm dev
 
 Open the URL Vite prints, usually `http://localhost:5173`. For live Home Assistant testing, enter
 your Home Assistant URL on the connect screen and complete Home Assistant OAuth authorization-code
-login. Contributors do not need a repo-root `.env` file for normal development.
+login. For live Homey testing, choose **Homey** on the connect screen and configure the Homey OAuth
+environment variables below first. Contributors do not need a repo-root `.env` file for normal
+development.
 
 Use `.env.example` only when you need runtime defaults for Docker or production-style preview flows.
 `NAVET_HASS_URL` is optional deployment/runtime metadata, not required source setup. Long-lived
-tokens are not part of the default development or Docker flow.
+tokens are not part of the default development or Docker flow. Homey OAuth requires
+`NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`. `NAVET_HOMEY_REDIRECT_URI` is only needed
+as an override when the callback URL should not default to the current origin.
 
 For a production-style local preview:
 
@@ -341,9 +370,13 @@ Branding is separate from the code license. See:
 - **HACS custom panel (`ha-panel`)**: Uses Home Assistant frontend session automatically; no URL/token prompt.
 - **Home Assistant add-on Ingress (`ha-ingress`)**: Uses Ingress-hosted Home Assistant session automatically; no URL/token prompt.
 - **Standalone Docker (`standalone-oauth`)**: Navet suggests a Home Assistant base URL when discovery succeeds, the user can edit it, then Navet redirects to Home Assistant OAuth and stores short-lived access + refresh tokens.
+- **Standalone Docker with Homey (`standalone-oauth`)**: Navet can also start Athom OAuth from the
+  same login screen, store the selected Homey session under `/data`, and use the same standalone
+  deployment for Homey-only or mixed-provider dashboards.
 
 ### Troubleshooting
 - OAuth redirect mismatch: verify redirect URI matches the Navet origin exactly (scheme, host, and port).
+- Homey redirect mismatch behind a proxy: keep the public Navet URL stable first; only add `NAVET_HOMEY_REDIRECT_URI` if Navet cannot infer the correct callback URL from incoming requests.
 - Invalid Home Assistant URL: use the root URL (for example `https://homeassistant.local:8123`).
 - Expired/invalid refresh token: sign out and re-run OAuth login.
 - Ingress unavailable: open Navet from Home Assistant sidebar Ingress entry or switch to panel mode.

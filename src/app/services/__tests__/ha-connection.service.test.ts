@@ -48,6 +48,7 @@ describe('HAConnectionService', () => {
 
     const service = new HAConnectionService();
     const session = {
+      providerId: 'home_assistant' as const,
       runtime: 'standalone-oauth' as const,
       authMode: 'oauth' as const,
       haBaseUrl: 'https://ha.example.com',
@@ -76,6 +77,7 @@ describe('HAConnectionService', () => {
     service.addListener('entities', (entities) => entityEvents.push(entities));
 
     await service.authenticate({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -115,6 +117,7 @@ describe('HAConnectionService', () => {
 
     await expect(
       service.authenticate({
+        providerId: 'home_assistant',
         runtime: 'standalone-oauth',
         authMode: 'oauth',
         haBaseUrl: 'https://ha.example.com',
@@ -138,6 +141,7 @@ describe('HAConnectionService', () => {
     service.addListener('error', ({ message }) => errors.push(message));
 
     await service.authenticate({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -165,12 +169,14 @@ describe('HAConnectionService', () => {
     const service = new HAConnectionService();
 
     const firstAuthenticate = service.authenticate({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://old-ha.example.com',
       hassUrl: 'https://old-ha.example.com',
     });
     const secondAuthenticate = service.authenticate({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://new-ha.example.com',
@@ -201,6 +207,7 @@ describe('HAConnectionService', () => {
     });
 
     await service.authenticate({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',

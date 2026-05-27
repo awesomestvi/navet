@@ -71,6 +71,23 @@ describe('DashboardPage loading recovery', () => {
     expect(screen.getByText('dashboard ready')).toBeInTheDocument();
   });
 
+  it('clears the loading recovery error once the dashboard becomes ready', () => {
+    const controller = createController();
+    getControllerMock.mockReturnValue(controller);
+    const { rerender } = renderWithProviders(<DashboardPage />);
+
+    expect(useErrorStore.getState().error?.message).toBe('Still loading devices');
+
+    getControllerMock.mockReturnValue({
+      ...controller,
+      homeLayoutHydrated: true,
+    });
+    rerender(<DashboardPage />);
+
+    expect(screen.getByText('dashboard ready')).toBeInTheDocument();
+    expect(useErrorStore.getState().error).toBeNull();
+  });
+
   it('keeps the connecting spinner while still connecting', () => {
     getControllerMock.mockReturnValue(createController({ connecting: true }));
     renderWithProviders(<DashboardPage />);

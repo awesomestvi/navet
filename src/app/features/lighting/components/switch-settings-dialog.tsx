@@ -28,7 +28,7 @@ import {
 } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { DeviceMetric } from '@/app/types/device.types';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { SwitchSiblingEntity } from './use-switch-card-controller';
@@ -255,12 +255,11 @@ function SwitchControlRow({
   isOn: boolean;
 }) {
   const handleToggle = useCallback(async () => {
-    await homeAssistantService.callService(
-      'switch',
-      isOn ? 'turn_off' : 'turn_on',
-      {},
-      { entity_id: entityId }
-    );
+    await dispatchEntityAction({
+      entityId,
+      domain: 'switch',
+      service: isOn ? 'turn_off' : 'turn_on',
+    });
   }, [entityId, isOn]);
 
   return (

@@ -2,6 +2,7 @@ import type { CardSize } from '../components/shared/card-size-selector';
 import type { SensorIconType } from '../features/sensors';
 import type { WeatherForecastMode } from '../stores/settings-store';
 import type { TemperatureUnit } from '../utils/temperature';
+import type { IntegrationProviderId } from './provider';
 
 export interface DeviceMetric {
   label: string;
@@ -16,6 +17,9 @@ export interface BaseDevice {
   id: string;
   name: string;
   size: CardSize;
+  providerId?: IntegrationProviderId;
+  nativeId?: string;
+  canonicalId?: string;
 }
 
 // Light device
@@ -130,7 +134,17 @@ export interface SwitchDevice extends BaseDevice {
 
 export type HelperDevice = Pick<
   SwitchDevice,
-  'id' | 'name' | 'room' | 'size' | 'state' | 'entityType' | 'serviceDomain' | 'serviceAction'
+  | 'id'
+  | 'name'
+  | 'room'
+  | 'size'
+  | 'state'
+  | 'entityType'
+  | 'serviceDomain'
+  | 'serviceAction'
+  | 'providerId'
+  | 'nativeId'
+  | 'canonicalId'
 >;
 
 // Cover device
