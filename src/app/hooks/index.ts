@@ -11,18 +11,26 @@ export { useAreaRooms } from './use-area-rooms';
 // Existing hooks
 export { useCardState } from './use-card-state';
 export { useClickOutside } from './use-click-outside';
+export { useCurrentIntegrationConnectionState } from './use-current-integration-connection';
 export { useDashboardDevices } from './use-dashboard-devices';
 export { useDashboardWidgetRoomOptions } from './use-dashboard-widget-room-options';
 export { useDeviceMap } from './use-device-map';
 export {
+  useAggregatedDevices,
   useCalendarDevicesCollection,
   useDevices,
+  useProviderDevices,
   useRooms,
   useWeatherDevicesCollection,
 } from './use-devices';
 export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
-export { useHomeAssistant } from './use-home-assistant';
+export {
+  useCurrentIntegrationStore,
+  useHomeAssistant,
+  useIntegrationStore,
+} from './use-home-assistant';
+export { useHomeyDevices } from './use-homey-devices';
 export { useLogout } from './use-logout';
 export { useMediaQuery } from './use-media-query';
 export { useNavigation } from './use-navigation';

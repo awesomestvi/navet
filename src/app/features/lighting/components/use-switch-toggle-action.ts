@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
 import { useServiceActionHandler } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface UseSwitchToggleActionParams {
   id: string;
+  providerId?: IntegrationProviderId;
   isOn: boolean;
   setIsOn: (next: boolean) => void;
   resetTimerRef: React.MutableRefObject<number | null>;
@@ -14,6 +16,7 @@ interface UseSwitchToggleActionParams {
 
 export function useSwitchToggleAction({
   id,
+  providerId,
   isOn,
   setIsOn,
   resetTimerRef,
@@ -28,12 +31,12 @@ export function useSwitchToggleAction({
       setIsOn(true);
       void runAction(
         async () => {
-          await homeAssistantService.callService(
-            resolvedServiceDomain,
-            'turn_on',
-            {},
-            { entity_id: id }
-          );
+          await dispatchEntityAction({
+            providerId,
+            entityId: id,
+            domain: resolvedServiceDomain,
+            service: 'turn_on',
+          });
           resetTimerRef.current = window.setTimeout(() => setIsOn(false), 700);
         },
         updateSwitchFailedMessage,
@@ -48,12 +51,12 @@ export function useSwitchToggleAction({
       setIsOn(true);
       void runAction(
         async () => {
-          await homeAssistantService.callService(
-            resolvedServiceDomain,
-            'press',
-            {},
-            { entity_id: id }
-          );
+          await dispatchEntityAction({
+            providerId,
+            entityId: id,
+            domain: resolvedServiceDomain,
+            service: 'press',
+          });
           resetTimerRef.current = window.setTimeout(() => setIsOn(false), 500);
         },
         updateSwitchFailedMessage,
@@ -68,12 +71,12 @@ export function useSwitchToggleAction({
     setIsOn(nextIsOn);
     void runAction(
       () =>
-        homeAssistantService.callService(
-          resolvedServiceDomain,
-          nextIsOn ? 'turn_on' : 'turn_off',
-          {},
-          { entity_id: id }
-        ),
+        dispatchEntityAction({
+          providerId,
+          entityId: id,
+          domain: resolvedServiceDomain,
+          service: nextIsOn ? 'turn_on' : 'turn_off',
+        }),
       updateSwitchFailedMessage,
       {
         onError: () => setIsOn(!nextIsOn),
@@ -81,6 +84,7 @@ export function useSwitchToggleAction({
     );
   }, [
     id,
+    providerId,
     isOn,
     runAction,
     resolvedServiceAction,

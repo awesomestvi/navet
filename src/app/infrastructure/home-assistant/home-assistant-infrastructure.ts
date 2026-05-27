@@ -1,20 +1,20 @@
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { authSessionManager } from './auth/auth-session-manager';
+import {
+  getCurrentIntegrationCameraStream,
+  getCurrentIntegrationSession,
+  signCurrentIntegrationPath,
+} from '@/app/services/integration-runtime.service';
 import { CameraMediaService } from './media/camera-media-service';
 import { MediaArtworkService } from './media/media-artwork-service';
 import { HomeAssistantResourceResolver } from './resources/resource-resolver';
 import { HomeAssistantHttpGateway } from './transport/http-gateway';
 
 export const homeAssistantResourceResolver = new HomeAssistantResourceResolver(
-  () => authSessionManager.getSession(),
-  async (path, expiresSeconds) => {
-    const signed = await homeAssistantService.signPath(path, expiresSeconds);
-    return signed.path;
-  }
+  () => getCurrentIntegrationSession(),
+  (path, expiresSeconds) => signCurrentIntegrationPath(path, expiresSeconds)
 );
 
 export const homeAssistantHttpGateway = new HomeAssistantHttpGateway(() =>
-  authSessionManager.getSession()
+  getCurrentIntegrationSession()
 );
 
 export const mediaArtworkService = new MediaArtworkService(
@@ -22,4 +22,7 @@ export const mediaArtworkService = new MediaArtworkService(
   homeAssistantHttpGateway
 );
 
-export const cameraMediaService = new CameraMediaService(homeAssistantResourceResolver);
+export const cameraMediaService = new CameraMediaService(
+  homeAssistantResourceResolver,
+  getCurrentIntegrationCameraStream
+);

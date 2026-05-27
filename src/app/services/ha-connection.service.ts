@@ -12,7 +12,7 @@ import {
 } from 'home-assistant-js-websocket';
 
 import { createHomeAssistantClient } from '@/api/homeAssistantClient';
-import type { AuthSession } from '@/auth/types';
+import type { HomeAssistantAuthSession } from '@/auth/types';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -33,7 +33,7 @@ export interface HAConnectionEventMap {
 
 export type HAConnectionEventType = keyof HAConnectionEventMap;
 
-export type HomeAssistantConfiguration = AuthSession;
+export type HomeAssistantConfiguration = HomeAssistantAuthSession;
 export const INVALID_HOME_ASSISTANT_AUTH_MESSAGE =
   'Invalid Home Assistant authentication. Sign in again to refresh the session.';
 

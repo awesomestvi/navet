@@ -22,9 +22,12 @@ COPY addons/navet/rootfs/ /
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
 COPY docker/njs/profile-store.js /etc/nginx/njs/profile-store.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
+COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js
+COPY docker/njs/homey-proxy.js /etc/nginx/njs/homey-proxy.js
 COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
 COPY docker/snippets/navet-profile-store.conf /etc/nginx/snippets/navet-profile-store.conf
 COPY docker/snippets/navet-auth-store.conf /etc/nginx/snippets/navet-auth-store.conf
+COPY docker/snippets/navet-homey-store.conf /etc/nginx/snippets/navet-homey-store.conf
 COPY docker/snippets/navet-discovery.conf /etc/nginx/snippets/navet-discovery.conf
 COPY docker/snippets/navet-security-headers.conf /etc/nginx/snippets/navet-security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html

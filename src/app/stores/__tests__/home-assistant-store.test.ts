@@ -232,6 +232,7 @@ describe('homeAssistantStore', () => {
     };
 
     await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -247,6 +248,7 @@ describe('homeAssistantStore', () => {
 
   it('marks registries hydrated after registry service events', async () => {
     await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -269,6 +271,7 @@ describe('homeAssistantStore', () => {
   it('debounces entity updates from the service', async () => {
     vi.useFakeTimers();
     await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -293,6 +296,7 @@ describe('homeAssistantStore', () => {
 
   it('disconnects and resets the store', async () => {
     await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://ha.example.com',
@@ -312,6 +316,7 @@ describe('homeAssistantStore', () => {
 
     await expect(
       homeAssistantStore.getState().connect({
+        providerId: 'home_assistant',
         runtime: 'standalone-oauth',
         authMode: 'oauth',
         haBaseUrl: 'https://ha.example.com',
@@ -328,6 +333,7 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://stale-ha.example.com',
@@ -353,6 +359,7 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://old-ha.example.com',
@@ -363,6 +370,7 @@ describe('homeAssistantStore', () => {
 
     homeAssistantServiceStub.connected = true;
     await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://new-ha.example.com',
@@ -382,6 +390,7 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
 
     void homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'https://stale-ha.example.com',

@@ -1,4 +1,5 @@
-import type { Connection, HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
+import type { Connection, HassConfig, HassEntities } from 'home-assistant-js-websocket';
+import { fromHassUser, type IntegrationUser } from '@/app/types/integration-user';
 
 import HAConnectionService, {
   type HAConnectionEventMap,
@@ -229,12 +230,12 @@ class HomeAssistantService {
   /**
    * Get Home Assistant user
    */
-  getUser(): HassUser | null {
+  getUser(): IntegrationUser | null {
     if (this.panelAdapter) {
-      return this.panelAdapter.getUser();
+      return fromHassUser(this.panelAdapter.getUser());
     }
 
-    return this.connectionService.getUser();
+    return fromHassUser(this.connectionService.getUser());
   }
 
   /**
@@ -518,7 +519,7 @@ class HomeAssistantService {
 
   async getCameraStreamUrl(
     entityId: string,
-    format: 'hls' = 'hls'
+    format: HomeAssistantCameraStreamType = 'hls'
   ): Promise<HomeAssistantCameraStream> {
     return await this.entityService.getCameraStreamUrl(entityId, format);
   }

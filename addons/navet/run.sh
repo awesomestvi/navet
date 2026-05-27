@@ -41,6 +41,7 @@ server {
 
   include /etc/nginx/snippets/navet-security-headers.conf;
   include /etc/nginx/snippets/navet-auth-store.conf;
+  include /etc/nginx/snippets/navet-homey-store.conf;
   include /etc/nginx/snippets/navet-profile-store.conf;
 
   location = /__navet_ha_proxy__/api/websocket {
@@ -76,6 +77,32 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
 ${PROXY_AUTH_DIRECTIVE}
+  }
+
+  location /__navet_homey_proxy__/ {
+    if (\$uri ~ "\.\.") {
+      return 400;
+    }
+    js_set \$navet_homey_proxy_url navet_homey_proxy.upstream_url;
+    js_set \$navet_homey_proxy_auth_header navet_homey_proxy.authorization_header;
+
+    if (\$navet_homey_proxy_url = "") {
+      return 502;
+    }
+
+    proxy_pass \$navet_homey_proxy_url;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$proxy_host;
+    proxy_set_header Forwarded "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Host "";
+    proxy_set_header X-Forwarded-Proto "";
+    proxy_set_header X-Real-IP "";
+    proxy_set_header Authorization \$navet_homey_proxy_auth_header;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
   }
 
   include /etc/nginx/snippets/navet-rss-proxy.conf;

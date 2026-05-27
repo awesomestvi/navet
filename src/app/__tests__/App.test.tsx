@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetRuntimeContextForTests } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import { homeyService } from '@/app/services/homey.service';
 import { resetAppStores } from '@/test/store-reset';
 import App from '../App';
 
@@ -157,6 +158,8 @@ describe('App Home Assistant connection recovery', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     await resetAppStores();
+    homeyService.setClient(null);
+    homeyService.resetSnapshot();
     homeAssistantServiceStub.connected = false;
     homeAssistantServiceStub.config = { location_name: 'Home' };
     homeAssistantServiceStub.entities = {};
@@ -222,12 +225,54 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'http://192.168.68.71:8123',
       hassUrl: 'http://192.168.68.71:8123',
       auth: expect.any(Object),
       expiresAt: expect.any(Number),
+    });
+  });
+
+  it('hydrates a saved Homey session without opening a Home Assistant connection', async () => {
+    vi.useRealTimers();
+    setStoredHomeySession();
+    homeyService.setClient({
+      setCapabilityValue: vi.fn(),
+      loadSnapshot: vi.fn(async () => ({
+        connected: true,
+        devices: {
+          light_1: {
+            id: 'light_1',
+            name: 'Sofa Lamp',
+            class: 'light',
+            zone: 'living_room',
+            capabilitiesObj: {
+              onoff: { value: true },
+              dim: { value: 0.4 },
+            },
+          },
+        },
+        zones: {
+          living_room: { id: 'living_room', name: 'Living Room' },
+        },
+      })),
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.getByText('dashboard')).toBeInTheDocument());
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+    expect(homeyService.getSnapshot()).toMatchObject({
+      connected: true,
+      devices: {
+        light_1: expect.objectContaining({
+          name: 'Sofa Lamp',
+        }),
+      },
     });
   });
 
@@ -243,7 +288,7 @@ describe('App Home Assistant connection recovery', () => {
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS * 2);
     });
 
     expect(screen.getByText('login')).toBeInTheDocument();
@@ -318,6 +363,7 @@ describe('App Home Assistant connection recovery', () => {
       saveTokens: expect.any(Function),
     });
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'http://192.168.68.99:8123',
@@ -395,6 +441,7 @@ describe('App Home Assistant connection recovery', () => {
 
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledTimes(2);
     expect(homeAssistantServiceStub.authenticate).toHaveBeenLastCalledWith({
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: 'http://192.168.68.71:8123',
@@ -578,6 +625,37 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.getByText('login')).toBeInTheDocument();
     expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument();
   });
+
+  it('shows a Homey chooser when OAuth session has multiple Homeys but none selected', async () => {
+    vi.useRealTimers();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/__navet_auth__/session')) {
+        return new Response(null, { status: 204 });
+      }
+
+      return new Response(
+        JSON.stringify({
+          userId: 'user-1',
+          homeys: [
+            { id: 'homey-1', name: 'Living Room Homey' },
+            { id: 'homey-2', name: 'Cabin Homey' },
+          ],
+          selectedHomeyId: null,
+          homeyBaseUrl: null,
+          hasActiveHomeySession: false,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    expect(screen.getByText('Choose a Homey')).toBeInTheDocument();
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+  });
 });
 
 function setAuthenticatedSession() {
@@ -598,4 +676,24 @@ function setAuthenticatedSession() {
 
 function setNoStoredSession() {
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+}
+
+function setStoredHomeySession() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes('/__navet_auth__/session')) {
+      return new Response(null, { status: 204 });
+    }
+
+    return new Response(
+      JSON.stringify({
+        userId: 'user-1',
+        homeys: [{ id: 'homey-1', name: 'Living Room Homey' }],
+        selectedHomeyId: 'homey-1',
+        homeyBaseUrl: 'https://homey.example.com',
+        hasActiveHomeySession: true,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  });
 }

@@ -14,9 +14,9 @@ import {
   AlertDialogTitle,
 } from '@/app/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
-import { useClickOutside, useHomeAssistant, useI18n, useLogout, useTheme } from '@/app/hooks';
+import { useClickOutside, useI18n, useIntegrationStore, useLogout, useTheme } from '@/app/hooks';
 import { refreshPwaApp } from '@/app/pwa/pwa-update-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationSelectors } from '@/app/stores/selectors';
 
 interface UserDropdownProps {
   avatarUrl?: string | null;
@@ -34,8 +34,8 @@ export const UserDropdown = memo(function UserDropdown({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const user = useHomeAssistant(homeAssistantSelectors.user);
-  const connected = useHomeAssistant(homeAssistantSelectors.connected);
+  const user = useIntegrationStore(integrationSelectors.user);
+  const connected = useIntegrationStore(integrationSelectors.connected);
   const performLogout = useLogout();
 
   const handleLogout = () => {

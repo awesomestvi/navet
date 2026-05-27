@@ -11,6 +11,7 @@ import { cn } from '@/app/components/ui/utils';
 import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { useVacuumControl } from '../vacuum/use-vacuum-control';
 import { VacuumControlsMedium } from '../vacuum/vacuum-controls-medium';
 import { VacuumControlsSmall } from '../vacuum/vacuum-controls-small';
@@ -28,6 +29,7 @@ type VacuumCardSize = 'small' | 'medium';
 interface VacuumCardProps {
   id: string;
   name: string;
+  providerId?: IntegrationProviderId;
   status: VacuumStatus;
   battery: number;
   cleanedArea?: string;
@@ -150,6 +152,7 @@ function splitMetricValue(value: string): { value: string; unit?: string } {
 export const VacuumCard = memo(function VacuumCard({
   id,
   name,
+  providerId,
   status,
   battery,
   cleanedArea = '0 m²',
@@ -194,7 +197,7 @@ export const VacuumCard = memo(function VacuumCard({
     handleStartCleaning,
     handlePause,
     handleReturnHome,
-  } = useVacuumControl({ entityId: id, initialStatus: liveStatus });
+  } = useVacuumControl({ entityId: id, providerId, initialStatus: liveStatus });
   const liveName =
     typeof liveAttrs?.friendly_name === 'string' && liveAttrs.friendly_name.length > 0
       ? normalizeVacuumDisplayName(liveAttrs.friendly_name)

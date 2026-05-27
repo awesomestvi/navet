@@ -16,6 +16,7 @@ describe('useLightCardDisplay', () => {
       useLightCardDisplay({
         selectedIcon: '',
         size: 'small',
+        initialTemp: 0,
         liveEntity: makeEntity({
           supported_color_modes: ['color_temp', 'hs'],
           min_color_temp_kelvin: 2800,
@@ -36,6 +37,7 @@ describe('useLightCardDisplay', () => {
       useLightCardDisplay({
         selectedIcon: '💡',
         size: 'small',
+        initialTemp: 0,
         liveEntity: undefined,
       })
     );
@@ -49,10 +51,28 @@ describe('useLightCardDisplay', () => {
       useLightCardDisplay({
         selectedIcon: '',
         size: 'extra-small',
+        initialTemp: 0,
         liveEntity: undefined,
       })
     );
 
     expect(result.current.isSmall).toBe(true);
+  });
+
+  it('enables color temperature controls for Homey lights that report an initial temperature', () => {
+    const { result } = renderHookWithProviders(() =>
+      useLightCardDisplay({
+        selectedIcon: '',
+        size: 'small',
+        providerId: 'homey',
+        initialTemp: 4600,
+        liveEntity: undefined,
+      })
+    );
+
+    expect(result.current.supportsColorTemperature).toBe(true);
+    expect(result.current.supportsColorControl).toBe(false);
+    expect(result.current.minColorTemp).toBe(2700);
+    expect(result.current.maxColorTemp).toBe(6500);
   });
 });

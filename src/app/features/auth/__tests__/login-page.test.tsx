@@ -37,6 +37,7 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Connect to Home Assistant' })).toBeInTheDocument();
     expect(screen.getByLabelText('Smart Home URL')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Homey' })).toBeInTheDocument();
     expect(screen.queryByLabelText(/token/i)).not.toBeInTheDocument();
   });
 
@@ -77,7 +78,10 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() =>
-      expect(loginMock).toHaveBeenCalledWith({ hassUrl: 'https://ha.example.com' })
+      expect(loginMock).toHaveBeenCalledWith({
+        providerId: 'home_assistant',
+        hassUrl: 'https://ha.example.com',
+      })
     );
   });
 
@@ -93,5 +97,27 @@ describe('LoginPage', () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByLabelText('Smart Home URL')).toBeEnabled();
+  });
+
+  it('starts Homey OAuth without asking for URL or token input', async () => {
+    fetchDiscoveryMock.mockResolvedValue(null);
+    chooseDiscoveryMock.mockReturnValue(null);
+    loginMock.mockResolvedValue(undefined);
+
+    renderWithProviders(<LoginPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Homey' }));
+
+    expect(screen.getByRole('heading', { name: 'Connect to Homey' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Smart Home URL')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/token/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() =>
+      expect(loginMock).toHaveBeenCalledWith({
+        providerId: 'homey',
+      })
+    );
   });
 });

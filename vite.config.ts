@@ -19,6 +19,11 @@ import {
   type HomeAssistantAuthData,
   isValidAuthData,
 } from './scripts/vite-auth-session-store'
+import {
+  createViteHomeySessionStore,
+  type HomeySessionData,
+  isValidHomeySessionData,
+} from './scripts/vite-homey-session-store'
 import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
@@ -33,6 +38,7 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
 const AUTH_SESSION_MAX_BYTES = 16 * 1024
+const HOMEY_SESSION_MAX_BYTES = 8 * 1024
 
 async function assertPublicHostname(hostname: string) {
   const normalizedHostname = hostname.toLowerCase()
@@ -259,6 +265,108 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
   }
 }
 
+function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (!req.url) {
+      res.statusCode = 400
+      res.end('Missing proxy path')
+      return
+    }
+
+    try {
+      let decodedUrl = ''
+      try {
+        decodedUrl = decodeURIComponent(req.url)
+      } catch {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
+        return
+      }
+
+      if (req.url.includes('..') || decodedUrl.includes('..')) {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
+        return
+      }
+
+      const session = getHomeySession()
+      const upstreamBaseUrl = session?.homeyBaseUrl ?? null
+      const sessionToken = session?.homeySessionToken ?? null
+      if (!upstreamBaseUrl || !sessionToken) {
+        res.statusCode = 502
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Homey OAuth session is required' }))
+        return
+      }
+
+      const upstreamOrigin = new URL(upstreamBaseUrl)
+      const targetPath = req.url.replace(/^\/__navet_homey_proxy__/, '') || '/'
+      const targetUrl = new URL(targetPath, upstreamOrigin)
+      if (targetUrl.origin !== upstreamOrigin.origin) {
+        res.statusCode = 400
+        res.end('Invalid proxy target')
+        return
+      }
+
+      const headers = new Headers()
+      const contentType =
+        typeof req.headers['content-type'] === 'string' ? req.headers['content-type'] : null
+      const accept = typeof req.headers.accept === 'string' ? req.headers.accept : null
+      if (contentType) {
+        headers.set('Content-Type', contentType)
+      }
+      if (accept) {
+        headers.set('Accept', accept)
+      }
+      headers.set('Authorization', `Bearer ${sessionToken}`)
+
+      const body =
+        req.method === 'GET' || req.method === 'HEAD'
+          ? undefined
+          : await new Response(req as never).text()
+
+      const upstreamResponse = await fetch(targetUrl, {
+        method: req.method,
+        redirect: 'manual',
+        headers,
+        body,
+      })
+
+      res.statusCode = upstreamResponse.status
+      setSecurityHeaders(res)
+      const responseContentType = upstreamResponse.headers.get('content-type')
+      if (responseContentType) {
+        res.setHeader('Content-Type', responseContentType)
+      }
+
+      if (!upstreamResponse.body) {
+        res.end()
+        return
+      }
+
+      Readable.fromWeb(upstreamResponse.body as globalThis.ReadableStream<Uint8Array>).pipe(res)
+    } catch {
+      res.statusCode = 502
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unable to load Homey resource' }))
+    }
+  }
+
+  return {
+    name: 'navet-homey-proxy',
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use('/__navet_homey_proxy__', async (req, res) => {
+        await handleRequest(req, res)
+      })
+    },
+    configurePreviewServer(server: PreviewServer) {
+      server.middlewares.use('/__navet_homey_proxy__', async (req, res) => {
+        await handleRequest(req, res)
+      })
+    },
+  }
+}
+
 function authSessionStorePlugin() {
   const authSessionStore = createViteAuthSessionStore()
 
@@ -358,6 +466,446 @@ function authSessionStorePlugin() {
   }
 }
 
+function homeySessionStorePlugin() {
+  const homeySessionStore = createViteHomeySessionStore()
+  const athomApiBaseUrl = 'https://api.athom.com'
+
+  const setNoStoreHeaders = (res: ServerResponse) => {
+    res.setHeader('Cache-Control', 'no-store')
+  }
+
+  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+    res.statusCode = statusCode
+    setNoStoreHeaders(res)
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify(payload))
+  }
+
+  const sendNoContent = (res: ServerResponse) => {
+    res.statusCode = 204
+    setNoStoreHeaders(res)
+    res.end()
+  }
+
+  const getHomeyOAuthConfig = (req: IncomingMessage) => {
+    const clientId = process.env.NAVET_HOMEY_CLIENT_ID?.trim()
+    const clientSecret = process.env.NAVET_HOMEY_CLIENT_SECRET?.trim()
+    const redirectUri =
+      process.env.NAVET_HOMEY_REDIRECT_URI?.trim() ??
+      `${new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`).origin}/__navet_homey__/callback`
+
+    return {
+      clientId,
+      clientSecret,
+      redirectUri,
+    }
+  }
+
+  const encodeClientCredentials = (clientId: string, clientSecret: string) =>
+    Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+
+  const getPreferredHomeyBaseUrl = (homey: HomeySessionData['homeys'][number]) =>
+    homey.localUrl ?? homey.localUrlSecure ?? homey.remoteUrl ?? null
+
+  const sanitizeHomeySession = (session: HomeySessionData) => ({
+    userId: session.userId ?? null,
+    user: session.user ?? null,
+    homeys: session.homeys,
+    selectedHomeyId: session.selectedHomeyId ?? null,
+    homeyBaseUrl: session.homeyBaseUrl ?? null,
+    hasActiveHomeySession: Boolean(session.homeySessionToken),
+  })
+
+  const getHomeyUserName = (user: {
+    firstname?: string | null
+    lastname?: string | null
+    name?: string | null
+    email?: string | null
+  }) => {
+    const first = user.firstname?.trim() ?? ''
+    const last = user.lastname?.trim() ?? ''
+    const fullName = `${first} ${last}`.trim()
+    return fullName || user.name?.trim() || user.email?.trim() || 'Homey User'
+  }
+
+  const getHomeyUserAvatarUrl = (user: {
+    avatar?: string | null
+    avatarUrl?: string | null
+    image?: string | null
+    imageUrl?: string | null
+    gravatar?: string | null
+  }) =>
+    user.avatarUrl?.trim() ||
+    user.imageUrl?.trim() ||
+    user.avatar?.trim() ||
+    user.image?.trim() ||
+    user.gravatar?.trim() ||
+    null
+
+  const refreshHomeyAccessToken = async (
+    session: HomeySessionData,
+    req: IncomingMessage
+  ): Promise<HomeySessionData> => {
+    if (session.expiresAt > Date.now() + 30_000) {
+      return session
+    }
+
+    const { clientId, clientSecret } = getHomeyOAuthConfig(req)
+    if (!clientId || !clientSecret) {
+      throw new Error('Homey OAuth credentials are not configured')
+    }
+
+    const response = await fetch(`${athomApiBaseUrl}/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${encodeClientCredentials(clientId, clientSecret)}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: session.refreshToken,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to refresh Homey OAuth token')
+    }
+
+    const token = (await response.json()) as {
+      access_token: string
+      refresh_token?: string
+      expires_in: number | string
+    }
+
+    const nextSession: HomeySessionData = {
+      ...session,
+      accessToken: token.access_token,
+      refreshToken: token.refresh_token ?? session.refreshToken,
+      expiresAt: Date.now() + Number(token.expires_in) * 1000,
+    }
+
+    homeySessionStore.saveSession(nextSession)
+    return nextSession
+  }
+
+  const loadAuthenticatedUser = async (accessToken: string) => {
+    const response = await fetch(`${athomApiBaseUrl}/user/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to load Homey account')
+    }
+
+    return (await response.json()) as {
+      _id?: string
+      firstname?: string | null
+      lastname?: string | null
+      name?: string | null
+      email?: string | null
+      avatar?: string | null
+      avatarUrl?: string | null
+      image?: string | null
+      imageUrl?: string | null
+      gravatar?: string | null
+      homeys?: Array<{
+        _id?: string
+        name?: string
+        platform?: string | null
+        localUrl?: string | null
+        localUrlSecure?: string | null
+        remoteUrl?: string | null
+      }>
+    }
+  }
+
+  const createHomeySession = async (
+    accessToken: string,
+    homey: HomeySessionData['homeys'][number]
+  ) => {
+    const homeyBaseUrl = getPreferredHomeyBaseUrl(homey)
+    if (!homeyBaseUrl) {
+      throw new Error('The selected Homey has no usable URL')
+    }
+
+    const delegationResponse = await fetch(`${athomApiBaseUrl}/delegation/token?audience=homey`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!delegationResponse.ok) {
+      throw new Error('Unable to create Homey delegation token')
+    }
+
+    const delegationToken = JSON.parse(await delegationResponse.text()) as string
+
+    const sessionResponse = await fetch(`${homeyBaseUrl}/api/manager/users/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: delegationToken,
+      }),
+    })
+
+    if (!sessionResponse.ok) {
+      throw new Error('Unable to create Homey session')
+    }
+
+    const homeySessionToken = JSON.parse(await sessionResponse.text()) as string
+    return {
+      homeyBaseUrl,
+      homeySessionToken,
+    }
+  }
+
+  const readRequestBody = async (req: IncomingMessage) => {
+    const chunks: Buffer[] = []
+    let size = 0
+
+    for await (const chunk of req) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      size += buffer.byteLength
+      if (size > HOMEY_SESSION_MAX_BYTES) {
+        throw new Error('Homey session is too large')
+      }
+      chunks.push(buffer)
+    }
+
+    return Buffer.concat(chunks).toString('utf8')
+  }
+
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.method === 'GET') {
+      const storedSession = homeySessionStore.getSession()
+      if (!storedSession) {
+        sendNoContent(res)
+        return
+      }
+
+      const session = await refreshHomeyAccessToken(storedSession, req).catch(() => storedSession)
+      res.statusCode = 200
+      setNoStoreHeaders(res)
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(JSON.stringify(sanitizeHomeySession(session)))
+      return
+    }
+
+    if (req.method === 'PUT') {
+      try {
+        const body = await readRequestBody(req)
+        const parsed = JSON.parse(body)
+        if (!isValidHomeySessionData(parsed)) {
+          sendJson(res, 400, { error: 'Unsupported Homey session' })
+          return
+        }
+
+        homeySessionStore.saveSession(parsed)
+        sendJson(res, 200, sanitizeHomeySession(parsed))
+      } catch {
+        sendJson(res, 400, { error: 'Unable to save Homey session' })
+      }
+      return
+    }
+
+    if (req.method === 'DELETE') {
+      homeySessionStore.clearSession()
+      sendJson(res, 200, { ok: true })
+      return
+    }
+
+    res.setHeader('Allow', 'GET, PUT, DELETE')
+    sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_homey__/authorize', async (req, res) => {
+      const { clientId, redirectUri } = getHomeyOAuthConfig(req)
+      if (!clientId) {
+        sendJson(res, 500, { error: 'Homey OAuth client ID is not configured' })
+        return
+      }
+
+      const loginUrl = new URL(`${athomApiBaseUrl}/oauth2/authorise`)
+      loginUrl.searchParams.set('response_type', 'code')
+      loginUrl.searchParams.set('client_id', clientId)
+      loginUrl.searchParams.set('redirect_uri', redirectUri)
+      loginUrl.searchParams.set(
+        'state',
+        Buffer.from(
+          JSON.stringify({
+            returnTo: '/',
+          })
+        ).toString('base64url')
+      )
+
+      res.statusCode = 302
+      res.setHeader('Location', loginUrl.toString())
+      res.end()
+    })
+
+    server.middlewares.use('/__navet_homey__/callback', async (req, res) => {
+      const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+      const code = requestUrl.searchParams.get('code')?.trim()
+      const { clientId, clientSecret, redirectUri } = getHomeyOAuthConfig(req)
+
+      if (!code || !clientId || !clientSecret) {
+        sendJson(res, 400, { error: 'Homey OAuth callback is incomplete' })
+        return
+      }
+
+      try {
+        const tokenResponse = await fetch(`${athomApiBaseUrl}/oauth2/token`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${encodeClientCredentials(clientId, clientSecret)}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: redirectUri,
+          }),
+        })
+
+        if (!tokenResponse.ok) {
+          sendJson(res, 502, { error: 'Homey OAuth token exchange failed' })
+          return
+        }
+
+        const token = (await tokenResponse.json()) as {
+          access_token: string
+          refresh_token: string
+          expires_in: number | string
+        }
+        const user = await loadAuthenticatedUser(token.access_token)
+        const mappedHomeys =
+          user.homeys?.map((homey) =>
+            homey._id && homey.name
+              ? {
+                  id: homey._id,
+                  name: homey.name,
+                  platform: homey.platform ?? null,
+                  localUrl: homey.localUrl ?? null,
+                  localUrlSecure: homey.localUrlSecure ?? null,
+                  remoteUrl: homey.remoteUrl ?? null,
+                }
+              : null
+          ) ?? []
+        const homeys = mappedHomeys.filter(
+          (
+            homey
+          ): homey is {
+            id: string
+            name: string
+            platform: string | null
+            localUrl: string | null
+            localUrlSecure: string | null
+            remoteUrl: string | null
+          } => Boolean(homey)
+        )
+
+        let session: HomeySessionData = {
+          accessToken: token.access_token,
+          refreshToken: token.refresh_token,
+          expiresAt: Date.now() + Number(token.expires_in) * 1000,
+          userId: user._id ?? null,
+          user: {
+            id: user._id ?? null,
+            name: getHomeyUserName(user),
+            avatarUrl: getHomeyUserAvatarUrl(user),
+            email: user.email ?? null,
+          },
+          homeys,
+          selectedHomeyId: null,
+          homeyBaseUrl: null,
+          homeySessionToken: null,
+        }
+
+        if (homeys.length === 1) {
+          const selection = await createHomeySession(session.accessToken, homeys[0])
+          session = {
+            ...session,
+            selectedHomeyId: homeys[0].id,
+            homeyBaseUrl: selection.homeyBaseUrl,
+            homeySessionToken: selection.homeySessionToken,
+          }
+        }
+
+        homeySessionStore.saveSession(session)
+        res.statusCode = 302
+        res.setHeader('Location', '/?homey_oauth_callback=1')
+        res.end()
+      } catch {
+        sendJson(res, 502, { error: 'Unable to complete Homey OAuth callback' })
+      }
+    })
+
+    server.middlewares.use('/__navet_homey__/session', async (req, res) => {
+      await handleRequest(req, res)
+    })
+
+    server.middlewares.use('/__navet_homey__/session/select', async (req, res) => {
+      if (req.method !== 'PUT') {
+        res.setHeader('Allow', 'PUT')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+
+      try {
+        const storedSession = homeySessionStore.getSession()
+        if (!storedSession) {
+          sendJson(res, 404, { error: 'No Homey OAuth session available' })
+          return
+        }
+
+        const session = await refreshHomeyAccessToken(storedSession, req)
+        const body = JSON.parse(await readRequestBody(req)) as { homeyId?: string }
+        const homeyId = body.homeyId?.trim()
+        if (!homeyId) {
+          sendJson(res, 400, { error: 'homeyId is required' })
+          return
+        }
+
+        const homey = session.homeys.find((entry) => entry.id === homeyId)
+        if (!homey) {
+          sendJson(res, 404, { error: 'Homey not found in OAuth session' })
+          return
+        }
+
+        const selection = await createHomeySession(session.accessToken, homey)
+        const nextSession: HomeySessionData = {
+          ...session,
+          selectedHomeyId: homey.id,
+          homeyBaseUrl: selection.homeyBaseUrl,
+          homeySessionToken: selection.homeySessionToken,
+        }
+
+        homeySessionStore.saveSession(nextSession)
+        sendJson(res, 200, sanitizeHomeySession(nextSession))
+      } catch {
+        sendJson(res, 502, { error: 'Unable to select Homey' })
+      }
+    })
+  }
+
+  return {
+    name: 'navet-homey-session-store',
+    api: {
+      getHomeySession(): HomeySessionData | null {
+        return homeySessionStore.getSession()
+      },
+    },
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
@@ -371,11 +919,13 @@ export default defineConfig(({ mode }) => {
     commandLine.includes('chromatic')
 
   const authSessionPlugin = authSessionStorePlugin()
+  const homeySessionPlugin = homeySessionStorePlugin()
   const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
     rssProxyPlugin(),
     authSessionPlugin,
+    homeySessionPlugin,
     homeAssistantProxyPlugin(
       () =>
         (
@@ -383,6 +933,14 @@ export default defineConfig(({ mode }) => {
             api?: { getAuthSession?: () => HomeAssistantAuthData | null }
           }
         ).api?.getAuthSession?.() ?? null
+    ),
+    homeyProxyPlugin(
+      () =>
+        (
+          homeySessionPlugin as PluginOption & {
+            api?: { getHomeySession?: () => HomeySessionData | null }
+          }
+        ).api?.getHomeySession?.() ?? null
     ),
   ]
 

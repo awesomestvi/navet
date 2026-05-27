@@ -1,8 +1,12 @@
 import type { Auth } from 'home-assistant-js-websocket';
 import type { RuntimeAuthMode } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
+import type { HomeyCloudHomey, HomeySnapshot } from '@/app/types/homey';
+import type { IntegrationUser } from '@/app/types/integration-user';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import type { AuthRuntime } from './runtime';
 
-export interface AuthSession {
+export interface BaseAuthSession {
+  providerId: IntegrationProviderId;
   runtime: AuthRuntime;
   authMode: RuntimeAuthMode;
   haBaseUrl: string;
@@ -10,12 +14,40 @@ export interface AuthSession {
   auth?: Auth;
   expiresAt?: number;
   userId?: string;
+  user?: IntegrationUser;
 }
 
+export interface HomeAssistantAuthSession extends BaseAuthSession {
+  providerId: 'home_assistant';
+}
+
+export interface HomeyAuthSession extends BaseAuthSession {
+  providerId: 'homey';
+  availableHomeys?: HomeyCloudHomey[];
+  selectedHomeyId?: string;
+  needsHomeySelection?: boolean;
+  homeySnapshot?: HomeySnapshot;
+}
+
+export interface OpenHABAuthSession extends BaseAuthSession {
+  providerId: 'openhab';
+}
+
+export type AuthSession = HomeAssistantAuthSession | HomeyAuthSession | OpenHABAuthSession;
+
 export interface AuthAdapter {
+  readonly providerId: IntegrationProviderId;
   readonly kind: AuthRuntime;
   init(): Promise<AuthSession | null>;
-  login?(input?: { hassUrl?: string }): Promise<AuthSession>;
+  login?(input?: {
+    hassUrl?: string;
+    accessToken?: string;
+    providerId?: IntegrationProviderId;
+  }): Promise<AuthSession>;
   refresh?(session: AuthSession): Promise<AuthSession>;
   logout?(): Promise<void>;
+}
+
+export function isHomeyAuthSession(session: AuthSession): session is HomeyAuthSession {
+  return session.providerId === 'homey';
 }

@@ -5,7 +5,7 @@ import { getDashboardCardFootprint } from '@/app/components/shared/card-size-sel
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { SwitchCard } from '@/app/features/lighting';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { QuickActionRoutine } from '../types';
 
 interface QuickActionGridProps {
@@ -59,7 +59,12 @@ function QuickActionCard({ action, shouldReduceMotion }: QuickActionCardProps) {
   const handleRun = () => {
     setIsRunning(true);
     void runAction(
-      () => homeAssistantService.callService(action.type, 'turn_on', {}, { entity_id: action.id }),
+      () =>
+        dispatchEntityAction({
+          entityId: action.id,
+          domain: action.type,
+          service: 'turn_on',
+        }),
       t('tasks.quickActions.triggerFailed', { name: action.name })
     ).finally(() => {
       setIsRunning(false);

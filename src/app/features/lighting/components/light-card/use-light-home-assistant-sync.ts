@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useI18n } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { clampKelvin, clampPercentage } from './light-card-utils';
 
 export interface LightUpdateOptions {
@@ -17,16 +19,54 @@ export interface LightUpdateOptions {
 
 interface UseLightServiceSyncParams {
   id: string;
+  providerId?: IntegrationProviderId;
   isHomeAssistantLight: boolean;
 }
 
-export function useLightServiceSync({ id, isHomeAssistantLight }: UseLightServiceSyncParams) {
+export function useLightServiceSync({
+  id,
+  providerId,
+  isHomeAssistantLight,
+}: UseLightServiceSyncParams) {
   const { t } = useI18n();
 
   return useCallback(
     async (options: LightUpdateOptions) => {
-      if (!isHomeAssistantLight) return;
       try {
+        if (providerId && providerId !== 'home_assistant') {
+          if (options.effect || options.rgbColor || options.hsColor || options.xyColor) {
+            throw new Error('This light control is not supported for the current integration yet');
+          }
+
+          if (options.state === 'off') {
+            await dispatchEntityAction({
+              providerId,
+              entityId: id,
+              domain: 'light',
+              service: 'turn_off',
+            });
+            return;
+          }
+
+          await dispatchEntityAction({
+            providerId,
+            entityId: id,
+            domain: 'light',
+            service: 'turn_on',
+            serviceData: {
+              ...(typeof options.brightnessPct === 'number'
+                ? { brightness_pct: options.brightnessPct }
+                : {}),
+              ...(typeof options.kelvin === 'number' ? { kelvin: options.kelvin } : {}),
+            },
+          });
+          return;
+        }
+
+        if (!isHomeAssistantLight) {
+          return;
+        }
+
         await homeAssistantService.updateLight(id, options);
       } catch (error) {
         toast.error(
@@ -35,7 +75,7 @@ export function useLightServiceSync({ id, isHomeAssistantLight }: UseLightServic
         throw error;
       }
     },
-    [id, isHomeAssistantLight, t]
+    [id, isHomeAssistantLight, providerId, t]
   );
 }
 

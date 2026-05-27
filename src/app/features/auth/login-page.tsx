@@ -20,6 +20,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(!initialUrl.current);
   const [discoveredUrl, setDiscoveredUrl] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<'home_assistant' | 'homey'>('home_assistant');
   const { login } = useAuthSession();
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -27,6 +28,11 @@ export function LoginPage() {
   const logoSrc = getPublicAssetUrl('logo.svg');
 
   useEffect(() => {
+    if (providerId !== 'home_assistant') {
+      setIsDiscovering(false);
+      return;
+    }
+
     if (initialUrl.current) {
       return;
     }
@@ -59,28 +65,35 @@ export function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [providerId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const hassUrl = urlInputRef.current?.value.trim() ?? '';
-    if (!hassUrl) {
-      setError(t('login.errors.urlRequired'));
-      return;
-    }
-
-    try {
-      new URL(hassUrl);
-    } catch (validationError) {
-      console.error('[LoginPage] Invalid URL format:', validationError);
-      setError(t('login.errors.urlInvalid'));
-      return;
-    }
 
     setIsLoading(true);
     try {
-      await login({ hassUrl });
+      if (providerId === 'homey') {
+        await login({ providerId });
+      } else {
+        const hassUrl = urlInputRef.current?.value.trim() ?? '';
+        if (!hassUrl) {
+          setError(t('login.errors.urlRequired'));
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          new URL(hassUrl);
+        } catch (validationError) {
+          console.error('[LoginPage] Invalid URL format:', validationError);
+          setError(t('login.errors.urlInvalid'));
+          setIsLoading(false);
+          return;
+        }
+
+        await login({ providerId, hassUrl });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('login.errors.unexpected'));
     } finally {
@@ -119,10 +132,12 @@ export function LoginPage() {
           <h1
             className={`mx-auto mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
           >
-            Connect to Home Assistant
+            {providerId === 'homey' ? 'Connect to Homey' : 'Connect to Home Assistant'}
           </h1>
           <p className={`mx-auto mt-3 max-w-md text-sm leading-relaxed ${mutedColor}`}>
-            Enter your Home Assistant URL to continue with OAuth.
+            {providerId === 'homey'
+              ? 'Continue with Homey Cloud OAuth, then choose which Homey Navet should use.'
+              : 'Enter your Home Assistant URL to continue with OAuth.'}
           </p>
 
           <form
@@ -135,23 +150,49 @@ export function LoginPage() {
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.025)_22%,transparent_58%)]" />
             <div className="relative space-y-5">
-              <FieldBlock
-                label={t('login.urlLabel')}
-                htmlFor="url"
-                hint={t('login.urlHelp')}
-                hintClassName={mutedColor}
-              >
-                <Input
-                  ref={urlInputRef}
-                  id="url"
-                  type="text"
-                  defaultValue={initialUrl.current}
-                  placeholder={t('login.urlPlaceholder')}
-                  leading={<Home className={`h-5 w-5 ${mutedColor}`} />}
-                  inputClassName={fieldInputClassName}
-                  disabled={isLoading}
-                />
-              </FieldBlock>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 p-1">
+                <button
+                  type="button"
+                  onClick={() => setProviderId('home_assistant')}
+                  className={`rounded-xl px-3 py-2 text-sm ${
+                    providerId === 'home_assistant'
+                      ? 'bg-orange-500 text-white'
+                      : `${textColor} ${surface.hoverBg}`
+                  }`}
+                >
+                  Home Assistant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProviderId('homey')}
+                  className={`rounded-xl px-3 py-2 text-sm ${
+                    providerId === 'homey'
+                      ? 'bg-orange-500 text-white'
+                      : `${textColor} ${surface.hoverBg}`
+                  }`}
+                >
+                  Homey
+                </button>
+              </div>
+              {providerId === 'home_assistant' ? (
+                <FieldBlock
+                  label={t('login.urlLabel')}
+                  htmlFor="url"
+                  hint={t('login.urlHelp')}
+                  hintClassName={mutedColor}
+                >
+                  <Input
+                    ref={urlInputRef}
+                    id="url"
+                    type="text"
+                    defaultValue={initialUrl.current}
+                    placeholder={t('login.urlPlaceholder')}
+                    leading={<Home className={`h-5 w-5 ${mutedColor}`} />}
+                    inputClassName={fieldInputClassName}
+                    disabled={isLoading}
+                  />
+                </FieldBlock>
+              ) : null}
 
               {error ? (
                 <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
@@ -169,7 +210,7 @@ export function LoginPage() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    {t('login.connecting')}
+                    {providerId === 'homey' ? 'Connecting to Homey...' : t('login.connecting')}
                   </span>
                 ) : (
                   'Continue'
@@ -177,11 +218,13 @@ export function LoginPage() {
               </Button>
 
               <p className={`${navetTypographyTokens.helper} text-center ${mutedColor}`}>
-                {isDiscovering
-                  ? 'Looking for Home Assistant...'
-                  : discoveredUrl
-                    ? 'Found Home Assistant on your network. You can edit the URL before continuing.'
-                    : 'You’ll sign in on Home Assistant, then return to Navet.'}
+                {providerId === 'homey'
+                  ? 'You’ll sign in with Athom, return to Navet, and pick a Homey if your account has more than one.'
+                  : isDiscovering
+                    ? 'Looking for Home Assistant...'
+                    : discoveredUrl
+                      ? 'Found Home Assistant on your network. You can edit the URL before continuing.'
+                      : 'You’ll sign in on Home Assistant, then return to Navet.'}
               </p>
             </div>
           </form>

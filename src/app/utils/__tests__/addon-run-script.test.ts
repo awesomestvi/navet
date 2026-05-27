@@ -22,6 +22,8 @@ describe('Home Assistant add-on run script', () => {
 
   it('always emits the Home Assistant proxy location for add-on ingress assets and media', () => {
     expect(runScript).toContain('location /__navet_ha_proxy__/');
+    expect(runScript).toContain('location /__navet_homey_proxy__/');
+    expect(runScript).toContain('include /etc/nginx/snippets/navet-homey-store.conf;');
     expect(runScript).not.toContain(`if [[ -n "\${RESOLVED_HASS_URL}" ]]; then`);
   });
 

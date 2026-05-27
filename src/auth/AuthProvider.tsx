@@ -5,10 +5,14 @@ import {
 } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { toLegacyAuthRuntime } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
 import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import type { IntegrationProviderDefinition, IntegrationProviderId } from '@/app/types/provider';
+import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
 import type { AuthRuntime } from './runtime';
 import type { AuthSession } from './types';
 
 interface AuthContextValue {
+  providerId: IntegrationProviderId;
+  provider: IntegrationProviderDefinition;
   runtime: AuthRuntime;
   snapshot: AuthSessionSnapshot;
   session: AuthSession | null;
@@ -16,7 +20,12 @@ interface AuthContextValue {
   error: string | null;
   hassUrl: string | null;
   haBaseUrl: string | null;
-  login: (input?: { hassUrl?: string; haBaseUrl?: string }) => Promise<void>;
+  login: (input?: {
+    hassUrl?: string;
+    haBaseUrl?: string;
+    accessToken?: string;
+    providerId?: IntegrationProviderId;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<AuthSession | null>;
   replaceSession: (session: AuthSession | null) => void;
@@ -35,7 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('ha_auth_config');
     localStorage.removeItem('ha-dashboard-config');
     localStorage.removeItem('navet-auth-config');
-    localStorage.removeItem('navet_auth_session');
   }, []);
 
   useEffect(() => {
@@ -98,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
+      providerId: snapshot.providerId,
+      provider: INTEGRATION_PROVIDERS[snapshot.providerId],
       runtime,
       snapshot,
       session,
@@ -142,6 +152,14 @@ export function useAuthSession() {
 
 export function useAuthBaseUrl() {
   return useContext(AuthContext)?.haBaseUrl ?? null;
+}
+
+export function useIntegrationSession() {
+  return useAuthSession();
+}
+
+export function useCurrentIntegrationProvider() {
+  return useAuthSession().provider;
 }
 
 export function useAuthLogout() {

@@ -113,6 +113,7 @@ function clearOAuthCallbackUrl(): void {
 }
 
 export const standaloneOAuthAuth: AuthAdapter = {
+  providerId: 'home_assistant',
   kind: 'standalone-oauth',
   async init() {
     if (hasOAuthCallback()) {
@@ -131,6 +132,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
       clearOAuthCallbackUrl();
 
       return {
+        providerId: 'home_assistant',
         runtime: 'standalone-oauth',
         authMode: 'oauth',
         haBaseUrl: auth.data.hassUrl,
@@ -161,6 +163,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
       }
 
       return {
+        providerId: 'home_assistant',
         runtime: 'standalone-oauth',
         authMode: 'oauth',
         haBaseUrl: auth.data.hassUrl,
@@ -192,6 +195,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
     }
 
     return {
+      providerId: 'home_assistant',
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: auth.data.hassUrl,

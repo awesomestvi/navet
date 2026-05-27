@@ -1,5 +1,8 @@
 import { useCallback } from 'react';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import {
+  dispatchEntityAction,
+  dispatchServiceAction,
+} from '@/app/services/integration-action.service';
 import type { Notification } from './use-notifications';
 
 interface UseNotificationActionsParams {
@@ -36,18 +39,20 @@ export function useNotificationActions({
 
       if (notification.source === 'update') {
         if (notification.requiresRestart) {
-          await homeAssistantService.callService('homeassistant', 'restart');
+          await dispatchServiceAction({
+            domain: 'homeassistant',
+            service: 'restart',
+          });
           setPendingUpdateInstalls((current) => current.filter((entityId) => entityId !== id));
           markAsRead(id);
           return;
         }
         setPendingUpdateInstalls((current) => (current.includes(id) ? current : [...current, id]));
-        await homeAssistantService.callService(
-          'update',
-          'install',
-          {},
-          { entity_id: notification.id }
-        );
+        await dispatchEntityAction({
+          entityId: notification.id,
+          domain: 'update',
+          service: 'install',
+        });
       }
 
       markAsRead(id);
@@ -69,8 +74,12 @@ export function useNotificationActions({
 
       if (notification.source === 'persistent_notification') {
         try {
-          await homeAssistantService.callService('persistent_notification', 'dismiss', {
-            notification_id: notification.notificationId,
+          await dispatchServiceAction({
+            domain: 'persistent_notification',
+            service: 'dismiss',
+            serviceData: {
+              notification_id: notification.notificationId,
+            },
           });
         } catch (error) {
           console.error('[NotificationActions] Failed to dismiss notification:', error);
@@ -92,8 +101,12 @@ export function useNotificationActions({
       notifications
         .filter((notification) => notification.source === 'persistent_notification')
         .map((notification) =>
-          homeAssistantService.callService('persistent_notification', 'dismiss', {
-            notification_id: notification.notificationId,
+          dispatchServiceAction({
+            domain: 'persistent_notification',
+            service: 'dismiss',
+            serviceData: {
+              notification_id: notification.notificationId,
+            },
           })
         )
     );
