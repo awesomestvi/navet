@@ -40,11 +40,12 @@ function sanitizeRecentSections(value: unknown): Section[] {
 
 interface NavigationState {
   currentRoom: string;
+  lastExplicitRoom: string;
   activeSection: Section;
   recentSections: Section[];
   lastNonHomeSection: Section | null;
   applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
-  setCurrentRoom: (room: string) => void;
+  setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
   setActiveSection: (section: Section) => void;
   syncActiveSectionFromLocation: (section: Section) => void;
 }
@@ -56,11 +57,21 @@ export const useNavigationStore = create<NavigationState>()(
   persist(
     (set) => ({
       currentRoom: ALL_ROOMS_ID,
+      lastExplicitRoom: ALL_ROOMS_ID,
       activeSection: initialSection(),
       recentSections: [],
       lastNonHomeSection: null,
-      applyNavigationState: ({ currentRoom, activeSection }) => set({ currentRoom, activeSection }),
-      setCurrentRoom: (currentRoom) => set({ currentRoom }),
+      applyNavigationState: ({ currentRoom, activeSection }) =>
+        set({
+          currentRoom,
+          lastExplicitRoom: currentRoom,
+          activeSection,
+        }),
+      setCurrentRoom: (currentRoom, options) =>
+        set((state) => ({
+          currentRoom,
+          lastExplicitRoom: options?.explicit === false ? state.lastExplicitRoom : currentRoom,
+        })),
       setActiveSection: (activeSection) => {
         history.pushState({}, '', sectionToPath(activeSection));
         window.scrollTo(0, 0);
@@ -84,6 +95,7 @@ export const useNavigationStore = create<NavigationState>()(
       // activeSection is derived from the URL; mobile recents stay persisted.
       partialize: (state) => ({
         currentRoom: state.currentRoom,
+        lastExplicitRoom: state.lastExplicitRoom,
         recentSections: state.recentSections,
         lastNonHomeSection: state.lastNonHomeSection,
       }),
@@ -95,6 +107,12 @@ export const useNavigationStore = create<NavigationState>()(
             typeof p.currentRoom === 'string' && p.currentRoom.length > 0
               ? p.currentRoom
               : ALL_ROOMS_ID,
+          lastExplicitRoom:
+            typeof p.lastExplicitRoom === 'string' && p.lastExplicitRoom.length > 0
+              ? p.lastExplicitRoom
+              : typeof p.currentRoom === 'string' && p.currentRoom.length > 0
+                ? p.currentRoom
+                : ALL_ROOMS_ID,
           recentSections: sanitizeRecentSections(p.recentSections),
           lastNonHomeSection:
             p.lastNonHomeSection &&

@@ -43,9 +43,10 @@ export interface EditModeState {
 
 export interface NavigationState {
   currentRoom: string;
+  lastExplicitRoom: string;
   activeSection: Section;
   applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
-  setCurrentRoom: (room: string) => void;
+  setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
   setActiveSection: (section: Section) => void;
 }
 

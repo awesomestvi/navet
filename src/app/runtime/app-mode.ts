@@ -13,3 +13,7 @@ export function isHomeAssistantPanelMode(): boolean {
 export function isHomeAssistantAddonMode(): boolean {
   return getRuntimeContext().kind === 'ha_ingress';
 }
+
+export function isStandaloneMode(): boolean {
+  return getRuntimeContext().kind === 'standalone';
+}

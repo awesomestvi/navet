@@ -7,13 +7,15 @@ import { useNavigationStore } from '../stores/navigation-store';
  * Encapsulates active room selection logic
  */
 export const useRoomNavigation = (defaultRoom: string) => {
-  const { currentRoom, setCurrentRoom } = useNavigationStore(
+  const { currentRoom, lastExplicitRoom, setCurrentRoom } = useNavigationStore(
     useShallow((state) => ({
       currentRoom: state.currentRoom,
+      lastExplicitRoom: state.lastExplicitRoom,
       setCurrentRoom: state.setCurrentRoom,
     }))
   );
   const activeRoom = currentRoom || defaultRoom;
+  const preferredRoom = lastExplicitRoom || defaultRoom;
 
   const changeRoom = useCallback(
     (room: string) => {
@@ -22,5 +24,15 @@ export const useRoomNavigation = (defaultRoom: string) => {
     [setCurrentRoom]
   );
 
-  return useMemo(() => ({ activeRoom, changeRoom }), [activeRoom, changeRoom]);
+  const fallbackRoom = useCallback(
+    (room: string) => {
+      setCurrentRoom(room, { explicit: false });
+    },
+    [setCurrentRoom]
+  );
+
+  return useMemo(
+    () => ({ activeRoom, preferredRoom, changeRoom, fallbackRoom }),
+    [activeRoom, changeRoom, fallbackRoom, preferredRoom]
+  );
 };
