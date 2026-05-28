@@ -233,6 +233,16 @@ function isAmbientTemperatureSensor(
   );
 }
 
+function isClimateLikeDevice(
+  device: DeviceWithType
+): device is (DeviceWithType & { type: 'climate' }) | (DeviceWithType & { type: 'hvac' }) {
+  return device.type === 'climate' || device.type === 'hvac';
+}
+
+function isHvacDevice(device: DeviceWithType): device is DeviceWithType & { type: 'hvac' } {
+  return device.type === 'hvac';
+}
+
 function formatClimateSummaryValue(values: number[]): string {
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -248,18 +258,24 @@ function getClimateSummary(
   devices: DeviceWithType[],
   options: StatusSummaryOptions = {}
 ): HomeStatusSummaryItem | null {
-  const climateDevices = devices.filter(
-    (device) =>
-      (device.type === 'climate' && device.serviceDomain !== 'water_heater') ||
-      device.type === 'hvac'
-  );
+  const climateDevices = devices.filter((device) => {
+    if (!isClimateLikeDevice(device)) {
+      return false;
+    }
+
+    return device.type === 'hvac' || device.serviceDomain !== 'water_heater';
+  });
   const temperatureSensors = devices.filter(isAmbientTemperatureSensor);
   const values = [
     ...climateDevices.map((device) => {
-      const value =
-        device.type === 'climate'
-          ? (getNumber(device.currentTemperature) ?? getNumber(device.temperature))
-          : getNumber(device.temp);
+      let value: number | null;
+      if (device.type === 'climate') {
+        value = getNumber(device.currentTemperature) ?? getNumber(device.temperature);
+      } else if (isHvacDevice(device)) {
+        value = getNumber(device.temp);
+      } else {
+        value = null;
+      }
       if (value === null) {
         return null;
       }

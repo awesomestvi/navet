@@ -14,9 +14,10 @@ import {
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
-import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
 
 interface LockCardProps {
@@ -63,7 +64,7 @@ export const LockCard = memo(function LockCard({
   const [isLocked, setIsLocked] = useState(initialState);
   const [pendingTargetLocked, setPendingTargetLocked] = useState<boolean | null>(null);
   const [isPendingAction, setIsPendingAction] = useState(false);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const liveEntity = useProviderRuntime(providerRuntimeSelectors.entity(id));
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
 
@@ -141,7 +142,11 @@ export const LockCard = memo(function LockCard({
 
     void runAction(
       async () => {
-        await homeAssistantService.updateLock(id, nextState);
+        await dispatchEntityAction({
+          entityId: id,
+          domain: 'lock',
+          service: nextState === 'locked' ? 'lock' : 'unlock',
+        });
         if (!liveEntity) {
           setIsLocked(nextLocked);
           setPendingTargetLocked(null);

@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import { expectProviderFeatureMatrixSubset } from '@/test/provider-contract-assertions';
 import {
   getCurrentIntegrationCameraStream,
+  getCurrentIntegrationFeatureMatrix,
   getCurrentIntegrationProvider,
   getCurrentIntegrationProviderId,
   getCurrentIntegrationSession,
@@ -24,6 +26,10 @@ vi.mock('../home-assistant.service', () => ({
 }));
 
 describe('integration-runtime.service', () => {
+  beforeEach(() => {
+    authSessionManager.replaceSession(null);
+  });
+
   it('defaults to Home Assistant as the current provider', () => {
     authSessionManager.replaceSession(null);
 
@@ -78,6 +84,38 @@ describe('integration-runtime.service', () => {
         pathSigning: false,
         cameraStreams: false,
       },
+      featureMatrix: {
+        rooms: true,
+        lighting: true,
+        sensors: true,
+        climate: false,
+        mediaControls: false,
+        mediaBrowse: false,
+        mediaArtwork: false,
+        cameraSnapshot: false,
+        cameraStreams: false,
+        energyNow: false,
+        calendar: false,
+        weather: false,
+        notifications: false,
+      },
+    });
+  });
+
+  it('surfaces the current provider feature matrix for shared feature gating', () => {
+    authSessionManager.replaceSession({
+      providerId: 'homey',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://homey.example.com',
+      hassUrl: 'https://homey.example.com',
+    });
+
+    expectProviderFeatureMatrixSubset(getCurrentIntegrationFeatureMatrix(), {
+      lighting: true,
+      sensors: true,
+      mediaBrowse: false,
+      notifications: false,
     });
   });
 

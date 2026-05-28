@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useNotifications } from '@/app/features/notifications';
+import { useProviderNotifications } from '@/app/features/notifications';
 import { useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
 import type { IntegrationStore } from '@/app/stores/integration-store';
 import { integrationSelectors } from '@/app/stores/selectors';
@@ -31,7 +31,7 @@ export function useHeaderController() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useProviderNotifications();
   const { t } = useI18n();
 
   const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();

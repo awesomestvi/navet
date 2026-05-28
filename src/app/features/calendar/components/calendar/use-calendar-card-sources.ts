@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useCalendarDevicesCollection, useI18n, usePersistedState } from '@/app/hooks';
+import { useI18n, usePersistedState, useProviderCalendarDevicesCollection } from '@/app/hooks';
 import {
   getCalendarEventSortValue,
   isCalendarEventVisibleInWindow,
@@ -23,7 +23,7 @@ const CALENDAR_TIME_WINDOW_REFRESH_MS = 60 * 1000;
 
 export function useCalendarCardSources(cardId?: string, fallbackEvents: CalendarEvent[] = []) {
   const { t } = useI18n();
-  const calendars = useCalendarDevicesCollection();
+  const calendars = useProviderCalendarDevicesCollection();
   const [timeWindowTick, setTimeWindowTick] = useState(() => Date.now());
   const [calendarSources, setCalendarSources] = usePersistedState<PersistedCalendarSources>(
     STORAGE_KEYS.calendarCardSources,

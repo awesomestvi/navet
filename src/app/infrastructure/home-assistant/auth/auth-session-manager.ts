@@ -4,7 +4,7 @@ import { haIngressAuth } from '@/auth/adapters/haIngressAuth';
 import { haPanelAuth } from '@/auth/adapters/haPanelAuth';
 import { homeyOAuthAuth } from '@/auth/adapters/homeyOAuthAuth';
 import { standaloneOAuthAuth } from '@/auth/adapters/standaloneOAuthAuth';
-import type { AuthAdapter, AuthSession } from '@/auth/types';
+import type { AuthAdapter, AuthSession, AuthSessionMap } from '@/auth/types';
 import {
   type NavetRuntimeKind,
   type RuntimeAuthMode,
@@ -13,6 +13,7 @@ import {
 import { getRuntimeContext } from '../runtime/runtime-detector';
 
 const STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
+const LAST_ACTIVE_PROVIDER_KEY = 'navet_active_provider';
 
 export interface AuthSessionSnapshot {
   providerId: IntegrationProviderId;
@@ -23,6 +24,8 @@ export interface AuthSessionSnapshot {
   expiresAt?: number;
   userId?: string;
   isAuthenticated: boolean;
+  sessions: AuthSessionMap;
+  authenticatedProviderIds: IntegrationProviderId[];
 }
 
 type AuthStateListener = (snapshot: AuthSessionSnapshot, session: AuthSession | null) => void;
@@ -37,8 +40,34 @@ const PROVIDER_ADAPTERS: Partial<Record<IntegrationProviderId, AuthAdapter>> = {
   homey: homeyOAuthAuth,
 };
 
-function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
+function readStoredActiveProviderId(): IntegrationProviderId | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const value = window.localStorage.getItem(LAST_ACTIVE_PROVIDER_KEY);
+  return value === 'home_assistant' || value === 'homey' || value === 'openhab' ? value : null;
+}
+
+function writeStoredActiveProviderId(providerId: IntegrationProviderId | null): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (!providerId) {
+    window.localStorage.removeItem(LAST_ACTIVE_PROVIDER_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(LAST_ACTIVE_PROVIDER_KEY, providerId);
+}
+
+function buildSnapshot(session: AuthSession | null, sessions: AuthSessionMap): AuthSessionSnapshot {
   const runtime = getRuntimeContext().kind;
+  const authenticatedProviderIds = Object.keys(sessions).filter(
+    (providerId): providerId is IntegrationProviderId =>
+      providerId === 'home_assistant' || providerId === 'homey' || providerId === 'openhab'
+  );
 
   if (!session) {
     return {
@@ -47,6 +76,8 @@ function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
       authMode: getRuntimeContext().authMode,
       haBaseUrl: getRuntimeContext().haBaseUrl,
       isAuthenticated: false,
+      sessions,
+      authenticatedProviderIds,
     };
   }
 
@@ -59,6 +90,8 @@ function buildSnapshot(session: AuthSession | null): AuthSessionSnapshot {
     expiresAt: session.expiresAt,
     userId: session.userId,
     isAuthenticated: true,
+    sessions,
+    authenticatedProviderIds,
   };
 }
 
@@ -98,7 +131,8 @@ function writeStoredIntegrationSession(session: AuthSession | null): void {
 }
 
 export class AuthSessionManager {
-  private session: AuthSession | null = null;
+  private sessions: AuthSessionMap = {};
+  private activeProviderId: IntegrationProviderId | null = readStoredActiveProviderId();
   private listeners = new Set<AuthStateListener>();
 
   private get adapter(): AuthAdapter {
@@ -114,17 +148,38 @@ export class AuthSessionManager {
   }
 
   getSession() {
-    return this.session;
+    return this.activeProviderId ? (this.sessions[this.activeProviderId] ?? null) : null;
+  }
+
+  getSessions(): AuthSessionMap {
+    return { ...this.sessions };
   }
 
   getSnapshot(): AuthSessionSnapshot {
-    return buildSnapshot(this.session);
+    return buildSnapshot(this.getSession(), this.getSessions());
   }
 
-  private updateSession(session: AuthSession | null) {
-    this.session = session;
-    writeStoredIntegrationSession(session);
-    const snapshot = buildSnapshot(session);
+  private resolveActiveProviderId(): IntegrationProviderId | null {
+    if (this.activeProviderId && this.sessions[this.activeProviderId]) {
+      return this.activeProviderId;
+    }
+
+    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey'];
+    return providerOrder.find((providerId) => this.sessions[providerId]) ?? null;
+  }
+
+  private updateSessions(
+    updater: AuthSessionMap | ((current: AuthSessionMap) => AuthSessionMap),
+    nextActiveProviderId?: IntegrationProviderId | null
+  ) {
+    this.sessions = typeof updater === 'function' ? updater(this.sessions) : updater;
+    const activeProviderId =
+      nextActiveProviderId === undefined ? this.resolveActiveProviderId() : nextActiveProviderId;
+    this.activeProviderId = activeProviderId;
+    writeStoredIntegrationSession(this.sessions.openhab ?? null);
+    writeStoredActiveProviderId(activeProviderId);
+    const session = this.getSession();
+    const snapshot = buildSnapshot(session, this.getSessions());
     for (const listener of this.listeners) {
       listener(snapshot, session);
     }
@@ -132,11 +187,27 @@ export class AuthSessionManager {
 
   async init(): Promise<AuthSessionSnapshot> {
     const legacyStoredSession = readStoredIntegrationSession();
-    const nextSession =
-      legacyStoredSession ??
-      (await this.getAdapterForProvider(undefined).init()) ??
-      (await this.getAdapterForProvider('homey').init());
-    this.updateSession(nextSession);
+    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey'];
+    const discoveredSessions: AuthSessionMap = {};
+
+    if (legacyStoredSession?.providerId === 'openhab') {
+      discoveredSessions.openhab = legacyStoredSession;
+    }
+
+    const sessionResults = await Promise.all(
+      providerOrder.map(async (providerId) => ({
+        providerId,
+        session: await this.getAdapterForProvider(providerId).init(),
+      }))
+    );
+
+    for (const { providerId, session } of sessionResults) {
+      if (session) {
+        discoveredSessions[providerId] = session;
+      }
+    }
+
+    this.updateSessions(discoveredSessions);
     return this.getSnapshot();
   }
 
@@ -158,36 +229,72 @@ export class AuthSessionManager {
       accessToken: input?.accessToken,
       providerId: input?.providerId,
     });
-    this.updateSession(nextSession);
+    this.updateSessions(
+      (current) => ({
+        ...current,
+        [nextSession.providerId]: nextSession,
+      }),
+      nextSession.providerId
+    );
     return this.getSnapshot();
   }
 
-  async refresh(): Promise<AuthSessionSnapshot> {
-    if (!this.session) {
+  async refresh(providerId?: IntegrationProviderId): Promise<AuthSessionSnapshot> {
+    const targetProviderId = providerId ?? this.activeProviderId;
+    const currentSession = targetProviderId ? this.sessions[targetProviderId] : null;
+    if (!currentSession) {
       return this.getSnapshot();
     }
 
-    const adapter = this.getAdapterForProvider(this.session.providerId);
+    const adapter = this.getAdapterForProvider(currentSession.providerId);
 
     if (!adapter.refresh) {
       return this.getSnapshot();
     }
 
-    const nextSession = await adapter.refresh(this.session);
-    this.updateSession(nextSession);
+    const nextSession = await adapter.refresh(currentSession);
+    this.updateSessions((current) => ({
+      ...current,
+      [nextSession.providerId]: nextSession,
+    }));
     return this.getSnapshot();
   }
 
   replaceSession(session: AuthSession | null): AuthSessionSnapshot {
-    this.updateSession(session);
+    if (!session) {
+      this.updateSessions({}, null);
+      return this.getSnapshot();
+    }
+
+    this.updateSessions(
+      (current) => ({
+        ...current,
+        [session.providerId]: session,
+      }),
+      session.providerId
+    );
     return this.getSnapshot();
   }
 
-  async logout(): Promise<void> {
-    const adapter = this.session
-      ? this.getAdapterForProvider(this.session.providerId)
-      : this.adapter;
-    this.updateSession(null);
+  setActiveProvider(providerId: IntegrationProviderId): AuthSessionSnapshot {
+    this.activeProviderId = this.sessions[providerId] ? providerId : this.resolveActiveProviderId();
+    writeStoredActiveProviderId(this.activeProviderId);
+    return this.getSnapshot();
+  }
+
+  async logout(providerId?: IntegrationProviderId): Promise<void> {
+    const targetProviderId = providerId ?? this.activeProviderId;
+    const session = targetProviderId ? this.sessions[targetProviderId] : null;
+    const adapter = session ? this.getAdapterForProvider(session.providerId) : this.adapter;
+    if (targetProviderId) {
+      this.updateSessions((current) => {
+        const next = { ...current };
+        delete next[targetProviderId];
+        return next;
+      });
+    } else {
+      this.updateSessions({}, null);
+    }
     await adapter.logout?.();
   }
 

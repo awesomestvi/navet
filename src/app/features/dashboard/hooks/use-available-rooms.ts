@@ -1,19 +1,58 @@
 import { useMemo } from 'react';
 import { isAllRooms } from '@/app/constants/rooms';
 
-export function useAvailableRooms(
-  areas: Array<{ area_id: string; name: string }>,
-  discoveredRooms: string[]
-) {
+type RoomInput = string | { name: string; key?: string; canonicalId?: string; area_id?: string };
+
+function toRoomName(room: RoomInput): string {
+  return typeof room === 'string' ? room : room.name;
+}
+
+function toRoomKey(room: RoomInput): string {
+  if (typeof room === 'string') {
+    return room.trim().toLocaleLowerCase();
+  }
+
+  if (typeof room.key === 'string' && room.key.length > 0) {
+    return room.key;
+  }
+
+  if (typeof room.canonicalId === 'string' && room.canonicalId.length > 0) {
+    return room.canonicalId;
+  }
+
+  return room.name.trim().toLocaleLowerCase();
+}
+
+export function useAvailableRooms(baseRooms: RoomInput[], discoveredRooms: RoomInput[] = []) {
   const areaRooms = useMemo(
-    () => areas.map((area) => area.name).filter((name) => name && !isAllRooms(name)),
-    [areas]
+    () =>
+      baseRooms
+        .map((room) => ({
+          key: toRoomKey(room),
+          name: toRoomName(room).trim(),
+        }))
+        .filter((room) => room.name && !isAllRooms(room.name)),
+    [baseRooms]
   );
 
   const availableRooms = useMemo(() => {
-    const discoveredOnlyRooms = discoveredRooms.filter((room) => !areaRooms.includes(room));
-    return [...new Set([...areaRooms, ...discoveredOnlyRooms])];
+    const roomMap = new Map<string, string>();
+
+    for (const room of areaRooms) {
+      roomMap.set(room.key, room.name);
+    }
+
+    for (const room of discoveredRooms) {
+      const key = toRoomKey(room);
+      const name = toRoomName(room).trim();
+      if (!name || isAllRooms(name) || roomMap.has(key)) {
+        continue;
+      }
+      roomMap.set(key, name);
+    }
+
+    return Array.from(roomMap.values());
   }, [areaRooms, discoveredRooms]);
 
-  return { areaRooms, availableRooms };
+  return { areaRooms: areaRooms.map((room) => room.name), availableRooms };
 }

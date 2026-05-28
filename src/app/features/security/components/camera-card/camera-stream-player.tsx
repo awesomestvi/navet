@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { homeAssistantResourceResolver } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
 import type { CameraGo2RtcConfig } from '@/app/stores/settings-store';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
@@ -113,7 +114,7 @@ function HlsCameraPlayer({
       scheduleStreamLoadTimeout(loadTimeoutRef, 'hls', onError);
 
       try {
-        const stream = await homeAssistantService.getCameraStreamUrl(entityId, 'hls');
+        const stream = await integrationCameraFeatureService.getCameraStreamUrl(entityId, 'hls');
         if (cancelled) {
           return;
         }
@@ -250,7 +251,11 @@ function WebRtcCameraPlayer({
       }
 
       for (const candidate of pendingCandidates.splice(0)) {
-        void homeAssistantService.addCameraWebRtcCandidate(entityId, sessionId, candidate.toJSON());
+        void integrationCameraFeatureService.addCameraWebRtcCandidate(
+          entityId,
+          sessionId,
+          candidate.toJSON()
+        );
       }
     };
 
@@ -270,7 +275,8 @@ function WebRtcCameraPlayer({
       scheduleStreamLoadTimeout(loadTimeoutRef, 'web_rtc', onError);
 
       try {
-        const clientConfig = await homeAssistantService.getWebRtcClientConfiguration(entityId);
+        const clientConfig =
+          await integrationCameraFeatureService.getWebRtcClientConfiguration(entityId);
         if (cancelled) {
           return;
         }
@@ -296,7 +302,7 @@ function WebRtcCameraPlayer({
             pendingCandidates.push(event.candidate);
             return;
           }
-          void homeAssistantService.addCameraWebRtcCandidate(
+          void integrationCameraFeatureService.addCameraWebRtcCandidate(
             entityId,
             sessionId,
             event.candidate.toJSON()
@@ -320,7 +326,7 @@ function WebRtcCameraPlayer({
           return;
         }
 
-        unsubscribePromise = homeAssistantService.subscribeCameraWebRtcOffer(
+        unsubscribePromise = integrationCameraFeatureService.subscribeCameraWebRtcOffer(
           entityId,
           offer.sdp,
           (event) => {

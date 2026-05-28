@@ -9,10 +9,12 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { shallow } from 'zustand/shallow';
-import { useCameraPlaybackPlan } from '@/app/features/security/hooks/use-camera-playback-plan';
+import { usePlatformCameraPresentation } from '@/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
+import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
+import type { IntegrationStore } from '@/app/stores/integration-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
@@ -269,10 +271,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     preferSnapshotPreview: runtime === 'standalone-oauth',
   });
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
-  const playbackPlan = useCameraPlaybackPlan({
+  const preferredTransport: PlatformCameraStreamType | 'auto' =
+    cameraFeedMode === 'auto' || cameraFeedMode === 'hls' || cameraFeedMode === 'web_rtc'
+      ? cameraFeedMode
+      : 'auto';
+  const presentation = usePlatformCameraPresentation({
     entityId: id,
     preferredMode: effectiveDashboardCameraViewMode,
-    preferredTransport: cameraFeedMode,
+    preferredTransport,
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
@@ -281,32 +287,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isRunning,
     failedTransports: failedStreamTypeSet,
   });
-  const imageSource: CameraImageSource =
-    playbackPlan?.primary.kind === 'webrtc_stream'
-      ? {
-          url: undefined,
-          kind:
-            playbackPlan.primary.metadata?.source === 'go2rtc' ? 'go2rtc' : ('web_rtc' as const),
-          isFallback: false,
-        }
-      : playbackPlan?.primary.kind === 'hls_stream'
-        ? { url: undefined, kind: 'hls' as const, isFallback: false }
-        : playbackPlan?.primary.kind === 'mjpeg_stream'
-          ? { url: playbackPlan.primary.url, kind: 'mjpeg' as const, isFallback: false }
-          : {
-              url: playbackPlan?.primary.url ?? snapshotUrl,
-              kind: 'snapshot' as const,
-              isFallback: effectiveDashboardCameraViewMode === 'live',
-            };
+  const imageSource: CameraImageSource = {
+    url: presentation.sourceUrl,
+    kind: presentation.sourceKind,
+    isFallback: presentation.isFallback,
+  };
   const refreshIntervalMs = getCameraAutoRefreshInterval({
     cameraViewMode: effectiveDashboardCameraViewMode,
     imageSourceKind: imageSource.kind,
     isFallback: imageSource.isFallback,
   });
-  const liveStreamKind =
-    imageSource.kind === 'go2rtc' || imageSource.kind === 'hls' || imageSource.kind === 'web_rtc'
-      ? imageSource.kind
-      : null;
+  const liveStreamKind = presentation.videoStreamKind;
   const shouldRenderLiveStream = isVisible && liveStreamKind;
   const streamFailureResetKey = `${effectiveDashboardCameraViewMode}:${cameraFeedMode}:${resolvedGo2RtcConfig.source}:${resolvedGo2RtcConfig.serverUrl}:${resolvedGo2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
 
@@ -378,7 +369,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     let retryCount = 0;
 
     const loadCapabilities = () => {
-      void homeAssistantService
+      void integrationCameraFeatureService
         .getCameraCapabilities(id)
         .then((capabilities) => {
           if (!isCancelled) {
@@ -418,7 +409,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   // Subscribe to only entities belonging to this camera's device.
   // Re-renders only when one of those entities changes, not on unrelated HA updates.
   const deviceEntitySelector = useCallback(
-    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
+    (state: IntegrationStore): Record<string, HassEntity | undefined> => {
       if (!deviceEntityIds.length || !state.entities) return EMPTY_DEVICE_RECORD;
       return Object.fromEntries(deviceEntityIds.map((eid) => [eid, state.entities?.[eid]]));
     },
@@ -527,8 +518,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     }
 
     void (motionDetectionEnabled
-      ? homeAssistantService.disableCameraMotionDetection(id)
-      : homeAssistantService.enableCameraMotionDetection(id));
+      ? integrationCameraFeatureService.disableCameraMotionDetection(id)
+      : integrationCameraFeatureService.enableCameraMotionDetection(id));
   }, [id, motionDetectionEnabled]);
 
   return (

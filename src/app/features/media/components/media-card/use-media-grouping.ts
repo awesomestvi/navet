@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import type { TranslateFn } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 
 interface UseMediaGroupingParams {
   entityId: string;
@@ -53,7 +53,13 @@ export function useMediaGrouping({
       }
 
       void runAction(
-        () => homeAssistantService.joinMediaPlayers(entityId, nextGroupMembers),
+        () =>
+          dispatchEntityAction({
+            entityId,
+            domain: 'media_player',
+            service: 'join',
+            serviceData: { group_members: nextGroupMembers },
+          }),
         t('media.feedback.groupAttachFailed')
       );
     },
@@ -67,7 +73,12 @@ export function useMediaGrouping({
       }
 
       void runAction(
-        () => homeAssistantService.unjoinMediaPlayer(memberEntityId),
+        () =>
+          dispatchEntityAction({
+            entityId: memberEntityId,
+            domain: 'media_player',
+            service: 'unjoin',
+          }),
         t('media.feedback.groupDetachFailed')
       );
     },

@@ -81,6 +81,15 @@ export function mapMediaDevice(
     name,
     room,
     size: 'medium',
+    resources: entityPicture
+      ? {
+          artwork: {
+            kind: 'media_artwork',
+            entityId,
+            path: entityPicture,
+          },
+        }
+      : undefined,
     title: mediaTitle,
     artist: mediaArtist,
     entityType: formatMediaEntityType(mediaDeviceClass, t),

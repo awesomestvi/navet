@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { homeAssistantSelectors } from '../stores/selectors';
-import { useHomeAssistant } from './use-home-assistant';
+import { providerRuntimeSelectors } from '../stores/selectors';
+import { useProviderRuntime } from './use-provider-runtime';
 
 export function useAreaRooms(): string[] {
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
+  const areas = useProviderRuntime(providerRuntimeSelectors.areas);
 
   return useMemo(
     () =>

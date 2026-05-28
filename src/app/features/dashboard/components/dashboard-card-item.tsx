@@ -79,8 +79,8 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   };
   const renderedCard = device ? (
     renderCard({
-      device,
-      size: resolvedSize,
+      device: device as Parameters<typeof renderCard>[0]['device'],
+      size: resolvedSize as CardSize,
       handleSizeChange,
       isEditMode,
       headerSubtitleOverride,

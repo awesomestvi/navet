@@ -147,14 +147,14 @@ describe('dashboard-config import hardening', () => {
     });
 
     expect(useCardZonesStore.getState().cardZones).toEqual({
-      'light.kitchen': 'actions',
+      'home_assistant:light.kitchen': 'actions',
     });
     expect(useHomeDashboardLayoutStore.getState()).toMatchObject({
       mode: 'sectioned',
       showHero: false,
-      cardIds: ['light.kitchen'],
+      cardIds: ['home_assistant:light.kitchen'],
       cardSectionAssignments: {
-        'light.kitchen': 'main',
+        'home_assistant:light.kitchen': 'main',
       },
     });
   });
@@ -239,7 +239,7 @@ describe('dashboard-config import hardening', () => {
     expect(exported.homeDashboardLayout).toMatchObject({
       mode: 'flow',
       showHero: true,
-      cardIds: ['light.kitchen'],
+      cardIds: ['home_assistant:light.kitchen'],
       sections: [],
       cardSectionAssignments: {},
     });

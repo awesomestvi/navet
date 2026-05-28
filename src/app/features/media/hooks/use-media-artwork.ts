@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { mediaArtworkService } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
-import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
+import type { ResolvedPlatformResource } from '@/app/platform/resources';
+import { resolvePlatformArtwork } from '@/app/services/integration-resource.service';
+import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface UseMediaArtworkOptions {
   entityId: string;
   attrs: Record<string, unknown> | undefined;
   fallbackPicture?: string;
   artworkKey?: string;
+  providerId?: IntegrationProviderId;
 }
 
 export function useMediaArtwork({
@@ -14,8 +16,9 @@ export function useMediaArtwork({
   attrs,
   fallbackPicture,
   artworkKey,
+  providerId,
 }: UseMediaArtworkOptions) {
-  const [resource, setResource] = useState<ResolvedMediaResource | null>(null);
+  const [resource, setResource] = useState<ResolvedPlatformResource | null>(null);
   const mediaImageUrl = typeof attrs?.media_image_url === 'string' ? attrs.media_image_url : '';
   const entityPicture = typeof attrs?.entity_picture === 'string' ? attrs.entity_picture : '';
   const entityPictureLocal =
@@ -49,8 +52,12 @@ export function useMediaArtwork({
     let cancelled = false;
     void artworkKey;
 
-    void mediaArtworkService
-      .resolveArtwork(entityId, artworkAttrs, fallbackPicture)
+    void resolvePlatformArtwork({
+      entityId,
+      attrs: artworkAttrs,
+      fallbackPicture,
+      providerId,
+    })
       .then((nextResource) => {
         if (!cancelled) {
           setResource(nextResource);
@@ -65,7 +72,7 @@ export function useMediaArtwork({
     return () => {
       cancelled = true;
     };
-  }, [artworkKey, entityId, fallbackPicture, artworkAttrs]);
+  }, [artworkKey, entityId, fallbackPicture, artworkAttrs, providerId]);
 
   return resource;
 }

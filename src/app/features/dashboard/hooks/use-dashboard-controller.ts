@@ -3,20 +3,22 @@ import { useShallow } from 'zustand/react/shallow';
 import { ALL_ROOMS_ID, HOME_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
+  useAggregatedRooms,
   useCardState,
   useDashboardDevices,
   useDeviceMap,
   useEditMode,
-  useHomeAssistant,
   useI18n,
   useNavigation,
   usePersistedState,
+  useProviderRuntime,
   useRoomNavigation,
 } from '@/app/hooks';
-import { useDevices, useRooms } from '@/app/hooks/use-devices';
+import { useDevices } from '@/app/hooks/use-devices';
 import { isStandaloneMode } from '@/app/runtime/app-mode';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import type { DeviceWithType } from '@/app/types/device.types';
+import { buildAggregatedRooms } from '@/app/utils/provider-rooms';
 import type { AllViewGrouping } from '../all-view-grid';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useAvailableRooms } from './use-available-rooms';
@@ -38,11 +40,10 @@ import { useOnboardingController } from './use-onboarding-controller';
 export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   const { t } = useI18n();
-  const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const connecting = useHomeAssistant(homeAssistantSelectors.connecting);
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
-  const registriesHydrated = useHomeAssistant(homeAssistantSelectors.registriesHydrated);
+  const connected = useProviderRuntime(providerRuntimeSelectors.connected);
+  const connecting = useProviderRuntime(providerRuntimeSelectors.connecting);
+  const hassEntitiesHydrated = useProviderRuntime(providerRuntimeSelectors.entitiesHydrated);
+  const registriesHydrated = useProviderRuntime(providerRuntimeSelectors.registriesHydrated);
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
     STORAGE_KEYS.allViewGrouping,
@@ -66,14 +67,16 @@ export function useDashboardController(): DashboardController {
       sensors: allDevices.sensors.filter((device) => shownSensorIds.has(device.id)),
     };
   }, [allDevices, shownSensorEntityIds]);
-  const discoveredRooms = useRooms(devices);
+  const aggregatedRooms = useAggregatedRooms();
+  const countableRooms = useMemo(() => buildAggregatedRooms(countableDevices), [countableDevices]);
+  const visibleRoomsState = useMemo(() => buildAggregatedRooms(devices), [devices]);
 
   const { roomItemCounts, roomHiddenItemCounts } = useDashboardRoomCounts(
-    countableDevices,
-    devices
+    countableRooms,
+    visibleRoomsState
   );
 
-  const { availableRooms } = useAvailableRooms(areas, discoveredRooms);
+  const { availableRooms } = useAvailableRooms(aggregatedRooms);
   const rooms = usePersistedRoomOrder(availableRooms, roomOrder);
   const visibleRooms = useMemo(() => {
     const hiddenRooms = new Set(hiddenRoomNames);

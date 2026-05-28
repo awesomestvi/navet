@@ -29,11 +29,11 @@ interface SecurityCameraDashboardProps {
 }
 
 function asCameraDevice(camera: CameraDashboardModel['primaryCameras'][number]): DeviceWithType {
-  return { ...camera, type: 'cameras' };
+  return { ...camera, type: 'cameras' } as DeviceWithType;
 }
 
 function asLockDevice(lock: CameraDashboardModel['locks'][number]): DeviceWithType {
-  return { ...lock, type: 'locks' };
+  return { ...lock, type: 'locks' } as DeviceWithType;
 }
 
 function getDefaultCameraSize(index: number): CardSize {

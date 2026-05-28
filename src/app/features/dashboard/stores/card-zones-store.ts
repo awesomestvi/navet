@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { type PersistStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
+import { ensureCanonicalEntityId } from '@/app/utils/provider-entity-id';
 import { ZONE_ORDERED, type ZoneName } from '../zones/zone-types';
 
 interface CardZonesStore {
@@ -51,12 +52,14 @@ function normalizeCardZones(value: unknown): Record<string, ZoneName> {
   }
 
   return Object.fromEntries(
-    Object.entries(value).filter(
-      (entry): entry is [string, ZoneName] =>
-        typeof entry[0] === 'string' &&
-        typeof entry[1] === 'string' &&
-        VALID_ZONES.has(entry[1] as ZoneName)
-    )
+    Object.entries(value)
+      .filter(
+        (entry): entry is [string, ZoneName] =>
+          typeof entry[0] === 'string' &&
+          typeof entry[1] === 'string' &&
+          VALID_ZONES.has(entry[1] as ZoneName)
+      )
+      .map(([id, zone]) => [ensureCanonicalEntityId(id), zone])
   );
 }
 
@@ -81,7 +84,7 @@ export const useCardZonesStore = create<CardZonesStore>()(
         set((state) => ({
           cardZones: {
             ...state.cardZones,
-            [id]: zone,
+            [ensureCanonicalEntityId(id)]: zone,
           },
         })),
     }),

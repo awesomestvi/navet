@@ -67,6 +67,7 @@ const kitchenCalendar: DeviceWithType = {
   name: 'Kitchen calendar',
   room: 'Kitchen',
   size: 'medium',
+  events: [],
   type: 'calendars',
 };
 

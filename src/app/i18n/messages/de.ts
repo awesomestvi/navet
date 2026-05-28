@@ -163,7 +163,7 @@ export const deMessages = {
   'settings.dashboard.backup.import': 'Konfiguration importieren',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
-    'Verbindungsdetails und Wiederherstellungsaktionen für das aktuelle Home-Assistant-Ziel.',
+    'Verbindungsdetails, Provider-Verwaltung und Wiederherstellungsaktionen für dieses Navet-Gerät.',
   'settings.system.animations.title': 'Animationen deaktivieren',
   'settings.system.animations.description':
     'Nützlich für langsamere Geräte wie Raspberry Pis. Schaltet Übergänge und animierte Effekte in der gesamten App aus.',
@@ -179,11 +179,29 @@ export const deMessages = {
   'settings.system.effectsQuality.recommended': 'Empfohlen für dieses Gerät',
   'settings.system.connection.title': 'Verbindung',
   'settings.system.connection.description':
-    'Prüfe das aktuelle Serverziel, öffne Home Assistant oder setze die gespeicherte Verbindung zurück.',
+    'Prüfe das aktive Provider-Ziel, öffne es direkt oder setze die gespeicherte Verbindung zurück.',
   'settings.system.connection.connectedTo': 'Verbunden mit',
   'settings.system.connection.notConnected': 'Nicht verbunden',
   'settings.system.connection.openHomeAssistant': 'Home Assistant öffnen',
   'settings.system.connection.reset': 'Verbindung zurücksetzen',
+  'settings.system.providers.title': 'Provider',
+  'settings.system.providers.description':
+    'Verbinde, trenne und wähle aus, welche Smart-Home-Provider Navet auf diesem Gerät aktiv halten soll.',
+  'settings.system.providers.active': 'Aktiv',
+  'settings.system.providers.activeLabel': 'Aktiver Provider: {provider}',
+  'settings.system.providers.connect': 'Verbinden',
+  'settings.system.providers.disconnect': 'Trennen',
+  'settings.system.providers.makeActive': 'Aktiv setzen',
+  'settings.system.providers.notConnected': 'Auf diesem Gerät nicht verbunden',
+  'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
+  'settings.system.providers.openhabLater':
+    'openHAB-Unterstützung ist geplant, aber noch nicht verfügbar.',
+  'settings.system.providers.status.connected': 'Verbunden',
+  'settings.system.providers.status.connecting': 'Verbindet',
+  'settings.system.providers.status.reconnecting': 'Verbindet erneut',
+  'settings.system.providers.status.signed-in': 'Angemeldet',
+  'settings.system.providers.status.disconnected': 'Getrennt',
+  'settings.system.providers.status.planned': 'Geplant',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -239,6 +257,11 @@ export const deMessages = {
   'settings.feedback.configExportFailed': 'Dashboard-Konfiguration konnte nicht exportiert werden',
   'settings.feedback.configImported': 'Dashboard-Konfiguration importiert. Neu laden...',
   'settings.feedback.configImportFailed': 'Dashboard-Konfiguration konnte nicht importiert werden',
+  'settings.feedback.providerConnected': 'Provider verbunden',
+  'settings.feedback.providerConnectFailed': 'Provider konnte nicht verbunden werden',
+  'settings.feedback.providerDisconnected': 'Provider getrennt',
+  'settings.feedback.providerDisconnectFailed': 'Provider konnte nicht getrennt werden',
+  'integration.featureUnavailable': '{provider} does not support this feature yet.',
   'dashboard.addEntity.title': 'Gerät hinzufügen',
   'dashboard.addEntity.descriptionWithHidden':
     'Home-Assistant-Geräte wieder zum Dashboard hinzufügen.',

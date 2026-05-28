@@ -12,9 +12,9 @@ describe('useCardZonesStore', () => {
     useCardZonesStore.getState().updateCardZone('light.kitchen', 'actions');
 
     expect(useCardZonesStore.getState().cardZones).toEqual({
-      'light.kitchen': 'actions',
+      'home_assistant:light.kitchen': 'actions',
     });
-    expect(localStorage.getItem(STORAGE_KEYS.cardZones)).toContain('light.kitchen');
+    expect(localStorage.getItem(STORAGE_KEYS.cardZones)).toContain('home_assistant:light.kitchen');
   });
 
   it('hydrates legacy raw records and drops invalid zones', async () => {
@@ -31,8 +31,8 @@ describe('useCardZonesStore', () => {
     await useCardZonesStore.persist.rehydrate();
 
     expect(useCardZonesStore.getState().cardZones).toEqual({
-      'weather.home': 'hero',
-      'sensor.power': 'analytics',
+      'home_assistant:weather.home': 'hero',
+      'home_assistant:sensor.power': 'analytics',
     });
   });
 
@@ -54,8 +54,8 @@ describe('useCardZonesStore', () => {
     await useCardZonesStore.persist.rehydrate();
 
     expect(useCardZonesStore.getState().cardZones).toEqual({
-      'vacuum.downstairs': 'status',
-      'media.living_room': 'hero',
+      'home_assistant:vacuum.downstairs': 'status',
+      'home_assistant:media.living_room': 'hero',
     });
   });
 });

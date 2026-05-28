@@ -7,14 +7,41 @@ import {
   notifyPersistedStateChanged,
   PERSISTED_STATE_EVENT,
 } from '@/app/utils/persisted-state-events';
+import { ensureCanonicalEntityId } from '@/app/utils/provider-entity-id';
 import { storage } from '@/app/utils/storage';
 import type { CustomCard } from './use-custom-cards';
+
+function areRoomOrdersEqual(
+  left: Record<string, string[]>,
+  right: Record<string, string[]>
+): boolean {
+  const leftRooms = Object.keys(left);
+  const rightRooms = Object.keys(right);
+
+  if (leftRooms.length !== rightRooms.length) {
+    return false;
+  }
+
+  return rightRooms.every((room) => {
+    const leftOrder = left[room] ?? [];
+    const rightOrder = right[room] ?? [];
+
+    return (
+      leftOrder.length === rightOrder.length &&
+      leftOrder.every((id, index) => id === rightOrder[index])
+    );
+  });
+}
 
 export const useCardOrdering = (
   devices: DeviceCollection,
   rooms: string[],
   customCards: CustomCard[] = []
 ) => {
+  const normalizeOrderIds = useCallback(
+    (ids: string[]) => ids.map((id) => ensureCanonicalEntityId(id)),
+    []
+  );
   const safeCustomCards = Array.isArray(customCards) ? customCards : [];
 
   // Extract only id+room — stable across HA state-only updates (brightness, temperature, etc.)
@@ -76,13 +103,21 @@ export const useCardOrdering = (
       safeCustomCards.forEach((card) => {
         allDeviceIds.add(card.id);
       });
+      const normalizedStored = Object.fromEntries(
+        Object.entries(stored).map(([room, orderArray]) => [
+          room,
+          Array.isArray(orderArray) ? normalizeOrderIds(orderArray) : [],
+        ])
+      );
       const isValid = Object.values(stored).every(
         (orderArray) =>
           Array.isArray(orderArray) &&
-          orderArray.every((id) => typeof id === 'string' && allDeviceIds.has(id))
+          normalizeOrderIds(orderArray).every(
+            (id) => typeof id === 'string' && allDeviceIds.has(id)
+          )
       );
       if (isValid) {
-        return stored;
+        return normalizedStored;
       }
     }
 
@@ -148,7 +183,17 @@ export const useCardOrdering = (
         return;
       }
 
-      setCardOrders(customEvent.detail.value ?? {});
+      const nextValue = customEvent.detail.value ?? {};
+      const normalizedValue = Object.fromEntries(
+        Object.entries(nextValue).map(([room, orderArray]) => [
+          room,
+          Array.isArray(orderArray) ? normalizeOrderIds(orderArray) : [],
+        ])
+      );
+
+      setCardOrders((previous) =>
+        areRoomOrdersEqual(previous, normalizedValue) ? previous : normalizedValue
+      );
     };
 
     window.addEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
@@ -156,7 +201,7 @@ export const useCardOrdering = (
     return () => {
       window.removeEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
     };
-  }, []);
+  }, [normalizeOrderIds]);
 
   return { cardOrders };
 };

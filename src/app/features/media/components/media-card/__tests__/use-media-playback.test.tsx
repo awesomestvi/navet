@@ -2,21 +2,17 @@ import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 
-const { runActionMock, serviceMock } = vi.hoisted(() => ({
+const { dispatchEntityActionMock, runActionMock } = vi.hoisted(() => ({
+  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
-  serviceMock: {
-    updateMediaPlayerPlayback: vi.fn().mockResolvedValue(undefined),
-    setMediaPlayerShuffle: vi.fn().mockResolvedValue(undefined),
-    setMediaPlayerRepeat: vi.fn().mockResolvedValue(undefined),
-  },
 }));
 
 vi.mock('@/app/hooks', () => ({
   useServiceActionHandler: () => runActionMock,
 }));
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityAction: dispatchEntityActionMock,
 }));
 
 import { useMediaPlayback } from '../use-media-playback';
@@ -44,10 +40,11 @@ describe('useMediaPlayback', () => {
 
     act(() => result.current.togglePlay());
 
-    expect(serviceMock.updateMediaPlayerPlayback).toHaveBeenCalledWith(
-      'media_player.living_room',
-      'toggle'
-    );
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.living_room',
+      domain: 'media_player',
+      service: 'media_play_pause',
+    });
   });
 
   it('cycles repeat mode from off to all to one', () => {
@@ -65,17 +62,21 @@ describe('useMediaPlayback', () => {
     );
 
     act(() => result.current.cycleRepeat());
-    expect(serviceMock.setMediaPlayerRepeat).toHaveBeenLastCalledWith(
-      'media_player.living_room',
-      'all'
-    );
+    expect(dispatchEntityActionMock).toHaveBeenLastCalledWith({
+      entityId: 'media_player.living_room',
+      domain: 'media_player',
+      service: 'repeat_set',
+      serviceData: { repeat: 'all' },
+    });
 
     rerender({ repeatMode: 'all' });
     act(() => result.current.cycleRepeat());
-    expect(serviceMock.setMediaPlayerRepeat).toHaveBeenLastCalledWith(
-      'media_player.living_room',
-      'one'
-    );
+    expect(dispatchEntityActionMock).toHaveBeenLastCalledWith({
+      entityId: 'media_player.living_room',
+      domain: 'media_player',
+      service: 'repeat_set',
+      serviceData: { repeat: 'one' },
+    });
   });
 
   it('toggles shuffle', () => {
@@ -92,7 +93,12 @@ describe('useMediaPlayback', () => {
 
     act(() => result.current.toggleShuffle());
 
-    expect(serviceMock.setMediaPlayerShuffle).toHaveBeenCalledWith('media_player.office', false);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'shuffle_set',
+      serviceData: { shuffle: false },
+    });
   });
 
   it('opens and closes the dialog', () => {
@@ -131,7 +137,7 @@ describe('useMediaPlayback', () => {
       result.current.handleNext();
     });
 
-    expect(serviceMock.updateMediaPlayerPlayback).not.toHaveBeenCalled();
+    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
     expect(runActionMock).not.toHaveBeenCalled();
   });
 });

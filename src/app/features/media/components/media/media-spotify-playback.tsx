@@ -2,12 +2,11 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import { Music2, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, Input, Select } from '@/app/components/primitives';
-import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
-import {
-  type HomeAssistantEntityRegistryEntry,
-  homeAssistantService,
-} from '@/app/services/home-assistant.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
+import type { IntegrationStore } from '@/app/stores/integration-store';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 const PLAY_MEDIA_FEATURE = 512;
@@ -24,10 +23,10 @@ interface MediaSpotifyPlaybackProps {
   entityName: string;
 }
 
-export function selectMediaPlaybackData(state: HomeAssistantStore) {
+export function selectMediaPlaybackData(state: IntegrationStore) {
   return {
-    entities: state.entities,
-    entityRegistry: state.entityRegistry,
+    entities: state.homeAssistant.entities,
+    entityRegistry: state.homeAssistant.entityRegistry,
   };
 }
 
@@ -139,7 +138,7 @@ export function MediaSpotifyPlayback({
 }: MediaSpotifyPlaybackProps) {
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
-  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
+  const { entities, entityRegistry } = useProviderRuntime(selectMediaPlaybackData);
   const currentEntity = entities?.[entityId];
   const spotifyTargets = useMemo(
     () => getSpotifyTargets(entities, entityRegistry),
@@ -174,19 +173,19 @@ export function MediaSpotifyPlayback({
     void runAction(async () => {
       if (resolvedTarget) {
         if (resolvedSource) {
-          await homeAssistantService.selectMediaPlayerSource(
+          await integrationMediaFeatureService.selectMediaPlayerSource(
             resolvedTarget.entityId,
             resolvedSource
           );
         }
-        await homeAssistantService.playMedia(resolvedTarget.entityId, {
+        await integrationMediaFeatureService.playMedia(resolvedTarget.entityId, {
           mediaContentId: trimmedMediaContentId,
           mediaContentType: inferMediaContentType(trimmedMediaContentId),
         });
         return;
       }
 
-      await homeAssistantService.playMedia(entityId, {
+      await integrationMediaFeatureService.playMedia(entityId, {
         mediaContentId: trimmedMediaContentId,
         mediaContentType: inferMediaContentType(trimmedMediaContentId),
       });

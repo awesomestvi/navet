@@ -33,6 +33,7 @@ interface HomeAssistantActions {
   clearError: () => void;
 }
 
+export type { HomeAssistantActions, HomeAssistantState };
 export type HomeAssistantStore = HomeAssistantState & HomeAssistantActions;
 
 const initialState: HomeAssistantState = {

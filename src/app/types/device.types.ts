@@ -1,5 +1,6 @@
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { SensorIconType } from '../features/sensors';
+import type { PlatformResourceDescriptor } from '../platform/resources';
 import type { WeatherForecastMode } from '../stores/settings-store';
 import type { TemperatureUnit } from '../utils/temperature';
 import type { IntegrationProviderId } from './provider';
@@ -20,6 +21,9 @@ export interface BaseDevice {
   providerId?: IntegrationProviderId;
   nativeId?: string;
   canonicalId?: string;
+  resources?: Partial<
+    Record<'primaryImage' | 'artwork' | 'snapshot' | 'stream', PlatformResourceDescriptor>
+  >;
 }
 
 // Light device
@@ -318,8 +322,6 @@ export interface DeviceCollection {
 }
 
 // Device with type information
-export interface DeviceWithType
-  extends Record<string, string | number | boolean | string[] | undefined> {
-  id: string;
-  type: keyof DeviceCollection;
-}
+export type DeviceWithType = {
+  [K in keyof DeviceCollection]: DeviceCollection[K][number] & { type: K };
+}[keyof DeviceCollection];

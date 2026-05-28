@@ -2,11 +2,9 @@ import { ListMusic, Search, Trash2 } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Button, Checkbox, Input, Select } from '@/app/components/primitives';
 import type { MediaPlayerCapabilities } from '@/app/constants/media-player-features';
-import { useI18n, useServiceActionHandler } from '@/app/hooks';
-import {
-  type HomeAssistantMediaBrowseResult,
-  homeAssistantService,
-} from '@/app/services/home-assistant.service';
+import { useEntityProviderFeature, useI18n, useServiceActionHandler } from '@/app/hooks';
+import type { PlatformMediaBrowseResult } from '@/app/platform/provider-feature-models';
+import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 type EnqueueMode = 'play' | 'next' | 'add' | 'replace';
@@ -37,9 +35,9 @@ function inferMediaContentType(mediaContentId: string, fallback?: string) {
   return 'music';
 }
 
-function flattenPlayableItems(result?: HomeAssistantMediaBrowseResult) {
+function flattenPlayableItems(result?: PlatformMediaBrowseResult | null) {
   return (result?.children ?? []).filter(
-    (item) => item.media_content_id && item.media_content_type && (item.can_play || item.can_expand)
+    (item) => item.mediaContentId && item.mediaContentType && (item.canPlay || item.canExpand)
   );
 }
 
@@ -65,19 +63,21 @@ export function MediaCapabilityPanel({
   const [mediaContentType, setMediaContentType] = useState('music');
   const [enqueue, setEnqueue] = useState<EnqueueMode>('play');
   const [announce, setAnnounce] = useState(false);
-  const [browseResult, setBrowseResult] = useState<HomeAssistantMediaBrowseResult | null>(null);
+  const [browseResult, setBrowseResult] = useState<PlatformMediaBrowseResult | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResult, setSearchResult] = useState<HomeAssistantMediaBrowseResult | null>(null);
+  const [searchResult, setSearchResult] = useState<PlatformMediaBrowseResult | null>(null);
   const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
+  const supportsMediaControls = useEntityProviderFeature(entityId, 'mediaControls');
+  const supportsMediaBrowse = useEntityProviderFeature(entityId, 'mediaBrowse');
 
   const canShowPanel =
-    capabilities.canPlayMedia ||
-    capabilities.canBrowseMedia ||
-    capabilities.canSearchMedia ||
-    capabilities.canSeek ||
-    (capabilities.canSelectSource && sourceList.length > 0) ||
-    (capabilities.canSelectSoundMode && soundModeList.length > 0) ||
-    capabilities.canClearPlaylist;
+    ((capabilities.canPlayMedia ||
+      capabilities.canSeek ||
+      (capabilities.canSelectSource && sourceList.length > 0) ||
+      (capabilities.canSelectSoundMode && soundModeList.length > 0) ||
+      capabilities.canClearPlaylist) &&
+      supportsMediaControls) ||
+    ((capabilities.canBrowseMedia || capabilities.canSearchMedia) && supportsMediaBrowse);
 
   if (!canShowPanel) {
     return null;
@@ -85,11 +85,11 @@ export function MediaCapabilityPanel({
 
   const playMedia = (contentId: string, contentType?: string) => {
     const trimmedContentId = contentId.trim();
-    if (!trimmedContentId || !capabilities.canPlayMedia) return;
+    if (!trimmedContentId || !capabilities.canPlayMedia || !supportsMediaControls) return;
 
     void runAction(
       () =>
-        homeAssistantService.playMedia(entityId, {
+        integrationMediaFeatureService.playMedia(entityId, {
           mediaContentId: trimmedContentId,
           mediaContentType: inferMediaContentType(trimmedContentId, contentType),
           enqueue: capabilities.canEnqueue ? enqueue : undefined,
@@ -99,11 +99,15 @@ export function MediaCapabilityPanel({
     );
   };
 
-  const browseMedia = (item?: HomeAssistantMediaBrowseResult) => {
+  const browseMedia = (item?: PlatformMediaBrowseResult) => {
+    if (!supportsMediaBrowse) {
+      return;
+    }
+
     void runAction(async () => {
-      const result = await homeAssistantService.browseMediaPlayer(entityId, {
-        mediaContentId: item?.media_content_id,
-        mediaContentType: item?.media_content_type,
+      const result = await integrationMediaFeatureService.browseMediaPlayer(entityId, {
+        mediaContentId: item?.mediaContentId,
+        mediaContentType: item?.mediaContentType,
       });
       setBrowseResult(result);
     }, t('media.feedback.browseMediaFailed'));
@@ -111,11 +115,11 @@ export function MediaCapabilityPanel({
 
   const searchMedia = () => {
     const query = searchQuery.trim();
-    if (!query) return;
+    if (!query || !supportsMediaBrowse) return;
 
     void runAction(async () => {
-      const result = await homeAssistantService.searchMediaPlayer(entityId, query);
-      setSearchResult(result as HomeAssistantMediaBrowseResult);
+      const result = await integrationMediaFeatureService.searchMediaPlayer(entityId, query);
+      setSearchResult(result);
     }, t('media.feedback.searchMediaFailed'));
   };
 
@@ -135,7 +139,7 @@ export function MediaCapabilityPanel({
         <span className={`text-sm font-semibold ${controller.surface.textPrimary}`}>
           {t('media.capabilities.title')}
         </span>
-        {capabilities.canClearPlaylist ? (
+        {capabilities.canClearPlaylist && supportsMediaControls ? (
           <Button
             size="compact"
             variant="ghost"
@@ -147,7 +151,7 @@ export function MediaCapabilityPanel({
         ) : null}
       </div>
 
-      {capabilities.canSeek && durationSeconds > 0 ? (
+      {capabilities.canSeek && durationSeconds > 0 && supportsMediaControls ? (
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className={`text-xs font-medium ${controller.surface.textSecondary}`}>
@@ -170,7 +174,7 @@ export function MediaCapabilityPanel({
         </div>
       ) : null}
 
-      {capabilities.canSelectSource && sourceList.length > 0 ? (
+      {capabilities.canSelectSource && sourceList.length > 0 && supportsMediaControls ? (
         <Select
           size="small"
           value={source ?? sourceList[0]}
@@ -185,7 +189,7 @@ export function MediaCapabilityPanel({
         </Select>
       ) : null}
 
-      {capabilities.canSelectSoundMode && soundModeList.length > 0 ? (
+      {capabilities.canSelectSoundMode && soundModeList.length > 0 && supportsMediaControls ? (
         <Select
           size="small"
           value={soundMode ?? soundModeList[0]}
@@ -200,7 +204,7 @@ export function MediaCapabilityPanel({
         </Select>
       ) : null}
 
-      {capabilities.canPlayMedia ? (
+      {capabilities.canPlayMedia && supportsMediaControls ? (
         <div className="space-y-2">
           <div className="flex min-w-0 gap-2">
             <Input
@@ -255,7 +259,7 @@ export function MediaCapabilityPanel({
         </div>
       ) : null}
 
-      {capabilities.canBrowseMedia ? (
+      {capabilities.canBrowseMedia && supportsMediaBrowse ? (
         <div className="space-y-2">
           <Button
             size="small"
@@ -269,16 +273,16 @@ export function MediaCapabilityPanel({
             <div className="space-y-1.5">
               {browsedItems.slice(0, 6).map((item) => (
                 <button
-                  key={`${item.media_content_type}:${item.media_content_id}`}
+                  key={`${item.mediaContentType}:${item.mediaContentId}`}
                   type="button"
                   className={itemButtonClassName}
                   onClick={() =>
-                    item.can_expand && !item.can_play
+                    item.canExpand && !item.canPlay
                       ? browseMedia(item)
-                      : playMedia(item.media_content_id ?? '', item.media_content_type)
+                      : playMedia(item.mediaContentId ?? '', item.mediaContentType)
                   }
                 >
-                  {item.title ?? item.media_content_id}
+                  {item.title ?? item.mediaContentId}
                 </button>
               ))}
             </div>
@@ -286,7 +290,7 @@ export function MediaCapabilityPanel({
         </div>
       ) : null}
 
-      {capabilities.canSearchMedia ? (
+      {capabilities.canSearchMedia && supportsMediaBrowse ? (
         <div className="space-y-2">
           <div className="flex gap-2">
             <Input
@@ -310,12 +314,12 @@ export function MediaCapabilityPanel({
             <div className="space-y-1.5">
               {searchedItems.slice(0, 6).map((item) => (
                 <button
-                  key={`${item.media_content_type}:${item.media_content_id}`}
+                  key={`${item.mediaContentType}:${item.mediaContentId}`}
                   type="button"
                   className={itemButtonClassName}
-                  onClick={() => playMedia(item.media_content_id ?? '', item.media_content_type)}
+                  onClick={() => playMedia(item.mediaContentId ?? '', item.mediaContentType)}
                 >
-                  {item.title ?? item.media_content_id}
+                  {item.title ?? item.mediaContentId}
                 </button>
               ))}
             </div>

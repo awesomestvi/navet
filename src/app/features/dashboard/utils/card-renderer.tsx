@@ -4,9 +4,9 @@ import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getBaseCardRadiusClassName } from '@/app/components/system/tokens';
 import type { SensorReading } from '@/app/features/sensors';
 import type { VacuumStatus } from '@/app/features/vacuum';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { settingsSelectors } from '@/app/stores/selectors';
+import { useI18n, useProviderRuntime } from '@/app/hooks';
+import type { IntegrationStore } from '@/app/stores/integration-store';
+import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceMetric } from '@/app/types/device.types';
 
@@ -128,8 +128,8 @@ function getAvailabilityEntityIds(device: DeviceData): string[] {
 }
 
 function createEntityStatesSelector(entityIds: string[]) {
-  return function selectEntityStates(state: HomeAssistantStore): Array<string | undefined> {
-    return entityIds.map((entityId) => state.entities?.[entityId]?.state);
+  return function selectEntityStates(state: IntegrationStore): Array<string | undefined> {
+    return entityIds.map((entityId) => integrationSelectors.entity(entityId)(state)?.state);
   };
 }
 
@@ -147,7 +147,7 @@ function EntityAvailabilityFrame({
   const shouldReducePaintEffects = effectsQuality !== 'high';
   const entityIds = useMemo(() => getAvailabilityEntityIds(device), [device]);
   const selectEntityStates = useMemo(() => createEntityStatesSelector(entityIds), [entityIds]);
-  const entityStates = useHomeAssistant(selectEntityStates, isSameEntityStateList);
+  const entityStates = useProviderRuntime(selectEntityStates, isSameEntityStateList);
   const isUnavailable =
     entityIds.length > 0 &&
     entityStates.length === entityIds.length &&

@@ -1,11 +1,14 @@
+import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
 import { useDashboardEntitiesStore } from '@/app/features/dashboard';
-import { useI18n, useTheme } from '@/app/hooks';
+import { useI18n, useProviderHealth, useTheme } from '@/app/hooks';
+import { getIntegrationProviderFeatureMatrix } from '@/app/services/integration-registry.service';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { useThemeStore } from '@/app/stores/theme-store';
-import { useAuthBaseUrl } from '@/auth/AuthProvider';
+import { INTEGRATION_PROVIDERS, type IntegrationProviderId } from '@/app/types/provider';
+import { useAuthBaseUrl, useOptionalAuthSession } from '@/auth/AuthProvider';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
 
@@ -14,6 +17,14 @@ export type SectionNavItem = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 };
+
+type ProviderCardStatus =
+  | 'connected'
+  | 'connecting'
+  | 'reconnecting'
+  | 'signed-in'
+  | 'disconnected'
+  | 'planned';
 
 export function useSettingsSectionController() {
   const {
@@ -31,6 +42,20 @@ export function useSettingsSectionController() {
   const manualTheme = useThemeStore((state) => state.theme);
   const { languageOptions, t } = useI18n();
   const hassUrl = useAuthBaseUrl();
+  const authSession = useOptionalAuthSession();
+  const activeProviderId = authSession?.providerId ?? 'home_assistant';
+  const sessions = authSession?.sessions ?? {};
+  const login = authSession?.login;
+  const logout = authSession?.logout;
+  const setActiveProvider = authSession?.setActiveProvider ?? (() => undefined);
+  const providerHealth = useProviderHealth() as Array<{
+    providerId: IntegrationProviderId;
+    connected: boolean;
+    connecting: boolean;
+    reconnecting: boolean;
+    implementationStatus: 'implemented' | 'planned';
+    lastError: string | null;
+  }>;
   const {
     cameraGo2RtcDefaults,
     disableAnimations,
@@ -96,18 +121,62 @@ export function useSettingsSectionController() {
     handleSelectWallpaper,
     handleExportDashboardConfig,
     handleImportDashboardConfig,
+    handleConnectProvider,
+    handleDisconnectProvider,
     handleRestartOnboarding,
   } = useSettingsSectionActions({
     t,
+    activeProviderId,
     setWallpaper,
     setActiveSection,
     setCurrentRoom,
     reopenOnboarding,
+    connectProvider: async ({ providerId, hassUrl }) => {
+      await login?.({ providerId, hassUrl });
+    },
+    disconnectProvider: async (providerId) => {
+      await logout?.(providerId);
+    },
   });
 
   const styles = getSettingsSectionStyles(theme, primaryColor);
+  const providerCards = useMemo(
+    () =>
+      Object.values(INTEGRATION_PROVIDERS).map((provider) => {
+        const health = providerHealth.find((entry) => entry.providerId === provider.id);
+        const session = sessions[provider.id];
+        const status: ProviderCardStatus =
+          provider.id === 'openhab'
+            ? 'planned'
+            : health?.reconnecting
+              ? 'reconnecting'
+              : health?.connecting
+                ? 'connecting'
+                : health?.connected
+                  ? 'connected'
+                  : session
+                    ? 'signed-in'
+                    : 'disconnected';
+
+        return {
+          id: provider.id,
+          label: provider.label,
+          status,
+          isActive: activeProviderId === provider.id,
+          isConnected: Boolean(session),
+          canConnect: provider.id !== 'openhab',
+          canDisconnect: Boolean(session),
+          baseUrl: session?.hassUrl ?? null,
+          error: health?.lastError ?? null,
+          implementationStatus: health?.implementationStatus ?? 'planned',
+          featureMatrix: getIntegrationProviderFeatureMatrix(provider.id),
+        };
+      }),
+    [activeProviderId, providerHealth, sessions]
+  );
 
   return {
+    activeProviderId,
     ambientLightBleed,
     cameraGo2RtcDefaults,
     config: hassUrl ? { url: hassUrl } : null,
@@ -119,6 +188,8 @@ export function useSettingsSectionController() {
     setFollowSystemTheme,
     handleExportDashboardConfig,
     handleImportDashboardConfig,
+    handleConnectProvider,
+    handleDisconnectProvider,
     handleLogout,
     confirmLogout,
     handleRemoveWallpaper,
@@ -135,7 +206,9 @@ export function useSettingsSectionController() {
     lowPowerMode,
     manualTheme,
     primaryColor,
+    providerCards,
     reopenOnboarding,
+    setActiveProvider,
     setPrimaryColor,
     setCustomPrimaryColor,
     setShowLicense,

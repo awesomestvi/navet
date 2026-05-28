@@ -68,41 +68,45 @@ function normalizeHomeyLightTemperature(device: HomeyDevice): number {
 
 function mapHomeyLight(device: HomeyDevice, room: string): LightDevice {
   const dim = getNumericCapability(device, 'dim');
+  const metadata = createProviderScopedMetadata('homey', device.id);
 
   return {
-    id: device.id,
+    id: metadata.canonicalId,
     name: device.name,
     room,
     size: 'small',
     state: normalizeHomeyState(device),
     brightness: Math.round((dim ?? 1) * 100),
     temp: normalizeHomeyLightTemperature(device),
-    ...createProviderScopedMetadata('homey', device.id),
+    ...metadata,
   };
 }
 
 function mapHomeyFan(device: HomeyDevice, room: string): FanDevice {
   const dim = getNumericCapability(device, 'dim');
+  const metadata = createProviderScopedMetadata('homey', device.id);
 
   return {
-    id: device.id,
+    id: metadata.canonicalId,
     name: device.name,
     room,
     size: 'small',
     state: normalizeHomeyState(device),
     percentage: Math.round((dim ?? 0) * 100),
-    ...createProviderScopedMetadata('homey', device.id),
+    ...metadata,
   };
 }
 
 function mapHomeySwitch(device: HomeyDevice, room: string): SwitchDevice {
+  const metadata = createProviderScopedMetadata('homey', device.id);
+
   return {
-    id: device.id,
+    id: metadata.canonicalId,
     name: device.name,
     room,
     size: 'small',
     state: normalizeHomeyState(device),
-    ...createProviderScopedMetadata('homey', device.id),
+    ...metadata,
   };
 }
 
@@ -133,6 +137,7 @@ function createHomeySensorDevice(
   capabilityId: string,
   capability: HomeyCapabilityState
 ): SensorDevice {
+  const metadata = createProviderScopedMetadata('homey', `${device.id}#${capabilityId}`);
   const value =
     typeof capability.value === 'boolean'
       ? capability.value
@@ -141,7 +146,7 @@ function createHomeySensorDevice(
       : String(capability.value ?? '');
 
   return {
-    id: `${device.id}#${capabilityId}`,
+    id: metadata.canonicalId,
     name: capability.title?.trim() || `${device.name} ${capabilityId.replace(/_/g, ' ')}`.trim(),
     room,
     size: 'small',
@@ -150,7 +155,7 @@ function createHomeySensorDevice(
     icon: inferSensorIcon(capabilityId),
     deviceClass: capabilityId.replace(/^(measure_|alarm_)/, ''),
     status: inferSensorStatus(capabilityId, capability.value),
-    ...createProviderScopedMetadata('homey', `${device.id}#${capabilityId}`),
+    ...metadata,
   };
 }
 

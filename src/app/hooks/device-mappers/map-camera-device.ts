@@ -24,16 +24,26 @@ export function mapCameraDevice(
 ): CameraDevice {
   const supportedFeatures = parseSupportedFeatures(entity.attributes?.supported_features);
   const isStreamCapable = (supportedFeatures & CAMERA_FEATURE_STREAM) === CAMERA_FEATURE_STREAM;
+  const entityPicture =
+    typeof entity.attributes?.entity_picture === 'string'
+      ? entity.attributes.entity_picture
+      : undefined;
 
   return {
     id: entityId,
     name,
     room,
     size: 'medium',
-    entityPicture:
-      typeof entity.attributes?.entity_picture === 'string'
-        ? entity.attributes.entity_picture
-        : undefined,
+    entityPicture,
+    resources: entityPicture
+      ? {
+          snapshot: {
+            kind: 'camera_snapshot',
+            entityId,
+            path: entityPicture,
+          },
+        }
+      : undefined,
     state: entity.state,
     supportedFeatures,
     isStreamCapable,

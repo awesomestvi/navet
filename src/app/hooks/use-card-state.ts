@@ -6,10 +6,25 @@ import {
   notifyPersistedStateChanged,
   PERSISTED_STATE_EVENT,
 } from '../utils/persisted-state-events';
+import { normalizePersistedEntityRecord } from '../utils/provider-entity-id';
 import { storage } from '../utils/storage';
 
 const CALENDAR_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
 const LOCK_ALLOWED_SIZES: CardSize[] = ['extra-small', 'small'];
+
+function areCardSizeRecordsEqual(
+  left: Record<string, CardSize>,
+  right: Record<string, CardSize>
+): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  return rightKeys.every((key) => left[key] === right[key]);
+}
 
 function normalizeCardSize(id: string, size: CardSize, devices: DeviceCollection): CardSize {
   const isCalendarCard = devices.calendars.some((device) => device.id === id);
@@ -55,7 +70,7 @@ export const useCardState = (
   const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>(() => {
     const stored = storage.get<Record<string, CardSize> | null>(STORAGE_KEYS[storageKey], null);
     if (stored) {
-      return normalizeCardSizes(stored, devices);
+      return normalizeCardSizes(normalizePersistedEntityRecord(stored), devices);
     }
 
     // Default: use sizes from devices
@@ -86,7 +101,14 @@ export const useCardState = (
         return;
       }
 
-      setCardSizes(normalizeCardSizes(customEvent.detail.value ?? {}, devices));
+      const normalizedValue = normalizeCardSizes(
+        normalizePersistedEntityRecord(customEvent.detail.value ?? {}),
+        devices
+      );
+
+      setCardSizes((previous) =>
+        areCardSizeRecordsEqual(previous, normalizedValue) ? previous : normalizedValue
+      );
     };
 
     window.addEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);

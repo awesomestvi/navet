@@ -4,7 +4,6 @@
  * Returns an aggregated calendar device combining all calendar entities
  */
 
-import type { Connection } from 'home-assistant-js-websocket';
 import {
   startTransition,
   useCallback,
@@ -20,49 +19,13 @@ import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useRegistryRoomResolver } from '@/app/hooks/use-registry-device-topology';
 import { useI18n } from '@/app/i18n';
+import type { PlatformCalendarEvent } from '@/app/platform/provider-feature-models';
+import { integrationCalendarFeatureService } from '@/app/services/integration-calendar-feature.service';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { CalendarDevice } from '@/app/types/device.types';
 import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
-
-type CalendarServiceEvent = Record<string, unknown>;
-
-type CalendarEventsServicePayload = {
-  response?: Record<
-    string,
-    {
-      events?: CalendarServiceEvent[];
-    }
-  >;
-};
-
-type CalendarEventsServiceEnvelope = CalendarEventsServicePayload & {
-  result?: CalendarEventsServicePayload;
-};
-
-async function fetchCalendarEvents(
-  connection: Connection,
-  entityId: string
-): Promise<CalendarServiceEvent[]> {
-  const now = new Date();
-  const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  const response = (await connection.sendMessagePromise({
-    type: 'call_service',
-    domain: 'calendar',
-    service: 'get_events',
-    target: { entity_id: entityId },
-    service_data: {
-      start_date_time: now.toISOString(),
-      end_date_time: end.toISOString(),
-    },
-    return_response: true,
-  })) as CalendarEventsServiceEnvelope;
-
-  const payload = response.response ?? response.result?.response;
-  return payload?.[entityId]?.events ?? [];
-}
 
 export function useCalendarDevices(): CalendarDevice[] {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
@@ -92,7 +55,7 @@ export function useCalendarDevices(): CalendarDevice[] {
     shallow
   );
 
-  const [calendarEvents, setCalendarEvents] = useState<Record<string, CalendarServiceEvent[]>>({});
+  const [calendarEvents, setCalendarEvents] = useState<Record<string, PlatformCalendarEvent[]>>({});
   const deferredCalendarEvents = useDeferredValue(calendarEvents);
 
   useEffect(() => {
@@ -116,7 +79,9 @@ export function useCalendarDevices(): CalendarDevice[] {
     async function refreshEvents() {
       const entries = await Promise.all(
         calendarEntityIds.map(async (entityId) => {
-          const events = await fetchCalendarEvents(activeConnection, entityId).catch(() => []);
+          const events = await integrationCalendarFeatureService
+            .getEvents(entityId, { connection: activeConnection })
+            .catch(() => []);
           return [entityId, events] as const;
         })
       );

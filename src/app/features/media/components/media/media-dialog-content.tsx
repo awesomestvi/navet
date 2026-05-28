@@ -4,7 +4,8 @@ import { CardDialogTabList, CardDialogTabTrigger } from '@/app/components/patter
 import { CustomDialogDoneButton, DialogFooter } from '@/app/components/primitives/dialog-shell';
 import { ModalSurface } from '@/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
+import { useEntityProviderFeatureMatrix, useI18n } from '@/app/hooks';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
 import { MediaCapabilityPanel } from './media-capability-panel';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
@@ -92,16 +93,21 @@ export function MediaDialogContent({
 }: MediaDialogContentProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('playback');
-  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
+  const { entities, entityRegistry } = useProviderRuntime(selectMediaPlaybackData);
+  const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const hasMediaControls = hasMediaCapabilityControls({
     capabilities,
     durationSeconds,
     sourceList,
     soundModeList,
   });
-  const hasSpotifyControls = hasSpotifyPlaybackControls(entities, entityRegistry, entityId);
+  const hasSpotifyControls =
+    featureMatrix.mediaControls && hasSpotifyPlaybackControls(entities, entityRegistry, entityId);
   const hasGroupingControls = supportsGrouping;
-  const shouldRenderTabs = hasMediaControls || hasSpotifyControls || hasGroupingControls;
+  const shouldRenderMediaTab =
+    (hasMediaControls && (featureMatrix.mediaControls || featureMatrix.mediaBrowse)) ||
+    hasSpotifyControls;
+  const shouldRenderTabs = shouldRenderMediaTab || hasGroupingControls;
   const playbackPanel = (
     <div className="space-y-5 md:space-y-6">
       <MediaDialogArtwork
@@ -211,7 +217,7 @@ export function MediaDialogContent({
               >
                 {t('media.tabs.playback')}
               </CardDialogTabTrigger>
-              {hasMediaControls || hasSpotifyControls ? (
+              {shouldRenderMediaTab ? (
                 <CardDialogTabTrigger
                   active={activeTab === 'media'}
                   icon={Music2}
@@ -234,7 +240,7 @@ export function MediaDialogContent({
             <TabPanel value="playback" className="mt-5">
               {playbackPanel}
             </TabPanel>
-            {hasMediaControls || hasSpotifyControls ? (
+            {shouldRenderMediaTab ? (
               <TabPanel value="media" className="mt-5">
                 {mediaPanel}
               </TabPanel>

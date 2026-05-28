@@ -1,43 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
+import type {
+  PlatformNotificationSnapshot,
+  PlatformPersistentNotification,
+  PlatformRepairIssue,
+} from '@/app/platform/provider-feature-models';
+import { integrationNotificationFeatureService } from '@/app/services/integration-notification-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
-export interface HomeAssistantPersistentNotification {
-  notification_id?: string;
-  title?: string;
-  message?: string;
-  created_at?: string;
-  status?: string;
-}
-
-export interface HomeAssistantRepairIssue {
-  issue_id?: string;
-  domain?: string;
-  issue_domain?: string;
-  translation_key?: string;
-  severity?: string;
-  breaks_in_ha_version?: string;
-  learn_more_url?: string;
-  title?: string;
-  description?: string;
-}
-
-interface HomeAssistantPersistentNotificationEvent {
-  update_type?: 'added' | 'removed' | 'updated' | 'current';
-  notifications?: HomeAssistantPersistentNotification[];
-}
-
-export interface HaNotificationData {
-  persistentNotifications: HomeAssistantPersistentNotification[];
-  repairIssues: HomeAssistantRepairIssue[];
-}
+export interface HaNotificationData extends PlatformNotificationSnapshot {}
 
 export function useHaNotificationData(): HaNotificationData {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const [persistentNotifications, setPersistentNotifications] = useState<
-    HomeAssistantPersistentNotification[]
+    PlatformPersistentNotification[]
   >([]);
-  const [repairIssues, setRepairIssues] = useState<HomeAssistantRepairIssue[]>([]);
+  const [repairIssues, setRepairIssues] = useState<PlatformRepairIssue[]>([]);
 
   useEffect(() => {
     if (!connection) {
@@ -48,50 +26,29 @@ export function useHaNotificationData(): HaNotificationData {
 
     let cancelled = false;
 
-    void connection
-      .sendMessagePromise({ type: 'persistent_notification/get' })
-      .then((result) => {
-        if (cancelled || !Array.isArray(result)) return;
-        setPersistentNotifications(
-          result.filter(
-            (entry): entry is HomeAssistantPersistentNotification =>
-              typeof entry === 'object' && entry !== null
-          )
-        );
+    void integrationNotificationFeatureService
+      .getSnapshot({ connection })
+      .then((snapshot) => {
+        if (cancelled) return;
+        setPersistentNotifications(snapshot.persistentNotifications);
+        setRepairIssues(snapshot.repairIssues);
       })
       .catch(() => {
-        if (!cancelled) setPersistentNotifications([]);
-      });
-
-    void connection
-      .sendMessagePromise({ type: 'repairs/list_issues' })
-      .then((result) => {
-        if (cancelled || !Array.isArray(result)) return;
-        setRepairIssues(
-          result.filter(
-            (entry): entry is HomeAssistantRepairIssue =>
-              typeof entry === 'object' && entry !== null
-          )
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setRepairIssues([]);
+        if (!cancelled) {
+          setPersistentNotifications([]);
+          setRepairIssues([]);
+        }
       });
 
     let unsubscribe: (() => void) | null = null;
 
-    void connection
-      .subscribeMessage(
-        (event: HomeAssistantPersistentNotificationEvent) => {
+    void integrationNotificationFeatureService
+      .subscribePersistentNotifications(
+        (event) => {
           if (cancelled || !Array.isArray(event?.notifications)) return;
-          setPersistentNotifications(
-            event.notifications.filter(
-              (entry): entry is HomeAssistantPersistentNotification =>
-                typeof entry === 'object' && entry !== null
-            )
-          );
+          setPersistentNotifications(event.notifications);
         },
-        { type: 'persistent_notification/subscribe' }
+        { connection }
       )
       .then((unsub) => {
         if (cancelled) {

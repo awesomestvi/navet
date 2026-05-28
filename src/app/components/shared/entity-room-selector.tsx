@@ -7,7 +7,7 @@ import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useEntityRoomRegistryContext, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationAdminService } from '@/app/services/integration-admin.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 interface EntityRoomSelectorProps {
@@ -91,8 +91,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 
       setIsSaving(true);
       try {
-        const createdArea = await homeAssistantService.createArea(trimmedRoomName);
-        await homeAssistantService.updateEntityArea(entityId, createdArea.area_id);
+        const createdArea = await integrationAdminService.createArea(trimmedRoomName);
+        await integrationAdminService.updateEntityArea(entityId, createdArea.area_id);
         toast.success(t('entityRoomSelector.movedTo', { room: createdArea.name }));
       } catch (error) {
         const message =
@@ -112,7 +112,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       sortedAreas.find((area) => area.area_id === nextAreaId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
-      await homeAssistantService.updateEntityArea(entityId, nextAreaId);
+      await integrationAdminService.updateEntityArea(entityId, nextAreaId);
 
       toast.success(t('entityRoomSelector.movedTo', { room: nextRoomName }));
     } catch (error) {

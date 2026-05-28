@@ -53,9 +53,12 @@ import { useWeatherDevices } from './use-weather-devices';
 export { useCalendarDevices, useWeatherDevices };
 
 function withProviderMetadata<T extends { id: string }>(device: T): T {
+  const metadata = createProviderScopedMetadata('home_assistant', device.id);
+
   return {
     ...device,
-    ...createProviderScopedMetadata('home_assistant', device.id),
+    id: metadata.canonicalId,
+    ...metadata,
   };
 }
 

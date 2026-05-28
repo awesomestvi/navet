@@ -1,37 +1,44 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { renderWithProviders } from '@/test/render';
 import { EnergyNowDashboardWidget } from '../energy-now-dashboard-widget';
 
 const energyDashboardMock = vi.hoisted(() => ({
-  useEnergyDashboard: vi.fn(),
   useEnergyLoadHistory: vi.fn(),
+  useProviderEnergyNow: vi.fn(),
 }));
 
 vi.mock('@/app/features/energy', () => ({
   EnergyNowCardView: ({ title }: { title: string }) => <div>{title}</div>,
-  useEnergyDashboard: energyDashboardMock.useEnergyDashboard,
   useEnergyLoadHistory: energyDashboardMock.useEnergyLoadHistory,
+  useProviderEnergyNow: energyDashboardMock.useProviderEnergyNow,
 }));
 
 describe('EnergyNowDashboardWidget', () => {
   beforeEach(() => {
+    authSessionManager.replaceSession(null);
     energyDashboardMock.useEnergyLoadHistory.mockReturnValue([]);
-    energyDashboardMock.useEnergyDashboard.mockReturnValue({
-      overview: {
-        totals: {
-          currentLoadW: 420,
-          solarTodayKWh: 0,
-          solarW: 0,
-          importTodayKWh: 0,
-          importW: 0,
-        },
-        topConsumers: [],
-      },
+    energyDashboardMock.useProviderEnergyNow.mockReturnValue({
+      currentLoadW: 420,
+      solarTodayKWh: 0,
+      solarW: 0,
+      importTodayKWh: 0,
+      importW: 0,
       currentLoadStatisticId: 'sensor.home_power',
       todayTotalUsageKWh: 3.2,
       isConnected: true,
       isConfigured: true,
+      sourceOptions: [
+        {
+          id: 'home-load',
+          name: 'Home',
+          currentPowerW: 420,
+          todayUsageKWh: 3.2,
+          trendEntityId: 'sensor.home_power',
+          group: 'home',
+        },
+      ],
     });
   });
 
@@ -55,21 +62,17 @@ describe('EnergyNowDashboardWidget', () => {
   });
 
   it('uses the custom-card empty state when Home Assistant energy is not configured', () => {
-    energyDashboardMock.useEnergyDashboard.mockReturnValue({
-      overview: {
-        totals: {
-          currentLoadW: 0,
-          solarTodayKWh: 0,
-          solarW: 0,
-          importTodayKWh: 0,
-          importW: 0,
-        },
-        topConsumers: [],
-      },
+    energyDashboardMock.useProviderEnergyNow.mockReturnValue({
+      currentLoadW: 0,
+      solarTodayKWh: 0,
+      solarW: 0,
+      importTodayKWh: 0,
+      importW: 0,
       currentLoadStatisticId: undefined,
       todayTotalUsageKWh: 0,
       isConnected: true,
       isConfigured: false,
+      sourceOptions: [],
     });
 
     renderWithProviders(<EnergyNowDashboardWidget onUpdate={vi.fn()} />);
@@ -81,21 +84,17 @@ describe('EnergyNowDashboardWidget', () => {
   });
 
   it('uses the card empty state when Home Assistant is disconnected', () => {
-    energyDashboardMock.useEnergyDashboard.mockReturnValue({
-      overview: {
-        totals: {
-          currentLoadW: 0,
-          solarTodayKWh: 0,
-          solarW: 0,
-          importTodayKWh: 0,
-          importW: 0,
-        },
-        topConsumers: [],
-      },
+    energyDashboardMock.useProviderEnergyNow.mockReturnValue({
+      currentLoadW: 0,
+      solarTodayKWh: 0,
+      solarW: 0,
+      importTodayKWh: 0,
+      importW: 0,
       currentLoadStatisticId: undefined,
       todayTotalUsageKWh: 0,
       isConnected: false,
       isConfigured: true,
+      sourceOptions: [],
     });
 
     renderWithProviders(<EnergyNowDashboardWidget />);
@@ -107,6 +106,22 @@ describe('EnergyNowDashboardWidget', () => {
       )
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Energy entities' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
+  });
+
+  it('shows a provider capability fallback when the active provider does not support energy', () => {
+    authSessionManager.replaceSession({
+      providerId: 'homey',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://homey.example.com',
+      hassUrl: 'https://homey.example.com',
+    });
+
+    renderWithProviders(<EnergyNowDashboardWidget />);
+
+    expect(screen.getByText('Energy Now')).toBeInTheDocument();
+    expect(screen.getByText('Homey does not support this feature yet.')).toBeInTheDocument();
     expect(screen.queryByText('Current Load')).not.toBeInTheDocument();
   });
 });

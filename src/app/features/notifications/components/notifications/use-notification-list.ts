@@ -5,12 +5,12 @@ import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useI18n } from '@/app/i18n';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { HaNotificationData } from './use-ha-notification-data';
-import type { Notification } from './use-notifications';
+import type { PlatformNotification } from './use-notifications';
 
 const inferNotificationType = (
   entityId: string,
   attributes: Record<string, unknown>
-): Notification['type'] => {
+): PlatformNotification['type'] => {
   const severity =
     typeof attributes.severity === 'string'
       ? attributes.severity.toLowerCase()
@@ -52,12 +52,12 @@ export function useNotificationList({
   readNotifications,
   hiddenNotifications,
   pendingUpdateInstalls,
-}: UseNotificationListParams): Notification[] {
+}: UseNotificationListParams): PlatformNotification[] {
   const { t } = useI18n();
   const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
   const updateEntities = useHomeAssistant(selectUpdateDomainEntities, shallow);
 
-  return useMemo<Notification[]>(() => {
+  return useMemo<PlatformNotification[]>(() => {
     if (
       !hassEntitiesHydrated &&
       persistentNotifications.length === 0 &&

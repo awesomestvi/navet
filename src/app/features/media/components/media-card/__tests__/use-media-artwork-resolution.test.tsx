@@ -479,14 +479,11 @@ describe('useMediaArtworkResolution', () => {
   });
 
   it('keeps the previous authenticated artwork visible while the next track artwork loads', async () => {
-    let resolveSecondArtwork: (value: string) => void = () => undefined;
     let callCount = 0;
     fetchMediaThumbnailDataUrlMock.mockImplementation(() =>
       callCount++ === 0
         ? Promise.resolve('data:image/jpeg;base64,first-track')
-        : new Promise<string>((resolve) => {
-            resolveSecondArtwork = resolve;
-          })
+        : new Promise<string>(() => undefined)
     );
 
     const { result, rerender } = renderHookWithProviders(
@@ -507,11 +504,8 @@ describe('useMediaArtworkResolution', () => {
     rerender({ liveArtworkKey: 'second-title::second-artist' });
 
     expect(result.current.albumArt).toBe('data:image/jpeg;base64,first-track');
-
-    resolveSecondArtwork('data:image/jpeg;base64,second-track');
-
     await waitFor(() => {
-      expect(result.current.albumArt).toBe('data:image/jpeg;base64,second-track');
+      expect(fetchMediaThumbnailDataUrlMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 

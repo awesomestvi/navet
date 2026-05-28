@@ -10,15 +10,9 @@ import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { AddEntityDialog, useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { SecurityCameraDashboard } from '@/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@/app/features/security/utils/security-camera-dashboard-model';
-import {
-  useCardState,
-  useDevices,
-  useEditMode,
-  useHomeAssistant,
-  useI18n,
-  useThemeMode,
-} from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { useCardState, useDevices, useEditMode, useI18n, useThemeMode } from '@/app/hooks';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import type { IntegrationStore } from '@/app/stores/integration-store';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 export function SecuritySection() {
@@ -26,7 +20,7 @@ export function SecuritySection() {
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDevices();
-  const selectSecuritySummaryEntities = useCallback((state: HomeAssistantStore) => {
+  const selectSecuritySummaryEntities = useCallback((state: IntegrationStore) => {
     if (!state.entities) {
       return null;
     }
@@ -40,7 +34,7 @@ export function SecuritySection() {
       )
     );
   }, []);
-  const entities = useHomeAssistant(selectSecuritySummaryEntities, shallow);
+  const entities = useProviderRuntime(selectSecuritySummaryEntities, shallow);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(

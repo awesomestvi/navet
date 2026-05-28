@@ -4,8 +4,15 @@ import { CardEmptyState } from '@/app/components/patterns';
 import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
-import { EnergyNowCardView, useEnergyDashboard, useEnergyLoadHistory } from '@/app/features/energy';
-import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
+import {
+  EnergyNowCardView,
+  useEnergyLoadHistory,
+  useProviderEnergyNow,
+} from '@/app/features/energy';
+import { useAreaRooms, useI18n, useProviderFeature, useTheme } from '@/app/hooks';
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
+import { useOptionalAuthSession } from '@/auth/AuthProvider';
 import { EnergyNowSettingsDialog, type EnergySourceOption } from './energy-now-settings-dialog';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
@@ -37,65 +44,34 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const rooms = useAreaRooms();
+  const authSession = useOptionalAuthSession();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { overview, currentLoadStatisticId, todayTotalUsageKWh, isConnected, isConfigured } =
-    useEnergyDashboard();
+  const energyNow = useProviderEnergyNow();
+  const supportsEnergyNow = useProviderFeature('energyNow');
   const selectedSourceId = getSelectedSourceId(data?.selectedSourceId);
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
 
   const sourceOptions = useMemo(() => {
-    const options: EnergySourceOption[] = [
-      {
-        id: 'home-load',
-        name: t('widgets.energyNow.settings.home'),
-        currentPowerW: overview.totals.currentLoadW,
-        todayUsageKWh: todayTotalUsageKWh,
-        trendEntityId: currentLoadStatisticId,
-        group: 'home',
-      },
-    ];
-
-    if (overview.totals.solarTodayKWh > 0 || overview.totals.solarW > 0) {
-      options.push({
-        id: 'solar',
-        name: t('energy.widgets.status.solarGenerated'),
-        currentPowerW: overview.totals.solarW,
-        todayUsageKWh: overview.totals.solarTodayKWh,
-        group: 'sources',
-      });
-    }
-
-    if (overview.totals.importTodayKWh > 0 || overview.totals.importW > 0) {
-      options.push({
-        id: 'grid-import',
-        name: t('energy.stats.gridImport'),
-        currentPowerW: overview.totals.importW,
-        todayUsageKWh: overview.totals.importTodayKWh,
-        group: 'sources',
-      });
-    }
-
-    for (const consumer of overview.topConsumers) {
-      options.push({
-        id: `device:${consumer.id}`,
-        name: consumer.name,
-        currentPowerW: consumer.powerW,
-        todayUsageKWh: consumer.energyKWh,
-        trendEntityId: consumer.powerEntityId,
-        group: 'devices',
-      });
-    }
-
-    return options;
-  }, [currentLoadStatisticId, overview, t, todayTotalUsageKWh]);
+    return energyNow.sourceOptions.map<EnergySourceOption>((option) => ({
+      ...option,
+      name:
+        option.id === 'home-load'
+          ? t('widgets.energyNow.settings.home')
+          : option.id === 'solar'
+            ? t('energy.widgets.status.solarGenerated')
+            : option.id === 'grid-import'
+              ? t('energy.stats.gridImport')
+              : option.name,
+    }));
+  }, [energyNow.sourceOptions, t]);
 
   const selectedOption =
     sourceOptions.find((option) => option.id === selectedSourceId) ?? sourceOptions[0] ?? null;
   const selectedTrend = useEnergyLoadHistory(
     selectedOption?.trendEntityId,
-    selectedOption?.currentPowerW ?? overview.totals.currentLoadW
+    selectedOption?.currentPowerW ?? energyNow.currentLoadW
   );
   const isCustomCard = Boolean(onUpdate);
   const settingsDialog = (
@@ -154,11 +130,18 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     </BaseCard>
   );
 
-  if (!isConnected) {
+  if (!supportsEnergyNow) {
+    const providerLabel =
+      authSession?.provider.label ??
+      INTEGRATION_PROVIDERS[authSessionManager.getSnapshot().providerId].label;
+    return renderEmptyCard(t('integration.featureUnavailable', { provider: providerLabel }), false);
+  }
+
+  if (!energyNow.isConnected) {
     return renderEmptyCard(t('network.disconnectedDescription'), false);
   }
 
-  if (!isConfigured) {
+  if (!energyNow.isConfigured) {
     if (isCustomCard) {
       return (
         <>
@@ -185,8 +168,8 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
           <EnergyNowCardView
             title={selectedOption?.name ?? t('widgets.energyNow.settings.home')}
             subtitle={t('widgets.common.widget')}
-            currentLoadW={selectedOption?.currentPowerW ?? overview.totals.currentLoadW}
-            todayUsageKWh={selectedOption?.todayUsageKWh ?? todayTotalUsageKWh}
+            currentLoadW={selectedOption?.currentPowerW ?? energyNow.currentLoadW}
+            todayUsageKWh={selectedOption?.todayUsageKWh ?? energyNow.todayTotalUsageKWh}
             trend={selectedTrend}
             accentColor={accentColor}
             size={size}
@@ -197,8 +180,8 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
         <EnergyNowCardView
           title={selectedOption?.name ?? t('widgets.energyNow.settings.home')}
           subtitle={t('widgets.common.widget')}
-          currentLoadW={selectedOption?.currentPowerW ?? overview.totals.currentLoadW}
-          todayUsageKWh={selectedOption?.todayUsageKWh ?? todayTotalUsageKWh}
+          currentLoadW={selectedOption?.currentPowerW ?? energyNow.currentLoadW}
+          todayUsageKWh={selectedOption?.todayUsageKWh ?? energyNow.todayTotalUsageKWh}
           trend={selectedTrend}
           accentColor={accentColor}
           size={size}

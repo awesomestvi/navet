@@ -1,28 +1,14 @@
-import { useHaNotificationData } from './use-ha-notification-data';
+import type { PlatformNotification } from '@/app/platform/provider-feature-models';
 import { useNotificationActions } from './use-notification-actions';
-import { useNotificationList } from './use-notification-list';
 import { useNotificationStorage } from './use-notification-storage';
+import { useProviderNotificationData } from './use-provider-notification-data';
+import { useProviderNotificationList } from './use-provider-notification-list';
 
-export interface Notification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  notificationId: string;
-  source: 'persistent_notification' | 'update' | 'repair';
-  isBusy?: boolean;
-  progress?: number | null;
-  statusLabel?: string;
-  requiresRestart?: boolean;
-  installedVersion?: string | null;
-  latestVersion?: string | null;
-  detailsUrl?: string | null;
-}
+export type { PlatformNotification };
+export type Notification = PlatformNotification;
 
-export interface UseNotificationsReturn {
-  notifications: Notification[];
+export interface PlatformNotificationsReturn {
+  notifications: PlatformNotification[];
   unreadCount: number;
   runPrimaryAction: (id: string) => Promise<void>;
   markAllAsRead: () => void;
@@ -30,7 +16,7 @@ export interface UseNotificationsReturn {
   clearAll: () => Promise<void>;
 }
 
-export function useNotifications(): UseNotificationsReturn {
+export function useNotifications(): PlatformNotificationsReturn {
   const {
     readNotifications,
     setReadNotifications,
@@ -40,9 +26,9 @@ export function useNotifications(): UseNotificationsReturn {
     setPendingUpdateInstalls,
   } = useNotificationStorage();
 
-  const { persistentNotifications, repairIssues } = useHaNotificationData();
+  const { persistentNotifications, repairIssues } = useProviderNotificationData();
 
-  const notifications = useNotificationList({
+  const notifications = useProviderNotificationList({
     persistentNotifications,
     repairIssues,
     readNotifications,

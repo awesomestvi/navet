@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
+import { ensureCanonicalEntityId } from '@/app/utils/provider-entity-id';
 import type { SectionLayoutItem } from '../utils/layout-engine';
 import { normalizeLayout } from '../utils/layout-migration';
 
@@ -49,9 +50,14 @@ function normalizeHomeDashboardLayout(value: unknown): HomeDashboardLayoutState 
   return {
     mode: normalized.mode,
     showHero: normalized.showHero,
-    cardIds: normalized.cardIds,
+    cardIds: normalized.cardIds.map((id) => ensureCanonicalEntityId(id)),
     sections: normalized.sections.map(toHomeSection),
-    cardSectionAssignments: normalized.cardSectionAssignments,
+    cardSectionAssignments: Object.fromEntries(
+      Object.entries(normalized.cardSectionAssignments).map(([id, sectionId]) => [
+        ensureCanonicalEntityId(id),
+        sectionId,
+      ])
+    ),
   };
 }
 
@@ -59,7 +65,7 @@ export const useHomeDashboardLayoutStore = create<HomeDashboardLayoutStore>()(
   persist(
     (set) => ({
       ...DEFAULT_HOME_DASHBOARD_LAYOUT,
-      replaceLayout: (layout) => set(layout),
+      replaceLayout: (layout) => set(normalizeHomeDashboardLayout(layout)),
       updateLayout: (updater) =>
         set((previous) => (typeof updater === 'function' ? updater(previous) : updater)),
     }),

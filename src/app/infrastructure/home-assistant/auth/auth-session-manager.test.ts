@@ -38,12 +38,47 @@ vi.mock('@/auth/adapters/homeyOAuthAuth', () => ({
 }));
 
 describe('authSessionManager snapshot', () => {
+  it('restores both Home Assistant and Homey sessions together', async () => {
+    const standaloneOAuthAuthModule = await import('@/auth/adapters/standaloneOAuthAuth');
+    vi.mocked(standaloneOAuthAuthModule.standaloneOAuthAuth.init).mockResolvedValueOnce({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+    homeyInitMock.mockResolvedValueOnce({
+      providerId: 'homey',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://homey.example.com',
+      hassUrl: 'https://homey.example.com',
+      availableHomeys: [{ id: 'homey-1', name: 'Living Room Homey' }],
+      selectedHomeyId: 'homey-1',
+      needsHomeySelection: false,
+    });
+
+    await expect(authSessionManager.init()).resolves.toMatchObject({
+      providerId: 'home_assistant',
+      authenticatedProviderIds: ['home_assistant', 'homey'],
+      sessions: {
+        home_assistant: expect.objectContaining({
+          hassUrl: 'https://ha.example.com',
+        }),
+        homey: expect.objectContaining({
+          hassUrl: 'https://homey.example.com',
+        }),
+      },
+    });
+  });
+
   it('includes provider metadata for unauthenticated snapshots', () => {
     authSessionManager.replaceSession(null);
 
     expect(authSessionManager.getSnapshot()).toMatchObject({
       providerId: 'home_assistant',
       isAuthenticated: false,
+      authenticatedProviderIds: [],
     });
   });
 

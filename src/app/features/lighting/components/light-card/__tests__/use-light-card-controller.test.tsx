@@ -21,12 +21,19 @@ const lightRuntimeState = {
 vi.mock('@/app/hooks', () => ({
   useHomeAssistant: vi.fn(
     (
-      selector: (state: { connection: object | null; entities: Record<string, unknown> }) => unknown
+      selector: (state: {
+        homeAssistant: {
+          connection: object | null;
+          entities: Record<string, unknown>;
+        };
+      }) => unknown
     ) =>
       selector({
-        connection: {},
-        entities: {
-          'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
+        homeAssistant: {
+          connection: {},
+          entities: {
+            'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
+          },
         },
       })
   ),

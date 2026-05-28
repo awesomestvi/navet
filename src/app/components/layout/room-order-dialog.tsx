@@ -27,7 +27,7 @@ import {
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationAdminService } from '@/app/services/integration-admin.service';
 
 interface RoomOrderDialogProps {
   isOpen: boolean;
@@ -118,7 +118,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
 
     setIsSaving(true);
     try {
-      await homeAssistantService.deleteArea(areaId);
+      await integrationAdminService.deleteArea(areaId);
       const nextRooms = draftRooms.filter((room) => room !== pendingDeleteRoom);
       setDraftRooms(nextRooms);
       onRoomOrderChange?.(nextRooms);

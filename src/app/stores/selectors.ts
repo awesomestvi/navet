@@ -3,6 +3,7 @@
  * Use these to prevent unnecessary re-renders
  */
 
+import { getProviderNativeId } from '@/app/utils/provider-ids';
 import type { ErrorStoreState } from './error-store';
 import type { IntegrationStore } from './integration-store';
 import { type CameraGo2RtcConfig, getEmptyCameraGo2RtcConfig } from './settings-store';
@@ -185,12 +186,22 @@ export const integrationSelectors = {
   connected: (state: IntegrationStore) => state.connected,
   connecting: (state: IntegrationStore) => state.connecting,
   reconnecting: (state: IntegrationStore) => state.reconnecting,
+  providerHealth: (state: IntegrationStore) => state.providerHealth,
+  providers: (state: IntegrationStore) => state.providers,
+  providerSessions: (state: IntegrationStore) => state.providerSessions,
+  providerSnapshots: (state: IntegrationStore) => state.providerSnapshots,
+  devicesByCanonicalId: (state: IntegrationStore) => state.devicesByCanonicalId,
+  roomsByCanonicalId: (state: IntegrationStore) => state.roomsByCanonicalId,
+  availableProviderIds: (state: IntegrationStore) => state.availableProviderIds,
+  selectedProviderIds: (state: IntegrationStore) => state.selectedProviderIds,
+  setSelectedProviders: (state: IntegrationStore) => state.setSelectedProviders,
   config: (state: IntegrationStore) => state.config,
   entities: (state: IntegrationStore) => state.entities,
   // Per-entity selector — only re-renders when that specific entity's reference changes.
   // home-assistant-js-websocket preserves entity object references for unchanged entities,
   // so this produces no re-render when a different entity updates.
-  entity: (entityId: string) => (state: IntegrationStore) => state.entities?.[entityId],
+  entity: (entityId: string) => (state: IntegrationStore) =>
+    state.entities?.[getProviderNativeId(entityId)],
   // Entities hydration check — stable selector for checking if entities are loaded
   entitiesHydrated: (state: IntegrationStore) => state.entities != null,
   registriesHydrated: (state: IntegrationStore) => state.registriesHydrated,
@@ -204,9 +215,35 @@ export const integrationSelectors = {
   syncPanelHass: (state: IntegrationStore) => state.syncPanelHass,
   disconnect: (state: IntegrationStore) => state.disconnect,
   clearError: (state: IntegrationStore) => state.clearError,
+  setIntegrationUser: (state: IntegrationStore) => state.setIntegrationUser,
+  setProviderSessions: (state: IntegrationStore) => state.setProviderSessions,
 };
 
-export const homeAssistantSelectors = integrationSelectors;
+export const providerRuntimeSelectors = integrationSelectors;
+
+export const homeAssistantRuntimeSelectors = {
+  connected: (state: IntegrationStore) => state.homeAssistant.connected,
+  connecting: (state: IntegrationStore) => state.homeAssistant.connecting,
+  reconnecting: (state: IntegrationStore) => state.homeAssistant.reconnecting,
+  config: (state: IntegrationStore) => state.homeAssistant.config,
+  entities: (state: IntegrationStore) => state.homeAssistant.entities,
+  entity: (entityId: string) => (state: IntegrationStore) =>
+    state.homeAssistant.entities?.[getProviderNativeId(entityId)],
+  entitiesHydrated: (state: IntegrationStore) => state.homeAssistant.entities != null,
+  registriesHydrated: (state: IntegrationStore) => state.homeAssistant.registriesHydrated,
+  user: (state: IntegrationStore) => state.homeAssistant.user,
+  areas: (state: IntegrationStore) => state.homeAssistant.areas,
+  deviceRegistry: (state: IntegrationStore) => state.homeAssistant.deviceRegistry,
+  entityRegistry: (state: IntegrationStore) => state.homeAssistant.entityRegistry,
+  connection: (state: IntegrationStore) => state.homeAssistant.connection,
+  error: (state: IntegrationStore) => state.homeAssistant.error,
+  connect: (state: IntegrationStore) => state.homeAssistant.actions.connect,
+  syncPanelHass: (state: IntegrationStore) => state.homeAssistant.actions.syncPanelHass,
+  disconnect: (state: IntegrationStore) => state.homeAssistant.actions.disconnect,
+  clearError: (state: IntegrationStore) => state.homeAssistant.actions.clearError,
+};
+
+export const homeAssistantSelectors = homeAssistantRuntimeSelectors;
 
 /**
  * Custom Cards Store Selectors

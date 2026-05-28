@@ -50,17 +50,17 @@ describe('useDashboardEntitiesStore', () => {
     useDashboardEntitiesStore.getState().showEntity('light.kitchen');
 
     expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
-      'sensor.kitchen_temperature',
-      'binary_sensor.front_window',
+      'home_assistant:sensor.kitchen_temperature',
+      'home_assistant:binary_sensor.front_window',
     ]);
 
     useDashboardEntitiesStore.getState().hideEntity('sensor.kitchen_temperature');
 
     expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
-      'binary_sensor.front_window',
+      'home_assistant:binary_sensor.front_window',
     ]);
     expect(useDashboardEntitiesStore.getState().hiddenEntityIds).toContain(
-      'sensor.kitchen_temperature'
+      'home_assistant:sensor.kitchen_temperature'
     );
   });
 
@@ -70,8 +70,8 @@ describe('useDashboardEntitiesStore', () => {
       .completeOnboarding(['light.kitchen', 'sensor.power', 'binary_sensor.motion'], false);
 
     expect(useDashboardEntitiesStore.getState().shownSensorEntityIds).toEqual([
-      'sensor.power',
-      'binary_sensor.motion',
+      'home_assistant:sensor.power',
+      'home_assistant:binary_sensor.motion',
     ]);
     expect(useDashboardEntitiesStore.getState().hiddenEntityIds).toEqual([]);
   });

@@ -276,6 +276,54 @@ describe('App Home Assistant connection recovery', () => {
     });
   });
 
+  it('bootstraps Home Assistant and Homey together when both stored sessions exist', async () => {
+    vi.useRealTimers();
+    setStoredMultiProviderSessions();
+    homeyService.setClient({
+      setCapabilityValue: vi.fn(),
+      loadSnapshot: vi.fn(async () => ({
+        connected: true,
+        devices: {
+          switch_1: {
+            id: 'switch_1',
+            name: 'Coffee Machine',
+            class: 'socket',
+            zone: 'living_room',
+            capabilitiesObj: {
+              onoff: { value: true },
+            },
+          },
+        },
+        zones: {
+          living_room: { id: 'living_room', name: 'Living Room' },
+        },
+      })),
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.getByText('dashboard')).toBeInTheDocument());
+    expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://192.168.68.71:8123',
+      hassUrl: 'http://192.168.68.71:8123',
+      auth: expect.any(Object),
+      expiresAt: expect.any(Number),
+    });
+    expect(homeyService.getSnapshot()).toMatchObject({
+      connected: true,
+      devices: {
+        switch_1: expect.objectContaining({
+          name: 'Coffee Machine',
+        }),
+      },
+    });
+  });
+
   it('falls back to the Home Assistant login when auth bootstrap stalls', async () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
 
@@ -683,6 +731,36 @@ function setStoredHomeySession() {
     const url = String(input);
     if (url.includes('/__navet_auth__/session')) {
       return new Response(null, { status: 204 });
+    }
+
+    return new Response(
+      JSON.stringify({
+        userId: 'user-1',
+        homeys: [{ id: 'homey-1', name: 'Living Room Homey' }],
+        selectedHomeyId: 'homey-1',
+        homeyBaseUrl: 'https://homey.example.com',
+        hasActiveHomeySession: true,
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  });
+}
+
+function setStoredMultiProviderSessions() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes('/__navet_auth__/session')) {
+      return new Response(
+        JSON.stringify({
+          hassUrl: 'http://192.168.68.71:8123',
+          clientId: 'http://localhost/',
+          expires: Date.now() + 3_600_000,
+          refresh_token: 'refresh-token',
+          access_token: 'access-token',
+          expires_in: 3600,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(

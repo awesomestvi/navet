@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  expectProviderFeatureClaims,
+  expectProviderFeatureMatrixSubset,
+} from '@/test/provider-contract-assertions';
+import {
   createMissingIntegrationCapabilityError,
+  createMissingIntegrationFeatureError,
   getIntegrationProviderAdapter,
+  getIntegrationProviderFeatureMatrix,
   listAvailableIntegrationProviders,
   listImplementedIntegrationProviders,
 } from '../integration-registry.service';
@@ -64,6 +70,21 @@ describe('integration-registry.service', () => {
         pathSigning: true,
         cameraStreams: true,
       },
+      featureMatrix: {
+        rooms: true,
+        lighting: true,
+        sensors: true,
+        climate: true,
+        mediaControls: true,
+        mediaBrowse: true,
+        mediaArtwork: true,
+        cameraSnapshot: true,
+        cameraStreams: true,
+        energyNow: true,
+        calendar: true,
+        weather: true,
+        notifications: true,
+      },
     });
 
     signPathMock.mockResolvedValue({ path: '/signed/test' });
@@ -89,6 +110,21 @@ describe('integration-registry.service', () => {
         pathSigning: false,
         cameraStreams: false,
       },
+      featureMatrix: {
+        rooms: true,
+        lighting: true,
+        sensors: true,
+        climate: false,
+        mediaControls: false,
+        mediaBrowse: false,
+        mediaArtwork: false,
+        cameraSnapshot: false,
+        cameraStreams: false,
+        energyNow: false,
+        calendar: false,
+        weather: false,
+        notifications: false,
+      },
     });
     expect(adapter.callService).toBeDefined();
     expect(adapter.signPath).toBeUndefined();
@@ -106,6 +142,27 @@ describe('integration-registry.service', () => {
 
     expect(createMissingIntegrationCapabilityError(adapter, 'pathSigning')).toMatchObject({
       message: 'Path signing is not implemented yet for provider Homey',
+    });
+    expect(createMissingIntegrationFeatureError(adapter, 'mediaBrowse')).toMatchObject({
+      message: 'Media browsing is not implemented yet for provider Homey',
+    });
+  });
+
+  it('exposes provider feature matrices separately from low-level transport capabilities', () => {
+    expectProviderFeatureMatrixSubset(getIntegrationProviderFeatureMatrix('home_assistant'), {
+      mediaBrowse: true,
+      notifications: true,
+      energyNow: true,
+    });
+    expectProviderFeatureMatrixSubset(getIntegrationProviderFeatureMatrix('homey'), {
+      lighting: true,
+      sensors: true,
+      mediaBrowse: false,
+      notifications: false,
+    });
+    expectProviderFeatureClaims(getIntegrationProviderAdapter('homey'), {
+      supported: ['lighting', 'sensors', 'rooms'],
+      unsupported: ['mediaBrowse', 'notifications', 'calendar'],
     });
   });
 });

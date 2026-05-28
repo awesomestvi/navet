@@ -85,8 +85,31 @@ describe('MediaCapabilityPanel', () => {
     await waitFor(() => {
       expect(serviceMock.searchMediaPlayer).toHaveBeenCalledWith(
         'media_player.living_room',
-        'result'
+        'result',
+        undefined
       );
     });
+  });
+
+  it('hides provider-unsupported media controls even when HA-style feature flags are present', () => {
+    renderWithProviders(
+      <MediaCapabilityPanel
+        capabilities={getMediaPlayerCapabilities(4127295 | 4194304)}
+        controller={controller}
+        durationSeconds={180}
+        elapsedSeconds={30}
+        entityId="homey:media_player.living_room"
+        onClearPlaylist={serviceMock.clearMediaPlayerPlaylist}
+        onSeek={vi.fn()}
+        onSelectSoundMode={vi.fn()}
+        onSelectSource={vi.fn()}
+        sourceList={['Living Room']}
+        soundModeList={[]}
+      />
+    );
+
+    expect(screen.queryByText('More media controls')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Browse' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
   });
 });

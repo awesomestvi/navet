@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { ensureCanonicalEntityId, ensureCanonicalEntityIds } from '@/app/utils/provider-entity-id';
+import { getProviderNativeId } from '@/app/utils/provider-ids';
 
 interface DashboardEntitiesState {
   hiddenEntityIds: string[];
@@ -37,11 +39,12 @@ function normalizeStringArray(value: unknown): string[] {
     return [];
   }
 
-  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string')));
+  return ensureCanonicalEntityIds(value.filter((item): item is string => typeof item === 'string'));
 }
 
 function isSensorEntityId(entityId: string) {
-  return entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.');
+  const nativeId = getProviderNativeId(entityId);
+  return nativeId.startsWith('sensor.') || nativeId.startsWith('binary_sensor.');
 }
 
 export const useDashboardEntitiesStore = create<DashboardEntitiesState>()(
@@ -58,35 +61,44 @@ export const useDashboardEntitiesStore = create<DashboardEntitiesState>()(
         onboardingCompleted,
       }) =>
         set({
-          hiddenEntityIds,
+          hiddenEntityIds: ensureCanonicalEntityIds(hiddenEntityIds),
           shownSensorEntityIds: normalizeStringArray(shownSensorEntityIds),
           lockedCardIds: normalizeLockedCardIds(lockedCardIds),
           onboardingCompleted,
         }),
       completeOnboarding: (entityIds, startBlank) =>
         set({
-          hiddenEntityIds: startBlank ? entityIds : [],
-          shownSensorEntityIds: startBlank ? [] : entityIds.filter(isSensorEntityId),
+          hiddenEntityIds: startBlank ? ensureCanonicalEntityIds(entityIds) : [],
+          shownSensorEntityIds: startBlank
+            ? []
+            : ensureCanonicalEntityIds(entityIds.filter(isSensorEntityId)),
           onboardingCompleted: true,
         }),
       markOnboardingCompleted: () => set({ onboardingCompleted: true }),
       hideEntity: (entityId) =>
-        set((state) => ({
-          hiddenEntityIds: state.hiddenEntityIds.includes(entityId)
-            ? state.hiddenEntityIds
-            : [...state.hiddenEntityIds, entityId],
-          shownSensorEntityIds: isSensorEntityId(entityId)
-            ? state.shownSensorEntityIds.filter((id) => id !== entityId)
-            : state.shownSensorEntityIds,
-        })),
-      showEntity: (entityId) =>
-        set((state) => ({
-          hiddenEntityIds: state.hiddenEntityIds.filter((id) => id !== entityId),
-          shownSensorEntityIds:
-            isSensorEntityId(entityId) && !state.shownSensorEntityIds.includes(entityId)
-              ? [...state.shownSensorEntityIds, entityId]
+        set((state) => {
+          const canonicalEntityId = ensureCanonicalEntityId(entityId);
+          return {
+            hiddenEntityIds: state.hiddenEntityIds.includes(canonicalEntityId)
+              ? state.hiddenEntityIds
+              : [...state.hiddenEntityIds, canonicalEntityId],
+            shownSensorEntityIds: isSensorEntityId(canonicalEntityId)
+              ? state.shownSensorEntityIds.filter((id) => id !== canonicalEntityId)
               : state.shownSensorEntityIds,
-        })),
+          };
+        }),
+      showEntity: (entityId) =>
+        set((state) => {
+          const canonicalEntityId = ensureCanonicalEntityId(entityId);
+          return {
+            hiddenEntityIds: state.hiddenEntityIds.filter((id) => id !== canonicalEntityId),
+            shownSensorEntityIds:
+              isSensorEntityId(canonicalEntityId) &&
+              !state.shownSensorEntityIds.includes(canonicalEntityId)
+                ? [...state.shownSensorEntityIds, canonicalEntityId]
+                : state.shownSensorEntityIds,
+          };
+        }),
       showAllEntities: () => set({ hiddenEntityIds: [] }),
       resetHiddenEntities: () => set({ hiddenEntityIds: [] }),
       lockCard: (cardId) =>
@@ -113,7 +125,9 @@ export const useDashboardEntitiesStore = create<DashboardEntitiesState>()(
       merge: (persistedState, currentState) => {
         const persisted = (persistedState as Record<string, unknown> | null) ?? {};
         const hiddenEntityIds = Array.isArray(persisted.hiddenEntityIds)
-          ? persisted.hiddenEntityIds.filter((item): item is string => typeof item === 'string')
+          ? ensureCanonicalEntityIds(
+              persisted.hiddenEntityIds.filter((item): item is string => typeof item === 'string')
+            )
           : [];
         const shownSensorEntityIds = normalizeStringArray(persisted.shownSensorEntityIds);
         const lockedCardIds = normalizeLockedCardIds(persisted.lockedCardIds);

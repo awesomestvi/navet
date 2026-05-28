@@ -1,14 +1,6 @@
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { type IntegrationStore, integrationStore } from '../stores/integration-store';
+import { useCurrentIntegrationStore, useIntegrationStore } from './use-integration-store';
 
-/**
- * Custom hook for current integration connection management.
- * Subscribe to the minimal integration store slice needed by a component.
- */
-export const useHomeAssistant = <T>(
-  selector: (state: IntegrationStore) => T,
-  equalityFn?: (a: T, b: T) => boolean
-): T => useStoreWithEqualityFn(integrationStore, selector, equalityFn);
+// Compatibility shim for modules that still use Home Assistant naming.
+export const useHomeAssistant = useIntegrationStore;
 
-export const useIntegrationStore = useHomeAssistant;
-export const useCurrentIntegrationStore = useIntegrationStore;
+export { useCurrentIntegrationStore, useIntegrationStore };
