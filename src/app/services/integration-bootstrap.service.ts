@@ -1,13 +1,14 @@
-import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { integrationStore } from '@/app/stores/integration-store';
 import type { AuthSession } from '@/auth/types';
 import { isHomeyAuthSession } from '@/auth/types';
 import { homeyService } from './homey.service';
 import { ensureHomeyApiClientConfigured } from './homey-api-client.service';
 
 export async function bootstrapIntegrationSession(session: AuthSession): Promise<void> {
+  integrationStore.getState().setIntegrationUser(session.user ?? null);
+
   if (isHomeyAuthSession(session)) {
     ensureHomeyApiClientConfigured();
-    homeAssistantStore.setState({ user: session.user ?? null });
     if (session.homeySnapshot) {
       homeyService.replaceSnapshot({
         connected: session.homeySnapshot.connected,
@@ -23,7 +24,8 @@ export async function bootstrapIntegrationSession(session: AuthSession): Promise
 
 export function teardownIntegrationSession(providerId: AuthSession['providerId'] | null): void {
   if (providerId === 'homey') {
-    homeAssistantStore.setState({ user: null });
     homeyService.resetSnapshot();
   }
+
+  integrationStore.getState().setIntegrationUser(null);
 }

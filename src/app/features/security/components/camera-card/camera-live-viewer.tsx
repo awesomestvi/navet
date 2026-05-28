@@ -2,9 +2,10 @@ import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DialogShell } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useCameraPlaybackPlan } from '@/app/features/security/hooks/use-camera-playback-plan';
-import { useI18n, useTheme } from '@/app/hooks';
+import { usePlatformCameraPresentation } from '@/app/features/security/hooks/resolve-platform-camera-presentation';
+import { useEntityProviderFeatureMatrix, useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
+import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
 import type {
   CameraFeedMode,
   CameraGo2RtcConfig,
@@ -90,59 +91,59 @@ export function CameraLiveViewer({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
   const streamFailureResetKey = `${isOpen}:${cameraViewMode}:${cameraFeedMode}:${go2RtcConfig.serverUrl}:${go2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
-  const playbackPlan = useCameraPlaybackPlan({
+  const supportsCameraStreams = featureMatrix.cameraStreams;
+  const supportsCameraSnapshot = featureMatrix.cameraSnapshot;
+  const preferredTransport: PlatformCameraStreamType | 'auto' =
+    cameraFeedMode === 'auto' || cameraFeedMode === 'hls' || cameraFeedMode === 'web_rtc'
+      ? cameraFeedMode
+      : 'auto';
+  const presentation = usePlatformCameraPresentation({
     entityId,
-    preferredMode: cameraViewMode,
-    preferredTransport: cameraFeedMode,
-    snapshotUrl,
-    mjpegStreamUrl,
-    frontendStreamTypes,
+    preferredMode: supportsCameraStreams ? cameraViewMode : 'snapshot',
+    preferredTransport,
+    snapshotUrl: supportsCameraSnapshot ? snapshotUrl : undefined,
+    mjpegStreamUrl: supportsCameraStreams ? mjpegStreamUrl : undefined,
+    frontendStreamTypes: supportsCameraStreams ? frontendStreamTypes : [],
     hasGo2RtcFeed,
     isUnavailable,
     isRunning,
     failedTransports: failedStreamTypeSet,
   });
-  const source =
-    playbackPlan?.primary.kind === 'webrtc_stream'
-      ? {
-          url: undefined,
-          kind:
-            playbackPlan.primary.metadata?.source === 'go2rtc' ? 'go2rtc' : ('web_rtc' as const),
-          isFallback: false,
-        }
-      : playbackPlan?.primary.kind === 'hls_stream'
-        ? { url: undefined, kind: 'hls' as const, isFallback: false }
-        : playbackPlan?.primary.kind === 'mjpeg_stream'
-          ? { url: playbackPlan.primary.url, kind: 'mjpeg' as const, isFallback: false }
-          : {
-              url: playbackPlan?.primary.url ?? snapshotUrl,
-              kind: 'snapshot' as const,
-              isFallback: cameraViewMode === 'live',
-            };
-  const sourceUrl = source.url;
-  const videoStreamKind =
-    source.kind === 'go2rtc' || source.kind === 'hls' || source.kind === 'web_rtc'
-      ? source.kind
-      : null;
+  const sourceUrl = presentation.sourceUrl;
+  const videoStreamKind = presentation.videoStreamKind;
   const streamTypeLabel = useMemo(() => {
-    if (source.isFallback) {
+    if (presentation.isFallback) {
       return t('camera.viewer.snapshotFallback');
     }
-    if (source.kind === 'go2rtc') {
+    if (presentation.sourceKind === 'go2rtc') {
       return 'go2rtc';
     }
-    if (source.kind === 'hls' || source.kind === 'web_rtc' || source.kind === 'mjpeg') {
-      return source.kind.toUpperCase();
+    if (
+      presentation.sourceKind === 'hls' ||
+      presentation.sourceKind === 'web_rtc' ||
+      presentation.sourceKind === 'mjpeg'
+    ) {
+      return presentation.sourceKind.toUpperCase();
     }
     if (frontendStreamTypes.length > 0) {
       return frontendStreamTypes.join(' / ').toUpperCase();
     }
 
-    return isStreamCapable ? t('camera.viewer.streamCapable') : t('camera.viewer.snapshotOnly');
-  }, [frontendStreamTypes, isStreamCapable, source.isFallback, source.kind, t]);
+    return supportsCameraStreams && isStreamCapable
+      ? t('camera.viewer.streamCapable')
+      : t('camera.viewer.snapshotOnly');
+  }, [
+    frontendStreamTypes,
+    isStreamCapable,
+    presentation.isFallback,
+    presentation.sourceKind,
+    supportsCameraStreams,
+    t,
+  ]);
 
   useEffect(() => {
     void streamFailureResetKey;
@@ -167,7 +168,7 @@ export function CameraLiveViewer({
     >
       <div className="relative flex h-full min-h-0 flex-col bg-black text-white">
         <div className="absolute inset-0">
-          {videoStreamKind && !isUnavailable ? (
+          {supportsCameraStreams && videoStreamKind && !isUnavailable ? (
             <CameraStreamPlayer
               entityId={entityId}
               kind={videoStreamKind}
@@ -176,12 +177,12 @@ export function CameraLiveViewer({
               fitMode="contain"
               onError={handleStreamError}
             />
-          ) : sourceUrl && !isUnavailable ? (
+          ) : supportsCameraSnapshot && sourceUrl && !isUnavailable ? (
             <CameraSnapshotImage
               src={sourceUrl}
               alt={name}
               className="h-full w-full object-contain"
-              onError={() => handleStreamError(source.kind)}
+              onError={() => handleStreamError(presentation.sourceKind)}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-950">
@@ -245,12 +246,14 @@ export function CameraLiveViewer({
               />
               <Video className="h-3.5 w-3.5 text-white/72" />
               <span>{isRunning ? t('camera.status.live') : t('common.off')}</span>
-              {source.isFallback ? (
+              {presentation.isFallback ? (
                 <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
               ) : null}
             </div>
 
-            <CameraViewerModeControl value={cameraViewMode} onChange={onCameraViewModeChange} />
+            {supportsCameraStreams ? (
+              <CameraViewerModeControl value={cameraViewMode} onChange={onCameraViewModeChange} />
+            ) : null}
           </div>
         </div>
       </div>

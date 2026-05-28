@@ -176,4 +176,19 @@ describe('CameraLiveViewer', () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it('falls back to a passive no-signal state when the entity provider does not support camera playback', async () => {
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        entityId="homey:camera.front_door"
+        snapshotUrl={String(cameraEntityFixtures.relativeUrl.attributes.entity_picture)}
+        frontendStreamTypes={['hls']}
+      />
+    );
+
+    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
+    expect(await screen.findByText('No signal')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Live' })).not.toBeInTheDocument();
+  });
 });

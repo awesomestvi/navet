@@ -23,7 +23,8 @@ import { NotificationHeader } from './notification-header';
 import { NotificationItem } from './notification-item';
 import { getNotificationSurfaceTokens } from './notification-surface-tokens';
 import { formatTimestamp, getColorValue } from './notification-utils';
-import { type Notification, useNotifications } from './use-notifications';
+import type { Notification } from './use-notifications';
+import { useProviderNotifications } from './use-provider-notifications';
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
     markAllAsRead,
     deleteNotification,
     clearAll,
-  } = useNotifications();
+  } = useProviderNotifications();
   const updateNotifications = notifications.filter(
     (notification) => notification.source === 'update'
   );

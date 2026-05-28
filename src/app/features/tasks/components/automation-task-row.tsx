@@ -11,9 +11,9 @@ import {
   useServiceActionHandler,
   useThemeMode,
 } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { integrationTaskService } from '@/app/services/integration-task.service';
+import type { IntegrationStore } from '@/app/stores/integration-store';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
 
@@ -110,19 +110,20 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
     [automationConfig]
   );
   const selectDetailEntities = useCallback(
-    (state: HomeAssistantStore): HassEntities | null => {
-      if (!state.entities || detailEntityIds.length === 0) {
+    (state: IntegrationStore): HassEntities | null => {
+      const snapshot = integrationTaskService.selectTaskRuntimeSnapshot(state);
+      if (!snapshot.entities || detailEntityIds.length === 0) {
         return null;
       }
 
-      const entities: HassEntities = {};
+      const detailEntities: HassEntities = {};
       for (const entityId of detailEntityIds) {
-        const entity = state.entities[entityId];
+        const entity = snapshot.entities[entityId];
         if (entity) {
-          entities[entityId] = entity;
+          detailEntities[entityId] = entity;
         }
       }
-      return entities;
+      return detailEntities;
     },
     [detailEntityIds]
   );
@@ -196,7 +197,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
 
     setIsLoadingDetails(true);
     setDetailsError(null);
-    void homeAssistantService
+    void integrationTaskService
       .getAutomationConfig(automation.id)
       .then((response) => {
         setAutomationConfig(response.config);

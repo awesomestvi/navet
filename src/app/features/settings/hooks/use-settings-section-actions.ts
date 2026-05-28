@@ -2,6 +2,7 @@ import { type ChangeEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { TranslateFn } from '@/app/hooks';
 import { useLogout } from '@/app/hooks/use-logout';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import {
   downloadDashboardConfig,
   importDashboardConfigFromFile,
@@ -10,18 +11,27 @@ import { readFileAsDataUrl, validateImageFile } from '@/app/utils/image-upload';
 
 interface SettingsSectionActionDeps {
   t: TranslateFn;
+  activeProviderId: IntegrationProviderId;
   setWallpaper: (wallpaper: string | null) => void;
   setActiveSection: (section: 'home') => void;
   setCurrentRoom: (room: string) => void;
   reopenOnboarding: () => void;
+  connectProvider: (input: {
+    providerId: IntegrationProviderId;
+    hassUrl?: string;
+  }) => Promise<void>;
+  disconnectProvider: (providerId: IntegrationProviderId) => Promise<void>;
 }
 
 export function useSettingsSectionActions({
   t,
+  activeProviderId,
   setWallpaper,
   setActiveSection,
   setCurrentRoom,
   reopenOnboarding,
+  connectProvider,
+  disconnectProvider,
 }: SettingsSectionActionDeps) {
   const performLogout = useLogout();
   const [showLicense, setShowLicense] = useState(false);
@@ -40,8 +50,9 @@ export function useSettingsSectionActions({
 
   const handleResetConnection = () => {
     if (confirm(t('settings.feedback.resetConnectionConfirm'))) {
-      performLogout();
-      toast.info(t('settings.feedback.resetConnectionSuccess'));
+      void disconnectProvider(activeProviderId).then(() => {
+        toast.info(t('settings.feedback.resetConnectionSuccess'));
+      });
     }
   };
 
@@ -112,6 +123,32 @@ export function useSettingsSectionActions({
     setShowRestartOnboardingConfirm(false);
   };
 
+  const handleConnectProvider = async (providerId: IntegrationProviderId, hassUrl?: string) => {
+    try {
+      await connectProvider({ providerId, hassUrl });
+      if (providerId === 'homey') {
+        return;
+      }
+
+      toast.success(t('settings.feedback.providerConnected'));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('settings.feedback.providerConnectFailed')
+      );
+    }
+  };
+
+  const handleDisconnectProvider = async (providerId: IntegrationProviderId) => {
+    try {
+      await disconnectProvider(providerId);
+      toast.success(t('settings.feedback.providerDisconnected'));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('settings.feedback.providerDisconnectFailed')
+      );
+    }
+  };
+
   return {
     showLicense,
     setShowLicense,
@@ -132,6 +169,8 @@ export function useSettingsSectionActions({
     handleSelectWallpaper,
     handleExportDashboardConfig,
     handleImportDashboardConfig,
+    handleConnectProvider,
+    handleDisconnectProvider,
     handleRestartOnboarding,
   };
 }

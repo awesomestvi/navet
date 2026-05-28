@@ -7,6 +7,7 @@ import {
 import type { HomeAssistantCameraStreamType } from './home-assistant.service';
 import {
   getIntegrationProviderAdapter,
+  getIntegrationProviderFeatureMatrix,
   listImplementedIntegrationProviders,
   listIntegrationProviderAdapters,
   requireIntegrationProviderCapability,
@@ -34,6 +35,10 @@ export function listImplementedIntegrationProvidersForRuntime(): IntegrationProv
 
 export function listIntegrationRuntimeAdapters() {
   return listIntegrationProviderAdapters();
+}
+
+export function getCurrentIntegrationFeatureMatrix() {
+  return getIntegrationProviderFeatureMatrix(getCurrentIntegrationProviderId());
 }
 
 export async function signCurrentIntegrationPath(path: string, expiresSeconds?: number) {

@@ -163,7 +163,7 @@ export const esMessages = {
   'settings.dashboard.backup.import': 'Importar configuración',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
-    'Detalles de conexión y acciones de recuperación para el destino actual de Home Assistant.',
+    'Detalles de conexión, gestión de proveedores y acciones de recuperación para este dispositivo Navet.',
   'settings.system.animations.title': 'Desactivar animaciones',
   'settings.system.animations.description':
     'Útil para dispositivos más lentos como Raspberry Pi. Desactiva transiciones y efectos animados en toda la app.',
@@ -179,11 +179,29 @@ export const esMessages = {
   'settings.system.effectsQuality.recommended': 'Recomendado para este dispositivo',
   'settings.system.connection.title': 'Conexión',
   'settings.system.connection.description':
-    'Revisa el servidor actual, abre Home Assistant o restablece la conexión guardada.',
+    'Revisa el proveedor activo, ábrelo directamente o restablece la conexión guardada.',
   'settings.system.connection.connectedTo': 'Conectado a',
   'settings.system.connection.notConnected': 'Sin conectar',
   'settings.system.connection.openHomeAssistant': 'Abrir Home Assistant',
   'settings.system.connection.reset': 'Restablecer conexión',
+  'settings.system.providers.title': 'Proveedores',
+  'settings.system.providers.description':
+    'Conecta, desconecta y elige qué proveedores de hogar inteligente debe mantener activos Navet en este dispositivo.',
+  'settings.system.providers.active': 'Activo',
+  'settings.system.providers.activeLabel': 'Proveedor activo: {provider}',
+  'settings.system.providers.connect': 'Conectar',
+  'settings.system.providers.disconnect': 'Desconectar',
+  'settings.system.providers.makeActive': 'Activar',
+  'settings.system.providers.notConnected': 'No conectado en este dispositivo',
+  'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
+  'settings.system.providers.openhabLater':
+    'La compatibilidad con openHAB está prevista pero aún no está disponible.',
+  'settings.system.providers.status.connected': 'Conectado',
+  'settings.system.providers.status.connecting': 'Conectando',
+  'settings.system.providers.status.reconnecting': 'Reconectando',
+  'settings.system.providers.status.signed-in': 'Sesión iniciada',
+  'settings.system.providers.status.disconnected': 'Desconectado',
+  'settings.system.providers.status.planned': 'Planificado',
   'settings.system.logout.description': 'Finaliza esta sesión de Navet en este dispositivo.',
   'settings.project.sectionTitle': 'Proyecto',
   'settings.project.sectionDescription':
@@ -239,6 +257,11 @@ export const esMessages = {
   'settings.feedback.configExportFailed': 'No se pudo exportar la configuración del panel',
   'settings.feedback.configImported': 'Configuración del panel importada. Recargando...',
   'settings.feedback.configImportFailed': 'No se pudo importar la configuración del panel',
+  'settings.feedback.providerConnected': 'Proveedor conectado',
+  'settings.feedback.providerConnectFailed': 'No se pudo conectar el proveedor',
+  'settings.feedback.providerDisconnected': 'Proveedor desconectado',
+  'settings.feedback.providerDisconnectFailed': 'No se pudo desconectar el proveedor',
+  'integration.featureUnavailable': '{provider} does not support this feature yet.',
   'dashboard.addEntity.title': 'Agregar entidad',
   'dashboard.addEntity.descriptionWithHidden':
     'Volver a agregar entidades de Home Assistant al panel.',

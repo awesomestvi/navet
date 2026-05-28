@@ -1,8 +1,6 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo } from 'react';
 import { useAuthSession } from '@/auth/AuthProvider';
-import { homeyService } from '../services/homey.service';
-import { integrationSelectors } from '../stores/selectors';
-import { useCurrentIntegrationStore } from './use-home-assistant';
+import { useProviderHealth } from './use-provider-health';
 
 export interface CurrentIntegrationConnectionState {
   connected: boolean;
@@ -12,25 +10,13 @@ export interface CurrentIntegrationConnectionState {
 
 export function useCurrentIntegrationConnectionState(): CurrentIntegrationConnectionState {
   const { providerId } = useAuthSession();
-  const homeAssistantConnection = useCurrentIntegrationStore((state) => ({
-    connected: integrationSelectors.connected(state),
-    connecting: integrationSelectors.connecting(state),
-    reconnecting: integrationSelectors.reconnecting(state),
-  }));
-  const homeySnapshot = useSyncExternalStore(
-    (listener) => homeyService.subscribe(listener),
-    () => homeyService.getSnapshot()
-  );
+  const providerHealth = useProviderHealth(providerId);
 
   return useMemo(() => {
-    if (providerId === 'homey') {
-      return {
-        connected: homeySnapshot.connected,
-        connecting: false,
-        reconnecting: false,
-      };
-    }
-
-    return homeAssistantConnection;
-  }, [providerId, homeAssistantConnection, homeySnapshot.connected]);
+    return {
+      connected: providerHealth.connected,
+      connecting: providerHealth.connecting,
+      reconnecting: providerHealth.reconnecting,
+    };
+  }, [providerHealth]);
 }

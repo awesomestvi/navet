@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import type { NavetProviderSession } from '@/app/core/navet';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
-import type { AuthSession, HomeAssistantAuthSession } from '@/auth/types';
+import { type AuthSession, type HomeAssistantAuthSession, isHomeyAuthSession } from '@/auth/types';
 import { LoadingSpinner } from './components/primitives/loading-spinner';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
@@ -46,7 +48,7 @@ function createIngressProxyRecoverySession(
 }
 
 function AppContent() {
-  const { providerId, runtime, session, ready, logout, replaceSession } = useAuthSession();
+  const { runtime, session, sessions, ready, logout, replaceSession } = useAuthSession();
   const isAuthenticated = Boolean(session);
   const needsHomeySelection =
     session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
@@ -57,6 +59,7 @@ function AppContent() {
   const connect = useCurrentIntegrationStore(integrationSelectors.connect);
   const disconnect = useCurrentIntegrationStore(integrationSelectors.disconnect);
   const syncPanelHass = useCurrentIntegrationStore(integrationSelectors.syncPanelHass);
+  const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
@@ -69,7 +72,8 @@ function AppContent() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
-  const failedConnectionAttemptKey = useRef<string | null>(null);
+  const failedConnectionAttemptKeys = useRef<Partial<Record<IntegrationProviderId, string>>>({});
+  const previousSessionProviderIds = useRef<IntegrationProviderId[]>([]);
   const ingressInvalidAuthRecoveryInFlight = useRef(false);
   const isInvalidHomeAssistantAuth = appError?.message === INVALID_HOME_ASSISTANT_AUTH_MESSAGE;
 
@@ -92,7 +96,7 @@ function AppContent() {
     }
 
     ingressInvalidAuthRecoveryInFlight.current = true;
-    failedConnectionAttemptKey.current = null;
+    delete failedConnectionAttemptKeys.current.home_assistant;
     const recoverySession = createIngressProxyRecoverySession(session);
     replaceSession(recoverySession);
 
@@ -115,26 +119,57 @@ function AppContent() {
     if (!isAuthenticated || !session || session.providerId !== 'home_assistant') {
       return;
     }
-    failedConnectionAttemptKey.current = null;
+    delete failedConnectionAttemptKeys.current.home_assistant;
 
     void connect(session).catch(() => {
-      failedConnectionAttemptKey.current = getConnectionAttemptKey(session);
+      failedConnectionAttemptKeys.current.home_assistant = getConnectionAttemptKey(session);
     });
   }, [runtime, recoverIngressSession, isAuthenticated, session, connect]);
 
   const resetSessionToLogin = useCallback(() => {
-    failedConnectionAttemptKey.current = null;
+    if (session?.providerId) {
+      delete failedConnectionAttemptKeys.current[session.providerId];
+    }
     clearAppError();
     logout();
-  }, [clearAppError, logout]);
+  }, [clearAppError, logout, session?.providerId]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      failedConnectionAttemptKey.current = null;
-      teardownIntegrationSession(providerId);
+    const nextSessions = Object.fromEntries(
+      Object.entries(sessions).map(([providerId, nextSession]) => [
+        providerId,
+        {
+          providerId: nextSession.providerId,
+          connected: providerId === 'home_assistant' ? connected : true,
+          runtime: nextSession.runtime,
+          authMode: nextSession.authMode,
+        },
+      ])
+    ) as Record<IntegrationProviderId, NavetProviderSession>;
+
+    setProviderSessions(nextSessions);
+  }, [sessions, connected, setProviderSessions]);
+
+  useEffect(() => {
+    const currentProviderIds = Object.keys(sessions) as IntegrationProviderId[];
+    const removedProviderIds = previousSessionProviderIds.current.filter(
+      (previousProviderId) => !currentProviderIds.includes(previousProviderId)
+    );
+
+    for (const removedProviderId of removedProviderIds) {
+      delete failedConnectionAttemptKeys.current[removedProviderId];
+      teardownIntegrationSession(removedProviderId);
+      if (removedProviderId === 'home_assistant') {
+        disconnect();
+      }
+    }
+
+    previousSessionProviderIds.current = currentProviderIds;
+
+    if (!currentProviderIds.length) {
       disconnect();
     }
-  }, [isAuthenticated, providerId, disconnect]);
+  }, [sessions, disconnect]);
 
   useEffect(() => {
     if (!isAuthenticated || !canResetSessionFromError) {
@@ -166,7 +201,7 @@ function AppContent() {
       if (parentHass) {
         syncPanelHass(parentHass);
         clearAppError();
-        failedConnectionAttemptKey.current = null;
+        delete failedConnectionAttemptKeys.current.home_assistant;
         return true;
       }
 
@@ -187,45 +222,48 @@ function AppContent() {
   }, [isAuthenticated, runtime, syncPanelHass, clearAppError]);
 
   useEffect(() => {
-    if (isAuthenticated && session && !connected && !connecting && !appError) {
-      if (session.providerId === 'homey' && session.needsHomeySelection) {
-        return;
-      }
-
-      if (session.providerId === 'homey') {
-        const attemptKey = getConnectionAttemptKey(session);
-        if (failedConnectionAttemptKey.current === attemptKey) {
-          return;
-        }
-
-        void bootstrapIntegrationSession(session).catch(() => {
-          failedConnectionAttemptKey.current = attemptKey;
-        });
-        return;
-      }
-
-      if (runtime === 'ha-ingress') {
-        const parentHass = resolveParentHomeAssistantBridge();
-        if (parentHass) {
-          syncPanelHass(parentHass);
-          return;
-        }
-      }
-
-      const attemptKey = getConnectionAttemptKey(session);
-      if (failedConnectionAttemptKey.current === attemptKey) {
-        return;
-      }
-
-      if (session.providerId !== 'home_assistant') {
-        return;
-      }
-
-      void connect(session).catch(() => {
-        failedConnectionAttemptKey.current = attemptKey;
-      });
+    const homeySession = sessions.homey;
+    if (!homeySession || !isHomeyAuthSession(homeySession) || homeySession.needsHomeySelection) {
+      return;
     }
-  }, [isAuthenticated, session, connected, connecting, appError, runtime, syncPanelHass, connect]);
+
+    const attemptKey = getConnectionAttemptKey(homeySession);
+    if (failedConnectionAttemptKeys.current.homey === attemptKey) {
+      return;
+    }
+
+    void bootstrapIntegrationSession(homeySession).catch(() => {
+      failedConnectionAttemptKeys.current.homey = attemptKey;
+    });
+  }, [sessions.homey]);
+
+  useEffect(() => {
+    const homeAssistantSession = sessions.home_assistant;
+    if (!homeAssistantSession || homeAssistantSession.providerId !== 'home_assistant' || appError) {
+      return;
+    }
+
+    if (runtime === 'ha-ingress') {
+      const parentHass = resolveParentHomeAssistantBridge();
+      if (parentHass) {
+        syncPanelHass(parentHass);
+        return;
+      }
+    }
+
+    if (connected || connecting) {
+      return;
+    }
+
+    const attemptKey = getConnectionAttemptKey(homeAssistantSession);
+    if (failedConnectionAttemptKeys.current.home_assistant === attemptKey) {
+      return;
+    }
+
+    void connect(homeAssistantSession).catch(() => {
+      failedConnectionAttemptKeys.current.home_assistant = attemptKey;
+    });
+  }, [sessions.home_assistant, connected, connecting, appError, runtime, syncPanelHass, connect]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);

@@ -161,7 +161,7 @@ export const svMessages = {
   'settings.dashboard.backup.import': 'Importera konfiguration',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
-    'Anslutningsdetaljer och återställningsåtgärder för den aktuella Home Assistant-servern.',
+    'Anslutningsdetaljer, providerhantering och återställningsåtgärder för den här Navet-enheten.',
   'settings.system.animations.title': 'Inaktivera animationer',
   'settings.system.animations.description':
     'Användbart för långsammare enheter som Raspberry Pi. Stänger av övergångar och animerade effekter i hela appen.',
@@ -177,11 +177,29 @@ export const svMessages = {
   'settings.system.effectsQuality.recommended': 'Rekommenderat för den här enheten',
   'settings.system.connection.title': 'Anslutning',
   'settings.system.connection.description':
-    'Granska aktuell server, öppna Home Assistant eller nollställ sparad anslutning.',
+    'Granska den aktiva providern, öppna den direkt eller nollställ den sparade anslutningen.',
   'settings.system.connection.connectedTo': 'Ansluten till',
   'settings.system.connection.notConnected': 'Inte ansluten',
   'settings.system.connection.openHomeAssistant': 'Öppna Home Assistant',
   'settings.system.connection.reset': 'Nollställ anslutning',
+  'settings.system.providers.title': 'Providers',
+  'settings.system.providers.description':
+    'Anslut, koppla från och välj vilka smarta hem-providers Navet ska hålla aktiva på den här enheten.',
+  'settings.system.providers.active': 'Aktiv',
+  'settings.system.providers.activeLabel': 'Aktiv provider: {provider}',
+  'settings.system.providers.connect': 'Anslut',
+  'settings.system.providers.disconnect': 'Koppla från',
+  'settings.system.providers.makeActive': 'Gör aktiv',
+  'settings.system.providers.notConnected': 'Inte ansluten på den här enheten',
+  'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
+  'settings.system.providers.openhabLater':
+    'Stöd för openHAB är planerat men inte tillgängligt ännu.',
+  'settings.system.providers.status.connected': 'Ansluten',
+  'settings.system.providers.status.connecting': 'Ansluter',
+  'settings.system.providers.status.reconnecting': 'Återansluter',
+  'settings.system.providers.status.signed-in': 'Inloggad',
+  'settings.system.providers.status.disconnected': 'Frånkopplad',
+  'settings.system.providers.status.planned': 'Planerad',
   'settings.system.logout.description': 'Avsluta Navet-sessionen på den här enheten.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -237,6 +255,11 @@ export const svMessages = {
   'settings.feedback.configExportFailed': 'Det gick inte att exportera dashboard-konfigurationen',
   'settings.feedback.configImported': 'Dashboard-konfiguration importerad. Laddar om...',
   'settings.feedback.configImportFailed': 'Det gick inte att importera dashboard-konfigurationen',
+  'settings.feedback.providerConnected': 'Provider ansluten',
+  'settings.feedback.providerConnectFailed': 'Det gick inte att ansluta provider',
+  'settings.feedback.providerDisconnected': 'Provider frånkopplad',
+  'settings.feedback.providerDisconnectFailed': 'Det gick inte att koppla från provider',
+  'integration.featureUnavailable': '{provider} does not support this feature yet.',
   'dashboard.addEntity.title': 'Lägg till enhet',
   'dashboard.addEntity.descriptionWithHidden':
     'Lägg tillbaka Home Assistant-enheter till dashboarden.',

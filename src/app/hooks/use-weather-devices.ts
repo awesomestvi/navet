@@ -3,7 +3,6 @@
  * Handles weather entity mapping and forecast fetching
  */
 
-import type { Connection } from 'home-assistant-js-websocket';
 import {
   startTransition,
   useCallback,
@@ -19,54 +18,20 @@ import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useRegistryRoomResolver } from '@/app/hooks/use-registry-device-topology';
 import { useI18n } from '@/app/i18n';
+import type { PlatformWeatherForecastEntry } from '@/app/platform/provider-feature-models';
+import { integrationWeatherFeatureService } from '@/app/services/integration-weather-feature.service';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { WeatherDevice } from '@/app/types/device.types';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
 
-type WeatherForecastEntry = Record<string, unknown>;
-
-type WeatherForecastServicePayload = {
-  response?: Record<
-    string,
-    {
-      forecast?: WeatherForecastEntry[];
-    }
-  >;
-};
-
-type WeatherForecastServiceEnvelope = WeatherForecastServicePayload & {
-  result?: WeatherForecastServicePayload;
-};
-
-type WeatherForecastType = 'daily' | 'hourly';
-
 type WeatherForecastState = Record<
   string,
   {
-    daily: WeatherForecastEntry[];
-    hourly: WeatherForecastEntry[];
+    daily: PlatformWeatherForecastEntry[];
+    hourly: PlatformWeatherForecastEntry[];
   }
 >;
-
-async function fetchWeatherForecast(
-  connection: Connection,
-  entityId: string,
-  type: WeatherForecastType
-): Promise<WeatherForecastEntry[]> {
-  const response = (await connection.sendMessagePromise({
-    type: 'call_service',
-    domain: 'weather',
-    service: 'get_forecasts',
-    target: { entity_id: entityId },
-    service_data: { type },
-    return_response: true,
-  })) as WeatherForecastServiceEnvelope;
-
-  return (
-    response.response?.[entityId]?.forecast ?? response.result?.response?.[entityId]?.forecast ?? []
-  );
-}
 
 export function useWeatherDevices(): WeatherDevice[] {
   const connection = useHomeAssistant(homeAssistantSelectors.connection);
@@ -111,8 +76,12 @@ export function useWeatherDevices(): WeatherDevice[] {
     const refreshForecasts = async () => {
       try {
         const [daily, hourly] = await Promise.all([
-          fetchWeatherForecast(connection, primaryWeatherEntityId, 'daily'),
-          fetchWeatherForecast(connection, primaryWeatherEntityId, 'hourly'),
+          integrationWeatherFeatureService.getForecast(primaryWeatherEntityId, 'daily', {
+            connection,
+          }),
+          integrationWeatherFeatureService.getForecast(primaryWeatherEntityId, 'hourly', {
+            connection,
+          }),
         ]);
 
         if (!cancelled) {

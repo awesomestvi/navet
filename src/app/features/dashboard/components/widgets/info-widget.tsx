@@ -13,9 +13,10 @@ import {
   type SensorReading,
 } from '@/app/features/sensors';
 import { useSensorStatisticsHistory } from '@/app/features/sensors/hooks/use-sensor-statistics-history';
-import { useAreaRooms, useHomeAssistant, useI18n } from '@/app/hooks';
+import { useAreaRooms, useI18n } from '@/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@/app/hooks/use-dashboard-widget-room-options';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 
 const MAX_INFO_WIDGET_SENSORS = 6;
@@ -54,10 +55,10 @@ function getSensorEntityIds(data: InfoWidgetData | undefined) {
 export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }: InfoWidgetProps) {
   const { t, locale } = useI18n();
   const rooms = useAreaRooms();
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const entities = useProviderRuntime(providerRuntimeSelectors.entities);
+  const areas = useProviderRuntime(providerRuntimeSelectors.areas);
+  const deviceRegistry = useProviderRuntime(providerRuntimeSelectors.deviceRegistry);
+  const entityRegistry = useProviderRuntime(providerRuntimeSelectors.entityRegistry);
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);

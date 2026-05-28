@@ -38,4 +38,15 @@ describe('useAvailableRooms', () => {
 
     expect(result.current.availableRooms).toEqual(['Kitchen', 'Unassigned']);
   });
+
+  it('de-duplicates canonical rooms by room key even when display text varies', () => {
+    const { result } = renderHook(() =>
+      useAvailableRooms(
+        [{ key: 'kitchen', name: 'Kitchen' }],
+        [{ key: 'kitchen', name: ' kitchen ' }]
+      )
+    );
+
+    expect(result.current.availableRooms).toEqual(['Kitchen']);
+  });
 });

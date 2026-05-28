@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDashboardEntitiesStore } from '@/app/features/dashboard/stores/dashboard-entities-store';
+import type { DeviceWithType } from '@/app/types/device.types';
 import { renderWithProviders } from '@/test/render';
 import { DashboardCardItem } from '../dashboard-card-item';
 
@@ -28,6 +29,31 @@ vi.mock('../widget-card', () => ({
   ),
 }));
 
+function createLightDevice(): DeviceWithType {
+  return {
+    id: 'light.kitchen',
+    name: 'Kitchen',
+    room: 'Kitchen',
+    size: 'small',
+    state: true,
+    brightness: 100,
+    temp: 3200,
+    type: 'lights',
+  };
+}
+
+function createSensorDevice(): DeviceWithType {
+  return {
+    id: 'sensor.kitchen_temperature',
+    name: 'Kitchen Temperature',
+    room: 'Kitchen',
+    size: 'small',
+    value: '21',
+    unit: '°C',
+    type: 'sensors',
+  };
+}
+
 describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -45,12 +71,7 @@ describe('DashboardCardItem card locking', () => {
         size="small"
         isEditMode={false}
         handleSizeChange={vi.fn()}
-        device={{
-          id: 'light.kitchen',
-          name: 'Kitchen',
-          room: 'Kitchen',
-          type: 'lights',
-        }}
+        device={createLightDevice()}
       />
     );
 
@@ -73,12 +94,7 @@ describe('DashboardCardItem card locking', () => {
         size="small"
         isEditMode
         handleSizeChange={vi.fn()}
-        device={{
-          id: 'light.kitchen',
-          name: 'Kitchen',
-          room: 'Kitchen',
-          type: 'lights',
-        }}
+        device={createLightDevice()}
       />
     );
 
@@ -118,12 +134,7 @@ describe('DashboardCardItem card locking', () => {
         isEditMode={false}
         handleSizeChange={vi.fn()}
         headerSubtitleOverride="Kitchen"
-        device={{
-          id: 'sensor.kitchen_temperature',
-          name: 'Kitchen Temperature',
-          room: 'Kitchen',
-          type: 'sensors',
-        }}
+        device={createSensorDevice()}
       />
     );
 

@@ -1,7 +1,9 @@
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { homeyService } from '@/app/services/homey.service';
 import { useEditModeStore } from '@/app/stores/edit-mode-store';
 import { useErrorStore } from '@/app/stores/error-store';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { integrationStore } from '@/app/stores/integration-store';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { useSearchStore } from '@/app/stores/search-store';
 import { useSettingsStore } from '@/app/stores/settings-store';
@@ -17,10 +19,12 @@ function resetStore<T>(store: {
 export async function resetAppStores() {
   localStorage.clear();
   sessionStorage.clear();
+  authSessionManager.replaceSession(null);
 
   resetStore(useEditModeStore);
   resetStore(useErrorStore);
   resetStore(homeAssistantStore);
+  resetStore(integrationStore);
   homeyService.setClient(null);
   homeyService.resetSnapshot();
   resetStore(useNavigationStore);

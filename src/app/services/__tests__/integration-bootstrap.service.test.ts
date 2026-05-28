@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { integrationStore } from '@/app/stores/integration-store';
 import type { HomeyAuthSession } from '@/auth/types';
 import { homeyService } from '../homey.service';
 import {
@@ -40,7 +40,7 @@ describe('integration-bootstrap.service', () => {
     await bootstrapIntegrationSession(session);
 
     expect(homeyService.getSnapshot()).toMatchObject(homeySnapshot);
-    expect(homeAssistantStore.getState().user).toEqual(session.user);
+    expect(integrationStore.getState().user).toEqual(session.user);
   });
 
   it('falls back to the Homey client snapshot loader when the session has no embedded snapshot', async () => {
@@ -91,6 +91,6 @@ describe('integration-bootstrap.service', () => {
       devices: {},
       zones: {},
     });
-    expect(homeAssistantStore.getState().user).toBeNull();
+    expect(integrationStore.getState().user).toBeNull();
   });
 });

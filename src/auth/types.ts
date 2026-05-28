@@ -51,3 +51,5 @@ export interface AuthAdapter {
 export function isHomeyAuthSession(session: AuthSession): session is HomeyAuthSession {
   return session.providerId === 'homey';
 }
+
+export type AuthSessionMap = Partial<Record<IntegrationProviderId, AuthSession>>;

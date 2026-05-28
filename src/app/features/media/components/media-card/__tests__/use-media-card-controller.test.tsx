@@ -2,7 +2,8 @@ import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 
-const { entitiesState, runActionMock, serviceMock } = vi.hoisted(() => ({
+const { dispatchEntityActionMock, entitiesState, runActionMock, serviceMock } = vi.hoisted(() => ({
+  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
   entitiesState: {
     entities: {} as Record<string, unknown>,
     entityRegistry: [] as Array<{ entity_id: string; platform?: string | null }>,
@@ -29,8 +30,18 @@ vi.mock('@/app/hooks', () => ({
   useServiceActionHandler: () => runActionMock,
 }));
 
+vi.mock('@/app/hooks/use-provider-runtime', () => ({
+  useProviderRuntime: vi.fn((selector: (state: typeof entitiesState) => unknown) =>
+    selector(entitiesState)
+  ),
+}));
+
 vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
+}));
+
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityAction: dispatchEntityActionMock,
 }));
 
 vi.mock('@/auth/AuthProvider', () => ({
@@ -113,10 +124,11 @@ describe('useMediaCardController', () => {
 
     act(() => result.current.togglePlay());
 
-    expect(serviceMock.updateMediaPlayerPlayback).toHaveBeenCalledWith(
-      'media_player.kitchen',
-      'toggle'
-    );
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.kitchen',
+      domain: 'media_player',
+      service: 'media_play_pause',
+    });
     expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
   });
 
@@ -130,10 +142,11 @@ describe('useMediaCardController', () => {
     const { result } = renderHookWithProviders(() => useMediaCardController(defaultParams));
 
     act(() => result.current.togglePlay());
-    expect(serviceMock.updateMediaPlayerPlayback).toHaveBeenCalledWith(
-      'media_player.kitchen',
-      'toggle'
-    );
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.kitchen',
+      domain: 'media_player',
+      service: 'media_play_pause',
+    });
     expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
 
     act(() => result.current.sendRemoteCommand('select'));

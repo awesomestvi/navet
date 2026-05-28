@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { DashboardController } from '@/app/features/dashboard/hooks/use-dashboard-controller';
 import { I18nProvider } from '@/app/i18n/i18n-provider';
+import type { DeviceWithType } from '@/app/types/device.types';
 import { DashboardOverlays } from '../dashboard-overlays';
 
 const addCardDialogSpy = vi.fn();
@@ -70,9 +71,12 @@ describe('DashboardOverlays', () => {
             id: 'sensor.kitchen_temperature',
             name: 'Kitchen temperature',
             room: 'Kitchen',
+            size: 'small',
+            value: '21',
+            unit: '°C',
             type: 'sensors',
             entityType: 'temperature',
-          },
+          } satisfies DeviceWithType,
         ],
       ]),
     });

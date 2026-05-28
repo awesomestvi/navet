@@ -52,7 +52,7 @@ describe('useHomeyDevices', () => {
 
     expect(result.current.lights).toEqual([
       expect.objectContaining({
-        id: 'light_1',
+        id: 'homey:light_1',
         providerId: 'homey',
         nativeId: 'light_1',
         canonicalId: 'homey:light_1',
@@ -64,7 +64,7 @@ describe('useHomeyDevices', () => {
     ]);
     expect(result.current.switches).toEqual([
       expect.objectContaining({
-        id: 'switch_1',
+        id: 'homey:switch_1',
         providerId: 'homey',
         room: 'Living Room',
         state: false,
@@ -72,7 +72,7 @@ describe('useHomeyDevices', () => {
     ]);
     expect(result.current.fans).toEqual([
       expect.objectContaining({
-        id: 'fan_1',
+        id: 'homey:fan_1',
         providerId: 'homey',
         room: 'Hallway',
         percentage: 66,
@@ -80,7 +80,7 @@ describe('useHomeyDevices', () => {
     ]);
     expect(result.current.sensors).toEqual([
       expect.objectContaining({
-        id: 'switch_1#measure_power',
+        id: 'homey:switch_1#measure_power',
         providerId: 'homey',
         nativeId: 'switch_1#measure_power',
         canonicalId: 'homey:switch_1#measure_power',
@@ -111,7 +111,7 @@ describe('useHomeyDevices', () => {
 
     expect(result.current.sensors).toEqual([
       expect.objectContaining({
-        id: 'sensor_1#alarm_motion',
+        id: 'homey:sensor_1#alarm_motion',
         room: 'Unassigned',
         value: 'Detected',
         status: 'active',

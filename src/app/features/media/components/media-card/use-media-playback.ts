@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { TranslateFn } from '@/app/hooks';
 import { useServiceActionHandler } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { dispatchEntityAction } from '@/app/services/integration-action.service';
 
 interface UseMediaPlaybackParams {
   entityId: string;
@@ -25,7 +25,12 @@ export function useMediaPlayback({
 
   const togglePlay = useCallback(() => {
     void runAction(
-      () => homeAssistantService.updateMediaPlayerPlayback(entityId, 'toggle'),
+      () =>
+        dispatchEntityAction({
+          entityId,
+          domain: 'media_player',
+          service: 'media_play_pause',
+        }),
       t('media.feedback.updatePlaybackFailed')
     );
   }, [entityId, runAction, t]);
@@ -34,7 +39,12 @@ export function useMediaPlayback({
     if (!canPreviousTrack) return;
 
     void runAction(
-      () => homeAssistantService.updateMediaPlayerPlayback(entityId, 'previous'),
+      () =>
+        dispatchEntityAction({
+          entityId,
+          domain: 'media_player',
+          service: 'media_previous_track',
+        }),
       t('media.feedback.previousTrackFailed')
     );
   }, [canPreviousTrack, entityId, runAction, t]);
@@ -43,14 +53,25 @@ export function useMediaPlayback({
     if (!canNextTrack) return;
 
     void runAction(
-      () => homeAssistantService.updateMediaPlayerPlayback(entityId, 'next'),
+      () =>
+        dispatchEntityAction({
+          entityId,
+          domain: 'media_player',
+          service: 'media_next_track',
+        }),
       t('media.feedback.nextTrackFailed')
     );
   }, [canNextTrack, entityId, runAction, t]);
 
   const toggleShuffle = useCallback(() => {
     void runAction(
-      () => homeAssistantService.setMediaPlayerShuffle(entityId, !shuffleEnabled),
+      () =>
+        dispatchEntityAction({
+          entityId,
+          domain: 'media_player',
+          service: 'shuffle_set',
+          serviceData: { shuffle: !shuffleEnabled },
+        }),
       t('media.feedback.updateShuffleFailed')
     );
   }, [entityId, runAction, shuffleEnabled, t]);
@@ -58,7 +79,13 @@ export function useMediaPlayback({
   const cycleRepeat = useCallback(() => {
     const nextRepeat = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
     void runAction(
-      () => homeAssistantService.setMediaPlayerRepeat(entityId, nextRepeat),
+      () =>
+        dispatchEntityAction({
+          entityId,
+          domain: 'media_player',
+          service: 'repeat_set',
+          serviceData: { repeat: nextRepeat },
+        }),
       t('media.feedback.updateRepeatFailed')
     );
   }, [entityId, repeatMode, runAction, t]);

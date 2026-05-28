@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
@@ -28,7 +28,7 @@ export function useEnergyStatisticsPeriods(entityId?: string): EnergyPeriodTotal
     const statisticId = entityId;
 
     async function fetchStats() {
-      const activeConnection = connection ?? homeAssistantService.getConnection();
+      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
       if (!activeConnection) return;
       try {
         const result = await getCachedEnergyStatistics(

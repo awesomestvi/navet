@@ -1,7 +1,9 @@
+import type { NavetActionIntent } from '@/app/core/navet';
 import type { IntegrationProviderId } from '../types/provider';
 import { getProviderNativeId, parseProviderScopedId } from '../utils/provider-ids';
 import {
   getIntegrationProviderAdapter,
+  getIntegrationProviderContract,
   type IntegrationServiceTarget,
   requireIntegrationProviderCapability,
 } from './integration-registry.service';
@@ -21,6 +23,20 @@ export interface DispatchEntityActionRequest {
   service: string;
   serviceData?: Record<string, unknown>;
   target?: Omit<IntegrationServiceTarget, 'entity_id'>;
+}
+
+export interface DispatchPlatformActionRequest {
+  targetId: string;
+  providerId?: IntegrationProviderId;
+  domain: string;
+  service: string;
+  payload?: Record<string, unknown>;
+  target?: Omit<IntegrationServiceTarget, 'entity_id'>;
+}
+
+export async function dispatchAction(intent: NavetActionIntent): Promise<void> {
+  const contract = getIntegrationProviderContract(intent.providerId);
+  await contract.dispatchAction(intent);
 }
 
 function normalizeScopedValue(value: string | string[] | undefined): string | string[] | undefined {
@@ -72,12 +88,17 @@ export async function dispatchServiceAction({
   const resolvedProviderId = resolveProviderId(providerId);
   const adapter = getIntegrationProviderAdapter(resolvedProviderId);
   requireIntegrationProviderCapability(adapter, 'serviceActions');
-
-  if (!adapter.callService) {
-    throw new Error(`${adapter.provider.label} does not support integration service actions`);
-  }
-
-  await adapter.callService(domain, service, serviceData, normalizeTarget(target));
+  await dispatchAction({
+    targetId: `${resolvedProviderId}:service`,
+    providerId: resolvedProviderId,
+    actionId: 'service',
+    payload: {
+      domain,
+      service,
+      serviceData,
+      target: normalizeTarget(target),
+    },
+  });
 }
 
 export async function dispatchEntityAction({
@@ -89,15 +110,36 @@ export async function dispatchEntityAction({
   target,
 }: DispatchEntityActionRequest): Promise<void> {
   const resolvedProviderId = resolveProviderId(providerId, entityId);
-
-  await dispatchServiceAction({
+  await dispatchAction({
+    targetId: entityId,
     providerId: resolvedProviderId,
+    actionId: 'service',
+    payload: {
+      domain,
+      service,
+      serviceData,
+      target: {
+        ...target,
+        entity_id: getProviderNativeId(entityId),
+      },
+    },
+  });
+}
+
+export async function dispatchPlatformAction({
+  targetId,
+  providerId,
+  domain,
+  service,
+  payload,
+  target,
+}: DispatchPlatformActionRequest): Promise<void> {
+  await dispatchEntityAction({
+    entityId: targetId,
+    providerId,
     domain,
     service,
-    serviceData,
-    target: {
-      ...target,
-      entity_id: getProviderNativeId(entityId),
-    },
+    serviceData: payload,
+    target,
   });
 }

@@ -8,7 +8,7 @@ import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/r
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '@/app/types/provider';
 import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
 import type { AuthRuntime } from './runtime';
-import type { AuthSession } from './types';
+import type { AuthSession, AuthSessionMap } from './types';
 
 interface AuthContextValue {
   providerId: IntegrationProviderId;
@@ -16,6 +16,7 @@ interface AuthContextValue {
   runtime: AuthRuntime;
   snapshot: AuthSessionSnapshot;
   session: AuthSession | null;
+  sessions: AuthSessionMap;
   ready: boolean;
   error: string | null;
   hassUrl: string | null;
@@ -26,9 +27,10 @@ interface AuthContextValue {
     accessToken?: string;
     providerId?: IntegrationProviderId;
   }) => Promise<void>;
-  logout: () => Promise<void>;
-  refresh: () => Promise<AuthSession | null>;
+  logout: (providerId?: IntegrationProviderId) => Promise<void>;
+  refresh: (providerId?: IntegrationProviderId) => Promise<AuthSession | null>;
   replaceSession: (session: AuthSession | null) => void;
+  setActiveProvider: (providerId: IntegrationProviderId) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -111,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       runtime,
       snapshot,
       session,
+      sessions: snapshot.sessions,
       ready,
       error,
       hassUrl: session?.hassUrl ?? null,
@@ -121,12 +124,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(authSessionManager.getSession());
         setError(null);
       },
-      logout: async () => {
-        setSession(null);
-        await authSessionManager.logout();
+      logout: async (providerId) => {
+        if (!providerId || providerId === session?.providerId) {
+          setSession(null);
+        }
+        await authSessionManager.logout(providerId);
+        setSnapshot(authSessionManager.getSnapshot());
+        setSession(authSessionManager.getSession());
       },
-      refresh: async () => {
-        const nextSnapshot = await authSessionManager.refresh();
+      refresh: async (providerId) => {
+        const nextSnapshot = await authSessionManager.refresh(providerId);
         const nextSession = authSessionManager.getSession();
         setSnapshot(nextSnapshot);
         setSession(nextSession);
@@ -136,6 +143,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const nextSnapshot = authSessionManager.replaceSession(nextSession);
         setSnapshot(nextSnapshot);
         setSession(nextSession);
+      },
+      setActiveProvider: (providerId) => {
+        const nextSnapshot = authSessionManager.setActiveProvider(providerId);
+        setSnapshot(nextSnapshot);
+        setSession(authSessionManager.getSession());
       },
     }),
     [runtime, snapshot, session, ready, error]
@@ -148,6 +160,10 @@ export function useAuthSession() {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuthSession must be used within AuthProvider');
   return context;
+}
+
+export function useOptionalAuthSession() {
+  return useContext(AuthContext);
 }
 
 export function useAuthBaseUrl() {
@@ -163,5 +179,7 @@ export function useCurrentIntegrationProvider() {
 }
 
 export function useAuthLogout() {
-  return useContext(AuthContext)?.logout ?? (() => Promise.resolve());
+  return (
+    useContext(AuthContext)?.logout ?? ((_providerId?: IntegrationProviderId) => Promise.resolve())
+  );
 }

@@ -25,7 +25,7 @@ describe('useHADevices', () => {
 
     expect(result.current.fans).toEqual([
       expect.objectContaining({
-        id: fanEntityFixtures.normal.entity_id,
+        id: `home_assistant:${fanEntityFixtures.normal.entity_id}`,
         nativeId: fanEntityFixtures.normal.entity_id,
         canonicalId: `home_assistant:${fanEntityFixtures.normal.entity_id}`,
         providerId: 'home_assistant',
@@ -58,7 +58,7 @@ describe('useHADevices', () => {
 
     expect(result.current.sensors).toEqual([
       expect.objectContaining({
-        id: temperatureSensor.entity_id,
+        id: `home_assistant:${temperatureSensor.entity_id}`,
         nativeId: temperatureSensor.entity_id,
         canonicalId: `home_assistant:${temperatureSensor.entity_id}`,
         providerId: 'home_assistant',
@@ -71,7 +71,7 @@ describe('useHADevices', () => {
         status: 'measurement',
       }),
       expect.objectContaining({
-        id: binarySensorEntityFixtures.normal.entity_id,
+        id: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
         nativeId: binarySensorEntityFixtures.normal.entity_id,
         canonicalId: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
         providerId: 'home_assistant',
@@ -106,14 +106,14 @@ describe('useHADevices', () => {
 
     expect(result.current.fans[0]).toEqual(
       expect.objectContaining({
-        id: unavailableFan.entity_id,
+        id: `home_assistant:${unavailableFan.entity_id}`,
         room: 'Office',
         state: false,
       })
     );
     expect(result.current.sensors[0]).toEqual(
       expect.objectContaining({
-        id: sensorEntityFixtures.unknown.entity_id,
+        id: `home_assistant:${sensorEntityFixtures.unknown.entity_id}`,
         room: 'Office',
         value: 'unknown',
         status: 'unavailable',
@@ -144,13 +144,13 @@ describe('useHADevices', () => {
 
     expect(result.current.sensors[0]).toEqual(
       expect.objectContaining({
-        id: sensorEntityFixtures.missingOptionalAttributes.entity_id,
+        id: `home_assistant:${sensorEntityFixtures.missingOptionalAttributes.entity_id}`,
         room: 'Utility',
       })
     );
     expect(result.current.fans[0]).toEqual(
       expect.objectContaining({
-        id: fanEntityFixtures.malformedButPlausible.entity_id,
+        id: `home_assistant:${fanEntityFixtures.malformedButPlausible.entity_id}`,
         room: 'Utility',
       })
     );

@@ -1,35 +1,25 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { isAllRooms } from '@/app/constants/rooms';
-import type { DeviceCollection } from '@/app/types/device.types';
+import type { PlatformRoom } from '@/app/platform/types';
 
-export function useDashboardRoomCounts(allDevices: DeviceCollection, devices: DeviceCollection) {
-  const countItemsByRoom = useCallback((collection: DeviceCollection) => {
-    const counts = new Map<string, number>();
-    const deviceGroups = Object.values(collection) as Array<Array<{ room: string }>>;
+function countItemsByRoom(rooms: PlatformRoom[]) {
+  const counts = new Map<string, number>();
 
-    deviceGroups.forEach((group) => {
-      group.forEach((device) => {
-        const room = device.room;
-        if (!room || isAllRooms(room)) {
-          return;
-        }
+  for (const room of rooms) {
+    if (!room.name || isAllRooms(room.name)) {
+      continue;
+    }
 
-        counts.set(room, (counts.get(room) ?? 0) + 1);
-      });
-    });
+    counts.set(room.name, room.canonicalMemberIds.length);
+  }
 
-    return counts;
-  }, []);
+  return counts;
+}
 
-  const roomItemCounts = useMemo(
-    () => countItemsByRoom(allDevices),
-    [allDevices, countItemsByRoom]
-  );
+export function useDashboardRoomCounts(allRooms: PlatformRoom[], visibleRooms: PlatformRoom[]) {
+  const roomItemCounts = useMemo(() => countItemsByRoom(allRooms), [allRooms]);
 
-  const visibleRoomItemCounts = useMemo(
-    () => countItemsByRoom(devices),
-    [countItemsByRoom, devices]
-  );
+  const visibleRoomItemCounts = useMemo(() => countItemsByRoom(visibleRooms), [visibleRooms]);
 
   const roomHiddenItemCounts = useMemo(() => {
     const counts = new Map<string, number>();

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMediaArtwork } from '@/app/features/media/hooks/use-media-artwork';
-import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
+import type { ResolvedPlatformResource } from '@/app/platform/resources';
+import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface UseMediaArtworkResolutionParams {
   entityId: string;
+  providerId?: IntegrationProviderId;
   artworkKey?: string;
   artworkVersionKey?: string;
   liveEntityPicture?: string;
@@ -15,6 +17,7 @@ const ARTWORK_CLEAR_DELAY_MS = 700;
 
 export function useMediaArtworkResolution({
   entityId,
+  providerId,
   artworkKey,
   artworkVersionKey,
   liveEntityPicture,
@@ -27,6 +30,7 @@ export function useMediaArtworkResolution({
     .join('::');
   const artworkResource = useMediaArtwork({
     entityId,
+    providerId,
     attrs: {
       entity_picture: liveEntityPicture,
     },
@@ -64,7 +68,7 @@ export function useMediaArtworkResolution({
     setFailedArtworkUrl(imageUrl);
   }, []);
 
-  const visibleArtworkResource: ResolvedMediaResource | null =
+  const visibleArtworkResource: ResolvedPlatformResource | null =
     albumArt && artworkResource?.kind === 'image' && artworkResource.url === albumArt
       ? artworkResource
       : null;

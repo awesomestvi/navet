@@ -79,4 +79,22 @@ describe('integration-action.service', () => {
       }
     );
   });
+
+  it('dispatches canonical provider actions through the provider contract', async () => {
+    const { dispatchAction } = await import('../integration-action.service');
+
+    await dispatchAction({
+      targetId: 'home_assistant:light.kitchen',
+      providerId: 'home_assistant',
+      actionId: 'brightness',
+      payload: { value: 42 },
+    });
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      'light',
+      'turn_on',
+      { brightness_pct: 42 },
+      { entity_id: 'light.kitchen' }
+    );
+  });
 });

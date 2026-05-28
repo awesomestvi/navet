@@ -2,20 +2,17 @@ import { act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 
-const { runActionMock, serviceMock } = vi.hoisted(() => ({
+const { dispatchEntityActionMock, runActionMock } = vi.hoisted(() => ({
+  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
-  serviceMock: {
-    setMediaPlayerMute: vi.fn().mockResolvedValue(undefined),
-    setMediaPlayerVolume: vi.fn().mockResolvedValue(undefined),
-  },
 }));
 
 vi.mock('@/app/hooks', () => ({
   useServiceActionHandler: () => runActionMock,
 }));
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityAction: dispatchEntityActionMock,
 }));
 
 import { useMediaVolume } from '../use-media-volume';
@@ -23,8 +20,7 @@ import { useMediaVolume } from '../use-media-volume';
 describe('useMediaVolume', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    serviceMock.setMediaPlayerMute.mockClear();
-    serviceMock.setMediaPlayerVolume.mockClear();
+    dispatchEntityActionMock.mockClear();
   });
 
   afterEach(() => {
@@ -45,7 +41,12 @@ describe('useMediaVolume', () => {
 
     act(() => result.current.toggleMute());
 
-    expect(serviceMock.setMediaPlayerMute).toHaveBeenCalledWith('media_player.office', true);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_mute',
+      serviceData: { is_volume_muted: true },
+    });
   });
 
   it('falls back to setting volume to zero when mute is unsupported', async () => {
@@ -62,7 +63,12 @@ describe('useMediaVolume', () => {
 
     act(() => result.current.toggleMute());
 
-    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 0);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_set',
+      serviceData: { volume_level: 0 },
+    });
   });
 
   it('debounces volume changes before sending them', async () => {
@@ -78,13 +84,18 @@ describe('useMediaVolume', () => {
     );
 
     act(() => result.current.handleVolumeChange(55));
-    expect(serviceMock.setMediaPlayerVolume).not.toHaveBeenCalled();
+    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
 
     await act(async () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 55);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_set',
+      serviceData: { volume_level: 0.55 },
+    });
   });
 
   it('sends the latest pending volume immediately when interaction ends', async () => {
@@ -105,7 +116,12 @@ describe('useMediaVolume', () => {
       result.current.endVolumeInteraction();
     });
 
-    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 45);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_set',
+      serviceData: { volume_level: 0.45 },
+    });
   });
 
   it('does not send intermediate volume changes while dragging', async () => {
@@ -130,11 +146,16 @@ describe('useMediaVolume', () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(serviceMock.setMediaPlayerVolume).not.toHaveBeenCalled();
+    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
 
     act(() => result.current.endVolumeInteraction());
 
-    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 50);
+    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_set',
+      serviceData: { volume_level: 0.5 },
+    });
   });
 
   it('unmutes before setting a non-zero volume when needed', async () => {
@@ -154,7 +175,17 @@ describe('useMediaVolume', () => {
       await vi.runAllTimersAsync();
     });
 
-    expect(serviceMock.setMediaPlayerMute).toHaveBeenCalledWith('media_player.office', false);
-    expect(serviceMock.setMediaPlayerVolume).toHaveBeenCalledWith('media_player.office', 30);
+    expect(dispatchEntityActionMock).toHaveBeenNthCalledWith(1, {
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_mute',
+      serviceData: { is_volume_muted: false },
+    });
+    expect(dispatchEntityActionMock).toHaveBeenNthCalledWith(2, {
+      entityId: 'media_player.office',
+      domain: 'media_player',
+      service: 'volume_set',
+      serviceData: { volume_level: 0.3 },
+    });
   });
 });

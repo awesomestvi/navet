@@ -62,16 +62,38 @@ export const useNavigationStore = create<NavigationState>()(
       recentSections: [],
       lastNonHomeSection: null,
       applyNavigationState: ({ currentRoom, activeSection }) =>
-        set({
-          currentRoom,
-          lastExplicitRoom: currentRoom,
-          activeSection,
+        set((state) => {
+          if (
+            state.currentRoom === currentRoom &&
+            state.lastExplicitRoom === currentRoom &&
+            state.activeSection === activeSection
+          ) {
+            return state;
+          }
+
+          return {
+            currentRoom,
+            lastExplicitRoom: currentRoom,
+            activeSection,
+          };
         }),
       setCurrentRoom: (currentRoom, options) =>
-        set((state) => ({
-          currentRoom,
-          lastExplicitRoom: options?.explicit === false ? state.lastExplicitRoom : currentRoom,
-        })),
+        set((state) => {
+          const nextLastExplicitRoom =
+            options?.explicit === false ? state.lastExplicitRoom : currentRoom;
+
+          if (
+            state.currentRoom === currentRoom &&
+            state.lastExplicitRoom === nextLastExplicitRoom
+          ) {
+            return state;
+          }
+
+          return {
+            currentRoom,
+            lastExplicitRoom: nextLastExplicitRoom,
+          };
+        }),
       setActiveSection: (activeSection) => {
         history.pushState({}, '', sectionToPath(activeSection));
         window.scrollTo(0, 0);

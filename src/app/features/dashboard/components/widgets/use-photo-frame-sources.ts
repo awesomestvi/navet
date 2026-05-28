@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
 import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { sanitizeImageUrl } from '@/app/utils/url-security';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
@@ -22,7 +22,7 @@ function canExpandMediaClass(mediaClass: string | undefined) {
 }
 
 async function resolveMediaSourceImageUrl(mediaContentId: string) {
-  const resolved = await homeAssistantService.resolveMediaSource(mediaContentId);
+  const resolved = await integrationMediaFeatureService.resolveMediaSource(mediaContentId);
 
   if (!resolved.url) {
     return null;
@@ -44,11 +44,11 @@ async function collectMediaSourceImageUrls(mediaSourceId: string) {
 
     seen.add(next.mediaContentId);
 
-    const media = await homeAssistantService.browseMediaSource(next.mediaContentId);
+    const media = await integrationMediaFeatureService.browseMediaSource(next.mediaContentId);
     const mediaChildren = media.children ?? [];
 
-    if (isImageMediaClass(media.media_class)) {
-      const imageUrl = await resolveMediaSourceImageUrl(media.media_content_id);
+    if (isImageMediaClass(media.mediaClass)) {
+      const imageUrl = await resolveMediaSourceImageUrl(media.mediaContentId ?? '');
       if (imageUrl) {
         collectedUrls.push(imageUrl);
       }
@@ -60,17 +60,17 @@ async function collectMediaSourceImageUrls(mediaSourceId: string) {
         break;
       }
 
-      if (isImageMediaClass(child.media_class)) {
-        const imageUrl = await resolveMediaSourceImageUrl(child.media_content_id);
+      if (isImageMediaClass(child.mediaClass)) {
+        const imageUrl = await resolveMediaSourceImageUrl(child.mediaContentId ?? '');
         if (imageUrl) {
           collectedUrls.push(imageUrl);
         }
         continue;
       }
 
-      if (next.depth < MAX_MEDIA_SOURCE_DEPTH && canExpandMediaClass(child.media_class)) {
+      if (next.depth < MAX_MEDIA_SOURCE_DEPTH && canExpandMediaClass(child.mediaClass)) {
         queue.push({
-          mediaContentId: child.media_content_id,
+          mediaContentId: child.mediaContentId ?? '',
           depth: next.depth + 1,
         });
       }

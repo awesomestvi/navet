@@ -31,10 +31,11 @@ import {
 } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useAreaRooms, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
 import { useSettingsStore } from '@/app/stores';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import {
   buildUpsDeviceOptions,
   getUpsStatusTone,
@@ -410,10 +411,10 @@ export const UpsWidget = memo(function UpsWidget({
   const { t, locale } = useI18n();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const rooms = useAreaRooms();
-  const entities = useHomeAssistant(homeAssistantSelectors.entities);
-  const areas = useHomeAssistant(homeAssistantSelectors.areas);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const entities = useProviderRuntime(providerRuntimeSelectors.entities);
+  const areas = useProviderRuntime(providerRuntimeSelectors.areas);
+  const deviceRegistry = useProviderRuntime(providerRuntimeSelectors.deviceRegistry);
+  const entityRegistry = useProviderRuntime(providerRuntimeSelectors.entityRegistry);
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const surface = getThemeSurfaceTokens(theme);

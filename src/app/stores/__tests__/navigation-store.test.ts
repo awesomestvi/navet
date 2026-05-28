@@ -151,6 +151,21 @@ describe('useNavigationStore', () => {
     expect(useNavigationStore.getState().lastExplicitRoom).toBe('Kitchen');
   });
 
+  it('does not emit updates when the requested room state is unchanged', () => {
+    const store = useNavigationStore.getState();
+    const listener = vi.fn();
+    const unsubscribe = useNavigationStore.subscribe(listener);
+
+    store.setCurrentRoom('Kitchen');
+    listener.mockClear();
+
+    store.setCurrentRoom('Kitchen');
+    store.setCurrentRoom('Kitchen', { explicit: false });
+
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
   it('does not rewrite MRU state when popstate navigates to home', () => {
     const store = useNavigationStore.getState();
 

@@ -7,7 +7,7 @@ import {
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@/app/services/ha-recorder-statistics';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
@@ -71,7 +71,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
     const stableEntityId = entityId;
 
     async function fetchHistory() {
-      const activeConnection = connection ?? homeAssistantService.getConnection();
+      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
       if (!activeConnection) {
         setPoints([]);
         return;

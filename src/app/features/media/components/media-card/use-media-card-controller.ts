@@ -13,10 +13,13 @@ import {
   supportsTvRemotePlaybackCommand,
   type TvRemoteAction,
 } from '@/app/features/media/tv-remote-commands';
-import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
+import type { IntegrationStore } from '@/app/stores/integration-store';
+import { providerRuntimeSelectors } from '@/app/stores/selectors';
+import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
@@ -29,7 +32,7 @@ import { useMediaVolume } from './use-media-volume';
 // useMediaGrouping only needs media_player.* entities to build the grouping picker.
 // Defined at module scope so the reference is stable and shallow equality can
 // suppress re-renders when unrelated entities (lights, sensors, etc.) update.
-function selectMediaPlayerEntities(state: HomeAssistantStore) {
+function selectMediaPlayerEntities(state: IntegrationStore) {
   if (!state.entities) return null;
   return Object.fromEntries(
     Object.entries(state.entities).filter(([id]) => id.startsWith('media_player.'))
@@ -40,7 +43,7 @@ function selectUndefinedEntity() {
   return undefined;
 }
 
-function selectEntityRegistry(state: HomeAssistantStore) {
+function selectEntityRegistry(state: IntegrationStore) {
   return state.entityRegistry;
 }
 
@@ -68,15 +71,21 @@ export function useMediaCardController({
 }: UseMediaCardControllerParams) {
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
+  const liveEntity = useProviderRuntime(providerRuntimeSelectors.entity(entityId));
+  const parsedEntityId = parseProviderScopedId(entityId);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const remoteEntityId = entityId.includes('.')
-    ? `remote.${entityId.split('.').slice(1).join('.')}`
-    : '';
-  const remoteEntity = useHomeAssistant(
-    remoteEntityId ? homeAssistantSelectors.entity(remoteEntityId) : selectUndefinedEntity
+  const remoteNativeId =
+    parsedEntityId?.nativeId.includes('.') || entityId.includes('.')
+      ? `remote.${(parsedEntityId?.nativeId ?? entityId).split('.').slice(1).join('.')}`
+      : '';
+  const remoteEntityId =
+    remoteNativeId && parsedEntityId
+      ? createProviderScopedId(parsedEntityId.providerId, remoteNativeId)
+      : remoteNativeId;
+  const remoteEntity = useProviderRuntime(
+    remoteEntityId ? providerRuntimeSelectors.entity(remoteEntityId) : selectUndefinedEntity
   );
-  const entityRegistry = useHomeAssistant(selectEntityRegistry);
+  const entityRegistry = useProviderRuntime(selectEntityRegistry);
   const resolvedInitialState = liveEntity
     ? normalizeMediaPlaybackState(liveEntity.state, deviceClass)
     : initialState;
@@ -129,7 +138,7 @@ export function useMediaCardController({
   // Only subscribe to all media player entities if grouping is actually supported.
   // Use the resolved live capability when available so grouping stays functional
   // even when the initial prop was stale.
-  const mediaPlayerEntities = useHomeAssistant(
+  const mediaPlayerEntities = useProviderRuntime(
     resolvedInitialSupportsGrouping ? selectMediaPlayerEntities : selectUndefinedEntity,
     shallow
   );
@@ -251,6 +260,7 @@ export function useMediaCardController({
 
   const { albumArt, artworkResource, handleArtworkError } = useMediaArtworkResolution({
     entityId,
+    providerId: parsedEntityId?.providerId,
     artworkKey,
     liveEntityPicture,
     liveArtworkKey,
@@ -316,25 +326,25 @@ export function useMediaCardController({
 
   const selectSource = (nextSource: string) =>
     void runMediaAction(
-      () => homeAssistantService.selectMediaPlayerSource(entityId, nextSource),
+      () => integrationMediaFeatureService.selectMediaPlayerSource(entityId, nextSource),
       t('media.feedback.updatePlaybackFailed')
     );
 
   const selectSoundMode = (nextSoundMode: string) =>
     void runMediaAction(
-      () => homeAssistantService.selectMediaPlayerSoundMode(entityId, nextSoundMode),
+      () => integrationMediaFeatureService.selectMediaPlayerSoundMode(entityId, nextSoundMode),
       t('media.feedback.updateSoundModeFailed')
     );
 
   const seekTo = (nextElapsedSeconds: number) =>
     void runMediaAction(
-      () => homeAssistantService.seekMediaPlayer(entityId, nextElapsedSeconds),
+      () => integrationMediaFeatureService.seekMediaPlayer(entityId, nextElapsedSeconds),
       t('media.feedback.seekFailed')
     );
 
   const clearPlaylist = () =>
     void runMediaAction(
-      () => homeAssistantService.clearMediaPlayerPlaylist(entityId),
+      () => integrationMediaFeatureService.clearMediaPlayerPlaylist(entityId),
       t('media.feedback.clearPlaylistFailed')
     );
 
