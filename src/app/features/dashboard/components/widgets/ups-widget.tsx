@@ -32,14 +32,14 @@ import {
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
-import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
+import { formatSensorValue } from '@/app/hooks/entity-utils';
 import { useSettingsStore } from '@/app/stores';
 import {
   getUpsStatusTone,
   resolveUpsMetricReadings,
   type UpsDeviceOption,
 } from './ups-widget-data';
-import { useHomeAssistantUpsWidgetData } from './use-home-assistant-ups-widget-data';
+import { useProviderUpsWidgetData } from './use-provider-ups-widget-data';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
 export interface UpsWidgetData {
@@ -414,7 +414,7 @@ export const UpsWidget = memo(function UpsWidget({
   const surface = getThemeSurfaceTokens(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const resolvedSize = normalizeUpsCardSize(size);
-  const { devices, entities, formatOptions } = useHomeAssistantUpsWidgetData({ use24HourTime });
+  const { devices, entities, formatOptions } = useProviderUpsWidgetData({ use24HourTime });
   const selectedDevice = getSelectedDevice(devices, data?.deviceId);
   const missingPersistedDevice = Boolean(data?.deviceId) && selectedDevice === null;
   const metricEntityIds =

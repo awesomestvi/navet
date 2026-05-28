@@ -1,10 +1,10 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useEffect } from 'react';
 import type { NavetLightState } from '@/app/core/navet-device-state';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 
 interface UseLightOnStateSyncParams {
   initialState: boolean;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   providerState?: NavetLightState | null;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
 }

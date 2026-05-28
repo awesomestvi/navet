@@ -8,7 +8,7 @@ import {
   formatMetricNumber,
   parseNumberish,
   parseRoundedNumberish,
-} from '../ha-entity-utils';
+} from '../entity-utils';
 
 type WeatherForecastEntry = Record<string, unknown>;
 

@@ -2,9 +2,12 @@
  * Light attribute parsing utilities
  */
 
-import type { HassEntity } from 'home-assistant-js-websocket';
+interface LightEntityLike {
+  state: string;
+  attributes?: Record<string, unknown>;
+}
 
-export function brightnessToPercent(entityId: string, entity: HassEntity): number {
+export function brightnessToPercent(entityId: string, entity: LightEntityLike): number {
   const brightnessPct = entity.attributes?.brightness_pct;
   if (typeof brightnessPct === 'number' && !Number.isNaN(brightnessPct)) {
     return Math.max(0, Math.min(100, Math.round(brightnessPct)));
@@ -39,7 +42,7 @@ export function brightnessToPercent(entityId: string, entity: HassEntity): numbe
   return entity.state === 'on' ? 100 : 0;
 }
 
-export function normalizeKelvin(entity: HassEntity): number {
+export function normalizeKelvin(entity: LightEntityLike): number {
   const kelvin = entity.attributes?.color_temp_kelvin;
   if (typeof kelvin === 'number' && !Number.isNaN(kelvin)) return Math.round(kelvin);
   const mired = entity.attributes?.color_temp;

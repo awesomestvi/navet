@@ -1,7 +1,7 @@
 import type { DeviceCollection } from '@/app/types/device.types';
 import type { NavetDevice, NavetProviderSnapshot } from './navet';
 
-function createEmptyDeviceCollection(): DeviceCollection {
+export function createEmptyDeviceCollection(): DeviceCollection {
   return {
     lights: [],
     fans: [],

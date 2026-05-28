@@ -1,49 +1,40 @@
 # Testing
 
-This file defines the general testing workflow for Navet. For any Home Assistant-facing test work, also read [home-assistant-contract-testing.md](home-assistant-contract-testing.md).
+This file defines Navet's general testing workflow.
 
-## Mandatory Reading Rule
+For Home Assistant-facing tests, also read
+[../testing/home-assistant-contract-testing.md](../testing/home-assistant-contract-testing.md).
 
-Before creating, modifying, deleting, or reviewing tests:
+## Core Rules
 
-- Read [home-assistant-contract-testing.md](home-assistant-contract-testing.md) if the test touches Home Assistant behavior.
-- Use that contract policy as the source of truth for Home Assistant integration behavior.
+- do not weaken valid tests to match implementation drift
+- do not rewrite tests only to make the suite pass
+- prefer behavior, contract, and regression coverage over implementation-shaped assertions
+- reuse shared fixtures instead of repeating inline mock builders
 
-## Core Testing Rules
+## Source Of Truth
 
-- Do not weaken a valid test just to make the suite pass.
-- Do not rewrite tests only to match current implementation drift.
-- If a valid contract test fails, assume the implementation is wrong first.
-- Extend existing test files and `__tests__/` directories before creating duplicate coverage.
-- Favor behavior and contract tests over shallow implementation tests.
-- Reuse shared fixtures instead of repeating inline mock builders.
+Tests that touch Home Assistant behavior should be grounded in one or more of:
 
-## Source Of Truth Rule
+1. official Home Assistant documentation
+2. realistic Home Assistant payloads
+3. known regressions
+4. explicit product requirements
 
-Tests that touch Home Assistant behavior must be grounded in one or more of:
-
-1. Official Home Assistant documentation
-2. Realistic Home Assistant payloads and documented entity or state shapes
-3. Known regressions
-4. Explicit product requirements
-
-Navet's current implementation is not the source of truth for those tests.
-
-## Review And Refactor Rules
-
-- Classify existing tests before changing them: keep, rewrite, or remove.
-- Keep tests that verify user-visible behavior, documented behavior, realistic payload handling, or known regressions.
-- Rewrite tests that have a good purpose but are overly implementation-shaped, unrealistic, or under-specified.
-- Remove tests that only mirror internals, use impossible payloads, or create false confidence.
-- Do not delete useful user-flow coverage blindly; rewrite it against real contracts where possible.
+Navet's current implementation is not the source of truth for those assertions.
 
 ## Fixture Rules
 
-- Prefer shared fixtures over repeated inline objects.
-- Fixtures for Home Assistant-facing tests should model Home Assistant payloads, not Navet-normalized objects.
-- Include realistic edge cases when relevant: missing fields, nulls, `unknown`, `unavailable`, relative URLs, absolute URLs, ingress paths, external URLs, and malformed-but-plausible payloads.
+- use shared fixtures under `src/test/fixtures/home-assistant/` when possible
+- include edge cases such as `unknown`, `unavailable`, missing fields, resource-path differences,
+  and malformed-but-plausible payloads when relevant
 
-## Related Guidance
+## Review Rules
 
-- Full Home Assistant contract policy lives in [home-assistant-contract-testing.md](home-assistant-contract-testing.md).
-- Storybook fixture and story ownership guidance lives in [storybook.md](storybook.md).
+Classify existing tests before editing them:
+
+- keep
+- rewrite
+- delete
+
+Use `ai/testing-review.md` when the file is already part of the audit baseline.

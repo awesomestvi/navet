@@ -1,6 +1,4 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -8,9 +6,11 @@ import { HA_PENDING_ECHO_WINDOW_MS } from '@/app/constants/interaction-timing';
 import { readNavetClimateState } from '@/app/core/navet-device-state';
 import {
   useHaCommandQueue,
-  useHomeAssistant,
-  useHvacRegistryDeviceTopology,
   useI18n,
+  useProviderEntitySnapshot,
+  useProviderEntitySnapshotRecord,
+  useProviderHvacTopology,
+  useProviderTemperatureUnit,
   useServiceActionHandler,
   useTheme,
 } from '@/app/hooks';
@@ -18,14 +18,14 @@ import {
   parseNumberish,
   resolveClimateTargetTemperature,
   resolveClimateTemperatureUnit,
-  resolveHomeAssistantTemperatureUnit,
-} from '@/app/hooks/ha-entity-utils';
+} from '@/app/hooks/entity-utils';
 import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import {
   convertDisplayTemperatureToSourceUnit,
@@ -42,14 +42,13 @@ import { useHvacVisualMode } from './use-hvac-visual-mode';
 
 export interface HVACSiblingEntity {
   id: string;
-  entity: HassEntity;
+  entity: PlatformEntitySnapshot;
 }
 
 export type HVACCardController = ReturnType<typeof useHVACCardController>;
 
 // Stable empty references so the selector and useMemo don't create new objects
 // when there are no siblings, which would break shallow equality.
-const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
 const DEFAULT_MIN_TEMP = 16;
 const DEFAULT_MAX_TEMP = 30;
 const DEFAULT_TEMP_STEP = 0.5;
@@ -74,7 +73,7 @@ function resolveDefaultTemperatureRange(sourceTemperatureUnit: TemperatureUnit |
 }
 
 function resolveClimateTemperatureRange(
-  liveEntity: HassEntity | undefined,
+  liveEntity: PlatformEntitySnapshot | undefined,
   sourceTemperatureUnit: TemperatureUnit | undefined
 ) {
   const attrs = liveEntity?.attributes;
@@ -97,7 +96,7 @@ function snapClimateTemperature(value: number, minTemp: number, maxTemp: number,
 
 function resolveClimateTemperatureServiceData(
   entityId: string,
-  liveEntity: HassEntity | undefined,
+  liveEntity: PlatformEntitySnapshot | undefined,
   nextTemp: number
 ): { temperature: number } | { target_temp_low?: number; target_temp_high?: number } {
   const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
@@ -176,11 +175,14 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const providerDevice = useProviderDevice(id);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const providerState = readNavetClimateState(providerDevice);
-  const homeAssistantTemperatureUnit = useHomeAssistant((state) =>
-    resolveHomeAssistantTemperatureUnit(state.config)
-  );
+  const resolvedProviderId =
+    providerDevice?.providerId ??
+    providerId ??
+    (isLegacyHomeAssistantEntityId(nativeEntityId) ? 'home_assistant' : undefined);
+  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
+  const liveEntity = useProviderEntitySnapshot(id);
+  const homeAssistantTemperatureUnit = useProviderTemperatureUnit(resolvedProviderId);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const effectiveSourceTemperatureUnit = useMemo(
     () =>
@@ -201,7 +203,7 @@ export function useHVACCardController({
     () => resolveClimateTemperatureRange(liveEntity, effectiveSourceTemperatureUnit),
     [effectiveSourceTemperatureUnit, liveEntity]
   );
-  const { siblingIds: siblingEntityIds } = useHvacRegistryDeviceTopology(id);
+  const { siblingIds: siblingEntityIds } = useProviderHvacTopology(id);
   const pendingTargetTempRef = useRef<number | null>(null);
   const deferredTargetTempRef = useRef<number | null>(null);
   const targetTempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -316,6 +318,7 @@ export function useHVACCardController({
 
   useHvacEntitySync({
     liveEntity,
+    providerState,
     initialTemp,
     initialCurrentTemp,
     initialMode,
@@ -337,14 +340,10 @@ export function useHVACCardController({
   // `shallow` does a key-wise === comparison: home-assistant-js-websocket preserves
   // entity object references for unchanged entities, so this will not re-render when
   // unrelated entities update elsewhere in HA.
-  const siblingEntitySelector = useCallback(
-    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
-      if (!siblingEntityIds.length || !state.entities) return EMPTY_SIBLING_RECORD;
-      return Object.fromEntries(siblingEntityIds.map((eid) => [eid, state.entities?.[eid]]));
-    },
-    [siblingEntityIds]
-  );
-  const siblingEntityRecord = useHomeAssistant(siblingEntitySelector, shallow);
+  const siblingEntityRecord = useProviderEntitySnapshotRecord(siblingEntityIds, {
+    providerId: resolvedProviderId,
+    enabled: isHomeAssistantProvider,
+  });
 
   const siblingEntities = useMemo<HVACSiblingEntity[]>(
     () =>

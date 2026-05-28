@@ -19,21 +19,16 @@ const lightRuntimeState = {
 };
 
 vi.mock('@/app/hooks', () => ({
-  useHomeAssistant: vi.fn(
-    (
-      selector: (state: { connection: object | null; entities: Record<string, unknown> }) => unknown
-    ) =>
-      selector({
-        connection: {},
-        entities: {
-          'light.kitchen': { entity_id: 'light.kitchen', state: 'on', attributes: {} },
-        },
-      })
-  ),
   useI18n: vi.fn(() => ({
     t: (key: string) => key,
   })),
   useProviderDevice: vi.fn(() => null),
+  useProviderConnectionState: vi.fn(() => true),
+  useProviderEntitySnapshot: vi.fn(() => ({
+    entityId: 'light.kitchen',
+    state: 'on',
+    attributes: {},
+  })),
 }));
 
 vi.mock('../../hooks/use-brightness-presets', () => ({

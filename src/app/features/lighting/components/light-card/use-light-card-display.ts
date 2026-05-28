@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { type CardSize, isExtraSmallCardSize } from '@/app/components/shared/card-size-selector';
@@ -10,6 +9,7 @@ import {
 } from '@/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import type { NavetLightState } from '@/app/core/navet-device-state';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import {
   getSupportedColorTemperatureRange,
@@ -21,7 +21,7 @@ interface UseLightCardDisplayParams {
   selectedIcon: string;
   size: CardSize;
   providerId?: IntegrationProviderId;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   initialTemp: number;
   providerState?: NavetLightState | null;
 }

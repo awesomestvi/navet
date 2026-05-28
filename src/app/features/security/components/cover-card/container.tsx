@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { parseNumberish } from '@/app/hooks/ha-entity-utils';
+import { readNavetCoverState } from '@/app/core/navet-device-state';
+import { useI18n, useProviderDevice, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { integrationSecurityFeatureService } from '@/app/services/integration-security-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEVICE_CLASS_CONFIG } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
 import { CoverCardView } from './view';
@@ -21,12 +20,11 @@ const COVER_POSITION_OPTIMISTIC_TIMEOUT_MS = 20_000;
 const COVER_POSITION_REACHED_TOLERANCE = 1;
 
 function normalizeCoverPosition(value: unknown) {
-  const parsed = parseNumberish(value);
-  if (parsed === null) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
     return null;
   }
 
-  return Math.max(0, Math.min(100, Math.round(parsed)));
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 function supportsCoverFeature(
@@ -70,23 +68,15 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const parsedLiveSupportedFeatures = parseNumberish(liveAttributes?.supported_features);
-  const liveSupportedFeatures =
-    parsedLiveSupportedFeatures === null ? undefined : Math.round(parsedLiveSupportedFeatures);
+  const providerDevice = useProviderDevice(id);
+  const providerState = readNavetCoverState(providerDevice);
+  const liveSupportedFeatures = providerState?.supportedFeatures;
   const resolvedSupportedFeatures = liveSupportedFeatures ?? initialSupportedFeatures;
-  const liveCoverPosition = normalizeCoverPosition(liveAttributes?.current_position);
-  const liveTiltPosition = normalizeCoverPosition(liveAttributes?.current_tilt_position);
-  const positionMode =
-    liveCoverPosition !== null
-      ? 'position'
-      : liveTiltPosition !== null
-        ? 'tilt'
-        : (initialPositionMode ?? 'position');
-  const livePosition = positionMode === 'tilt' ? liveTiltPosition : liveCoverPosition;
+  const livePosition = normalizeCoverPosition(providerState?.position);
+  const positionMode = providerState?.positionMode ?? initialPositionMode ?? 'position';
   const hasLivePosition = livePosition !== null;
-  const hasPosition = hasLivePosition || Boolean(initialHasPosition);
+  const hasPosition =
+    hasLivePosition || providerState?.hasPosition === true || Boolean(initialHasPosition);
   const canOpen = supportsCoverFeature(
     resolvedSupportedFeatures,
     positionMode === 'tilt' ? COVER_FEATURE_OPEN_TILT : COVER_FEATURE_OPEN,
@@ -132,11 +122,8 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   );
 
   useEffect(() => {
-    if (!liveEntity) return;
-    const attrs = liveEntity.attributes as Record<string, unknown>;
-    const nextCoverPosition = normalizeCoverPosition(attrs.current_position);
-    const nextTiltPosition = normalizeCoverPosition(attrs.current_tilt_position);
-    const nextPosition = positionMode === 'tilt' ? nextTiltPosition : nextCoverPosition;
+    if (!providerState) return;
+    const nextPosition = normalizeCoverPosition(providerState.position);
     if (nextPosition !== null) {
       latestLivePositionRef.current = nextPosition;
       const optimisticPosition = optimisticPositionRef.current;
@@ -151,7 +138,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
         setPosition(nextPosition);
       }
     }
-    const liveState = liveEntity.state as CoverState;
+    const liveState = providerState.value as CoverState;
     if (['open', 'closed', 'opening', 'closing'].includes(liveState)) {
       setCoverState(liveState);
       if (nextPosition === null) {
@@ -162,7 +149,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
         }
       }
     }
-  }, [liveEntity, positionMode, clearOptimisticPosition]);
+  }, [clearOptimisticPosition, providerState]);
 
   useEffect(() => clearOptimisticPosition, [clearOptimisticPosition]);
   const { colors, theme } = useTheme();
@@ -297,7 +284,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       name={name}
       room={room}
       position={position}
-      deviceClass={deviceClass}
+      deviceClass={(providerState?.deviceClass as DeviceClass | undefined) ?? deviceClass}
       deviceClassConfig={DEVICE_CLASS_CONFIG}
       size={size}
       isEditMode={isEditMode}

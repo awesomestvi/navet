@@ -1,4 +1,7 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import type {
+  PlatformEntitySnapshot,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 import type { CameraDevice, DeviceCollection, LockDevice } from '@/app/types/device.types';
 
 const SECURITY_CAMERA_KEYWORDS = [
@@ -52,7 +55,7 @@ function includesAnyKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function getDeviceClass(entity: HassEntity | undefined): string {
+function getDeviceClass(entity: PlatformEntitySnapshot | undefined): string {
   return typeof entity?.attributes?.device_class === 'string'
     ? entity.attributes.device_class.toLowerCase()
     : '';
@@ -94,7 +97,7 @@ function compareByRoomAndName(
   return left.name.localeCompare(right.name);
 }
 
-function getRelatedMotionCount(entities: HassEntities | null | undefined): number {
+function getRelatedMotionCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
   if (!entities) {
     return 0;
   }
@@ -114,7 +117,7 @@ function getRelatedMotionCount(entities: HassEntities | null | undefined): numbe
   }).length;
 }
 
-function getOpenSensorCount(entities: HassEntities | null | undefined): number {
+function getOpenSensorCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
   if (!entities) {
     return 0;
   }
@@ -129,7 +132,7 @@ function getOpenSensorCount(entities: HassEntities | null | undefined): number {
   }).length;
 }
 
-function getActiveAlarmCount(entities: HassEntities | null | undefined): number {
+function getActiveAlarmCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
   if (!entities) {
     return 0;
   }
@@ -141,7 +144,7 @@ function getActiveAlarmCount(entities: HassEntities | null | undefined): number 
   ).length;
 }
 
-function getActiveSirenCount(entities: HassEntities | null | undefined): number {
+function getActiveSirenCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
   if (!entities) {
     return 0;
   }
@@ -153,7 +156,7 @@ function getActiveSirenCount(entities: HassEntities | null | undefined): number 
 
 export function buildSecurityCameraDashboardModel(
   devices: Pick<DeviceCollection, 'cameras' | 'locks'>,
-  entities?: HassEntities | null
+  entities?: PlatformEntitySnapshotMap | null
 ): CameraDashboardModel {
   const cameras = [...devices.cameras].sort(compareByRoomAndName);
   const unavailableCameras = cameras.filter(isUnavailableCamera);

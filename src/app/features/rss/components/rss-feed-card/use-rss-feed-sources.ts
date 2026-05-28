@@ -1,8 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { shallow } from 'zustand/shallow';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { useHomeAssistant } from '@/app/hooks';
-import { selectFeedreaderEventEntities } from '@/app/hooks/ha-domain-entity-maps';
+import { useProviderFeedreaderEntities } from '@/app/features/rss/components/rss-feed-card/use-provider-feedreader-entities';
 import { usePersistedState } from '@/app/hooks/use-persisted-state';
 import { sanitizeExternalUrl } from '@/app/utils/url-security';
 import { DEFAULT_RSS_PROVIDERS } from './providers';
@@ -27,7 +25,7 @@ export function useRSSFeedSources(
   cardData?: RSSCardData,
   onCardDataChange?: (updates: Partial<RSSCardData>) => void
 ) {
-  const feedreaderEntities = useHomeAssistant(selectFeedreaderEventEntities, shallow);
+  const feedreaderEntities = useProviderFeedreaderEntities();
   const [legacyCustomProviders, setLegacyCustomProviders] = usePersistedState<RSSProvider[]>(
     STORAGE_KEYS.rssFeedProviders,
     DEFAULT_RSS_PROVIDERS

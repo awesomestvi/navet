@@ -8,17 +8,32 @@ import {
 } from 'react';
 import { shallow } from 'zustand/shallow';
 import { SUN_ENTITY_ID, WEATHER_FORECAST_REFRESH_INTERVAL } from '@/app/constants';
-import { mapWeatherDevice } from '@/app/hooks/ha-device-mappers';
-import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useRegistryRoomResolver } from '@/app/hooks/use-registry-device-topology';
 import { useI18n } from '@/app/i18n';
+import { mapWeatherDevice } from '@/app/infrastructure/home-assistant/home-assistant-device-mappers';
+import {
+  getName,
+  resolveEntityRoom,
+} from '@/app/infrastructure/home-assistant/home-assistant-entity-utils';
 import type { PlatformWeatherForecastEntry } from '@/app/platform/provider-feature-models';
 import { integrationWeatherFeatureService } from '@/app/services/integration-weather-feature.service';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { WeatherDevice } from '@/app/types/device.types';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
+
+function selectNoConnection() {
+  return null;
+}
+
+function selectNoConfig() {
+  return null;
+}
+
+function selectNoEntities() {
+  return null;
+}
 
 type WeatherForecastState = Record<
   string,
@@ -28,10 +43,15 @@ type WeatherForecastState = Record<
   }
 >;
 
-export function useHomeAssistantWeatherDevices(): WeatherDevice[] {
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
-  const config = useHomeAssistant(homeAssistantSelectors.config);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+export function useHomeAssistantWeatherDevices(enabled = true): WeatherDevice[] {
+  const connection = useHomeAssistant(
+    enabled ? homeAssistantSelectors.connection : selectNoConnection
+  );
+  const config = useHomeAssistant(enabled ? homeAssistantSelectors.config : selectNoConfig);
+  const entities = useHomeAssistant(
+    enabled ? homeAssistantSelectors.entities : selectNoEntities,
+    haEntityStructureEqual
+  );
   const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
@@ -58,7 +78,7 @@ export function useHomeAssistantWeatherDevices(): WeatherDevice[] {
   const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
 
   useEffect(() => {
-    if (!connection || !primaryWeatherEntityId) {
+    if (!enabled || !connection || !primaryWeatherEntityId) {
       startTransition(() => {
         setWeatherForecasts({});
       });
@@ -108,7 +128,7 @@ export function useHomeAssistantWeatherDevices(): WeatherDevice[] {
         clearTimeout(refreshTimer);
       }
     };
-  }, [connection, primaryWeatherEntityId]);
+  }, [connection, enabled, primaryWeatherEntityId]);
 
   return useMemo(() => {
     if (!entities || !primaryWeatherEntityId) {

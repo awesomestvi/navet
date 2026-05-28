@@ -1,8 +1,8 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import type { DeviceCollection } from '@/app/types/device.types';
 import { useDashboardDevices } from '../use-dashboard-devices';
-import { createEmptyDeviceCollection } from '../use-ha-devices.helpers';
 
 describe('useDashboardDevices', () => {
   it('keeps sensors hidden until explicitly shown', () => {

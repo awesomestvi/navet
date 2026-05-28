@@ -29,13 +29,11 @@ import {
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
-import type { HaBatterySensorRow } from '@/app/hooks/ha-battery-sensor-rows';
-import {
-  haBatterySensorRowsEqual,
-  selectBatterySensorRowsFromHa,
-} from '@/app/hooks/ha-battery-sensor-rows';
-import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { BatteryList, getLevelColor } from './battery-list';
+import {
+  type ProviderBatterySensorRow,
+  useProviderBatterySensorRows,
+} from './use-provider-battery-sensor-rows';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
@@ -61,7 +59,7 @@ function getSelectedEntityIds(value: unknown): string[] | undefined {
 }
 
 interface BatterySettingsDialogProps {
-  batteries: HaBatterySensorRow[];
+  batteries: ProviderBatterySensorRow[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedEntityIds?: string[];
@@ -280,7 +278,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const surface = getThemeSurfaceTokens(theme);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const rooms = useAreaRooms();
-  const batteries = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
+  const batteries = useProviderBatterySensorRows();
   const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
   const selectedIdSet = useMemo(() => new Set(selectedEntityIds ?? []), [selectedEntityIds]);
   const filteredBatteries =

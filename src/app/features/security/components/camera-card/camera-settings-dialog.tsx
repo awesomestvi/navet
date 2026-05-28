@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { RadioTower, Sliders } from 'lucide-react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import {
@@ -23,6 +22,7 @@ import { getAccentCardShellTokens } from '@/app/components/shared/theme/accent-c
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
 import type {
@@ -38,7 +38,7 @@ import type { CameraStreamType } from './camera-view-mode';
 
 export interface SiblingEntity {
   id: string;
-  entity: HassEntity;
+  entity: PlatformEntitySnapshot;
 }
 
 interface CameraSettingsDialogProps {
@@ -63,8 +63,11 @@ interface CameraSettingsDialogProps {
   onGo2RtcConfigChange: (config: CameraGo2RtcConfig) => void;
 }
 
-function getDisplayName(entityId: string, entity: HassEntity): string {
-  const friendly = entity.attributes?.friendly_name as string | undefined;
+function getDisplayName(entityId: string, entity: PlatformEntitySnapshot): string {
+  const friendly =
+    typeof entity.attributes?.friendly_name === 'string'
+      ? entity.attributes.friendly_name
+      : undefined;
   if (friendly) return friendly;
   const withoutDomain = entityId.replace(/^[^.]+\./, '');
   return withoutDomain.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

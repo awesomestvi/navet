@@ -2,13 +2,22 @@ import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'reac
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { getBaseCardRadiusClassName } from '@/app/components/system/tokens';
+import {
+  readNavetCameraState,
+  readNavetClimateState,
+  readNavetCoverState,
+  readNavetLockState,
+  readNavetMediaState,
+  readNavetPersonState,
+  readNavetSensorState,
+} from '@/app/core/navet-device-state';
 import type { SensorReading } from '@/app/features/sensors';
 import type { VacuumStatus } from '@/app/features/vacuum';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useI18n, useIntegrationStore } from '@/app/hooks';
+import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceMetric } from '@/app/types/device.types';
+import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 
 interface DeviceData {
   id: string;
@@ -110,27 +119,54 @@ function EntityCardFallback({ size }: { size: CardSize }) {
   );
 }
 
-function isSameEntityStateList(left: Array<string | undefined>, right: Array<string | undefined>) {
-  if (left.length !== right.length) {
-    return false;
+function readUnavailableState(device: DeviceData): string | undefined {
+  const value = device.state;
+  if (typeof value === 'string') {
+    return value;
   }
 
-  return left.every((value, index) => value === right[index]);
+  return undefined;
 }
 
-function getAvailabilityEntityIds(device: DeviceData): string[] {
-  const sourceIds = device.sourceIds;
-  if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
-    return sourceIds;
+function readProviderDeviceStateValue(
+  device: NonNullable<ReturnType<typeof resolveAvailabilityDevice>>
+): string | undefined {
+  switch (device.kind) {
+    case 'camera':
+      return readNavetCameraState(device)?.value;
+    case 'climate':
+    case 'hvac':
+      return readNavetClimateState(device)?.value;
+    case 'cover':
+      return readNavetCoverState(device)?.value;
+    case 'lock':
+      return readNavetLockState(device)?.value;
+    case 'media':
+      return readNavetMediaState(device)?.value;
+    case 'person':
+      return readNavetPersonState(device)?.value;
+    case 'sensor':
+    case 'grouped-sensor':
+      return readNavetSensorState(device)?.value;
+    default:
+      return typeof device.state?.value === 'string' ? device.state.value : undefined;
   }
-
-  return typeof device.id === 'string' && device.id.includes('.') ? [device.id] : [];
 }
 
-function createEntityStatesSelector(entityIds: string[]) {
-  return function selectEntityStates(state: HomeAssistantStore): Array<string | undefined> {
-    return entityIds.map((entityId) => homeAssistantSelectors.entity(entityId)(state)?.state);
-  };
+function resolveAvailabilityDevice(
+  deviceId: string,
+  devicesByCanonicalId: ReturnType<typeof integrationSelectors.devicesByCanonicalId>,
+  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
+) {
+  return (
+    devicesByCanonicalId[deviceId] ??
+    devicesByCanonicalId[
+      parseProviderScopedId(deviceId)
+        ? deviceId
+        : createProviderScopedId(currentProviderId, deviceId)
+    ] ??
+    null
+  );
 }
 
 function EntityAvailabilityFrame({
@@ -144,10 +180,31 @@ function EntityAvailabilityFrame({
 }) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const shouldReducePaintEffects = effectsQuality !== 'high';
-  const entityIds = useMemo(() => getAvailabilityEntityIds(device), [device]);
-  const selectEntityStates = useMemo(() => createEntityStatesSelector(entityIds), [entityIds]);
-  const entityStates = useHomeAssistant(selectEntityStates, isSameEntityStateList);
+  const entityIds = useMemo(() => {
+    const sourceIds = device.sourceIds;
+    if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
+      return sourceIds;
+    }
+
+    return typeof device.id === 'string' ? [device.id] : [];
+  }, [device]);
+  const entityStates = useMemo(
+    () =>
+      entityIds.map((entityId) => {
+        const providerDevice = resolveAvailabilityDevice(
+          entityId,
+          devicesByCanonicalId,
+          currentProviderId
+        );
+        return providerDevice
+          ? readProviderDeviceStateValue(providerDevice)
+          : readUnavailableState(device);
+      }),
+    [currentProviderId, device, devicesByCanonicalId, entityIds]
+  );
   const isUnavailable =
     entityIds.length > 0 &&
     entityStates.length === entityIds.length &&

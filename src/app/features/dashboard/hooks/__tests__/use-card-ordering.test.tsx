@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
-import { createEmptyDeviceCollection } from '@/app/hooks/use-ha-devices.helpers';
+import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import { PERSISTED_STATE_EVENT } from '@/app/utils/persisted-state-events';
 import { useCardOrdering } from '../use-card-ordering';
 

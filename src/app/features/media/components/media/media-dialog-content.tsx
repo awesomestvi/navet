@@ -4,7 +4,8 @@ import { CardDialogTabList, CardDialogTabTrigger } from '@/app/components/patter
 import { CustomDialogDoneButton, DialogFooter } from '@/app/components/primitives/dialog-shell';
 import { ModalSurface } from '@/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import { useEntityProviderFeatureMatrix, useHomeAssistant, useI18n } from '@/app/hooks';
+import { useProviderMediaPlaybackData } from '@/app/features/media/hooks/use-provider-media-playback-data';
+import { useEntityProviderFeatureMatrix, useI18n } from '@/app/hooks';
 import { MediaCapabilityPanel } from './media-capability-panel';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
@@ -15,11 +16,7 @@ import {
   MediaDialogUpNext,
   MediaDialogVolumeControl,
 } from './media-dialog-sections';
-import {
-  hasSpotifyPlaybackControls,
-  MediaSpotifyPlayback,
-  selectMediaPlaybackData,
-} from './media-spotify-playback';
+import { hasSpotifyPlaybackControls, MediaSpotifyPlayback } from './media-spotify-playback';
 import { withAlpha } from './use-media-artwork-colors';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
@@ -92,7 +89,7 @@ export function MediaDialogContent({
 }: MediaDialogContentProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('playback');
-  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
+  const { entities, entityRegistry } = useProviderMediaPlaybackData(entityId);
   const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const hasMediaControls = hasMediaCapabilityControls({
     capabilities,

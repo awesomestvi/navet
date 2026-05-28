@@ -1,100 +1,53 @@
-import type {
-  PlatformMessageClient,
-  PlatformPersistentNotification,
-  PlatformPersistentNotificationEvent,
-  PlatformRepairIssue,
-} from '@/app/platform/provider-feature-models';
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderNotificationFeatureService } from '@/app/platform/provider-feature-services';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import {
-  dispatchEntityAction,
-  dispatchServiceAction,
-} from '@/app/services/integration-action.service';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getIntegrationProviderAdapter,
+  getIntegrationProviderNotificationFeatureService,
+  hasIntegrationProviderFeature,
+} from './integration-registry.service';
 
-function getActiveMessageClient(messageClient?: PlatformMessageClient | null) {
-  return messageClient ?? homeAssistantService.getConnection();
+function resolveNotificationProviderId(entityId?: string) {
+  return (
+    (entityId ? parseProviderScopedId(entityId)?.providerId : null) ??
+    authSessionManager.getSnapshot().providerId
+  );
 }
 
-function isObjectEntry<T extends object>(value: unknown): value is T {
-  return typeof value === 'object' && value !== null;
-}
-
-function requireHomeAssistantUpdateProvider(entityId: string) {
-  const providerScope = parseProviderScopedId(entityId);
-  if (providerScope && providerScope.providerId !== 'home_assistant') {
-    throw new Error('Update installation is not supported for the current integration yet');
+function getNotificationFeatureService(providerId = authSessionManager.getSnapshot().providerId) {
+  const adapter = getIntegrationProviderAdapter(providerId);
+  if (!hasIntegrationProviderFeature(adapter, 'notifications')) {
+    throw new Error('Notifications are not supported for the current integration yet');
   }
 
-  return providerScope?.nativeId ?? entityId;
+  return getIntegrationProviderNotificationFeatureService(providerId);
 }
 
 export const integrationNotificationFeatureService: ProviderNotificationFeatureService = {
   async getSnapshot(options) {
-    const messageClient = getActiveMessageClient(options?.messageClient);
-    if (!messageClient) {
-      return {
-        persistentNotifications: [],
-        repairIssues: [],
-      };
-    }
-
-    const [persistentNotifications, repairIssues] = await Promise.all([
-      messageClient
-        .sendMessagePromise({ type: 'persistent_notification/get' })
-        .then((result) =>
-          Array.isArray(result)
-            ? result.filter((entry): entry is PlatformPersistentNotification =>
-                isObjectEntry<PlatformPersistentNotification>(entry)
-              )
-            : []
-        )
-        .catch(() => []),
-      messageClient
-        .sendMessagePromise({ type: 'repairs/list_issues' })
-        .then((result) =>
-          Array.isArray(result)
-            ? result.filter((entry): entry is PlatformRepairIssue =>
-                isObjectEntry<PlatformRepairIssue>(entry)
-              )
-            : []
-        )
-        .catch(() => []),
-    ]);
-
-    return {
-      persistentNotifications,
-      repairIssues,
-    };
+    const service = getNotificationFeatureService();
+    return await service.getSnapshot(options);
   },
   async subscribePersistentNotifications(callback, options) {
-    const messageClient = getActiveMessageClient(options?.messageClient);
-    if (!messageClient?.subscribeMessage) {
-      return () => {};
+    const service = getNotificationFeatureService();
+    return await service.subscribePersistentNotifications(callback, options);
+  },
+  dismissPersistentNotification: async (notificationId) => {
+    const service = getNotificationFeatureService();
+    await service.dismissPersistentNotification(notificationId);
+  },
+  installUpdate: (entityId) => {
+    const providerId = resolveNotificationProviderId(entityId);
+    const adapter = getIntegrationProviderAdapter(providerId);
+    if (!hasIntegrationProviderFeature(adapter, 'notifications')) {
+      throw new Error('Update installation is not supported for the current integration yet');
     }
 
-    return await messageClient.subscribeMessage(
-      (event: PlatformPersistentNotificationEvent) => callback(event),
-      { type: 'persistent_notification/subscribe' }
-    );
+    const service = getIntegrationProviderNotificationFeatureService(providerId);
+    return service.installUpdate(parseProviderScopedId(entityId)?.nativeId ?? entityId);
   },
-  dismissPersistentNotification: (notificationId) =>
-    dispatchServiceAction({
-      domain: 'persistent_notification',
-      service: 'dismiss',
-      serviceData: {
-        notification_id: notificationId,
-      },
-    }),
-  installUpdate: (entityId) =>
-    dispatchEntityAction({
-      entityId: requireHomeAssistantUpdateProvider(entityId),
-      domain: 'update',
-      service: 'install',
-    }),
-  restartSystem: () =>
-    dispatchServiceAction({
-      domain: 'homeassistant',
-      service: 'restart',
-    }),
+  restartSystem: async () => {
+    const service = getNotificationFeatureService();
+    await service.restartSystem();
+  },
 };

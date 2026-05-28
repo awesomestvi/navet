@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
 
@@ -15,21 +15,33 @@ interface EnergyPeriodTotals {
   month: number;
 }
 
-export function useEnergyStatisticsPeriods(entityId?: string): EnergyPeriodTotals {
+function isHomeAssistantStatisticId(entityId: string | undefined): boolean {
+  if (!entityId) {
+    return false;
+  }
+
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return scopedId.providerId === 'home_assistant';
+  }
+
+  return isLegacyHomeAssistantEntityId(entityId);
+}
+
+export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): EnergyPeriodTotals {
   const [totals, setTotals] = useState<EnergyPeriodTotals>({ today: 0, week: 0, month: 0 });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
+  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId);
 
   useEffect(() => {
-    if (!entityId) {
+    if (!enabled || !isHomeAssistantEntity || !entityId) {
       setTotals({ today: 0, week: 0, month: 0 });
       return;
     }
     const statisticId = entityId;
 
     async function fetchStats() {
-      const activeMessageClient =
-        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      const activeMessageClient = integrationHistoryService.getMessageClient();
       if (!activeMessageClient) return;
       try {
         const result = await getCachedEnergyStatistics(
@@ -50,7 +62,7 @@ export function useEnergyStatisticsPeriods(entityId?: string): EnergyPeriodTotal
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [connection, entityId]);
+  }, [enabled, entityId, isHomeAssistantEntity]);
 
   return totals;
 }

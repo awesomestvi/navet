@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import { homeyService } from '@/app/services/homey.service';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { integrationStore } from '@/app/stores/integration-store';
@@ -10,7 +11,6 @@ import {
   mergeDeviceCollections,
   useDevices,
 } from '../use-devices';
-import { createEmptyDeviceCollection } from '../use-ha-devices.helpers';
 
 describe('filterDeviceCollectionByProvider', () => {
   it('returns only devices from the requested provider', () => {
@@ -180,5 +180,58 @@ describe('useDevices', () => {
       }),
     ]);
     expect(result.current.switches).toEqual([]);
+  });
+
+  it('returns devices from every selected provider without routing through a fake HA snapshot', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      devicesByCanonicalId: {
+        'home_assistant:light.kitchen': {
+          id: 'light.kitchen',
+          canonicalId: 'home_assistant:light.kitchen',
+          nativeId: 'light.kitchen',
+          providerId: 'home_assistant',
+          kind: 'light',
+          name: 'Kitchen Light',
+          room: 'Kitchen',
+          capabilities: [],
+          state: {
+            value: 'on',
+            brightnessPct: 100,
+            colorTemperatureKelvin: 3200,
+          },
+        },
+        'homey:switch_1': {
+          id: 'homey:switch_1',
+          canonicalId: 'homey:switch_1',
+          nativeId: 'switch_1',
+          providerId: 'homey',
+          kind: 'switch',
+          name: 'Coffee Machine',
+          room: 'Living Room',
+          capabilities: [],
+          state: {
+            value: 'off',
+          },
+        },
+      },
+      selectedProviderIds: ['home_assistant', 'homey'],
+    });
+
+    const { result } = renderHookWithProviders(() => useDevices());
+
+    expect(result.current.lights).toEqual([
+      expect.objectContaining({
+        id: 'home_assistant:light.kitchen',
+        providerId: 'home_assistant',
+      }),
+    ]);
+    expect(result.current.switches).toEqual([
+      expect.objectContaining({
+        id: 'homey:switch_1',
+        providerId: 'homey',
+      }),
+    ]);
   });
 });

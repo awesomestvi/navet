@@ -1,25 +1,19 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import { buildUpsDeviceOptions, getUpsStatusTone } from '../ups-widget-data';
 
-function entity(
-  entityId: string,
-  state: string,
-  attributes: HassEntity['attributes'] = {}
-): HassEntity {
+function entity(entityId: string, state: string, attributes: Record<string, unknown> = {}) {
   return {
-    entity_id: entityId,
+    entityId,
     state,
     attributes,
-    context: { id: 'context', parent_id: null, user_id: null },
-    last_changed: '2026-05-21T00:00:00.000Z',
-    last_updated: '2026-05-21T00:00:00.000Z',
+    lastChanged: '2026-05-21T00:00:00.000Z',
+    lastUpdated: '2026-05-21T00:00:00.000Z',
   };
 }
 
 describe('ups widget data', () => {
   it('groups sibling documented NUT sensors by device id and ranks defaults', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.nutdev1_battery_charge': entity('sensor.nutdev1_battery_charge', '97', {
         friendly_name: 'Battery charge',
         device_class: 'battery',
@@ -51,11 +45,11 @@ describe('ups widget data', () => {
 
     const devices = buildUpsDeviceOptions({
       entities,
-      areas: [{ area_id: 'server-room', name: 'Server Room' }],
-      deviceRegistry: [{ id: 'device-ups', area_id: 'server-room', name: 'Rack UPS' }],
+      areas: [{ areaId: 'server-room', name: 'Server Room' }],
+      deviceRegistry: [{ deviceId: 'device-ups', areaId: 'server-room', name: 'Rack UPS' }],
       entityRegistry: Object.keys(entities).map((entityId) => ({
-        entity_id: entityId,
-        device_id: 'device-ups',
+        entityId,
+        deviceId: 'device-ups',
       })),
     });
 
@@ -76,7 +70,7 @@ describe('ups widget data', () => {
   });
 
   it('falls back to status data when status is absent', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.nutdev1_battery_charge': entity('sensor.nutdev1_battery_charge', '83', {
         friendly_name: 'Battery charge',
         device_class: 'battery',
@@ -90,8 +84,8 @@ describe('ups widget data', () => {
     const devices = buildUpsDeviceOptions({
       entities,
       entityRegistry: Object.keys(entities).map((entityId) => ({
-        entity_id: entityId,
-        device_id: 'device-ups',
+        entityId,
+        deviceId: 'device-ups',
       })),
     });
 
@@ -99,7 +93,7 @@ describe('ups widget data', () => {
   });
 
   it('supports input load when regular load is absent', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.nutdev1_battery_charge': entity('sensor.nutdev1_battery_charge', '83', {
         friendly_name: 'Battery charge',
         device_class: 'battery',
@@ -117,8 +111,8 @@ describe('ups widget data', () => {
     const devices = buildUpsDeviceOptions({
       entities,
       entityRegistry: Object.keys(entities).map((entityId) => ({
-        entity_id: entityId,
-        device_id: 'device-ups',
+        entityId,
+        deviceId: 'device-ups',
       })),
     });
 
@@ -126,7 +120,7 @@ describe('ups widget data', () => {
   });
 
   it('keeps runtime optional when no runtime sensor exists', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.nutdev1_battery_charge': entity('sensor.nutdev1_battery_charge', '83', {
         friendly_name: 'Battery charge',
         device_class: 'battery',
@@ -144,8 +138,8 @@ describe('ups widget data', () => {
     const devices = buildUpsDeviceOptions({
       entities,
       entityRegistry: Object.keys(entities).map((entityId) => ({
-        entity_id: entityId,
-        device_id: 'device-ups',
+        entityId,
+        deviceId: 'device-ups',
       })),
     });
 
@@ -156,7 +150,7 @@ describe('ups widget data', () => {
   });
 
   it('ignores unrelated room sensors that are not siblings on the same device', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.nutdev1_battery_charge': entity('sensor.nutdev1_battery_charge', '97', {
         friendly_name: 'Battery charge',
         device_class: 'battery',
@@ -171,17 +165,17 @@ describe('ups widget data', () => {
 
     const devices = buildUpsDeviceOptions({
       entities,
-      areas: [{ area_id: 'server-room', name: 'Server Room' }],
+      areas: [{ areaId: 'server-room', name: 'Server Room' }],
       entityRegistry: [
         {
-          entity_id: 'sensor.nutdev1_battery_charge',
-          device_id: 'device-ups',
-          area_id: 'server-room',
+          entityId: 'sensor.nutdev1_battery_charge',
+          deviceId: 'device-ups',
+          areaId: 'server-room',
         },
         {
-          entity_id: 'sensor.server_room_temperature',
-          device_id: 'device-temp',
-          area_id: 'server-room',
+          entityId: 'sensor.server_room_temperature',
+          deviceId: 'device-temp',
+          areaId: 'server-room',
         },
       ],
     });

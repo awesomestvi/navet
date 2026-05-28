@@ -40,6 +40,7 @@ export interface SensorReading {
   value: string;
   unit: string;
   icon?: SensorIconType;
+  entityType?: string;
 }
 
 export interface SensorColorScheme {

@@ -1,8 +1,8 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useHaCommandQueue } from '@/app/hooks';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import { clampPercentage, getBrightnessPercent } from './light-card-utils';
 
 type SyncLightOptions = {
@@ -15,7 +15,7 @@ interface UseLightBrightnessSyncParams {
   isOn: boolean;
   setIsOn: (on: boolean) => void;
   initialBrightness: number;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   providerState: NavetLightState | null | undefined;
   syncLight: (options: SyncLightOptions) => Promise<void>;
   rememberLightState: (id: string, state: { brightness?: number }) => void;

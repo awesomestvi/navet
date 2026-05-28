@@ -6,7 +6,6 @@ export interface HaBatterySensorRow {
   level: number;
 }
 
-/** Narrow HA subscription: battery-class `sensor.*` rows only (sorted by level). */
 export function selectBatterySensorRowsFromHa(
   state: Pick<HomeAssistantStore, 'entities'>
 ): HaBatterySensorRow[] {
@@ -54,7 +53,7 @@ export function haBatterySensorRowsEqual(
     return false;
   }
 
-  for (let i = 0; i < a.length; i++) {
+  for (let i = 0; i < a.length; i += 1) {
     if (a[i].id !== b[i].id || a[i].level !== b[i].level || a[i].name !== b[i].name) {
       return false;
     }

@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
 import { shallow } from 'zustand/shallow';
+import {
+  createRegistryMaps,
+  getEntityCategory,
+} from '@/app/infrastructure/home-assistant/home-assistant-registry-helpers';
 import { useI18n } from '../i18n';
 import { useSettingsStore } from '../stores';
 import { homeAssistantSelectors } from '../stores/selectors';
@@ -33,14 +37,12 @@ import {
   mapSensorDevice,
   mapSwitchDevice,
   mapVacuumDevice,
-} from './ha-device-mappers';
-import { getName, resolveEntityRoom, resolveHomeAssistantTemperatureUnit } from './ha-entity-utils';
+} from './device-mappers';
+import { getName, resolveEntityRoom, resolveHomeAssistantTemperatureUnit } from './entity-utils';
 import {
   buildDeviceIndexes,
   createEmptyDeviceCollection,
-  createRegistryMaps,
   getDomain,
-  getEntityCategory,
   mapHelperDevice,
   shouldSkipSwitchDevice,
   shouldSuppressForVacuumDevice,

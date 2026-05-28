@@ -1,4 +1,4 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import { resolveAddonLocalEndpointUrl } from '@/app/utils/home-assistant-connection-target';
 import { parseRSSDocument, toRSSItem } from './rss-feed-parser';
 import type { RSSItem, RSSProvider } from './types';
@@ -42,7 +42,7 @@ export async function fetchUrlProviderItems(
 
 export function getHomeAssistantProviderItems(
   provider: RSSProvider,
-  entities: HassEntities | null,
+  entities: PlatformEntitySnapshotMap | null,
   fallbackRecentLabel: string,
   formatRelativeTime: (value: number, unit: Intl.RelativeTimeFormatUnit) => string
 ): RSSItem[] {

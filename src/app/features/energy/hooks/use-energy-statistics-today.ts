@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsToday } from '../services/energy-statistics-service';
 
@@ -19,16 +17,18 @@ interface EnergyStatisticsTodayState {
   values: Record<string, number>;
 }
 
-export function useEnergyStatisticsToday(entityIds: string[]): EnergyStatisticsTodayState {
+export function useEnergyStatisticsToday(
+  entityIds: string[],
+  enabled = true
+): EnergyStatisticsTodayState {
   const [todayKWh, setTodayKWh] = useState<Record<string, number>>({});
   const [hasLoaded, setHasLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
   const entityIdsKey = useMemo(() => JSON.stringify([...entityIds].sort()), [entityIds]);
 
   useEffect(() => {
     const resolvedEntityIds = JSON.parse(entityIdsKey) as string[];
-    if (resolvedEntityIds.length === 0) {
+    if (!enabled || resolvedEntityIds.length === 0) {
       setTodayKWh({});
       setHasLoaded(false);
       return;
@@ -36,8 +36,7 @@ export function useEnergyStatisticsToday(entityIds: string[]): EnergyStatisticsT
     setHasLoaded(false);
 
     async function fetchStats() {
-      const activeMessageClient =
-        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      const activeMessageClient = integrationHistoryService.getMessageClient();
       if (!activeMessageClient) return;
       try {
         const result = await getCachedEnergyStatistics(
@@ -60,7 +59,7 @@ export function useEnergyStatisticsToday(entityIds: string[]): EnergyStatisticsT
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [connection, entityIdsKey]);
+  }, [enabled, entityIdsKey]);
 
   return { hasLoaded, values: todayKWh };
 }

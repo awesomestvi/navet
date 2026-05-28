@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
@@ -23,6 +23,18 @@ import type {
   EnergyStat,
 } from '../types/energy.types';
 import { useEnergyStatisticsToday } from './use-energy-statistics-today';
+
+function selectNoConnection() {
+  return null;
+}
+
+function selectNoEntities() {
+  return null;
+}
+
+function selectNoRegistry() {
+  return [];
+}
 
 export type EnergyEntityMap = Record<
   string,
@@ -377,7 +389,10 @@ export function isMissingEnergyPrefsError(error: unknown): boolean {
  * replace this with recorder/statistics_during_period once the setup flow is
  * validated.
  */
-export function useEnergyHaData(range: EnergyRange): {
+export function useEnergyHaData(
+  range: EnergyRange,
+  enabled = true
+): {
   energySourceDiagnostics: EnergySourceDiagnostic[];
   hasEnergyStatisticsLoaded: boolean;
   overview: EnergyOverview;
@@ -385,17 +400,29 @@ export function useEnergyHaData(range: EnergyRange): {
   currentLoadStatisticId?: string;
   haSourceConfig: EnergySourceConfig | null;
 } {
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
-  const entityStructure = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
+  const connection = useHomeAssistant(
+    enabled ? homeAssistantSelectors.connection : selectNoConnection
+  );
+  const entityStructure = useHomeAssistant(
+    enabled ? homeAssistantSelectors.entities : selectNoEntities,
+    haEntityStructureEqual
+  );
+  const entityRegistry = useHomeAssistant(
+    enabled ? homeAssistantSelectors.entityRegistry : selectNoRegistry,
+    shallow
+  );
   const [haSourceConfig, setHaSourceConfig] = useState<EnergySourceConfig | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setHaSourceConfig(null);
+      return;
+    }
+
     let cancelled = false;
 
     async function fetchEnergyPrefs() {
-      const activeMessageClient =
-        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      const activeMessageClient = connection ?? integrationHistoryService.getMessageClient();
       if (!activeMessageClient) {
         setHaSourceConfig(null);
         return;
@@ -421,7 +448,7 @@ export function useEnergyHaData(range: EnergyRange): {
     return () => {
       cancelled = true;
     };
-  }, [connection]);
+  }, [connection, enabled]);
 
   const isConfigured = hasEnergySourceConfig(haSourceConfig);
   const runtimeSourceConfig = useMemo(
@@ -486,7 +513,7 @@ export function useEnergyHaData(range: EnergyRange): {
     ].filter((id): id is string => Boolean(id));
   }, [haSourceConfig]);
 
-  const todayStatistics = useEnergyStatisticsToday(energyStatisticIds);
+  const todayStatistics = useEnergyStatisticsToday(energyStatisticIds, enabled);
   const todayKWh = todayStatistics.values;
   const energySourceDiagnostics = useMemo<EnergySourceDiagnostic[]>(() => {
     if (!haSourceConfig) {

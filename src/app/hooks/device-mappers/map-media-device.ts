@@ -6,7 +6,7 @@ import {
 } from '@/app/constants/media-player-features';
 import type { TranslateFn } from '@/app/i18n/index';
 import type { MediaDevice } from '@/app/types/device.types';
-import { formatMediaEntityType, parseNumberish } from '../ha-entity-utils';
+import { formatMediaEntityType, parseNumberish } from '../entity-utils';
 
 export function mapMediaDevice(
   entityId: string,

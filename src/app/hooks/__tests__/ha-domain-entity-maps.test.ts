@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { alarmControlPanelEntityFactory } from '@/test/fixtures/home-assistant/entities/alarm-control-panel';
-import { binarySensorEntityFactory } from '@/test/fixtures/home-assistant/entities/binary-sensor';
-import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
 import {
   selectFeedreaderEventEntities,
   selectSecuritySummaryEntities,
   selectUpdateDomainEntities,
-} from '../ha-domain-entity-maps';
+} from '@/app/infrastructure/home-assistant/home-assistant-domain-selectors';
+import { alarmControlPanelEntityFactory } from '@/test/fixtures/home-assistant/entities/alarm-control-panel';
+import { binarySensorEntityFactory } from '@/test/fixtures/home-assistant/entities/binary-sensor';
+import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
 
 describe('ha-domain-entity-maps', () => {
   it('selects only security summary entities from the Home Assistant store', () => {

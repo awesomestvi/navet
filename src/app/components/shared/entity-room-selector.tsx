@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useEntityRoomRegistryContext, useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
+import { useI18n, useIntegrationStore, useProviderEntityRoomContext, useTheme } from '@/app/hooks';
 import { buildManageableRoomReferences } from '@/app/platform/provider-room-management';
 import { integrationAdminService } from '@/app/services/integration-admin.service';
 import { integrationSelectors } from '@/app/stores/selectors';
@@ -41,7 +41,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const { t } = useI18n();
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
-  const roomRegistry = useEntityRoomRegistryContext(entityId);
+  const roomRegistry = useProviderEntityRoomContext(entityId);
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
   const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);

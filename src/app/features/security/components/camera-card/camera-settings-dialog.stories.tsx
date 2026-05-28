@@ -1,34 +1,47 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import { resolveCameraGo2RtcConfig } from '@/app/stores/settings-store';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';
 
+function siblingEntity(
+  entityId: string,
+  state: string,
+  attributes: Record<string, unknown>
+): PlatformEntitySnapshot {
+  return {
+    entityId,
+    state,
+    attributes,
+  };
+}
+
 const siblingEntities: SiblingEntity[] = [
   {
     id: 'switch.camera_motion_detection',
-    entity: {
-      state: 'on',
-      attributes: { friendly_name: 'Motion Detection' },
-    } as unknown as HassEntity,
+    entity: siblingEntity('switch.camera_motion_detection', 'on', {
+      friendly_name: 'Motion Detection',
+    }),
   },
   {
     id: 'select.camera_ir_mode',
-    entity: {
-      state: 'auto',
-      attributes: { friendly_name: 'IR Mode', options: ['off', 'auto', 'on'] },
-    } as unknown as HassEntity,
+    entity: siblingEntity('select.camera_ir_mode', 'auto', {
+      friendly_name: 'IR Mode',
+      options: ['off', 'auto', 'on'],
+    }),
   },
   {
     id: 'number.camera_brightness',
-    entity: {
-      state: '55',
-      attributes: { friendly_name: 'Image Brightness', min: 0, max: 100, step: 1 },
-    } as unknown as HassEntity,
+    entity: siblingEntity('number.camera_brightness', '55', {
+      friendly_name: 'Image Brightness',
+      min: 0,
+      max: 100,
+      step: 1,
+    }),
   },
 ];
 

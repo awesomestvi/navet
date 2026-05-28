@@ -57,6 +57,7 @@ describe('LightCard', () => {
 
   it('keeps the extra-small icon as a toggle when card taps open controls', () => {
     homeAssistantStore.setState({
+      connected: true,
       connection: {} as never,
       entities: {
         'light.desk_lamp': createLightEntity('on'),
@@ -95,6 +96,7 @@ describe('LightCard', () => {
 
   it('shows the effect picker on medium cards and sends effect selections to Home Assistant', async () => {
     homeAssistantStore.setState({
+      connected: true,
       connection: {} as never,
       entities: {
         'light.desk_lamp': createEffectLightEntity('Rainbow'),
@@ -126,6 +128,7 @@ describe('LightCard', () => {
 
   it('keeps effect selection out of the extra-small quick actions', () => {
     homeAssistantStore.setState({
+      connected: true,
       connection: {} as never,
       entities: {
         'light.desk_lamp': createEffectLightEntity(),

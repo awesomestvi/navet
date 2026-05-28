@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { selectBatterySensorRowsFromHa } from '@/app/infrastructure/home-assistant/home-assistant-battery-selectors';
 import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
-import { selectBatterySensorRowsFromHa } from '../ha-battery-sensor-rows';
 
 describe('selectBatterySensorRowsFromHa', () => {
   it('returns only numeric battery sensors sorted from low to high', () => {

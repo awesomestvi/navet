@@ -1,32 +1,20 @@
 import { useMemo, useRef, useState } from 'react';
-import { shallow } from 'zustand/shallow';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import { readNavetPersonState } from '@/app/core/navet-device-state';
 import { useProviderNotifications } from '@/app/features/notifications';
-import { useHomeAssistant, useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors, integrationSelectors } from '@/app/stores/selectors';
-import { resolveHomeAssistantAbsoluteUrl } from '@/app/utils/home-assistant-url';
+import { useI18n, useIntegrationStore, useProviderResource, useTheme } from '@/app/hooks';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
 export type HeaderController = ReturnType<typeof useHeaderController>;
 
-// Narrow to only person.* entities — the only domain this controller needs.
-// Defined at module scope so the selector reference is stable and shallow equality
-// can do its job: no re-render unless a person entity actually changes.
-function selectHomeAssistantPersonEntities(state: HomeAssistantStore) {
-  if (!state.entities) return null;
-  return Object.fromEntries(
-    Object.entries(state.entities).filter(([id]) => id.startsWith('person.'))
-  );
-}
-
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const personEntities = useHomeAssistant(selectHomeAssistantPersonEntities, shallow);
-  const homeAssistantConnected = useHomeAssistant(homeAssistantSelectors.connected);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
   const user = useIntegrationStore(integrationSelectors.currentUser);
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -59,26 +47,49 @@ export function useHeaderController() {
     return fullName.split(/\s+/)[0];
   }, [t, user?.name]);
 
-  const avatarUrl = useMemo(() => {
-    const entityPicture = Object.values(personEntities ?? {}).find((entity) => {
-      if (!entity.entity_id.startsWith('person.')) {
-        return false;
-      }
-
-      const friendlyName = entity.attributes?.friendly_name;
-      return (
-        typeof friendlyName === 'string' &&
-        typeof user?.name === 'string' &&
-        friendlyName.trim().toLowerCase() === user.name.trim().toLowerCase()
-      );
-    })?.attributes?.entity_picture;
-
-    if (!homeAssistantConnected || typeof entityPicture !== 'string' || !entityPicture) {
-      return user?.avatarUrl ?? null;
+  const matchedPersonDevice = useMemo(() => {
+    const normalizedUserName = user?.name?.trim().toLowerCase();
+    if (!normalizedUserName) {
+      return null;
     }
 
-    return resolveHomeAssistantAbsoluteUrl(entityPicture);
-  }, [homeAssistantConnected, personEntities, user?.avatarUrl, user?.name]);
+    return (
+      Object.values(devicesByCanonicalId).find((device) => {
+        if (device.providerId !== currentProviderId || device.kind !== 'person') {
+          return false;
+        }
+
+        return device.name.trim().toLowerCase() === normalizedUserName;
+      }) ?? null
+    );
+  }, [currentProviderId, devicesByCanonicalId, user?.name]);
+
+  const matchedPersonState = readNavetPersonState(matchedPersonDevice);
+  const avatarRequestKey = [
+    matchedPersonDevice?.resources?.primary_image?.path,
+    matchedPersonState?.entityPicture,
+    matchedPersonDevice?.providerId,
+  ]
+    .filter(Boolean)
+    .join('::');
+  const avatarResource = useProviderResource({
+    deviceId: matchedPersonDevice?.canonicalId ?? '',
+    kind: 'primary_image',
+    attrs: matchedPersonDevice?.resources?.primary_image?.path
+      ? { entity_picture: matchedPersonDevice.resources.primary_image.path }
+      : undefined,
+    fallbackPicture: matchedPersonState?.entityPicture,
+    providerId: matchedPersonDevice?.providerId,
+    requestKey: avatarRequestKey,
+  });
+
+  const avatarUrl = useMemo(() => {
+    if (avatarResource?.kind === 'image' && avatarResource.url) {
+      return avatarResource.url;
+    }
+
+    return user?.avatarUrl ?? null;
+  }, [avatarResource, user?.avatarUrl]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { mapProviderSnapshotsToDeviceCollection } from '@/app/core/navet-device-collections';
+import { mapNavetDevicesToDeviceCollection } from '@/app/core/navet-device-collections';
 import { integrationSelectors } from '../stores/selectors';
 import type { DeviceCollection } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
@@ -18,14 +18,7 @@ export const useAggregatedDevices = (): DeviceCollection => {
     const selectedDevices = Object.values(devicesByCanonicalId).filter((device) =>
       selectedProviderIds.includes(device.providerId)
     );
-    const collection = mapProviderSnapshotsToDeviceCollection([
-      {
-        providerId: 'home_assistant',
-        connected: true,
-        devices: selectedDevices,
-        rooms: [],
-      },
-    ]);
+    const collection = mapNavetDevicesToDeviceCollection(selectedDevices);
 
     collection.calendars = calendars;
     collection.weather = weather;

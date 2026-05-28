@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
-import { useHomeAssistant } from '@/app/hooks';
-import {
-  haBatterySensorRowsEqual,
-  selectBatterySensorRowsFromHa,
-} from '@/app/hooks/ha-battery-sensor-rows';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { useProviderBatterySensorRows } from '@/app/features/dashboard/components/widgets/use-provider-battery-sensor-rows';
+import { useIntegrationStore, useProviderHealth } from '@/app/hooks';
+import { integrationSelectors } from '@/app/stores/selectors';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 import { useEnergyHaData } from './use-energy-ha-data';
 import { useEnergyLoadHistory } from './use-energy-load-history';
@@ -52,8 +49,10 @@ function getTodayUsageFromLoadTrend(points: EnergySeriesPoint[], fallbackKWh: nu
 }
 
 export function useProviderEnergyData(range: EnergyRange) {
-  const isConnected = useHomeAssistant(homeAssistantSelectors.connected);
-  const batteryDevices = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const isHomeAssistantProvider = currentProviderId === 'home_assistant';
+  const providerHealth = useProviderHealth(currentProviderId);
+  const batteryDevices = useProviderBatterySensorRows();
   const {
     energySourceDiagnostics,
     hasEnergyStatisticsLoaded,
@@ -61,16 +60,21 @@ export function useProviderEnergyData(range: EnergyRange) {
     isConfigured,
     currentLoadStatisticId,
     haSourceConfig,
-  } = useEnergyHaData(range);
+  } = useEnergyHaData(range, isHomeAssistantProvider);
   const recentLoadTrend = useEnergyLoadHistory(
     currentLoadStatisticId,
-    overview.totals.currentLoadW
+    overview.totals.currentLoadW,
+    isHomeAssistantProvider
   );
-  const periodTotals = useEnergyStatisticsPeriods(haSourceConfig?.gridImportEnergyEntityId);
+  const periodTotals = useEnergyStatisticsPeriods(
+    haSourceConfig?.gridImportEnergyEntityId,
+    isHomeAssistantProvider
+  );
   const todayTotalUsageKWh = useMemo(
     () => getTodayUsageFromLoadTrend(recentLoadTrend, periodTotals.today),
     [periodTotals.today, recentLoadTrend]
   );
+  const isConnected = providerHealth.connected;
 
   return {
     batteryDevices,

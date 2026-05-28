@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { Button } from '@/app/components/primitives/button';
-import type { HaBatterySensorRow } from '@/app/hooks/ha-battery-sensor-rows';
+import type { HaBatterySensorRow } from '@/app/infrastructure/home-assistant/home-assistant-battery-selectors';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@/app/storybook/story-frames';
 import { BatterySettingsDialog } from './battery-overview-widget';

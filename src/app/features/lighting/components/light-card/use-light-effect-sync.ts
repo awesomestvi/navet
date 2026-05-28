@@ -1,6 +1,6 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/app/hooks';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import {
   buildLightEffectOptions,
   normalizeCurrentLightEffect,
@@ -12,7 +12,7 @@ import type { LightUpdateOptions } from './use-light-home-assistant-sync';
 interface UseLightEffectSyncParams {
   isHomeAssistantLight: boolean;
   isOn: boolean;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
   syncLight: (options: LightUpdateOptions) => Promise<void>;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import {
   clampKelvin,
   clampPercentage,
@@ -12,17 +12,17 @@ import {
   roundKelvin,
 } from '../light-card-utils';
 
-// Minimal HassEntity factory for tests
+// Minimal platform entity factory for tests
 function makeEntity(
-  overrides: { entity_id?: string; state?: string; attributes?: Record<string, unknown> } = {}
-) {
-  const entity = lightEntityFactory();
-  entity.entity_id = overrides.entity_id ?? 'light.test';
-  entity.state = (overrides.state as 'on' | 'off') ?? 'on';
-  if (overrides.attributes !== undefined) {
-    entity.attributes = overrides.attributes;
-  }
-  return entity;
+  overrides: Partial<PlatformEntitySnapshot> & { attributes?: Record<string, unknown> } = {}
+): PlatformEntitySnapshot {
+  return {
+    entityId: overrides.entityId ?? 'light.test',
+    state: overrides.state ?? 'on',
+    attributes: overrides.attributes ?? {},
+    ...(overrides.lastChanged ? { lastChanged: overrides.lastChanged } : {}),
+    ...(overrides.lastUpdated ? { lastUpdated: overrides.lastUpdated } : {}),
+  };
 }
 
 // ─── clampPercentage ───────────────────────────────────────────────────────

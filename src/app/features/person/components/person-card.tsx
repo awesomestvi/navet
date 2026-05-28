@@ -4,9 +4,8 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, getStandardCardPadding } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { resolveHomeAssistantAbsoluteUrl } from '@/app/utils/home-assistant-url';
+import { readNavetPersonState } from '@/app/core/navet-device-state';
+import { useI18n, useProviderDevice, useProviderResource, useTheme } from '@/app/hooks';
 import { getPersonCardSurfaceTokens } from './person-card-surface-tokens';
 
 interface PersonCardProps {
@@ -57,22 +56,6 @@ function getFirstString(...values: Array<string | null | undefined>): string | n
   return null;
 }
 
-function getBatteryLevel(attributes: Record<string, unknown> | undefined) {
-  const rawValue = attributes?.battery_level ?? attributes?.battery;
-  if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
-    return Math.max(0, Math.min(100, Math.round(rawValue)));
-  }
-
-  if (typeof rawValue === 'string') {
-    const parsed = Number.parseFloat(rawValue);
-    if (Number.isFinite(parsed)) {
-      return Math.max(0, Math.min(100, Math.round(parsed)));
-    }
-  }
-
-  return null;
-}
-
 export const PersonCard = memo(function PersonCard({
   id,
   name,
@@ -87,34 +70,49 @@ export const PersonCard = memo(function PersonCard({
   const { t } = useI18n();
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-
+  const providerDevice = useProviderDevice(id);
+  const providerState = readNavetPersonState(providerDevice);
   const liveState: 'home' | 'away' =
-    liveEntity?.state === 'home' ? 'home' : liveEntity ? 'away' : state;
-  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const liveEntityPicture =
-    typeof liveAttrs?.entity_picture === 'string'
-      ? (liveAttrs.entity_picture as string)
-      : entityPicture;
-  const batteryLevel = getBatteryLevel(liveAttrs);
+    providerState?.value === 'home' ? 'home' : providerState?.value === 'away' ? 'away' : state;
+  const fallbackPicture =
+    typeof providerState?.entityPicture === 'string' ? providerState.entityPicture : entityPicture;
+  const pictureRequestKey = [
+    providerDevice?.resources?.primary_image?.path,
+    fallbackPicture,
+    providerDevice?.providerId,
+  ]
+    .filter(Boolean)
+    .join('::');
+  const primaryImageResource = useProviderResource({
+    deviceId: id,
+    kind: 'primary_image',
+    attrs: providerDevice?.resources?.primary_image?.path
+      ? { entity_picture: providerDevice.resources.primary_image.path }
+      : undefined,
+    fallbackPicture,
+    providerId: providerDevice?.providerId,
+    requestKey: pictureRequestKey,
+  });
+  const batteryLevel =
+    typeof providerState?.batteryLevel === 'number' ? providerState.batteryLevel : null;
   const presenceLabel = liveState === 'home' ? t('person.home') : t('person.away');
   const detailLabel =
     liveState === 'home'
       ? getFirstString(room, location)
       : getFirstString(
-          typeof liveAttrs?.address === 'string' ? liveAttrs.address : null,
-          typeof liveAttrs?.location_name === 'string' ? liveAttrs.location_name : null,
-          typeof liveAttrs?.geocoded_location === 'string' ? liveAttrs.geocoded_location : null,
-          typeof liveAttrs?.zone === 'string' ? liveAttrs.zone : null,
+          providerState?.address,
+          providerState?.locationName,
+          providerState?.geocodedLocation,
+          providerState?.zone,
+          providerState?.location,
           location
         );
 
   const cardColors = liveState === 'home' ? colors.person.home : colors.person.away;
   const surface = getPersonCardSurfaceTokens(theme, liveState);
   const padding = getStandardCardPadding(size);
-  const resolvedEntityPicture = liveEntityPicture
-    ? (resolveHomeAssistantAbsoluteUrl(liveEntityPicture) ?? undefined)
-    : undefined;
+  const resolvedEntityPicture =
+    primaryImageResource?.kind === 'image' ? (primaryImageResource.url ?? undefined) : undefined;
   const hasPortrait = Boolean(resolvedEntityPicture);
   const isTiny = size === 'tiny';
   const isExtraSmall = size === 'extra-small';

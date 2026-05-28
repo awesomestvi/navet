@@ -1,14 +1,14 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useHomeAssistant } from '@/app/hooks';
+import { useProviderEntitySnapshot } from '@/app/hooks';
 import { getSensorDeviceClass } from '@/app/hooks/device-mappers';
 import {
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@/app/services/ha-recorder-statistics';
-import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
@@ -20,7 +20,15 @@ function getStartOfToday(now: Date) {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function isNumericSensor(entityId: string, entity: HassEntity | undefined) {
+function isNumericSensor(
+  entityId: string,
+  entity:
+    | {
+        state: string;
+        attributes?: Record<string, unknown>;
+      }
+    | undefined
+) {
   if (!entityId.startsWith('sensor.') || !entity) {
     return false;
   }
@@ -53,15 +61,29 @@ export interface SensorStatisticsPoint {
   maxValue: number;
 }
 
+function isHomeAssistantHistoryEntityId(entityId: string | undefined): boolean {
+  if (!entityId) {
+    return false;
+  }
+
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return scopedId.providerId === 'home_assistant';
+  }
+
+  return isLegacyHomeAssistantEntityId(entityId);
+}
+
 export function useSensorStatisticsHistory(entityId: string | undefined) {
-  const entity = useHomeAssistant(
-    entityId ? homeAssistantSelectors.entity(entityId) : () => undefined
-  );
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
+  const isHomeAssistantEntity = isHomeAssistantHistoryEntityId(entityId);
+  const entity = useProviderEntitySnapshot(entityId ?? '');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [points, setPoints] = useState<SensorStatisticsPoint[]>([]);
 
-  const canFetch = useMemo(() => isNumericSensor(entityId ?? '', entity), [entity, entityId]);
+  const canFetch = useMemo(
+    () => isHomeAssistantEntity && isNumericSensor(entityId ?? '', entity),
+    [entity, entityId, isHomeAssistantEntity]
+  );
 
   useEffect(() => {
     if (!entityId || !canFetch) {
@@ -71,8 +93,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
     const stableEntityId = entityId;
 
     async function fetchHistory() {
-      const activeMessageClient =
-        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      const activeMessageClient = integrationHistoryService.getMessageClient();
       if (!activeMessageClient) {
         setPoints([]);
         return;
@@ -126,7 +147,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
         clearInterval(timerRef.current);
       }
     };
-  }, [canFetch, connection, entityId]);
+  }, [canFetch, entityId]);
 
   return {
     points,

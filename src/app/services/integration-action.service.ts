@@ -1,4 +1,5 @@
 import type { NavetActionIntent } from '@/app/core/navet';
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { IntegrationProviderId } from '../types/provider';
 import { getProviderNativeId, parseProviderScopedId } from '../utils/provider-ids';
 import {
@@ -72,10 +73,12 @@ function resolveProviderId(
   }
 
   if (entityId) {
-    return parseProviderScopedId(entityId)?.providerId ?? 'home_assistant';
+    return (
+      parseProviderScopedId(entityId)?.providerId ?? authSessionManager.getSnapshot().providerId
+    );
   }
 
-  return 'home_assistant';
+  return authSessionManager.getSnapshot().providerId;
 }
 
 export async function dispatchServiceAction({

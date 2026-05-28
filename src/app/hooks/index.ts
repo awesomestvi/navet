@@ -29,7 +29,6 @@ export {
 export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
 export { useHomeAssistant } from './use-home-assistant';
-export { useHomeyDevices } from './use-homey-devices';
 export {
   useCurrentIntegrationStore,
   useIntegrationStore,
@@ -46,6 +45,14 @@ export {
 } from './use-provider-calendar-devices';
 export { useProviderDevice } from './use-provider-device';
 export {
+  useProviderConnectionState,
+  useProviderEntityRegistryEntries,
+  useProviderEntitySnapshot,
+  useProviderEntitySnapshotRecord,
+  useProviderEntitySnapshots,
+  useProviderTemperatureUnit,
+} from './use-provider-entity';
+export {
   resolveProviderIdForFeatureSupport,
   useEntityProviderFeature,
   useEntityProviderFeatureMatrix,
@@ -53,6 +60,7 @@ export {
   useProviderFeatureMatrix,
 } from './use-provider-feature-support';
 export { useProviderHealth } from './use-provider-health';
+export { useProviderResource } from './use-provider-resource';
 export { useProviderRuntime } from './use-provider-runtime';
 export {
   useProviderWeatherDevices,
@@ -61,12 +69,18 @@ export {
 export type {
   EntityRoomRegistryContext,
   EntityRoomRegistryPick,
+  ProviderDeviceTopology,
+  ProviderEntityRoomContext,
   RegistryDeviceIdsSlice,
 } from './use-registry-device-topology';
 export {
   useCameraRegistryDeviceTopology,
   useEntityRoomRegistryContext,
   useHvacRegistryDeviceTopology,
+  useProviderCameraTopology,
+  useProviderEntityRoomContext,
+  useProviderHvacTopology,
+  useProviderSwitchTopology,
   useSwitchRegistryDeviceTopology,
 } from './use-registry-device-topology';
 export { useRoomNavigation } from './use-room-navigation';

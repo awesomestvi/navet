@@ -1,23 +1,25 @@
 import { waitFor } from '@testing-library/react';
-import type { Connection } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { homeAssistantStore } from '@/app/stores/home-assistant-store';
-import { binarySensorEntityFactory } from '@/test/fixtures/home-assistant/entities/binary-sensor';
-import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
 import { renderHookWithProviders } from '@/test/render';
 import { useSensorStatisticsHistory } from '../use-sensor-statistics-history';
+
+const { useProviderEntitySnapshotMock } = vi.hoisted(() => ({
+  useProviderEntitySnapshotMock: vi.fn(),
+}));
+
+vi.mock('@/app/hooks', () => ({
+  useProviderEntitySnapshot: useProviderEntitySnapshotMock,
+}));
 
 describe('useSensorStatisticsHistory', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    homeAssistantStore.setState({
-      ...homeAssistantStore.getInitialState(),
-    });
+    useProviderEntitySnapshotMock.mockReset();
   });
 
   it('returns recorder history for numeric sensors with statistics', async () => {
-    const connection = {
+    const messageClient = {
       sendMessagePromise: vi.fn().mockResolvedValue({
         'sensor.kitchen_temperature': [
           {
@@ -36,24 +38,18 @@ describe('useSensorStatisticsHistory', () => {
           },
         ],
       }),
-    } as unknown as Connection;
+    };
 
-    const temperatureSensor = sensorEntityFactory({
-      friendly_name: 'Kitchen Temperature',
-      device_class: 'temperature',
-      unit_of_measurement: '°C',
-    });
-    temperatureSensor.entity_id = 'sensor.kitchen_temperature';
-    temperatureSensor.state = '21.3';
-
-    vi.spyOn(homeAssistantService, 'getConnection').mockReturnValue(connection);
-    homeAssistantStore.setState({
-      ...homeAssistantStore.getInitialState(),
-      connection,
-      entities: {
-        'sensor.kitchen_temperature': temperatureSensor,
+    useProviderEntitySnapshotMock.mockReturnValue({
+      entityId: 'sensor.kitchen_temperature',
+      state: '21.3',
+      attributes: {
+        friendly_name: 'Kitchen Temperature',
+        device_class: 'temperature',
+        unit_of_measurement: '°C',
       },
     });
+    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
 
     const { result } = renderHookWithProviders(() =>
       useSensorStatisticsHistory('sensor.kitchen_temperature')
@@ -64,41 +60,35 @@ describe('useSensorStatisticsHistory', () => {
     });
 
     expect(result.current.points).toHaveLength(2);
-    expect(connection.sendMessagePromise).toHaveBeenCalledTimes(1);
+    expect(messageClient.sendMessagePromise).toHaveBeenCalledTimes(1);
   });
 
   it('does not fetch history for binary, timestamp, or unavailable sensors', async () => {
-    const connection = {
+    const messageClient = {
       sendMessagePromise: vi.fn(),
-    } as unknown as Connection;
+    };
 
-    const motionSensor = binarySensorEntityFactory({
-      device_class: 'motion',
-    });
-    motionSensor.entity_id = 'binary_sensor.hall_motion';
-    motionSensor.state = 'on';
-    const timestampSensor = sensorEntityFactory({
-      device_class: 'timestamp',
-    });
-    timestampSensor.entity_id = 'sensor.sun_next_setting';
-    timestampSensor.state = '2026-05-25T19:29:00.000Z';
-    const unavailableTemperature = sensorEntityFactory({
-      device_class: 'temperature',
-      unit_of_measurement: '°C',
-    });
-    unavailableTemperature.entity_id = 'sensor.garage_temperature';
-    unavailableTemperature.state = 'unavailable';
+    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
 
-    vi.spyOn(homeAssistantService, 'getConnection').mockReturnValue(connection);
-    homeAssistantStore.setState({
-      ...homeAssistantStore.getInitialState(),
-      connection,
-      entities: {
-        'binary_sensor.hall_motion': motionSensor,
-        'sensor.sun_next_setting': timestampSensor,
-        'sensor.garage_temperature': unavailableTemperature,
-      },
-    });
+    useProviderEntitySnapshotMock
+      .mockReturnValueOnce({
+        entityId: 'binary_sensor.hall_motion',
+        state: 'on',
+        attributes: { device_class: 'motion' },
+      })
+      .mockReturnValueOnce({
+        entityId: 'sensor.sun_next_setting',
+        state: '2026-05-25T19:29:00.000Z',
+        attributes: { device_class: 'timestamp' },
+      })
+      .mockReturnValueOnce({
+        entityId: 'sensor.garage_temperature',
+        state: 'unavailable',
+        attributes: {
+          device_class: 'temperature',
+          unit_of_measurement: '°C',
+        },
+      });
 
     const motion = renderHookWithProviders(() =>
       useSensorStatisticsHistory('binary_sensor.hall_motion')
@@ -116,6 +106,33 @@ describe('useSensorStatisticsHistory', () => {
       expect(unavailable.result.current.canFetch).toBe(false);
     });
 
-    expect(connection.sendMessagePromise).not.toHaveBeenCalled();
+    expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();
+  });
+
+  it('does not query Home Assistant history for non-HA provider-scoped sensors', async () => {
+    const messageClient = {
+      sendMessagePromise: vi.fn(),
+    };
+
+    useProviderEntitySnapshotMock.mockReturnValue({
+      entityId: 'sensor.office_temperature',
+      state: '20.1',
+      attributes: {
+        device_class: 'temperature',
+        unit_of_measurement: '°C',
+      },
+    });
+    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
+
+    const { result } = renderHookWithProviders(() =>
+      useSensorStatisticsHistory('homey:sensor.office_temperature')
+    );
+
+    await waitFor(() => {
+      expect(result.current.canFetch).toBe(false);
+      expect(result.current.points).toEqual([]);
+    });
+
+    expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();
   });
 });

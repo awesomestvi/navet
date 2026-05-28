@@ -1,10 +1,7 @@
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import { getEntityCategory } from '@/app/infrastructure/home-assistant/home-assistant-registry-helpers';
+import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
 import type { TranslateFn } from '../i18n';
-import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantDeviceRegistryEntry,
-  HomeAssistantEntityRegistryEntry,
-} from '../services/home-assistant.service';
 import type { DeviceCollection, DeviceMetric, HelperDevice } from '../types/device.types';
 import {
   getMetricLabel,
@@ -12,13 +9,7 @@ import {
   inferMetricIcon,
   normalizeMetric,
   parseNumberish,
-} from './ha-entity-utils';
-
-export interface HADeviceRegistryMaps {
-  areaMap: Map<string, string>;
-  deviceRegistryMap: Map<string, HomeAssistantDeviceRegistryEntry>;
-  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>;
-}
+} from './entity-utils';
 
 export interface HADeviceIndexes {
   switchMetricsByDeviceId: Map<string, DeviceMetric[]>;
@@ -49,13 +40,6 @@ export function getEntityObjectId(entityId: string): string {
 export function getDomain(entityId: string): string {
   const separatorIndex = entityId.indexOf('.');
   return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
-}
-
-export function getEntityCategory(
-  entityEntry: { entity_category?: unknown } | undefined
-): 'config' | 'diagnostic' | null {
-  const raw = entityEntry?.entity_category;
-  return raw === 'config' || raw === 'diagnostic' ? raw : null;
 }
 
 export function getSwitchPrimarySortKey(
@@ -112,20 +96,6 @@ export function createEmptyDeviceCollection(): DeviceCollection {
     calendars: [],
     cameras: [],
     'grouped-sensors': [],
-  };
-}
-
-export function createRegistryMaps(
-  areas: HomeAssistantAreaRegistryEntry[],
-  deviceRegistry: HomeAssistantDeviceRegistryEntry[],
-  entityRegistry: HomeAssistantEntityRegistryEntry[]
-): HADeviceRegistryMaps {
-  return {
-    areaMap: new Map(areas.map((area) => [area.area_id, area.name])),
-    entityRegistryMap: new Map(
-      entityRegistry.map((registryEntry) => [registryEntry.entity_id, registryEntry])
-    ),
-    deviceRegistryMap: new Map(deviceRegistry.map((device) => [device.id, device])),
   };
 }
 

@@ -1,92 +1,90 @@
 # Architecture
 
-This file defines Navet's architecture constraints, state rules, feature boundaries, and dashboard-specific structure.
+This file defines the implementation-facing architecture rules for Navet contributors and agents.
 
 ## Canonical Direction
 
-- [`../technical/multi-backend-migration-guide.md`](../technical/multi-backend-migration-guide.md) is the canonical architecture reference for major refactors and new integration work.
-- Navet uses a backend-agnostic core where UI, dashboard state, and interactions depend on Navet-owned contracts rather than backend raw payloads.
-- Home Assistant remains a first-class backend, but it is one adapter inside the broader architecture.
-- Do not add new UI dependencies on `HassEntity` or other backend raw types unless the code is adapter-internal.
-- Prefer `IntegrationProviderId`, `NavetDevice`, `NavetRoom`, `NavetProviderSnapshot`, `NavetProviderContract`, and provider-scoped IDs when describing or extending architecture.
+- [`../technical/multi-backend-migration-guide.md`](../technical/multi-backend-migration-guide.md)
+  is the canonical architecture reference.
+- Navet uses provider-scoped runtime and normalized shared contracts.
+- Home Assistant is the most mature provider, not the application architecture.
+- Homey support is implemented today but is not at the same maturity level as Home Assistant.
+- openHAB is part of the provider model and types, but remains planned.
 
-## State Management Model
+## Preferred Shared Seams
 
-- All shared app state is Zustand. Do not introduce React Context for general reactive app state.
-- Runtime auth and session handling lives in `src/auth/AuthProvider.tsx` because it owns OAuth, ingress, and provider session bootstrapping.
-- Context is otherwise only for infrastructure without general shared app state, such as `I18nProvider` in `src/app/i18n/`.
-- Use selectors from `src/app/stores/selectors.ts` to subscribe to the minimum slice needed.
-- Persisted stores use `persist` middleware with `createJSONStorage(() => localStorage)` and a `merge` function that validates before rehydrating.
-- Never use raw `window.localStorage` in stores.
-- See [../technical/REACT_ZUSTAND.md](../technical/REACT_ZUSTAND.md) for the full state management guide.
+Prefer these current shared seams before inventing new layers:
 
-## Runtime Surfaces
+- `src/app/core/`
+- `src/app/platform/`
+- `src/app/stores/integration-store.ts`
+- `src/app/hooks/` provider/runtime selectors and read hooks
+- `src/auth/`
+- `src/app/features/`
 
-- `src/app/stores/integration-store.ts` is the main cross-provider runtime/store surface.
-- `src/app/hooks/use-provider-runtime.ts` is the preferred read interface for provider runtime state.
-- `src/app/stores/home-assistant-store.ts` is a provider-specific runtime slice that feeds the broader integration runtime.
-- `src/app/infrastructure/home-assistant/` contains Home Assistant adapter-specific auth, runtime, transport, media, and resource infrastructure.
-- `src/app/core/` contains Navet-owned domain contracts and mapping layers.
-- `src/app/platform/` contains provider feature abstractions and capability-oriented interfaces.
+Provider-specific behavior belongs primarily in:
 
-## Zustand Stores
+- `src/app/infrastructure/home-assistant/`
+- `src/app/services/`
+- `src/app/stores/home-assistant-store.ts`
 
-| Store | Responsibility |
-|---|---|
-| `integration-store` | Cross-provider runtime state, provider sessions, provider health, and normalized provider snapshots |
-| `home-assistant-store` | WebSocket connection state, entities, registries |
-| `settings-store` | User preferences |
-| `theme-store` | Theme mode, accent color, wallpaper |
-| `navigation-store` | Active section and current room |
-| `edit-mode-store` | Dashboard edit mode toggle |
-| `search-store` | Search query and filtered device ids |
-| `error-store` | Global app error overlay state |
+## State Model
 
-## Selector Usage
+- Zustand is the shared app-state system.
+- `AuthProvider` is the runtime-auth exception because it owns provider session bootstrap.
+- Use selectors from `src/app/stores/selectors.ts`.
+- Prefer normalized provider state and provider-scoped IDs in shared UI and shared feature flows.
 
-```ts
-const connected = useProviderRuntime(providerRuntimeSelectors.connected);
+## Ownership Rules
 
-const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsStore(
-  settingsSelectors.displaySettings
-);
+Shared layers own:
 
-// Avoid
-const store = useProviderRuntime();
-```
+- normalized devices, rooms, room descriptors, and provider snapshots
+- dashboard and settings state
+- provider selection and current provider runtime state
+- resource requests and action intents
 
-Use minimal subscriptions. Avoid broad store reads that re-render on unrelated changes.
+Provider layers own:
 
-## Service To Store Event Flow
+- auth and session details
+- runtime detection
+- REST and WebSocket transport
+- backend raw payload parsing
+- resource rewriting and proxy behavior
+- backend-specific action translation
 
-- `HomeAssistantService` emits typed events: `'entities' | 'config' | 'registries' | 'connection'`.
-- `home-assistant-store` subscribes and updates only the affected Home Assistant slice.
-- `integration-store` aggregates provider-specific runtime and Navet-owned snapshots into the broader runtime contract.
-- Do not add catch-all listeners that copy all service state on every event.
-- Do not treat provider-specific service events as the long-term public app architecture.
+## Rules For New Work
 
-## Imports And Feature Boundaries
+- Do not add new shared-UI dependencies on `HassEntity` or other backend raw types.
+- Do not call Home Assistant services directly from generic feature components or shared card
+  controllers.
+- Do not construct Home Assistant resource URLs in shared UI when resolver seams already own that
+  behavior.
+- Prefer extending provider/runtime seams over adding provider-specific conditionals in shared code.
 
-- Import from a feature's root `index.ts` when crossing feature boundaries.
-- Never reach into another feature's `components/`, `hooks/`, or `stores/` subdirectories from outside that feature.
-- Use `@/app/...` for shared app modules and cross-feature imports.
-- Keep short relative imports for files inside the same small feature or module subtree.
-- Prefer Navet-owned and provider/runtime abstraction modules before importing backend-specific types into shared UI or dashboard code.
+## Current Runtime Surfaces
 
-## Component And File Structure
+- `src/auth/AuthProvider.tsx` resolves runtime and provider sessions.
+- `src/app/runtime/app-mode.ts` exposes coarse runtime helpers for feature flows that truly need
+  mode awareness.
+- `src/app/stores/home-assistant-store.ts` tracks Home Assistant provider state.
+- `src/app/stores/integration-store.ts` aggregates provider runtime state and normalized snapshots.
+- `src/app/hooks/use-provider-runtime.ts` and store selectors are the preferred app-facing read
+  surface.
 
-- Split large feature files into entry components, controller hooks, presentational views, and local types, data, or constants.
-- Card-style features use folder modules with `index.tsx` entries.
-- A controller hook should not exceed about 150 lines. Split coherent groups of state and handlers into named hooks.
-- Never call `storeInstance.setState()` from a component. Use the store's own action methods.
-- Cards and shared UI should render capabilities and normalized state, not backend-specific payload assumptions.
+## Dashboard Rules
 
-## Dashboard-Specific Rules
+- Dashboard card registration lives in
+  `src/app/features/dashboard/utils/card-renderer.tsx`.
+- Dashboard section routing lives in
+  `src/app/features/dashboard/components/dashboard-section-router.tsx`.
+- Dashboard persisted state belongs under
+  `src/app/features/dashboard/stores/`.
 
-- `src/app/features/dashboard/utils/card-renderer.tsx` is the dashboard card registry. Do not move card rendering registration logic back into generic `src/app/utils/`.
-- Dashboard entity visibility, custom card state, card ordering, and room ordering must stay colocated with the dashboard feature in `src/app/features/dashboard/stores/`.
+Do not move dashboard-specific ownership back into generic shared utility folders.
 
-## Related Guidance
+## Related Docs
 
-- Feature and card entry points live in [project-map.md](project-map.md).
-- Shared UI and theming rules live in [ui-and-theming.md](ui-and-theming.md).
+- [project-map.md](project-map.md)
+- [../../design-system/UI-GUIDELINES.md](../../design-system/UI-GUIDELINES.md)
+- [testing.md](testing.md)

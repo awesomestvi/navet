@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
-import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useIntegrationStore } from '@/app/hooks';
+import { providerRuntimeSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { useTaskRoutines } from './use-task-automation-groups';
 
 export function useAutomationDashboardController() {
   const { automations, quickActions } = useTaskRoutines();
-  const connected = useHomeAssistant(homeAssistantSelectors.connected);
-  const entitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
+  const currentProviderRuntime = useIntegrationStore(
+    providerRuntimeSelectors.currentProviderRuntime
+  );
+  const connected = currentProviderRuntime.connected;
+  const entitiesHydrated = currentProviderRuntime.entitiesHydrated;
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);

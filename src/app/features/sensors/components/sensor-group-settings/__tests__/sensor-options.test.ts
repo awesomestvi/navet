@@ -1,25 +1,19 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
 import { buildAvailableSensorOptions, resolveSensorReadings } from '../sensor-options';
 
-function entity(
-  entityId: string,
-  state: string,
-  attributes: HassEntity['attributes'] = {}
-): HassEntity {
+function entity(entityId: string, state: string, attributes: Record<string, unknown> = {}) {
   return {
-    entity_id: entityId,
+    entityId,
     state,
     attributes,
-    context: { id: 'context', parent_id: null, user_id: null },
-    last_changed: '2026-05-21T00:00:00.000Z',
-    last_updated: '2026-05-21T00:00:00.000Z',
+    lastChanged: '2026-05-21T00:00:00.000Z',
+    lastUpdated: '2026-05-21T00:00:00.000Z',
   };
 }
 
 describe('sensor group options', () => {
   it('builds searchable options from Home Assistant sensor entities only', () => {
-    const entities: HassEntities = {
+    const entities = {
       'sensor.kitchen_temperature': entity('sensor.kitchen_temperature', '21.4', {
         friendly_name: 'Kitchen Temperature',
         device_class: 'temperature',
@@ -42,11 +36,11 @@ describe('sensor group options', () => {
 
     const options = buildAvailableSensorOptions({
       entities,
-      areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
+      areas: [{ areaId: 'kitchen', name: 'Kitchen' }],
       entityRegistry: [
         {
-          entity_id: 'sensor.kitchen_temperature',
-          area_id: 'kitchen',
+          entityId: 'sensor.kitchen_temperature',
+          areaId: 'kitchen',
         },
       ],
     });
@@ -103,6 +97,7 @@ describe('sensor group options', () => {
         value: 'unavailable',
         unit: 'ppm',
         icon: 'wind',
+        entityType: 'carbon dioxide',
       },
       {
         id: 'sensor.removed',

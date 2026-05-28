@@ -1,11 +1,17 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import { useHomeAssistant, useI18n, useSwitchRegistryDeviceTopology, useTheme } from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import {
+  useI18n,
+  useProviderDevice,
+  useProviderEntitySnapshot,
+  useProviderEntitySnapshotRecord,
+  useProviderSwitchTopology,
+  useTheme,
+} from '@/app/hooks';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import type { SwitchCardProps } from './switch-card.types';
 import { useSwitchCardAppearance } from './use-switch-card-appearance';
 import { useSwitchMetricFormatters } from './use-switch-metric-formatters';
@@ -15,10 +21,8 @@ import { useSwitchToggleAction } from './use-switch-toggle-action';
 
 export interface SwitchSiblingEntity {
   id: string;
-  entity: HassEntity;
+  entity: PlatformEntitySnapshot;
 }
-
-const EMPTY_SIBLING_RECORD: Record<string, HassEntity | undefined> = {};
 
 export function useSwitchCardController({
   id,
@@ -38,11 +42,18 @@ export function useSwitchCardController({
   const [isOn, setIsOn] = useState(initialState);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
+  const providerDevice = useProviderDevice(id);
+  const nativeId = parseProviderScopedId(id)?.nativeId ?? id;
+  const resolvedProviderId =
+    providerDevice?.providerId ??
+    providerId ??
+    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
 
   useSwitchResetTimerCleanup(resetTimerRef);
 
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const { siblingIds: siblingEntityIds } = useSwitchRegistryDeviceTopology(id);
+  const liveEntity = useProviderEntitySnapshot(id);
+  const { siblingIds: siblingEntityIds } = useProviderSwitchTopology(id);
   const { accentColor, colors, theme } = useTheme();
   const { t } = useI18n();
   const resolvedEntityType = entityType || t('lighting.type.switch');
@@ -71,14 +82,10 @@ export function useSwitchCardController({
     metrics,
   });
 
-  const siblingEntitySelector = useCallback(
-    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
-      if (!siblingEntityIds.length || !state.entities) return EMPTY_SIBLING_RECORD;
-      return Object.fromEntries(siblingEntityIds.map((eid) => [eid, state.entities?.[eid]]));
-    },
-    [siblingEntityIds]
-  );
-  const siblingEntityRecord = useHomeAssistant(siblingEntitySelector, shallow);
+  const siblingEntityRecord = useProviderEntitySnapshotRecord(siblingEntityIds, {
+    providerId: resolvedProviderId,
+    enabled: isHomeAssistantProvider,
+  });
 
   const siblingEntities = useMemo<SwitchSiblingEntity[]>(
     () =>

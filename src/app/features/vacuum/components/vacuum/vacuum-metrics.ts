@@ -1,5 +1,8 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import type {
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 
 const NEXT_CLEANING_KEYS = [
   'next_cleaning',
@@ -45,15 +48,15 @@ export interface VacuumGlanceMetrics {
 }
 
 interface ResolveVacuumGlanceMetricsOptions {
-  vacuumEntity?: HassEntity;
+  vacuumEntity?: PlatformEntitySnapshot;
   vacuumEntityId: string;
   fallbackBattery: number;
   fallbackNextCleaning?: unknown;
   fallbackWaterLevel?: unknown;
   fallbackBinLevel?: unknown;
   use24HourTime?: boolean;
-  entities?: HassEntities | null;
-  entityRegistry?: HomeAssistantEntityRegistryEntry[];
+  entities?: PlatformEntitySnapshotMap | null;
+  entityRegistry?: PlatformEntityRegistryEntry[];
 }
 
 function clampPercentage(value: number): number {
@@ -146,26 +149,25 @@ function findRelatedSensorValue({
   matchers,
 }: {
   vacuumEntityId: string;
-  entities?: HassEntities | null;
-  entityRegistry?: HomeAssistantEntityRegistryEntry[];
+  entities?: PlatformEntitySnapshotMap | null;
+  entityRegistry?: PlatformEntityRegistryEntry[];
   matchers: string[];
 }): unknown {
   if (!entities || !entityRegistry?.length) return undefined;
 
-  const vacuumRegistryEntry = entityRegistry.find((entry) => entry.entity_id === vacuumEntityId);
-  const deviceId = vacuumRegistryEntry?.device_id;
+  const vacuumRegistryEntry = entityRegistry.find((entry) => entry.entityId === vacuumEntityId);
+  const deviceId = vacuumRegistryEntry?.deviceId;
   if (!deviceId) return undefined;
 
   const sensorEntries = entityRegistry.filter(
-    (entry) => entry.device_id === deviceId && entry.entity_id.startsWith('sensor.')
+    (entry) => entry.deviceId === deviceId && entry.entityId.startsWith('sensor.')
   );
 
   for (const entry of sensorEntries) {
-    const entity = entities[entry.entity_id];
+    const entity = entities[entry.entityId];
     const searchable = [
-      entry.entity_id,
+      entry.entityId,
       entry.name,
-      entry.original_name,
       entity?.attributes?.friendly_name,
       entity?.attributes?.device_class,
     ]

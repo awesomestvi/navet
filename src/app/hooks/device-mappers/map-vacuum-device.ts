@@ -1,7 +1,7 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { normalizeVacuumStatus } from '@/app/features/vacuum';
 import type { VacuumDevice } from '@/app/types/device.types';
-import { parseNumberish } from '../ha-entity-utils';
+import { parseNumberish } from '../entity-utils';
 
 function readFirst(attrs: HassEntity['attributes'], keys: string[]): unknown {
   for (const key of keys) {

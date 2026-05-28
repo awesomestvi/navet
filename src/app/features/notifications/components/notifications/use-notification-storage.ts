@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { shallow } from 'zustand/shallow';
-import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { storage } from '@/app/utils/storage';
+import { useProviderUpdateCandidates } from './use-provider-update-candidates';
 
 const READ_NOTIFICATIONS_STORAGE_KEY = 'navet-read-notifications';
 const HIDDEN_NOTIFICATIONS_STORAGE_KEY = 'navet-hidden-notifications';
@@ -39,18 +37,8 @@ export interface NotificationStorageState {
   setPendingUpdateInstalls: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-// Only update.* entities are needed to validate pending installs.
-// Narrowing here means the effect only re-runs when update entities change
-// (new firmware available, update installed), not on every HA entity update.
-function selectUpdateEntities(state: HomeAssistantStore) {
-  if (!state.entities) return null;
-  return Object.fromEntries(
-    Object.entries(state.entities).filter(([id]) => id.startsWith('update.'))
-  );
-}
-
 export function useNotificationStorage(): NotificationStorageState {
-  const updateEntities = useHomeAssistant(selectUpdateEntities, shallow);
+  const updateCandidates = useProviderUpdateCandidates();
   const [readNotifications, setReadNotificationsState] = useState<string[]>(() =>
     loadNotificationIds(READ_NOTIFICATIONS_STORAGE_KEY)
   );
@@ -126,18 +114,18 @@ export function useNotificationStorage(): NotificationStorageState {
     };
   }, []);
 
-  // Remove pending installs for entities that no longer exist in HA.
-  // updateEntities only changes when update entities are added/removed/installed —
-  // not on unrelated entity state updates.
+  // Remove pending installs for entities that no longer exist for the active provider.
   useEffect(() => {
-    if (!updateEntities) {
+    if (updateCandidates.length === 0) {
       setPendingUpdateInstalls([]);
       return;
     }
+
+    const liveUpdateIds = new Set(updateCandidates.map((candidate) => candidate.entityId));
     setPendingUpdateInstalls((current) =>
-      current.filter((entityId) => Boolean(updateEntities[entityId]))
+      current.filter((entityId) => liveUpdateIds.has(entityId))
     );
-  }, [updateEntities, setPendingUpdateInstalls]);
+  }, [setPendingUpdateInstalls, updateCandidates]);
 
   return {
     readNotifications,

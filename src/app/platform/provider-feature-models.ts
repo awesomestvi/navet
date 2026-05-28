@@ -51,6 +51,24 @@ export interface PlatformMessageClient {
   ): Promise<() => void>;
 }
 
+export interface PlatformEntitySnapshot {
+  entityId: string;
+  state: string;
+  attributes: Record<string, unknown>;
+  lastChanged?: string;
+  lastUpdated?: string;
+}
+
+export type PlatformEntitySnapshotMap = Record<string, PlatformEntitySnapshot>;
+
+export interface PlatformEntityRegistryEntry {
+  entityId: string;
+  deviceId?: string | null;
+  areaId?: string | null;
+  name?: string | null;
+  platform?: string | null;
+}
+
 export interface PlatformFeatureRequestOptions {
   messageClient?: PlatformMessageClient | null;
 }

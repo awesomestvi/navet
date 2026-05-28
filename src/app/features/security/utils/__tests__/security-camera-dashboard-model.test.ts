@@ -1,7 +1,6 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import type { CameraDevice, LockDevice } from '@/app/types/device.types';
-import { makeHassEntityFixture } from '@/test/fixtures/home-assistant/shared';
 import {
   buildSecurityCameraDashboardModel,
   isStillImageUtilityCamera,
@@ -34,6 +33,18 @@ function lock(overrides: Partial<LockDevice> & Pick<LockDevice, 'id' | 'name'>):
     room: overrides.room ?? 'Entrance',
     size: overrides.size ?? 'small',
     state: overrides.state ?? true,
+  };
+}
+
+function toSnapshotMapEntry(
+  entityId: string,
+  state: string,
+  attributes: Record<string, unknown> = {}
+) {
+  return {
+    entityId,
+    state,
+    attributes,
   };
 }
 
@@ -74,31 +85,17 @@ describe('security camera dashboard model', () => {
 
   it('derives related security status from locks and binary sensors', () => {
     const entities = {
-      'binary_sensor.entry_motion': makeHassEntityFixture({
-        entityId: 'binary_sensor.entry_motion',
-        state: 'on',
-        attributes: {
-          device_class: 'motion',
-          friendly_name: 'Entry Motion',
-        },
+      'binary_sensor.entry_motion': toSnapshotMapEntry('binary_sensor.entry_motion', 'on', {
+        device_class: 'motion',
+        friendly_name: 'Entry Motion',
       }),
-      'binary_sensor.patio_door': makeHassEntityFixture({
-        entityId: 'binary_sensor.patio_door',
-        state: 'on',
-        attributes: {
-          device_class: 'door',
-          friendly_name: 'Patio Door',
-        },
+      'binary_sensor.patio_door': toSnapshotMapEntry('binary_sensor.patio_door', 'on', {
+        device_class: 'door',
+        friendly_name: 'Patio Door',
       }),
-      'alarm_control_panel.home': makeHassEntityFixture({
-        entityId: 'alarm_control_panel.home',
-        state: 'armed_home',
-      }),
-      'siren.hallway': makeHassEntityFixture({
-        entityId: 'siren.hallway',
-        state: 'on',
-      }),
-    } satisfies HassEntities;
+      'alarm_control_panel.home': toSnapshotMapEntry('alarm_control_panel.home', 'armed_home'),
+      'siren.hallway': toSnapshotMapEntry('siren.hallway', 'on'),
+    } satisfies PlatformEntitySnapshotMap;
 
     const model = buildSecurityCameraDashboardModel(
       {

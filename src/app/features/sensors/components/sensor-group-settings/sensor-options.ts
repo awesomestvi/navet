@@ -1,38 +1,37 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import {
   formatBinarySensorState,
   getSensorDeviceClass,
   inferSensorDisplayIcon,
 } from '@/app/hooks/device-mappers';
-import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
+import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/entity-utils';
 import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantDeviceRegistryEntry,
-  HomeAssistantEntityRegistryEntry,
-} from '@/app/services/home-assistant.service';
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 import type { SensorIconType, SensorReading } from '../sensors';
 import type { AvailableSensor } from './types';
 
 interface SensorRegistryContext {
-  areas?: HomeAssistantAreaRegistryEntry[];
-  deviceRegistry?: HomeAssistantDeviceRegistryEntry[];
-  entityRegistry?: HomeAssistantEntityRegistryEntry[];
+  areas?: Array<{ areaId: string; name: string }>;
+  deviceRegistry?: Array<{ deviceId: string; areaId?: string | null }>;
+  entityRegistry?: PlatformEntityRegistryEntry[];
 }
 
 interface SensorOptionBuildParams extends SensorRegistryContext {
-  entities: HassEntities | null | undefined;
+  entities: PlatformEntitySnapshotMap | null | undefined;
   formatOptions?: Parameters<typeof formatSensorValue>[1];
   includeBinarySensors?: boolean;
 }
 
 interface SensorOptionContext {
   areaMap: Map<string, string>;
-  deviceRegistryMap: Map<string, HomeAssistantDeviceRegistryEntry>;
-  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>;
+  deviceRegistryMap: Map<string, { deviceId: string; areaId?: string | null }>;
+  entityRegistryMap: Map<string, PlatformEntityRegistryEntry>;
 }
 
 interface ResolveSensorReadingsParams {
-  entities: HassEntities | null | undefined;
+  entities: PlatformEntitySnapshotMap | null | undefined;
   sensorEntityIds: string[];
   fallbackSensors?: SensorReading[];
   formatOptions?: Parameters<typeof formatSensorValue>[1];
@@ -40,21 +39,23 @@ interface ResolveSensorReadingsParams {
 
 const SENSOR_UNAVAILABLE_STATES = new Set(['unknown', 'unavailable']);
 
-function getEntityRegistryMap(entityRegistry: HomeAssistantEntityRegistryEntry[] | undefined) {
-  return new Map((entityRegistry ?? []).map((entry) => [entry.entity_id, entry]));
+function getEntityRegistryMap(entityRegistry: PlatformEntityRegistryEntry[] | undefined) {
+  return new Map((entityRegistry ?? []).map((entry) => [entry.entityId, entry]));
 }
 
-function getAreaMap(areas: HomeAssistantAreaRegistryEntry[] | undefined) {
-  return new Map((areas ?? []).map((area) => [area.area_id, area.name]));
+function getAreaMap(areas: Array<{ areaId: string; name: string }> | undefined) {
+  return new Map((areas ?? []).map((area) => [area.areaId, area.name]));
 }
 
-function getDeviceRegistryMap(deviceRegistry: HomeAssistantDeviceRegistryEntry[] | undefined) {
-  return new Map((deviceRegistry ?? []).map((device) => [device.id, device]));
+function getDeviceRegistryMap(
+  deviceRegistry: Array<{ deviceId: string; areaId?: string | null }> | undefined
+) {
+  return new Map((deviceRegistry ?? []).map((device) => [device.deviceId, device]));
 }
 
 function getSensorDisplayValue(
   entityId: string,
-  entity: HassEntity,
+  entity: PlatformEntitySnapshot,
   formatOptions?: Parameters<typeof formatSensorValue>[1]
 ): { value: string; unit: string } {
   const deviceClass = getSensorDeviceClass(entity);
@@ -93,6 +94,14 @@ function getSensorCategory(deviceClass: string | undefined): AvailableSensor['ca
   }
 }
 
+function formatEntityType(deviceClass: string | undefined, entityId: string): string {
+  if (deviceClass && deviceClass.trim().length > 0) {
+    return deviceClass.replace(/_/g, ' ');
+  }
+
+  return entityId.startsWith('binary_sensor.') ? 'binary sensor' : 'sensor';
+}
+
 export function inferSensorIcon(
   deviceClass: string | undefined,
   unit: string,
@@ -103,7 +112,7 @@ export function inferSensorIcon(
 
 function mapSensorOption(
   entityId: string,
-  entity: HassEntity,
+  entity: PlatformEntitySnapshot,
   context: SensorOptionContext,
   formatOptions?: Parameters<typeof formatSensorValue>[1]
 ): AvailableSensor {
@@ -172,17 +181,20 @@ export function resolveSensorReadings({
     const fallback = fallbackSensors.find((sensor) => sensor.id === entityId);
 
     if (!entity) {
+      const fallbackEntityType = fallback?.entityType;
       return {
         id: entityId,
         label: fallback?.label ?? entityId,
         value: fallback?.value ?? 'unavailable',
         unit: fallback?.unit ?? '',
         icon: fallback?.icon ?? 'gauge',
+        ...(fallbackEntityType ? { entityType: fallbackEntityType } : {}),
       };
     }
 
     const deviceClass = getSensorDeviceClass(entity);
     const formatted = getSensorDisplayValue(entityId, entity, formatOptions);
+    const entityType = formatEntityType(deviceClass, entityId);
 
     return {
       id: entityId,
@@ -193,6 +205,7 @@ export function resolveSensorReadings({
       value: formatted.value,
       unit: formatted.unit,
       icon: inferSensorIcon(deviceClass, formatted.unit, entityId),
+      ...(entityType ? { entityType } : {}),
     };
   });
 }

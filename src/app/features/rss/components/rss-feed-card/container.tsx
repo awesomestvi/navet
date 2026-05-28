@@ -1,25 +1,16 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { shallow } from 'zustand/shallow';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
-import {
-  useAreaRooms,
-  useDashboardWidgetRoomOptions,
-  useHomeAssistant,
-  useI18n,
-  useTheme,
-} from '@/app/hooks';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { useAreaRooms, useDashboardWidgetRoomOptions, useI18n, useTheme } from '@/app/hooks';
 import { sanitizeExternalUrl } from '@/app/utils/url-security';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSFeedCardProps } from './types';
+import { useProviderFeedreaderEntities } from './use-provider-feedreader-entities';
 import { useRSSFeedItems } from './use-rss-feed-items';
 import { useRSSFeedSources } from './use-rss-feed-sources';
 import { RSSFeedCardView } from './view';
 
 const RSS_REFRESH_INTERVAL_SECONDS = 120;
-const EMPTY_FEEDREADER_ENTITIES: HassEntities = {};
 
 export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   cardId,
@@ -64,16 +55,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
     [selectedProviders]
   );
 
-  const feedreaderEntitySelector = useCallback(
-    (state: HomeAssistantStore): HassEntities => {
-      if (!feedreaderEntityIds.length || !state.entities) return EMPTY_FEEDREADER_ENTITIES;
-      return Object.fromEntries(
-        feedreaderEntityIds.map((eid) => [eid, state.entities?.[eid]])
-      ) as HassEntities;
-    },
-    [feedreaderEntityIds]
-  );
-  const feedreaderEntities = useHomeAssistant(feedreaderEntitySelector, shallow);
+  const feedreaderEntities = useProviderFeedreaderEntities(feedreaderEntityIds);
 
   const { items, isLoading, error } = useRSSFeedItems(
     selectedProviders,

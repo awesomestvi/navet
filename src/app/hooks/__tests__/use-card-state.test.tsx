@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
+import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import { PERSISTED_STATE_EVENT } from '@/app/utils/persisted-state-events';
 import { useCardState } from '../use-card-state';
-import { createEmptyDeviceCollection } from '../use-ha-devices.helpers';
 
 describe('useCardState', () => {
   it('does not re-persist identical card size events', () => {
