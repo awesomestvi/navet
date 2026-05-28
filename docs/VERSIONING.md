@@ -1,159 +1,39 @@
 # Versioning
 
-Navet is currently in beta. Until the product contract is stable, use pre-`1.0` semantic versioning.
+Navet currently uses pre-`1.0` semantic versioning.
 
-## Current Phase
+## Current Line
 
-- Current release line: `0.x`
-- Current version: `0.3.0`
-- Meaning: current public beta release line for the standalone app image, Home Assistant custom panel, and Home Assistant add-on surfaces that ship from the same tagged version
+- current version: `0.3.0`
+- current phase: public beta
+- shared release line: standalone app, custom panel, and add-on ship from the same tagged version
 
 ## Scheme
 
-Use semantic versioning with prerelease tags when needed:
-
 - `0.x.y` for beta releases
-- `0.x.y-beta.n` for prerelease/beta candidates within a milestone
-- `1.0.0` only when core behavior and compatibility are considered stable
-
-Examples:
-
-- `0.1.0-beta.1`
-- `0.1.0-beta.2`
-- `0.1.0-beta.3`
-- `0.1.0-beta.4`
-- `0.1.1-beta.1`
-- `0.1.0`
-- `0.1.1`
-- `0.2.0`
-- `0.2.1`
-- `0.2.2`
-- `0.2.3`
-- `0.2.4`
-- `0.2.5`
-- `0.3.0`
+- `0.x.y-beta.n` for prerelease milestones
+- `1.0.0` only when compatibility expectations are stable enough for a major stable line
 
 ## Bump Rules
 
-- `patch`:
+- `patch`
   - bug fixes
-  - translation fixes
-  - docs-only corrections tied to a shipped release
-  - small visual polish without feature expansion
-- `minor`:
-  - new cards
-  - new settings
-  - meaningful dashboard behavior changes
-  - new integrations or user-visible capabilities
-- `prerelease`:
-  - `-beta.n` for builds that should be tested before the milestone is treated as the current baseline
-- `major`:
-  - reserve for `1.0.0` and later stable-breaking releases
+  - focused polish
+  - docs-only corrections tied to released behavior
+- `minor`
+  - user-visible features
+  - new cards, widgets, settings, or meaningful runtime behavior
+  - deployment or provider features that change what users can do
+- `prerelease`
+  - testable beta milestones before a general release
 
 ## Source Of Truth
 
 - `package.json` is the canonical app version
-- the in-app Settings -> Project screen reads the version from `package.json` through [app-version.ts](../src/app/constants/app-version.ts)
-- `CHANGELOG.md` is the source of truth for HACS-visible GitHub Release notes
-- `custom_components/navet/manifest.json` and `addons/navet/config.yaml` must stay aligned with the tagged release version when those surfaces are included in a release
+- `src/app/constants/app-version.ts` is the app-facing version surface
+- `CHANGELOG.md` tracks released history
 
-## Release Flow
+## Release Notes Rule
 
-Recommended lightweight flow:
-
-1. Decide whether the change is `patch`, `minor`, or `beta prerelease`.
-2. Bump `package.json`.
-3. Fetch Linear's `Ready for Release` column and use those tickets as the release-note source. If the column has no tickets for the release, draft a concise changelog from commit messages instead.
-4. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow publishes this section as the release notes that HACS/Home Assistant can show before users update.
-5. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version` matches the package/tag version.
-6. For HACS custom panel releases, build the bundled panel assets with `pnpm build:ha-panel` and include the generated `custom_components/navet/frontend/` changes in the release commit.
-7. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
-8. If the release meaning changed, update this file.
-9. Tag the commit with a version tag such as `v0.1.1-beta.1` or `v0.1.1`.
-10. Push the tag to GitHub to trigger [.github/workflows/github-release.yml](../.github/workflows/github-release.yml). Version tags also trigger app image publishing and add-on image publishing.
-11. For developer hardware testing before a public tag, manually run the publish workflows with the `dev` tag.
-
-## Release Note Style
-
-Release notes must be issue-led and concise. Fetch Linear first, then draft the changelog from the release-ready issues instead of copying commit summaries.
-
-Preferred source:
-
-1. Fetch Linear issues in the `Ready for Release` workflow state.
-2. Treat those issues as the complete release scope.
-3. Group related issues into user-facing outcomes.
-4. Mention the Linear issue identifiers only while drafting; do not include them in `CHANGELOG.md`.
-
-Use the Linear app to list issues where status is `Ready for Release`. Alternatively, fetch the same source with:
-
-```bash
-pnpm release:linear
-```
-
-The script reads `LINEAR_API_KEY` from the current environment, or from `~/.zshrc` through an interactive zsh shell for local release drafting.
-
-Optional filters:
-
-```bash
-pnpm release:linear -- --team NAV
-pnpm release:linear -- --label "public beta"
-pnpm release:linear -- --project "0.2 release"
-```
-
-Use this drafting prompt:
-
-```text
-Create the CHANGELOG.md section for version <version> from these Linear issues.
-
-Rules:
-- Write for Home Assistant users, not developers.
-- Explain what was fixed or improved in plain language.
-- Prefer specific outcomes over broad categories.
-- Consolidate related issues into one bullet.
-- Keep each bullet to one clear user-visible result.
-- Do not include implementation details, commit hashes, branch names, PR numbers, or Linear issue IDs.
-- Only include sections that have at least one strong entry.
-- Keep the whole section short enough to read in a Home Assistant update dialog.
-
-Format:
-## <version> - <yyyy-mm-dd>
-
-One sentence summarizing the release.
-
-## New
-- User-visible capability that is now available
-
-## Fixed
-- Problem that no longer happens, with the affected user flow named
-
-## Improved
-- Existing behavior that now feels clearer, faster, or more reliable
-
-## Documentation
-- User-facing setup or troubleshooting guidance that changed
-```
-
-Only use `New`, `Fixed`, `Improved`, and `Documentation`. For small releases, one or two sections are enough. Prefer `Fixed` when the release resolves broken behavior, even if the implementation also changed internals.
-
-Fallback source:
-
-If there are no issues in `Ready for Release`, build concise notes from every commit since the previous release tag. Query the range with `git log --reverse --format=%H%x09%s%n%b <previous-tag>..<release-tag>`. Account for each commit during drafting, but do not force every commit into the final changelog. Consolidate duplicate, internal, or release-only changes into the fewest useful user-facing bullets.
-
-## GitHub Releases
-
-- All `v*` tags create a GitHub Release automatically.
-- Tags matching `v*-alpha.*`, `v*-beta.*`, or `v*-rc.*` are marked as prereleases in GitHub.
-- Standalone app images publish the exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
-- Add-on images publish the configured add-on version and `sha-*` for every `v*` tag; prerelease
-  tags also move add-on `beta` and `latest`.
-- HACS/custom panel users consume the same tagged GitHub Release through the bundled frontend assets and matching integration manifest version.
-- GitHub Release bodies are generated from the matching `CHANGELOG.md` version section. The workflow fails if the tag has no changelog entry.
-
-## Stable Exit
-
-Move to `1.0.0` when:
-
-- core dashboard flows are stable
-- major card types and settings behavior are no longer changing in breaking ways
-- import/export and persistence formats are considered durable
-- language, theming, and interaction models are stable enough to support compatibility expectations
+Keep historical changelog entries intact. When release framing changes, update the top-level current
+version references rather than rewriting older release notes.

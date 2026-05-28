@@ -19,7 +19,7 @@ vi.mock('@/app/hooks', async () => {
 
   return {
     ...actual,
-    useHvacRegistryDeviceTopology: () => ({ deviceId: null, siblingIds: [] }),
+    useProviderHvacTopology: () => ({ deviceId: null, siblingIds: [] }),
     useServiceActionHandler: () => runActionMock,
   };
 });

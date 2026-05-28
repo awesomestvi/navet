@@ -1,8 +1,8 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 
 export { kelvinToColor } from '@/app/utils/light-color-temperature';
 
-export function getBrightnessPercent(entity: HassEntity): number {
+export function getBrightnessPercent(entity: PlatformEntitySnapshot): number {
   const brightnessPct = parseNumberish(entity.attributes?.brightness_pct);
   if (brightnessPct !== null) {
     return clampPercentage(brightnessPct);
@@ -27,7 +27,7 @@ export function clampKelvin(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, roundKelvin(value)));
 }
 
-export function getReportedColorTempKelvin(entity: HassEntity): number | null {
+export function getReportedColorTempKelvin(entity: PlatformEntitySnapshot): number | null {
   const kelvin = parseNumberish(entity.attributes?.color_temp_kelvin);
   if (kelvin !== null) {
     return roundKelvin(kelvin);
@@ -41,7 +41,7 @@ export function getReportedColorTempKelvin(entity: HassEntity): number | null {
   return null;
 }
 
-export function getReportedColorHex(entity: HassEntity): string | null {
+export function getReportedColorHex(entity: PlatformEntitySnapshot): string | null {
   const activeColorMode = entity.attributes?.color_mode;
   if (
     typeof activeColorMode === 'string' &&
@@ -95,7 +95,7 @@ export function roundKelvin(value: number): number {
   return Math.round(value / 100) * 100;
 }
 
-export function supportsColorTemperatureControl(entity?: HassEntity): boolean {
+export function supportsColorTemperatureControl(entity?: PlatformEntitySnapshot): boolean {
   if (!entity) {
     return true;
   }
@@ -108,7 +108,7 @@ export function supportsColorTemperatureControl(entity?: HassEntity): boolean {
   );
 }
 
-export function supportsColorSelection(entity?: HassEntity): boolean {
+export function supportsColorSelection(entity?: PlatformEntitySnapshot): boolean {
   if (!entity) {
     return true;
   }
@@ -117,7 +117,7 @@ export function supportsColorSelection(entity?: HassEntity): boolean {
   return ['hs', 'rgb', 'rgbw', 'rgbww', 'xy'].some((mode) => colorModes.has(mode));
 }
 
-export function getSupportedColorTemperatureRange(entity?: HassEntity): {
+export function getSupportedColorTemperatureRange(entity?: PlatformEntitySnapshot): {
   min: number;
   max: number;
 } {
@@ -297,7 +297,7 @@ function rgbToHex(red: number, green: number, blue: number): string {
     .join('')}`;
 }
 
-function getSupportedColorModes(entity: HassEntity): Set<string> {
+function getSupportedColorModes(entity: PlatformEntitySnapshot): Set<string> {
   const modes = entity.attributes?.supported_color_modes;
   if (Array.isArray(modes)) {
     return new Set(modes.filter((mode): mode is string => typeof mode === 'string'));

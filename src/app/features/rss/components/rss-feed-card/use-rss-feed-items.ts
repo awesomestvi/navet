@@ -1,6 +1,6 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/app/hooks';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import {
   deleteCachedEntry,
   getCachedEntry,
@@ -20,7 +20,7 @@ const inFlightRequests = new Map<string, Promise<RSSFeedLoadResult>>();
 
 export function useRSSFeedItems(
   providers: RSSProvider[],
-  entities: HassEntities | null,
+  entities: PlatformEntitySnapshotMap | null,
   limit = 10,
   refreshNonce = 0
 ) {

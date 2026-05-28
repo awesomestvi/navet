@@ -8,11 +8,14 @@ import {
 } from 'react';
 import { shallow } from 'zustand/shallow';
 import { CALENDAR_EVENTS_REFRESH_INTERVAL } from '@/app/constants';
-import { mapCalendarSources } from '@/app/hooks/ha-device-mappers';
-import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { useRegistryRoomResolver } from '@/app/hooks/use-registry-device-topology';
 import { useI18n } from '@/app/i18n';
+import { mapCalendarSources } from '@/app/infrastructure/home-assistant/home-assistant-device-mappers';
+import {
+  getName,
+  resolveEntityRoom,
+} from '@/app/infrastructure/home-assistant/home-assistant-entity-utils';
 import type { PlatformCalendarEvent } from '@/app/platform/provider-feature-models';
 import { integrationCalendarFeatureService } from '@/app/services/integration-calendar-feature.service';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
@@ -21,9 +24,22 @@ import type { CalendarDevice } from '@/app/types/device.types';
 import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
 
-export function useHomeAssistantCalendarDevices(): CalendarDevice[] {
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
-  const entities = useHomeAssistant(homeAssistantSelectors.entities, haEntityStructureEqual);
+function selectNoConnection() {
+  return null;
+}
+
+function selectNoEntities() {
+  return null;
+}
+
+export function useHomeAssistantCalendarDevices(enabled = true): CalendarDevice[] {
+  const connection = useHomeAssistant(
+    enabled ? homeAssistantSelectors.connection : selectNoConnection
+  );
+  const entities = useHomeAssistant(
+    enabled ? homeAssistantSelectors.entities : selectNoEntities,
+    haEntityStructureEqual
+  );
   const { areaMap, deviceRegistryMap, entityRegistryMap } = useRegistryRoomResolver();
   const { locale, t } = useI18n();
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
@@ -53,7 +69,7 @@ export function useHomeAssistantCalendarDevices(): CalendarDevice[] {
   const deferredCalendarEvents = useDeferredValue(calendarEvents);
 
   useEffect(() => {
-    if (!connection || calendarEntityIds.length === 0) {
+    if (!enabled || !connection || calendarEntityIds.length === 0) {
       startTransition(() => {
         setCalendarEvents({});
       });
@@ -100,7 +116,7 @@ export function useHomeAssistantCalendarDevices(): CalendarDevice[] {
         clearTimeout(refreshTimer);
       }
     };
-  }, [calendarEntityIds, connection]);
+  }, [calendarEntityIds, connection, enabled]);
 
   return useMemo(() => {
     if (!entities || calendarEntityIds.length === 0) {

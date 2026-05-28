@@ -7,15 +7,9 @@ import {
   isTinyCardSize,
 } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import {
-  formatBinarySensorState,
-  getSensorDeviceClass,
-  inferSensorDisplayIcon,
-} from '@/app/hooks/device-mappers';
-import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
-import { useSettingsStore } from '@/app/stores';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { readNavetSensorState } from '@/app/core/navet-device-state';
+import { useI18n, useProviderDevice, useTheme } from '@/app/hooks';
+import { inferSensorDisplayIcon } from '@/app/hooks/device-mappers';
 import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
 import { SensorHistorySparkline } from './sensor-history-sparkline';
@@ -48,7 +42,7 @@ export const InfoCard = memo(function InfoCard({
   room: _room,
   value,
   unit,
-  icon = 'gauge',
+  icon: _icon = 'gauge',
   subtitle,
   deviceClass,
   status = 'measurement',
@@ -61,33 +55,15 @@ export const InfoCard = memo(function InfoCard({
   sparklineData,
 }: InfoCardProps) {
   const { theme } = useTheme();
-  const { locale, t } = useI18n();
-  const use24HourTime = useSettingsStore((state) => state.use24HourTime);
+  const { t } = useI18n();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const liveDeviceClass = liveEntity ? getSensorDeviceClass(liveEntity) : deviceClass;
-  const isBinarySensor = id.startsWith('binary_sensor.');
-  const liveFormatted = liveEntity
-    ? isBinarySensor
-      ? formatBinarySensorState(liveEntity.state, liveDeviceClass)
-      : formatSensorValue(liveEntity, { locale, use24HourTime })
-    : null;
-  const liveValue = liveFormatted?.value ?? value;
-  const liveUnit = isBinarySensor
-    ? ''
-    : ((liveFormatted as { unit?: string } | null)?.unit ?? unit);
-  const liveStatus = isBinarySensor
-    ? liveEntity?.state === 'unknown' || liveEntity?.state === 'unavailable'
-      ? 'unavailable'
-      : liveFormatted && 'isActive' in liveFormatted
-        ? liveFormatted.isActive
-          ? 'active'
-          : 'clear'
-        : status
-    : liveEntity?.state === 'unknown' || liveEntity?.state === 'unavailable'
-      ? 'unavailable'
-      : status;
-  const resolvedIcon = liveEntity ? inferSensorDisplayIcon(id, liveDeviceClass, liveUnit) : icon;
+  const providerDevice = useProviderDevice(id);
+  const providerState = readNavetSensorState(providerDevice);
+  const liveDeviceClass = providerState?.deviceClass ?? deviceClass;
+  const liveValue = typeof providerState?.value === 'string' ? providerState.value : value;
+  const liveUnit = typeof providerState?.unit === 'string' ? providerState.unit : unit;
+  const liveStatus = providerState?.status ?? status;
+  const resolvedIcon = inferSensorDisplayIcon(id, liveDeviceClass, liveUnit || unit);
   const { HeaderIconComponent, headerIconText, selectedIcon, setSelectedIcon } =
     useSensorCardAppearance({
       id,
@@ -100,7 +76,7 @@ export const InfoCard = memo(function InfoCard({
     value: liveValue,
     unit: liveUnit,
     icon: resolvedIcon,
-    entityType: subtitle,
+    entityType: subtitle ?? providerState?.entityType,
     deviceClass: liveDeviceClass,
     status: liveStatus,
     size,

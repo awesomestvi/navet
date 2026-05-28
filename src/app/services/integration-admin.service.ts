@@ -1,15 +1,12 @@
 import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderAdminFeatureService } from '@/app/platform/provider-feature-services';
-import {
-  createPlatformRoomReference,
-  parsePlatformRoomReference,
-} from '@/app/platform/provider-room-management';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { parsePlatformRoomReference } from '@/app/platform/provider-room-management';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { getProviderNativeId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { getIntegrationProviderAdminFeatureService } from './integration-registry.service';
 
 function getCurrentProviderId(): IntegrationProviderId {
-  return authSessionManager.getSnapshot().providerId ?? 'home_assistant';
+  return authSessionManager.getSnapshot().providerId;
 }
 
 function getProviderLabel(providerId: IntegrationProviderId): string {
@@ -23,14 +20,6 @@ function getProviderLabel(providerId: IntegrationProviderId): string {
   }
 }
 
-function assertHomeAssistantRoomManagement(providerId: IntegrationProviderId): void {
-  if (providerId !== 'home_assistant') {
-    throw new Error(
-      `Room management is not implemented yet for provider ${getProviderLabel(providerId)}`
-    );
-  }
-}
-
 function resolveEntityProviderId(entityId: string): IntegrationProviderId {
   return parseProviderScopedId(entityId)?.providerId ?? getCurrentProviderId();
 }
@@ -38,23 +27,16 @@ function resolveEntityProviderId(entityId: string): IntegrationProviderId {
 export const integrationAdminService: ProviderAdminFeatureService = {
   createRoom: async (name) => {
     const providerId = getCurrentProviderId();
-    assertHomeAssistantRoomManagement(providerId);
-    const area = await homeAssistantService.createArea(name);
-    return createPlatformRoomReference(providerId, area.area_id, area.name);
+    return await getIntegrationProviderAdminFeatureService(providerId).createRoom(name);
   },
   updateEntityRoom: async (entityId, roomId) => {
     const providerId = resolveEntityProviderId(entityId);
-    assertHomeAssistantRoomManagement(providerId);
-
     const parsedRoom = roomId ? parsePlatformRoomReference(roomId) : null;
     if (roomId && (!parsedRoom || parsedRoom.providerId !== providerId)) {
       throw new Error(`Room ${roomId} does not belong to provider ${getProviderLabel(providerId)}`);
     }
 
-    await homeAssistantService.updateEntityArea(
-      getProviderNativeId(entityId),
-      parsedRoom?.nativeId ?? null
-    );
+    await getIntegrationProviderAdminFeatureService(providerId).updateEntityRoom(entityId, roomId);
   },
   deleteRoom: async (roomId) => {
     const parsedRoom = parsePlatformRoomReference(roomId);
@@ -62,7 +44,6 @@ export const integrationAdminService: ProviderAdminFeatureService = {
       throw new Error(`Invalid room reference: ${roomId}`);
     }
 
-    assertHomeAssistantRoomManagement(parsedRoom.providerId);
-    await homeAssistantService.deleteArea(parsedRoom.nativeId);
+    await getIntegrationProviderAdminFeatureService(parsedRoom.providerId).deleteRoom(roomId);
   },
 };

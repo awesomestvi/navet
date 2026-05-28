@@ -4,7 +4,7 @@ import {
   parseNumberish,
   resolveClimateTargetTemperature,
   resolveClimateTemperatureUnit,
-} from '../ha-entity-utils';
+} from '../entity-utils';
 
 function parseSupportedHvacModes(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {

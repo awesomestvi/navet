@@ -14,7 +14,10 @@ import { useSensorStatisticsHistory } from '@/app/features/sensors/hooks/use-sen
 import { useAreaRooms, useI18n } from '@/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@/app/hooks/use-dashboard-widget-room-options';
 import { useSettingsStore } from '@/app/stores/settings-store';
-import { useHomeAssistantInfoWidgetData } from './use-home-assistant-info-widget-data';
+import {
+  type ProviderInfoWidgetDataResult,
+  useProviderInfoWidgetData,
+} from './use-provider-info-widget-data';
 
 const MAX_INFO_WIDGET_SENSORS = 6;
 const EMPTY_SENSOR_ENTITY_IDS: string[] = [];
@@ -56,11 +59,11 @@ export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }:
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
   const sensorEntityIds = getSensorEntityIds(data);
-  const { availableSensors, currentSensors } = useHomeAssistantInfoWidgetData(sensorEntityIds, {
+  const { availableSensors, currentSensors } = useProviderInfoWidgetData(sensorEntityIds, {
     includeBinarySensors: true,
     use24HourTime,
   }) as {
-    availableSensors: ReturnType<typeof useHomeAssistantInfoWidgetData>['availableSensors'];
+    availableSensors: ProviderInfoWidgetDataResult['availableSensors'];
     currentSensors: SensorReading[];
   };
   const primaryEntityId = currentSensors[0]?.id;
@@ -142,6 +145,7 @@ export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }:
           value={currentSensors[0]?.value ?? ''}
           unit={currentSensors[0]?.unit ?? ''}
           icon={currentSensors[0]?.icon}
+          subtitle={currentSensors[0]?.entityType}
           size={size}
           onSizeChange={() => {}}
           isEditMode={false}

@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { readNavetLightState } from '@/app/core/navet-device-state';
 import { useBrightnessPresets } from '@/app/features/lighting/hooks/use-brightness-presets';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
-import { useHomeAssistant, useProviderDevice } from '@/app/hooks';
+import {
+  useProviderConnectionState,
+  useProviderDevice,
+  useProviderEntitySnapshot,
+} from '@/app/hooks';
 import { useCardSettingsDialog } from '@/app/hooks/use-card-settings-dialog';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
@@ -43,10 +47,16 @@ export function useLightCardController({
   const { isOpen, onOpen, onClose } = useCardSettingsDialog();
   const [selectedIcon, setSelectedIcon] = useState('');
   const [tintColor, setTintColor] = useState('');
-  const nativeId = parseProviderScopedId(id)?.nativeId ?? id;
+  const scopedId = parseProviderScopedId(id);
+  const nativeId = scopedId?.nativeId ?? id;
+  const resolvedProviderId =
+    providerDevice?.providerId ??
+    providerId ??
+    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
 
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const isProviderConnected = useProviderConnectionState(resolvedProviderId);
+  const liveEntity = useProviderEntitySnapshot(id);
   const brightnessPresets = useBrightnessPresets(id);
   const rememberLightState = useLightMemoryStore((state) => state.rememberState);
   const {
@@ -56,7 +66,8 @@ export function useLightCardController({
     onBrightnessPresetValueChange,
   } = useLightPresetActions(id);
 
-  const isHomeAssistantLight = Boolean(connection) && nativeId.startsWith('light.');
+  const isHomeAssistantLight =
+    isHomeAssistantProvider && isProviderConnected && nativeId.startsWith('light.');
   const {
     isSmall,
     padding,

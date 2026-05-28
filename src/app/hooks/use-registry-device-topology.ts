@@ -3,7 +3,7 @@ import { shallow } from 'zustand/shallow';
 import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { resolveHomeAssistantEntityId as resolveProviderHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { useHomeAssistant } from './use-home-assistant';
 
 const EMPTY_IDS: string[] = [];
@@ -11,10 +11,20 @@ const EMPTY_IDS: string[] = [];
 /** HVAC sibling domains: fan, switch, input_boolean, script, button, input_button */
 const HVAC_SIBLING_PATTERN = /^(fan|switch|input_boolean|script|button|input_button)\./;
 
+function selectEmptyRegistryDeviceIds(): RegistryDeviceIdsSlice {
+  return { deviceId: null, siblingIds: EMPTY_IDS };
+}
+
+function selectEmptyEntityRoomRegistryContext(): EntityRoomRegistryContext {
+  return { entry: null, deviceAreaId: null };
+}
+
 export interface RegistryDeviceIdsSlice {
   deviceId: string | null;
   siblingIds: string[];
 }
+
+export type ProviderDeviceTopology = RegistryDeviceIdsSlice;
 
 function registryDeviceIdsEqual(a: RegistryDeviceIdsSlice, b: RegistryDeviceIdsSlice): boolean {
   if (a.deviceId !== b.deviceId) {
@@ -58,12 +68,7 @@ function collectDeviceSiblingIds(
 }
 
 function resolveHomeAssistantEntityId(entityId: string): string | null {
-  const scopedId = parseProviderScopedId(entityId);
-  if (!scopedId) {
-    return entityId;
-  }
-
-  return scopedId.providerId === 'home_assistant' ? scopedId.nativeId : null;
+  return resolveProviderHomeAssistantEntityId(entityId);
 }
 
 export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
@@ -78,7 +83,14 @@ export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceI
     [homeAssistantEntityId]
   );
 
-  return useHomeAssistant(selector, registryDeviceIdsEqual);
+  return useHomeAssistant(
+    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
+    registryDeviceIdsEqual
+  );
+}
+
+export function useProviderHvacTopology(entityId: string): ProviderDeviceTopology {
+  return useHvacRegistryDeviceTopology(entityId);
 }
 
 export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
@@ -93,7 +105,14 @@ export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDevic
     [homeAssistantEntityId]
   );
 
-  return useHomeAssistant(selector, registryDeviceIdsEqual);
+  return useHomeAssistant(
+    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
+    registryDeviceIdsEqual
+  );
+}
+
+export function useProviderSwitchTopology(entityId: string): ProviderDeviceTopology {
+  return useSwitchRegistryDeviceTopology(entityId);
 }
 
 export function useCameraRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
@@ -106,7 +125,14 @@ export function useCameraRegistryDeviceTopology(entityId: string): RegistryDevic
     [homeAssistantEntityId]
   );
 
-  return useHomeAssistant(selector, registryDeviceIdsEqual);
+  return useHomeAssistant(
+    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
+    registryDeviceIdsEqual
+  );
+}
+
+export function useProviderCameraTopology(entityId: string): ProviderDeviceTopology {
+  return useCameraRegistryDeviceTopology(entityId);
 }
 
 /** Minimal registry fields used by {@link EntityRoomSelector}. */
@@ -121,6 +147,8 @@ export interface EntityRoomRegistryContext {
   /** `device_registry` area fallback when the entity has no direct `area_id`. */
   deviceAreaId: string | null;
 }
+
+export type ProviderEntityRoomContext = EntityRoomRegistryContext;
 
 function entityRoomRegistryContextEqual(
   a: EntityRoomRegistryContext,
@@ -172,7 +200,14 @@ export function useEntityRoomRegistryContext(entityId: string): EntityRoomRegist
     [homeAssistantEntityId]
   );
 
-  return useHomeAssistant(selector, entityRoomRegistryContextEqual);
+  return useHomeAssistant(
+    homeAssistantEntityId ? selector : selectEmptyEntityRoomRegistryContext,
+    entityRoomRegistryContextEqual
+  );
+}
+
+export function useProviderEntityRoomContext(entityId: string): ProviderEntityRoomContext {
+  return useEntityRoomRegistryContext(entityId);
 }
 
 /**

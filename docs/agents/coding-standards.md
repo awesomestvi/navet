@@ -62,11 +62,11 @@ These rules apply to all code written for Navet.
 ## Documentation Rules
 
 - When moving or renaming files referenced by docs, update the active docs in the same change.
-- Keep these current when affected: `README.md`, `docs/README.md`, `design-system/README.md`, `design-system/FEATURES.md`.
+- Keep these current when affected: `README.md`, `docs/README.md`, `design-system/README.md`, `design-system/FEATURES.md`, `design-system/UI-GUIDELINES.md`.
 - Treat `docs/archive/*` as historical snapshots. Do not rewrite them.
 
 ## Related Guidance
 
-- UI and theming specifics live in [ui-and-theming.md](ui-and-theming.md).
-- Storybook-specific authoring rules live in [storybook.md](storybook.md).
+- UI and theming specifics live in [../../design-system/UI-GUIDELINES.md](../../design-system/UI-GUIDELINES.md).
+- Storybook-specific authoring rules live in [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md).
 - Repo structure and key files live in [project-map.md](project-map.md).

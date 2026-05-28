@@ -1,28 +1,28 @@
 # Navet Home Assistant Panel
 
-This custom integration registers Navet as a native Home Assistant sidebar panel.
+This custom integration registers Navet as a Home Assistant sidebar panel.
 
-## Install with HACS
+## Install With HACS
 
 1. Add `https://github.com/awesomestvi/navet` as a HACS custom repository with category
-   **Integration**.
-2. Download **Navet** from HACS.
+   `Integration`.
+2. Download `Navet`.
 3. Restart Home Assistant.
-4. Add **Navet** from **Settings -> Devices & services -> Add integration**.
-5. Open **Navet** from the Home Assistant sidebar.
+4. Add the `Navet` integration from `Settings -> Devices & services`.
+5. Open Navet from the Home Assistant sidebar.
 
-The integration registers the `/navet` panel, serves the bundled frontend from
-`/api/navet/static/`, and loads `navet-panel.js` as a Home Assistant custom panel module.
-The panel uses the current Home Assistant frontend session and does not ask for a separate Navet
-URL or token.
+## Current Behavior
+
+- registers the `/navet` panel
+- serves bundled assets from `/api/navet/static/`
+- loads `navet-panel.js`
+- uses the current Home Assistant frontend session
+- does not prompt for a separate Navet login
 
 ## Development
 
-Build the panel bundle from the repository root before packaging or installing:
+Build the panel bundle from the repo root before packaging or testing:
 
 ```bash
 pnpm build:ha-panel
 ```
-
-The build writes static assets to `custom_components/navet/frontend/`. Home Assistant serves them
-from `/api/navet/static/` and loads `navet-panel.js` as the panel module.

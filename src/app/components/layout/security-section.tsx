@@ -2,7 +2,6 @@ import { Plus, Video } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
-import { shallow } from 'zustand/shallow';
 import { DashboardEmptyState } from '@/app/components/patterns';
 import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
@@ -14,11 +13,12 @@ import {
   useCardState,
   useDevices,
   useEditMode,
-  useHomeAssistant,
   useI18n,
+  useIntegrationStore,
+  useProviderEntitySnapshots,
   useThemeMode,
 } from '@/app/hooks';
-import { selectSecuritySummaryEntities } from '@/app/hooks/ha-domain-entity-maps';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 export function SecuritySection() {
@@ -26,7 +26,11 @@ export function SecuritySection() {
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDevices();
-  const entities = useHomeAssistant(selectSecuritySummaryEntities, shallow);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const entities = useProviderEntitySnapshots({
+    providerId: currentProviderId,
+    enabled: currentProviderId === 'home_assistant',
+  });
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(

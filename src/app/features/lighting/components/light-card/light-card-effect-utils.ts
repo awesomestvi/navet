@@ -1,4 +1,4 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import type { LightEffectOption } from './light-card-types';
 
 export const LIGHT_EFFECT_OFF = 'EFFECT_OFF';
@@ -21,7 +21,7 @@ export function normalizeCurrentLightEffect(value: unknown): string | null {
   return trimmed;
 }
 
-export function getLightEffectList(entity?: HassEntity): string[] {
+export function getLightEffectList(entity?: PlatformEntitySnapshot): string[] {
   const effectList = entity?.attributes?.effect_list;
   if (!Array.isArray(effectList)) {
     return [];
@@ -33,12 +33,12 @@ export function getLightEffectList(entity?: HassEntity): string[] {
     .filter(Boolean);
 }
 
-export function supportsLightEffects(entity?: HassEntity): boolean {
+export function supportsLightEffects(entity?: PlatformEntitySnapshot): boolean {
   return getLightEffectList(entity).length > 0;
 }
 
 export function buildLightEffectOptions(
-  entity: HassEntity | undefined,
+  entity: PlatformEntitySnapshot | undefined,
   noEffectLabel: string,
   currentEffect?: string | null
 ): LightEffectOption[] {

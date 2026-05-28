@@ -5,19 +5,33 @@ import type {
   NavetResourceResolveRequest,
 } from '@/app/core/navet';
 import {
-  buildHomeAssistantNavetRooms,
-  buildHomeyNavetRooms,
-  mapHomeAssistantEntitiesToNavetDevices,
-  mapHomeySnapshotToNavetDevices,
-} from '@/app/core/navet-mappers';
+  buildHomeAssistantProviderSnapshot,
+  buildHomeyProviderSnapshot,
+} from '@/app/core/provider-snapshot-builders';
 import type {
   PlatformCameraStream,
   PlatformCameraStreamType,
 } from '@/app/platform/provider-feature-models';
+import type {
+  ProviderAdminFeatureService,
+  ProviderCalendarFeatureService,
+  ProviderCameraFeatureService,
+  ProviderMediaFeatureService,
+  ProviderNotificationFeatureService,
+  ProviderTaskFeatureService,
+  ProviderWeatherFeatureService,
+} from '@/app/platform/provider-feature-services';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
 import { INTEGRATION_PROVIDERS } from '../types/provider';
 import { homeAssistantService } from './home-assistant.service';
+import { homeAssistantAdminFeatureService } from './home-assistant-admin-feature.service';
+import { homeAssistantCalendarFeatureService } from './home-assistant-calendar-feature.service';
+import { homeAssistantCameraFeatureService } from './home-assistant-camera-feature.service';
+import { homeAssistantMediaFeatureService } from './home-assistant-media-feature.service';
+import { homeAssistantNotificationFeatureService } from './home-assistant-notification-feature.service';
+import { homeAssistantTaskFeatureService } from './home-assistant-task-feature.service';
+import { homeAssistantWeatherFeatureService } from './home-assistant-weather-feature.service';
 import { homeyService } from './homey.service';
 
 export interface IntegrationServiceTarget {
@@ -48,6 +62,7 @@ export interface IntegrationProviderFeatureMatrix {
   calendar: boolean;
   weather: boolean;
   notifications: boolean;
+  tasks: boolean;
 }
 
 export type IntegrationProviderFeature = keyof IntegrationProviderFeatureMatrix;
@@ -71,6 +86,13 @@ export interface IntegrationProviderAdapter {
     entityId: string,
     format: PlatformCameraStreamType
   ) => Promise<PlatformCameraStream>;
+  adminFeatureService?: ProviderAdminFeatureService;
+  calendarFeatureService?: ProviderCalendarFeatureService;
+  cameraFeatureService?: ProviderCameraFeatureService;
+  mediaFeatureService?: ProviderMediaFeatureService;
+  notificationFeatureService?: ProviderNotificationFeatureService;
+  taskFeatureService?: ProviderTaskFeatureService;
+  weatherFeatureService?: ProviderWeatherFeatureService;
 }
 
 function payloadBoolean(payload: Record<string, unknown>, key: string): boolean {
@@ -92,33 +114,17 @@ function resolveActionProviderPayload(intent: NavetActionIntent) {
 }
 
 function getHomeAssistantSnapshot(): NavetProviderSnapshot {
-  return {
-    providerId: 'home_assistant',
+  return buildHomeAssistantProviderSnapshot({
     connected: homeAssistantService.isConnected(),
-    devices: mapHomeAssistantEntitiesToNavetDevices({
-      entities: homeAssistantService.getEntities(),
-      areas: homeAssistantService.getAreas(),
-      deviceRegistry: homeAssistantService.getDeviceRegistry(),
-      entityRegistry: homeAssistantService.getEntityRegistry(),
-    }),
-    rooms: buildHomeAssistantNavetRooms({
-      entities: homeAssistantService.getEntities(),
-      areas: homeAssistantService.getAreas(),
-      deviceRegistry: homeAssistantService.getDeviceRegistry(),
-      entityRegistry: homeAssistantService.getEntityRegistry(),
-    }),
-  };
+    entities: homeAssistantService.getEntities(),
+    areas: homeAssistantService.getAreas(),
+    deviceRegistry: homeAssistantService.getDeviceRegistry(),
+    entityRegistry: homeAssistantService.getEntityRegistry(),
+  });
 }
 
 function getHomeySnapshot(): NavetProviderSnapshot {
-  const snapshot = homeyService.getSnapshot();
-
-  return {
-    providerId: 'homey',
-    connected: snapshot.connected,
-    devices: mapHomeySnapshotToNavetDevices(snapshot),
-    rooms: buildHomeyNavetRooms(snapshot),
-  };
+  return buildHomeyProviderSnapshot(homeyService.getSnapshot());
 }
 
 async function dispatchHomeAssistantAction(intent: NavetActionIntent) {
@@ -215,6 +221,7 @@ const FEATURE_MESSAGES: Record<IntegrationProviderFeature, string> = {
   calendar: 'Calendar support is not implemented yet',
   weather: 'Weather support is not implemented yet',
   notifications: 'Notifications are not implemented yet',
+  tasks: 'Task support is not implemented yet',
 };
 
 function createUnsupportedProviderAdapter(
@@ -256,6 +263,7 @@ function createUnsupportedProviderAdapter(
       calendar: false,
       weather: false,
       notifications: false,
+      tasks: false,
     },
   };
 }
@@ -302,6 +310,7 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
       calendar: true,
       weather: true,
       notifications: true,
+      tasks: true,
     },
     callService: async (domain, service, serviceData = {}, target) =>
       homeAssistantService.callService(domain, service, serviceData, target),
@@ -311,6 +320,13 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
     },
     getCameraStream: async (entityId, format) =>
       await homeAssistantService.getCameraStreamUrl(entityId, format),
+    adminFeatureService: homeAssistantAdminFeatureService,
+    calendarFeatureService: homeAssistantCalendarFeatureService,
+    cameraFeatureService: homeAssistantCameraFeatureService,
+    mediaFeatureService: homeAssistantMediaFeatureService,
+    notificationFeatureService: homeAssistantNotificationFeatureService,
+    taskFeatureService: homeAssistantTaskFeatureService,
+    weatherFeatureService: homeAssistantWeatherFeatureService,
   },
   homey: {
     contract: {
@@ -395,6 +411,7 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
       calendar: false,
       weather: false,
       notifications: false,
+      tasks: false,
     },
     callService: async (domain, service, serviceData = {}, target) =>
       await homeyService.callService(domain, service, serviceData, target),
@@ -478,4 +495,60 @@ export function listImplementedIntegrationProviders(): IntegrationProviderDefini
 
 export function listIntegrationProviderAdapters(): IntegrationProviderAdapter[] {
   return Object.values(ADAPTERS);
+}
+
+function requireFeatureService<T>(
+  providerId: IntegrationProviderId,
+  feature: IntegrationProviderFeature,
+  selector: (adapter: IntegrationProviderAdapter) => T | undefined
+): T {
+  const adapter = getIntegrationProviderAdapter(providerId);
+  requireIntegrationProviderFeature(adapter, feature);
+  const service = selector(adapter);
+  if (!service) {
+    throw createMissingIntegrationFeatureError(adapter, feature);
+  }
+  return service;
+}
+
+export function getIntegrationProviderAdminFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(providerId, 'rooms', (adapter) => adapter.adminFeatureService);
+}
+
+export function getIntegrationProviderCalendarFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(providerId, 'calendar', (adapter) => adapter.calendarFeatureService);
+}
+
+export function getIntegrationProviderCameraFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(
+    providerId,
+    'cameraStreams',
+    (adapter) => adapter.cameraFeatureService
+  );
+}
+
+export function getIntegrationProviderMediaFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(
+    providerId,
+    'mediaControls',
+    (adapter) => adapter.mediaFeatureService
+  );
+}
+
+export function getIntegrationProviderNotificationFeatureService(
+  providerId: IntegrationProviderId
+) {
+  return requireFeatureService(
+    providerId,
+    'notifications',
+    (adapter) => adapter.notificationFeatureService
+  );
+}
+
+export function getIntegrationProviderTaskFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(providerId, 'tasks', (adapter) => adapter.taskFeatureService);
+}
+
+export function getIntegrationProviderWeatherFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(providerId, 'weather', (adapter) => adapter.weatherFeatureService);
 }

@@ -1,6 +1,10 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { normalizeTemperatureUnit } from '@/app/utils/temperature';
 import { parseNumberish } from './numeric-utils';
+
+interface ClimateEntityLike {
+  state: string;
+  attributes?: Record<string, unknown>;
+}
 
 export function resolveHomeAssistantTemperatureUnit(
   config: { unit_system?: { temperature?: unknown } } | null | undefined
@@ -9,7 +13,7 @@ export function resolveHomeAssistantTemperatureUnit(
 }
 
 export function resolveClimateTemperatureUnit(
-  entity: HassEntity | undefined,
+  entity: ClimateEntityLike | undefined,
   fallbackUnit?: unknown
 ) {
   if (!entity) {
@@ -25,7 +29,9 @@ export function resolveClimateTemperatureUnit(
   );
 }
 
-export function resolveClimateTargetTemperature(entity: HassEntity | undefined): number | null {
+export function resolveClimateTargetTemperature(
+  entity: ClimateEntityLike | undefined
+): number | null {
   if (!entity) {
     return null;
   }

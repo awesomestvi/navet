@@ -48,5 +48,5 @@ pnpm storybook:build # static Storybook build for GitHub Pages
 
 ## Related Guidance
 
-- Storybook-specific command and base-path rules live in [storybook.md](storybook.md).
+- Storybook-specific command and base-path rules live in [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md).
 - Release and publishing policy lives in [release-and-publishing.md](release-and-publishing.md).

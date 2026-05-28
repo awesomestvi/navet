@@ -52,6 +52,38 @@ export interface NavetCameraState extends NavetBaseDeviceState {
   lastUpdated?: string;
 }
 
+export interface NavetCoverState extends NavetBaseDeviceState {
+  position?: number;
+  positionMode?: 'position' | 'tilt';
+  deviceClass?: string;
+  supportedFeatures?: number;
+  hasPosition?: boolean;
+}
+
+export interface NavetLockState extends NavetBaseDeviceState {
+  locked?: boolean;
+  deviceClass?: string;
+}
+
+export interface NavetPersonState extends NavetBaseDeviceState {
+  location?: string;
+  entityPicture?: string;
+  batteryLevel?: number;
+  address?: string;
+  locationName?: string;
+  geocodedLocation?: string;
+  zone?: string;
+}
+
+export interface NavetSensorState extends NavetBaseDeviceState {
+  icon?: string;
+  unit?: string;
+  entityType?: string;
+  deviceClass?: string;
+  status?: 'measurement' | 'active' | 'clear' | 'unavailable';
+  lastUpdated?: string;
+}
+
 function readDeviceState<TState extends object>(
   device: NavetDevice | null | undefined
 ): TState | null {
@@ -84,4 +116,26 @@ export function readNavetCameraState(
   device: NavetDevice | null | undefined
 ): NavetCameraState | null {
   return readDeviceState<NavetCameraState>(device);
+}
+
+export function readNavetCoverState(
+  device: NavetDevice | null | undefined
+): NavetCoverState | null {
+  return readDeviceState<NavetCoverState>(device);
+}
+
+export function readNavetLockState(device: NavetDevice | null | undefined): NavetLockState | null {
+  return readDeviceState<NavetLockState>(device);
+}
+
+export function readNavetPersonState(
+  device: NavetDevice | null | undefined
+): NavetPersonState | null {
+  return readDeviceState<NavetPersonState>(device);
+}
+
+export function readNavetSensorState(
+  device: NavetDevice | null | undefined
+): NavetSensorState | null {
+  return readDeviceState<NavetSensorState>(device);
 }

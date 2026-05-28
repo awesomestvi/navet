@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { shallow } from 'zustand/shallow';
 import {
   getMediaPlayerCapabilities,
   hasMediaPlayerGroupingSupport,
@@ -9,17 +8,21 @@ import {
 import { readNavetMediaState } from '@/app/core/navet-device-state';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import {
+  useProviderMediaCompanionEntity,
+  useProviderMediaEntity,
+  useProviderMediaEntityRegistry,
+  useProviderMediaPlayerEntities,
+} from '@/app/features/media/hooks/use-provider-media-playback-data';
+import {
   getTvRemoteCommand,
   resolveTvRemoteProfile,
   supportsTvRemotePlaybackCommand,
   type TvRemoteAction,
 } from '@/app/features/media/tv-remote-commands';
-import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useI18n, useServiceActionHandler } from '@/app/hooks';
 import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { resolveHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
@@ -28,24 +31,6 @@ import { useMediaGrouping } from './use-media-grouping';
 import { useMediaPlayback } from './use-media-playback';
 import { useMediaPlaybackProgress } from './use-media-playback-progress';
 import { useMediaVolume } from './use-media-volume';
-
-// useMediaGrouping only needs media_player.* entities to build the grouping picker.
-// Defined at module scope so the reference is stable and shallow equality can
-// suppress re-renders when unrelated entities (lights, sensors, etc.) update.
-function selectMediaPlayerEntities(state: HomeAssistantStore) {
-  if (!state.entities) return null;
-  return Object.fromEntries(
-    Object.entries(state.entities).filter(([id]) => id.startsWith('media_player.'))
-  );
-}
-
-function selectUndefinedEntity() {
-  return undefined;
-}
-
-function selectEntityRegistry(state: HomeAssistantStore) {
-  return state.entityRegistry;
-}
 
 export function useMediaCardController({
   entityId,
@@ -72,22 +57,17 @@ export function useMediaCardController({
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
   const providerDevice = useProviderDevice(entityId);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
-  const parsedEntityId = parseProviderScopedId(entityId);
+  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId, providerDevice?.providerId);
+  const resolvedProviderId =
+    providerDevice?.providerId ?? (homeAssistantEntityId ? 'home_assistant' : undefined);
+  const remoteEntityId = homeAssistantEntityId
+    ? `remote.${homeAssistantEntityId.split('.').slice(1).join('.')}`
+    : '';
+  const liveEntity = useProviderMediaEntity(entityId);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const providerState = readNavetMediaState(providerDevice);
-  const remoteNativeId =
-    parsedEntityId?.nativeId.includes('.') || entityId.includes('.')
-      ? `remote.${(parsedEntityId?.nativeId ?? entityId).split('.').slice(1).join('.')}`
-      : '';
-  const remoteEntityId =
-    remoteNativeId && parsedEntityId
-      ? createProviderScopedId(parsedEntityId.providerId, remoteNativeId)
-      : remoteNativeId;
-  const remoteEntity = useHomeAssistant(
-    remoteEntityId ? homeAssistantSelectors.entity(remoteEntityId) : selectUndefinedEntity
-  );
-  const entityRegistry = useHomeAssistant(selectEntityRegistry);
+  const remoteEntity = useProviderMediaCompanionEntity(entityId, 'remote');
+  const entityRegistry = useProviderMediaEntityRegistry(entityId);
   const resolvedInitialState = liveEntity
     ? normalizeMediaPlaybackState(liveEntity.state, deviceClass)
     : typeof providerState?.value === 'string'
@@ -154,9 +134,9 @@ export function useMediaCardController({
   // Only subscribe to all media player entities if grouping is actually supported.
   // Use the resolved live capability when available so grouping stays functional
   // even when the initial prop was stale.
-  const mediaPlayerEntities = useHomeAssistant(
-    resolvedInitialSupportsGrouping ? selectMediaPlayerEntities : selectUndefinedEntity,
-    shallow
+  const mediaPlayerEntities = useProviderMediaPlayerEntities(
+    entityId,
+    resolvedInitialSupportsGrouping
   );
   const runMediaAction = useServiceActionHandler();
   const resolvedInitialGroupMembersFromEntity = Array.isArray(liveAttrs?.group_members)
@@ -282,7 +262,7 @@ export function useMediaCardController({
 
   const { albumArt, artworkResource, handleArtworkError } = useMediaArtworkResolution({
     entityId,
-    providerId: parsedEntityId?.providerId,
+    providerId: resolvedProviderId,
     artworkKey,
     liveEntityPicture,
     liveArtworkKey,
@@ -334,8 +314,10 @@ export function useMediaCardController({
     t,
   });
   const remoteAvailable = isTv && Boolean(remoteEntity);
-  const remoteRegistryEntry = entityRegistry.find((entry) => entry.entity_id === remoteEntityId);
-  const mediaRegistryEntry = entityRegistry.find((entry) => entry.entity_id === entityId);
+  const remoteRegistryEntry = entityRegistry.find((entry) => entry.entityId === remoteEntityId);
+  const mediaRegistryEntry = entityRegistry.find(
+    (entry) => entry.entityId === (homeAssistantEntityId ?? entityId)
+  );
   const remoteFriendlyName =
     typeof remoteEntity?.attributes?.friendly_name === 'string'
       ? remoteEntity.attributes.friendly_name

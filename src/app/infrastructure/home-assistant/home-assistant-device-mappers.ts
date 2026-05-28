@@ -1,8 +1,3 @@
-/**
- * Device mapper registry - Re-exports all device mappers
- * Individual mappers are extracted to reduce file size and improve maintainability
- */
-
 export {
   mapCalendarSources,
   mapCameraDevice,
@@ -18,4 +13,4 @@ export {
   mapSwitchDevice,
   mapVacuumDevice,
   mapWeatherDevice,
-} from './device-mappers';
+} from '@/app/hooks/device-mappers';

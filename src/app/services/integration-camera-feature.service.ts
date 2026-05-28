@@ -1,66 +1,55 @@
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderCameraFeatureService } from '@/app/platform/provider-feature-services';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { getIntegrationProviderCameraFeatureService } from './integration-registry.service';
 
-function requireHomeAssistantCameraProvider(entityId: string) {
-  const providerId = parseProviderScopedId(entityId)?.providerId ?? 'home_assistant';
-  if (providerId !== 'home_assistant') {
-    throw new Error(`Camera features are not implemented yet for provider ${providerId}`);
-  }
+function resolveCameraProviderId(entityId: string) {
+  return parseProviderScopedId(entityId)?.providerId ?? authSessionManager.getSnapshot().providerId;
+}
+
+function getNativeEntityId(entityId: string) {
+  return parseProviderScopedId(entityId)?.nativeId ?? entityId;
 }
 
 export const integrationCameraFeatureService: ProviderCameraFeatureService = {
-  getCameraCapabilities: async (entityId) => {
-    requireHomeAssistantCameraProvider(entityId);
-    const capabilities = await homeAssistantService.getCameraCapabilities(entityId);
-    return {
-      streamTypes: capabilities.frontend_stream_types ?? [],
-    };
-  },
-  getCameraStreamUrl: async (entityId, format) => {
-    requireHomeAssistantCameraProvider(entityId);
-    const stream = await homeAssistantService.getCameraStreamUrl(entityId, format);
-    return { url: stream.url };
-  },
-  getWebRtcClientConfiguration: (entityId) => {
-    requireHomeAssistantCameraProvider(entityId);
-    return homeAssistantService.getWebRtcClientConfiguration(entityId);
-  },
-  subscribeCameraWebRtcOffer: (entityId, offer, callback) => {
-    requireHomeAssistantCameraProvider(entityId);
-    return homeAssistantService.subscribeCameraWebRtcOffer(entityId, offer, callback);
-  },
-  addCameraWebRtcCandidate: (entityId, sessionId, candidate) => {
-    requireHomeAssistantCameraProvider(entityId);
-    return homeAssistantService.addCameraWebRtcCandidate(entityId, sessionId, candidate);
-  },
-  toggleCameraAccessory: (entityId, state) =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'switch',
-      service: state === 'on' ? 'turn_on' : 'turn_off',
-    }),
-  selectCameraAccessoryOption: (entityId, option) =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'select',
-      service: 'select_option',
-      serviceData: { option },
-    }),
-  setCameraAccessoryValue: (entityId, value) =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'number',
-      service: 'set_value',
-      serviceData: { value },
-    }),
-  enableCameraMotionDetection: (entityId) => {
-    requireHomeAssistantCameraProvider(entityId);
-    return homeAssistantService.enableCameraMotionDetection(entityId);
-  },
-  disableCameraMotionDetection: (entityId) => {
-    requireHomeAssistantCameraProvider(entityId);
-    return homeAssistantService.disableCameraMotionDetection(entityId);
-  },
+  getCameraCapabilities: async (entityId) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).getCameraCapabilities(getNativeEntityId(entityId)),
+  getCameraStreamUrl: async (entityId, format) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).getCameraStreamUrl(getNativeEntityId(entityId), format),
+  getWebRtcClientConfiguration: async (entityId) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).getWebRtcClientConfiguration(getNativeEntityId(entityId)),
+  subscribeCameraWebRtcOffer: async (entityId, offer, callback) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).subscribeCameraWebRtcOffer(getNativeEntityId(entityId), offer, callback),
+  addCameraWebRtcCandidate: async (entityId, sessionId, candidate) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).addCameraWebRtcCandidate(getNativeEntityId(entityId), sessionId, candidate),
+  toggleCameraAccessory: async (entityId, state) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).toggleCameraAccessory(getNativeEntityId(entityId), state),
+  selectCameraAccessoryOption: async (entityId, option) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).selectCameraAccessoryOption(getNativeEntityId(entityId), option),
+  setCameraAccessoryValue: async (entityId, value) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).setCameraAccessoryValue(getNativeEntityId(entityId), value),
+  enableCameraMotionDetection: async (entityId) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).enableCameraMotionDetection(getNativeEntityId(entityId)),
+  disableCameraMotionDetection: async (entityId) =>
+    await getIntegrationProviderCameraFeatureService(
+      resolveCameraProviderId(entityId)
+    ).disableCameraMotionDetection(getNativeEntityId(entityId)),
 };

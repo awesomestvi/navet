@@ -1,4 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
+import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import { homeyService } from '../services/homey.service';
 import type {
   DeviceCollection,
@@ -10,7 +11,6 @@ import type {
 import type { HomeyCapabilityState, HomeyDevice, HomeySnapshot, HomeyZone } from '../types/homey';
 import { UNKNOWN_ROOM_LABEL } from '../utils/device-location';
 import { createProviderScopedMetadata } from '../utils/provider-ids';
-import { createEmptyDeviceCollection } from './use-ha-devices.helpers';
 
 const HOMEY_LIGHT_TEMPERATURE_MIN_KELVIN = 2700;
 const HOMEY_LIGHT_TEMPERATURE_MAX_KELVIN = 6500;

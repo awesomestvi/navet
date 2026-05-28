@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useHomeAssistant } from '@/app/hooks';
-import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
@@ -10,6 +10,19 @@ import type { EnergySeriesPoint } from '../types/energy.types';
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const FALLBACK_POINT_COUNT = 12;
+
+function isHomeAssistantStatisticId(entityId: string | undefined): boolean {
+  if (!entityId) {
+    return false;
+  }
+
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return scopedId.providerId === 'home_assistant';
+  }
+
+  return isLegacyHomeAssistantEntityId(entityId);
+}
 
 function formatBucketLabel(timestampMs: number, index: number, total: number) {
   if (index === total - 1) {
@@ -66,16 +79,17 @@ function buildFallbackPoints(currentLoadW: number, seedKey: string): EnergySerie
 
 export function useEnergyLoadHistory(
   entityId: string | undefined,
-  fallbackCurrentLoadW: number
+  fallbackCurrentLoadW: number,
+  enabled = true
 ): EnergySeriesPoint[] {
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const connection = useHomeAssistant(homeAssistantSelectors.connection);
+  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId);
 
   useEffect(() => {
     const fallbackSeedKey = entityId ?? `load:${Math.round(fallbackCurrentLoadW)}`;
 
-    if (!entityId) {
+    if (!enabled || !isHomeAssistantEntity || !entityId) {
       setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
       return;
     }
@@ -83,8 +97,7 @@ export function useEnergyLoadHistory(
     const resolvedEntityId = entityId;
 
     async function fetchHistory() {
-      const activeMessageClient =
-        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      const activeMessageClient = integrationHistoryService.getMessageClient();
       if (!activeMessageClient) {
         setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
         return;
@@ -125,7 +138,7 @@ export function useEnergyLoadHistory(
         clearInterval(timerRef.current);
       }
     };
-  }, [connection, entityId, fallbackCurrentLoadW]);
+  }, [enabled, entityId, fallbackCurrentLoadW, isHomeAssistantEntity]);
 
   return points;
 }

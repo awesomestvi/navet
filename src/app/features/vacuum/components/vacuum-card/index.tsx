@@ -8,10 +8,19 @@ import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-sh
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
-import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import {
+  useI18n,
+  useProviderDevice,
+  useProviderEntityRegistryEntries,
+  useProviderEntitySnapshot,
+  useProviderEntitySnapshots,
+  useTheme,
+} from '@/app/hooks';
+import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
+import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useVacuumControl } from '../vacuum/use-vacuum-control';
 import { VacuumControlsMedium } from '../vacuum/vacuum-controls-medium';
 import { VacuumControlsSmall } from '../vacuum/vacuum-controls-small';
@@ -166,6 +175,13 @@ export const VacuumCard = memo(function VacuumCard({
   isEditMode: _isEditMode,
 }: VacuumCardProps) {
   const resolvedSize = normalizeVacuumCardSize(size);
+  const providerDevice = useProviderDevice(id);
+  const nativeId = parseProviderScopedId(id)?.nativeId ?? id;
+  const resolvedProviderId =
+    providerDevice?.providerId ??
+    providerId ??
+    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
   const readStringList = (value: unknown) =>
     Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
@@ -178,11 +194,17 @@ export const VacuumCard = memo(function VacuumCard({
     }
     return undefined;
   };
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const allEntities = useHomeAssistant(homeAssistantSelectors.entities);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry);
+  const liveEntity = useProviderEntitySnapshot(id);
+  const allEntities = useProviderEntitySnapshots({
+    providerId: resolvedProviderId,
+    enabled: isHomeAssistantProvider,
+  });
+  const entityRegistry = useProviderEntityRegistryEntries({
+    providerId: resolvedProviderId,
+    enabled: isHomeAssistantProvider,
+  });
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
-  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const liveAttrs = liveEntity?.attributes;
   const liveStatus = normalizeVacuumStatus(
     (typeof liveAttrs?.status === 'string' && liveAttrs.status) ||
       (typeof liveAttrs?.state === 'string' && liveAttrs.state) ||
@@ -197,7 +219,7 @@ export const VacuumCard = memo(function VacuumCard({
     handleStartCleaning,
     handlePause,
     handleReturnHome,
-  } = useVacuumControl({ entityId: id, providerId, initialStatus: liveStatus });
+  } = useVacuumControl({ entityId: id, providerId: resolvedProviderId, initialStatus: liveStatus });
   const liveName =
     typeof liveAttrs?.friendly_name === 'string' && liveAttrs.friendly_name.length > 0
       ? normalizeVacuumDisplayName(liveAttrs.friendly_name)

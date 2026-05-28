@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { LightDevice } from '@/app/types/device.types';
-import { brightnessToPercent, normalizeKelvin } from '../ha-entity-utils';
+import { brightnessToPercent, normalizeKelvin } from '../entity-utils';
 
 export function mapLightDevice(
   entityId: string,

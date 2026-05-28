@@ -1,105 +1,102 @@
 # Project Map
 
-This file summarizes Navet's stack, repository structure, key files, and common feature entry points.
+This file is the current implementation map for Navet.
 
 ## Tech Stack
 
 | Layer | Tool |
 |---|---|
-| Framework | React 19, TypeScript 6 |
-| Build | Vite 8, pnpm |
-| Styling | Tailwind CSS 4.3, Radix UI |
+| Framework | React 19 |
+| Language | TypeScript 6 |
+| Build | Vite 8 |
+| Package manager | pnpm 11 |
+| Styling | Tailwind CSS 4, Radix UI |
 | State | Zustand 5 |
-| Home Assistant adapter | `home-assistant-js-websocket` |
-| Linting and format | Biome 2 |
+| Tests | Vitest 4, Testing Library, Storybook Vitest project |
+| Storybook | Storybook 10 |
 
-## Project Structure
+## Repo Structure
 
 ```text
-src/app/
-  core/             # Navet-owned domain contracts, provider snapshots, and mapper layers
-  features/         # domain modules that own their hooks, stores, and components
-  components/
-    ui/             # Radix UI wrappers
-    layout/         # header, sidebar, navigation
-    primitives/     # low-level reusable UI building blocks
-    patterns/       # composed shared UI structures
-    system/         # curated public surface for Storybook and cross-app discovery
-    shared/         # app-specific shared UI and compatibility shims
-    figma/          # design integration components
-  config/           # app-level configuration helpers
-  constants/        # shared constants
-  platform/         # provider feature abstractions and cross-provider interfaces
-  stores/           # shared Zustand stores, including provider runtime aggregation
-  pwa/              # PWA update support
-  services/         # provider-facing services and adapter registries
-  hooks/            # shared hooks, runtime selectors, device mappers, entity utilities
-  infrastructure/
-    home-assistant/ # Home Assistant adapter-specific runtime, auth, media, resources, transport
-  session/          # config serialization helpers
-  utils/            # pure helpers
-  i18n/             # translations
-  marketing/        # marketing and public-site support
-  navigation/       # section types and helpers
-  storybook/        # Storybook frames and docs utilities
-  ui-kit/           # Storybook-facing inventory and overview stories
-  test-utils/       # shared test helpers
-  types/            # app-level shared types
-  demo/             # GitHub Pages demo app and demo data
+src/
+  api/                 # Home Assistant API client helpers and tests
+  auth/                # runtime auth adapters, provider selection, discovery, auth types
+  panel/               # Home Assistant panel entrypoint
+  test/                # shared test helpers and Home Assistant fixtures
+  app/
+    core/              # Navet-owned contracts and mapper entry points
+    platform/          # provider-facing interfaces and shared platform abstractions
+    stores/            # shared Zustand stores and selectors
+    services/          # provider-facing services and integration facades
+    infrastructure/    # provider-specific runtime, auth, media, resources, transport
+    features/          # feature-owned UI and logic
+    components/        # shared UI authoring layers
+    ui-kit/            # stable docs/story import surface
+    storybook/         # Storybook helpers and frames
+    runtime/           # runtime-mode helpers
+    hooks/             # shared hooks and selectors
+    i18n/              # localization
+    demo/              # public demo app
 ```
 
-## Key Files
+## Key Files And Paths
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `src/app/App.tsx` | Root provider tree, connection effect, and global DOM attributes |
-| `src/app/core/navet.ts` | Navet-owned device, room, provider snapshot, and contract types |
-| `src/app/core/navet-mappers.ts` | Backend-to-Navet mapping layer for current providers |
-| `src/app/platform/provider-feature-services.ts` | Provider feature-service abstraction surface |
+| `src/app/App.tsx` | App shell composition, auth split, bootstrap side effects, network and error surfaces |
+| `src/auth/AuthProvider.tsx` | Runtime auth and provider session ownership |
+| `src/app/core/navet.ts` | Navet-owned device, room, provider, action, and resource contracts |
+| `src/app/core/navet-mappers.ts` | Provider-to-Navet normalization entry points |
+| `src/app/platform/provider-feature-services.ts` | Provider feature service interfaces |
 | `src/app/stores/integration-store.ts` | Cross-provider runtime aggregation and normalized provider snapshot state |
-| `src/app/hooks/use-provider-runtime.ts` | Main runtime hook for provider-backed app state |
-| `src/app/stores/home-assistant-store.ts` | Home Assistant provider runtime slice and typed service subscriptions |
-| `src/app/services/home-assistant.service.ts` | Home Assistant adapter WebSocket and API integration |
-| `src/app/features/dashboard/hooks/use-dashboard-controller.ts` | Dashboard coordinator hook |
-| `src/app/features/dashboard/utils/card-renderer.tsx` | Dashboard card registry |
-| `src/app/components/shared/theme/theme-surface-tokens.ts` | Shared surface theming decisions |
-| `src/app/hooks/use-ha-devices.ts` | Entity-to-device-type mapping |
-| `src/app/hooks/device-mappers/` | Domain-specific Home Assistant device mappers |
-| `src/app/hooks/entity-utils/` | Shared entity parsing and formatting helpers |
-| `src/app/stores/selectors.ts` | Typed selectors for store subscriptions |
-| `src/app/storybook/story-frames.tsx` | Shared Storybook frame utilities |
-| `src/app/storybook/story-docs.ts` | Story-level documentation helpers |
-| `src/app/ui-kit/` | Storybook UI-kit discovery stories |
-| `.storybook/main.ts` | Storybook Vite integration and base-path handling |
-| `docs/technical/REACT_ZUSTAND.md` | Detailed state management guide |
-| `design-system/UI-GUIDELINES.md` | Shared visual guidance |
-| `design-system/FEATURES.md` | Feature map and test locations |
+| `src/app/stores/home-assistant-store.ts` | Home Assistant provider runtime slice |
+| `src/app/hooks/use-provider-runtime.ts` | Main app-facing provider runtime hook |
+| `src/app/infrastructure/home-assistant/` | Home Assistant runtime, auth, transport, media, and resources |
+| `src/app/features/dashboard/hooks/use-dashboard-controller.ts` | Dashboard orchestration controller |
+| `src/app/features/dashboard/utils/card-renderer.tsx` | Card registration and rendering entry surface |
+| `src/app/features/dashboard/components/dashboard-section-router.tsx` | Top-level section routing |
+| `src/app/components/system/` | Curated internal UI system exports |
+| `src/app/ui-kit/` | Stable docs/story import surface |
 
-## Adding A New Feature
+## Shared UI Layers
 
-1. Create `src/app/features/<name>/` with `index.ts`, `components/`, and optionally `hooks/` and `stores/`.
-2. If the feature has persisted state, create a Zustand store with `persist` middleware.
-3. If the feature reads live provider-backed runtime state, prefer `useProviderRuntime(...)` and Navet-owned/provider-scoped types instead of subscribing to provider services directly.
-4. Expose a single controller hook for the feature's root component.
-5. Register the feature in `src/app/features/dashboard/components/dashboard-section-router.tsx` using `lazy()` if it needs a top-level section.
+- `src/app/components/primitives/`
+  - low-level reusable UI building blocks
+- `src/app/components/patterns/`
+  - composed shared UI patterns
+- `src/app/components/shared/`
+  - app-specific shared UI and dashboard-specific helpers
+- `src/app/components/system/`
+  - curated internal export surface for stable primitives, patterns, and tokens
+- `src/app/ui-kit/`
+  - canonical docs/story import surface for stable shared UI
 
-## Adding A New Card Type
+## Top-Level Product Sections
 
-1. Add the card in `src/app/features/<domain>/components/<name>-card/` as a folder module.
-2. Implement `use-<name>-card-controller.ts` so it prefers normalized Navet/provider runtime state and delegates provider-specific behavior through the existing runtime/service seams.
-3. Register the card in the appropriate device or capability mapping path without introducing new shared-UI dependencies on backend raw types.
-4. Register the renderer in `src/app/features/dashboard/utils/card-renderer.tsx`.
-5. Add the card to the add-card dialog in `src/app/features/dashboard/components/add-card-dialog/`.
+Current section model is driven from the dashboard feature and navigation helpers:
 
-## Anti-Patterns
+- `home`
+- `energy`
+- `climate`
+- `security`
+- `lights`
+- `media`
+- `tasks`
+- `settings`
 
-- Do not use `window.localStorage` directly.
-- Do not call `storeInstance.setState()` from outside the owning store file.
-- Do not create React Context for shared reactive app state.
-- Do not add a catch-all Home Assistant service listener that syncs all fields on every event.
-- Do not treat `home-assistant-store` or Home Assistant services as the primary long-term app contract.
-- Do not add new shared-UI dependencies on `HassEntity` unless the code is adapter-internal.
-- Do not make multiple store subscriptions when a combined selector exists.
-- Do not make a controller hook longer than about 150 lines.
-- Do not import from another feature's internals across feature boundaries.
-- Do not duplicate components, hooks, utilities, or stories without checking existing surfaces first.
+Supporting feature folders also exist for weather, calendar, person, sensors, notifications,
+scenes, rss, vacuum, and auth flows.
+
+## Current Provider Model
+
+- `home_assistant`: implemented and most mature
+- `homey`: implemented through shared runtime and service paths, but not feature-parity complete
+- `openhab`: present in provider IDs and planning surfaces, not implemented as a runtime yet
+
+## Rules Of Thumb
+
+- Import across feature boundaries through a feature `index.ts` or `index.tsx` where available.
+- Prefer normalized provider/runtime state over provider-specific internals in shared UI.
+- Prefer current file paths over remembered historical paths when updating docs.
+- If work touches provider boundaries, read
+  `docs/technical/multi-backend-migration-guide.md` first.

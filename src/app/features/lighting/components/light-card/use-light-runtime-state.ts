@@ -1,6 +1,6 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import { useLightBrightnessSync } from './use-light-brightness-sync';
 import { useLightColorSync } from './use-light-color-sync';
 import type { LightUpdateOptions } from './use-light-home-assistant-sync';
@@ -12,7 +12,7 @@ interface UseLightRuntimeStateParams {
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
   initialBrightness: number;
   initialTemp: number;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   providerState: NavetLightState | null | undefined;
   minColorTemp: number;
   maxColorTemp: number;

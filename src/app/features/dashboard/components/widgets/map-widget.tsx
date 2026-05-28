@@ -13,7 +13,7 @@ import {
 } from '@/app/components/shared/theme/map-widget-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useHomeAssistant, useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
+import { useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
@@ -21,9 +21,9 @@ import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { BoundsFitter } from './map-bounds-fitter';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { buildMarkerIcon } from './map-marker-icon';
-import { mapMarkersEqual, selectMapMarkersFromHa } from './map-markers';
 import { getTileUrl, TILE_ATTRIBUTION } from './map-tiles';
 import type { MapMarker } from './map-types';
+import { useProviderMapMarkers } from './use-provider-map-markers';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 export interface MapWidgetProps {
@@ -118,8 +118,7 @@ export const MapWidget = memo(function MapWidget({
     [surface.panelStyle]
   );
   const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
-
-  const homeAssistantMarkers = useHomeAssistant(selectMapMarkersFromHa, mapMarkersEqual);
+  const homeAssistantMarkers = useProviderMapMarkers();
   const markers = staticMarkers ?? homeAssistantMarkers;
   const resolvedMarkers = useMemo(
     () =>

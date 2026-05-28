@@ -4,6 +4,7 @@ import {
   ensureCanonicalEntityIds,
   isLegacyHomeAssistantEntityId,
   normalizePersistedEntityRecord,
+  resolveHomeAssistantEntityId,
 } from '../provider-entity-id';
 
 describe('provider-entity-id', () => {
@@ -35,5 +36,11 @@ describe('provider-entity-id', () => {
       'home_assistant:light.kitchen': 'small',
       'homey:switch_1': 'medium',
     });
+  });
+
+  it('resolves Home Assistant native ids only for Home Assistant entities', () => {
+    expect(resolveHomeAssistantEntityId('home_assistant:light.kitchen')).toBe('light.kitchen');
+    expect(resolveHomeAssistantEntityId('light.kitchen')).toBe('light.kitchen');
+    expect(resolveHomeAssistantEntityId('homey:light.kitchen')).toBeNull();
   });
 });

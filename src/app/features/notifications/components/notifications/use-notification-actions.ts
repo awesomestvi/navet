@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { homeAssistantNotificationFeatureService } from '@/app/services/home-assistant-notification-feature.service';
+import { integrationNotificationFeatureService } from '@/app/services/integration-notification-feature.service';
 import type { Notification } from './use-notifications';
 
 interface UseNotificationActionsParams {
@@ -36,13 +36,13 @@ export function useNotificationActions({
 
       if (notification.source === 'update') {
         if (notification.requiresRestart) {
-          await homeAssistantNotificationFeatureService.restartSystem();
+          await integrationNotificationFeatureService.restartSystem();
           setPendingUpdateInstalls((current) => current.filter((entityId) => entityId !== id));
           markAsRead(id);
           return;
         }
         setPendingUpdateInstalls((current) => (current.includes(id) ? current : [...current, id]));
-        await homeAssistantNotificationFeatureService.installUpdate(notification.id);
+        await integrationNotificationFeatureService.installUpdate(notification.id);
       }
 
       markAsRead(id);
@@ -64,7 +64,7 @@ export function useNotificationActions({
 
       if (notification.source === 'persistent_notification') {
         try {
-          await homeAssistantNotificationFeatureService.dismissPersistentNotification(
+          await integrationNotificationFeatureService.dismissPersistentNotification(
             notification.notificationId
           );
         } catch (error) {
@@ -87,7 +87,7 @@ export function useNotificationActions({
       notifications
         .filter((notification) => notification.source === 'persistent_notification')
         .map((notification) =>
-          homeAssistantNotificationFeatureService.dismissPersistentNotification(
+          integrationNotificationFeatureService.dismissPersistentNotification(
             notification.notificationId
           )
         )

@@ -1,201 +1,83 @@
-# Widget System Documentation
+# Widget System
 
-This document explains how custom dashboard widgets work in Navet.
+This document describes the currently implemented custom widget system in Navet.
 
-Calendar and weather are not custom widgets. They are Home Assistant entity cards (`calendar.*` and weather entities) and should be added through the entity flow.
+Calendar and weather are not custom widgets. They are entity-card flows driven by provider-backed
+devices.
 
-## Overview
+## Current Widget Types
 
-Custom widgets let users place non-entity cards on the dashboard and keep their state locally.
+Current custom widget templates:
 
-### Current Built-in Widgets
+- `info`
+- `rss`
+- `photo`
+- `note`
+- `battery`
+- `ups`
+- `energy-now`
+- `button`
+- `map`
 
-- Info
-- RSS Feed
-- Photo Frame
-- Quick Note
-- Battery Overview
-- UPS Status
-- Energy Now
-- Button
-- Map
+Widget templates are defined from the dashboard feature, primarily in:
 
-### Core Behavior
-
-- Widgets are stored locally in browser storage (`ha-dashboard-custom-cards`)
-- Widgets persist through the shared dashboard custom-card store for both the home section and the energy section
-- RSS widget feed configuration is stored on the widget card itself so exports/imports keep provider selection and article count
-- Direct RSS URLs are fetched through the same-origin `/__navet_rss_proxy__` path; Docker and add-on nginx load those feeds through the embedded njs runtime (no browser CORS, no separate Node sidecar)
-- Widgets support edit-mode rename, move, resize, lock, and delete flows
-- Widget sizing is template-specific (not one global size list)
-- Widgets can be assigned to rooms and participate in the home overview zone layout
-- Locked widget cards stay visible but ignore accidental taps outside edit mode, using the same
-  `lockedCardIds` dashboard entity state as entity cards
-- Scene shortcuts are implemented as preconfigured Button widgets with `scene.turn_on` defaults
-
-Room assignment details:
-
-- `__home__` is the sentinel room used for widgets that belong to the home overview canvas
-- `__energy__` is the sentinel room used for widgets that belong to the energy section's custom-widget band
-- Home widgets may also persist an optional `zone` override (`hero`, `actions`, `status`, `analytics`)
-
-## Supported Sizes by Widget
-
-The Add Card dialog defines widget size support in `src/app/features/dashboard/components/add-card-dialog/templates.tsx`.
-
-- `rss`: `medium`, `large`
-- `photo`: `small`, `medium`, `large`, `extra-large`
-- `note`: `small`, `medium`, `large`, `extra-large`
-- `battery`: `small`, `medium`, `large`
-- `energy-now`: `small`, `medium`, `large`
-- `button`: `tiny`, `extra-small`, `small`
-- `map`: `small`, `medium`, `large`
-- `info`: `small`, `medium`, `large`
-- `ups`: `small`, `medium`, `large`
-
-## Add and Manage Widgets
-
-### Add
-
-1. Enter `Customize` to open edit mode.
-2. Open the `Add` menu.
-3. Select a widget template.
-4. Choose one of the template's supported sizes.
-5. Confirm add.
-
-### Resize
-
-1. Enter edit mode.
-2. Use the card resize action.
-3. Pick a supported size for that widget type.
-
-### Rename
-
-1. Enter edit mode.
-2. Open the widget settings or edit action.
-3. Change the custom card name.
-4. Save the widget settings.
-
-### Move
-
-1. Enter edit mode.
-2. Drag and drop the widget card.
-
-### Delete
-
-1. Enter edit mode.
-2. Use the remove action on the card.
-3. Confirm deletion.
-
-### Lock
-
-1. Enter edit mode.
-2. Use the lock action on the widget card.
-3. Leave edit mode. The widget remains visible but no longer reacts to normal dashboard taps until it is unlocked.
-
-### Edit Data
-
-- Quick Note: inline note editing with persisted content.
-- RSS Feed: source/provider and tint configuration.
-- Photo Frame: image URLs, shuffle mode, and tint configuration.
-- Button: action label/icon/service/entity/service-data configuration. Scene shortcuts use the same
-  widget type with `scene.turn_on` prefilled.
-- Info: one or several sensor/binary-sensor readings with persisted name, room assignment, and
-  accent color.
-- Battery Overview: read-only overview of battery entities.
-- UPS Status: detected UPS device selection, status source selection, metric selection, room
-  assignment, and tint configuration.
-- Energy Now: full-bleed live usage chart with current power overlaid on top, plus a settings dialog for choosing configured energy sources or matching energy-usage sensors/entities.
-- Map: live person and `device_tracker` markers from Home Assistant, plus tint configuration.
-
-## Architecture and File Map
-
-### Add Dialog Templates
-
-- `src/app/features/dashboard/components/add-card-dialog/types.ts`
 - `src/app/features/dashboard/components/add-card-dialog/templates.tsx`
+- `src/app/features/dashboard/components/add-card-dialog/types.ts`
 
-These files define widget type ids, labels, defaults, and supported sizes.
+## Current Ownership
 
-### Widget Host Renderer
+Widget ownership is split across the dashboard feature and feature-specific implementations:
 
-- `src/app/features/dashboard/components/widget-card.tsx`
+- dashboard feature owns template registration, add-card flows, placement, persistence, room
+  assignment, sizing, locking, and layout behavior
+- RSS behavior lives in the RSS feature
+- info and grouped sensor behavior compose with the sensors feature
+- map, energy, battery, UPS, photo, note, and button widgets live under dashboard widget paths
 
-`WidgetCard` maps `CustomCard.type` to the actual widget component and manages per-widget update callbacks.
+Current host renderer surface:
 
-### Widget Components
+- `src/app/features/dashboard/components/widgets/`
 
-- `src/app/features/dashboard/components/widgets/button-widget.tsx`
-- `src/app/features/dashboard/components/widgets/note-widget.tsx`
-- `src/app/features/dashboard/components/widgets/info-widget.tsx`
-- `src/app/features/dashboard/components/widgets/photo-frame-widget.tsx`
-- `src/app/features/dashboard/components/widgets/battery-overview-widget.tsx`
-- `src/app/features/dashboard/components/widgets/ups-widget.tsx`
-- `src/app/features/dashboard/components/widgets/energy-now-dashboard-widget.tsx`
-- `src/app/features/dashboard/components/widgets/map-widget.tsx`
-- RSS widget component lives in `src/app/features/rss/components/rss-feed-card/`
-- Info widget rendering composes `InfoCard` and `GroupedSensorCard` from
-  `src/app/features/sensors/components/`, with settings logic from
-  `src/app/features/sensors/components/sensor-group-settings/`
+## Core Behavior
 
-### Widget Store
+- widgets persist through dashboard feature stores
+- widgets support rename, move, resize, lock, and delete flows
+- widgets can belong to room views or Home overview bands
+- widgets participate in dashboard import and export state
+- RSS fetching uses the same-origin proxy path rather than direct browser cross-origin fetches
 
-- `src/app/features/dashboard/stores/custom-cards-store.ts`
+## Special Room IDs
 
-Store responsibilities:
+- `__home__`: widget belongs to the Home overview
+- `__energy__`: widget belongs to the Energy section band
 
-- persist cards
-- add/remove/update cards
-- persist custom widget names through the card data payload
-- normalize invalid migrated sizes
-- preserve home-zone overrides and shared room sentinels used by the home and energy sections
-- migrate legacy widget types (`news` -> `rss`)
-- migrate legacy sensor widgets (`sensor-group` -> `info`)
-- drop removed legacy custom-card types (`weather`, `calendar`, `presence`, `sparkline`) during migration
+Home widgets may also store zone placement metadata for the Home overview layout.
 
-## Type Reference
+## Current Size Support
 
-```ts
-type CardType =
-  | 'info'
-  | 'rss'
-  | 'photo'
-  | 'note'
-  | 'battery'
-  | 'ups'
-  | 'energy-now'
-  | 'button'
-  | 'map';
+Supported sizes are template-specific rather than globally identical.
 
-type CardSize =
-  | 'tiny'
-  | 'extra-small'
-  | 'small'
-  | 'medium'
-  | 'medium-vertical'
-  | 'large'
-  | 'extra-large';
+Current template size rules live in
+`src/app/features/dashboard/components/add-card-dialog/templates.tsx`.
 
-interface CustomCard {
-  id: string;
-  type: CardType;
-  size: CardSize;
-  room: string;
-  zone?: string;
-  data?: Record<string, unknown>;
-  createdAt: number;
-}
-```
+Representative support:
 
-`room` is not limited to Home Assistant room names. The dashboard also uses sentinel values such as
-`__home__` and `__energy__` for section-level widget bands.
+- `button`: `tiny`, `extra-small`, `small`
+- `photo`, `note`: `small`, `medium`, `large`, `extra-large`
+- `battery`, `ups`, `energy-now`, `info`, `map`: `small`, `medium`, `large`
+- `rss`: `medium`, `large`
 
-Dashboard export/import and shared profile sync also include dashboard entity state. That state now
-contains `lockedCardIds`, so locked widget and entity cards survive YAML backup/restore and
-Docker/add-on profile synchronization.
+## Editing Flow
 
-## Legacy Notes
+Current widget editing behavior:
 
-- Legacy `sensor-group` widgets are migrated to `info` widgets on load.
-- Legacy custom weather/calendar cards are no longer part of the widget system.
-- Legacy presence/sparkline custom cards are removed and filtered out during persisted data migration.
+1. enter dashboard edit mode
+2. open the add-card dialog or widget settings
+3. choose template and supported size
+4. place, rename, resize, move, or lock through dashboard edit controls
+
+## Implementation Notes
+
+- do not describe widgets as backend-native cards
+- do not treat them as a separate platform-specific dashboard system
+- keep widget docs aligned with the dashboard feature and current template registry

@@ -1,12 +1,14 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { SensorIconType } from '@/app/features/sensors';
 import type { SensorDevice } from '@/app/types/device.types';
-import { formatSensorValue } from '../ha-entity-utils';
+import { formatSensorValue } from '../entity-utils';
 
 const SENSOR_UNAVAILABLE_STATES = new Set(['unknown', 'unavailable']);
 const SENSOR_STATUS_ON_STATES = new Set(['on', 'detected', 'open', 'wet', 'problem', 'unsafe']);
 
-export function getSensorDeviceClass(entity: HassEntity): string | undefined {
+export function getSensorDeviceClass(entity: {
+  attributes?: Record<string, unknown>;
+}): string | undefined {
   return typeof entity.attributes?.device_class === 'string'
     ? entity.attributes.device_class.toLowerCase()
     : undefined;

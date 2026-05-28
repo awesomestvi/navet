@@ -1,14 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
 import type { TranslateFn } from '@/app/hooks';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { getProviderNativeId } from '@/app/utils/provider-ids';
 
 interface UseMediaGroupingParams {
   entityId: string;
-  entities:
-    | Record<string, { entity_id: string; attributes?: Record<string, unknown> }>
-    | null
-    | undefined;
+  entities: PlatformEntitySnapshotMap | null | undefined;
   groupMembers: string[];
   runAction: (action: () => Promise<void>, fallbackMessage: string) => Promise<void>;
   t: TranslateFn;
@@ -21,26 +20,28 @@ export function useMediaGrouping({
   runAction,
   t,
 }: UseMediaGroupingParams) {
+  const nativeEntityId = getProviderNativeId(entityId);
+
   const availableGroupingPlayers = useMemo(
     () =>
       Object.values(entities ?? {})
         .filter(
           (entity): entity is NonNullable<typeof entity> =>
             Boolean(entity) &&
-            entity.entity_id.startsWith('media_player.') &&
-            entity.entity_id !== entityId &&
+            entity.entityId.startsWith('media_player.') &&
+            entity.entityId !== nativeEntityId &&
             typeof entity.attributes?.supported_features === 'number' &&
             hasMediaPlayerGroupingSupport(entity.attributes.supported_features)
         )
         .map((entity) => ({
-          id: entity.entity_id,
+          id: entity.entityId,
           name:
             typeof entity.attributes?.friendly_name === 'string' && entity.attributes.friendly_name
               ? entity.attributes.friendly_name
-              : entity.entity_id,
-          isAttached: groupMembers.includes(entity.entity_id),
+              : entity.entityId,
+          isAttached: groupMembers.includes(entity.entityId),
         })),
-    [entities, entityId, groupMembers]
+    [entities, groupMembers, nativeEntityId]
   );
 
   const attachGroupMember = useCallback(

@@ -1,11 +1,15 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { Music2, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, Input, Select } from '@/app/components/primitives';
-import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
-import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import { useProviderMediaPlaybackData } from '@/app/features/media/hooks/use-provider-media-playback-data';
+import { useI18n, useServiceActionHandler } from '@/app/hooks';
+import type {
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { resolveHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 const PLAY_MEDIA_FEATURE = 512;
@@ -22,14 +26,7 @@ interface MediaSpotifyPlaybackProps {
   entityName: string;
 }
 
-export function selectMediaPlaybackData(state: HomeAssistantStore) {
-  return {
-    entities: state.entities,
-    entityRegistry: state.entityRegistry,
-  };
-}
-
-function getEntityName(entityId: string, entity?: HassEntity) {
+function getEntityName(entityId: string, entity?: PlatformEntitySnapshot) {
   if (typeof entity?.attributes?.friendly_name === 'string') {
     return entity.attributes.friendly_name;
   }
@@ -40,7 +37,7 @@ function getEntityName(entityId: string, entity?: HassEntity) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function getSourceList(entity?: HassEntity) {
+function getSourceList(entity?: PlatformEntitySnapshot) {
   return Array.isArray(entity?.attributes?.source_list)
     ? entity.attributes.source_list.filter(
         (value): value is string => typeof value === 'string' && value.trim().length > 0
@@ -48,7 +45,7 @@ function getSourceList(entity?: HassEntity) {
     : [];
 }
 
-function getSupportedFeatures(entity?: HassEntity) {
+function getSupportedFeatures(entity?: PlatformEntitySnapshot) {
   return typeof entity?.attributes?.supported_features === 'number'
     ? entity.attributes.supported_features
     : 0;
@@ -56,8 +53,8 @@ function getSupportedFeatures(entity?: HassEntity) {
 
 function isSpotifyEntity(
   entityId: string,
-  entity: HassEntity,
-  registryEntry?: HomeAssistantEntityRegistryEntry
+  entity: PlatformEntitySnapshot,
+  registryEntry?: PlatformEntityRegistryEntry
 ) {
   const platform = registryEntry?.platform?.toLowerCase() ?? '';
   const name = getEntityName(entityId, entity).toLowerCase();
@@ -99,14 +96,14 @@ function inferMediaContentType(mediaContentId: string) {
 }
 
 function getSpotifyTargets(
-  entities: Record<string, HassEntity> | null,
-  entityRegistry: HomeAssistantEntityRegistryEntry[]
+  entities: PlatformEntitySnapshotMap | null,
+  entityRegistry: PlatformEntityRegistryEntry[]
 ) {
   if (!entities) return [];
 
   return Object.entries(entities)
     .filter(([entityId, entity]) => {
-      const registryEntry = entityRegistry.find((entry) => entry.entity_id === entityId);
+      const registryEntry = entityRegistry.find((entry) => entry.entityId === entityId);
       return (
         entityId.startsWith('media_player.') && isSpotifyEntity(entityId, entity, registryEntry)
       );
@@ -119,11 +116,12 @@ function getSpotifyTargets(
 }
 
 export function hasSpotifyPlaybackControls(
-  entities: Record<string, HassEntity> | null,
-  entityRegistry: HomeAssistantEntityRegistryEntry[],
+  entities: PlatformEntitySnapshotMap | null,
+  entityRegistry: PlatformEntityRegistryEntry[],
   entityId: string
 ) {
-  const currentEntity = entities?.[entityId];
+  const currentEntityId = resolveHomeAssistantEntityId(entityId, 'home_assistant') ?? entityId;
+  const currentEntity = entities?.[currentEntityId];
   return (
     getSpotifyTargets(entities, entityRegistry).length > 0 ||
     (getSupportedFeatures(currentEntity) & PLAY_MEDIA_FEATURE) === PLAY_MEDIA_FEATURE
@@ -137,8 +135,9 @@ export function MediaSpotifyPlayback({
 }: MediaSpotifyPlaybackProps) {
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
-  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
-  const currentEntity = entities?.[entityId];
+  const { entities, entityRegistry } = useProviderMediaPlaybackData(entityId);
+  const currentEntityId = resolveHomeAssistantEntityId(entityId, 'home_assistant') ?? entityId;
+  const currentEntity = entities?.[currentEntityId];
   const spotifyTargets = useMemo(
     () => getSpotifyTargets(entities, entityRegistry),
     [entities, entityRegistry]

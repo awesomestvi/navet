@@ -1,7 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 
-/** `event.*` entities that look like Feedreader / HA RSS sources (for shallow store compare). */
 export function selectFeedreaderEventEntities(
   state: HomeAssistantStore
 ): Record<string, HassEntity> {
@@ -30,7 +29,6 @@ export function selectFeedreaderEventEntities(
   return out;
 }
 
-/** `update.*` entities only — notification list slice (for shallow store compare). */
 export function selectUpdateDomainEntities(state: HomeAssistantStore): Record<string, HassEntity> {
   const all = state.entities;
   if (!all) {
@@ -47,7 +45,6 @@ export function selectUpdateDomainEntities(state: HomeAssistantStore): Record<st
   return out;
 }
 
-/** Security summary source entities only — `binary_sensor.*`, `alarm_control_panel.*`, `siren.*`. */
 export function selectSecuritySummaryEntities(
   state: HomeAssistantStore
 ): Record<string, HassEntity> | null {

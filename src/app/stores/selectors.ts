@@ -183,6 +183,8 @@ export const settingsSelectors = {
 export const integrationSelectors = {
   providerHealth: (state: IntegrationStore) => state.providerHealth,
   providerRuntime: (state: IntegrationStore) => state.providerRuntime,
+  currentProviderRuntime: (state: IntegrationStore) =>
+    state.providerRuntime[state.currentProviderId],
   providerRuntimeById:
     (providerId: keyof IntegrationStore['providerRuntime']) => (state: IntegrationStore) =>
       state.providerRuntime[providerId],

@@ -6,7 +6,7 @@ import {
   inferCalendarEventType,
   isAllDayCalendarValue,
   parseCalendarDate,
-} from '../ha-entity-utils';
+} from '../entity-utils';
 
 type CalendarServiceEvent = Record<string, unknown>;
 

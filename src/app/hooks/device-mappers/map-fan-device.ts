@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { FanDevice } from '@/app/types/device.types';
-import { parseNumberish } from '../ha-entity-utils';
+import { parseNumberish } from '../entity-utils';
 
 function readStringList(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {

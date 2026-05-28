@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import {
   memo,
   useCallback,
@@ -8,16 +7,17 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { shallow } from 'zustand/shallow';
 import { readNavetCameraState } from '@/app/core/navet-device-state';
 import { usePlatformCameraPresentation } from '@/app/features/security/hooks/resolve-platform-camera-presentation';
-import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
+import { useProviderCameraTopology } from '@/app/hooks';
 import { useProviderDevice } from '@/app/hooks/use-provider-device';
-import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
+import type {
+  PlatformCameraStreamType,
+  PlatformEntitySnapshot,
+} from '@/app/platform/provider-feature-models';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
   type CameraGo2RtcConfig,
@@ -44,6 +44,7 @@ import {
   resolveViewerInitialCameraViewMode,
 } from './camera-view-mode';
 import type { CameraCardProps } from './types';
+import { useProviderCameraLiveData } from './use-provider-camera-live-data';
 import { CameraCardView } from './view';
 
 function isMotionEntity(
@@ -108,7 +109,6 @@ function canUseGo2RtcCameraCard() {
   );
 }
 
-const EMPTY_DEVICE_RECORD: Record<string, HassEntity | undefined> = {};
 const CAMERA_CLOCK_INTERVAL_MS = 30_000;
 const CAMERA_STREAM_RETRY_DELAY_MS = 5_000;
 const CAMERA_CAPABILITIES_RETRY_DELAY_MS = 3_000;
@@ -189,8 +189,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 }: CameraCardProps) {
   const { runtime } = useAuthSession();
   const providerDevice = useProviderDevice(id);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-  const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
@@ -205,7 +203,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const updateCameraFeedMode = useSettingsStore(settingsSelectors.updateCameraFeedMode);
   const updateCameraGo2RtcDefaults = useSettingsStore(settingsSelectors.updateCameraGo2RtcDefaults);
   const updateCameraGo2RtcConfig = useSettingsStore(settingsSelectors.updateCameraGo2RtcConfig);
-  const { siblingIds: deviceEntityIds } = useCameraRegistryDeviceTopology(id);
+  const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
+  const { connected, deviceEntities, liveEntity } = useProviderCameraLiveData(id, deviceEntityIds);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -269,7 +268,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       ? liveAttrs.motion_detection_enabled
       : null;
   const statusChangedAt =
-    parseTimestamp(liveEntity?.last_changed) ?? parseTimestamp(liveEntity?.last_updated);
+    parseTimestamp(liveEntity?.lastChanged) ?? parseTimestamp(liveEntity?.lastUpdated);
   const hasSnapshot = Boolean(snapshotUrl);
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
     cameraDashboardViewMode,
@@ -414,17 +413,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     };
   }, [connected, id]);
 
-  // Subscribe to only entities belonging to this camera's device.
-  // Re-renders only when one of those entities changes, not on unrelated HA updates.
-  const deviceEntitySelector = useCallback(
-    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
-      if (!deviceEntityIds.length || !state.entities) return EMPTY_DEVICE_RECORD;
-      return Object.fromEntries(deviceEntityIds.map((eid) => [eid, state.entities?.[eid]]));
-    },
-    [deviceEntityIds]
-  );
-  const deviceEntities = useHomeAssistant(deviceEntitySelector, shallow);
-
   // Discover sibling entities from the same HA device (switches, selects, numbers)
   const siblingEntities = useMemo(() => {
     return deviceEntityIds
@@ -436,7 +424,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         const entity = deviceEntities[eid];
         return entity ? { id: eid, entity } : null;
       })
-      .filter((entry): entry is { id: string; entity: HassEntity } => entry !== null);
+      .filter((entry): entry is { id: string; entity: PlatformEntitySnapshot } => entry !== null);
   }, [deviceEntityIds, deviceEntities]);
 
   const motionEntity = useMemo(() => {
@@ -455,8 +443,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     motionEntity?.entity?.state === 'home' ||
     motionEntity?.entity?.state === 'detected';
   const motionChangedAt =
-    parseTimestamp(motionEntity?.entity?.last_changed) ??
-    parseTimestamp(motionEntity?.entity?.last_updated);
+    parseTimestamp(motionEntity?.entity?.lastChanged) ??
+    parseTimestamp(motionEntity?.entity?.lastUpdated);
 
   const handleRefresh = useCallback(() => {
     setFailedStreamTypes([]);

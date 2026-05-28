@@ -132,7 +132,7 @@ describe('HVACSettingsDialog', () => {
         {
           id: 'fan.hallway',
           entity: {
-            entity_id: 'fan.hallway',
+            entityId: 'fan.hallway',
             state: 'on',
             attributes: {
               friendly_name: 'Hallway Fan',
@@ -141,9 +141,8 @@ describe('HVACSettingsDialog', () => {
               preset_mode: 'auto',
               preset_modes: ['auto', 'sleep'],
             },
-            last_changed: '2026-05-17T00:00:00.000Z',
-            last_updated: '2026-05-17T00:00:00.000Z',
-            context: { id: 'ctx', parent_id: null, user_id: null },
+            lastChanged: '2026-05-17T00:00:00.000Z',
+            lastUpdated: '2026-05-17T00:00:00.000Z',
           },
         },
       ],

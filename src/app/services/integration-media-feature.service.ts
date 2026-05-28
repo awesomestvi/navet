@@ -1,149 +1,64 @@
-import type {
-  PlatformMediaBrowseResult,
-  PlatformMediaItem,
-  PlatformMessageClient,
-} from '@/app/platform/provider-feature-models';
+import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderMediaFeatureService } from '@/app/platform/provider-feature-services';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { getIntegrationProviderMediaFeatureService } from './integration-registry.service';
 
-interface MediaThumbnailResponse {
-  content_type: string;
-  content: string;
+function resolveMediaProviderId(entityId: string) {
+  return parseProviderScopedId(entityId)?.providerId ?? authSessionManager.getSnapshot().providerId;
 }
 
-interface MediaThumbnailEnvelope {
-  result?: MediaThumbnailResponse;
-  content_type?: string;
-  content?: string;
-}
-
-interface MediaBrowseNode {
-  title?: string;
-  media_class?: string;
-  media_content_id?: string;
-  media_content_type?: string;
-  children?: MediaBrowseNode[];
-  can_expand?: boolean;
-  can_play?: boolean;
-  thumbnail?: string | null;
-}
-
-let mediaThumbnailCommandSupported: boolean | null = null;
-
-function requireHomeAssistantMediaProvider(entityId: string) {
-  const providerId = parseProviderScopedId(entityId)?.providerId ?? 'home_assistant';
-  if (providerId !== 'home_assistant') {
-    throw new Error(`Media features are not implemented yet for provider ${providerId}`);
-  }
-}
-
-function mapMediaItem(item: MediaBrowseNode): PlatformMediaItem {
-  return {
-    title: item.title ?? '',
-    mediaClass: item.media_class,
-    mediaContentId: item.media_content_id,
-    mediaContentType: item.media_content_type,
-    children: item.children?.map(mapMediaItem),
-    canExpand: item.can_expand,
-    canPlay: item.can_play,
-    thumbnail: item.thumbnail ?? null,
-  };
-}
-
-function mapMediaBrowseResult(result: MediaBrowseNode): PlatformMediaBrowseResult {
-  return mapMediaItem(result);
+function getNativeEntityId(entityId: string) {
+  return parseProviderScopedId(entityId)?.nativeId ?? entityId;
 }
 
 export const integrationMediaFeatureService: ProviderMediaFeatureService = {
-  playMedia: (entityId, media) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.playMedia(entityId, media);
-  },
-  browseMediaPlayer: async (entityId, media) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return mapMediaBrowseResult(await homeAssistantService.browseMediaPlayer(entityId, media));
-  },
-  searchMediaPlayer: (entityId, query, media) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService
-      .searchMediaPlayer(entityId, query, media)
-      .then((result) => mapMediaBrowseResult(result));
-  },
-  selectMediaPlayerSource: (entityId, source) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.selectMediaPlayerSource(entityId, source);
-  },
-  selectMediaPlayerSoundMode: (entityId, soundMode) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.selectMediaPlayerSoundMode(entityId, soundMode);
-  },
-  seekMediaPlayer: (entityId, seekPosition) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.seekMediaPlayer(entityId, seekPosition);
-  },
-  clearMediaPlayerPlaylist: (entityId) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.clearMediaPlayerPlaylist(entityId);
-  },
-  updateMediaPlayerPower: (entityId, state) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.updateMediaPlayerPower(entityId, state);
-  },
-  sendRemoteCommand: (entityId, command) => {
-    requireHomeAssistantMediaProvider(entityId);
-    return homeAssistantService.sendRemoteCommand(entityId, command);
-  },
+  playMedia: async (entityId, media) =>
+    await getIntegrationProviderMediaFeatureService(resolveMediaProviderId(entityId)).playMedia(
+      getNativeEntityId(entityId),
+      media
+    ),
+  browseMediaPlayer: async (entityId, media) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).browseMediaPlayer(getNativeEntityId(entityId), media),
+  searchMediaPlayer: async (entityId, query, media) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).searchMediaPlayer(getNativeEntityId(entityId), query, media),
+  selectMediaPlayerSource: async (entityId, source) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).selectMediaPlayerSource(getNativeEntityId(entityId), source),
+  selectMediaPlayerSoundMode: async (entityId, soundMode) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).selectMediaPlayerSoundMode(getNativeEntityId(entityId), soundMode),
+  seekMediaPlayer: async (entityId, seekPosition) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).seekMediaPlayer(getNativeEntityId(entityId), seekPosition),
+  clearMediaPlayerPlaylist: async (entityId) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).clearMediaPlayerPlaylist(getNativeEntityId(entityId)),
+  updateMediaPlayerPower: async (entityId, state) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).updateMediaPlayerPower(getNativeEntityId(entityId), state),
+  sendRemoteCommand: async (entityId, command) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).sendRemoteCommand(getNativeEntityId(entityId), command),
   browseMediaSource: async (mediaContentId) =>
-    mapMediaBrowseResult(await homeAssistantService.browseMediaSource(mediaContentId)),
-  resolveMediaSource: async (mediaContentId) => {
-    const resolved = await homeAssistantService.resolveMediaSource(mediaContentId);
-    return {
-      url: resolved.url,
-      mimeType: resolved.mime_type,
-    };
-  },
-  fetchMediaThumbnailDataUrl: async (entityId, messageClient) => {
-    requireHomeAssistantMediaProvider(entityId);
-    if (mediaThumbnailCommandSupported === false) {
-      return null;
-    }
-
-    const activeMessageClient: PlatformMessageClient | null =
-      messageClient ?? homeAssistantService.getConnection();
-    if (!activeMessageClient) {
-      return null;
-    }
-
-    let response: MediaThumbnailEnvelope;
-
-    try {
-      response = (await activeMessageClient.sendMessagePromise({
-        type: 'media_player/thumbnail',
-        entity_id: entityId,
-      })) as MediaThumbnailEnvelope;
-      mediaThumbnailCommandSupported = true;
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'unknown_command'
-      ) {
-        mediaThumbnailCommandSupported = false;
-        return null;
-      }
-
-      throw error;
-    }
-
-    const payload =
-      response && 'result' in response && response.result ? response.result : response;
-
-    if (!payload?.content || !payload?.content_type) {
-      return null;
-    }
-
-    return `data:${payload.content_type};base64,${payload.content}`;
-  },
+    await getIntegrationProviderMediaFeatureService(
+      authSessionManager.getSnapshot().providerId
+    ).browseMediaSource(mediaContentId),
+  resolveMediaSource: async (mediaContentId) =>
+    await getIntegrationProviderMediaFeatureService(
+      authSessionManager.getSnapshot().providerId
+    ).resolveMediaSource(mediaContentId),
+  fetchMediaThumbnailDataUrl: async (entityId, messageClient) =>
+    await getIntegrationProviderMediaFeatureService(
+      resolveMediaProviderId(entityId)
+    ).fetchMediaThumbnailDataUrl(getNativeEntityId(entityId), messageClient),
 };

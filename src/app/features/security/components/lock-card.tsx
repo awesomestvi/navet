@@ -14,9 +14,9 @@ import {
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
-import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { readNavetLockState } from '@/app/core/navet-device-state';
+import { useI18n, useProviderDevice, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { integrationSecurityFeatureService } from '@/app/services/integration-security-feature.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
 
 interface LockCardProps {
@@ -63,17 +63,18 @@ export const LockCard = memo(function LockCard({
   const [isLocked, setIsLocked] = useState(initialState);
   const [pendingTargetLocked, setPendingTargetLocked] = useState<boolean | null>(null);
   const [isPendingAction, setIsPendingAction] = useState(false);
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const providerDevice = useProviderDevice(id);
+  const providerState = readNavetLockState(providerDevice);
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
 
   useEffect(() => {
-    if (liveEntity) {
-      if (liveEntity.state !== 'locked' && liveEntity.state !== 'unlocked') {
+    if (typeof providerState?.locked === 'boolean') {
+      if (providerState.value !== 'locked' && providerState.value !== 'unlocked') {
         return;
       }
 
-      const nextIsLocked = liveEntity.state === 'locked';
+      const nextIsLocked = providerState.locked;
       setIsLocked(nextIsLocked);
       if (pendingTargetLocked === nextIsLocked) {
         setPendingTargetLocked(null);
@@ -85,14 +86,15 @@ export const LockCard = memo(function LockCard({
     setIsLocked(initialState);
     setPendingTargetLocked(null);
     setIsPendingAction(false);
-  }, [liveEntity, initialState, pendingTargetLocked]);
+  }, [initialState, pendingTargetLocked, providerState?.locked, providerState?.value]);
 
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
-  const liveAttributes = liveEntity?.attributes as Record<string, unknown> | undefined;
   const resolvedSize = resolveLockCardSize(size);
-  const isVehicleLock = isVehicleLockEntity(id, name, liveAttributes);
+  const isVehicleLock = isVehicleLockEntity(id, name, {
+    device_class: providerState?.deviceClass,
+  });
   const displayIsLocked = pendingTargetLocked ?? isLocked;
   const IconComponent = isVehicleLock ? CarFront : displayIsLocked ? Lock : Unlock;
   const pendingLabel =
@@ -146,7 +148,7 @@ export const LockCard = memo(function LockCard({
         } else {
           await integrationSecurityFeatureService.unlockEntity(id);
         }
-        if (!liveEntity) {
+        if (typeof providerState?.locked !== 'boolean') {
           setIsLocked(nextLocked);
           setPendingTargetLocked(null);
           setIsPendingAction(false);
@@ -160,7 +162,7 @@ export const LockCard = memo(function LockCard({
         },
       }
     ).finally(() => {
-      if (!liveEntity) {
+      if (typeof providerState?.locked !== 'boolean') {
         setIsPendingAction(false);
       }
     });

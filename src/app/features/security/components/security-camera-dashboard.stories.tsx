@@ -1,7 +1,7 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { type ReactNode, useEffect } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import type { ThemeMode } from '@/app/stores/theme-store';
 import { useThemeStore } from '@/app/stores/theme-store';
@@ -136,30 +136,27 @@ const locks: LockDevice[] = [
   },
 ];
 
-const securityEntities: HassEntities = {
+const securityEntities: PlatformEntitySnapshotMap = {
   'binary_sensor.entry_motion': {
-    entity_id: 'binary_sensor.entry_motion',
+    entityId: 'binary_sensor.entry_motion',
     state: 'on',
     attributes: { friendly_name: 'Entry Motion', device_class: 'motion' },
-    last_changed: '2026-05-15T20:12:00.000Z',
-    last_updated: '2026-05-15T20:12:00.000Z',
-    context: { id: 'context-motion', parent_id: null, user_id: null },
+    lastChanged: '2026-05-15T20:12:00.000Z',
+    lastUpdated: '2026-05-15T20:12:00.000Z',
   },
   'binary_sensor.patio_door': {
-    entity_id: 'binary_sensor.patio_door',
+    entityId: 'binary_sensor.patio_door',
     state: 'on',
     attributes: { friendly_name: 'Patio Door', device_class: 'door' },
-    last_changed: '2026-05-15T20:06:00.000Z',
-    last_updated: '2026-05-15T20:06:00.000Z',
-    context: { id: 'context-door', parent_id: null, user_id: null },
+    lastChanged: '2026-05-15T20:06:00.000Z',
+    lastUpdated: '2026-05-15T20:06:00.000Z',
   },
   'alarm_control_panel.home': {
-    entity_id: 'alarm_control_panel.home',
+    entityId: 'alarm_control_panel.home',
     state: 'armed_home',
     attributes: { friendly_name: 'Home Alarm' },
-    last_changed: '2026-05-15T19:00:00.000Z',
-    last_updated: '2026-05-15T19:00:00.000Z',
-    context: { id: 'context-alarm', parent_id: null, user_id: null },
+    lastChanged: '2026-05-15T19:00:00.000Z',
+    lastUpdated: '2026-05-15T19:00:00.000Z',
   },
 };
 
@@ -188,7 +185,7 @@ const labels = {
 interface SecurityDashboardStoryProps {
   cameras: CameraDevice[];
   locks: LockDevice[];
-  entities: HassEntities;
+  entities: PlatformEntitySnapshotMap;
 }
 
 function SecurityDashboardStory({ cameras, locks, entities }: SecurityDashboardStoryProps) {

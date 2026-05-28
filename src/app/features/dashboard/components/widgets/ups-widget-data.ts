@@ -1,10 +1,9 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
+import { formatSensorValue, getName, resolveEntityRoom } from '@/app/hooks/entity-utils';
 import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantDeviceRegistryEntry,
-  HomeAssistantEntityRegistryEntry,
-} from '@/app/services/home-assistant.service';
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 
 export type UpsMetricKind =
   | 'battery'
@@ -34,19 +33,30 @@ export interface UpsDeviceOption {
   defaultStatusEntityId?: string;
 }
 
+export interface UpsAreaReference {
+  areaId: string;
+  name: string;
+}
+
+export interface UpsDeviceReference {
+  deviceId: string;
+  areaId?: string | null;
+  name?: string | null;
+}
+
 interface UpsRegistryContext {
-  areas?: HomeAssistantAreaRegistryEntry[];
-  deviceRegistry?: HomeAssistantDeviceRegistryEntry[];
-  entityRegistry?: HomeAssistantEntityRegistryEntry[];
+  areas?: UpsAreaReference[];
+  deviceRegistry?: UpsDeviceReference[];
+  entityRegistry?: PlatformEntityRegistryEntry[];
 }
 
 interface BuildUpsDeviceOptionsParams extends UpsRegistryContext {
-  entities: HassEntities | null | undefined;
+  entities: PlatformEntitySnapshotMap | null | undefined;
   formatOptions?: Parameters<typeof formatSensorValue>[1];
 }
 
 interface ResolveUpsMetricReadingsParams {
-  entities: HassEntities | null | undefined;
+  entities: PlatformEntitySnapshotMap | null | undefined;
   metricEntityIds: string[];
   availableMetrics: UpsMetricOption[];
   formatOptions?: Parameters<typeof formatSensorValue>[1];
@@ -76,25 +86,25 @@ const UPS_STATUS_RED = [
   'trim',
 ];
 
-function getEntityRegistryMap(entityRegistry: HomeAssistantEntityRegistryEntry[] | undefined) {
-  return new Map((entityRegistry ?? []).map((entry) => [entry.entity_id, entry]));
+function getEntityRegistryMap(entityRegistry: PlatformEntityRegistryEntry[] | undefined) {
+  return new Map((entityRegistry ?? []).map((entry) => [entry.entityId, entry]));
 }
 
-function getDeviceRegistryMap(deviceRegistry: HomeAssistantDeviceRegistryEntry[] | undefined) {
-  return new Map((deviceRegistry ?? []).map((device) => [device.id, device]));
+function getDeviceRegistryMap(deviceRegistry: UpsDeviceReference[] | undefined) {
+  return new Map((deviceRegistry ?? []).map((device) => [device.deviceId, device]));
 }
 
-function getAreaMap(areas: HomeAssistantAreaRegistryEntry[] | undefined) {
-  return new Map((areas ?? []).map((area) => [area.area_id, area.name]));
+function getAreaMap(areas: UpsAreaReference[] | undefined) {
+  return new Map((areas ?? []).map((area) => [area.areaId, area.name]));
 }
 
-function buildSearchText(entityId: string, entity: HassEntity) {
+function buildSearchText(entityId: string, entity: PlatformEntitySnapshot) {
   const friendlyName =
     typeof entity.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : '';
   return `${entityId} ${friendlyName}`.toLowerCase();
 }
 
-function getEntityUnit(entity: HassEntity) {
+function getEntityUnit(entity: PlatformEntitySnapshot) {
   return typeof entity.attributes?.unit_of_measurement === 'string'
     ? entity.attributes.unit_of_measurement.toLowerCase()
     : typeof entity.attributes?.native_unit_of_measurement === 'string'
@@ -102,13 +112,13 @@ function getEntityUnit(entity: HassEntity) {
       : '';
 }
 
-function getDeviceClass(entity: HassEntity) {
+function getDeviceClass(entity: PlatformEntitySnapshot) {
   return typeof entity.attributes?.device_class === 'string'
     ? entity.attributes.device_class.toLowerCase()
     : undefined;
 }
 
-function classifyUpsMetric(entityId: string, entity: HassEntity): UpsMetricKind | null {
+function classifyUpsMetric(entityId: string, entity: PlatformEntitySnapshot): UpsMetricKind | null {
   const searchText = buildSearchText(entityId, entity);
   const deviceClass = getDeviceClass(entity);
   const unit = getEntityUnit(entity);
@@ -165,8 +175,8 @@ function classifyUpsMetric(entityId: string, entity: HassEntity): UpsMetricKind 
 
 function buildMetricOption(
   entityId: string,
-  entity: HassEntity,
-  entityEntry: HomeAssistantEntityRegistryEntry | undefined,
+  entity: PlatformEntitySnapshot,
+  entityEntry: PlatformEntityRegistryEntry | undefined,
   kind: UpsMetricKind,
   formatOptions?: Parameters<typeof formatSensorValue>[1]
 ): UpsMetricOption {
@@ -255,18 +265,18 @@ export function buildUpsDeviceOptions({
   const sensorsByDeviceId = new Map<string, string[]>();
 
   for (const entry of entityRegistry) {
-    if (!entry.device_id || !entry.entity_id.startsWith('sensor.')) {
+    if (!entry.deviceId || !entry.entityId.startsWith('sensor.')) {
       continue;
     }
 
-    const entity = entities[entry.entity_id];
+    const entity = entities[entry.entityId];
     if (!entity) {
       continue;
     }
 
-    const nextIds = sensorsByDeviceId.get(entry.device_id) ?? [];
-    nextIds.push(entry.entity_id);
-    sensorsByDeviceId.set(entry.device_id, nextIds);
+    const nextIds = sensorsByDeviceId.get(entry.deviceId) ?? [];
+    nextIds.push(entry.entityId);
+    sensorsByDeviceId.set(entry.deviceId, nextIds);
   }
 
   return Array.from(sensorsByDeviceId.entries())
@@ -303,7 +313,7 @@ export function buildUpsDeviceOptions({
       const primaryEntityId = metrics[0]?.entityId;
       const primaryEntity = primaryEntityId ? entities[primaryEntityId] : undefined;
       const room =
-        (device?.area_id ? areaMap.get(device.area_id) : undefined) ??
+        (device?.areaId ? areaMap.get(device.areaId) : undefined) ??
         (primaryEntityId && primaryEntity
           ? resolveEntityRoom(
               primaryEntityId,
@@ -319,7 +329,7 @@ export function buildUpsDeviceOptions({
       return [
         {
           deviceId,
-          name: device?.name_by_user ?? device?.name ?? metrics[0]?.label ?? deviceId,
+          name: device?.name ?? metrics[0]?.label ?? deviceId,
           room,
           metrics,
           statusOptions,

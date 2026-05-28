@@ -1,6 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { CoverDevice } from '@/app/types/device.types';
-import { parseNumberish } from '../ha-entity-utils';
+import { parseNumberish } from '../entity-utils';
 
 function normalizeCoverPosition(value: unknown) {
   const parsed = parseNumberish(value);

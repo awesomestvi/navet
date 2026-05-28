@@ -8,7 +8,7 @@ import {
   formatSensorValue,
   formatTimestampTime,
   getName,
-} from '../ha-entity-utils';
+} from '../entity-utils';
 
 describe('ha-entity-utils entity naming', () => {
   it('prefers Home Assistant registry names over entity friendly names', () => {

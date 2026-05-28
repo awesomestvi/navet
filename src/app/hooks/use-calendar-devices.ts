@@ -1,1 +1,1 @@
-export { useHomeAssistantCalendarDevices as useCalendarDevices } from './use-home-assistant-calendar-devices';
+export { useProviderCalendarDevices as useCalendarDevices } from './use-provider-calendar-devices';

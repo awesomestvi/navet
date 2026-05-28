@@ -6,7 +6,7 @@ const { dispatchEntityActionMock, entitiesState, runActionMock, serviceMock } = 
   dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
   entitiesState: {
     entities: {} as Record<string, unknown>,
-    entityRegistry: [] as Array<{ entity_id: string; platform?: string | null }>,
+    entityRegistry: [] as Array<{ entityId: string; platform?: string | null }>,
   },
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
   serviceMock: {
@@ -94,8 +94,8 @@ function setMediaEntities(includeRemote: boolean) {
       : {}),
   };
   entitiesState.entityRegistry = [
-    { entity_id: 'media_player.kitchen', platform: 'androidtv_remote' },
-    ...(includeRemote ? [{ entity_id: 'remote.kitchen', platform: 'androidtv_remote' }] : []),
+    { entityId: 'media_player.kitchen', platform: 'androidtv_remote' },
+    ...(includeRemote ? [{ entityId: 'remote.kitchen', platform: 'androidtv_remote' }] : []),
   ];
 }
 
@@ -132,11 +132,28 @@ describe('useMediaCardController', () => {
     expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
   });
 
+  it('resolves canonical Home Assistant ids through the provider media hooks', () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaCardController({
+        ...defaultParams,
+        entityId: 'home_assistant:media_player.kitchen',
+      })
+    );
+
+    act(() => result.current.togglePlay());
+
+    expect(serviceMock.sendRemoteCommand).toHaveBeenCalledWith(
+      'remote.kitchen',
+      'MEDIA_PLAY_PAUSE'
+    );
+    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
+  });
+
   it('uses media player play-pause for Samsung TV playback while keeping Samsung remote commands', () => {
     setMediaEntities(true);
     entitiesState.entityRegistry = [
-      { entity_id: 'media_player.kitchen', platform: 'samsungtv' },
-      { entity_id: 'remote.kitchen', platform: 'samsungtv' },
+      { entityId: 'media_player.kitchen', platform: 'samsungtv' },
+      { entityId: 'remote.kitchen', platform: 'samsungtv' },
     ];
 
     const { result } = renderHookWithProviders(() => useMediaCardController(defaultParams));

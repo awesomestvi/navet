@@ -1,7 +1,7 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useHaCommandQueue } from '@/app/hooks';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import {
   clampKelvin,
   getReportedColorHex,
@@ -26,7 +26,7 @@ interface UseLightColorSyncParams {
   isOn: boolean;
   setIsOn: (on: boolean) => void;
   initialTemp: number;
-  liveEntity: HassEntity | undefined;
+  liveEntity: PlatformEntitySnapshot | undefined;
   providerState: NavetLightState | null | undefined;
   minColorTemp: number;
   maxColorTemp: number;

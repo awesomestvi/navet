@@ -1,4 +1,8 @@
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import {
+  createRegistryMaps,
+  getEntityCategory,
+} from '@/app/infrastructure/home-assistant/home-assistant-registry-helpers';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -10,8 +14,7 @@ import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
 import { normalizeTemperatureUnit } from '@/app/utils/temperature';
 import { normalizeVacuumStatus } from '../features/vacuum';
-import { getName, resolveEntityRoom } from '../hooks/ha-entity-utils';
-import { createRegistryMaps, getEntityCategory } from '../hooks/use-ha-devices.helpers';
+import { getName, resolveEntityRoom } from '../hooks/entity-utils';
 import type { NavetCapability, NavetDevice, NavetRoom } from './navet';
 
 function normalizeRoomName(name: string) {
@@ -98,6 +101,15 @@ function readStringList(value: unknown): string[] | undefined {
 
   const entries = value.filter((entry): entry is string => typeof entry === 'string');
   return entries.length > 0 ? entries : undefined;
+}
+
+function readPercent(value: unknown): number | undefined {
+  const numericValue = readNumberish(value);
+  if (typeof numericValue !== 'number') {
+    return undefined;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
 }
 
 function resolveBinarySensorPresentation(
@@ -285,10 +297,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
 
     return {
       value: entity.state,
-      position:
-        position ??
-        tiltPosition ??
-        (entity.state === 'open' || entity.state === 'opening' ? 100 : 0),
+      position: position ?? tiltPosition,
       positionMode: position != null ? 'position' : tiltPosition != null ? 'tilt' : undefined,
       deviceClass,
       supportedFeatures: readNumberish(entity.attributes?.supported_features),
@@ -301,6 +310,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
     return {
       value: entity.state,
       locked: entity.state === 'locked',
+      deviceClass,
       size: 'small',
     };
   }
@@ -328,6 +338,19 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
         (typeof entity.attributes?.entity_picture_local === 'string' &&
           entity.attributes.entity_picture_local) ||
         undefined,
+      batteryLevel:
+        readPercent(entity.attributes?.battery_level) ?? readPercent(entity.attributes?.battery),
+      address:
+        typeof entity.attributes?.address === 'string' ? entity.attributes.address : undefined,
+      locationName:
+        typeof entity.attributes?.location_name === 'string'
+          ? entity.attributes.location_name
+          : undefined,
+      geocodedLocation:
+        typeof entity.attributes?.geocoded_location === 'string'
+          ? entity.attributes.geocoded_location
+          : undefined,
+      zone: typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : undefined,
       size: 'small',
     };
   }

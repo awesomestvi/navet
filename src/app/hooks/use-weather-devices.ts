@@ -1,1 +1,1 @@
-export { useHomeAssistantWeatherDevices as useWeatherDevices } from './use-home-assistant-weather-devices';
+export { useProviderWeatherDevices as useWeatherDevices } from './use-provider-weather-devices';

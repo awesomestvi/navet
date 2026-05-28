@@ -4,369 +4,144 @@ Current state-management guidance for Navet.
 
 ## Summary
 
-Navet uses **Zustand exclusively** for shared app state that drives rendering. Runtime
-authentication/session handling lives outside the store layer in `src/auth/AuthProvider.tsx`,
-because it owns OAuth, Ingress, panel, and provider session bootstrapping. React Context is reserved for
-that runtime auth infrastructure and other cross-cutting providers that are not general-purpose
-shared UI state.
+Navet uses Zustand for shared reactive app state.
 
-[`multi-backend-migration-guide.md`](multi-backend-migration-guide.md) is the canonical architecture
-reference. This document describes the store model that implements that architecture.
+Runtime authentication and session bootstrap live in `src/auth/AuthProvider.tsx`, not in a general
+purpose auth store. That is the main architectural exception because auth spans runtime detection,
+provider selection, session refresh, and logout behavior across multiple deployment modes.
 
----
+Read [`multi-backend-migration-guide.md`](multi-backend-migration-guide.md) together with this
+document when state work touches provider boundaries or runtime ownership.
 
-## State Layer Ownership
+## State Ownership
 
-### Zustand stores (`src/app/stores/`)
+### Shared Zustand stores
 
-Shared app and dashboard state lives here. Runtime auth/session state is centralized in
-`src/auth/AuthProvider.tsx` rather than represented as `auth-store` or `config-store` files.
+Current shared store surfaces live under `src/app/stores/`:
 
 | Store | Responsibility |
 |---|---|
-| `integration-store` | Cross-provider runtime, provider sessions, provider health, and normalized provider snapshots |
-| `home-assistant-store` | WebSocket connection state, entities, registries |
-| `settings-store` | User preferences (persisted) |
-| `theme-store` | Theme mode, accent color, wallpaper (persisted) |
-| `navigation-store` | Active section, current room (persisted via Zustand persist) |
-| `edit-mode-store` | Dashboard edit mode toggle |
-| `search-store` | Search query and filtered device ids |
-| `error-store` | Global app error overlay (`ErrorDisplay`): `error`, `setError`, `clearError` |
+| `integration-store.ts` | Cross-provider runtime state, provider sessions, provider health, normalized provider snapshots, canonical device map, room map, room descriptors, current integration user |
+| `home-assistant-store.ts` | Home Assistant provider connection state, entities, config, registries |
+| `settings-store.ts` | Persisted user preferences |
+| `theme-store.ts` | Theme mode, accent color, wallpapers, and appearance state |
+| `navigation-store.ts` | Active section and room navigation state |
+| `edit-mode-store.ts` | Dashboard edit-mode state |
+| `search-store.ts` | Search state and filtered IDs |
+| `error-store.ts` | Global app error state |
+
+Feature-owned persisted stores also exist under feature directories, for example dashboard layout
+and custom-card state under `src/app/features/dashboard/stores/`.
 
 ### Runtime auth context
 
-Runtime authentication is the main exception to the shared-state store rule:
+`src/auth/AuthProvider.tsx` owns:
 
-- `AuthProvider` (`src/auth/AuthProvider.tsx`) — runtime-specific OAuth, Ingress, panel, and provider
-  session handling
-- `useAuthSession`, `useAuthBaseUrl`, and `useAuthLogout` expose the current auth session,
-  selected provider session, base URL, and logout action to app code
+- runtime detection
+- active provider session
+- session map
+- login
+- logout
+- refresh
+- provider switching
+- session replacement for recovery flows
 
-### Hybrid provider runtime model
-
-Navet uses a multi-backend runtime model:
-
-- `integration-store` is the main cross-provider runtime surface for app code
-- `home-assistant-store` is a provider-specific runtime slice that feeds the broader integration
-  runtime
-- Home Assistant typed events and services remain real, but they are implementation details of the
-  Home Assistant adapter rather than the long-term public architecture for all UI code
+Use `useAuthSession()` or the smaller exported auth hooks when the work is truly auth- or
+session-specific.
 
 ### Other React Context
 
-Only used for providers that have no general shared app state of their own:
+React Context is reserved for infrastructure providers that are not the general shared app-state
+system, such as i18n.
 
-- `I18nProvider` (`src/app/i18n/`) — locale loading and translation function
+Do not introduce new React Context for shared dashboard, feature, or provider runtime state.
 
----
+## Store Access Rules
 
-## Rules
-
-### All shared app state goes in Zustand
-
-Do not introduce new React Context for state that drives rendering. If many components need to
-read or write the same app preference, dashboard state, or provider-backed runtime state, put it in
-a store.
-
-### Expose stores through hook modules
-
-Stores should be consumed through the existing app hooks and typed store hooks. Prefer wrappers such
-as `useProviderRuntime` for provider-backed runtime state, and use exported store hooks such as
-`useSettingsStore(selector)` with selectors from `src/app/stores/selectors.ts` for direct store
-subscriptions. Use `useHomeAssistant` only when work is explicitly Home Assistant runtime-specific.
-Runtime auth is consumed through `useAuthSession`, `useAuthBaseUrl`, and
-`useAuthLogout` from `src/auth/AuthProvider.tsx`.
-
-### Prefer typed selectors
-
-Use selectors from `src/app/stores/selectors.ts` to subscribe to the minimum slice of state
-needed. Avoid subscribing to the full store object — this re-renders on every state change.
+- Prefer selectors from `src/app/stores/selectors.ts`.
+- Prefer app-facing hooks such as `useProviderRuntime`, `useIntegrationStore`, `useSettingsStore`,
+  and `useHomeAssistant` instead of broad direct subscriptions.
+- Keep subscriptions narrow.
+- Do not subscribe to a full store object when a selector already exists.
 
 ```ts
-// Good — re-renders only when connected changes
-const connected = useProviderRuntime(providerRuntimeSelectors.connected);
+const currentRuntime = useIntegrationStore(
+  providerRuntimeSelectors.currentProviderRuntime
+);
 
-// Good — one subscription for a group of related display settings
-const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsStore(
+const { disableAnimations, effectsQuality } = useSettingsStore(
   settingsSelectors.displaySettings
 );
-
-// Avoid — re-renders on every store change
-const store = useProviderRuntime();
 ```
 
-### One source of truth
-
-- Do not maintain the same domain in both a store and local component state
-- Do not duplicate persistence logic — use `createJSONStorage(() => localStorage)` inside
-  the store's `persist` middleware, not raw `window.localStorage` access
-- Stores own their own localStorage keys; feature components do not call `storage.set` directly
-
-### Controller decomposition contract
-
-Feature controller hooks should remain orchestration-focused and delegate responsibility:
-
-- Keep entity/service synchronization in dedicated sync hooks (for example `use-*-entity-sync`,
-  `use-*-runtime-state`, `use-*-on-state-sync`)
-- Keep side-effectful domain actions in action hooks (`use-*-actions`, `use-*-toggle-action`)
-- Keep display-only computed fields in display hooks (`use-*-display`, `use-*-display-fields`)
-
-The controller should compose these slices and return view state, rather than accumulating large
-inline sync/action/display blocks.
-
-### Shared compact-card presentation contract
-
-When adding or revising dense card variants:
-
-- Reuse shared presentational primitives such as the entity title block and shared `BaseCard` shell
-- Prefer passing feature data into a shared card shell over building new one-off compact layouts
-- Keep title/subtitle ordering explicit through the shared title block (`title-first` vs `eyebrow-first`) so compact cards stay visually consistent across domains
-
-This keeps tiny, extra-small, and other compressed card variants aligned while still letting
-features supply their own actions, metrics, and visual accents.
-
-### Typed i18n callback contract
-
-Use shared translator function types exported by the i18n module for hook/component dependencies
-that accept `t` callbacks.
-
-- Prefer importing `TranslateFn` from `src/app/hooks` or `src/app/i18n`
-- Avoid redefining local callback signatures like `(key: string) => string`
-
-This keeps strict `TranslationKey` typing intact across features and prevents type mismatch when
-extracting helper hooks.
-
-### Store mutation boundary
-
-For import/restore/config-apply flows, mutate stores through explicit action methods (`apply...`,
-`replace...`) rather than calling external `store.setState(...)` from feature or utility modules.
-
-`setState` is allowed inside the store implementation itself when needed for store-internal sync
-mechanics, but external callers should use store actions for store-owned domains.
-
-### Persistence pattern
-
-Use Zustand `persist` middleware for any store that needs to survive a page reload:
+Avoid:
 
 ```ts
-export const useMyStore = create<MyState>()(
-  persist(
-    (set) => ({ ... }),
-    {
-      name: 'navet-my-key',
-      storage: createJSONStorage(() => localStorage),
-      merge: (persisted, current) => {
-        // Validate and normalize persisted values before rehydrating
-        return { ...current, ...sanitized };
-      },
-    }
-  )
-);
+const store = useIntegrationStore();
 ```
 
-Persisted stores should validate or normalize persisted values before rehydrating. Most persisted
-stores implement this with a `merge` function (`settings-store`, `theme-store`, `navigation-store`,
-`edit-mode-store`, `dashboard-entities-store`, `home-dashboard-layout-store`,
-`energy-dashboard-store`, and `light-memory-store`). A small number of feature stores normalize in
-their own action or migration paths (`custom-cards-store`, `light-preset-store`); do not add new
-persisted stores without an explicit validation or migration strategy.
+## Current Runtime Flow
 
-Never use the manual `subscribe` + `localStorage.setItem` pattern.
+The current runtime model is layered:
 
----
+1. `AuthProvider` resolves runtime and active session state.
+2. Provider-specific services and infrastructure manage transport and provider data.
+3. `home-assistant-store.ts` tracks Home Assistant provider state.
+4. `integration-store.ts` aggregates provider runtime state and normalized snapshots.
+5. Shared hooks and feature controllers read normalized state for UI behavior.
 
-## Service → Store event flow
+This means Home Assistant services and stores are real implementation details, but not the public
+shared architecture for all features.
 
-`HomeAssistantService` is the Home Assistant adapter facade in `src/app/services/`. It currently
-composes the connection, entity, and registry services and emits typed events:
-`'entities' | 'config' | 'registries' | 'connection'`.
+## Service To Store Flow
 
-The provider-specific store subscribes via `addListener(event => ...)` and updates **only the
-affected slice**:
+Current Home Assistant service flow:
 
-```
-service emits 'entities'  →  home-assistant-store sets { entities }
-service emits 'config'    →  home-assistant-store sets { config }
-service emits 'registries'→  home-assistant-store sets { areas, deviceRegistry, entityRegistry }
-service emits 'connection'→  home-assistant-store sets { connected, connection, connecting }
-```
+- `src/app/services/home-assistant.service.ts` is the main Home Assistant facade.
+- It emits typed updates such as `entities`, `config`, `registries`, and `connection`.
+- `src/app/stores/home-assistant-store.ts` updates only the affected slice.
+- `src/app/stores/integration-store.ts` derives provider runtime state and normalized provider
+  snapshots from provider-specific data.
 
-`integration-store` then aggregates provider-specific runtime and normalized provider snapshots into
-the broader app-facing runtime contract.
+Do not add catch-all "sync everything" listeners that copy every field on every event.
 
-Do not add a generic "re-sync everything" listener. Each event type should produce a minimal,
-targeted `set()` call.
+## Persistence Rules
 
----
+- Use Zustand `persist` middleware for persisted store state.
+- Use `createJSONStorage(() => localStorage)` for browser-backed persistence.
+- Validate or normalize persisted values before rehydrating.
+- Keep store-owned storage keys and migration logic inside the store layer.
+- Do not use raw `window.localStorage` directly in components or arbitrary utilities.
 
-## Decision Guide
+## Mutation Rules
 
-| Scenario | Use |
-|---|---|
-| State read by 2+ components | Zustand store |
-| State persisted across page loads | Zustand store + `persist` middleware |
-| Real-time provider data | Zustand store updated via typed provider service events |
-| Feature-scoped ephemeral UI state | `useState` / `useReducer` inside the feature hook |
-| Cross-cutting lifecycle / DI | React Context (no reactive state) |
+- Mutate store-owned state through store actions.
+- Do not call `storeInstance.setState(...)` from components or feature utilities.
+- Keep imperative data-loading logic in services, adapters, or controller hooks rather than inside
+  generic primitives.
 
----
+## Feature Controller Rules
 
-## Anti-patterns to avoid
+Feature controllers should orchestrate state instead of owning every detail inline.
 
-- Raw `window.localStorage` access outside of `src/app/utils/storage`
-- Calling `storeInstance.setState(...)` directly from a component — use the store's own actions
-- Registering a catch-all listener on a provider service that copies all fields on every event
-- Maintaining the same flag in both a Zustand store and a React Context
-- Multiple `useXyzStore(state => state.field)` calls in the same component when a combined
-  selector already exists
+- keep synchronization logic in dedicated hooks
+- keep action logic in dedicated hooks or service facades
+- keep derived display data in display hooks or pure helpers
+- keep provider-specific assumptions out of shared controllers where a provider seam already exists
 
----
+## Anti-Patterns
 
-## HA entity update performance
+Do not:
 
-Every HA WebSocket state change replaces the `entities` object in the store, causing
-`useHADevices` to rebuild all device collections and `useDeviceMap` to produce a new
-`Map`. Without stabilization this triggers a full component-tree re-render.
+- introduce React Context for general shared state
+- mirror the same state in both local component state and a store without a clear reason
+- register provider service listeners that resync all fields on every update
+- use Home Assistant stores as the app-wide long-term public contract
+- bypass normalized provider state when shared UI already has a provider-agnostic path
 
-**`useDeviceMap` reference stabilization** — A `useRef` tracks the previous Map. On each
-rebuild, each new device object is compared against its previous version (primitives by
-`===`, arrays by length + `JSON.stringify`). Unchanged devices reuse their old object
-reference. When no devices changed, the same Map instance is returned, collapsing the
-entire cascade.
+## Related Docs
 
----
-
-## Performance optimization patterns
-
-### useShallow for multi-value subscriptions
-
-When subscribing to multiple related values from a store, use `useShallow` from Zustand to
-enable shallow equality checking instead of referential equality. This prevents re-renders
-when multiple fields are extracted but only some have changed:
-
-```ts
-import { useShallow } from 'zustand/react/shallow';
-import { useSettingsStore } from '@/app/stores';
-
-// ✅ Good — only re-renders when effectsQuality or lowPowerMode actually change
-const { effectsQuality, lowPowerMode } = useSettingsStore(
-  useShallow((state) => ({
-    effectsQuality: state.effectsQuality,
-    lowPowerMode: state.lowPowerMode,
-  }))
-);
-
-// ❌ Avoid — creates new object every render, always re-renders
-const { effectsQuality, lowPowerMode } = useSettingsStore(
-  (state) => ({
-    effectsQuality: state.effectsQuality,
-    lowPowerMode: state.lowPowerMode,
-  })
-);
-```
-
-### Memoize complex computations and callbacks
-
-Use `useMemo` for expensive transformations and `useCallback` for stable callback references
-passed to child components or event handlers:
-
-```ts
-// ✅ Memoize derived arrays and objects
-const sortableItems = useMemo(() => 
-  cardIds.map((cardId) => `home-card-${cardId}`), 
-  [cardIds]
-);
-
-// ✅ Memoize callback closures
-const handleAddCard = useCallback(() => {
-  onOpenAddCardDialog?.();
-}, [onOpenAddCardDialog]);
-```
-
-### Cache Intl formatters
-
-Intl formatters are expensive to create. Cache them in a module-level Map keyed by locale,
-or memoize within components:
-
-```ts
-// Module-level cache for date/time formatters
-const timeFormatterByLocale = new Map<string, Intl.DateTimeFormat>();
-
-function getTimeFormatter(locale: string): Intl.DateTimeFormat {
-  const existing = timeFormatterByLocale.get(locale);
-  if (existing) return existing;
-  const formatter = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' });
-  timeFormatterByLocale.set(locale, formatter);
-  return formatter;
-}
-```
-
-### Theme surface token memoization
-
-Use `useMemo` to prevent recalculation of theme surface tokens on every render:
-
-```ts
-const surface = useMemo(
-  () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
-  [resolvedEffectsQuality, theme]
-);
-```
-
-**`RoomSection` custom memo comparator** — Default `memo` re-renders all sections
-whenever `deviceMap` changes reference. The custom comparator (`areRoomSectionPropsEqual`)
-only iterates `orderedIds` that belong to *this* section when checking `deviceMap` and
-`customCardMap`, and compares `orderedIds` by content rather than reference. Sections
-whose devices are unmodified skip re-rendering entirely when another section's device
-updates.
-
-**Per-entity selectors** — `homeAssistantSelectors.entity(id)` returns a selector that extracts a
-single entity by ID. Since `home-assistant-js-websocket` preserves entity object references for
-unchanged entities, Zustand's `Object.is` check means a card only re-renders when *its own* entity
-changes — not when any other entity in the house updates. Use this in card controllers instead of
-`homeAssistantSelectors.entities` + index lookup.
-
-```ts
-// Good — re-renders only when light.living_room changes
-const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
-
-// Avoid — re-renders on every entity update in the house
-const entities = useHomeAssistant(homeAssistantSelectors.entities);
-const liveEntity = entities?.[id];
-```
-
-**`useDeferredValue` for bulk entity consumers** — Hooks that process the full entity collection
-(device builders, RSS source scanners, notification watchers) should wrap their `entities`
-subscription in `useDeferredValue`. React will prioritize user interactions over the rebuild and
-schedule it during idle time:
-
-```ts
-const entities = useDeferredValue(useHomeAssistant(homeAssistantSelectors.entities));
-```
-
-**`useCardOrdering` identity key** — Card ordering only needs to rebuild when device IDs
-or room assignments change, not on every HA state update (temperature, brightness, etc.).
-A `deviceIdentityKey` string (`id:room` pairs joined) is computed from `devices` and used
-to gate `buildOrders` recreation. The actual pairs are read via a `useRef` so the callback
-never goes stale. This decouples ordering from HA state churn entirely.
-
-**Edit mode `startTransition`** — Toggling edit mode causes every `DashboardCardItem` to
-re-render (the `isEditMode` prop changes) and mounts ~200 new DOM nodes (remove + resize
-buttons per card). Wrapping the `toggleEditMode` call in `startTransition` marks the
-update as non-urgent, keeping the UI responsive on low-end hardware (RPi) while React
-processes the batch in the background.
-
-**`content-visibility: auto` on room sections (low quality mode only)** — When
-`effectsQuality === 'low'`, each `RoomSection` wrapper gets `content-visibility: auto` and
-`contain-intrinsic-block-size` set to the estimated section height. This tells the browser to
-skip layout and paint for offscreen sections entirely. Omitted in high/medium quality modes
-because `content-visibility: auto` creates a containment context that clips ambient light
-bleed effects.
-
-**`contain: layout style paint` on card wrappers** — Applied to all cards except light cards
-when `ambientLightBleed` is enabled; `paint` containment clips glow effects to the card
-border-box, so light cards in bleed mode use `contain: layout style` only.
-
-**Stable event handlers** — Where multiple sibling elements share the same logical action
-(for example brightness preset buttons), a single `useCallback`-memoized handler can be
-passed to all buttons via `data-*` attributes and `e.currentTarget`. This produces one
-function allocation instead of N closures per render.
+- `docs/technical/multi-backend-migration-guide.md`
+- `docs/agents/architecture.md`
+- `docs/agents/testing.md`
+- `ai/skills/testing-architecture.md`

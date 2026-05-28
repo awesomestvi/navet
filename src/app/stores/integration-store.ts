@@ -65,9 +65,10 @@ function getProviderSessionsSnapshot(): Partial<
   Record<IntegrationProviderId, NavetProviderSession>
 > {
   const snapshot = authSessionManager.getSnapshot();
+  const sessions = snapshot.sessions ?? {};
 
   return Object.fromEntries(
-    Object.entries(snapshot.sessions).map(([providerId, session]) => [
+    Object.entries(sessions).map(([providerId, session]) => [
       providerId,
       {
         providerId: session.providerId,
@@ -112,6 +113,12 @@ function buildProviderSnapshots(homeAssistantState: HomeAssistantStore): {
       connected: homeySnapshot.connected,
       devices: homeyDevices,
       rooms: homeyRooms,
+    },
+    openhab: {
+      providerId: 'openhab',
+      connected: false,
+      devices: [],
+      rooms: [],
     },
   };
 

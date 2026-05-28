@@ -1,6 +1,8 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { describe, expect, it } from 'vitest';
-import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
+import type {
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshotMap,
+} from '@/app/platform/provider-feature-models';
 import { sensorEntityFactory } from '@/test/fixtures/home-assistant/entities/sensor';
 import { vacuumEntityFactory } from '@/test/fixtures/home-assistant/entities/vacuum';
 import { resolveVacuumGlanceMetrics } from '../vacuum-metrics';
@@ -19,7 +21,13 @@ describe('resolveVacuumGlanceMetrics', () => {
     const metrics = resolveVacuumGlanceMetrics({
       vacuumEntityId: 'vacuum.roborock',
       fallbackBattery: 10,
-      vacuumEntity,
+      vacuumEntity: {
+        entityId: 'vacuum.roborock',
+        state: vacuumEntity.state,
+        attributes: vacuumEntity.attributes,
+        lastChanged: vacuumEntity.last_changed,
+        lastUpdated: vacuumEntity.last_updated,
+      },
     });
 
     expect(metrics).toEqual({
@@ -58,23 +66,23 @@ describe('resolveVacuumGlanceMetrics', () => {
       'sensor.roborock_water_tank': waterSensor,
       'sensor.roborock_dustbin': dustbinSensor,
       'sensor.unrelated_water': unrelatedWaterSensor,
-    } as HassEntities;
-    const entityRegistry: HomeAssistantEntityRegistryEntry[] = [
-      { entity_id: 'vacuum.roborock', device_id: 'device-vacuum' },
+    } as unknown as PlatformEntitySnapshotMap;
+    const entityRegistry: PlatformEntityRegistryEntry[] = [
+      { entityId: 'vacuum.roborock', deviceId: 'device-vacuum' },
       {
-        entity_id: 'sensor.roborock_water_tank',
-        device_id: 'device-vacuum',
-        original_name: 'Water tank',
+        entityId: 'sensor.roborock_water_tank',
+        deviceId: 'device-vacuum',
+        name: 'Water tank',
       },
       {
-        entity_id: 'sensor.roborock_dustbin',
-        device_id: 'device-vacuum',
-        original_name: 'Dustbin',
+        entityId: 'sensor.roborock_dustbin',
+        deviceId: 'device-vacuum',
+        name: 'Dustbin',
       },
       {
-        entity_id: 'sensor.unrelated_water',
-        device_id: 'device-other',
-        original_name: 'Water tank',
+        entityId: 'sensor.unrelated_water',
+        deviceId: 'device-other',
+        name: 'Water tank',
       },
     ];
 

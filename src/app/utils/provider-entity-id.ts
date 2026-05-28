@@ -7,6 +7,26 @@ export function isLegacyHomeAssistantEntityId(value: string): boolean {
   return LEGACY_HOME_ASSISTANT_ENTITY_ID_PATTERN.test(value);
 }
 
+export function resolveHomeAssistantEntityId(
+  value: string,
+  providerId?: IntegrationProviderId | null
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const scopedId = parseProviderScopedId(value);
+  if (scopedId) {
+    return scopedId.providerId === 'home_assistant' ? scopedId.nativeId : null;
+  }
+
+  if (providerId === 'home_assistant') {
+    return value;
+  }
+
+  return isLegacyHomeAssistantEntityId(value) ? value : null;
+}
+
 export function ensureCanonicalEntityId(
   value: string,
   defaultProviderId: IntegrationProviderId = 'home_assistant'

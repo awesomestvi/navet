@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { CaptionValue } from '@/app/components/ui/caption-value';
 import { useI18n } from '@/app/hooks';
-import { formatMetricNumber } from '@/app/hooks/ha-entity-utils';
+import { formatMetricNumber } from '@/app/hooks/entity-utils';
 import type { WeatherMetricId } from '@/app/stores/settings-store';
 import {
   formatTemperatureFromSourceUnit,

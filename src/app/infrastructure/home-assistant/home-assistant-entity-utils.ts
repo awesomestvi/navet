@@ -1,8 +1,3 @@
-/**
- * Home Assistant entity utilities
- * Refactored: Main logic extracted to entity-utils/ for better maintainability
- */
-
 export {
   brightnessToPercent,
   formatCalendarTime,
@@ -31,4 +26,4 @@ export {
   toKilowattHours,
   toVolts,
   toWatts,
-} from './entity-utils';
+} from '@/app/hooks/entity-utils';
