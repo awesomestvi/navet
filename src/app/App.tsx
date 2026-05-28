@@ -16,6 +16,7 @@ import {
   useAccentColor,
   useCurrentIntegrationConnectionState,
   useCurrentIntegrationStore,
+  useHomeAssistant,
 } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
@@ -29,7 +30,12 @@ import {
 import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
-import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
+import {
+  appErrorSelectors,
+  homeAssistantSelectors,
+  integrationSelectors,
+  settingsSelectors,
+} from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
@@ -56,9 +62,12 @@ function AppContent() {
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const { connected, connecting, reconnecting } = useCurrentIntegrationConnectionState();
-  const connect = useCurrentIntegrationStore(integrationSelectors.connect);
-  const disconnect = useCurrentIntegrationStore(integrationSelectors.disconnect);
-  const syncPanelHass = useCurrentIntegrationStore(integrationSelectors.syncPanelHass);
+  const connect = useHomeAssistant(homeAssistantSelectors.connect);
+  const disconnect = useHomeAssistant(homeAssistantSelectors.disconnect);
+  const syncPanelHass = useHomeAssistant(homeAssistantSelectors.syncPanelHass);
+  const setCurrentProviderId = useCurrentIntegrationStore(
+    integrationSelectors.setCurrentProviderId
+  );
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
@@ -133,6 +142,12 @@ function AppContent() {
     clearAppError();
     logout();
   }, [clearAppError, logout, session?.providerId]);
+
+  useEffect(() => {
+    if (session?.providerId) {
+      setCurrentProviderId(session.providerId);
+    }
+  }, [session?.providerId, setCurrentProviderId]);
 
   useEffect(() => {
     const nextSessions = Object.fromEntries(

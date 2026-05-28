@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { type Dispatch, type ReactNode, type SetStateAction, useRef, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { NavetRoomDescriptor } from '@/app/core/navet';
 import { useTheme } from '@/app/hooks';
 import type { TranslateFn, TranslationKey } from '@/app/i18n';
 import type { PrimaryColor } from '@/app/stores/theme-store';
@@ -15,6 +16,23 @@ const STORY_ROOMS = ['Living Room', 'Kitchen', 'Bedroom'];
 const STORY_AREAS = STORY_ROOMS.map((name, index) => ({
   area_id: String(index + 1),
   name,
+}));
+const STORY_ROOM_DESCRIPTORS: NavetRoomDescriptor[] = STORY_AREAS.map((area) => ({
+  id: area.name.toLowerCase(),
+  canonicalId: area.name.toLowerCase(),
+  name: area.name,
+  normalizedName: area.name.toLowerCase(),
+  providerIds: ['home_assistant'],
+  memberIds: [],
+  sources: [
+    {
+      providerId: 'home_assistant',
+      nativeId: area.area_id,
+      sourceType: 'provider_managed',
+      supportsOrdering: true,
+      supportsDeletion: true,
+    },
+  ],
 }));
 const STORY_TEXT: Partial<Record<TranslationKey, string>> = {
   'header.searchPlaceholder': 'Search devices',
@@ -157,7 +175,7 @@ function createStoryMobileEditActions(
     onAllViewGroupingChange: () => undefined,
     reorderRooms: {
       rooms: STORY_ROOMS,
-      areas: STORY_AREAS,
+      roomDescriptors: STORY_ROOM_DESCRIPTORS,
       roomHiddenItemCounts: new Map([
         ['Living Room', 1],
         ['Kitchen', 0],

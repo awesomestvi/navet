@@ -4,13 +4,17 @@ import { I18nProvider } from '@/app/i18n/i18n-provider';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { LockCard } from '../lock-card';
 
-const { dispatchEntityActionMock, toastErrorMock } = vi.hoisted(() => ({
-  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
+const { lockEntityMock, toastErrorMock, unlockEntityMock } = vi.hoisted(() => ({
+  lockEntityMock: vi.fn().mockResolvedValue(undefined),
   toastErrorMock: vi.fn(),
+  unlockEntityMock: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/app/services/integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
+vi.mock('@/app/services/integration-security-feature.service', () => ({
+  integrationSecurityFeatureService: {
+    lockEntity: lockEntityMock,
+    unlockEntity: unlockEntityMock,
+  },
 }));
 
 vi.mock('sonner', () => ({
@@ -57,9 +61,11 @@ function setLockEntity(state: 'locked' | 'unlocked') {
 describe('LockCard', () => {
   beforeEach(() => {
     homeAssistantStore.setState({ entities: null });
-    dispatchEntityActionMock.mockReset();
-    dispatchEntityActionMock.mockResolvedValue(undefined);
+    lockEntityMock.mockReset();
+    lockEntityMock.mockResolvedValue(undefined);
     toastErrorMock.mockReset();
+    unlockEntityMock.mockReset();
+    unlockEntityMock.mockResolvedValue(undefined);
   });
 
   it('shows a loading state until the Home Assistant entity echoes the unlock', async () => {
@@ -68,13 +74,7 @@ describe('LockCard', () => {
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Slide to unlock' }), { key: ' ' });
 
-    await waitFor(() =>
-      expect(dispatchEntityActionMock).toHaveBeenCalledWith({
-        entityId: 'lock.front_door',
-        domain: 'lock',
-        service: 'unlock',
-      })
-    );
+    await waitFor(() => expect(unlockEntityMock).toHaveBeenCalledWith('lock.front_door'));
     expect(screen.getByText('Unlocking...')).toBeInTheDocument();
     expect(screen.queryByText('Unlocked')).not.toBeInTheDocument();
 
@@ -90,13 +90,7 @@ describe('LockCard', () => {
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Slide to lock' }), { key: ' ' });
 
-    await waitFor(() =>
-      expect(dispatchEntityActionMock).toHaveBeenCalledWith({
-        entityId: 'lock.front_door',
-        domain: 'lock',
-        service: 'lock',
-      })
-    );
+    await waitFor(() => expect(lockEntityMock).toHaveBeenCalledWith('lock.front_door'));
     expect(screen.getByText('Locking...')).toBeInTheDocument();
     expect(screen.queryByText('Unlocked')).not.toBeInTheDocument();
 
@@ -107,7 +101,7 @@ describe('LockCard', () => {
   });
 
   it('restores the previous state when the lock service fails', async () => {
-    dispatchEntityActionMock.mockRejectedValue(new Error('Unable to update lock'));
+    unlockEntityMock.mockRejectedValue(new Error('Unable to update lock'));
     renderLockCard();
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Slide to unlock' }), { key: ' ' });

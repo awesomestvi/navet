@@ -6,24 +6,23 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { coverEntityFactory } from '@/test/fixtures/home-assistant/entities/cover';
 import { CoverCard } from '../index';
 
-const { callServiceMock, toastErrorMock } = vi.hoisted(() => ({
-  callServiceMock: vi.fn().mockResolvedValue(undefined),
-  toastErrorMock: vi.fn(),
+const { closeCoverMock, openCoverMock, setCoverPositionMock, stopCoverMock, toastErrorMock } =
+  vi.hoisted(() => ({
+    closeCoverMock: vi.fn().mockResolvedValue(undefined),
+    openCoverMock: vi.fn().mockResolvedValue(undefined),
+    setCoverPositionMock: vi.fn().mockResolvedValue(undefined),
+    stopCoverMock: vi.fn().mockResolvedValue(undefined),
+    toastErrorMock: vi.fn(),
+  }));
+
+vi.mock('@/app/services/integration-security-feature.service', () => ({
+  integrationSecurityFeatureService: {
+    closeCover: closeCoverMock,
+    openCover: openCoverMock,
+    setCoverPosition: setCoverPositionMock,
+    stopCover: stopCoverMock,
+  },
 }));
-
-vi.mock('@/app/services/home-assistant.service', async () => {
-  const actual = await vi.importActual<typeof import('@/app/services/home-assistant.service')>(
-    '@/app/services/home-assistant.service'
-  );
-
-  return {
-    ...actual,
-    homeAssistantService: {
-      ...actual.homeAssistantService,
-      callService: callServiceMock,
-    },
-  };
-});
 
 vi.mock('sonner', () => ({
   toast: {
@@ -112,8 +111,14 @@ function setLiveCoverTiltPosition(position: number, state = 'open') {
 describe('CoverCard', () => {
   beforeEach(() => {
     homeAssistantStore.setState({ entities: null });
-    callServiceMock.mockReset();
-    callServiceMock.mockResolvedValue(undefined);
+    closeCoverMock.mockReset();
+    closeCoverMock.mockResolvedValue(undefined);
+    openCoverMock.mockReset();
+    openCoverMock.mockResolvedValue(undefined);
+    setCoverPositionMock.mockReset();
+    setCoverPositionMock.mockResolvedValue(undefined);
+    stopCoverMock.mockReset();
+    stopCoverMock.mockResolvedValue(undefined);
     toastErrorMock.mockReset();
     Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
       configurable: true,
@@ -125,18 +130,13 @@ describe('CoverCard', () => {
     });
   });
 
-  it('calls the Home Assistant open cover service', async () => {
+  it('calls the provider open cover action', async () => {
     renderCoverCard();
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'open_cover',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(openCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );
   });
 
@@ -155,57 +155,37 @@ describe('CoverCard', () => {
 
     expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'open_cover',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(openCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );
   });
 
-  it('calls the Home Assistant close cover service', async () => {
+  it('calls the provider close cover action', async () => {
     renderCoverCard();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'close_cover',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );
   });
 
-  it('calls the Home Assistant stop cover service', async () => {
+  it('calls the provider stop cover action', async () => {
     renderCoverCard();
 
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'stop_cover',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(stopCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );
   });
 
-  it('calls the Home Assistant set cover position service from presets', async () => {
+  it('calls the provider set cover position action from presets', async () => {
     renderCoverCard();
 
     fireEvent.click(screen.getByRole('button', { name: '75' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 75 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 75, 'position')
     );
   });
 
@@ -220,12 +200,7 @@ describe('CoverCard', () => {
     fireEvent.click(screen.getByRole('button', { name: '75' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_tilt_position',
-        { tilt_position: 75 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 75, 'tilt')
     );
   });
 
@@ -240,23 +215,13 @@ describe('CoverCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'open_cover_tilt',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(openCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'tilt')
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'close_cover_tilt',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'tilt')
     );
   });
 
@@ -271,12 +236,7 @@ describe('CoverCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'open_cover_tilt',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(openCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'tilt')
     );
     expect(screen.getAllByText('0%').length).toBeGreaterThan(0);
 
@@ -309,20 +269,15 @@ describe('CoverCard', () => {
     fireEvent.pointerDown(gestureSurface, { clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(gestureSurface, { clientY: 40, pointerId: 1 });
 
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
     expect(screen.getAllByText('80%').length).toBeGreaterThan(0);
 
     fireEvent.pointerUp(gestureSurface, { clientY: 40, pointerId: 1 });
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 80 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 80, 'position')
     );
-    expect(callServiceMock).toHaveBeenCalledTimes(1);
+    expect(setCoverPositionMock).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the committed cover position optimistic while Home Assistant reports intermediate movement', async () => {
@@ -347,12 +302,7 @@ describe('CoverCard', () => {
     fireEvent.pointerUp(gestureSurface, { clientY: 30, pointerId: 1 });
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 70 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 70, 'position')
     );
     expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
 
@@ -375,12 +325,7 @@ describe('CoverCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'close_cover',
-        {},
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );
     expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
 
@@ -410,19 +355,14 @@ describe('CoverCard', () => {
     fireEvent.pointerDown(gestureSurface, { clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(gestureSurface, { clientY: 160, pointerId: 1 });
 
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
 
     fireEvent.pointerUp(gestureSurface, { clientY: 160, pointerId: 1 });
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 20 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 20, 'position')
     );
-    expect(callServiceMock).toHaveBeenCalledTimes(1);
+    expect(setCoverPositionMock).toHaveBeenCalledTimes(1);
   });
 
   it('supports position swipes from the compact metric surface', async () => {
@@ -446,12 +386,7 @@ describe('CoverCard', () => {
     fireEvent.pointerUp(gestureSurface, { clientY: 20, pointerId: 1 });
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 80 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 80, 'position')
     );
   });
 
@@ -488,12 +423,7 @@ describe('CoverCard', () => {
     fireEvent.pointerUp(gestureSurface, { clientY: 20, pointerId: 1 });
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 90 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 90, 'position')
     );
   });
 
@@ -520,20 +450,10 @@ describe('CoverCard', () => {
     fireEvent.click(cardRoot);
 
     await waitFor(() =>
-      expect(callServiceMock).toHaveBeenCalledWith(
-        'cover',
-        'set_cover_position',
-        { position: 80 },
-        { entity_id: 'cover.living_room_blind' }
-      )
+      expect(setCoverPositionMock).toHaveBeenCalledWith('cover.living_room_blind', 80, 'position')
     );
-    expect(callServiceMock).toHaveBeenCalledTimes(1);
-    expect(callServiceMock).not.toHaveBeenCalledWith(
-      'cover',
-      'close_cover',
-      {},
-      { entity_id: 'cover.living_room_blind' }
-    );
+    expect(setCoverPositionMock).toHaveBeenCalledTimes(1);
+    expect(closeCoverMock).not.toHaveBeenCalled();
   });
 
   it('does not toggle the cover when tapping the position gesture surface', () => {
@@ -543,7 +463,10 @@ describe('CoverCard', () => {
 
     fireEvent.click(gestureSurface);
 
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(openCoverMock).not.toHaveBeenCalled();
+    expect(closeCoverMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
+    expect(stopCoverMock).not.toHaveBeenCalled();
   });
 
   it('does not preview or commit when the position gesture is tapped without dragging', () => {
@@ -568,7 +491,7 @@ describe('CoverCard', () => {
 
     expect(screen.queryByText('90%')).not.toBeInTheDocument();
     expect(screen.getAllByText('50%').length).toBeGreaterThan(0);
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
   });
 
   it('does not call set position when a drag returns to the starting position', () => {
@@ -596,7 +519,7 @@ describe('CoverCard', () => {
 
     expect(screen.queryByText('70%')).not.toBeInTheDocument();
     expect(screen.getAllByText('50%').length).toBeGreaterThan(0);
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
   });
 
   it('reverts swipe previews without committing when the gesture is canceled', () => {
@@ -624,7 +547,7 @@ describe('CoverCard', () => {
 
     expect(screen.queryByText('80%')).not.toBeInTheDocument();
     expect(screen.getAllByText('50%').length).toBeGreaterThan(0);
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
   });
 
   it('disables position presets when set position is unsupported', () => {
@@ -658,11 +581,11 @@ describe('CoverCard', () => {
     fireEvent.pointerUp(gestureSurface, { clientY: 40, pointerId: 1 });
 
     expect(gestureSurface).toHaveAttribute('aria-disabled', 'true');
-    expect(callServiceMock).not.toHaveBeenCalled();
+    expect(setCoverPositionMock).not.toHaveBeenCalled();
   });
 
   it('shows service action failures through the shared handler', async () => {
-    callServiceMock.mockRejectedValue('failed');
+    openCoverMock.mockRejectedValue('failed');
     renderCoverCard();
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));

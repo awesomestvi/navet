@@ -1,7 +1,7 @@
 import { lazy, memo, Suspense, useMemo } from 'react';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useEnergyDashboard } from '@/app/features/energy';
+import { useProviderEnergySnapshot } from '@/app/features/energy';
 import { buildHomeStatusSummaryItems, InfoBadgeStrip } from '@/app/features/sensors';
 import { useAccentColor, useI18n, useThemeMode } from '@/app/hooks';
 import { useSettingsStore } from '@/app/stores';
@@ -45,7 +45,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const accentColor = useAccentColor();
   const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
-  const { overview: energyOverview, isConfigured: isEnergyConfigured } = useEnergyDashboard();
+  const energySnapshot = useProviderEnergySnapshot();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const { allCards, flowCards, sectionCards } = useMemo(
@@ -60,14 +60,14 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const statusSummaryItems = useMemo(
     () =>
       buildHomeStatusSummaryItems(deviceMap, {
-        gridImportTodayKWh: isEnergyConfigured ? energyOverview.totals.importTodayKWh : undefined,
+        gridImportTodayKWh: energySnapshot.isConfigured ? energySnapshot.importTodayKWh : undefined,
         routineCount,
         temperatureUnit,
       }),
     [
       deviceMap,
-      energyOverview.totals.importTodayKWh,
-      isEnergyConfigured,
+      energySnapshot.importTodayKWh,
+      energySnapshot.isConfigured,
       routineCount,
       temperatureUnit,
     ]

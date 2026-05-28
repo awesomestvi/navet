@@ -1,23 +1,20 @@
 import { Gauge, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { CardEmptyState } from '@/app/components/patterns';
 import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import {
   type AccentColor,
-  buildAvailableSensorOptions,
   GroupedSensorCard,
   InfoCard,
-  resolveSensorReadings,
   SensorGroupSettingsDialog,
   type SensorReading,
 } from '@/app/features/sensors';
 import { useSensorStatisticsHistory } from '@/app/features/sensors/hooks/use-sensor-statistics-history';
 import { useAreaRooms, useI18n } from '@/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@/app/hooks/use-dashboard-widget-room-options';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
-import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
+import { useHomeAssistantInfoWidgetData } from './use-home-assistant-info-widget-data';
 
 const MAX_INFO_WIDGET_SENSORS = 6;
 const EMPTY_SENSOR_ENTITY_IDS: string[] = [];
@@ -53,38 +50,19 @@ function getSensorEntityIds(data: InfoWidgetData | undefined) {
 }
 
 export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }: InfoWidgetProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const rooms = useAreaRooms();
-  const entities = useProviderRuntime(providerRuntimeSelectors.entities);
-  const areas = useProviderRuntime(providerRuntimeSelectors.areas);
-  const deviceRegistry = useProviderRuntime(providerRuntimeSelectors.deviceRegistry);
-  const entityRegistry = useProviderRuntime(providerRuntimeSelectors.entityRegistry);
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
-  const formatOptions = useMemo(() => ({ locale, use24HourTime }), [locale, use24HourTime]);
-  const availableSensors = useMemo(
-    () =>
-      buildAvailableSensorOptions({
-        entities,
-        areas,
-        deviceRegistry,
-        entityRegistry,
-        formatOptions,
-        includeBinarySensors: true,
-      }),
-    [areas, deviceRegistry, entities, entityRegistry, formatOptions]
-  );
   const sensorEntityIds = getSensorEntityIds(data);
-  const currentSensors = useMemo<SensorReading[]>(
-    () =>
-      resolveSensorReadings({
-        entities,
-        sensorEntityIds,
-        formatOptions,
-      }),
-    [entities, formatOptions, sensorEntityIds]
-  );
+  const { availableSensors, currentSensors } = useHomeAssistantInfoWidgetData(sensorEntityIds, {
+    includeBinarySensors: true,
+    use24HourTime,
+  }) as {
+    availableSensors: ReturnType<typeof useHomeAssistantInfoWidgetData>['availableSensors'];
+    currentSensors: SensorReading[];
+  };
   const primaryEntityId = currentSensors[0]?.id;
   const { points: sparklineData, hasHistory } = useSensorStatisticsHistory(primaryEntityId);
   const primarySensor = primaryEntityId

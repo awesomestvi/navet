@@ -13,6 +13,13 @@ Navet must deliberately support:
 
 These modes must stay supported through the same core auth model, not through scattered one-off UI hacks.
 
+## Shared Multi-Backend Direction
+
+- Auth and runtime decisions must move toward backend-agnostic seams where possible.
+- Keep provider selection, session bootstrapping, and runtime ownership in shared auth/runtime layers rather than feature components.
+- Treat Home Assistant-specific runtime behavior as adapter-specific infrastructure, not the permanent global architecture.
+- When a change affects more than one provider or changes provider/runtime boundaries, read `docs/technical/multi-backend-migration-guide.md` first.
+
 ## Architecture Rules
 
 - Avoid separate hacks for each mode.
@@ -42,6 +49,8 @@ Also verify:
 - Home Assistant frontend token reuse for ingress when available
 - panel mode without separate token bootstrap
 - reconnect behavior after auth failure
+
+Home Assistant-specific deployment and auth rules still apply inside the Home Assistant adapter boundary. Do not generalize Home Assistant runtime assumptions into the cross-provider architecture.
 
 ## Change Policy
 

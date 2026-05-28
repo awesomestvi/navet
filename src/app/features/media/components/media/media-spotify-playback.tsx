@@ -2,11 +2,10 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import { Music2, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, Input, Select } from '@/app/components/primitives';
-import { useI18n, useServiceActionHandler } from '@/app/hooks';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
 import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 const PLAY_MEDIA_FEATURE = 512;
@@ -23,10 +22,10 @@ interface MediaSpotifyPlaybackProps {
   entityName: string;
 }
 
-export function selectMediaPlaybackData(state: IntegrationStore) {
+export function selectMediaPlaybackData(state: HomeAssistantStore) {
   return {
-    entities: state.homeAssistant.entities,
-    entityRegistry: state.homeAssistant.entityRegistry,
+    entities: state.entities,
+    entityRegistry: state.entityRegistry,
   };
 }
 
@@ -138,7 +137,7 @@ export function MediaSpotifyPlayback({
 }: MediaSpotifyPlaybackProps) {
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
-  const { entities, entityRegistry } = useProviderRuntime(selectMediaPlaybackData);
+  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
   const currentEntity = entities?.[entityId];
   const spotifyTargets = useMemo(
     () => getSpotifyTargets(entities, entityRegistry),

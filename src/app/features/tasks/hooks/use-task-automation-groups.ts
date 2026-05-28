@@ -1,49 +1,57 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { useCallback, useMemo } from 'react';
-import { shallow } from 'zustand/shallow';
-import { useHomeAssistant, useI18n } from '@/app/hooks';
+import { useMemo, useSyncExternalStore } from 'react';
+import { useI18n } from '@/app/hooks';
+import type {
+  PlatformTaskEntityMap,
+  PlatformTaskRuntimeSnapshot,
+} from '@/app/platform/provider-feature-models';
 import { integrationTaskService } from '@/app/services/integration-task.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
 import type { TaskRoutineData } from '../types';
 import { mapTaskRoutines } from '../utils/map-task-routines';
+import { filterTaskEntities } from '../utils/task-runtime';
 
 export function useTaskRoutines(): TaskRoutineData {
   const { locale } = useI18n();
-  const selectTaskEntities = useCallback((state: IntegrationStore): HassEntities | null => {
-    const snapshot = integrationTaskService.selectTaskRuntimeSnapshot(state);
-    if (!snapshot.entities) {
-      return null;
-    }
+  const taskRuntime = useSyncExternalStore(
+    integrationTaskService.subscribeTaskRuntimeSnapshot,
+    integrationTaskService.getTaskRuntimeSnapshot,
+    integrationTaskService.getTaskRuntimeSnapshot
+  );
 
-    return Object.fromEntries(
-      Object.entries(snapshot.entities).filter(
-        ([entityId]) =>
+  const entities = useMemo(
+    (): PlatformTaskEntityMap | null =>
+      filterTaskEntities(
+        taskRuntime.entities,
+        (entityId) =>
           entityId.startsWith('automation.') ||
           entityId.startsWith('scene.') ||
           entityId.startsWith('script.')
-      )
-    );
-  }, []);
-  const entities = useHomeAssistant(selectTaskEntities, shallow);
-  const areas = useHomeAssistant(
-    (state) => integrationTaskService.selectTaskRuntimeSnapshot(state).areas
+      ),
+    [taskRuntime.entities]
   );
-  const deviceRegistry = useHomeAssistant(
-    (state) => integrationTaskService.selectTaskRuntimeSnapshot(state).deviceRegistry
-  );
-  const entityRegistry = useHomeAssistant(
-    (state) => integrationTaskService.selectTaskRuntimeSnapshot(state).entityRegistry
+  const taskRuntimeMetadata = useMemo(
+    (): Pick<PlatformTaskRuntimeSnapshot, 'rooms' | 'devices' | 'entityReferences'> => ({
+      rooms: taskRuntime.rooms,
+      devices: taskRuntime.devices,
+      entityReferences: taskRuntime.entityReferences,
+    }),
+    [taskRuntime.devices, taskRuntime.entityReferences, taskRuntime.rooms]
   );
 
   return useMemo(
     () =>
       mapTaskRoutines({
         entities,
-        areas,
-        deviceRegistry,
-        entityRegistry,
+        rooms: taskRuntimeMetadata.rooms,
+        devices: taskRuntimeMetadata.devices,
+        entityReferences: taskRuntimeMetadata.entityReferences,
         locale,
       }),
-    [areas, deviceRegistry, entities, entityRegistry, locale]
+    [
+      entities,
+      locale,
+      taskRuntimeMetadata.devices,
+      taskRuntimeMetadata.entityReferences,
+      taskRuntimeMetadata.rooms,
+    ]
   );
 }

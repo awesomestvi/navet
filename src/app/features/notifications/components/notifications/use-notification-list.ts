@@ -1,11 +1,8 @@
 import { useMemo } from 'react';
-import { shallow } from 'zustand/shallow';
-import { selectUpdateDomainEntities } from '@/app/hooks/ha-domain-entity-maps';
-import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
-import { useI18n } from '@/app/i18n';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import type { HaNotificationData } from './use-ha-notification-data';
+import { type TranslateFn, useI18n } from '@/app/i18n';
+import type { PlatformUpdateNotificationCandidate } from '@/app/platform/provider-feature-models';
 import type { PlatformNotification } from './use-notifications';
+import type { ProviderNotificationData } from './use-provider-notification-data';
 
 const inferNotificationType = (
   entityId: string,
@@ -40,28 +37,101 @@ const inferNotificationType = (
   return 'info';
 };
 
-interface UseNotificationListParams extends HaNotificationData {
+interface UseNotificationListParams extends ProviderNotificationData {
   readNotifications: string[];
   hiddenNotifications: string[];
   pendingUpdateInstalls: string[];
 }
 
+interface BuildUpdateNotificationsParams {
+  pendingUpdateInstalls: string[];
+  readNotifications: string[];
+  t: TranslateFn;
+  updateCandidates: PlatformUpdateNotificationCandidate[];
+}
+
+export function buildUpdateNotifications({
+  pendingUpdateInstalls,
+  readNotifications,
+  t,
+  updateCandidates,
+}: BuildUpdateNotificationsParams): PlatformNotification[] {
+  return updateCandidates
+    .filter(
+      (candidate) =>
+        candidate.state === 'on' ||
+        candidate.inProgress ||
+        pendingUpdateInstalls.includes(candidate.entityId)
+    )
+    .map((candidate) => {
+      const title = candidate.friendlyName || t('notifications.update.available');
+      const isBusy = candidate.inProgress || pendingUpdateInstalls.includes(candidate.entityId);
+      const requiresRestart =
+        pendingUpdateInstalls.includes(candidate.entityId) &&
+        !candidate.inProgress &&
+        candidate.state !== 'on';
+      const versionMessage =
+        candidate.installedVersion && candidate.latestVersion
+          ? t('notifications.update.availableFromTo', {
+              from: candidate.installedVersion,
+              to: candidate.latestVersion,
+            })
+          : candidate.latestVersion
+            ? t('notifications.update.availableTo', { version: candidate.latestVersion })
+            : t('notifications.update.available');
+      const detailMessage =
+        candidate.releaseNotes?.trim() || candidate.releaseSummary?.trim() || null;
+      const message = detailMessage ? `${versionMessage}\n\n${detailMessage}` : versionMessage;
+      const statusLabel = requiresRestart
+        ? t('notifications.update.restartToFinish')
+        : isBusy
+          ? candidate.progress !== null && candidate.progress !== undefined
+            ? t('notifications.update.installingProgress', { progress: candidate.progress })
+            : t('notifications.update.installing')
+          : candidate.latestVersion
+            ? t('notifications.update.readyToInstall', { version: candidate.latestVersion })
+            : t('notifications.update.available');
+      const timestamp = new Date(candidate.lastChanged ?? candidate.lastUpdated ?? Date.now());
+
+      const notification: PlatformNotification = {
+        id: candidate.entityId,
+        notificationId: candidate.entityId,
+        source: 'update' as const,
+        type: 'warning' as const,
+        title,
+        message,
+        timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
+        read: readNotifications.includes(candidate.entityId),
+        isBusy,
+        progress: candidate.progress ?? null,
+        statusLabel,
+        requiresRestart,
+        installedVersion: candidate.installedVersion ?? null,
+        latestVersion: candidate.latestVersion ?? null,
+        detailsUrl: candidate.detailsUrl ?? null,
+      };
+
+      return notification;
+    });
+}
+
 export function useNotificationList({
+  entitiesHydrated,
   persistentNotifications,
   repairIssues,
+  updateCandidates,
   readNotifications,
   hiddenNotifications,
   pendingUpdateInstalls,
 }: UseNotificationListParams): PlatformNotification[] {
   const { t } = useI18n();
-  const hassEntitiesHydrated = useHomeAssistant(homeAssistantSelectors.entitiesHydrated);
-  const updateEntities = useHomeAssistant(selectUpdateDomainEntities, shallow);
 
   return useMemo<PlatformNotification[]>(() => {
     if (
-      !hassEntitiesHydrated &&
+      !entitiesHydrated &&
       persistentNotifications.length === 0 &&
-      repairIssues.length === 0
+      repairIssues.length === 0 &&
+      updateCandidates.length === 0
     ) {
       return [];
     }
@@ -109,119 +179,24 @@ export function useNotificationList({
       };
     });
 
-    const updateNotifications = Object.entries(updateEntities)
-      .filter(([entityId, entity]) => {
-        if (!entityId.startsWith('update.')) return false;
-        return (
-          entity.state === 'on' ||
-          Boolean(entity.attributes?.in_progress) ||
-          pendingUpdateInstalls.includes(entityId)
-        );
-      })
-      .map(([entityId, entity]) => {
-        const title =
-          (typeof entity.attributes?.friendly_name === 'string' &&
-            entity.attributes.friendly_name) ||
-          t('notifications.update.available');
-        const installedVersion =
-          typeof entity.attributes?.installed_version === 'string'
-            ? entity.attributes.installed_version
-            : null;
-        const latestVersion =
-          typeof entity.attributes?.latest_version === 'string'
-            ? entity.attributes.latest_version
-            : null;
-        const releaseSummary =
-          typeof entity.attributes?.release_summary === 'string'
-            ? entity.attributes.release_summary
-            : null;
-        const releaseNotes =
-          typeof entity.attributes?.release_notes === 'string' &&
-          !/^https?:\/\//i.test(entity.attributes.release_notes)
-            ? entity.attributes.release_notes
-            : null;
-        const detailsUrl =
-          typeof entity.attributes?.release_url === 'string'
-            ? entity.attributes.release_url
-            : typeof entity.attributes?.release_notes_url === 'string'
-              ? entity.attributes.release_notes_url
-              : typeof entity.attributes?.release_notes === 'string' &&
-                  /^https?:\/\//i.test(entity.attributes.release_notes)
-                ? entity.attributes.release_notes
-                : null;
-        const rawProgress =
-          typeof entity.attributes?.update_percentage === 'number'
-            ? entity.attributes.update_percentage
-            : typeof entity.attributes?.update_progress === 'number'
-              ? entity.attributes.update_progress
-              : null;
-        const progress =
-          typeof rawProgress === 'number' && !Number.isNaN(rawProgress)
-            ? Math.max(0, Math.min(100, Math.round(rawProgress)))
-            : null;
-        const isBusy =
-          Boolean(entity.attributes?.in_progress) || pendingUpdateInstalls.includes(entityId);
-        const requiresRestart =
-          pendingUpdateInstalls.includes(entityId) &&
-          !entity.attributes?.in_progress &&
-          entity.state !== 'on';
-        const versionMessage =
-          installedVersion && latestVersion
-            ? t('notifications.update.availableFromTo', {
-                from: installedVersion,
-                to: latestVersion,
-              })
-            : latestVersion
-              ? t('notifications.update.availableTo', { version: latestVersion })
-              : t('notifications.update.available');
-        const detailMessage = releaseNotes?.trim() || releaseSummary?.trim() || null;
-        const message = detailMessage ? `${versionMessage}\n\n${detailMessage}` : versionMessage;
-        const statusLabel = requiresRestart
-          ? t('notifications.update.restartToFinish')
-          : isBusy
-            ? progress !== null
-              ? t('notifications.update.installingProgress', { progress })
-              : t('notifications.update.installing')
-            : latestVersion
-              ? t('notifications.update.readyToInstall', { version: latestVersion })
-              : t('notifications.update.available');
-        const timestampSource =
-          typeof entity.last_changed === 'string'
-            ? entity.last_changed
-            : typeof entity.last_updated === 'string'
-              ? entity.last_updated
-              : '';
-        const timestamp = new Date(timestampSource || Date.now());
-        return {
-          id: entityId,
-          notificationId: entityId,
-          source: 'update' as const,
-          type: 'warning' as const,
-          title,
-          message,
-          timestamp: Number.isNaN(timestamp.getTime()) ? new Date() : timestamp,
-          read: readNotifications.includes(entityId),
-          isBusy,
-          progress,
-          statusLabel,
-          requiresRestart,
-          installedVersion,
-          latestVersion,
-          detailsUrl,
-        };
-      });
+    const updateNotifications = buildUpdateNotifications({
+      pendingUpdateInstalls,
+      readNotifications,
+      t,
+      updateCandidates,
+    });
 
     return [...livePersistentNotifications, ...liveRepairNotifications, ...updateNotifications]
       .filter((notification) => !hiddenNotifications.includes(notification.id))
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }, [
-    hassEntitiesHydrated,
+    entitiesHydrated,
     hiddenNotifications,
     pendingUpdateInstalls,
     persistentNotifications,
     readNotifications,
     repairIssues,
     t,
-    updateEntities,
+    updateCandidates,
   ]);
 }

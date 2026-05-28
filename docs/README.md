@@ -5,6 +5,7 @@ the docs that are meant to describe the current codebase rather than historical 
 
 ## Start Here
 
+- [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md): canonical architecture direction for provider boundaries, backend-agnostic state, and incremental migration work
 - [../README.md](../README.md): project overview, setup, commands, testing workflow, and architecture summary
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): shared-state rules, auth-provider boundaries, store boundaries, and service-to-store flow
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md): Storybook taxonomy, story placement, fixture rules, and review checklist
@@ -22,6 +23,7 @@ the docs that are meant to describe the current codebase rather than historical 
 
 ### Architecture and implementation
 
+- [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md): canonical architecture direction for multi-backend migration and provider boundaries
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): Zustand shared-state guidance and runtime auth-provider boundaries
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md): Storybook workflow and story authoring guide
 - [PUBLIC_LAUNCH_SECURITY.md](PUBLIC_LAUNCH_SECURITY.md): security gates and deployment hardening for public releases
@@ -46,12 +48,15 @@ the docs that are meant to describe the current codebase rather than historical 
 Use these directories when docs need to be checked against the live implementation:
 
 - [`src/app/features/`](../src/app/features/): feature-owned modules
+- [`src/app/core/`](../src/app/core/): Navet-owned domain contracts, provider snapshots, and mapping layers
+- [`src/app/platform/`](../src/app/platform/): provider feature abstractions and cross-provider interfaces
 - [`src/app/components/`](../src/app/components/): shared UI layers and app-shell composition
 - [`src/app/ui-kit/`](../src/app/ui-kit/): canonical shared UI import surface for docs, examples, and stable consumers
-- [`src/app/stores/`](../src/app/stores/): Zustand stores and selectors
-- [`src/app/services/`](../src/app/services/): Home Assistant facade plus connection, entity, and registry services
+- [`src/app/stores/`](../src/app/stores/): Zustand stores, selectors, and cross-provider runtime aggregation
+- [`src/app/services/`](../src/app/services/): provider-facing services, adapter registries, and backend-specific integrations
 - [`src/app/storybook/`](../src/app/storybook/): shared Storybook frames and docs helpers
-- [`src/auth/`](../src/auth/): runtime-specific OAuth, Ingress, and Home Assistant panel auth adapters
+- [`src/app/infrastructure/home-assistant/`](../src/app/infrastructure/home-assistant/): Home Assistant adapter-specific runtime, auth, transport, media, and resources
+- [`src/auth/`](../src/auth/): runtime-specific OAuth, Ingress, panel, and provider auth adapters
 - [`src/test/`](../src/test/): shared Vitest helpers, stubs, and browser mocks
 
 ## Recommended Reading Paths
@@ -59,9 +64,9 @@ Use these directories when docs need to be checked against the live implementati
 ### New contributor
 
 1. [../README.md](../README.md)
-2. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
-3. [../design-system/README.md](../design-system/README.md)
-4. [../design-system/FEATURES.md](../design-system/FEATURES.md)
+2. [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md)
+3. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
+4. [../design-system/README.md](../design-system/README.md)
 
 ### Working on shared UI
 
@@ -72,10 +77,10 @@ Use these directories when docs need to be checked against the live implementati
 
 ### Working on dashboard, state, or section flows
 
-1. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
-2. [../design-system/FEATURES.md](../design-system/FEATURES.md)
-3. [WIDGETS.md](WIDGETS.md)
-4. [`../src/test/`](../src/test/) for test harness helpers
+1. [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md)
+2. [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
+3. [../design-system/FEATURES.md](../design-system/FEATURES.md)
+4. [WIDGETS.md](WIDGETS.md)
 
 ### Writing or updating tests
 
@@ -95,10 +100,11 @@ Use these directories when docs need to be checked against the live implementati
 - Keep active docs aligned with the codebase when architecture, setup, commands, or product surface changes
 - Prefer updating existing active docs over adding duplicate scratch notes
 - Treat `docs/archive/` as historical material, not the current source of truth
+- When provider boundaries, adapter ownership, or backend-agnostic contracts change, update `technical/multi-backend-migration-guide.md`, `technical/REACT_ZUSTAND.md`, and the relevant agent docs together
 - When top-level sections, shared stores, widget types, dashboard edit behavior, or test locations change, update `README.md`, `docs/WIDGETS.md`, and `design-system/FEATURES.md`
 - When Storybook ownership, UI-layer boundaries, token helpers, or `ui-kit/` exports change, update `design-system/README.md` and `STORYBOOK_WORKFLOW.md`
-- When the Home Assistant service split or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
+- When provider runtime aggregation, Home Assistant service flow, or typed event flow changes, update `README.md` and `technical/REACT_ZUSTAND.md`
 - When auth runtimes, OAuth behavior, or deployment defaults change, update `README.md`, `DOCKER_HOME_ASSISTANT_ADDON.md`, and `VERSIONING.md`
 - When setup scripts or test commands change, update `README.md`
 
-Last updated: May 26, 2026
+Last updated: May 28, 2026

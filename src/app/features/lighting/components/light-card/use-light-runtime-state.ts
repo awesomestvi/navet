@@ -1,4 +1,5 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
+import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useLightBrightnessSync } from './use-light-brightness-sync';
 import { useLightColorSync } from './use-light-color-sync';
@@ -12,6 +13,7 @@ interface UseLightRuntimeStateParams {
   initialBrightness: number;
   initialTemp: number;
   liveEntity: HassEntity | undefined;
+  providerState: NavetLightState | null | undefined;
   minColorTemp: number;
   maxColorTemp: number;
   supportsColorTemperature: boolean;
@@ -26,6 +28,7 @@ export function useLightRuntimeState({
   initialBrightness,
   initialTemp,
   liveEntity,
+  providerState,
   minColorTemp,
   maxColorTemp,
   supportsColorTemperature,
@@ -47,6 +50,7 @@ export function useLightRuntimeState({
     setIsOn,
     initialBrightness,
     liveEntity,
+    providerState,
     syncLight: syncLightWithHomeAssistant,
     rememberLightState,
   });
@@ -68,6 +72,7 @@ export function useLightRuntimeState({
     setIsOn,
     initialTemp,
     liveEntity,
+    providerState,
     minColorTemp,
     maxColorTemp,
     syncLight: syncLightWithHomeAssistant,

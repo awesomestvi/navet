@@ -1,5 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useHaCommandQueue } from '@/app/hooks';
 import {
   clampKelvin,
@@ -26,6 +27,7 @@ interface UseLightColorSyncParams {
   setIsOn: (on: boolean) => void;
   initialTemp: number;
   liveEntity: HassEntity | undefined;
+  providerState: NavetLightState | null | undefined;
   minColorTemp: number;
   maxColorTemp: number;
   syncLight: (options: SyncLightOptions) => Promise<void>;
@@ -41,6 +43,7 @@ export function useLightColorSync({
   setIsOn,
   initialTemp,
   liveEntity,
+  providerState,
   minColorTemp,
   maxColorTemp,
   syncLight,
@@ -85,8 +88,12 @@ export function useLightColorSync({
       setColorTemp(nextTemp);
       return;
     }
+    const providerTemp =
+      typeof providerState?.colorTemperatureKelvin === 'number'
+        ? providerState.colorTemperatureKelvin
+        : initialTemp;
     if (isAdjustingTemp) return;
-    if (pendingTempRef.current !== null && Math.abs(initialTemp - pendingTempRef.current) > 100) {
+    if (pendingTempRef.current !== null && Math.abs(providerTemp - pendingTempRef.current) > 100) {
       return;
     }
     if (pendingTempRef.current !== null) {
@@ -96,7 +103,7 @@ export function useLightColorSync({
         tempSyncTimeoutRef.current = null;
       }
     }
-    const nextTemp = roundKelvin(initialTemp);
+    const nextTemp = roundKelvin(providerTemp);
     lastColorTempRef.current = nextTemp;
     rememberLightState(id, { colorTemp: nextTemp });
     setColorTemp(nextTemp);
@@ -107,6 +114,7 @@ export function useLightColorSync({
     liveEntity,
     maxColorTemp,
     minColorTemp,
+    providerState?.colorTemperatureKelvin,
     rememberLightState,
   ]);
 

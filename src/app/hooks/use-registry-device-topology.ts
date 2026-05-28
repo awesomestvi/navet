@@ -3,6 +3,7 @@ import { shallow } from 'zustand/shallow';
 import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useHomeAssistant } from './use-home-assistant';
 
 const EMPTY_IDS: string[] = [];
@@ -56,35 +57,53 @@ function collectDeviceSiblingIds(
   return { deviceId, siblingIds };
 }
 
+function resolveHomeAssistantEntityId(entityId: string): string | null {
+  const scopedId = parseProviderScopedId(entityId);
+  if (!scopedId) {
+    return entityId;
+  }
+
+  return scopedId.providerId === 'home_assistant' ? scopedId.nativeId : null;
+}
+
 export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
+  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
   const selector = useCallback(
     (state: HomeAssistantStore) =>
-      collectDeviceSiblingIds(state.entityRegistry, entityId, (e) =>
-        HVAC_SIBLING_PATTERN.test(e.entity_id)
-      ),
-    [entityId]
+      homeAssistantEntityId
+        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (e) =>
+            HVAC_SIBLING_PATTERN.test(e.entity_id)
+          )
+        : { deviceId: null, siblingIds: EMPTY_IDS },
+    [homeAssistantEntityId]
   );
 
   return useHomeAssistant(selector, registryDeviceIdsEqual);
 }
 
 export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
+  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
   const selector = useCallback(
     (state: HomeAssistantStore) =>
-      collectDeviceSiblingIds(state.entityRegistry, entityId, (e) =>
-        e.entity_id.startsWith('switch.')
-      ),
-    [entityId]
+      homeAssistantEntityId
+        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (e) =>
+            e.entity_id.startsWith('switch.')
+          )
+        : { deviceId: null, siblingIds: EMPTY_IDS },
+    [homeAssistantEntityId]
   );
 
   return useHomeAssistant(selector, registryDeviceIdsEqual);
 }
 
 export function useCameraRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
+  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
   const selector = useCallback(
     (state: HomeAssistantStore) =>
-      collectDeviceSiblingIds(state.entityRegistry, entityId, (_e) => true),
-    [entityId]
+      homeAssistantEntityId
+        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (_e) => true)
+        : { deviceId: null, siblingIds: EMPTY_IDS },
+    [homeAssistantEntityId]
   );
 
   return useHomeAssistant(selector, registryDeviceIdsEqual);
@@ -127,9 +146,14 @@ function entityRoomRegistryContextEqual(
 }
 
 export function useEntityRoomRegistryContext(entityId: string): EntityRoomRegistryContext {
+  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
   const selector = useCallback(
     (state: HomeAssistantStore): EntityRoomRegistryContext => {
-      const raw = state.entityRegistry.find((e) => e.entity_id === entityId);
+      if (!homeAssistantEntityId) {
+        return { entry: null, deviceAreaId: null };
+      }
+
+      const raw = state.entityRegistry.find((e) => e.entity_id === homeAssistantEntityId);
       const entry = raw
         ? {
             entity_id: raw.entity_id,
@@ -145,7 +169,7 @@ export function useEntityRoomRegistryContext(entityId: string): EntityRoomRegist
 
       return { entry, deviceAreaId };
     },
-    [entityId]
+    [homeAssistantEntityId]
   );
 
   return useHomeAssistant(selector, entityRoomRegistryContextEqual);

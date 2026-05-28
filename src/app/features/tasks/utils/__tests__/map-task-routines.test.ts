@@ -1,35 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { makeHassEntity } from '@/app/features/tasks/test-utils';
+import { makeTaskEntity } from '@/app/features/tasks/test-utils';
 import { mapTaskRoutines } from '../map-task-routines';
 
 describe('mapTaskRoutines', () => {
   it('maps automations, scenes, and scripts into separate routine surfaces', () => {
     const routines = mapTaskRoutines({
       entities: {
-        'automation.arrival': makeHassEntity({
+        'automation.arrival': makeTaskEntity({
           entity_id: 'automation.arrival',
           state: 'on',
           attributes: { friendly_name: 'Arrival' },
         }),
-        'scene.movie': makeHassEntity({
+        'scene.movie': makeTaskEntity({
           entity_id: 'scene.movie',
           state: 'scening',
           attributes: { friendly_name: 'Movie time' },
         }),
-        'script.goodnight': makeHassEntity({
+        'script.goodnight': makeTaskEntity({
           entity_id: 'script.goodnight',
           state: 'off',
           attributes: { friendly_name: 'Good night' },
         }),
-        'light.kitchen': makeHassEntity({
+        'light.kitchen': makeTaskEntity({
           entity_id: 'light.kitchen',
           state: 'on',
           attributes: { friendly_name: 'Kitchen light' },
         }),
       },
-      areas: [],
-      deviceRegistry: [],
-      entityRegistry: [],
+      rooms: [],
+      devices: [],
+      entityReferences: [],
       locale: 'en-US',
     });
 
@@ -62,15 +62,15 @@ describe('mapTaskRoutines', () => {
   it('resolves quick action rooms through the registry', () => {
     const routines = mapTaskRoutines({
       entities: {
-        'scene.movie': makeHassEntity({
+        'scene.movie': makeTaskEntity({
           entity_id: 'scene.movie',
           state: 'scening',
           attributes: { friendly_name: 'Movie time' },
         }),
       },
-      areas: [{ area_id: 'living', name: 'Living Room' }],
-      deviceRegistry: [{ id: 'device-1', area_id: 'living' }],
-      entityRegistry: [{ entity_id: 'scene.movie', device_id: 'device-1' }],
+      rooms: [{ id: 'living', name: 'Living Room' }],
+      devices: [{ id: 'device-1', roomId: 'living' }],
+      entityReferences: [{ entityId: 'scene.movie', deviceId: 'device-1' }],
       locale: 'en-US',
     });
 

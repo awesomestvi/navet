@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NAVET_ENABLE_DEMO: "false"
     image: navet:local
     ports:
       - "8080:80"

@@ -1,7 +1,7 @@
 import {
-  getCurrentIntegrationCameraStream,
+  getCurrentIntegrationCameraStreamUrl,
   getCurrentIntegrationSession,
-  signCurrentIntegrationPath,
+  getCurrentIntegrationSignedPath,
 } from '@/app/services/integration-runtime.service';
 import { CameraMediaService } from './media/camera-media-service';
 import { MediaArtworkService } from './media/media-artwork-service';
@@ -10,7 +10,7 @@ import { HomeAssistantHttpGateway } from './transport/http-gateway';
 
 export const homeAssistantResourceResolver = new HomeAssistantResourceResolver(
   () => getCurrentIntegrationSession(),
-  (path, expiresSeconds) => signCurrentIntegrationPath(path, expiresSeconds)
+  (path, expiresSeconds) => getCurrentIntegrationSignedPath(path, expiresSeconds)
 );
 
 export const homeAssistantHttpGateway = new HomeAssistantHttpGateway(() =>
@@ -24,5 +24,5 @@ export const mediaArtworkService = new MediaArtworkService(
 
 export const cameraMediaService = new CameraMediaService(
   homeAssistantResourceResolver,
-  getCurrentIntegrationCameraStream
+  getCurrentIntegrationCameraStreamUrl
 );

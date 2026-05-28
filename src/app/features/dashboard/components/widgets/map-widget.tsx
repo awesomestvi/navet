@@ -13,8 +13,7 @@ import {
 } from '@/app/components/shared/theme/map-widget-surface-tokens';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import { useHomeAssistant, useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
@@ -120,7 +119,7 @@ export const MapWidget = memo(function MapWidget({
   );
   const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
 
-  const homeAssistantMarkers = useProviderRuntime(selectMapMarkersFromHa, mapMarkersEqual);
+  const homeAssistantMarkers = useHomeAssistant(selectMapMarkersFromHa, mapMarkersEqual);
   const markers = staticMarkers ?? homeAssistantMarkers;
   const resolvedMarkers = useMemo(
     () =>

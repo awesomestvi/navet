@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
-import type { IntegrationStore } from '@/app/stores/integration-store';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { storage } from '@/app/utils/storage';
 
 const READ_NOTIFICATIONS_STORAGE_KEY = 'navet-read-notifications';
@@ -42,7 +42,7 @@ export interface NotificationStorageState {
 // Only update.* entities are needed to validate pending installs.
 // Narrowing here means the effect only re-runs when update entities change
 // (new firmware available, update installed), not on every HA entity update.
-function selectUpdateEntities(state: IntegrationStore) {
+function selectUpdateEntities(state: HomeAssistantStore) {
   if (!state.entities) return null;
   return Object.fromEntries(
     Object.entries(state.entities).filter(([id]) => id.startsWith('update.'))

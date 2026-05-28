@@ -1,5 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { NavetLightState } from '@/app/core/navet-device-state';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useHaCommandQueue } from '@/app/hooks';
 import { clampPercentage, getBrightnessPercent } from './light-card-utils';
@@ -15,6 +16,7 @@ interface UseLightBrightnessSyncParams {
   setIsOn: (on: boolean) => void;
   initialBrightness: number;
   liveEntity: HassEntity | undefined;
+  providerState: NavetLightState | null | undefined;
   syncLight: (options: SyncLightOptions) => Promise<void>;
   rememberLightState: (id: string, state: { brightness?: number }) => void;
 }
@@ -25,6 +27,7 @@ export function useLightBrightnessSync({
   setIsOn,
   initialBrightness,
   liveEntity,
+  providerState,
   syncLight,
   rememberLightState,
 }: UseLightBrightnessSyncParams) {
@@ -39,14 +42,52 @@ export function useLightBrightnessSync({
 
   useEffect(() => {
     if (liveEntity) return;
-    setBrightness(initialBrightness);
-    if (initialBrightness > 0) {
-      lastBrightnessRef.current = initialBrightness;
-      rememberLightState(id, { brightness: initialBrightness });
+    const nextBrightness =
+      typeof providerState?.brightnessPct === 'number'
+        ? providerState.brightnessPct
+        : initialBrightness;
+    setBrightness(nextBrightness);
+    if (nextBrightness > 0) {
+      lastBrightnessRef.current = nextBrightness;
+      rememberLightState(id, { brightness: nextBrightness });
     }
-  }, [id, initialBrightness, liveEntity, rememberLightState]);
+  }, [id, initialBrightness, liveEntity, providerState?.brightnessPct, rememberLightState]);
 
   useEffect(() => {
+    if (!liveEntity && typeof providerState?.brightnessPct === 'number' && !isAdjustingBrightness) {
+      const brightnessFromProvider = providerState.brightnessPct;
+      if (providerState.value !== 'on') {
+        if (brightnessFromProvider > 0) {
+          lastBrightnessRef.current = brightnessFromProvider;
+          rememberLightState(id, { brightness: brightnessFromProvider });
+        }
+        return;
+      }
+
+      if (
+        pendingBrightnessRef.current !== null &&
+        Math.abs(brightnessFromProvider - pendingBrightnessRef.current) > 1
+      ) {
+        return;
+      }
+
+      if (pendingBrightnessRef.current !== null) {
+        pendingBrightnessRef.current = null;
+        if (brightnessSyncTimeoutRef.current) {
+          clearTimeout(brightnessSyncTimeoutRef.current);
+          brightnessSyncTimeoutRef.current = null;
+        }
+      }
+
+      if (brightnessFromProvider > 0) {
+        lastBrightnessRef.current = brightnessFromProvider;
+        rememberLightState(id, { brightness: brightnessFromProvider });
+      }
+
+      setBrightness(brightnessFromProvider);
+      return;
+    }
+
     if (!liveEntity || isAdjustingBrightness) return;
     const brightnessFromEntity = getBrightnessPercent(liveEntity);
     if (liveEntity.state !== 'on') {
@@ -74,7 +115,14 @@ export function useLightBrightnessSync({
       rememberLightState(id, { brightness: brightnessFromEntity });
     }
     setBrightness(brightnessFromEntity);
-  }, [id, isAdjustingBrightness, liveEntity, rememberLightState]);
+  }, [
+    id,
+    isAdjustingBrightness,
+    liveEntity,
+    providerState?.brightnessPct,
+    providerState?.value,
+    rememberLightState,
+  ]);
 
   useEffect(() => {
     return () => {

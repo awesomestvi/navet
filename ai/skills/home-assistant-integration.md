@@ -5,6 +5,7 @@ Read this file before changing Home Assistant-facing code, domain mapping, servi
 ## Source Of Truth
 
 - Official Home Assistant documentation is the source of truth.
+- Home Assistant documentation governs Home Assistant adapter behavior, not Navet's overall multi-backend architecture.
 - Do not infer expected behavior from Navet's current implementation.
 - If Home Assistant docs conflict with Navet implementation, assume Navet is wrong unless proven otherwise by a higher-priority product requirement.
 - If you cannot point to a Home Assistant doc page, a real captured payload, or an explicit Navet product requirement, do not invent behavior.

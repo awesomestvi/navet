@@ -16,7 +16,7 @@ Read this file before changing rendering, animations, dashboard update flows, or
 - Avoid adding large dependencies without strong justification.
 - Watch bundle size.
 - Prefer existing primitives, selectors, and stores over introducing new reactive layers.
-- Keep frequent Home Assistant updates from forcing broad tree re-renders.
+- Keep frequent provider updates, especially Home Assistant WebSocket updates, from forcing broad tree re-renders.
 
 ## Dashboard Constraints
 
@@ -37,12 +37,12 @@ Also guard against:
 - Do not add animation for its own sake on first-screen cards.
 - Do not introduce a dependency just to solve a small UI problem that existing code can already handle.
 - Do not put per-frame or per-second timers in multiple cards without a measured reason.
-- Do not move frequently changing Home Assistant data through extra component layers if a selector or store action can keep it narrower.
+- Do not move frequently changing provider data through extra component layers if a selector or store action can keep it narrower.
 - Do not optimize only for localhost on a powerful laptop.
 
 ## Known Navet Failure Modes To Guard Against
 
-- dashboard slowdown when many entities update over WebSocket
+- dashboard slowdown when many provider entities update over WebSocket
 - camera and media surfaces that keep refetching or recreating heavy objects
 - visual effects that look good on desktop but stutter on Raspberry Pi Chromium
 - global rerenders caused by broad subscriptions or poorly scoped derived data
@@ -57,6 +57,8 @@ Read this file before changing:
 - `src/app/hooks/`
 - `src/app/stores/`
 - `src/app/infrastructure/home-assistant/`
+
+Home Assistant infrastructure is a current adapter-specific hotspot, not the permanent global runtime model.
 
 ## Relevant Repo Areas
 

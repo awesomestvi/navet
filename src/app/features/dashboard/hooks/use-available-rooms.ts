@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { isAllRooms } from '@/app/constants/rooms';
 
 type RoomInput = string | { name: string; key?: string; canonicalId?: string; area_id?: string };
+const EMPTY_DISCOVERED_ROOMS: RoomInput[] = [];
 
 function toRoomName(room: RoomInput): string {
   return typeof room === 'string' ? room : room.name;
@@ -23,7 +24,10 @@ function toRoomKey(room: RoomInput): string {
   return room.name.trim().toLocaleLowerCase();
 }
 
-export function useAvailableRooms(baseRooms: RoomInput[], discoveredRooms: RoomInput[] = []) {
+export function useAvailableRooms(
+  baseRooms: RoomInput[],
+  discoveredRooms: RoomInput[] = EMPTY_DISCOVERED_ROOMS
+) {
   const areaRooms = useMemo(
     () =>
       baseRooms

@@ -1,9 +1,11 @@
 import type {
   PlatformMediaBrowseResult,
   PlatformMediaItem,
+  PlatformMessageClient,
 } from '@/app/platform/provider-feature-models';
 import type { ProviderMediaFeatureService } from '@/app/platform/provider-feature-services';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
 interface MediaThumbnailResponse {
   content_type: string;
@@ -29,6 +31,13 @@ interface MediaBrowseNode {
 
 let mediaThumbnailCommandSupported: boolean | null = null;
 
+function requireHomeAssistantMediaProvider(entityId: string) {
+  const providerId = parseProviderScopedId(entityId)?.providerId ?? 'home_assistant';
+  if (providerId !== 'home_assistant') {
+    throw new Error(`Media features are not implemented yet for provider ${providerId}`);
+  }
+}
+
 function mapMediaItem(item: MediaBrowseNode): PlatformMediaItem {
   return {
     title: item.title ?? '',
@@ -47,20 +56,44 @@ function mapMediaBrowseResult(result: MediaBrowseNode): PlatformMediaBrowseResul
 }
 
 export const integrationMediaFeatureService: ProviderMediaFeatureService = {
-  playMedia: (entityId, media) => homeAssistantService.playMedia(entityId, media),
-  browseMediaPlayer: async (entityId, media) =>
-    mapMediaBrowseResult(await homeAssistantService.browseMediaPlayer(entityId, media)),
-  searchMediaPlayer: (entityId, query, media) =>
-    homeAssistantService
+  playMedia: (entityId, media) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.playMedia(entityId, media);
+  },
+  browseMediaPlayer: async (entityId, media) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return mapMediaBrowseResult(await homeAssistantService.browseMediaPlayer(entityId, media));
+  },
+  searchMediaPlayer: (entityId, query, media) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService
       .searchMediaPlayer(entityId, query, media)
-      .then((result) => mapMediaBrowseResult(result)),
-  selectMediaPlayerSource: (entityId, source) =>
-    homeAssistantService.selectMediaPlayerSource(entityId, source),
-  selectMediaPlayerSoundMode: (entityId, soundMode) =>
-    homeAssistantService.selectMediaPlayerSoundMode(entityId, soundMode),
-  seekMediaPlayer: (entityId, seekPosition) =>
-    homeAssistantService.seekMediaPlayer(entityId, seekPosition),
-  clearMediaPlayerPlaylist: (entityId) => homeAssistantService.clearMediaPlayerPlaylist(entityId),
+      .then((result) => mapMediaBrowseResult(result));
+  },
+  selectMediaPlayerSource: (entityId, source) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.selectMediaPlayerSource(entityId, source);
+  },
+  selectMediaPlayerSoundMode: (entityId, soundMode) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.selectMediaPlayerSoundMode(entityId, soundMode);
+  },
+  seekMediaPlayer: (entityId, seekPosition) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.seekMediaPlayer(entityId, seekPosition);
+  },
+  clearMediaPlayerPlaylist: (entityId) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.clearMediaPlayerPlaylist(entityId);
+  },
+  updateMediaPlayerPower: (entityId, state) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.updateMediaPlayerPower(entityId, state);
+  },
+  sendRemoteCommand: (entityId, command) => {
+    requireHomeAssistantMediaProvider(entityId);
+    return homeAssistantService.sendRemoteCommand(entityId, command);
+  },
   browseMediaSource: async (mediaContentId) =>
     mapMediaBrowseResult(await homeAssistantService.browseMediaSource(mediaContentId)),
   resolveMediaSource: async (mediaContentId) => {
@@ -70,20 +103,22 @@ export const integrationMediaFeatureService: ProviderMediaFeatureService = {
       mimeType: resolved.mime_type,
     };
   },
-  fetchMediaThumbnailDataUrl: async (entityId, connection) => {
+  fetchMediaThumbnailDataUrl: async (entityId, messageClient) => {
+    requireHomeAssistantMediaProvider(entityId);
     if (mediaThumbnailCommandSupported === false) {
       return null;
     }
 
-    const activeConnection = connection ?? homeAssistantService.getConnection();
-    if (!activeConnection) {
+    const activeMessageClient: PlatformMessageClient | null =
+      messageClient ?? homeAssistantService.getConnection();
+    if (!activeMessageClient) {
       return null;
     }
 
     let response: MediaThumbnailEnvelope;
 
     try {
-      response = (await activeConnection.sendMessagePromise({
+      response = (await activeMessageClient.sendMessagePromise({
         type: 'media_player/thumbnail',
         entity_id: entityId,
       })) as MediaThumbnailEnvelope;

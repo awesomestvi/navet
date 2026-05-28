@@ -3,7 +3,7 @@ import { useEntityCardInteractionController } from '@/app/components/shared/enti
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { parseNumberish } from '@/app/hooks/ha-entity-utils';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { integrationSecurityFeatureService } from '@/app/services/integration-security-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { DEVICE_CLASS_CONFIG } from './constants';
 import type { CoverCardProps, CoverState, DeviceClass } from './types';
@@ -168,17 +168,6 @@ export const CoverCardContainer = memo(function CoverCardContainer({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
-  const callCoverService = useCallback(
-    (service: string, serviceData: Record<string, unknown> = {}) =>
-      dispatchEntityAction({
-        entityId: id,
-        domain: 'cover',
-        service,
-        serviceData,
-      }),
-    [id]
-  );
-
   const previewPosition = (newPosition: number) => {
     if (!canSetPosition) {
       return;
@@ -206,11 +195,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     previewPosition(nextPosition);
     beginOptimisticPosition(nextPosition);
     void runAction(
-      () =>
-        callCoverService(
-          positionMode === 'tilt' ? 'set_cover_tilt_position' : 'set_cover_position',
-          positionMode === 'tilt' ? { tilt_position: nextPosition } : { position: nextPosition }
-        ),
+      () => integrationSecurityFeatureService.setCoverPosition(id, nextPosition, positionMode),
       t('cover.feedback.updateFailed'),
       {
         onError: () => {
@@ -231,7 +216,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       setPosition(100);
     }
     void runAction(
-      () => callCoverService(positionMode === 'tilt' ? 'open_cover_tilt' : 'open_cover'),
+      () => integrationSecurityFeatureService.openCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
         onError: () =>
@@ -250,7 +235,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       setPosition(0);
     }
     void runAction(
-      () => callCoverService(positionMode === 'tilt' ? 'close_cover_tilt' : 'close_cover'),
+      () => integrationSecurityFeatureService.closeCover(id, positionMode),
       t('cover.feedback.updateFailed'),
       {
         onError: () =>
@@ -270,7 +255,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       return prev;
     });
     void runAction(
-      () => callCoverService(positionMode === 'tilt' ? 'stop_cover_tilt' : 'stop_cover'),
+      () => integrationSecurityFeatureService.stopCover(id, positionMode),
       t('cover.feedback.updateFailed')
     );
   };

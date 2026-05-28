@@ -1,12 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { browseMediaPlayerMock, browseMediaSourceMock, getConnectionMock, resolveMediaSourceMock } =
-  vi.hoisted(() => ({
-    browseMediaPlayerMock: vi.fn(),
-    browseMediaSourceMock: vi.fn(),
-    getConnectionMock: vi.fn(),
-    resolveMediaSourceMock: vi.fn(),
-  }));
+const {
+  browseMediaPlayerMock,
+  browseMediaSourceMock,
+  getConnectionMock,
+  resolveMediaSourceMock,
+  sendRemoteCommandMock,
+  updateMediaPlayerPowerMock,
+} = vi.hoisted(() => ({
+  browseMediaPlayerMock: vi.fn(),
+  browseMediaSourceMock: vi.fn(),
+  getConnectionMock: vi.fn(),
+  resolveMediaSourceMock: vi.fn(),
+  sendRemoteCommandMock: vi.fn(),
+  updateMediaPlayerPowerMock: vi.fn(),
+}));
 
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
@@ -16,10 +24,12 @@ vi.mock('../home-assistant.service', () => ({
     getConnection: getConnectionMock,
     playMedia: vi.fn(),
     resolveMediaSource: resolveMediaSourceMock,
+    sendRemoteCommand: sendRemoteCommandMock,
     searchMediaPlayer: vi.fn(),
     seekMediaPlayer: vi.fn(),
     selectMediaPlayerSoundMode: vi.fn(),
     selectMediaPlayerSource: vi.fn(),
+    updateMediaPlayerPower: updateMediaPlayerPowerMock,
   },
 }));
 
@@ -31,6 +41,8 @@ describe('integrationMediaFeatureService', () => {
     browseMediaSourceMock.mockReset();
     getConnectionMock.mockReset();
     resolveMediaSourceMock.mockReset();
+    sendRemoteCommandMock.mockReset();
+    updateMediaPlayerPowerMock.mockReset();
   });
 
   it('maps Home Assistant browse results into platform media items', async () => {
@@ -107,5 +119,13 @@ describe('integrationMediaFeatureService', () => {
       type: 'media_player/thumbnail',
       entity_id: 'media_player.kitchen',
     });
+  });
+
+  it('routes media power and remote commands through the provider feature boundary', async () => {
+    await integrationMediaFeatureService.updateMediaPlayerPower('media_player.kitchen', 'off');
+    await integrationMediaFeatureService.sendRemoteCommand('remote.kitchen', 'MEDIA_PLAY_PAUSE');
+
+    expect(updateMediaPlayerPowerMock).toHaveBeenCalledWith('media_player.kitchen', 'off');
+    expect(sendRemoteCommandMock).toHaveBeenCalledWith('remote.kitchen', 'MEDIA_PLAY_PAUSE');
   });
 });

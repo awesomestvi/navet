@@ -1,8 +1,30 @@
-import { fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCameraGo2RtcConfig } from '@/app/stores/settings-store';
 import { renderWithProviders } from '@/test/render';
 import { CameraSettingsDialog } from '../camera-settings-dialog';
+
+const { selectCameraAccessoryOptionMock, setCameraAccessoryValueMock, toggleCameraAccessoryMock } =
+  vi.hoisted(() => ({
+    selectCameraAccessoryOptionMock: vi.fn().mockResolvedValue(undefined),
+    setCameraAccessoryValueMock: vi.fn().mockResolvedValue(undefined),
+    toggleCameraAccessoryMock: vi.fn().mockResolvedValue(undefined),
+  }));
+
+vi.mock('@/app/services/integration-camera-feature.service', () => ({
+  integrationCameraFeatureService: {
+    selectCameraAccessoryOption: selectCameraAccessoryOptionMock,
+    setCameraAccessoryValue: setCameraAccessoryValueMock,
+    toggleCameraAccessory: toggleCameraAccessoryMock,
+    enableCameraMotionDetection: vi.fn(),
+    disableCameraMotionDetection: vi.fn(),
+    getCameraCapabilities: vi.fn(),
+    getCameraStreamUrl: vi.fn(),
+    getWebRtcClientConfiguration: vi.fn(),
+    subscribeCameraWebRtcOffer: vi.fn(),
+    addCameraWebRtcCandidate: vi.fn(),
+  },
+}));
 
 const defaultProps = {
   entityId: 'camera.front_door',
@@ -36,6 +58,15 @@ afterEach(() => {
 });
 
 describe('CameraSettingsDialog', () => {
+  beforeEach(() => {
+    selectCameraAccessoryOptionMock.mockReset();
+    selectCameraAccessoryOptionMock.mockResolvedValue(undefined);
+    setCameraAccessoryValueMock.mockReset();
+    setCameraAccessoryValueMock.mockResolvedValue(undefined);
+    toggleCameraAccessoryMock.mockReset();
+    toggleCameraAccessoryMock.mockResolvedValue(undefined);
+  });
+
   it('shows only snapshot-backed camera view modes for snapshot-only cameras', () => {
     renderWithProviders(
       <CameraSettingsDialog
@@ -184,5 +215,67 @@ describe('CameraSettingsDialog', () => {
     expect(screen.getByText('Embedded Home Assistant go2rtc')).toBeInTheDocument();
     expect(screen.getByLabelText('Default server URL')).toBeInTheDocument();
     expect(screen.getByLabelText('Server URL')).toBeInTheDocument();
+  });
+
+  it('routes sibling switch and select controls through the camera provider service', async () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        siblingEntities={[
+          {
+            id: 'switch.camera_motion_detection',
+            entity: {
+              state: 'on',
+              attributes: { friendly_name: 'Motion Detection' },
+            } as never,
+          },
+          {
+            id: 'select.camera_ir_mode',
+            entity: {
+              state: 'auto',
+              attributes: { friendly_name: 'IR Mode', options: ['off', 'auto', 'on'] },
+            } as never,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Motion Detection' }));
+    await waitFor(() =>
+      expect(toggleCameraAccessoryMock).toHaveBeenCalledWith(
+        'switch.camera_motion_detection',
+        'off'
+      )
+    );
+
+    fireEvent.change(screen.getByLabelText('IR Mode'), { target: { value: 'on' } });
+    await waitFor(() =>
+      expect(selectCameraAccessoryOptionMock).toHaveBeenCalledWith('select.camera_ir_mode', 'on')
+    );
+  });
+
+  it('routes sibling number controls through the camera provider service', async () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        siblingEntities={[
+          {
+            id: 'number.camera_brightness',
+            entity: {
+              state: '55',
+              attributes: { friendly_name: 'Image Brightness', min: 0, max: 100, step: 1 },
+            } as never,
+          },
+        ]}
+      />
+    );
+
+    const slider = screen.getByRole('slider', { name: 'Image Brightness' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    fireEvent.keyUp(slider, { key: 'ArrowRight' });
+
+    await waitFor(() =>
+      expect(setCameraAccessoryValueMock).toHaveBeenCalledWith('number.camera_brightness', 56)
+    );
   });
 });

@@ -37,13 +37,17 @@ import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
 import { useOnboardingController } from './use-onboarding-controller';
 
+const homeAssistantProviderRuntimeSelector =
+  providerRuntimeSelectors.providerRuntimeById('home_assistant');
+
 export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   const { t } = useI18n();
-  const connected = useProviderRuntime(providerRuntimeSelectors.connected);
-  const connecting = useProviderRuntime(providerRuntimeSelectors.connecting);
-  const hassEntitiesHydrated = useProviderRuntime(providerRuntimeSelectors.entitiesHydrated);
-  const registriesHydrated = useProviderRuntime(providerRuntimeSelectors.registriesHydrated);
+  const homeAssistantRuntime = useProviderRuntime(homeAssistantProviderRuntimeSelector);
+  const connected = homeAssistantRuntime.connected;
+  const connecting = homeAssistantRuntime.connecting;
+  const entitiesHydrated = homeAssistantRuntime.entitiesHydrated;
+  const registriesHydrated = homeAssistantRuntime.registriesHydrated;
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [allViewGrouping, setAllViewGrouping] = usePersistedState<AllViewGrouping>(
     STORAGE_KEYS.allViewGrouping,
@@ -92,7 +96,7 @@ export function useDashboardController(): DashboardController {
     visibleRooms,
     changeRoom,
     fallbackRoom,
-    hassEntitiesHydrated,
+    entitiesHydrated,
     devicesLoaded,
     registriesHydrated,
     connected,

@@ -86,7 +86,7 @@ export const RoomNav = memo(function RoomNav({
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const areas = useIntegrationStore(integrationSelectors.areas);
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const [isScrollbarDragging, setIsScrollbarDragging] = useState(false);
@@ -103,8 +103,8 @@ export const RoomNav = memo(function RoomNav({
     startX: number;
   } | null>(null);
   const manageableRooms = useMemo(() => {
-    return getManageableRoomOrder(rooms, areas);
-  }, [areas, rooms]);
+    return getManageableRoomOrder(rooms, roomDescriptors);
+  }, [roomDescriptors, rooms]);
   const visibleRooms = useMemo(
     () => getVisibleRoomNavRooms(rooms.filter((room) => !hiddenRoomNames.includes(room))),
     [hiddenRoomNames, rooms]
@@ -411,7 +411,7 @@ export const RoomNav = memo(function RoomNav({
           onOpenChange={setIsReorderDialogOpen}
           rooms={manageableRooms}
           hiddenRoomNames={hiddenRoomNames}
-          areas={areas}
+          roomDescriptors={roomDescriptors}
           roomHiddenItemCounts={roomHiddenItemCounts}
           roomEntityCounts={roomItemCounts}
           onRoomOrderChange={onRoomOrderChange}

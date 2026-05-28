@@ -40,7 +40,7 @@ describe('integration-bootstrap.service', () => {
     await bootstrapIntegrationSession(session);
 
     expect(homeyService.getSnapshot()).toMatchObject(homeySnapshot);
-    expect(integrationStore.getState().user).toEqual(session.user);
+    expect(integrationStore.getState().currentUser).toEqual(session.user);
   });
 
   it('falls back to the Homey client snapshot loader when the session has no embedded snapshot', async () => {
@@ -91,6 +91,6 @@ describe('integration-bootstrap.service', () => {
       devices: {},
       zones: {},
     });
-    expect(integrationStore.getState().user).toBeNull();
+    expect(integrationStore.getState().currentUser).toBeNull();
   });
 });

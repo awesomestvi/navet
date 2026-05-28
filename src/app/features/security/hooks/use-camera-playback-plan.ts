@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { cameraMediaService } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
 import type { CameraPlaybackPlan } from '@/app/infrastructure/home-assistant/media/camera-media-service';
+import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
 
 interface UseCameraPlaybackPlanOptions {
@@ -9,7 +10,7 @@ interface UseCameraPlaybackPlanOptions {
   preferredTransport: CameraFeedMode;
   snapshotUrl?: string;
   mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly ('hls' | 'web_rtc')[];
+  frontendStreamTypes: readonly PlatformCameraStreamType[];
   hasGo2RtcFeed: boolean;
   isUnavailable: boolean;
   isRunning: boolean;

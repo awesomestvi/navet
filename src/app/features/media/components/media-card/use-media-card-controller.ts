@@ -6,6 +6,7 @@ import {
   hasMediaPlayerNextTrackSupport,
   hasMediaPlayerPreviousTrackSupport,
 } from '@/app/constants/media-player-features';
+import { readNavetMediaState } from '@/app/core/navet-device-state';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import {
   getTvRemoteCommand,
@@ -13,12 +14,11 @@ import {
   supportsTvRemotePlaybackCommand,
   type TvRemoteAction,
 } from '@/app/features/media/tv-remote-commands';
-import { useI18n, useServiceActionHandler } from '@/app/hooks';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { useHomeAssistant, useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
-import { providerRuntimeSelectors } from '@/app/stores/selectors';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
@@ -32,7 +32,7 @@ import { useMediaVolume } from './use-media-volume';
 // useMediaGrouping only needs media_player.* entities to build the grouping picker.
 // Defined at module scope so the reference is stable and shallow equality can
 // suppress re-renders when unrelated entities (lights, sensors, etc.) update.
-function selectMediaPlayerEntities(state: IntegrationStore) {
+function selectMediaPlayerEntities(state: HomeAssistantStore) {
   if (!state.entities) return null;
   return Object.fromEntries(
     Object.entries(state.entities).filter(([id]) => id.startsWith('media_player.'))
@@ -43,7 +43,7 @@ function selectUndefinedEntity() {
   return undefined;
 }
 
-function selectEntityRegistry(state: IntegrationStore) {
+function selectEntityRegistry(state: HomeAssistantStore) {
   return state.entityRegistry;
 }
 
@@ -71,9 +71,11 @@ export function useMediaCardController({
 }: UseMediaCardControllerParams) {
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
-  const liveEntity = useProviderRuntime(providerRuntimeSelectors.entity(entityId));
+  const providerDevice = useProviderDevice(entityId);
+  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(entityId));
   const parsedEntityId = parseProviderScopedId(entityId);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const providerState = readNavetMediaState(providerDevice);
   const remoteNativeId =
     parsedEntityId?.nativeId.includes('.') || entityId.includes('.')
       ? `remote.${(parsedEntityId?.nativeId ?? entityId).split('.').slice(1).join('.')}`
@@ -82,31 +84,45 @@ export function useMediaCardController({
     remoteNativeId && parsedEntityId
       ? createProviderScopedId(parsedEntityId.providerId, remoteNativeId)
       : remoteNativeId;
-  const remoteEntity = useProviderRuntime(
-    remoteEntityId ? providerRuntimeSelectors.entity(remoteEntityId) : selectUndefinedEntity
+  const remoteEntity = useHomeAssistant(
+    remoteEntityId ? homeAssistantSelectors.entity(remoteEntityId) : selectUndefinedEntity
   );
-  const entityRegistry = useProviderRuntime(selectEntityRegistry);
+  const entityRegistry = useHomeAssistant(selectEntityRegistry);
   const resolvedInitialState = liveEntity
     ? normalizeMediaPlaybackState(liveEntity.state, deviceClass)
-    : initialState;
+    : typeof providerState?.value === 'string'
+      ? normalizeMediaPlaybackState(providerState.value, deviceClass)
+      : initialState;
   const resolvedInitialVolume =
     typeof liveAttrs?.volume_level === 'number'
       ? Math.max(0, Math.min(100, Math.round(liveAttrs.volume_level * 100)))
-      : initialVolume;
+      : typeof providerState?.volume === 'number'
+        ? providerState.volume
+        : initialVolume;
   const resolvedInitialMuted =
-    typeof liveAttrs?.is_volume_muted === 'boolean' ? liveAttrs.is_volume_muted : initialMuted;
+    typeof liveAttrs?.is_volume_muted === 'boolean'
+      ? liveAttrs.is_volume_muted
+      : providerState?.isMuted === true
+        ? true
+        : initialMuted;
   const resolvedInitialElapsedSeconds =
     typeof liveAttrs?.media_position === 'number'
       ? liveAttrs.media_position
-      : (initialElapsedSeconds ?? 0);
+      : typeof providerState?.elapsedSeconds === 'number'
+        ? providerState.elapsedSeconds
+        : (initialElapsedSeconds ?? 0);
   const resolvedInitialDurationSeconds =
     typeof liveAttrs?.media_duration === 'number'
       ? liveAttrs.media_duration
-      : (initialDurationSeconds ?? 0);
+      : typeof providerState?.durationSeconds === 'number'
+        ? providerState.durationSeconds
+        : (initialDurationSeconds ?? 0);
   const resolvedInitialSupportedFeatures =
     typeof liveAttrs?.supported_features === 'number'
       ? liveAttrs.supported_features
-      : initialSupportedFeatures;
+      : typeof providerState?.supportedFeatures === 'number'
+        ? providerState.supportedFeatures
+        : initialSupportedFeatures;
   const mediaCapabilities =
     typeof resolvedInitialSupportedFeatures === 'number'
       ? getMediaPlayerCapabilities(resolvedInitialSupportedFeatures)
@@ -138,7 +154,7 @@ export function useMediaCardController({
   // Only subscribe to all media player entities if grouping is actually supported.
   // Use the resolved live capability when available so grouping stays functional
   // even when the initial prop was stale.
-  const mediaPlayerEntities = useProviderRuntime(
+  const mediaPlayerEntities = useHomeAssistant(
     resolvedInitialSupportsGrouping ? selectMediaPlayerEntities : selectUndefinedEntity,
     shallow
   );
@@ -174,12 +190,14 @@ export function useMediaCardController({
           ? liveAttrs.media_series_title
           : undefined,
         typeof liveAttrs?.source === 'string' ? liveAttrs.source : undefined,
+        typeof providerState?.source === 'string' ? providerState.source : undefined,
         typeof initialSource === 'string' ? initialSource : undefined,
         typeof initialTitle === 'string' ? initialTitle : undefined,
         typeof initialArtist === 'string' ? initialArtist : undefined,
       ]
     : [
         typeof liveAttrs?.source === 'string' ? liveAttrs.source : undefined,
+        typeof providerState?.source === 'string' ? providerState.source : undefined,
         typeof initialSource === 'string' ? initialSource : undefined,
       ];
   const source = sourceCandidates.find(
@@ -189,7 +207,11 @@ export function useMediaCardController({
     ? liveAttrs.source_list.filter(
         (value): value is string => typeof value === 'string' && value.trim().length > 0
       )
-    : initialSourceList;
+    : Array.isArray(providerState?.sourceList)
+      ? providerState.sourceList.filter(
+          (value): value is string => typeof value === 'string' && value.trim().length > 0
+        )
+      : initialSourceList;
   const upNextTitle = [
     liveAttrs?.next_title,
     liveAttrs?.next_track_title,
@@ -268,6 +290,7 @@ export function useMediaCardController({
 
   useMediaEntitySync({
     liveEntity,
+    providerState,
     entityId,
     deviceClass,
     currentMuted: isMuted,
@@ -350,7 +373,11 @@ export function useMediaCardController({
 
   const toggleTvPower = () =>
     void runMediaAction(
-      () => homeAssistantService.updateMediaPlayerPower(entityId, state === 'off' ? 'on' : 'off'),
+      () =>
+        integrationMediaFeatureService.updateMediaPlayerPower(
+          entityId,
+          state === 'off' ? 'on' : 'off'
+        ),
       t('media.feedback.updatePlaybackFailed')
     );
 
@@ -362,7 +389,7 @@ export function useMediaCardController({
 
     void runMediaAction(
       () =>
-        homeAssistantService.sendRemoteCommand(
+        integrationMediaFeatureService.sendRemoteCommand(
           remoteEntityId,
           getTvRemoteCommand(remoteProfile, 'playPause')
         ),
@@ -376,7 +403,7 @@ export function useMediaCardController({
     const command = getTvRemoteCommand(remoteProfile, action);
 
     void runMediaAction(
-      () => homeAssistantService.sendRemoteCommand(remoteEntityId, command),
+      () => integrationMediaFeatureService.sendRemoteCommand(remoteEntityId, command),
       t('media.feedback.updatePlaybackFailed')
     );
   };

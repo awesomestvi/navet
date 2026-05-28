@@ -5,6 +5,7 @@ import { useI18n } from '@/app/hooks';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { IntegrationProviderId } from '@/app/types/provider';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { clampKelvin, clampPercentage } from './light-card-utils';
 
 export interface LightUpdateOptions {
@@ -33,6 +34,8 @@ export function useLightServiceSync({
   return useCallback(
     async (options: LightUpdateOptions) => {
       try {
+        const nativeEntityId = parseProviderScopedId(id)?.nativeId ?? id;
+
         if (providerId && providerId !== 'home_assistant') {
           if (options.effect || options.rgbColor || options.hsColor || options.xyColor) {
             throw new Error('This light control is not supported for the current integration yet');
@@ -67,7 +70,7 @@ export function useLightServiceSync({
           return;
         }
 
-        await homeAssistantService.updateLight(id, options);
+        await homeAssistantService.updateLight(nativeEntityId, options);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t('lighting.feedback.updateLightFailed')

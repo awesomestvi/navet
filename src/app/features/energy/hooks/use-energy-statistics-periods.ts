@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useHomeAssistant } from '@/app/hooks';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
@@ -28,13 +28,14 @@ export function useEnergyStatisticsPeriods(entityId?: string): EnergyPeriodTotal
     const statisticId = entityId;
 
     async function fetchStats() {
-      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
-      if (!activeConnection) return;
+      const activeMessageClient =
+        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      if (!activeMessageClient) return;
       try {
         const result = await getCachedEnergyStatistics(
           `periods-5minute-today:${statisticId}`,
           CACHE_TTL_MS,
-          () => getEnergyStatisticsPeriods(activeConnection, statisticId)
+          () => getEnergyStatisticsPeriods(activeMessageClient, statisticId)
         );
         setTotals(result);
       } catch (error) {

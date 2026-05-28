@@ -1,10 +1,10 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { getName } from '@/app/hooks/ha-entity-utils';
+import type { PlatformTaskEntityMap } from '@/app/platform/provider-feature-models';
+import { getTaskEntityName } from './task-runtime';
 
 type UnknownRecord = Record<string, unknown>;
 
 interface AutomationConfigSummaryOptions {
-  entities?: HassEntities | null;
+  entities?: PlatformTaskEntityMap | null;
 }
 
 function stringifyValue(value: unknown): string | null {
@@ -58,7 +58,7 @@ function resolveEntityLabel(
     }
 
     const entity = options.entities?.[value];
-    return entity ? getName(entity) : value;
+    return entity ? getTaskEntityName(entity) : value;
   }
 
   if (Array.isArray(value)) {

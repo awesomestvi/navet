@@ -4,8 +4,7 @@ import { CardDialogTabList, CardDialogTabTrigger } from '@/app/components/patter
 import { CustomDialogDoneButton, DialogFooter } from '@/app/components/primitives/dialog-shell';
 import { ModalSurface } from '@/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
-import { useEntityProviderFeatureMatrix, useI18n } from '@/app/hooks';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
+import { useEntityProviderFeatureMatrix, useHomeAssistant, useI18n } from '@/app/hooks';
 import { MediaCapabilityPanel } from './media-capability-panel';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
@@ -93,7 +92,7 @@ export function MediaDialogContent({
 }: MediaDialogContentProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('playback');
-  const { entities, entityRegistry } = useProviderRuntime(selectMediaPlaybackData);
+  const { entities, entityRegistry } = useHomeAssistant(selectMediaPlaybackData);
   const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const hasMediaControls = hasMediaCapabilityControls({
     capabilities,

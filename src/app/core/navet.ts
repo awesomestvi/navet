@@ -88,6 +88,34 @@ export interface NavetRoom {
   memberIds: string[];
 }
 
+export interface NavetRoomDescriptorSource {
+  providerId: IntegrationProviderId;
+  nativeId: string;
+  canonicalId?: string;
+  sourceType: 'provider_managed' | 'derived';
+  supportsOrdering: boolean;
+  supportsDeletion: boolean;
+}
+
+export interface NavetRoomDescriptor {
+  id: string;
+  canonicalId: string;
+  name: string;
+  normalizedName: string;
+  providerIds: IntegrationProviderId[];
+  memberIds: string[];
+  sources: NavetRoomDescriptorSource[];
+}
+
+export interface NavetProviderRuntimeState {
+  providerId: IntegrationProviderId;
+  connected: boolean;
+  connecting: boolean;
+  reconnecting: boolean;
+  entitiesHydrated: boolean;
+  registriesHydrated: boolean;
+}
+
 export interface NavetProviderSnapshot {
   providerId: IntegrationProviderId;
   connected: boolean;
@@ -114,6 +142,7 @@ export interface NavetProviderContract {
   providerId: IntegrationProviderId;
   bootstrapSession?: (sessions: AuthSessionMap) => NavetProviderSession | null;
   getSnapshot: () => NavetProviderSnapshot;
+  subscribeSnapshot?: (listener: () => void) => () => void;
   dispatchAction: (intent: NavetActionIntent) => Promise<void>;
   resolveResource?: (
     request: NavetResourceResolveRequest

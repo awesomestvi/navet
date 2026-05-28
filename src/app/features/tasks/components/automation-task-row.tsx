@@ -1,19 +1,11 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { ChevronDown, ChevronUp, Play } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
-import { shallow } from 'zustand/shallow';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Badge, Button, IconButton, Panel, Switch, Tag } from '@/app/components/primitives';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import {
-  useAccentColor,
-  useHomeAssistant,
-  useI18n,
-  useServiceActionHandler,
-  useThemeMode,
-} from '@/app/hooks';
+import { useAccentColor, useI18n, useServiceActionHandler, useThemeMode } from '@/app/hooks';
+import type { PlatformTaskEntityMap } from '@/app/platform/provider-feature-models';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { integrationTaskService } from '@/app/services/integration-task.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
 
@@ -109,25 +101,26 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
     () => (automationConfig ? [...collectEntityIds(automationConfig)].sort() : []),
     [automationConfig]
   );
-  const selectDetailEntities = useCallback(
-    (state: IntegrationStore): HassEntities | null => {
-      const snapshot = integrationTaskService.selectTaskRuntimeSnapshot(state);
-      if (!snapshot.entities || detailEntityIds.length === 0) {
-        return null;
-      }
-
-      const detailEntities: HassEntities = {};
-      for (const entityId of detailEntityIds) {
-        const entity = snapshot.entities[entityId];
-        if (entity) {
-          detailEntities[entityId] = entity;
-        }
-      }
-      return detailEntities;
-    },
-    [detailEntityIds]
+  const taskRuntime = useSyncExternalStore(
+    integrationTaskService.subscribeTaskRuntimeSnapshot,
+    integrationTaskService.getTaskRuntimeSnapshot,
+    integrationTaskService.getTaskRuntimeSnapshot
   );
-  const detailEntities = useHomeAssistant(selectDetailEntities, shallow);
+  const detailEntities = useMemo((): PlatformTaskEntityMap | null => {
+    if (!taskRuntime.entities || detailEntityIds.length === 0) {
+      return null;
+    }
+
+    const entities: PlatformTaskEntityMap = {};
+    for (const entityId of detailEntityIds) {
+      const entity = taskRuntime.entities[entityId];
+      if (entity) {
+        entities[entityId] = entity;
+      }
+    }
+
+    return entities;
+  }, [detailEntityIds, taskRuntime.entities]);
 
   const lastTriggeredLabel = useMemo(() => {
     if (!automation.lastTriggered) {
@@ -198,7 +191,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
     setIsLoadingDetails(true);
     setDetailsError(null);
     void integrationTaskService
-      .getAutomationConfig(automation.id)
+      .getAutomationDetails(automation.id)
       .then((response) => {
         setAutomationConfig(response.config);
       })

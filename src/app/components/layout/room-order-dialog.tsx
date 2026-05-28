@@ -26,7 +26,9 @@ import {
 } from '@/app/components/primitives';
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { NavetRoomDescriptor } from '@/app/core/navet';
 import { useI18n, useTheme } from '@/app/hooks';
+import { buildManageableRoomReferences } from '@/app/platform/provider-room-management';
 import { integrationAdminService } from '@/app/services/integration-admin.service';
 
 interface RoomOrderDialogProps {
@@ -34,7 +36,7 @@ interface RoomOrderDialogProps {
   onOpenChange: (open: boolean) => void;
   rooms: string[];
   hiddenRoomNames?: string[];
-  areas: Array<{ area_id: string; name: string }>;
+  roomDescriptors: NavetRoomDescriptor[];
   roomHiddenItemCounts: Map<string, number>;
   roomEntityCounts: Map<string, number>;
   onRoomOrderChange?: (rooms: string[]) => void;
@@ -46,7 +48,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
   onOpenChange,
   rooms,
   hiddenRoomNames = [],
-  areas,
+  roomDescriptors,
   roomHiddenItemCounts,
   roomEntityCounts,
   onRoomOrderChange,
@@ -69,9 +71,25 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
     }
   }, [isOpen, rooms]);
 
-  const areaIdByName = useMemo(() => {
-    return new Map(areas.map((area) => [area.name, area.area_id]));
-  }, [areas]);
+  const deletableRoomIdByName = useMemo(() => {
+    const roomsByName = new Map<string, string>();
+
+    for (const providerId of new Set(
+      roomDescriptors.flatMap((descriptor) => descriptor.providerIds)
+    )) {
+      for (const room of buildManageableRoomReferences(roomDescriptors, providerId)) {
+        if (room.canDelete) {
+          roomsByName.set(room.name, room.id);
+        }
+      }
+    }
+
+    return roomsByName;
+  }, [roomDescriptors]);
+  const deletableRoomNames = useMemo(
+    () => new Set(deletableRoomIdByName.keys()),
+    [deletableRoomIdByName]
+  );
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -111,14 +129,14 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
       return;
     }
 
-    const areaId = areaIdByName.get(pendingDeleteRoom);
-    if (!areaId) {
+    const roomId = deletableRoomIdByName.get(pendingDeleteRoom);
+    if (!roomId) {
       return;
     }
 
     setIsSaving(true);
     try {
-      await integrationAdminService.deleteArea(areaId);
+      await integrationAdminService.deleteRoom(roomId);
       const nextRooms = draftRooms.filter((room) => room !== pendingDeleteRoom);
       setDraftRooms(nextRooms);
       onRoomOrderChange?.(nextRooms);
@@ -191,7 +209,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
                   isHidden={hiddenRoomSet.has(room)}
                   onToggleHidden={() => toggleRoomHidden(room)}
                   onDelete={() => setPendingDeleteRoom(room)}
-                  deleteDisabled={isSaving}
+                  deleteDisabled={isSaving || !deletableRoomNames.has(room)}
                 />
               ))}
             </div>

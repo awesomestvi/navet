@@ -1,4 +1,4 @@
-import type { Connection } from 'home-assistant-js-websocket';
+import type { PlatformMessageClient } from '@/app/platform/provider-feature-models';
 import { getRecorderMeanHistory } from '@/app/services/ha-recorder-statistics';
 
 interface StatisticEntry {
@@ -14,7 +14,7 @@ type StatisticsResponse = Record<string, StatisticEntry[]>;
  * Returns 0 for any entity where statistics are unavailable.
  */
 export async function getEnergyStatisticsToday(
-  connection: Connection,
+  messageClient: PlatformMessageClient,
   entityIds: string[]
 ): Promise<Record<string, number>> {
   if (entityIds.length === 0) return {};
@@ -22,7 +22,7 @@ export async function getEnergyStatisticsToday(
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const response = (await connection.sendMessagePromise({
+  const response = (await messageClient.sendMessagePromise({
     type: 'recorder/statistics_during_period',
     start_time: startOfToday.toISOString(),
     end_time: now.toISOString(),
@@ -59,7 +59,7 @@ function getStartOfMonth(now: Date): Date {
 }
 
 export async function getEnergyStatisticsPeriods(
-  connection: Connection,
+  messageClient: PlatformMessageClient,
   entityId: string
 ): Promise<{ today: number; week: number; month: number }> {
   const now = new Date();
@@ -70,7 +70,7 @@ export async function getEnergyStatisticsPeriods(
   } as const;
 
   const responses = await Promise.all([
-    connection.sendMessagePromise({
+    messageClient.sendMessagePromise({
       type: 'recorder/statistics_during_period',
       start_time: periods.today.toISOString(),
       end_time: now.toISOString(),
@@ -80,7 +80,7 @@ export async function getEnergyStatisticsPeriods(
     }) as Promise<StatisticsResponse>,
     ...[periods.week, periods.month].map(
       (start) =>
-        connection.sendMessagePromise({
+        messageClient.sendMessagePromise({
           type: 'recorder/statistics_during_period',
           start_time: start.toISOString(),
           statistic_ids: [entityId],
@@ -105,11 +105,11 @@ export async function getEnergyStatisticsPeriods(
 }
 
 export async function getPowerStatisticsHistory(
-  connection: Connection,
+  messageClient: PlatformMessageClient,
   entityId: string,
   startTime?: Date
 ): Promise<Array<{ start: number; end: number; mean: number; min: number; max: number }>> {
   const now = new Date();
   const start = startTime ?? getStartOfToday(now);
-  return getRecorderMeanHistory(connection, entityId, start, now);
+  return getRecorderMeanHistory(messageClient, entityId, start, now);
 }

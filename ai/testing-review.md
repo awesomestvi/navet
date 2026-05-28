@@ -64,20 +64,9 @@ These tests have useful intent, but they should not be treated as fully trustwor
 
 ## Tests That Should Be Deleted Or Replaced
 
-These tests are low-value because they mostly mirror file contents or implementation text, not runtime behavior or product contracts.
+There are no current baseline entries in this category.
 
-- `src/app/utils/__tests__/vite-dev-proxy.test.ts`
-  - Delete or replace. It asserts string fragments inside `vite.config.ts`, so refactors can break it without changing behavior and bugs can survive if the same strings still exist.
-  - Replace with behavioral coverage around the actual proxy middleware or extracted proxy helpers.
-- `src/app/utils/__tests__/docker-discovery.test.ts`
-  - Delete or replace. It mostly checks that Docker, nginx, and njs files contain exact text snippets.
-  - Replace with a smaller number of behavioral tests against parsed config outputs or runtime script helpers.
-- `src/app/utils/__tests__/addon-run-script.test.ts`
-  - Delete or replace. It is implementation-mirroring shell-script text inspection, not a runtime ingress/auth contract test.
-  - Replace with focused tests for the generated proxy/auth behavior or extracted config-generation logic.
-- `src/app/utils/__tests__/addon-config.test.ts`
-  - Delete or replace. It depends on literal YAML text content instead of validating the add-on contract in a resilient way.
-  - Replace with structured config parsing assertions if this contract must stay tested.
+The previous repo-file string-inspection tests in `src/app/utils/__tests__/` were removed because they only mirrored implementation text instead of validating runtime behavior or documented contracts.
 
 ## Home Assistant Docs And Assumptions To Check Next
 

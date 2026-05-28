@@ -1,6 +1,6 @@
-import type { Connection } from 'home-assistant-js-websocket';
 import type { ProviderCalendarFeatureService } from '@/app/platform/provider-feature-services';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
 type CalendarServiceEvent = Record<string, unknown>;
 
@@ -17,14 +17,26 @@ type CalendarEventsServiceEnvelope = CalendarEventsServicePayload & {
   result?: CalendarEventsServicePayload;
 };
 
-function getActiveConnection(connection?: Connection | null) {
-  return connection ?? homeAssistantService.getConnection();
+function getActiveMessageClient(
+  messageClient?: { sendMessagePromise<T>(message: unknown): Promise<T> } | null
+) {
+  return messageClient ?? homeAssistantService.getConnection();
+}
+
+function requireHomeAssistantCalendarProvider(entityId: string) {
+  const providerScope = parseProviderScopedId(entityId);
+  if (providerScope && providerScope.providerId !== 'home_assistant') {
+    throw new Error('Calendar events are not supported for the current integration yet');
+  }
+
+  return providerScope?.nativeId ?? entityId;
 }
 
 export const integrationCalendarFeatureService: ProviderCalendarFeatureService = {
   async getEvents(entityId, options) {
-    const connection = getActiveConnection(options?.connection);
-    if (!connection) {
+    const nativeEntityId = requireHomeAssistantCalendarProvider(entityId);
+    const messageClient = getActiveMessageClient(options?.messageClient);
+    if (!messageClient) {
       return [];
     }
 
@@ -33,11 +45,11 @@ export const integrationCalendarFeatureService: ProviderCalendarFeatureService =
     const endDateTime =
       options?.endDateTime ?? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const response = (await connection.sendMessagePromise({
+    const response = (await messageClient.sendMessagePromise({
       type: 'call_service',
       domain: 'calendar',
       service: 'get_events',
-      target: { entity_id: entityId },
+      target: { entity_id: nativeEntityId },
       service_data: {
         start_date_time: startDateTime,
         end_date_time: endDateTime,
@@ -46,6 +58,6 @@ export const integrationCalendarFeatureService: ProviderCalendarFeatureService =
     })) as CalendarEventsServiceEnvelope;
 
     const payload = response.response ?? response.result?.response;
-    return payload?.[entityId]?.events ?? [];
+    return payload?.[nativeEntityId]?.events ?? [];
   },
 };

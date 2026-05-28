@@ -3,7 +3,7 @@ import { homeyService } from '@/app/services/homey.service';
 import { resetAppStores } from '@/test/store-reset';
 import { homeAssistantStore } from '../home-assistant-store';
 import { integrationStore } from '../integration-store';
-import { integrationSelectors } from '../selectors';
+import { homeAssistantSelectors } from '../selectors';
 
 describe('integrationStore', () => {
   it('tracks provider health for Home Assistant and Homey', async () => {
@@ -31,6 +31,31 @@ describe('integrationStore', () => {
       providerId: 'homey',
       connected: true,
     });
+    expect(integrationStore.getState().providerRuntime.home_assistant).toMatchObject({
+      providerId: 'home_assistant',
+      connected: true,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: false,
+    });
+    expect(integrationStore.getState().providerRuntime.homey).toMatchObject({
+      providerId: 'homey',
+      connected: true,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: true,
+    });
+    expect(integrationStore.getState().currentProviderId).toBe('home_assistant');
+  });
+
+  it('updates the active provider id separately from provider session snapshots', async () => {
+    await resetAppStores();
+
+    integrationStore.getState().setCurrentProviderId('homey');
+
+    expect(integrationStore.getState().currentProviderId).toBe('homey');
   });
 
   it('resolves canonical entity ids through the shared integration store', async () => {
@@ -49,8 +74,8 @@ describe('integrationStore', () => {
       },
     });
 
-    const entity = integrationSelectors.entity('home_assistant:light.kitchen')(
-      integrationStore.getState()
+    const entity = homeAssistantSelectors.entity('home_assistant:light.kitchen')(
+      homeAssistantStore.getState()
     );
     expect(entity?.attributes.friendly_name).toBe('Kitchen Light');
   });
@@ -60,6 +85,7 @@ describe('integrationStore', () => {
 
     homeAssistantStore.setState({
       connected: true,
+      areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
       entities: {
         'light.kitchen': {
           entity_id: 'light.kitchen',
@@ -125,5 +151,43 @@ describe('integrationStore', () => {
         }),
       ])
     );
+    expect(integrationStore.getState().roomDescriptors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Kitchen',
+          providerIds: expect.arrayContaining(['home_assistant', 'homey']),
+          sources: expect.arrayContaining([
+            expect.objectContaining({
+              providerId: 'home_assistant',
+              nativeId: 'kitchen',
+              sourceType: 'provider_managed',
+              supportsOrdering: true,
+              supportsDeletion: true,
+            }),
+            expect.objectContaining({
+              providerId: 'homey',
+              nativeId: 'kitchen',
+              sourceType: 'provider_managed',
+              supportsOrdering: true,
+              supportsDeletion: false,
+            }),
+          ]),
+        }),
+        expect.objectContaining({
+          name: 'Unassigned',
+          sources: expect.arrayContaining([
+            expect.objectContaining({
+              providerId: 'home_assistant',
+              sourceType: 'derived',
+              supportsOrdering: false,
+            }),
+          ]),
+        }),
+      ])
+    );
+    expect(integrationStore.getState().providerRuntime.home_assistant).toMatchObject({
+      entitiesHydrated: true,
+      registriesHydrated: false,
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useEffect, useRef } from 'react';
 import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
+import type { NavetMediaState } from '@/app/core/navet-device-state';
 import { normalizeMediaPlaybackState } from '@/app/features/media';
 
 function areStringArraysEqual(a: string[], b: string[]) {
@@ -18,6 +19,7 @@ function areStringArraysEqual(a: string[], b: string[]) {
 
 interface UseMediaEntitySyncParams {
   liveEntity: { state: string; attributes: Record<string, unknown> } | undefined;
+  providerState?: NavetMediaState | null;
   entityId: string;
   deviceClass?: string;
   currentMuted: boolean;
@@ -41,6 +43,7 @@ interface UseMediaEntitySyncParams {
 
 export function useMediaEntitySync({
   liveEntity,
+  providerState,
   entityId,
   deviceClass,
   currentMuted,
@@ -135,12 +138,30 @@ export function useMediaEntitySync({
     }
 
     const resolvedInitialGroupMembers =
-      initialGroupMembers.length > 0 ? initialGroupMembers : [entityId];
-    const resolvedInitialElapsedSeconds = initialElapsedSeconds ?? 0;
-    const resolvedInitialDurationSeconds = initialDurationSeconds ?? 0;
-    const initialPlaybackSnapshotKey = `${initialState}::${resolvedInitialElapsedSeconds}::`;
+      Array.isArray(providerState?.groupMembers) && providerState.groupMembers.length > 0
+        ? providerState.groupMembers
+        : initialGroupMembers.length > 0
+          ? initialGroupMembers
+          : [entityId];
+    const resolvedInitialElapsedSeconds =
+      typeof providerState?.elapsedSeconds === 'number'
+        ? providerState.elapsedSeconds
+        : (initialElapsedSeconds ?? 0);
+    const resolvedInitialDurationSeconds =
+      typeof providerState?.durationSeconds === 'number'
+        ? providerState.durationSeconds
+        : (initialDurationSeconds ?? 0);
+    const resolvedInitialState =
+      typeof providerState?.value === 'string'
+        ? normalizeMediaPlaybackState(providerState.value, deviceClass)
+        : initialState;
+    const initialPlaybackSnapshotKey = `${resolvedInitialState}::${resolvedInitialElapsedSeconds}::`;
+    const resolvedInitialVolume =
+      typeof providerState?.volume === 'number' ? providerState.volume : initialVolume;
 
-    setState((currentState) => (currentState === initialState ? currentState : initialState));
+    setState((currentState) =>
+      currentState === resolvedInitialState ? currentState : resolvedInitialState
+    );
     if (lastPlaybackSnapshotKeyRef.current !== initialPlaybackSnapshotKey) {
       lastPlaybackSnapshotKeyRef.current = initialPlaybackSnapshotKey;
       setElapsedSeconds((currentElapsedSeconds) =>
@@ -156,21 +177,23 @@ export function useMediaEntitySync({
     );
     if (!isAdjustingVolume) {
       setVolume((currentVolume) =>
-        currentVolume === initialVolume ? currentVolume : initialVolume
+        currentVolume === resolvedInitialVolume ? currentVolume : resolvedInitialVolume
       );
-      if (initialVolume > 0) {
+      if (resolvedInitialVolume > 0) {
         setPreviousVolume((previousVolume) =>
-          previousVolume === initialVolume ? previousVolume : initialVolume
+          previousVolume === resolvedInitialVolume ? previousVolume : resolvedInitialVolume
         );
       }
       setIsMuted((previousMuted) =>
-        previousMuted === initialMuted ? previousMuted : initialMuted
+        previousMuted === (providerState?.isMuted ?? initialMuted)
+          ? previousMuted
+          : (providerState?.isMuted ?? initialMuted)
       );
     }
     setSupportsGrouping((currentSupportsGrouping) =>
-      currentSupportsGrouping === initialSupportsGrouping
+      currentSupportsGrouping === (providerState?.supportsGrouping ?? initialSupportsGrouping)
         ? currentSupportsGrouping
-        : initialSupportsGrouping
+        : (providerState?.supportsGrouping ?? initialSupportsGrouping)
     );
     setGroupMembers((currentGroupMembers) =>
       areStringArraysEqual(currentGroupMembers, resolvedInitialGroupMembers)
@@ -182,6 +205,7 @@ export function useMediaEntitySync({
     initialState,
     currentMuted,
     deviceClass,
+    providerState,
     initialVolume,
     initialMuted,
     initialElapsedSeconds,

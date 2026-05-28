@@ -909,6 +909,7 @@ function homeySessionStorePlugin() {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
+  const enableDemo = (env.NAVET_ENABLE_DEMO ?? process.env.NAVET_ENABLE_DEMO ?? 'true') !== 'false'
   const lifecycleEvent = process.env.npm_lifecycle_event ?? ''
   const commandLine = process.argv.join(' ')
   const isStorybook =
@@ -1007,6 +1008,7 @@ export default defineConfig(({ mode }) => {
     envPrefix: ['VITE_'],
     define: {
       __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+      __NAVET_ENABLE_DEMO__: JSON.stringify(enableDemo),
     },
     plugins,
     resolve: {

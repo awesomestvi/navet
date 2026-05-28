@@ -7,7 +7,7 @@ interface HookProps {
   activeRoom: string;
   preferredRoom: string;
   rooms: string[];
-  hassEntitiesHydrated: boolean;
+  entitiesHydrated: boolean;
   devicesLoaded: boolean;
   registriesHydrated: boolean;
   connected: boolean;
@@ -19,7 +19,7 @@ const defaultProps: HookProps = {
   activeRoom: 'Kitchen',
   preferredRoom: 'Kitchen',
   rooms: ['Kitchen', 'Living Room'],
-  hassEntitiesHydrated: true,
+  entitiesHydrated: true,
   devicesLoaded: true,
   registriesHydrated: true,
   connected: true,
@@ -35,7 +35,7 @@ function renderRoomNavigation(props: Partial<HookProps> = {}) {
       activeRoom,
       preferredRoom,
       rooms,
-      hassEntitiesHydrated,
+      entitiesHydrated,
       devicesLoaded,
       registriesHydrated,
       connected,
@@ -48,7 +48,7 @@ function renderRoomNavigation(props: Partial<HookProps> = {}) {
         rooms,
         changeRoom,
         fallbackRoom,
-        hassEntitiesHydrated,
+        entitiesHydrated,
         devicesLoaded,
         registriesHydrated,
         connected,
@@ -102,7 +102,7 @@ describe('useDashboardRoomNavigation', () => {
       activeRoom: 'Living Room',
       preferredRoom: 'Living Room',
       rooms: ['Kitchen', 'Living Room'],
-      hassEntitiesHydrated: true,
+      entitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: true,
     });
@@ -111,7 +111,7 @@ describe('useDashboardRoomNavigation', () => {
       ...defaultProps,
       activeRoom: 'Living Room',
       rooms: ['Kitchen'],
-      hassEntitiesHydrated: true,
+      entitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: true,
     });
@@ -131,7 +131,7 @@ describe('useDashboardRoomNavigation', () => {
       activeRoom: ALL_ROOMS_ID,
       preferredRoom: ALL_ROOMS_ID,
       rooms: [],
-      hassEntitiesHydrated: true,
+      entitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: true,
     });
@@ -145,7 +145,7 @@ describe('useDashboardRoomNavigation', () => {
     rerender({
       ...defaultProps,
       rooms: [],
-      hassEntitiesHydrated: true,
+      entitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: false,
     });
@@ -159,7 +159,7 @@ describe('useDashboardRoomNavigation', () => {
     rerender({
       ...defaultProps,
       rooms: [],
-      hassEntitiesHydrated: true,
+      entitiesHydrated: true,
       devicesLoaded: true,
       registriesHydrated: true,
     });

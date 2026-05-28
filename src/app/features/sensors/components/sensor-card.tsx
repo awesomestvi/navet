@@ -7,7 +7,7 @@ import {
   isTinyCardSize,
 } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
-import { useI18n, useProviderRuntime, useTheme } from '@/app/hooks';
+import { useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
 import {
   formatBinarySensorState,
   getSensorDeviceClass,
@@ -15,7 +15,7 @@ import {
 } from '@/app/hooks/device-mappers';
 import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
 import { useSettingsStore } from '@/app/stores';
-import { integrationSelectors } from '@/app/stores/selectors';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
 import { SensorHistorySparkline } from './sensor-history-sparkline';
@@ -64,7 +64,7 @@ export const InfoCard = memo(function InfoCard({
   const { locale, t } = useI18n();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const liveEntity = useProviderRuntime(integrationSelectors.entity(id));
+  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const liveDeviceClass = liveEntity ? getSensorDeviceClass(liveEntity) : deviceClass;
   const isBinarySensor = id.startsWith('binary_sensor.');
   const liveFormatted = liveEntity

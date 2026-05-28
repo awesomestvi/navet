@@ -42,7 +42,9 @@ const tempDataDir = mkdtempSync(join(tmpdir(), 'navet-docker-runtime-check-'));
 
 try {
   ensureDockerAvailable();
-  run('docker', ['build', '-t', imageTag, '.'], { cwd: process.cwd() });
+  run('docker', ['build', '--build-arg', 'NAVET_ENABLE_DEMO=false', '-t', imageTag, '.'], {
+    cwd: process.cwd(),
+  });
   run('docker', [
     'run',
     '--rm',

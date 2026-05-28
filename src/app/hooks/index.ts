@@ -44,6 +44,7 @@ export {
   useProviderCalendarDevices,
   useProviderCalendarDevicesCollection,
 } from './use-provider-calendar-devices';
+export { useProviderDevice } from './use-provider-device';
 export {
   resolveProviderIdForFeatureSupport,
   useEntityProviderFeature,

@@ -1,4 +1,4 @@
-import type { Connection } from 'home-assistant-js-websocket';
+import type { PlatformMessageClient } from '@/app/platform/provider-feature-models';
 import type {
   EnergyConsumerCategory,
   EnergyDeviceSource,
@@ -62,8 +62,8 @@ export interface HaEnergyEntityRegistryEntry {
 
 // ─── API call ────────────────────────────────────────────────────────────────
 
-export async function getEnergyPrefs(connection: Connection): Promise<HaEnergyPrefs> {
-  return connection.sendMessagePromise({ type: 'energy/get_prefs' }) as Promise<HaEnergyPrefs>;
+export async function getEnergyPrefs(messageClient: PlatformMessageClient): Promise<HaEnergyPrefs> {
+  return messageClient.sendMessagePromise({ type: 'energy/get_prefs' }) as Promise<HaEnergyPrefs>;
 }
 
 const DEVICE_CATEGORY_HINTS: [string, EnergyConsumerCategory][] = [

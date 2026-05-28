@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { makeTaskEntity } from '@/app/features/tasks/test-utils';
 import {
   automationEntityFactory,
   automationEntityFixtures,
@@ -10,12 +11,14 @@ describe('mapAutomationTasks', () => {
   it('maps only automation entities', () => {
     const tasks = mapAutomationTasks({
       entities: {
-        [automationEntityFixtures.normal.entity_id]: automationEntityFixtures.normal,
-        [scriptEntityFixtures.normal.entity_id]: scriptEntityFixtures.normal,
+        [automationEntityFixtures.normal.entity_id]: makeTaskEntity(
+          automationEntityFixtures.normal
+        ),
+        [scriptEntityFixtures.normal.entity_id]: makeTaskEntity(scriptEntityFixtures.normal),
       },
-      areas: [],
-      deviceRegistry: [],
-      entityRegistry: [],
+      rooms: [],
+      devices: [],
+      entityReferences: [],
       locale: 'en-US',
     });
 
@@ -31,12 +34,14 @@ describe('mapAutomationTasks', () => {
   it('resolves display name, room, and last_triggered metadata from Home Assistant registries', () => {
     const tasks = mapAutomationTasks({
       entities: {
-        [automationEntityFixtures.normal.entity_id]: automationEntityFixtures.normal,
+        [automationEntityFixtures.normal.entity_id]: makeTaskEntity(
+          automationEntityFixtures.normal
+        ),
       },
-      areas: [{ area_id: 'hall', name: 'Hallway' }],
-      deviceRegistry: [{ id: 'device-1', area_id: 'hall' }],
-      entityRegistry: [
-        { entity_id: automationEntityFixtures.normal.entity_id, device_id: 'device-1' },
+      rooms: [{ id: 'hall', name: 'Hallway' }],
+      devices: [{ id: 'device-1', roomId: 'hall' }],
+      entityReferences: [
+        { entityId: automationEntityFixtures.normal.entity_id, deviceId: 'device-1' },
       ],
       locale: 'en-US',
     });
@@ -63,13 +68,13 @@ describe('mapAutomationTasks', () => {
 
     const tasks = mapAutomationTasks({
       entities: {
-        [beta.entity_id]: beta,
-        [alpha.entity_id]: alpha,
-        [zulu.entity_id]: zulu,
+        [beta.entity_id]: makeTaskEntity(beta),
+        [alpha.entity_id]: makeTaskEntity(alpha),
+        [zulu.entity_id]: makeTaskEntity(zulu),
       },
-      areas: [],
-      deviceRegistry: [],
-      entityRegistry: [],
+      rooms: [],
+      devices: [],
+      entityReferences: [],
       locale: 'en-US',
     });
 
@@ -91,11 +96,11 @@ describe('mapAutomationTasks', () => {
 
     const tasks = mapAutomationTasks({
       entities: {
-        [entity.entity_id]: entity,
+        [entity.entity_id]: makeTaskEntity(entity),
       },
-      areas: [],
-      deviceRegistry: [],
-      entityRegistry: [],
+      rooms: [],
+      devices: [],
+      entityReferences: [],
       locale: 'en-US',
     });
 
@@ -123,11 +128,11 @@ describe('mapAutomationTasks', () => {
 
     const tasks = mapAutomationTasks({
       entities: {
-        [entity.entity_id]: entity,
+        [entity.entity_id]: makeTaskEntity(entity),
       },
-      areas: [],
-      deviceRegistry: [],
-      entityRegistry: [],
+      rooms: [],
+      devices: [],
+      entityReferences: [],
       locale: 'en-US',
     });
 

@@ -1,10 +1,13 @@
 import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import type {
+  PlatformCameraStream,
+  PlatformCameraStreamType,
+} from '@/app/platform/provider-feature-models';
 import {
   INTEGRATION_PROVIDERS,
   type IntegrationProviderDefinition,
   type IntegrationProviderId,
 } from '../types/provider';
-import type { HomeAssistantCameraStreamType } from './home-assistant.service';
 import {
   getIntegrationProviderAdapter,
   getIntegrationProviderFeatureMatrix,
@@ -42,6 +45,10 @@ export function getCurrentIntegrationFeatureMatrix() {
 }
 
 export async function signCurrentIntegrationPath(path: string, expiresSeconds?: number) {
+  return await getCurrentIntegrationSignedPath(path, expiresSeconds);
+}
+
+export async function getCurrentIntegrationSignedPath(path: string, expiresSeconds?: number) {
   const adapter = getIntegrationProviderAdapter(getCurrentIntegrationProviderId());
   requireIntegrationProviderCapability(adapter, 'pathSigning');
 
@@ -54,8 +61,15 @@ export async function signCurrentIntegrationPath(path: string, expiresSeconds?: 
 
 export async function getCurrentIntegrationCameraStream(
   entityId: string,
-  format: HomeAssistantCameraStreamType
-) {
+  format: PlatformCameraStreamType
+): Promise<PlatformCameraStream> {
+  return await getCurrentIntegrationCameraStreamUrl(entityId, format);
+}
+
+export async function getCurrentIntegrationCameraStreamUrl(
+  entityId: string,
+  format: PlatformCameraStreamType
+): Promise<PlatformCameraStream> {
   const adapter = getIntegrationProviderAdapter(getCurrentIntegrationProviderId());
   requireIntegrationProviderCapability(adapter, 'cameraStreams');
 

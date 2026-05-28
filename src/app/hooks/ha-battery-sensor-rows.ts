@@ -1,4 +1,4 @@
-import type { IntegrationStore } from '@/app/stores/integration-store';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 
 export interface HaBatterySensorRow {
   id: string;
@@ -8,7 +8,7 @@ export interface HaBatterySensorRow {
 
 /** Narrow HA subscription: battery-class `sensor.*` rows only (sorted by level). */
 export function selectBatterySensorRowsFromHa(
-  state: Pick<IntegrationStore, 'entities'>
+  state: Pick<HomeAssistantStore, 'entities'>
 ): HaBatterySensorRow[] {
   const entities = state.entities;
   if (!entities) {

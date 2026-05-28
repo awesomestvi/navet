@@ -10,13 +10,14 @@ This file summarizes Navet's stack, repository structure, key files, and common 
 | Build | Vite 8, pnpm |
 | Styling | Tailwind CSS 4.3, Radix UI |
 | State | Zustand 5 |
-| Home Assistant integration | `home-assistant-js-websocket` |
+| Home Assistant adapter | `home-assistant-js-websocket` |
 | Linting and format | Biome 2 |
 
 ## Project Structure
 
 ```text
 src/app/
+  core/             # Navet-owned domain contracts, provider snapshots, and mapper layers
   features/         # domain modules that own their hooks, stores, and components
   components/
     ui/             # Radix UI wrappers
@@ -28,10 +29,13 @@ src/app/
     figma/          # design integration components
   config/           # app-level configuration helpers
   constants/        # shared constants
-  stores/           # shared Zustand stores
+  platform/         # provider feature abstractions and cross-provider interfaces
+  stores/           # shared Zustand stores, including provider runtime aggregation
   pwa/              # PWA update support
-  services/         # Home Assistant service layer
-  hooks/            # shared hooks, device mappers, entity utilities
+  services/         # provider-facing services and adapter registries
+  hooks/            # shared hooks, runtime selectors, device mappers, entity utilities
+  infrastructure/
+    home-assistant/ # Home Assistant adapter-specific runtime, auth, media, resources, transport
   session/          # config serialization helpers
   utils/            # pure helpers
   i18n/             # translations
@@ -49,9 +53,13 @@ src/app/
 | File | Purpose |
 |---|---|
 | `src/app/App.tsx` | Root provider tree, connection effect, and global DOM attributes |
-| `src/app/stores/` | Shared Zustand stores and selectors |
-| `src/app/services/home-assistant.service.ts` | Home Assistant WebSocket and API integration |
-| `src/app/stores/home-assistant-store.ts` | Home Assistant state store and service subscriptions |
+| `src/app/core/navet.ts` | Navet-owned device, room, provider snapshot, and contract types |
+| `src/app/core/navet-mappers.ts` | Backend-to-Navet mapping layer for current providers |
+| `src/app/platform/provider-feature-services.ts` | Provider feature-service abstraction surface |
+| `src/app/stores/integration-store.ts` | Cross-provider runtime aggregation and normalized provider snapshot state |
+| `src/app/hooks/use-provider-runtime.ts` | Main runtime hook for provider-backed app state |
+| `src/app/stores/home-assistant-store.ts` | Home Assistant provider runtime slice and typed service subscriptions |
+| `src/app/services/home-assistant.service.ts` | Home Assistant adapter WebSocket and API integration |
 | `src/app/features/dashboard/hooks/use-dashboard-controller.ts` | Dashboard coordinator hook |
 | `src/app/features/dashboard/utils/card-renderer.tsx` | Dashboard card registry |
 | `src/app/components/shared/theme/theme-surface-tokens.ts` | Shared surface theming decisions |
@@ -71,15 +79,15 @@ src/app/
 
 1. Create `src/app/features/<name>/` with `index.ts`, `components/`, and optionally `hooks/` and `stores/`.
 2. If the feature has persisted state, create a Zustand store with `persist` middleware.
-3. If the feature reads Home Assistant entities, use `useHomeAssistant(homeAssistantSelectors.entities)` instead of subscribing to the service directly.
+3. If the feature reads live provider-backed runtime state, prefer `useProviderRuntime(...)` and Navet-owned/provider-scoped types instead of subscribing to provider services directly.
 4. Expose a single controller hook for the feature's root component.
 5. Register the feature in `src/app/features/dashboard/components/dashboard-section-router.tsx` using `lazy()` if it needs a top-level section.
 
 ## Adding A New Card Type
 
 1. Add the card in `src/app/features/<domain>/components/<name>-card/` as a folder module.
-2. Implement `use-<name>-card-controller.ts` that reads from the Home Assistant store and calls service methods.
-3. Register the card in `src/app/hooks/use-ha-devices.ts` under the appropriate device type.
+2. Implement `use-<name>-card-controller.ts` so it prefers normalized Navet/provider runtime state and delegates provider-specific behavior through the existing runtime/service seams.
+3. Register the card in the appropriate device or capability mapping path without introducing new shared-UI dependencies on backend raw types.
 4. Register the renderer in `src/app/features/dashboard/utils/card-renderer.tsx`.
 5. Add the card to the add-card dialog in `src/app/features/dashboard/components/add-card-dialog/`.
 
@@ -89,6 +97,8 @@ src/app/
 - Do not call `storeInstance.setState()` from outside the owning store file.
 - Do not create React Context for shared reactive app state.
 - Do not add a catch-all Home Assistant service listener that syncs all fields on every event.
+- Do not treat `home-assistant-store` or Home Assistant services as the primary long-term app contract.
+- Do not add new shared-UI dependencies on `HassEntity` unless the code is adapter-internal.
 - Do not make multiple store subscriptions when a combined selector exists.
 - Do not make a controller hook longer than about 150 lines.
 - Do not import from another feature's internals across feature boundaries.
