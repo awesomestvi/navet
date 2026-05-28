@@ -23,6 +23,10 @@ export interface DashboardProfileSaveResult {
   lastModified: string | null;
 }
 
+function isPermanentProfileSaveFailure(status: number): boolean {
+  return status === 400 || status === 404 || status === 405 || status === 413;
+}
+
 function readResponseMetadata(response: Response) {
   return {
     etag: response.headers.get('ETag'),
@@ -107,7 +111,7 @@ export async function saveDashboardProfile(
 
     return {
       saved: response.ok,
-      permanentFailure: response.status === 400 || response.status === 413,
+      permanentFailure: isPermanentProfileSaveFailure(response.status),
       ...metadata,
     };
   } catch (error) {

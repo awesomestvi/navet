@@ -2,12 +2,18 @@
 
 This directory exists to stop generic or implementation-driven changes.
 
-Navet is a Home Assistant dashboard, not a generic smart-home demo app. Future agents must make decisions from Home Assistant contracts, Navet product requirements, realistic fixtures, and supported deployment modes.
+Navet is a smart-home dashboard frontend with a backend-agnostic core. Future agents must make decisions from Navet-owned contracts, provider boundaries, realistic fixtures, supported deployment modes, and Home Assistant contracts where the work is specifically Home Assistant adapter behavior.
 
 ## Mandatory Rules
 
 - Read the relevant skill file before changing code, tests, fixtures, or docs in that area.
+- For architecture, state, integration, provider, or large refactor work, read [`/docs/technical/multi-backend-migration-guide.md`](../docs/technical/multi-backend-migration-guide.md) first.
 - Home Assistant official documentation is the source of truth for integration behavior.
+- Home Assistant documentation governs Home Assistant adapter behavior, not Navet's overall architecture.
+- Treat Home Assistant as one backend adapter, not the application architecture.
+- New architecture work must prefer Navet-owned contracts, provider abstractions, and backend-agnostic UI/state.
+- Do not add new UI dependencies on `HassEntity` or other backend raw types unless the work is explicitly adapter-internal.
+- Prefer `src/app/core/`, `src/app/platform/`, `integration-store`, and provider/runtime seams before adding backend-specific conditionals.
 - Navet's current implementation is not the behavioral reference for Home Assistant-facing work.
 - Do not update tests only to make them pass.
 - Delete or rewrite implementation-mirroring tests unless they protect a real regression, a documented contract, or a user-visible behavior.
@@ -29,6 +35,7 @@ Navet is a Home Assistant dashboard, not a generic smart-home demo app. Future a
 
 Use the focused `/ai/skills/` files first, then the deeper repo docs when needed:
 
+- Multi-backend migration architecture: [`/docs/technical/multi-backend-migration-guide.md`](../docs/technical/multi-backend-migration-guide.md)
 - Commands and command restrictions: [`/docs/agents/commands.md`](../docs/agents/commands.md)
 - General coding standards: [`/docs/agents/coding-standards.md`](../docs/agents/coding-standards.md)
 - State and architecture: [`/docs/agents/architecture.md`](../docs/agents/architecture.md)

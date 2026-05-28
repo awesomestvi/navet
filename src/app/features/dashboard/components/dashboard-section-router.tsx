@@ -116,7 +116,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const areas = useIntegrationStore(integrationSelectors.areas);
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
@@ -147,7 +147,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
     rooms,
     updateCardSize,
   } = controller;
-  const manageableRooms = getManageableRoomOrder(rooms, areas);
+  const manageableRooms = getManageableRoomOrder(rooms, roomDescriptors);
   const sectionStackProps = {
     className: 'flex flex-col gap-2 md:gap-6',
   };
@@ -628,7 +628,7 @@ export function DashboardSectionRouter({ controller }: DashboardSectionRouterPro
             ? {
                 rooms: manageableRooms,
                 hiddenRoomNames: controller.hiddenRoomNames,
-                areas,
+                roomDescriptors,
                 roomHiddenItemCounts: controller.roomHiddenItemCounts,
                 roomItemCounts: controller.roomItemCounts,
                 onRoomOrderChange: controller.onSetRoomOrder,

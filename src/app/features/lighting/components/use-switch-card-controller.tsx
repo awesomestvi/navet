@@ -3,10 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
-import { useI18n, useSwitchRegistryDeviceTopology, useTheme } from '@/app/hooks';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
-import type { IntegrationStore } from '@/app/stores/integration-store';
-import { providerRuntimeSelectors } from '@/app/stores/selectors';
+import { useHomeAssistant, useI18n, useSwitchRegistryDeviceTopology, useTheme } from '@/app/hooks';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { SwitchCardProps } from './switch-card.types';
 import { useSwitchCardAppearance } from './use-switch-card-appearance';
 import { useSwitchMetricFormatters } from './use-switch-metric-formatters';
@@ -42,7 +41,7 @@ export function useSwitchCardController({
 
   useSwitchResetTimerCleanup(resetTimerRef);
 
-  const liveEntity = useProviderRuntime(providerRuntimeSelectors.entity(id));
+  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const { siblingIds: siblingEntityIds } = useSwitchRegistryDeviceTopology(id);
   const { accentColor, colors, theme } = useTheme();
   const { t } = useI18n();
@@ -73,13 +72,13 @@ export function useSwitchCardController({
   });
 
   const siblingEntitySelector = useCallback(
-    (state: IntegrationStore): Record<string, HassEntity | undefined> => {
+    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
       if (!siblingEntityIds.length || !state.entities) return EMPTY_SIBLING_RECORD;
       return Object.fromEntries(siblingEntityIds.map((eid) => [eid, state.entities?.[eid]]));
     },
     [siblingEntityIds]
   );
-  const siblingEntityRecord = useProviderRuntime(siblingEntitySelector, shallow);
+  const siblingEntityRecord = useHomeAssistant(siblingEntitySelector, shallow);
 
   const siblingEntities = useMemo<SwitchSiblingEntity[]>(
     () =>

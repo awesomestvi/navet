@@ -5,7 +5,7 @@ import type {
   PlatformPersistentNotification,
   PlatformRepairIssue,
 } from '@/app/platform/provider-feature-models';
-import { integrationNotificationFeatureService } from '@/app/services/integration-notification-feature.service';
+import { homeAssistantNotificationFeatureService } from '@/app/services/home-assistant-notification-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 export interface HaNotificationData extends PlatformNotificationSnapshot {}
@@ -26,8 +26,8 @@ export function useHaNotificationData(): HaNotificationData {
 
     let cancelled = false;
 
-    void integrationNotificationFeatureService
-      .getSnapshot({ connection })
+    void homeAssistantNotificationFeatureService
+      .getSnapshot({ messageClient: connection })
       .then((snapshot) => {
         if (cancelled) return;
         setPersistentNotifications(snapshot.persistentNotifications);
@@ -42,13 +42,13 @@ export function useHaNotificationData(): HaNotificationData {
 
     let unsubscribe: (() => void) | null = null;
 
-    void integrationNotificationFeatureService
+    void homeAssistantNotificationFeatureService
       .subscribePersistentNotifications(
         (event) => {
           if (cancelled || !Array.isArray(event?.notifications)) return;
           setPersistentNotifications(event.notifications);
         },
-        { connection }
+        { messageClient: connection }
       )
       .then((unsub) => {
         if (cancelled) {

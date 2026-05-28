@@ -1,24 +1,38 @@
-import type { Connection } from 'home-assistant-js-websocket';
 import type {
+  PlatformMessageClient,
   PlatformPersistentNotification,
   PlatformPersistentNotificationEvent,
   PlatformRepairIssue,
 } from '@/app/platform/provider-feature-models';
 import type { ProviderNotificationFeatureService } from '@/app/platform/provider-feature-services';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
+import {
+  dispatchEntityAction,
+  dispatchServiceAction,
+} from '@/app/services/integration-action.service';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
-function getActiveConnection(connection?: Connection | null) {
-  return connection ?? homeAssistantService.getConnection();
+function getActiveMessageClient(messageClient?: PlatformMessageClient | null) {
+  return messageClient ?? homeAssistantService.getConnection();
 }
 
 function isObjectEntry<T extends object>(value: unknown): value is T {
   return typeof value === 'object' && value !== null;
 }
 
+function requireHomeAssistantUpdateProvider(entityId: string) {
+  const providerScope = parseProviderScopedId(entityId);
+  if (providerScope && providerScope.providerId !== 'home_assistant') {
+    throw new Error('Update installation is not supported for the current integration yet');
+  }
+
+  return providerScope?.nativeId ?? entityId;
+}
+
 export const integrationNotificationFeatureService: ProviderNotificationFeatureService = {
   async getSnapshot(options) {
-    const connection = getActiveConnection(options?.connection);
-    if (!connection) {
+    const messageClient = getActiveMessageClient(options?.messageClient);
+    if (!messageClient) {
       return {
         persistentNotifications: [],
         repairIssues: [],
@@ -26,7 +40,7 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
     }
 
     const [persistentNotifications, repairIssues] = await Promise.all([
-      connection
+      messageClient
         .sendMessagePromise({ type: 'persistent_notification/get' })
         .then((result) =>
           Array.isArray(result)
@@ -36,7 +50,7 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
             : []
         )
         .catch(() => []),
-      connection
+      messageClient
         .sendMessagePromise({ type: 'repairs/list_issues' })
         .then((result) =>
           Array.isArray(result)
@@ -54,14 +68,33 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
     };
   },
   async subscribePersistentNotifications(callback, options) {
-    const connection = getActiveConnection(options?.connection);
-    if (!connection) {
+    const messageClient = getActiveMessageClient(options?.messageClient);
+    if (!messageClient?.subscribeMessage) {
       return () => {};
     }
 
-    return await connection.subscribeMessage(
+    return await messageClient.subscribeMessage(
       (event: PlatformPersistentNotificationEvent) => callback(event),
       { type: 'persistent_notification/subscribe' }
     );
   },
+  dismissPersistentNotification: (notificationId) =>
+    dispatchServiceAction({
+      domain: 'persistent_notification',
+      service: 'dismiss',
+      serviceData: {
+        notification_id: notificationId,
+      },
+    }),
+  installUpdate: (entityId) =>
+    dispatchEntityAction({
+      entityId: requireHomeAssistantUpdateProvider(entityId),
+      domain: 'update',
+      service: 'install',
+    }),
+  restartSystem: () =>
+    dispatchServiceAction({
+      domain: 'homeassistant',
+      service: 'restart',
+    }),
 };

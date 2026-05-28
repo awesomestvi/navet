@@ -75,7 +75,7 @@ Recommended lightweight flow:
 
 ## Release Note Style
 
-Release notes must be issue-led and concise. Fetch Linear first, then have Codex draft the changelog from the release-ready issues instead of copying commit summaries.
+Release notes must be issue-led and concise. Fetch Linear first, then draft the changelog from the release-ready issues instead of copying commit summaries.
 
 Preferred source:
 
@@ -84,7 +84,7 @@ Preferred source:
 3. Group related issues into user-facing outcomes.
 4. Mention the Linear issue identifiers only while drafting; do not include them in `CHANGELOG.md`.
 
-In Codex, use the Linear app to list issues where status is `Ready for Release`. Outside Codex, fetch the same source with:
+Use the Linear app to list issues where status is `Ready for Release`. Alternatively, fetch the same source with:
 
 ```bash
 pnpm release:linear

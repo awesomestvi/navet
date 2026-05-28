@@ -1,11 +1,10 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { resolveEntityLabel, stringifyValue } from './automation-formatter-helpers';
+import {
+  type AutomationConfigSummaryOptions,
+  resolveEntityLabel,
+  stringifyValue,
+} from './automation-formatter-helpers';
 
 type UnknownRecord = Record<string, unknown>;
-
-interface AutomationConfigSummaryOptions {
-  entities?: HassEntities | null;
-}
 
 export function summarizeCondition(
   condition: unknown,

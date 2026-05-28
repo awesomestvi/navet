@@ -1,6 +1,6 @@
 # Navet
 
-A polished smart-home dashboard for Home Assistant and Homey wall panels, tablets, phones, and desktop screens.
+A polished smart-home dashboard frontend for wall panels, tablets, phones, and desktop screens.
 
 ![Navet dashboard demo on iPad frame](docs/marketing/assets/use-cases/navet-ipad-frame-dashboard.jpg)
 
@@ -9,9 +9,10 @@ A polished smart-home dashboard for Home Assistant and Homey wall panels, tablet
 [Get started](#get-started) ·
 [Security notes](docs/PUBLIC_LAUNCH_SECURITY.md)
 
-Navet turns Home Assistant and Homey into a dedicated smart home control surface. Use it for the
-devices and rooms you touch every day: lights, media, cameras, locks, energy, automations, weather,
-calendars, sensors, and custom dashboard widgets.
+Navet turns supported smart-home backends into a dedicated smart home control surface. Today it is
+strongest on Home Assistant, includes active Homey support, and uses a backend-agnostic core with
+openHAB planned. Use it for the devices and rooms you touch every day: lights, media,
+cameras, locks, energy, automations, weather, calendars, sensors, and custom dashboard widgets.
 
 Current release: `0.3.0`
 
@@ -27,6 +28,19 @@ Current release: `0.3.0`
   resources stay in your own environment.
 - **Installable app experience.** Use Navet as a PWA on supported devices for a focused dashboard
   instead of a normal browser tab.
+
+## Architecture direction
+
+Navet is a multi-backend smart-home frontend. Home Assistant is the most mature backend, Homey
+support already exists, and the architecture uses Navet-owned provider abstractions instead of
+backend raw payloads for UI, state, and interaction contracts.
+
+For the canonical migration target, read
+[docs/technical/multi-backend-migration-guide.md](docs/technical/multi-backend-migration-guide.md).
+In repo terms, the direction is to build on surfaces such as `IntegrationProviderId`,
+`integration-store`, `useProviderRuntime`, `NavetDevice`, `NavetRoom`, `NavetProviderSnapshot`, and
+`NavetProviderContract`, while keeping backend-specific auth, transport, actions, and resource
+resolution inside adapters.
 
 ## Features
 
@@ -71,7 +85,7 @@ Open the public beta demo:
 
 [https://awesomestvi.github.io/navet/demo/](https://awesomestvi.github.io/navet/demo/)
 
-The demo uses fake `/demo` data. It does not connect to a real Home Assistant instance.
+The demo uses fake `/demo` data. It does not connect to a real smart-home backend instance.
 
 Review the public Storybook:
 
@@ -83,6 +97,7 @@ Choose the setup that matches where you want Navet to live. For Home Assistant O
 users, the HACS custom panel path is the recommended Home Assistant-native setup.
 
 Homey users should use the standalone Docker path. Navet does not ship as a Homey app in v1.
+openHAB is planned and is not available as a supported runtime yet.
 
 ### Returning users and OAuth login
 
@@ -322,6 +337,7 @@ when to run those locally.
 ### Project docs
 
 - [docs/README.md](docs/README.md): active documentation index
+- [docs/technical/multi-backend-migration-guide.md](docs/technical/multi-backend-migration-guide.md): canonical multi-backend architecture direction
 - [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md): shared state and service flow
 - [docs/STORYBOOK_WORKFLOW.md](docs/STORYBOOK_WORKFLOW.md): Storybook structure and review workflow
 - [docs/WIDGETS.md](docs/WIDGETS.md): widget behavior and extension notes
@@ -334,7 +350,7 @@ when to run those locally.
 | App | React 19, TypeScript 6, Vite 8 |
 | Styling | Tailwind CSS 4.3, Radix UI primitives |
 | State | Zustand 5 |
-| Home Assistant | `home-assistant-js-websocket` |
+| Home Assistant adapter | `home-assistant-js-websocket` |
 | Maps | `leaflet`, `react-leaflet` |
 | Quality | Vitest 4, Biome 2, Storybook 10 |
 | PWA | `vite-plugin-pwa`, `workbox-window` |

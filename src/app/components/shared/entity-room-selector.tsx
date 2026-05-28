@@ -2,13 +2,15 @@ import { Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { shallow } from 'zustand/shallow';
 import { RoomEyebrow } from '@/app/components/primitives/room-eyebrow';
 import { Select } from '@/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useEntityRoomRegistryContext, useHomeAssistant, useI18n, useTheme } from '@/app/hooks';
+import { useEntityRoomRegistryContext, useI18n, useIntegrationStore, useTheme } from '@/app/hooks';
+import { buildManageableRoomReferences } from '@/app/platform/provider-room-management';
 import { integrationAdminService } from '@/app/services/integration-admin.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
+import { integrationSelectors } from '@/app/stores/selectors';
+import type { IntegrationProviderId } from '@/app/types/provider';
+import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 
 interface EntityRoomSelectorProps {
   entityId: string;
@@ -37,7 +39,8 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 }: EntityRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
   const roomRegistry = useEntityRoomRegistryContext(entityId);
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,33 +48,42 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
   const resolvedLabel = label ?? t('common.room');
 
-  const sortedAreas = useMemo(
-    () => [...areas].sort((left, right) => left.name.localeCompare(right.name)),
-    [areas]
+  const entityProviderId = useMemo<IntegrationProviderId>(
+    () => parseProviderScopedId(entityId)?.providerId ?? currentProviderId,
+    [currentProviderId, entityId]
   );
-  const selectedAreaId = useMemo(() => {
+  const manageableRooms = useMemo(
+    () =>
+      buildManageableRoomReferences(roomDescriptors, entityProviderId).filter(
+        (room) => room.canAssign
+      ),
+    [entityProviderId, roomDescriptors]
+  );
+  const selectedRoomId = useMemo(() => {
     const entityEntry = roomRegistry.entry;
     if (!entityEntry) {
       return '';
     }
 
     if (entityEntry.area_id) {
-      return entityEntry.area_id;
+      return createProviderScopedId(entityProviderId, entityEntry.area_id);
     }
 
     if (!entityEntry.device_id) {
       return '';
     }
 
-    return roomRegistry.deviceAreaId ?? '';
-  }, [roomRegistry.deviceAreaId, roomRegistry.entry]);
-  const selectedAreaLabel = useMemo(() => {
-    if (!selectedAreaId) {
+    return roomRegistry.deviceAreaId
+      ? createProviderScopedId(entityProviderId, roomRegistry.deviceAreaId)
+      : '';
+  }, [entityProviderId, roomRegistry.deviceAreaId, roomRegistry.entry]);
+  const selectedRoomLabel = useMemo(() => {
+    if (!selectedRoomId) {
       return t('common.noRoom');
     }
 
-    return sortedAreas.find((area) => area.area_id === selectedAreaId)?.name ?? t('common.noRoom');
-  }, [selectedAreaId, sortedAreas, t]);
+    return manageableRooms.find((room) => room.id === selectedRoomId)?.name ?? t('common.noRoom');
+  }, [manageableRooms, selectedRoomId, t]);
 
   const baseSelectClassName = compact
     ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`
@@ -91,9 +103,9 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 
       setIsSaving(true);
       try {
-        const createdArea = await integrationAdminService.createArea(trimmedRoomName);
-        await integrationAdminService.updateEntityArea(entityId, createdArea.area_id);
-        toast.success(t('entityRoomSelector.movedTo', { room: createdArea.name }));
+        const createdRoom = await integrationAdminService.createRoom(trimmedRoomName);
+        await integrationAdminService.updateEntityRoom(entityId, createdRoom.id);
+        toast.success(t('entityRoomSelector.movedTo', { room: createdRoom.name }));
       } catch (error) {
         const message =
           error instanceof Error && error.message.trim().length > 0
@@ -107,12 +119,12 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       return;
     }
 
-    const nextAreaId = nextValue || null;
+    const nextRoomId = nextValue || null;
     const nextRoomName =
-      sortedAreas.find((area) => area.area_id === nextAreaId)?.name ?? t('common.noRoom');
+      manageableRooms.find((room) => room.id === nextRoomId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
-      await integrationAdminService.updateEntityArea(entityId, nextAreaId);
+      await integrationAdminService.updateEntityRoom(entityId, nextRoomId);
 
       toast.success(t('entityRoomSelector.movedTo', { room: nextRoomName }));
     } catch (error) {
@@ -138,7 +150,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
             <select
               name="room"
               aria-label={resolvedLabel}
-              value={selectedAreaId}
+              value={selectedRoomId}
               disabled={isSaving}
               onChange={(event) => void handleChange(event.target.value)}
               onKeyDown={() => setIsKeyboardFocus(true)}
@@ -151,15 +163,15 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               className="absolute inset-0 z-10 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
-              {sortedAreas.map((area) => (
-                <option key={area.area_id} value={area.area_id}>
-                  {area.name}
+              {manageableRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.name}
                 </option>
               ))}
               <option value={CREATE_ROOM_VALUE}>{t('entityRoomSelector.createAction')}</option>
             </select>
             <RoomEyebrow
-              room={selectedAreaLabel}
+              room={selectedRoomLabel}
               isLoading={isSaving}
               forceDark={forceDark}
               visualOnly
@@ -172,7 +184,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
           <>
             <Select
               aria-label={resolvedLabel}
-              value={selectedAreaId}
+              value={selectedRoomId}
               disabled={isSaving}
               onChange={(event) => void handleChange(event.target.value)}
               containerClassName="w-full"
@@ -182,9 +194,9 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               style={selectStyle}
             >
               <option value="">{t('common.noRoom')}</option>
-              {sortedAreas.map((area) => (
-                <option key={area.area_id} value={area.area_id}>
-                  {area.name}
+              {manageableRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.name}
                 </option>
               ))}
               <option value={CREATE_ROOM_VALUE}>{t('entityRoomSelector.createAction')}</option>

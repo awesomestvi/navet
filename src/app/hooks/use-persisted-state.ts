@@ -5,6 +5,44 @@ import {
 } from '../utils/persisted-state-events';
 import { storage } from '../utils/storage';
 
+function hasOwnKey(object: Record<string, unknown>, key: string): boolean {
+  return Object.keys(object).includes(key);
+}
+
+function arePersistedValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+
+  if (left == null || right == null) {
+    return false;
+  }
+
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return (
+      left.length === right.length &&
+      left.every((value, index) => arePersistedValuesEqual(value, right[index]))
+    );
+  }
+
+  if (typeof left === 'object' && typeof right === 'object') {
+    const leftObject = left as Record<string, unknown>;
+    const rightObject = right as Record<string, unknown>;
+    const leftKeys = Object.keys(leftObject);
+    const rightKeys = Object.keys(rightObject);
+
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every(
+        (key) =>
+          hasOwnKey(rightObject, key) && arePersistedValuesEqual(leftObject[key], rightObject[key])
+      )
+    );
+  }
+
+  return false;
+}
+
 /**
  * Custom hook for persisting state to localStorage
  *
@@ -34,7 +72,8 @@ export function usePersistedState<T>(
         return;
       }
 
-      setValue(event.newValue ? JSON.parse(event.newValue) : defaultValue);
+      const nextValue = event.newValue ? (JSON.parse(event.newValue) as T) : defaultValue;
+      setValue((previous) => (arePersistedValuesEqual(previous, nextValue) ? previous : nextValue));
     };
 
     const handlePersistedState = (event: Event) => {
@@ -43,7 +82,8 @@ export function usePersistedState<T>(
         return;
       }
 
-      setValue(customEvent.detail.value ?? defaultValue);
+      const nextValue = customEvent.detail.value ?? defaultValue;
+      setValue((previous) => (arePersistedValuesEqual(previous, nextValue) ? previous : nextValue));
     };
 
     window.addEventListener('storage', handleStorage);

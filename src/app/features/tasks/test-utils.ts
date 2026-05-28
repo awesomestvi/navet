@@ -1,4 +1,8 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
+import type {
+  PlatformTaskEntityMap,
+  PlatformTaskEntityState,
+} from '@/app/platform/provider-feature-models';
 
 export function makeHassEntity(overrides: Partial<HassEntity> = {}): HassEntity {
   return {
@@ -10,4 +14,29 @@ export function makeHassEntity(overrides: Partial<HassEntity> = {}): HassEntity 
     last_updated: '',
     ...overrides,
   } as HassEntity;
+}
+
+export function makeTaskEntity(overrides: Partial<HassEntity> = {}): PlatformTaskEntityState {
+  const entity = makeHassEntity(overrides);
+
+  return {
+    entityId: entity.entity_id,
+    state: entity.state,
+    name:
+      typeof entity.attributes.friendly_name === 'string'
+        ? entity.attributes.friendly_name
+        : undefined,
+    attributes: entity.attributes,
+  };
+}
+
+export function makeTaskEntityMap(
+  entries: Array<[entityId: string, overrides?: Partial<HassEntity>]>
+): PlatformTaskEntityMap {
+  return Object.fromEntries(
+    entries.map(([entityId, overrides]) => [
+      entityId,
+      makeTaskEntity({ entity_id: entityId, ...overrides }),
+    ])
+  );
 }

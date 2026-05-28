@@ -9,6 +9,7 @@ import {
   resolveLightIconComponent,
 } from '@/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
+import type { NavetLightState } from '@/app/core/navet-device-state';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import {
   getSupportedColorTemperatureRange,
@@ -22,6 +23,7 @@ interface UseLightCardDisplayParams {
   providerId?: IntegrationProviderId;
   liveEntity: HassEntity | undefined;
   initialTemp: number;
+  providerState?: NavetLightState | null;
 }
 
 interface UseLightCardDisplayResult {
@@ -42,11 +44,14 @@ export function useLightCardDisplay({
   providerId,
   liveEntity,
   initialTemp,
+  providerState,
 }: UseLightCardDisplayParams): UseLightCardDisplayResult {
   const isHomeAssistantProvider = !providerId || providerId === 'home_assistant';
   const supportsColorTemperature = isHomeAssistantProvider
     ? supportsColorTemperatureControl(liveEntity)
-    : initialTemp > 0;
+    : (typeof providerState?.colorTemperatureKelvin === 'number'
+        ? providerState.colorTemperatureKelvin
+        : initialTemp) > 0;
   const supportsColorControl = isHomeAssistantProvider && supportsColorSelection(liveEntity);
   const { max: maxColorTemp, min: minColorTemp } = getSupportedColorTemperatureRange(liveEntity);
 

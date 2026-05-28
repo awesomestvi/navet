@@ -40,4 +40,27 @@ describe('integrationCalendarFeatureService', () => {
       })
     );
   });
+
+  it('accepts an injected message client through the provider contract options', async () => {
+    const sendMessagePromise = vi.fn().mockResolvedValue({
+      response: {
+        'calendar.family': {
+          events: [{ summary: 'Dentist' }],
+        },
+      },
+    });
+
+    await expect(
+      integrationCalendarFeatureService.getEvents('calendar.family', {
+        messageClient: { sendMessagePromise },
+      })
+    ).resolves.toEqual([{ summary: 'Dentist' }]);
+    expect(getConnectionMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-Home Assistant calendar entities', async () => {
+    await expect(
+      integrationCalendarFeatureService.getEvents('homey:calendar.family')
+    ).rejects.toThrow('Calendar events are not supported for the current integration yet');
+  });
 });

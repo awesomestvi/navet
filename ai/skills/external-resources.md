@@ -19,6 +19,7 @@ Read this file before changing any camera, artwork, image, stream, RSS, proxy, o
 - Do not assume absolute URLs work.
 - Do not assume the browser can access Home Assistant internal URLs directly.
 - Handle ingress, add-on, standalone Docker, and localhost.
+- Keep backend-specific resource rewriting and auth handling inside adapter-owned resolvers and helpers.
 - Prefer Home Assistant-supported proxy or resource APIs when possible.
 - Route URL rewriting through shared resolver or URL helpers, not ad hoc string manipulation inside cards.
 - Treat any resource URL as potentially authenticated, signed, expired, ingress-prefixed, or same-origin sensitive.
@@ -94,6 +95,8 @@ Read this file before changing:
 - `src/app/features/security/components/camera-card/`
 - `src/app/features/media/`
 - `src/app/features/rss/components/rss-feed-card/`
+
+These Home Assistant paths are current adapter-owned infrastructure. Do not treat them as the permanent global architecture for all providers.
 
 ## Relevant Repo Areas
 

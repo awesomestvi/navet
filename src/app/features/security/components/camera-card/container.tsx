@@ -9,12 +9,14 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { shallow } from 'zustand/shallow';
+import { readNavetCameraState } from '@/app/core/navet-device-state';
 import { usePlatformCameraPresentation } from '@/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useCameraRegistryDeviceTopology, useHomeAssistant } from '@/app/hooks';
+import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
@@ -186,6 +188,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   isEditMode,
 }: CameraCardProps) {
   const { runtime } = useAuthSession();
+  const providerDevice = useProviderDevice(id);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
   const connected = useHomeAssistant(homeAssistantSelectors.connected);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
@@ -215,9 +218,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const now = useCameraClock();
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+  const providerState = readNavetCameraState(providerDevice);
   const liveEntityPicture =
     readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
-  const initialSnapshotUrl = readImageUrl(initialEntityPicture);
+  const initialSnapshotUrl =
+    readImageUrl(initialEntityPicture) ??
+    readImageUrl(
+      typeof providerState?.entityPicture === 'string' ? providerState.entityPicture : undefined
+    );
   const baseSnapshotUrl = normalizeCameraSnapshotUrl(
     liveEntityPicture ? resolveHomeAssistantImageUrl(liveEntityPicture) : initialSnapshotUrl
   );
@@ -249,7 +257,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       ? liveAttrs.supported_features
       : typeof liveAttrs?.supported_features === 'string'
         ? Number(liveAttrs.supported_features)
-        : initialSupportedFeatures;
+        : (providerState?.supportedFeatures ?? initialSupportedFeatures);
   const isStreamCapable =
     hasGo2RtcFeed ||
     frontendStreamTypes.length > 0 ||
@@ -409,7 +417,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   // Subscribe to only entities belonging to this camera's device.
   // Re-renders only when one of those entities changes, not on unrelated HA updates.
   const deviceEntitySelector = useCallback(
-    (state: IntegrationStore): Record<string, HassEntity | undefined> => {
+    (state: HomeAssistantStore): Record<string, HassEntity | undefined> => {
       if (!deviceEntityIds.length || !state.entities) return EMPTY_DEVICE_RECORD;
       return Object.fromEntries(deviceEntityIds.map((eid) => [eid, state.entities?.[eid]]));
     },

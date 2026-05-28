@@ -8,6 +8,8 @@ import type { HomeyDevice, HomeySnapshot, HomeyZone } from '@/app/types/homey';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
+import { normalizeTemperatureUnit } from '@/app/utils/temperature';
+import { normalizeVacuumStatus } from '../features/vacuum';
 import { getName, resolveEntityRoom } from '../hooks/ha-entity-utils';
 import { createRegistryMaps, getEntityCategory } from '../hooks/use-ha-devices.helpers';
 import type { NavetCapability, NavetDevice, NavetRoom } from './navet';
@@ -76,6 +78,61 @@ function createNavetDevice(
   };
 }
 
+function readNumberish(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function readStringList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entries = value.filter((entry): entry is string => typeof entry === 'string');
+  return entries.length > 0 ? entries : undefined;
+}
+
+function resolveBinarySensorPresentation(
+  state: string,
+  deviceClass: string | undefined
+): { value: string; status: 'active' | 'clear' | 'unavailable' } {
+  const normalized = state.toLowerCase();
+
+  if (normalized === 'unknown' || normalized === 'unavailable') {
+    return { value: state, status: 'unavailable' };
+  }
+
+  const isActive = ['on', 'detected', 'open', 'wet', 'problem', 'unsafe'].includes(normalized);
+
+  switch (deviceClass) {
+    case 'door':
+    case 'garage_door':
+    case 'opening':
+    case 'window':
+      return { value: isActive ? 'Open' : 'Closed', status: isActive ? 'active' : 'clear' };
+    case 'gas':
+    case 'moisture':
+    case 'motion':
+    case 'occupancy':
+    case 'presence':
+    case 'smoke':
+      return { value: isActive ? 'Detected' : 'Clear', status: isActive ? 'active' : 'clear' };
+    default:
+      return {
+        value: isActive ? 'On' : normalized === 'off' ? 'Off' : state,
+        status: isActive ? 'active' : 'clear',
+      };
+  }
+}
+
 function inferHomeAssistantCapabilities(entityId: string, entity: HassEntity): NavetCapability[] {
   const domain = getDomain(entityId);
 
@@ -106,6 +163,22 @@ function inferHomeAssistantCapabilities(entityId: string, entity: HassEntity): N
     return ['toggle'];
   }
 
+  if (domain === 'climate' || domain === 'water_heater') {
+    return ['temperature_setpoint'];
+  }
+
+  if (domain === 'media_player') {
+    return ['media_playback'];
+  }
+
+  if (domain === 'cover') {
+    return ['position'];
+  }
+
+  if (domain === 'lock') {
+    return ['lock'];
+  }
+
   if (domain === 'sensor' || domain === 'binary_sensor') {
     return ['numeric_sensor'];
   }
@@ -115,6 +188,204 @@ function inferHomeAssistantCapabilities(entityId: string, entity: HassEntity): N
 
 function createHomeAssistantState(entityId: string, entity: HassEntity): Record<string, unknown> {
   const domain = getDomain(entityId);
+  const deviceClass =
+    typeof entity.attributes?.device_class === 'string'
+      ? entity.attributes.device_class
+      : undefined;
+
+  if (domain === 'climate' || domain === 'water_heater') {
+    const currentTemperature = readNumberish(entity.attributes?.current_temperature);
+    const targetTemperature =
+      readNumberish(entity.attributes?.temperature) ??
+      readNumberish(entity.attributes?.target_temp_low) ??
+      readNumberish(entity.attributes?.target_temp_high) ??
+      currentTemperature;
+
+    return {
+      value: entity.state,
+      temperature: targetTemperature ?? 0,
+      currentTemperature: currentTemperature ?? targetTemperature ?? 0,
+      temperatureUnit:
+        normalizeTemperatureUnit(
+          entity.attributes?.temperature_unit ?? entity.attributes?.unit_of_measurement
+        ) ?? undefined,
+      mode:
+        (typeof entity.state === 'string' && entity.state) ||
+        (typeof entity.attributes?.hvac_mode === 'string' && entity.attributes.hvac_mode) ||
+        'off',
+      action:
+        typeof entity.attributes?.hvac_action === 'string'
+          ? entity.attributes.hvac_action
+          : undefined,
+      supportedHvacModes:
+        readStringList(entity.attributes?.hvac_modes ?? entity.attributes?.operation_list) ?? [],
+      serviceDomain: domain === 'water_heater' ? 'water_heater' : 'climate',
+      size: 'medium',
+    };
+  }
+
+  if (domain === 'media_player') {
+    const normalizedState =
+      entity.state === 'playing'
+        ? 'playing'
+        : entity.state === 'paused'
+          ? 'paused'
+          : entity.state === 'idle'
+            ? 'idle'
+            : 'off';
+    const entityPicture =
+      (typeof entity.attributes?.entity_picture === 'string' && entity.attributes.entity_picture) ||
+      (typeof entity.attributes?.entity_picture_local === 'string' &&
+        entity.attributes.entity_picture_local) ||
+      (typeof entity.attributes?.media_image_url === 'string' &&
+        entity.attributes.media_image_url) ||
+      undefined;
+
+    return {
+      value: normalizedState,
+      title:
+        (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
+        (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
+        (typeof entity.attributes?.media_channel === 'string' && entity.attributes.media_channel) ||
+        getName(entity),
+      artist:
+        (typeof entity.attributes?.media_artist === 'string' && entity.attributes.media_artist) ||
+        (typeof entity.attributes?.media_album_name === 'string' &&
+          entity.attributes.media_album_name) ||
+        (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
+        '',
+      entityType: 'Media player',
+      deviceClass,
+      source: typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined,
+      sourceList: readStringList(entity.attributes?.source_list),
+      entityPicture,
+      volume:
+        typeof entity.attributes?.volume_level === 'number'
+          ? Math.max(0, Math.min(100, Math.round(entity.attributes.volume_level * 100)))
+          : 0,
+      isMuted: entity.attributes?.is_volume_muted === true,
+      elapsedSeconds: readNumberish(entity.attributes?.media_position),
+      durationSeconds: readNumberish(entity.attributes?.media_duration),
+      positionUpdatedAt:
+        typeof entity.attributes?.media_position_updated_at === 'string'
+          ? entity.attributes.media_position_updated_at
+          : undefined,
+      supportsGrouping: Array.isArray(entity.attributes?.group_members),
+      supportsPreviousTrack: true,
+      supportsNextTrack: true,
+      supportedFeatures: readNumberish(entity.attributes?.supported_features),
+      groupMembers: readStringList(entity.attributes?.group_members),
+      size: 'medium',
+    };
+  }
+
+  if (domain === 'cover') {
+    const position = readNumberish(entity.attributes?.current_position);
+    const tiltPosition = readNumberish(entity.attributes?.current_tilt_position);
+
+    return {
+      value: entity.state,
+      position:
+        position ??
+        tiltPosition ??
+        (entity.state === 'open' || entity.state === 'opening' ? 100 : 0),
+      positionMode: position != null ? 'position' : tiltPosition != null ? 'tilt' : undefined,
+      deviceClass,
+      supportedFeatures: readNumberish(entity.attributes?.supported_features),
+      hasPosition: position != null || tiltPosition != null,
+      size: 'medium',
+    };
+  }
+
+  if (domain === 'lock') {
+    return {
+      value: entity.state,
+      locked: entity.state === 'locked',
+      size: 'small',
+    };
+  }
+
+  if (domain === 'scene') {
+    return {
+      value: entity.state,
+      size: 'small',
+    };
+  }
+
+  if (domain === 'person') {
+    const personState = typeof entity.state === 'string' ? entity.state : 'not_home';
+    return {
+      value: personState === 'home' ? 'home' : 'away',
+      location:
+        personState === 'home'
+          ? 'Home'
+          : personState === 'not_home'
+            ? 'Away'
+            : personState.replace(/_/g, ' '),
+      entityPicture:
+        (typeof entity.attributes?.entity_picture === 'string' &&
+          entity.attributes.entity_picture) ||
+        (typeof entity.attributes?.entity_picture_local === 'string' &&
+          entity.attributes.entity_picture_local) ||
+        undefined,
+      size: 'small',
+    };
+  }
+
+  if (domain === 'camera') {
+    const entityPicture =
+      typeof entity.attributes?.entity_picture === 'string'
+        ? entity.attributes.entity_picture
+        : undefined;
+    const supportedFeatures = readNumberish(entity.attributes?.supported_features) ?? 0;
+
+    return {
+      value: entity.state,
+      entityPicture,
+      supportedFeatures,
+      isStreamCapable: (supportedFeatures & 2) === 2,
+      isStillImageOnly: (supportedFeatures & 2) !== 2,
+      lastChanged: entity.last_changed,
+      lastUpdated: entity.last_updated,
+      size: 'medium',
+    };
+  }
+
+  if (domain === 'vacuum') {
+    const batteryLevel =
+      readNumberish(entity.attributes?.battery_level) ??
+      readNumberish(entity.attributes?.battery) ??
+      readNumberish(entity.attributes?.battery_percent);
+
+    return {
+      value: entity.state,
+      status: normalizeVacuumStatus(entity.attributes?.status ?? entity.state),
+      battery: typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : 0,
+      cleanedArea:
+        typeof entity.attributes?.cleaned_area === 'number'
+          ? `${entity.attributes.cleaned_area} m²`
+          : undefined,
+      cleaningTime:
+        typeof entity.attributes?.cleaning_time === 'number'
+          ? `${Math.round(entity.attributes.cleaning_time)} min`
+          : undefined,
+      nextCleaning:
+        typeof entity.attributes?.next_cleaning === 'string'
+          ? entity.attributes.next_cleaning
+          : undefined,
+      waterLevel:
+        typeof entity.attributes?.water_level === 'string' ||
+        typeof entity.attributes?.water_level === 'number'
+          ? entity.attributes.water_level
+          : undefined,
+      binLevel:
+        typeof entity.attributes?.bin_level === 'string' ||
+        typeof entity.attributes?.bin_level === 'number'
+          ? entity.attributes.bin_level
+          : undefined,
+      size: 'medium',
+    };
+  }
 
   return {
     value: entity.state,
@@ -125,7 +396,12 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
         : undefined,
     colorTemperatureKelvin: entity.attributes?.color_temp_kelvin,
     percentage: entity.attributes?.percentage,
-    deviceClass: entity.attributes?.device_class,
+    presetMode:
+      typeof entity.attributes?.preset_mode === 'string'
+        ? entity.attributes.preset_mode
+        : undefined,
+    presetModes: readStringList(entity.attributes?.preset_modes),
+    deviceClass,
     unit: entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement,
     lastChanged: entity.last_changed,
     lastUpdated: entity.last_updated,
@@ -143,6 +419,21 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
         : domain === 'button' || domain === 'input_button'
           ? 'press'
           : undefined,
+    size:
+      domain === 'light' ||
+      domain === 'fan' ||
+      domain === 'switch' ||
+      domain === 'input_boolean' ||
+      domain === 'script' ||
+      domain === 'button' ||
+      domain === 'input_button' ||
+      domain === 'sensor' ||
+      domain === 'binary_sensor'
+        ? 'small'
+        : 'medium',
+    ...(domain === 'binary_sensor'
+      ? resolveBinarySensorPresentation(entity.state, deviceClass)
+      : {}),
   };
 }
 
@@ -179,6 +470,15 @@ export function mapHomeAssistantEntitiesToNavetDevices(input: {
         'input_button',
         'sensor',
         'binary_sensor',
+        'climate',
+        'water_heater',
+        'media_player',
+        'cover',
+        'lock',
+        'scene',
+        'person',
+        'camera',
+        'vacuum',
       ].includes(domain)
     ) {
       continue;
@@ -202,10 +502,10 @@ export function mapHomeAssistantEntitiesToNavetDevices(input: {
           : (domain as NavetDevice['kind']);
 
     const resources =
-      domain === 'camera' || typeof entity.attributes?.entity_picture === 'string'
+      domain === 'camera'
         ? ({
-            primary_image: {
-              kind: 'primary_image' as const,
+            camera_snapshot: {
+              kind: 'camera_snapshot' as const,
               providerId: 'home_assistant',
               entityId,
               path:
@@ -214,7 +514,35 @@ export function mapHomeAssistantEntitiesToNavetDevices(input: {
                   : undefined,
             },
           } satisfies NavetDevice['resources'])
-        : undefined;
+        : domain === 'media_player'
+          ? ({
+              media_artwork: {
+                kind: 'media_artwork' as const,
+                providerId: 'home_assistant',
+                entityId,
+                path:
+                  (typeof entity.attributes?.entity_picture === 'string' &&
+                    entity.attributes.entity_picture) ||
+                  (typeof entity.attributes?.entity_picture_local === 'string' &&
+                    entity.attributes.entity_picture_local) ||
+                  (typeof entity.attributes?.media_image_url === 'string' &&
+                    entity.attributes.media_image_url) ||
+                  undefined,
+              },
+            } satisfies NavetDevice['resources'])
+          : typeof entity.attributes?.entity_picture === 'string'
+            ? ({
+                primary_image: {
+                  kind: 'primary_image' as const,
+                  providerId: 'home_assistant',
+                  entityId,
+                  path:
+                    typeof entity.attributes?.entity_picture === 'string'
+                      ? entity.attributes.entity_picture
+                      : undefined,
+                },
+              } satisfies NavetDevice['resources'])
+            : undefined;
 
     devices.push(
       createNavetDevice(

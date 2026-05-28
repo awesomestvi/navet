@@ -146,6 +146,11 @@ Then open `http://localhost:8080`.
 `navet:local`. Compose also loads optional runtime variables from a repo-root `.env` file via
 `env_file`.
 
+Standalone container builds disable the bundled `/demo` experience by default with
+`NAVET_ENABLE_DEMO=false` so the image does not ship the large demo screenshots and sample media.
+Normal non-Docker builds still keep the public demo enabled unless you explicitly override that
+flag.
+
 ### Release Pipeline
 
 The GitHub Actions publish workflow publishes multi-arch app images to GitHub Container Registry:

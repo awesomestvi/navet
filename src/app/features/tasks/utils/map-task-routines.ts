@@ -1,62 +1,43 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantDeviceRegistryEntry,
-  HomeAssistantEntityRegistryEntry,
-} from '@/app/services/home-assistant.service';
+  PlatformTaskDeviceReference,
+  PlatformTaskEntityMap,
+  PlatformTaskEntityReference,
+  PlatformTaskRoomReference,
+} from '@/app/platform/provider-feature-models';
 import type { AutomationRoutine, QuickActionRoutine, TaskRoutineData } from '../types';
 import { mapAutomationTasks } from './map-automation-tasks';
+import { createTaskRoomMaps, getTaskEntityName, resolveTaskEntityRoom } from './task-runtime';
 
 interface MapTaskRoutinesOptions {
-  entities: HassEntities | null;
-  areas: HomeAssistantAreaRegistryEntry[];
-  deviceRegistry: HomeAssistantDeviceRegistryEntry[];
-  entityRegistry: HomeAssistantEntityRegistryEntry[];
+  entities: PlatformTaskEntityMap | null;
+  rooms: PlatformTaskRoomReference[];
+  devices: PlatformTaskDeviceReference[];
+  entityReferences: PlatformTaskEntityReference[];
   locale?: string;
-}
-
-function createRegistryRoomMaps({
-  areas,
-  deviceRegistry,
-  entityRegistry,
-}: Pick<MapTaskRoutinesOptions, 'areas' | 'deviceRegistry' | 'entityRegistry'>) {
-  const areaMap = new Map(areas.map((area) => [area.area_id, area.name]));
-  const entityRegistryMap = new Map(
-    entityRegistry.map((entry) => [
-      entry.entity_id,
-      { area_id: entry.area_id, device_id: entry.device_id },
-    ])
-  );
-  const deviceRegistryMap = new Map(
-    deviceRegistry.map((entry) => [entry.id, { area_id: entry.area_id }])
-  );
-
-  return { areaMap, entityRegistryMap, deviceRegistryMap };
 }
 
 export function mapTaskRoutines({
   entities,
-  areas,
-  deviceRegistry,
-  entityRegistry,
+  rooms,
+  devices,
+  entityReferences,
   locale,
 }: MapTaskRoutinesOptions): TaskRoutineData {
   if (!entities) {
     return { automations: [], quickActions: [] };
   }
 
-  const { areaMap, entityRegistryMap, deviceRegistryMap } = createRegistryRoomMaps({
-    areas,
-    deviceRegistry,
-    entityRegistry,
+  const { roomMap, entityReferenceMap, deviceMap } = createTaskRoomMaps({
+    rooms,
+    devices,
+    entityReferences,
   });
 
   const automations: AutomationRoutine[] = mapAutomationTasks({
     entities,
-    areas,
-    deviceRegistry,
-    entityRegistry,
+    rooms,
+    devices,
+    entityReferences,
     locale,
   }).map((task) => ({ ...task, type: 'automation' }));
 
@@ -68,8 +49,8 @@ export function mapTaskRoutines({
       return {
         id: entityId,
         type,
-        name: getName(entity),
-        room: resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap),
+        name: getTaskEntityName(entity),
+        room: resolveTaskEntityRoom(entityId, roomMap, entityReferenceMap, deviceMap),
         state: entity.state,
       };
     })

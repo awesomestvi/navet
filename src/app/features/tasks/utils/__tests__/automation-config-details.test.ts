@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeHassEntity } from '@/app/features/tasks/test-utils';
+import { makeTaskEntity } from '@/app/features/tasks/test-utils';
 import { buildAutomationConfigSections } from '../automation-config-details';
 
 describe('buildAutomationConfigSections', () => {
@@ -12,7 +12,7 @@ describe('buildAutomationConfigSections', () => {
       },
       {
         entities: {
-          'light.kitchen': makeHassEntity({
+          'light.kitchen': makeTaskEntity({
             entity_id: 'light.kitchen',
             state: 'off',
             attributes: { friendly_name: 'Kitchen light' },
@@ -38,22 +38,22 @@ describe('buildAutomationConfigSections', () => {
       },
       {
         entities: {
-          'binary_sensor.motion': makeHassEntity({
+          'binary_sensor.motion': makeTaskEntity({
             entity_id: 'binary_sensor.motion',
             state: 'off',
             attributes: { friendly_name: 'Kitchen motion' },
           }),
-          'sensor.temperature': makeHassEntity({
+          'sensor.temperature': makeTaskEntity({
             entity_id: 'sensor.temperature',
             state: '20',
             attributes: { friendly_name: 'Kitchen temperature' },
           }),
-          'light.kitchen': makeHassEntity({
+          'light.kitchen': makeTaskEntity({
             entity_id: 'light.kitchen',
             state: 'off',
             attributes: { friendly_name: 'Kitchen light' },
           }),
-          'light.counter': makeHassEntity({
+          'light.counter': makeTaskEntity({
             entity_id: 'light.counter',
             state: 'off',
             attributes: { friendly_name: 'Counter light' },
@@ -92,7 +92,7 @@ describe('buildAutomationConfigSections', () => {
       },
       {
         entities: {
-          'scene.movie_time': makeHassEntity({
+          'scene.movie_time': makeTaskEntity({
             entity_id: 'scene.movie_time',
             state: 'scening',
             attributes: { friendly_name: 'Movie time' },

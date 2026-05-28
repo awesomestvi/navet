@@ -1,5 +1,5 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import {
+  type AutomationConfigSummaryOptions,
   humanizeToken,
   joinLabels,
   resolveEntityLabel,
@@ -7,10 +7,6 @@ import {
 } from './automation-formatter-helpers';
 
 type UnknownRecord = Record<string, unknown>;
-
-interface AutomationConfigSummaryOptions {
-  entities?: HassEntities | null;
-}
 
 function ensureArray(value: unknown): unknown[] {
   if (Array.isArray(value)) {

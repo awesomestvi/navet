@@ -28,12 +28,13 @@ import {
 } from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import { useAreaRooms, useI18n, useProviderRuntime, useTheme } from '@/app/hooks';
+import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import type { HaBatterySensorRow } from '@/app/hooks/ha-battery-sensor-rows';
 import {
   haBatterySensorRowsEqual,
   selectBatterySensorRowsFromHa,
 } from '@/app/hooks/ha-battery-sensor-rows';
+import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
 import { BatteryList, getLevelColor } from './battery-list';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -279,7 +280,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const surface = getThemeSurfaceTokens(theme);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const rooms = useAreaRooms();
-  const batteries = useProviderRuntime(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
+  const batteries = useHomeAssistant(selectBatterySensorRowsFromHa, haBatterySensorRowsEqual);
   const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
   const selectedIdSet = useMemo(() => new Set(selectedEntityIds ?? []), [selectedEntityIds]);
   const filteredBatteries =

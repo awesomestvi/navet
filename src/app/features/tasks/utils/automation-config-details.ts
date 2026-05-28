@@ -1,12 +1,8 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
 import { summarizeActionSequence } from './automation-action-formatter';
 import { summarizeCondition } from './automation-condition-formatter';
 import type { AutomationConfigSections } from './automation-config-sections';
+import type { AutomationConfigSummaryOptions } from './automation-formatter-helpers';
 import { summarizeTrigger } from './automation-trigger-formatter';
-
-interface AutomationConfigSummaryOptions {
-  entities?: HassEntities | null;
-}
 
 function ensureArray(value: unknown): unknown[] {
   if (Array.isArray(value)) {

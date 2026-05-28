@@ -24,7 +24,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { useI18n, useTheme } from '@/app/hooks';
 import type { TranslationKey } from '@/app/i18n';
 import { isHomeAssistantPanelMode } from '@/app/runtime/app-mode';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
 import type {
   CameraFeedMode,
   CameraGo2RtcConfig,
@@ -72,11 +72,7 @@ function getDisplayName(entityId: string, entity: HassEntity): string {
 
 function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string; isOn: boolean }) {
   const handleToggle = useCallback(async () => {
-    await dispatchEntityAction({
-      entityId,
-      domain: 'switch',
-      service: isOn ? 'turn_off' : 'turn_on',
-    });
+    await integrationCameraFeatureService.toggleCameraAccessory(entityId, isOn ? 'off' : 'on');
   }, [entityId, isOn]);
 
   return (
@@ -108,12 +104,7 @@ function SelectRow({
 }) {
   const handleSelect = useCallback(
     async (option: string) => {
-      await dispatchEntityAction({
-        entityId,
-        domain: 'select',
-        service: 'select_option',
-        serviceData: { option },
-      });
+      await integrationCameraFeatureService.selectCameraAccessoryOption(entityId, option);
     },
     [entityId]
   );
@@ -162,12 +153,7 @@ function NumberRow({
 
   const handleChange = useCallback(
     async (newValue: number) => {
-      await dispatchEntityAction({
-        entityId,
-        domain: 'number',
-        service: 'set_value',
-        serviceData: { value: newValue },
-      });
+      await integrationCameraFeatureService.setCameraAccessoryValue(entityId, newValue);
     },
     [entityId]
   );

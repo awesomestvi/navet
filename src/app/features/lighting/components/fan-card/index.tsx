@@ -12,10 +12,9 @@ import { useEntityCardInteractionController } from '@/app/components/shared/enti
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
-import { useHomeAssistant, useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { parseNumberish } from '@/app/hooks/ha-entity-utils';
+import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { getLightCardSurfaceTokens } from '../light-card/light-card-surface-tokens';
 import { SwitchSettingsDialog } from '../switch-settings-dialog';
@@ -103,7 +102,7 @@ export const FanCard = memo(function FanCard({
 }: FanCardProps) {
   const { t } = useI18n();
   const { theme, colors, accentColor } = useTheme();
-  const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const providerDevice = useProviderDevice(id);
   const runAction = useServiceActionHandler();
   const resolvedSize = resolveFanCardSize(size);
   const [isOn, setIsOn] = useState(initialState);
@@ -118,15 +117,18 @@ export const FanCard = memo(function FanCard({
   const isSmall = isCompactCardSize(resolvedSize);
 
   useEffect(() => {
-    if (!liveEntity) {
+    const state = providerDevice?.state;
+    if (!state) {
       setIsOn(initialState);
       setPercentage(clampPercentage(initialPercentage));
       return;
     }
 
-    setIsOn(liveEntity.state === 'on');
-    setPercentage(clampPercentage(parseNumberish(liveEntity.attributes?.percentage)));
-  }, [initialPercentage, initialState, liveEntity]);
+    setIsOn(state.value === 'on' || state.on === true);
+    setPercentage(
+      clampPercentage(typeof state.percentage === 'number' ? state.percentage : initialPercentage)
+    );
+  }, [initialPercentage, initialState, providerDevice]);
 
   const updatePower = useCallback(
     (nextIsOn: boolean) => {

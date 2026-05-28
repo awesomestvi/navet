@@ -9,7 +9,7 @@ export function useDashboardRoomNavigation(
   rooms: string[],
   changeRoom: (room: string) => void,
   fallbackRoom: (room: string) => void,
-  hassEntitiesHydrated: boolean,
+  entitiesHydrated: boolean,
   devicesLoaded: boolean,
   registriesHydrated: boolean,
   connected: boolean,
@@ -106,7 +106,7 @@ export function useDashboardRoomNavigation(
       return;
     }
 
-    if (!hassEntitiesHydrated || !devicesLoaded || !registriesHydrated) {
+    if (!entitiesHydrated || !devicesLoaded || !registriesHydrated) {
       return;
     }
 
@@ -145,8 +145,8 @@ export function useDashboardRoomNavigation(
     activeRoom,
     changeRoom,
     devicesLoaded,
+    entitiesHydrated,
     fallbackRoom,
-    hassEntitiesHydrated,
     preferredRoom,
     registriesHydrated,
     resumeGraceActive,

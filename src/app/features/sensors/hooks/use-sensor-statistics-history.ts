@@ -7,7 +7,7 @@ import {
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@/app/services/ha-recorder-statistics';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
@@ -71,8 +71,9 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
     const stableEntityId = entityId;
 
     async function fetchHistory() {
-      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
-      if (!activeConnection) {
+      const activeMessageClient =
+        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      if (!activeMessageClient) {
         setPoints([]);
         return;
       }
@@ -94,7 +95,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
 
       try {
         const data = await getRecorderMeanHistory(
-          activeConnection,
+          activeMessageClient,
           stableEntityId,
           getStartOfToday(new Date())
         );

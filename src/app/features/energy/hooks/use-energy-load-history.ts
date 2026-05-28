@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useHomeAssistant } from '@/app/hooks';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
@@ -83,8 +83,9 @@ export function useEnergyLoadHistory(
     const resolvedEntityId = entityId;
 
     async function fetchHistory() {
-      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
-      if (!activeConnection) {
+      const activeMessageClient =
+        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      if (!activeMessageClient) {
         setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
         return;
       }
@@ -93,7 +94,7 @@ export function useEnergyLoadHistory(
         const stats = await getCachedEnergyStatistics(
           `history:${resolvedEntityId}`,
           CACHE_TTL_MS,
-          () => getPowerStatisticsHistory(activeConnection, resolvedEntityId)
+          () => getPowerStatisticsHistory(activeMessageClient, resolvedEntityId)
         );
         if (stats.length === 0) {
           setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));

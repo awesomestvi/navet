@@ -1,11 +1,12 @@
 FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
+ARG NAVET_ENABLE_DEMO=false
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
 FROM --platform=$TARGETPLATFORM nginx:1.27-alpine
 

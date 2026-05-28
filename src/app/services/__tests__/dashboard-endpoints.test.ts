@@ -111,4 +111,34 @@ describe('dashboard add-on endpoints', () => {
       body: expect.any(String),
     });
   });
+
+  it('treats missing shared-profile endpoints as permanent write failures', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 404,
+      })
+    );
+
+    await expect(
+      saveDashboardProfile({
+        version: 3,
+        app: 'navet',
+        exportedAt: new Date().toISOString(),
+        theme: {
+          theme: 'glass',
+          primaryColor: 'blue',
+        },
+        settings: {},
+        navigation: {
+          currentRoom: 'all',
+          activeSection: 'home',
+        },
+      })
+    ).resolves.toEqual({
+      saved: false,
+      permanentFailure: true,
+      etag: null,
+      lastModified: null,
+    });
+  });
 });

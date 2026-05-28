@@ -25,4 +25,30 @@ describe('useHvacRegistryDeviceTopology', () => {
       siblingIds: ['fan.hallway', 'switch.hallway_boost'],
     });
   });
+
+  it('resolves provider-scoped Home Assistant IDs and ignores non-Home Assistant providers', async () => {
+    await resetAppStores();
+    homeAssistantStore.setState({
+      entityRegistry: [
+        { entity_id: 'climate.hallway', device_id: 'device-hvac' },
+        { entity_id: 'fan.hallway', device_id: 'device-hvac' },
+      ],
+    });
+
+    const { result: scopedResult } = renderHookWithProviders(() =>
+      useHvacRegistryDeviceTopology('home_assistant:climate.hallway')
+    );
+    const { result: homeyResult } = renderHookWithProviders(() =>
+      useHvacRegistryDeviceTopology('homey:climate.hallway')
+    );
+
+    expect(scopedResult.current).toEqual({
+      deviceId: 'device-hvac',
+      siblingIds: ['fan.hallway'],
+    });
+    expect(homeyResult.current).toEqual({
+      deviceId: null,
+      siblingIds: [],
+    });
+  });
 });

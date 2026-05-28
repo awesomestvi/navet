@@ -1,12 +1,22 @@
 import type {
   NavetActionIntent,
   NavetProviderContract,
+  NavetProviderSnapshot,
   NavetResourceResolveRequest,
 } from '@/app/core/navet';
+import {
+  buildHomeAssistantNavetRooms,
+  buildHomeyNavetRooms,
+  mapHomeAssistantEntitiesToNavetDevices,
+  mapHomeySnapshotToNavetDevices,
+} from '@/app/core/navet-mappers';
+import type {
+  PlatformCameraStream,
+  PlatformCameraStreamType,
+} from '@/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
 import { INTEGRATION_PROVIDERS } from '../types/provider';
-import type { HomeAssistantCameraStreamType } from './home-assistant.service';
 import { homeAssistantService } from './home-assistant.service';
 import { homeyService } from './homey.service';
 
@@ -59,8 +69,8 @@ export interface IntegrationProviderAdapter {
   signPath?: (path: string, expiresSeconds?: number) => Promise<string>;
   getCameraStream?: (
     entityId: string,
-    format: HomeAssistantCameraStreamType
-  ) => Promise<{ url: string }>;
+    format: PlatformCameraStreamType
+  ) => Promise<PlatformCameraStream>;
 }
 
 function payloadBoolean(payload: Record<string, unknown>, key: string): boolean {
@@ -78,6 +88,36 @@ function resolveActionProviderPayload(intent: NavetActionIntent) {
       payload.serviceData && typeof payload.serviceData === 'object'
         ? (payload.serviceData as Record<string, unknown>)
         : payload,
+  };
+}
+
+function getHomeAssistantSnapshot(): NavetProviderSnapshot {
+  return {
+    providerId: 'home_assistant',
+    connected: homeAssistantService.isConnected(),
+    devices: mapHomeAssistantEntitiesToNavetDevices({
+      entities: homeAssistantService.getEntities(),
+      areas: homeAssistantService.getAreas(),
+      deviceRegistry: homeAssistantService.getDeviceRegistry(),
+      entityRegistry: homeAssistantService.getEntityRegistry(),
+    }),
+    rooms: buildHomeAssistantNavetRooms({
+      entities: homeAssistantService.getEntities(),
+      areas: homeAssistantService.getAreas(),
+      deviceRegistry: homeAssistantService.getDeviceRegistry(),
+      entityRegistry: homeAssistantService.getEntityRegistry(),
+    }),
+  };
+}
+
+function getHomeySnapshot(): NavetProviderSnapshot {
+  const snapshot = homeyService.getSnapshot();
+
+  return {
+    providerId: 'homey',
+    connected: snapshot.connected,
+    devices: mapHomeySnapshotToNavetDevices(snapshot),
+    rooms: buildHomeyNavetRooms(snapshot),
   };
 }
 
@@ -224,12 +264,20 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
   home_assistant: {
     contract: {
       providerId: 'home_assistant',
-      getSnapshot: () => ({
-        providerId: 'home_assistant',
-        connected: homeAssistantService.isConnected(),
-        devices: [],
-        rooms: [],
-      }),
+      getSnapshot: getHomeAssistantSnapshot,
+      subscribeSnapshot: (listener) => {
+        const unsubscribers = [
+          homeAssistantService.addListener('entities', listener),
+          homeAssistantService.addListener('registries', listener),
+          homeAssistantService.addListener('connection', listener),
+        ];
+
+        return () => {
+          for (const unsubscribe of unsubscribers) {
+            unsubscribe();
+          }
+        };
+      },
       dispatchAction: dispatchHomeAssistantAction,
       resolveResource: resolveHomeAssistantResource,
     },
@@ -267,12 +315,8 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
   homey: {
     contract: {
       providerId: 'homey',
-      getSnapshot: () => ({
-        providerId: 'homey',
-        connected: homeyService.getSnapshot().connected,
-        devices: [],
-        rooms: [],
-      }),
+      getSnapshot: getHomeySnapshot,
+      subscribeSnapshot: (listener) => homeyService.subscribe(() => listener()),
       dispatchAction: async (intent) => {
         const entityId = intent.targetId.replace(/^homey:/, '');
         const target = { entity_id: entityId };

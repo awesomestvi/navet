@@ -1,4 +1,3 @@
-import type { Connection } from 'home-assistant-js-websocket';
 import type { CalendarDevice, WeatherDevice } from '@/app/types/device.types';
 
 export interface PlatformMediaItem {
@@ -44,6 +43,75 @@ export type PlatformCalendarEvent = Record<string, unknown>;
 
 export type PlatformWeatherForecastEntry = Record<string, unknown>;
 
+export interface PlatformMessageClient {
+  sendMessagePromise<TResponse = unknown>(message: unknown): Promise<TResponse>;
+  subscribeMessage?<TEvent = unknown>(
+    callback: (event: TEvent) => void,
+    subscribeMessage: unknown
+  ): Promise<() => void>;
+}
+
+export interface PlatformFeatureRequestOptions {
+  messageClient?: PlatformMessageClient | null;
+}
+
+export interface PlatformTaskEntityState {
+  entityId: string;
+  state: string;
+  name?: string;
+  attributes: Record<string, unknown>;
+}
+
+export type PlatformTaskEntityMap = Record<string, PlatformTaskEntityState>;
+
+export interface PlatformTaskRoomReference {
+  id: string;
+  name: string;
+}
+
+export interface PlatformTaskDeviceReference {
+  id: string;
+  roomId?: string | null;
+}
+
+export interface PlatformTaskEntityReference {
+  entityId: string;
+  roomId?: string | null;
+  deviceId?: string | null;
+}
+
+export interface PlatformTaskRuntimeSnapshot {
+  entities: PlatformTaskEntityMap | null;
+  rooms: PlatformTaskRoomReference[];
+  devices: PlatformTaskDeviceReference[];
+  entityReferences: PlatformTaskEntityReference[];
+}
+
+export interface PlatformAutomationDetails {
+  config: Record<string, unknown>;
+}
+
+export interface PlatformCalendarRequestOptions extends PlatformFeatureRequestOptions {
+  startDateTime?: string;
+  endDateTime?: string;
+}
+
+export interface PlatformWeatherRequestOptions extends PlatformFeatureRequestOptions {}
+
+export interface PlatformNotificationRequestOptions extends PlatformFeatureRequestOptions {}
+
+export interface PlatformRoomReference {
+  id: string;
+  name: string;
+  providerId?: string;
+}
+
+export interface PlatformManageableRoomReference extends PlatformRoomReference {
+  canAssign: boolean;
+  canDelete: boolean;
+  canOrder: boolean;
+}
+
 export interface PlatformPersistentNotification {
   notification_id?: string;
   title?: string;
@@ -74,8 +142,23 @@ export interface PlatformNotificationSnapshot {
   repairIssues: PlatformRepairIssue[];
 }
 
-export interface PlatformHistoryConnectionAccess {
-  connection: Connection | null;
+export interface PlatformUpdateNotificationCandidate {
+  entityId: string;
+  state: string;
+  friendlyName?: string;
+  installedVersion?: string | null;
+  latestVersion?: string | null;
+  releaseSummary?: string | null;
+  releaseNotes?: string | null;
+  detailsUrl?: string | null;
+  progress?: number | null;
+  inProgress: boolean;
+  lastChanged?: string;
+  lastUpdated?: string;
+}
+
+export interface PlatformHistoryClientAccess {
+  messageClient: PlatformMessageClient | null;
 }
 
 export type PlatformWeatherDevice = WeatherDevice;
@@ -131,4 +214,23 @@ export interface PlatformEnergyNowSnapshot {
   importW: number;
   importTodayKWh: number;
   sourceOptions: PlatformEnergySourceOption[];
+}
+
+export type PlatformEnergySourceDiagnosticStatus =
+  | 'not_configured'
+  | 'configured_idle'
+  | 'configured_unavailable'
+  | 'configured_numeric';
+
+export interface PlatformEnergySourceDiagnostic {
+  id: string;
+  label: string;
+  entityId?: string;
+  liveEntityId?: string;
+  status: PlatformEnergySourceDiagnosticStatus;
+}
+
+export interface PlatformEnergySnapshot extends PlatformEnergyNowSnapshot {
+  hasLoaded: boolean;
+  sourceDiagnostics: PlatformEnergySourceDiagnostic[];
 }

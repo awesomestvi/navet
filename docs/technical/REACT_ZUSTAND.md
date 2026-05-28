@@ -6,9 +6,12 @@ Current state-management guidance for Navet.
 
 Navet uses **Zustand exclusively** for shared app state that drives rendering. Runtime
 authentication/session handling lives outside the store layer in `src/auth/AuthProvider.tsx`,
-because it owns OAuth, Ingress, and Home Assistant panel adapters. React Context is reserved for
+because it owns OAuth, Ingress, panel, and provider session bootstrapping. React Context is reserved for
 that runtime auth infrastructure and other cross-cutting providers that are not general-purpose
 shared UI state.
+
+[`multi-backend-migration-guide.md`](multi-backend-migration-guide.md) is the canonical architecture
+reference. This document describes the store model that implements that architecture.
 
 ---
 
@@ -21,6 +24,7 @@ Shared app and dashboard state lives here. Runtime auth/session state is central
 
 | Store | Responsibility |
 |---|---|
+| `integration-store` | Cross-provider runtime, provider sessions, provider health, and normalized provider snapshots |
 | `home-assistant-store` | WebSocket connection state, entities, registries |
 | `settings-store` | User preferences (persisted) |
 | `theme-store` | Theme mode, accent color, wallpaper (persisted) |
@@ -33,10 +37,20 @@ Shared app and dashboard state lives here. Runtime auth/session state is central
 
 Runtime authentication is the main exception to the shared-state store rule:
 
-- `AuthProvider` (`src/auth/AuthProvider.tsx`) — runtime-specific OAuth, Ingress, and panel
+- `AuthProvider` (`src/auth/AuthProvider.tsx`) — runtime-specific OAuth, Ingress, panel, and provider
   session handling
 - `useAuthSession`, `useAuthBaseUrl`, and `useAuthLogout` expose the current auth session,
-  Home Assistant base URL, and logout action to app code
+  selected provider session, base URL, and logout action to app code
+
+### Hybrid provider runtime model
+
+Navet uses a multi-backend runtime model:
+
+- `integration-store` is the main cross-provider runtime surface for app code
+- `home-assistant-store` is a provider-specific runtime slice that feeds the broader integration
+  runtime
+- Home Assistant typed events and services remain real, but they are implementation details of the
+  Home Assistant adapter rather than the long-term public architecture for all UI code
 
 ### Other React Context
 
@@ -51,15 +65,16 @@ Only used for providers that have no general shared app state of their own:
 ### All shared app state goes in Zustand
 
 Do not introduce new React Context for state that drives rendering. If many components need to
-read or write the same app preference, dashboard state, or Home Assistant-derived state, put it in
+read or write the same app preference, dashboard state, or provider-backed runtime state, put it in
 a store.
 
 ### Expose stores through hook modules
 
-Stores should be consumed through the existing app hooks and typed store hooks. Use wrappers such as
-`useHomeAssistant` for Home Assistant state, and use exported store hooks such as
+Stores should be consumed through the existing app hooks and typed store hooks. Prefer wrappers such
+as `useProviderRuntime` for provider-backed runtime state, and use exported store hooks such as
 `useSettingsStore(selector)` with selectors from `src/app/stores/selectors.ts` for direct store
-subscriptions. Runtime auth is consumed through `useAuthSession`, `useAuthBaseUrl`, and
+subscriptions. Use `useHomeAssistant` only when work is explicitly Home Assistant runtime-specific.
+Runtime auth is consumed through `useAuthSession`, `useAuthBaseUrl`, and
 `useAuthLogout` from `src/auth/AuthProvider.tsx`.
 
 ### Prefer typed selectors
@@ -69,7 +84,7 @@ needed. Avoid subscribing to the full store object — this re-renders on every 
 
 ```ts
 // Good — re-renders only when connected changes
-const connected = useHomeAssistant(homeAssistantSelectors.connected);
+const connected = useProviderRuntime(providerRuntimeSelectors.connected);
 
 // Good — one subscription for a group of related display settings
 const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsStore(
@@ -77,7 +92,7 @@ const { disableAnimations, effectsQuality, weatherForecastMode } = useSettingsSt
 );
 
 // Avoid — re-renders on every store change
-const store = useHomeAssistant();
+const store = useProviderRuntime();
 ```
 
 ### One source of truth
@@ -162,21 +177,25 @@ Never use the manual `subscribe` + `localStorage.setItem` pattern.
 
 ## Service → Store event flow
 
-`HomeAssistantService` is the public facade in `src/app/services/`. It currently composes the
-connection, entity, and registry services and emits typed events:
+`HomeAssistantService` is the Home Assistant adapter facade in `src/app/services/`. It currently
+composes the connection, entity, and registry services and emits typed events:
 `'entities' | 'config' | 'registries' | 'connection'`.
 
-The store subscribes via `addListener(event => ...)` and updates **only the affected slice**:
+The provider-specific store subscribes via `addListener(event => ...)` and updates **only the
+affected slice**:
 
 ```
-service emits 'entities'  →  store sets { entities }
-service emits 'config'    →  store sets { config }
-service emits 'registries'→  store sets { areas, deviceRegistry, entityRegistry }
-service emits 'connection'→  store sets { connected, connection, connecting }
+service emits 'entities'  →  home-assistant-store sets { entities }
+service emits 'config'    →  home-assistant-store sets { config }
+service emits 'registries'→  home-assistant-store sets { areas, deviceRegistry, entityRegistry }
+service emits 'connection'→  home-assistant-store sets { connected, connection, connecting }
 ```
 
-Do not add a generic "re-sync everything" listener. Each event type should produce a
-minimal, targeted `set()` call.
+`integration-store` then aggregates provider-specific runtime and normalized provider snapshots into
+the broader app-facing runtime contract.
+
+Do not add a generic "re-sync everything" listener. Each event type should produce a minimal,
+targeted `set()` call.
 
 ---
 
@@ -186,7 +205,7 @@ minimal, targeted `set()` call.
 |---|---|
 | State read by 2+ components | Zustand store |
 | State persisted across page loads | Zustand store + `persist` middleware |
-| Real-time data from WebSocket | Zustand store updated via typed service events |
+| Real-time provider data | Zustand store updated via typed provider service events |
 | Feature-scoped ephemeral UI state | `useState` / `useReducer` inside the feature hook |
 | Cross-cutting lifecycle / DI | React Context (no reactive state) |
 
@@ -196,7 +215,7 @@ minimal, targeted `set()` call.
 
 - Raw `window.localStorage` access outside of `src/app/utils/storage`
 - Calling `storeInstance.setState(...)` directly from a component — use the store's own actions
-- Registering a catch-all listener on the HA service that copies all fields on every event
+- Registering a catch-all listener on a provider service that copies all fields on every event
 - Maintaining the same flag in both a Zustand store and a React Context
 - Multiple `useXyzStore(state => state.field)` calls in the same component when a combined
   selector already exists

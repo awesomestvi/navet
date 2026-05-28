@@ -1,10 +1,6 @@
 import { isAllRooms } from '@/app/constants/rooms';
+import type { NavetRoomDescriptor } from '@/app/core/navet';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
-
-export interface NamedArea {
-  area_id: string;
-  name: string;
-}
 
 export interface MobileHeaderActionAvailability extends MobileHeaderEditActions {
   hasEditUtilities: boolean;
@@ -32,10 +28,17 @@ export function getMobileHeaderActionAvailability(
   };
 }
 
-export function getManageableRoomOrder(rooms: string[], areas: NamedArea[]) {
-  const areaNames = areas.map((area) => area.name).filter((name) => name && !isAllRooms(name));
-  const orderedKnownRooms = rooms.filter((room) => areaNames.includes(room));
-  const unorderedAreaRooms = areaNames.filter((room) => !orderedKnownRooms.includes(room));
-  const navetOnlyRooms = rooms.filter((room) => !isAllRooms(room) && !areaNames.includes(room));
+export function getManageableRoomOrder(rooms: string[], roomDescriptors: NavetRoomDescriptor[]) {
+  const manageableRoomNames = roomDescriptors
+    .filter((descriptor) => descriptor.sources.some((source) => source.supportsOrdering))
+    .map((descriptor) => descriptor.name)
+    .filter((name) => name.length > 0 && !isAllRooms(name));
+  const orderedKnownRooms = rooms.filter((room) => manageableRoomNames.includes(room));
+  const unorderedAreaRooms = manageableRoomNames.filter(
+    (room) => !orderedKnownRooms.includes(room)
+  );
+  const navetOnlyRooms = rooms.filter(
+    (room) => !isAllRooms(room) && !manageableRoomNames.includes(room)
+  );
   return [...new Set([...orderedKnownRooms, ...unorderedAreaRooms, ...navetOnlyRooms])];
 }

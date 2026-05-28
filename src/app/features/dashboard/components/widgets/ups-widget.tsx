@@ -33,15 +33,13 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useAreaRooms, useI18n, useTheme } from '@/app/hooks';
 import { formatSensorValue } from '@/app/hooks/ha-entity-utils';
-import { useProviderRuntime } from '@/app/hooks/use-provider-runtime';
 import { useSettingsStore } from '@/app/stores';
-import { providerRuntimeSelectors } from '@/app/stores/selectors';
 import {
-  buildUpsDeviceOptions,
   getUpsStatusTone,
   resolveUpsMetricReadings,
   type UpsDeviceOption,
 } from './ups-widget-data';
+import { useHomeAssistantUpsWidgetData } from './use-home-assistant-ups-widget-data';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
 export interface UpsWidgetData {
@@ -408,30 +406,15 @@ export const UpsWidget = memo(function UpsWidget({
   onRoomChange,
 }: UpsWidgetProps) {
   const { theme, primaryColor } = useTheme();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const rooms = useAreaRooms();
-  const entities = useProviderRuntime(providerRuntimeSelectors.entities);
-  const areas = useProviderRuntime(providerRuntimeSelectors.areas);
-  const deviceRegistry = useProviderRuntime(providerRuntimeSelectors.deviceRegistry);
-  const entityRegistry = useProviderRuntime(providerRuntimeSelectors.entityRegistry);
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const surface = getThemeSurfaceTokens(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const resolvedSize = normalizeUpsCardSize(size);
-  const formatOptions = useMemo(() => ({ locale, use24HourTime }), [locale, use24HourTime]);
-  const devices = useMemo(
-    () =>
-      buildUpsDeviceOptions({
-        entities,
-        areas,
-        deviceRegistry,
-        entityRegistry,
-        formatOptions,
-      }),
-    [areas, deviceRegistry, entities, entityRegistry, formatOptions]
-  );
+  const { devices, entities, formatOptions } = useHomeAssistantUpsWidgetData({ use24HourTime });
   const selectedDevice = getSelectedDevice(devices, data?.deviceId);
   const missingPersistedDevice = Boolean(data?.deviceId) && selectedDevice === null;
   const metricEntityIds =

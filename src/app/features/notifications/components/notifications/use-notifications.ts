@@ -26,11 +26,14 @@ export function useNotifications(): PlatformNotificationsReturn {
     setPendingUpdateInstalls,
   } = useNotificationStorage();
 
-  const { persistentNotifications, repairIssues } = useProviderNotificationData();
+  const { entitiesHydrated, persistentNotifications, repairIssues, updateCandidates } =
+    useProviderNotificationData();
 
   const notifications = useProviderNotificationList({
+    entitiesHydrated,
     persistentNotifications,
     repairIssues,
+    updateCandidates,
     readNotifications,
     hiddenNotifications,
     pendingUpdateInstalls,

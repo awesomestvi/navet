@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useHomeAssistant } from '@/app/hooks';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
+import { homeAssistantHistoryFeatureService } from '@/app/services/home-assistant-history-feature.service';
+import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@/app/stores/selectors';
 import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
@@ -394,14 +394,15 @@ export function useEnergyHaData(range: EnergyRange): {
     let cancelled = false;
 
     async function fetchEnergyPrefs() {
-      const activeConnection = connection ?? integrationHistoryService.getActiveConnection();
-      if (!activeConnection) {
+      const activeMessageClient =
+        connection ?? homeAssistantHistoryFeatureService.getMessageClient();
+      if (!activeMessageClient) {
         setHaSourceConfig(null);
         return;
       }
 
       try {
-        const prefs = await getEnergyPrefs(activeConnection);
+        const prefs = await getEnergyPrefs(activeMessageClient);
         if (!cancelled) {
           setHaSourceConfig(mapPrefsToConfig(prefs));
         }
@@ -453,7 +454,7 @@ export function useEnergyHaData(range: EnergyRange): {
   }, [runtimeSourceConfig]);
 
   const configEntitySelector = useCallback(
-    (state: IntegrationStore) => {
+    (state: HomeAssistantStore) => {
       const entities = state.entities;
       if (!entities || !configEntityIds.length) return null as EnergyEntityMap | null;
       const result: EnergyEntityMap = {};

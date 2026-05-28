@@ -5,6 +5,7 @@
 
 import { getProviderNativeId } from '@/app/utils/provider-ids';
 import type { ErrorStoreState } from './error-store';
+import type { HomeAssistantStore } from './home-assistant-store';
 import type { IntegrationStore } from './integration-store';
 import { type CameraGo2RtcConfig, getEmptyCameraGo2RtcConfig } from './settings-store';
 import type {
@@ -179,68 +180,54 @@ export const settingsSelectors = {
   }),
 };
 
-/**
- * Home Assistant Store Selectors
- */
 export const integrationSelectors = {
-  connected: (state: IntegrationStore) => state.connected,
-  connecting: (state: IntegrationStore) => state.connecting,
-  reconnecting: (state: IntegrationStore) => state.reconnecting,
   providerHealth: (state: IntegrationStore) => state.providerHealth,
+  providerRuntime: (state: IntegrationStore) => state.providerRuntime,
+  providerRuntimeById:
+    (providerId: keyof IntegrationStore['providerRuntime']) => (state: IntegrationStore) =>
+      state.providerRuntime[providerId],
   providers: (state: IntegrationStore) => state.providers,
+  currentProviderId: (state: IntegrationStore) => state.currentProviderId,
   providerSessions: (state: IntegrationStore) => state.providerSessions,
   providerSnapshots: (state: IntegrationStore) => state.providerSnapshots,
   devicesByCanonicalId: (state: IntegrationStore) => state.devicesByCanonicalId,
   roomsByCanonicalId: (state: IntegrationStore) => state.roomsByCanonicalId,
+  roomDescriptors: (state: IntegrationStore) => state.roomDescriptors,
   availableProviderIds: (state: IntegrationStore) => state.availableProviderIds,
   selectedProviderIds: (state: IntegrationStore) => state.selectedProviderIds,
   setSelectedProviders: (state: IntegrationStore) => state.setSelectedProviders,
-  config: (state: IntegrationStore) => state.config,
-  entities: (state: IntegrationStore) => state.entities,
-  // Per-entity selector — only re-renders when that specific entity's reference changes.
-  // home-assistant-js-websocket preserves entity object references for unchanged entities,
-  // so this produces no re-render when a different entity updates.
-  entity: (entityId: string) => (state: IntegrationStore) =>
-    state.entities?.[getProviderNativeId(entityId)],
-  // Entities hydration check — stable selector for checking if entities are loaded
-  entitiesHydrated: (state: IntegrationStore) => state.entities != null,
-  registriesHydrated: (state: IntegrationStore) => state.registriesHydrated,
-  user: (state: IntegrationStore) => state.user,
-  areas: (state: IntegrationStore) => state.areas,
-  deviceRegistry: (state: IntegrationStore) => state.deviceRegistry,
-  entityRegistry: (state: IntegrationStore) => state.entityRegistry,
-  connection: (state: IntegrationStore) => state.connection,
-  error: (state: IntegrationStore) => state.error,
-  connect: (state: IntegrationStore) => state.connect,
-  syncPanelHass: (state: IntegrationStore) => state.syncPanelHass,
-  disconnect: (state: IntegrationStore) => state.disconnect,
-  clearError: (state: IntegrationStore) => state.clearError,
+  currentUser: (state: IntegrationStore) => state.currentUser,
   setIntegrationUser: (state: IntegrationStore) => state.setIntegrationUser,
+  setCurrentProviderId: (state: IntegrationStore) => state.setCurrentProviderId,
   setProviderSessions: (state: IntegrationStore) => state.setProviderSessions,
 };
 
 export const providerRuntimeSelectors = integrationSelectors;
 
+/**
+ * Explicit Home Assistant compatibility selectors.
+ * Raw Home Assistant entities, registries, and transport state should stay here.
+ */
 export const homeAssistantRuntimeSelectors = {
-  connected: (state: IntegrationStore) => state.homeAssistant.connected,
-  connecting: (state: IntegrationStore) => state.homeAssistant.connecting,
-  reconnecting: (state: IntegrationStore) => state.homeAssistant.reconnecting,
-  config: (state: IntegrationStore) => state.homeAssistant.config,
-  entities: (state: IntegrationStore) => state.homeAssistant.entities,
-  entity: (entityId: string) => (state: IntegrationStore) =>
-    state.homeAssistant.entities?.[getProviderNativeId(entityId)],
-  entitiesHydrated: (state: IntegrationStore) => state.homeAssistant.entities != null,
-  registriesHydrated: (state: IntegrationStore) => state.homeAssistant.registriesHydrated,
-  user: (state: IntegrationStore) => state.homeAssistant.user,
-  areas: (state: IntegrationStore) => state.homeAssistant.areas,
-  deviceRegistry: (state: IntegrationStore) => state.homeAssistant.deviceRegistry,
-  entityRegistry: (state: IntegrationStore) => state.homeAssistant.entityRegistry,
-  connection: (state: IntegrationStore) => state.homeAssistant.connection,
-  error: (state: IntegrationStore) => state.homeAssistant.error,
-  connect: (state: IntegrationStore) => state.homeAssistant.actions.connect,
-  syncPanelHass: (state: IntegrationStore) => state.homeAssistant.actions.syncPanelHass,
-  disconnect: (state: IntegrationStore) => state.homeAssistant.actions.disconnect,
-  clearError: (state: IntegrationStore) => state.homeAssistant.actions.clearError,
+  connected: (state: HomeAssistantStore) => state.connected,
+  connecting: (state: HomeAssistantStore) => state.connecting,
+  reconnecting: (state: HomeAssistantStore) => state.reconnecting,
+  config: (state: HomeAssistantStore) => state.config,
+  entities: (state: HomeAssistantStore) => state.entities,
+  entity: (entityId: string) => (state: HomeAssistantStore) =>
+    state.entities?.[getProviderNativeId(entityId)],
+  entitiesHydrated: (state: HomeAssistantStore) => state.entities != null,
+  registriesHydrated: (state: HomeAssistantStore) => state.registriesHydrated,
+  user: (state: HomeAssistantStore) => state.user,
+  areas: (state: HomeAssistantStore) => state.areas,
+  deviceRegistry: (state: HomeAssistantStore) => state.deviceRegistry,
+  entityRegistry: (state: HomeAssistantStore) => state.entityRegistry,
+  connection: (state: HomeAssistantStore) => state.connection,
+  error: (state: HomeAssistantStore) => state.error,
+  connect: (state: HomeAssistantStore) => state.connect,
+  syncPanelHass: (state: HomeAssistantStore) => state.syncPanelHass,
+  disconnect: (state: HomeAssistantStore) => state.disconnect,
+  clearError: (state: HomeAssistantStore) => state.clearError,
 };
 
 export const homeAssistantSelectors = homeAssistantRuntimeSelectors;

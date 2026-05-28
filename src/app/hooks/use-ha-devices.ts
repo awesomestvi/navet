@@ -35,7 +35,6 @@ import {
   mapVacuumDevice,
 } from './ha-device-mappers';
 import { getName, resolveEntityRoom, resolveHomeAssistantTemperatureUnit } from './ha-entity-utils';
-import { useCalendarDevices } from './use-calendar-devices';
 import {
   buildDeviceIndexes,
   createEmptyDeviceCollection,
@@ -48,9 +47,10 @@ import {
   shouldSuppressHelperCard,
 } from './use-ha-devices.helpers';
 import { useHomeAssistant } from './use-home-assistant';
-import { useWeatherDevices } from './use-weather-devices';
+import { useHomeAssistantCalendarDevices } from './use-home-assistant-calendar-devices';
+import { useHomeAssistantWeatherDevices } from './use-home-assistant-weather-devices';
 
-export { useCalendarDevices, useWeatherDevices };
+export { useHomeAssistantCalendarDevices, useHomeAssistantWeatherDevices };
 
 function withProviderMetadata<T extends { id: string }>(device: T): T {
   const metadata = createProviderScopedMetadata('home_assistant', device.id);
@@ -84,8 +84,8 @@ export const useHADevices = () => {
   );
   const { locale, t } = useI18n();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
-  const calendars = useCalendarDevices();
-  const weather = useWeatherDevices();
+  const calendars = useHomeAssistantCalendarDevices();
+  const weather = useHomeAssistantWeatherDevices();
 
   const baseDevices = useMemo(() => {
     if (!entities) {

@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
+import type { NavetLightState } from '@/app/core/navet-device-state';
 import type { BrightnessPresetKey } from '@/app/features/lighting/stores/light-preset-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import type {
@@ -19,6 +20,7 @@ export interface LightCardControllerParams {
   initialTemp: number;
   size: CardSize;
   isEditMode: boolean;
+  providerState?: NavetLightState | null;
 }
 
 export interface LightCardController {

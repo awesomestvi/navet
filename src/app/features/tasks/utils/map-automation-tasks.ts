@@ -1,48 +1,43 @@
-import type { HassEntities } from 'home-assistant-js-websocket';
-import { getName, resolveEntityRoom } from '@/app/hooks/ha-entity-utils';
 import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantDeviceRegistryEntry,
-  HomeAssistantEntityRegistryEntry,
-} from '@/app/services/home-assistant.service';
+  PlatformTaskDeviceReference,
+  PlatformTaskEntityMap,
+  PlatformTaskEntityReference,
+  PlatformTaskRoomReference,
+} from '@/app/platform/provider-feature-models';
 import type { AutomationTask } from '../types';
+import { createTaskRoomMaps, getTaskEntityName, resolveTaskEntityRoom } from './task-runtime';
 
 interface MapAutomationTasksOptions {
-  entities: HassEntities | null;
-  areas: HomeAssistantAreaRegistryEntry[];
-  deviceRegistry: HomeAssistantDeviceRegistryEntry[];
-  entityRegistry: HomeAssistantEntityRegistryEntry[];
+  entities: PlatformTaskEntityMap | null;
+  rooms: PlatformTaskRoomReference[];
+  devices: PlatformTaskDeviceReference[];
+  entityReferences: PlatformTaskEntityReference[];
   locale?: string;
 }
 
 export function mapAutomationTasks({
   entities,
-  areas,
-  deviceRegistry,
-  entityRegistry,
+  rooms,
+  devices,
+  entityReferences,
   locale,
 }: MapAutomationTasksOptions): AutomationTask[] {
   if (!entities) {
     return [];
   }
 
-  const areaMap = new Map(areas.map((area) => [area.area_id, area.name]));
-  const entityRegistryMap = new Map(
-    entityRegistry.map((entry) => [
-      entry.entity_id,
-      { area_id: entry.area_id, device_id: entry.device_id },
-    ])
-  );
-  const deviceRegistryMap = new Map(
-    deviceRegistry.map((entry) => [entry.id, { area_id: entry.area_id }])
-  );
+  const { roomMap, entityReferenceMap, deviceMap } = createTaskRoomMaps({
+    rooms,
+    devices,
+    entityReferences,
+  });
 
   return Object.entries(entities)
     .filter(([entityId]) => entityId.startsWith('automation.'))
     .map(([entityId, entity]) => ({
       id: entityId,
-      name: getName(entity),
-      room: resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap),
+      name: getTaskEntityName(entity),
+      room: resolveTaskEntityRoom(entityId, roomMap, entityReferenceMap, deviceMap),
       enabled: entity.state === 'on',
       state: entity.state,
       lastTriggered:

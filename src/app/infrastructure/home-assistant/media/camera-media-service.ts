@@ -1,7 +1,7 @@
 import type {
-  HomeAssistantCameraStream,
-  HomeAssistantCameraStreamType,
-} from '@/app/services/home-assistant.service';
+  PlatformCameraStream,
+  PlatformCameraStreamType,
+} from '@/app/platform/provider-feature-models';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
 import type { ResolvedMediaResource } from '../resources/resource-types';
@@ -21,7 +21,7 @@ interface CameraPlaybackPlanInput {
   preferredTransport: CameraFeedMode | 'go2rtc';
   snapshotUrl?: string;
   mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly ('hls' | 'web_rtc')[];
+  frontendStreamTypes: readonly PlatformCameraStreamType[];
   hasGo2RtcFeed: boolean;
   isUnavailable: boolean;
   isRunning: boolean;
@@ -51,8 +51,8 @@ export class CameraMediaService {
     private resolver: HomeAssistantResourceResolver,
     private getCameraStream: (
       entityId: string,
-      format: HomeAssistantCameraStreamType
-    ) => Promise<HomeAssistantCameraStream>
+      format: PlatformCameraStreamType
+    ) => Promise<PlatformCameraStream>
   ) {}
 
   async getPlaybackPlan(input: CameraPlaybackPlanInput): Promise<CameraPlaybackPlan> {

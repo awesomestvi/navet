@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar'
 import { useClickOutside, useI18n, useIntegrationStore, useLogout, useTheme } from '@/app/hooks';
 import { refreshPwaApp } from '@/app/pwa/pwa-update-store';
 import { integrationSelectors } from '@/app/stores/selectors';
+import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
 
 interface UserDropdownProps {
   avatarUrl?: string | null;
@@ -34,8 +35,11 @@ export const UserDropdown = memo(function UserDropdown({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const user = useIntegrationStore(integrationSelectors.user);
-  const connected = useIntegrationStore(integrationSelectors.connected);
+  const user = useIntegrationStore(integrationSelectors.currentUser);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const providerRuntime = useIntegrationStore(
+    integrationSelectors.providerRuntimeById(currentProviderId)
+  );
   const performLogout = useLogout();
 
   const handleLogout = () => {
@@ -63,6 +67,8 @@ export const UserDropdown = memo(function UserDropdown({
     'inline-flex w-full items-center gap-2 rounded-full bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/15';
 
   const fullName = user?.name?.trim() || t('userDropdown.defaultUser');
+  const connected = providerRuntime.connected;
+  const providerLabel = INTEGRATION_PROVIDERS[currentProviderId].label;
   const initials = useMemo(() => {
     const parts = fullName.split(/\s+/).filter(Boolean);
     return parts
@@ -118,7 +124,7 @@ export const UserDropdown = memo(function UserDropdown({
                 style={{ backgroundColor: connected ? '#22c55e' : '#6b7280' }}
               />
               <p className={`truncate text-sm font-medium ${textPrimary}`}>
-                {connected ? 'Home Assistant' : t('settings.system.connection.notConnected')}
+                {connected ? providerLabel : t('settings.system.connection.notConnected')}
               </p>
             </div>
           </div>

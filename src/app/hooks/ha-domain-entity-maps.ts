@@ -46,3 +46,22 @@ export function selectUpdateDomainEntities(state: HomeAssistantStore): Record<st
 
   return out;
 }
+
+/** Security summary source entities only — `binary_sensor.*`, `alarm_control_panel.*`, `siren.*`. */
+export function selectSecuritySummaryEntities(
+  state: HomeAssistantStore
+): Record<string, HassEntity> | null {
+  const all = state.entities;
+  if (!all) {
+    return null;
+  }
+
+  return Object.fromEntries(
+    Object.entries(all).filter(
+      ([entityId]) =>
+        entityId.startsWith('binary_sensor.') ||
+        entityId.startsWith('alarm_control_panel.') ||
+        entityId.startsWith('siren.')
+    )
+  );
+}

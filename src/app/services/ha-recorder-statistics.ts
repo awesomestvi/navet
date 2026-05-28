@@ -1,4 +1,4 @@
-import type { Connection } from 'home-assistant-js-websocket';
+import type { PlatformMessageClient } from '@/app/platform/provider-feature-models';
 
 interface StatisticEntry {
   start: string;
@@ -39,12 +39,12 @@ export interface RecorderStatisticPoint {
 }
 
 export async function getRecorderMeanHistory(
-  connection: Connection,
+  messageClient: PlatformMessageClient,
   entityId: string,
   startTime: Date,
   endTime = new Date()
 ): Promise<RecorderStatisticPoint[]> {
-  const response = (await connection.sendMessagePromise({
+  const response = (await messageClient.sendMessagePromise({
     type: 'recorder/statistics_during_period',
     start_time: startTime.toISOString(),
     end_time: endTime.toISOString(),

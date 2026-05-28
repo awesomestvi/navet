@@ -1,19 +1,20 @@
-import type { Connection } from 'home-assistant-js-websocket';
 import type {
-  HomeAssistantAreaRegistryEntry,
-  HomeAssistantAutomationConfig,
-} from '@/app/services/home-assistant.service';
-import type { IntegrationStore } from '@/app/stores/integration-store';
-import type {
+  PlatformAutomationDetails,
   PlatformCalendarEvent,
+  PlatformCalendarRequestOptions,
   PlatformCameraCapabilities,
   PlatformCameraStream,
   PlatformCameraStreamType,
   PlatformMediaBrowseResult,
+  PlatformMessageClient,
+  PlatformNotificationRequestOptions,
   PlatformNotificationSnapshot,
   PlatformPersistentNotificationEvent,
   PlatformResolvedMediaSource,
+  PlatformRoomReference,
+  PlatformTaskRuntimeSnapshot,
   PlatformWeatherForecastEntry,
+  PlatformWeatherRequestOptions,
   PlatformWebRtcClientConfiguration,
   PlatformWebRtcOfferEvent,
 } from './provider-feature-models';
@@ -41,11 +42,13 @@ export interface ProviderMediaFeatureService {
   selectMediaPlayerSoundMode: (entityId: string, soundMode: string) => Promise<void>;
   seekMediaPlayer: (entityId: string, seekPosition: number) => Promise<void>;
   clearMediaPlayerPlaylist: (entityId: string) => Promise<void>;
+  updateMediaPlayerPower: (entityId: string, state: 'on' | 'off') => Promise<void>;
+  sendRemoteCommand: (entityId: string, command: string) => Promise<void>;
   browseMediaSource: (mediaContentId: string) => Promise<PlatformMediaBrowseResult>;
   resolveMediaSource: (mediaContentId: string) => Promise<PlatformResolvedMediaSource>;
   fetchMediaThumbnailDataUrl: (
     entityId: string,
-    connection?: Connection | null
+    messageClient?: PlatformMessageClient | null
   ) => Promise<string | null>;
 }
 
@@ -66,28 +69,40 @@ export interface ProviderCameraFeatureService {
     sessionId: string,
     candidate: RTCIceCandidateInit
   ) => Promise<void>;
+  toggleCameraAccessory: (entityId: string, state: 'on' | 'off') => Promise<void>;
+  selectCameraAccessoryOption: (entityId: string, option: string) => Promise<void>;
+  setCameraAccessoryValue: (entityId: string, value: number) => Promise<void>;
   enableCameraMotionDetection: (entityId: string) => Promise<void>;
   disableCameraMotionDetection: (entityId: string) => Promise<void>;
 }
 
+export interface ProviderSecurityFeatureService {
+  lockEntity: (entityId: string) => Promise<void>;
+  unlockEntity: (entityId: string) => Promise<void>;
+  openCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;
+  closeCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;
+  stopCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;
+  setCoverPosition: (
+    entityId: string,
+    position: number,
+    mode?: 'position' | 'tilt'
+  ) => Promise<void>;
+}
+
 export interface ProviderAdminFeatureService {
-  createArea: (name: string) => Promise<HomeAssistantAreaRegistryEntry>;
-  updateEntityArea: (entityId: string, areaId: string | null) => Promise<void>;
-  deleteArea: (areaId: string) => Promise<void>;
+  createRoom: (name: string) => Promise<PlatformRoomReference>;
+  updateEntityRoom: (entityId: string, roomId: string | null) => Promise<void>;
+  deleteRoom: (roomId: string) => Promise<void>;
 }
 
 export interface ProviderHistoryFeatureService {
-  getActiveConnection: () => Connection | null;
+  getMessageClient: () => PlatformMessageClient | null;
 }
 
 export interface ProviderCalendarFeatureService {
   getEvents: (
     entityId: string,
-    options?: {
-      connection?: Connection | null;
-      startDateTime?: string;
-      endDateTime?: string;
-    }
+    options?: PlatformCalendarRequestOptions
   ) => Promise<PlatformCalendarEvent[]>;
 }
 
@@ -95,23 +110,25 @@ export interface ProviderWeatherFeatureService {
   getForecast: (
     entityId: string,
     type: 'daily' | 'hourly',
-    options?: { connection?: Connection | null }
+    options?: PlatformWeatherRequestOptions
   ) => Promise<PlatformWeatherForecastEntry[]>;
 }
 
 export interface ProviderNotificationFeatureService {
-  getSnapshot: (options?: {
-    connection?: Connection | null;
-  }) => Promise<PlatformNotificationSnapshot>;
+  getSnapshot: (
+    options?: PlatformNotificationRequestOptions
+  ) => Promise<PlatformNotificationSnapshot>;
   subscribePersistentNotifications: (
     callback: (event: PlatformPersistentNotificationEvent) => void,
-    options?: { connection?: Connection | null }
+    options?: PlatformNotificationRequestOptions
   ) => Promise<() => void>;
+  dismissPersistentNotification: (notificationId: string) => Promise<void>;
+  installUpdate: (entityId: string) => Promise<void>;
+  restartSystem: () => Promise<void>;
 }
 
 export interface ProviderTaskFeatureService {
-  selectTaskRuntimeSnapshot: (
-    state: IntegrationStore
-  ) => Pick<IntegrationStore, 'entities' | 'areas' | 'deviceRegistry' | 'entityRegistry'>;
-  getAutomationConfig: (entityId: string) => Promise<HomeAssistantAutomationConfig>;
+  getTaskRuntimeSnapshot: () => PlatformTaskRuntimeSnapshot;
+  subscribeTaskRuntimeSnapshot: (listener: () => void) => () => void;
+  getAutomationDetails: (entityId: string) => Promise<PlatformAutomationDetails>;
 }

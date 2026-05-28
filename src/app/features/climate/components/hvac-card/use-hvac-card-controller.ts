@@ -5,6 +5,7 @@ import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { HA_PENDING_ECHO_WINDOW_MS } from '@/app/constants/interaction-timing';
+import { readNavetClimateState } from '@/app/core/navet-device-state';
 import {
   useHaCommandQueue,
   useHomeAssistant,
@@ -19,11 +20,13 @@ import {
   resolveClimateTemperatureUnit,
   resolveHomeAssistantTemperatureUnit,
 } from '@/app/hooks/ha-entity-utils';
+import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { homeAssistantSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import {
   convertDisplayTemperatureToSourceUnit,
   convertTemperatureUnitValue,
@@ -97,7 +100,8 @@ function resolveClimateTemperatureServiceData(
   liveEntity: HassEntity | undefined,
   nextTemp: number
 ): { temperature: number } | { target_temp_low?: number; target_temp_high?: number } {
-  if (!liveEntity || entityId.startsWith('water_heater.')) {
+  const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
+  if (!liveEntity || nativeEntityId.startsWith('water_heater.')) {
     return { temperature: nextTemp };
   }
 
@@ -160,6 +164,7 @@ export function useHVACCardController({
   | 'isEditMode'
   | 'size'
 > & { sourceTemperatureUnit?: TemperatureUnit }) {
+  const nativeEntityId = parseProviderScopedId(id)?.nativeId ?? id;
   const { t } = useI18n();
   const [targetTemp, setTargetTemp] = useState(initialTemp);
   const [currentTemp, setCurrentTemp] = useState(initialCurrentTemp);
@@ -170,7 +175,9 @@ export function useHVACCardController({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const providerDevice = useProviderDevice(id);
   const liveEntity = useHomeAssistant(homeAssistantSelectors.entity(id));
+  const providerState = readNavetClimateState(providerDevice);
   const homeAssistantTemperatureUnit = useHomeAssistant((state) =>
     resolveHomeAssistantTemperatureUnit(state.config)
   );
@@ -178,8 +185,17 @@ export function useHVACCardController({
   const effectiveSourceTemperatureUnit = useMemo(
     () =>
       sourceTemperatureUnit ??
+      (providerState?.temperatureUnit === 'celsius' ||
+      providerState?.temperatureUnit === 'fahrenheit'
+        ? providerState.temperatureUnit
+        : undefined) ??
       resolveClimateTemperatureUnit(liveEntity, homeAssistantTemperatureUnit),
-    [homeAssistantTemperatureUnit, liveEntity, sourceTemperatureUnit]
+    [
+      homeAssistantTemperatureUnit,
+      liveEntity,
+      providerState?.temperatureUnit,
+      sourceTemperatureUnit,
+    ]
   );
   const temperatureRange = useMemo(
     () => resolveClimateTemperatureRange(liveEntity, effectiveSourceTemperatureUnit),
@@ -232,7 +248,7 @@ export function useHVACCardController({
     runTemperatureAction(async () => {
       const serviceData = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
       if ('temperature' in serviceData) {
-        await homeAssistantService.setClimateTemperature(id, serviceData.temperature);
+        await homeAssistantService.setClimateTemperature(nativeEntityId, serviceData.temperature);
         return;
       }
 
