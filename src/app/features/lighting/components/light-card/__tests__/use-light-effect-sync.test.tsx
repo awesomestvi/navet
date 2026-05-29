@@ -22,7 +22,7 @@ describe('useLightEffectSync', () => {
 
     const { result } = renderHookWithProviders(() =>
       useLightEffectSync({
-        isHomeAssistantLight: true,
+        supportsAdvancedLightControls: true,
         isOn: true,
         liveEntity: makeEntity(['Rainbow', 'Fire'], 'Rainbow'),
         setIsOn,
@@ -45,7 +45,7 @@ describe('useLightEffectSync', () => {
 
     const { result } = renderHookWithProviders(() =>
       useLightEffectSync({
-        isHomeAssistantLight: true,
+        supportsAdvancedLightControls: true,
         isOn: true,
         liveEntity: makeEntity(['Rainbow'], 'Rainbow'),
         setIsOn,

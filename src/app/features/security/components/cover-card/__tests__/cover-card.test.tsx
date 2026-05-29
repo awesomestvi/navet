@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@/app/i18n/i18n-provider';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { coverEntityFactory } from '@/test/fixtures/home-assistant/entities/cover';
+import { resetAppStores } from '@/test/store-reset';
 import { CoverCard } from '../index';
 
 const { closeCoverMock, openCoverMock, setCoverPositionMock, stopCoverMock, toastErrorMock } =
@@ -109,7 +110,8 @@ function setLiveCoverTiltPosition(position: number, state = 'open') {
 }
 
 describe('CoverCard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await resetAppStores();
     homeAssistantStore.setState({ entities: null });
     closeCoverMock.mockReset();
     closeCoverMock.mockResolvedValue(undefined);
@@ -147,13 +149,12 @@ describe('CoverCard', () => {
     expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
   });
 
-  it('optimistically fills positionless covers when opening from the card', async () => {
+  it('opens positionless covers from the card', async () => {
     act(() => setLiveCoverStateWithoutPosition('closed'));
     renderCoverCard({ hasPosition: false, initialPosition: 0 });
 
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
-    expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     await waitFor(() =>
       expect(openCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
     );

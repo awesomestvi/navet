@@ -186,6 +186,40 @@ describe('useDevices', () => {
     await resetAppStores();
 
     integrationStore.setState({
+      providerEntitiesByCanonicalId: {
+        'home_assistant:light.kitchen': {
+          id: 'home_assistant:light.kitchen',
+          canonicalId: 'home_assistant:light.kitchen',
+          providerId: 'home_assistant',
+          externalId: 'light.kitchen',
+          type: 'light',
+          name: 'Kitchen Light',
+          room: 'Kitchen',
+          primaryState: 'on',
+          availability: 'available',
+          capabilities: [],
+          attributes: {
+            value: 'on',
+            brightnessPct: 100,
+            colorTemperatureKelvin: 3200,
+          },
+        },
+        'homey:switch_1': {
+          id: 'homey:switch_1',
+          canonicalId: 'homey:switch_1',
+          providerId: 'homey',
+          externalId: 'switch_1',
+          type: 'switch',
+          name: 'Coffee Machine',
+          room: 'Living Room',
+          primaryState: 'off',
+          availability: 'available',
+          capabilities: [],
+          attributes: {
+            value: 'off',
+          },
+        },
+      },
       devicesByCanonicalId: {
         'home_assistant:light.kitchen': {
           id: 'light.kitchen',

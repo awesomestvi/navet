@@ -39,6 +39,7 @@ function createController(): SettingsSectionController {
       {
         id: 'home_assistant',
         label: 'Home Assistant',
+        loginMode: 'url_oauth',
         status: 'connected',
         isActive: true,
         isConnected: true,
@@ -66,6 +67,7 @@ function createController(): SettingsSectionController {
       {
         id: 'homey',
         label: 'Homey',
+        loginMode: 'oauth',
         status: 'disconnected',
         isActive: false,
         isConnected: false,
@@ -93,14 +95,15 @@ function createController(): SettingsSectionController {
       {
         id: 'openhab',
         label: 'openHAB',
-        status: 'planned',
+        loginMode: 'url_session',
+        status: 'disconnected',
         isActive: false,
         isConnected: false,
-        canConnect: false,
+        canConnect: true,
         canDisconnect: false,
         baseUrl: null,
         error: null,
-        implementationStatus: 'planned',
+        implementationStatus: 'implemented',
         featureMatrix: {
           rooms: false,
           lighting: false,
@@ -155,16 +158,14 @@ describe('SettingsSystemSection', () => {
     controller = createController();
   });
 
-  it('shows provider management with active and planned providers', () => {
+  it('shows provider management with active and implemented providers', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
     expect(screen.getByText('Homey')).toBeInTheDocument();
     expect(screen.getByText('openHAB')).toBeInTheDocument();
-    expect(
-      screen.getByText('openHAB support is planned but not available yet.')
-    ).toBeInTheDocument();
+    expect(screen.getAllByText('Not connected on this device').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Active')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Lighting').length).toBeGreaterThan(0);
     expect(screen.getByText('Notifications')).toBeInTheDocument();
@@ -175,6 +176,7 @@ describe('SettingsSystemSection', () => {
       {
         id: 'home_assistant',
         label: 'Home Assistant',
+        loginMode: 'url_oauth',
         status: 'connected',
         isActive: false,
         isConnected: true,
@@ -202,6 +204,7 @@ describe('SettingsSystemSection', () => {
       {
         id: 'homey',
         label: 'Homey',
+        loginMode: 'oauth',
         status: 'disconnected',
         isActive: false,
         isConnected: false,
@@ -242,6 +245,7 @@ describe('SettingsSystemSection', () => {
       {
         id: 'home_assistant',
         label: 'Home Assistant',
+        loginMode: 'url_oauth',
         status: 'disconnected',
         isActive: true,
         isConnected: false,
@@ -269,6 +273,7 @@ describe('SettingsSystemSection', () => {
       {
         id: 'homey',
         label: 'Homey',
+        loginMode: 'oauth',
         status: 'connected',
         isActive: false,
         isConnected: true,

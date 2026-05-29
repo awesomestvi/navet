@@ -1,19 +1,20 @@
 import { useMemo } from 'react';
 import type { PlatformRoom } from '@/app/platform/types';
-import { useNavetRooms } from './use-navet-devices';
+import { integrationSelectors } from '@/app/stores/selectors';
+import { useIntegrationStore } from './use-integration-store';
 
 export function useAggregatedRooms(): PlatformRoom[] {
-  const navetRooms = useNavetRooms();
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
 
   return useMemo<PlatformRoom[]>(
     () =>
-      navetRooms.map((room) => ({
+      roomDescriptors.map((room) => ({
         id: room.id,
         key: room.normalizedName,
         name: room.name,
-        providerIds: [room.providerId],
+        providerIds: [...room.providerIds],
         canonicalMemberIds: [...room.memberIds],
       })),
-    [navetRooms]
+    [roomDescriptors]
   );
 }

@@ -224,7 +224,7 @@ describe('WidgetCard info widget', () => {
 
     expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
-        sensorEntityIds: ['sensor.kitchen_humidity'],
+        sensorEntityIds: ['home_assistant:sensor.kitchen_humidity'],
       },
     });
 
@@ -261,12 +261,15 @@ describe('WidgetCard info widget', () => {
 
     expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
-        sensorEntityIds: ['sensor.kitchen_temperature'],
+        sensorEntityIds: ['home_assistant:sensor.kitchen_temperature'],
       },
     });
     expect(onUpdate).toHaveBeenCalledWith('custom-info', {
       data: {
-        sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
+        sensorEntityIds: [
+          'home_assistant:sensor.kitchen_temperature',
+          'home_assistant:sensor.kitchen_humidity',
+        ],
       },
     });
   });

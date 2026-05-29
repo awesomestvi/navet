@@ -1,9 +1,9 @@
-import type { NavetResourceKind } from '@/app/core/navet';
+import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
+import type { NavetResourceKind } from '@navet/core/types';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import { integrationStore } from '@/app/stores/integration-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
-import { getIntegrationProviderContract } from './integration-registry.service';
 
 interface ResolvePlatformArtworkRequest {
   entityId: string;
@@ -45,7 +45,7 @@ export function normalizeResourceUrl(
   }
 
   const resolvedProviderId = resolveProviderId(resourceUrl, providerId);
-  const contract = getIntegrationProviderContract(resolvedProviderId);
+  const contract = getRegisteredProviderContract(resolvedProviderId);
 
   return contract.normalizeResourceUrl?.(resourceUrl) ?? resourceUrl;
 }
@@ -60,7 +60,7 @@ export async function resolveResource(
   }
 ): Promise<ResolvedPlatformResource> {
   const resolvedProviderId = resolveProviderId(deviceId, options?.providerId);
-  const contract = getIntegrationProviderContract(resolvedProviderId);
+  const contract = getRegisteredProviderContract(resolvedProviderId);
 
   if (!contract.resolveResource) {
     return {

@@ -1,8 +1,8 @@
-import { toLegacyAuthRuntime } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
-import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
+import { integrationSessionRuntime } from './integration-session-runtime';
+import type { AuthRuntime } from './runtime-types';
 
-export type AuthRuntime = 'ha-panel' | 'ha-ingress' | 'standalone-oauth';
+export type { AuthRuntime } from './runtime-types';
 
 export function detectAuthRuntime(): AuthRuntime {
-  return toLegacyAuthRuntime(getRuntimeContext().kind);
+  return integrationSessionRuntime.getAuthRuntime();
 }

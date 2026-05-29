@@ -1,0 +1,11 @@
+{
+  "name": "@navet/provider-openhab",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./openhab-adapter": "./src/openhab-adapter.ts",
+    "./openhab-mappers": "./src/openhab-mappers.ts",
+    "./openhab-runtime-registration": "./src/openhab-runtime-registration.ts"
+  }
+}

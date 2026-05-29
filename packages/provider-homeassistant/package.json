@@ -1,0 +1,27 @@
+{
+  "name": "@navet/provider-homeassistant",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./homeassistant-adapter": "./src/homeassistant-adapter.ts",
+    "./homeassistant-admin-feature.service": "./src/homeassistant-admin-feature.service.ts",
+    "./homeassistant-calendar-feature.service": "./src/homeassistant-calendar-feature.service.ts",
+    "./homeassistant-camera-feature.service": "./src/homeassistant-camera-feature.service.ts",
+    "./homeassistant-camera-runtime": "./src/homeassistant-camera-runtime.ts",
+    "./homeassistant-climate-feature.service": "./src/homeassistant-climate-feature.service.ts",
+    "./homeassistant-energy-feature.service": "./src/homeassistant-energy-feature.service.ts",
+    "./homeassistant-entity-runtime.service": "./src/homeassistant-entity-runtime.service.ts",
+    "./homeassistant-history-feature.service": "./src/homeassistant-history-feature.service.ts",
+    "./homeassistant-light-feature.service": "./src/homeassistant-light-feature.service.ts",
+    "./homeassistant-mappers": "./src/homeassistant-mappers.ts",
+    "./homeassistant-media-feature.service": "./src/homeassistant-media-feature.service.ts",
+    "./homeassistant-notification-feature.service": "./src/homeassistant-notification-feature.service.ts",
+    "./homeassistant-runtime-registration": "./src/homeassistant-runtime-registration.ts",
+    "./homeassistant-security-feature.service": "./src/homeassistant-security-feature.service.ts",
+    "./homeassistant-service-bridge": "./src/homeassistant-service-bridge.ts",
+    "./homeassistant-session-runtime": "./src/homeassistant-session-runtime.ts",
+    "./homeassistant-task-feature.service": "./src/homeassistant-task-feature.service.ts",
+    "./homeassistant-weather-feature.service": "./src/homeassistant-weather-feature.service.ts"
+  }
+}

@@ -10,7 +10,7 @@ import {
 import type { LightUpdateOptions } from './use-light-home-assistant-sync';
 
 interface UseLightEffectSyncParams {
-  isHomeAssistantLight: boolean;
+  supportsAdvancedLightControls: boolean;
   isOn: boolean;
   liveEntity: PlatformEntitySnapshot | undefined;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
@@ -18,7 +18,7 @@ interface UseLightEffectSyncParams {
 }
 
 export function useLightEffectSync({
-  isHomeAssistantLight,
+  supportsAdvancedLightControls,
   isOn,
   liveEntity,
   setIsOn,
@@ -62,11 +62,11 @@ export function useLightEffectSync({
     () => buildLightEffectOptions(liveEntity, noEffectLabel, currentEffect),
     [currentEffect, liveEntity, noEffectLabel]
   );
-  const supportsEffects = supportsLightEffects(liveEntity);
+  const supportsEffects = supportsAdvancedLightControls && supportsLightEffects(liveEntity);
 
   const onEffectSelect = useCallback(
     (effectValue: string) => {
-      if (!isHomeAssistantLight) {
+      if (!supportsEffects) {
         return;
       }
 
@@ -100,7 +100,7 @@ export function useLightEffectSync({
         }
       });
     },
-    [currentEffect, isHomeAssistantLight, isOn, setIsOn, syncLight]
+    [currentEffect, isOn, setIsOn, supportsEffects, syncLight]
   );
 
   return {

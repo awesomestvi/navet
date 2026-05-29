@@ -191,8 +191,10 @@ export const integrationSelectors = {
   providers: (state: IntegrationStore) => state.providers,
   currentProviderId: (state: IntegrationStore) => state.currentProviderId,
   providerSessions: (state: IntegrationStore) => state.providerSessions,
-  providerSnapshots: (state: IntegrationStore) => state.providerSnapshots,
-  devicesByCanonicalId: (state: IntegrationStore) => state.devicesByCanonicalId,
+  providerEntitiesByCanonicalId: (state: IntegrationStore) => state.providerEntitiesByCanonicalId,
+  providerEntityViewsByCanonicalId: (state: IntegrationStore) =>
+    state.providerEntityViewsByCanonicalId,
+  providerEvents: (state: IntegrationStore) => state.providerEvents,
   roomsByCanonicalId: (state: IntegrationStore) => state.roomsByCanonicalId,
   roomDescriptors: (state: IntegrationStore) => state.roomDescriptors,
   availableProviderIds: (state: IntegrationStore) => state.availableProviderIds,

@@ -1,9 +1,9 @@
-import { expect } from 'vitest';
 import type {
-  IntegrationProviderAdapter,
   IntegrationProviderFeature,
   IntegrationProviderFeatureMatrix,
-} from '@/app/services/integration-registry.service';
+} from '@navet/app/provider-runtime-types';
+import { expect } from 'vitest';
+import type { IntegrationProviderAdapter } from '@/app/services/integration-registry.service';
 import { hasIntegrationProviderFeature } from '@/app/services/integration-registry.service';
 
 export function expectProviderFeatureMatrixSubset(

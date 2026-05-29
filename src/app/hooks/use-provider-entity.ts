@@ -1,3 +1,4 @@
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { useMemo, useSyncExternalStore } from 'react';
 import { resolveProviderTemperatureUnit } from '@/app/hooks/entity-utils';
 import type {
@@ -5,12 +6,11 @@ import type {
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
-import { getIntegrationProviderEntityRuntimeService } from '@/app/services/integration-registry.service';
 import { integrationSelectors } from '@/app/stores/selectors';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useIntegrationStore } from './use-integration-store';
-import { useProviderDevice } from './use-provider-device';
+import { useProviderEntityModel } from './use-provider-device';
 
 const EMPTY_ENTITY_SNAPSHOT_RECORD: Record<string, PlatformEntitySnapshot | undefined> = {};
 const EMPTY_ENTITY_SNAPSHOTS: PlatformEntitySnapshotMap = {};
@@ -34,7 +34,9 @@ function useProviderEntityRuntimeSnapshots(
   providerId: IntegrationProviderId | undefined,
   enabled: boolean
 ): PlatformEntitySnapshotMap | null {
-  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+  const runtimeService = providerId
+    ? (getProviderRuntimeRegistration(providerId).entityRuntimeService ?? null)
+    : null;
 
   return useSyncExternalStore(
     enabled && runtimeService ? runtimeService.subscribeEntitySnapshots : subscribeNoop,
@@ -47,7 +49,9 @@ function useProviderEntityRuntimeRegistry(
   providerId: IntegrationProviderId | undefined,
   enabled: boolean
 ): PlatformEntityRegistryEntry[] {
-  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+  const runtimeService = providerId
+    ? (getProviderRuntimeRegistration(providerId).entityRuntimeService ?? null)
+    : null;
 
   return useSyncExternalStore(
     enabled && runtimeService ? runtimeService.subscribeEntityRegistryEntries : subscribeNoop,
@@ -59,7 +63,9 @@ function useProviderEntityRuntimeRegistry(
 }
 
 function useProviderConfigRuntime(providerId: IntegrationProviderId | undefined, enabled: boolean) {
-  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+  const runtimeService = providerId
+    ? (getProviderRuntimeRegistration(providerId).entityRuntimeService ?? null)
+    : null;
 
   return useSyncExternalStore(
     enabled && runtimeService ? runtimeService.subscribeConfig : subscribeNoop,
@@ -149,11 +155,11 @@ function resolveProviderRuntimeEntityId(
 }
 
 export function useProviderEntitySnapshot(entityId: string): PlatformEntitySnapshot | undefined {
-  const providerDevice = useProviderDevice(entityId);
+  const providerEntity = useProviderEntityModel(entityId);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = resolveEntityProviderId(
     entityId,
-    providerDevice?.providerId,
+    providerEntity?.providerId,
     currentProviderId
   );
   const runtimeEntityId = useMemo(

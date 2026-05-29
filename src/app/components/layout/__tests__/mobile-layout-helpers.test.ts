@@ -1,5 +1,5 @@
+import type { NavetRoomDescriptor } from '@navet/app/internal/compat-models';
 import { describe, expect, it } from 'vitest';
-import type { NavetRoomDescriptor } from '@/app/core/navet';
 import { getManageableRoomOrder } from '../mobile-layout-helpers';
 
 function createRoomDescriptor(

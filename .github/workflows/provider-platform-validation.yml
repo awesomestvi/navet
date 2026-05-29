@@ -1,0 +1,39 @@
+name: Tier 1 Release-Critical Validation
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_call:
+
+jobs:
+  tier-1-release-critical:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pinned pnpm
+        run: corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tier 1 release-critical tests
+        run: pnpm test:tier1
+
+      - name: Check provider boundaries
+        run: node scripts/check-provider-boundaries.mjs
+
+      - name: Validate Docker build and config
+        run: pnpm check:docker

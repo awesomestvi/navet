@@ -1,14 +1,14 @@
 import {
-  cameraMediaService,
-  homeAssistantResourceResolver,
-} from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
+  getCurrentHomeAssistantPanelHass,
+  getHomeAssistantCameraPlaybackPlan,
+  resolveHomeAssistantCameraStreamResource,
+} from '@navet/provider-homeassistant/homeassistant-camera-runtime';
 import type {
   CameraPlaybackPlan,
   PlatformCameraStreamType,
 } from '@/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
-import { homeAssistantService } from './home-assistant.service';
 
 interface CameraPlaybackPlanRequest {
   entityId: string;
@@ -26,7 +26,7 @@ interface CameraPlaybackPlanRequest {
 export async function getCameraPlaybackPlan(
   request: CameraPlaybackPlanRequest
 ): Promise<CameraPlaybackPlan> {
-  return await cameraMediaService.getPlaybackPlan(request);
+  return await getHomeAssistantCameraPlaybackPlan(request);
 }
 
 export async function resolveCameraStreamResource(
@@ -34,14 +34,9 @@ export async function resolveCameraStreamResource(
   stream: 'hls' | 'web_rtc' | 'mjpeg',
   rawPath?: string
 ): Promise<ResolvedPlatformResource> {
-  return await homeAssistantResourceResolver.resolve({
-    kind: 'camera_stream',
-    entityId,
-    stream,
-    rawPath,
-  });
+  return await resolveHomeAssistantCameraStreamResource(entityId, stream, rawPath);
 }
 
 export function getCurrentCameraPanelHass() {
-  return homeAssistantService.getPanelHass();
+  return getCurrentHomeAssistantPanelHass();
 }

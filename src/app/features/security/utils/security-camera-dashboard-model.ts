@@ -1,8 +1,9 @@
 import type {
-  PlatformEntitySnapshot,
-  PlatformEntitySnapshotMap,
-} from '@/app/platform/provider-feature-models';
-import type { CameraDevice, DeviceCollection, LockDevice } from '@/app/types/device.types';
+  CameraDevice,
+  DeviceCollection,
+  LockDevice,
+  SensorDevice,
+} from '@/app/types/device.types';
 
 const SECURITY_CAMERA_KEYWORDS = [
   'camera',
@@ -55,10 +56,8 @@ function includesAnyKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function getDeviceClass(entity: PlatformEntitySnapshot | undefined): string {
-  return typeof entity?.attributes?.device_class === 'string'
-    ? entity.attributes.device_class.toLowerCase()
-    : '';
+function getDeviceClass(device: SensorDevice | undefined): string {
+  return typeof device?.deviceClass === 'string' ? device.deviceClass.toLowerCase() : '';
 }
 
 function isUnavailableCamera(camera: CameraDevice): boolean {
@@ -97,66 +96,45 @@ function compareByRoomAndName(
   return left.name.localeCompare(right.name);
 }
 
-function getRelatedMotionCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
-  if (!entities) {
-    return 0;
-  }
-
-  return Object.entries(entities).filter(([entityId, entity]) => {
-    if (!entityId.startsWith('binary_sensor.')) {
-      return false;
-    }
-
-    const deviceClass = getDeviceClass(entity);
-    const searchText = normalizeText(`${entityId} ${entity.attributes?.friendly_name ?? ''}`);
+function getRelatedMotionCount(sensors: SensorDevice[]): number {
+  return sensors.filter((device) => {
+    const entityId = device.nativeId ?? device.id;
+    const deviceClass = getDeviceClass(device);
+    const searchText = normalizeText(`${entityId} ${device.name}`);
     const isMotionSensor =
       MOTION_DEVICE_CLASSES.has(deviceClass) ||
       includesAnyKeyword(searchText, ['motion', 'occupancy', 'presence', 'pir']);
 
-    return isMotionSensor && entity.state === 'on';
+    return isMotionSensor && device.status === 'active';
   }).length;
 }
 
-function getOpenSensorCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
-  if (!entities) {
-    return 0;
-  }
-
-  return Object.entries(entities).filter(([entityId, entity]) => {
-    if (!entityId.startsWith('binary_sensor.')) {
-      return false;
-    }
-
-    const deviceClass = getDeviceClass(entity);
-    return OPENING_DEVICE_CLASSES.has(deviceClass) && entity.state === 'on';
+function getOpenSensorCount(sensors: SensorDevice[]): number {
+  return sensors.filter((device) => {
+    const deviceClass = getDeviceClass(device);
+    return OPENING_DEVICE_CLASSES.has(deviceClass) && device.status === 'active';
   }).length;
 }
 
-function getActiveAlarmCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
-  if (!entities) {
-    return 0;
-  }
-
-  return Object.entries(entities).filter(
-    ([entityId, entity]) =>
+function getActiveAlarmCount(sensors: SensorDevice[]): number {
+  return sensors.filter((device) => {
+    const entityId = device.nativeId ?? device.id;
+    return (
       entityId.startsWith('alarm_control_panel.') &&
-      !['disarmed', 'unavailable', 'unknown'].includes(entity.state)
-  ).length;
+      !['clear', 'unavailable'].includes(device.status ?? 'measurement')
+    );
+  }).length;
 }
 
-function getActiveSirenCount(entities: PlatformEntitySnapshotMap | null | undefined): number {
-  if (!entities) {
-    return 0;
-  }
-
-  return Object.entries(entities).filter(
-    ([entityId, entity]) => entityId.startsWith('siren.') && entity.state === 'on'
-  ).length;
+function getActiveSirenCount(sensors: SensorDevice[]): number {
+  return sensors.filter((device) => {
+    const entityId = device.nativeId ?? device.id;
+    return entityId.startsWith('siren.') && device.status === 'active';
+  }).length;
 }
 
 export function buildSecurityCameraDashboardModel(
-  devices: Pick<DeviceCollection, 'cameras' | 'locks'>,
-  entities?: PlatformEntitySnapshotMap | null
+  devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'>
 ): CameraDashboardModel {
   const cameras = [...devices.cameras].sort(compareByRoomAndName);
   const unavailableCameras = cameras.filter(isUnavailableCamera);
@@ -181,12 +159,12 @@ export function buildSecurityCameraDashboardModel(
       liveCount,
       idleCount,
       unavailableCount: unavailableCameras.length,
-      motionCount: getRelatedMotionCount(entities),
+      motionCount: getRelatedMotionCount(devices.sensors),
       lockedCount: locks.length - unlockedCount,
       unlockedCount,
-      openSensorCount: getOpenSensorCount(entities),
-      activeAlarmCount: getActiveAlarmCount(entities),
-      activeSirenCount: getActiveSirenCount(entities),
+      openSensorCount: getOpenSensorCount(devices.sensors),
+      activeAlarmCount: getActiveAlarmCount(devices.sensors),
+      activeSirenCount: getActiveSirenCount(devices.sensors),
     },
   };
 }

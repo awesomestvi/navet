@@ -1,8 +1,8 @@
+import type { NavetRoomDescriptor } from '@navet/app/internal/compat-models';
 import type { Meta, StoryObj } from '@storybook/react';
 import { type Dispatch, type ReactNode, type SetStateAction, useRef, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import type { NavetRoomDescriptor } from '@/app/core/navet';
 import { useTheme } from '@/app/hooks';
 import type { TranslateFn, TranslationKey } from '@/app/i18n';
 import type { PrimaryColor } from '@/app/stores/theme-store';

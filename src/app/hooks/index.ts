@@ -35,7 +35,6 @@ export {
 } from './use-integration-store';
 export { useLogout } from './use-logout';
 export { useMediaQuery } from './use-media-query';
-export { useNavetDevices, useNavetProviderDevices, useNavetRooms } from './use-navet-devices';
 export { useNavigation } from './use-navigation';
 // New reusable hooks
 export { usePersistedState } from './use-persisted-state';
@@ -43,7 +42,7 @@ export {
   useProviderCalendarDevices,
   useProviderCalendarDevicesCollection,
 } from './use-provider-calendar-devices';
-export { useProviderDevice } from './use-provider-device';
+export { useProviderEntityModel } from './use-provider-device';
 export {
   useProviderConnectionState,
   useProviderEntityRegistryEntries,

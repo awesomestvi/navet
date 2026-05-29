@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
-import { integrationSelectors } from '@/app/stores/selectors';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getIntegrationHistoryMessageClient,
+  supportsIntegrationEnergyStatistics,
+} from '@/app/services/integration-history.service';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
 
@@ -16,30 +16,13 @@ interface EnergyPeriodTotals {
   month: number;
 }
 
-function isHomeAssistantStatisticId(
-  entityId: string | undefined,
-  currentProviderId: string
-): boolean {
-  if (!entityId) {
-    return false;
-  }
-
-  const scopedId = parseProviderScopedId(entityId);
-  if (scopedId) {
-    return scopedId.providerId === 'home_assistant';
-  }
-
-  return currentProviderId === 'home_assistant';
-}
-
 export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): EnergyPeriodTotals {
   const [totals, setTotals] = useState<EnergyPeriodTotals>({ today: 0, week: 0, month: 0 });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId, currentProviderId);
+  const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
 
   useEffect(() => {
-    if (!enabled || !isHomeAssistantEntity || !entityId) {
+    if (!enabled || !supportsStatistics || !entityId) {
       setTotals({ today: 0, week: 0, month: 0 });
       return;
     }
@@ -67,7 +50,7 @@ export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): E
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [enabled, entityId, isHomeAssistantEntity]);
+  }, [enabled, entityId, supportsStatistics]);
 
   return totals;
 }

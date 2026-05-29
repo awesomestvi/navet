@@ -1,5 +1,8 @@
 # Commands
 
+Internal maintainer and agent reference. This file defines repo command rules for contributors who
+are actively changing the codebase.
+
 This file defines repo command rules, command references, and commit requirements for agents working in Navet.
 
 ## Command Reference
@@ -11,7 +14,10 @@ pnpm format          # Biome format (auto-fix)
 pnpm check:stories   # validate Storybook title, coverage, and ownership rules
 pnpm check:ui-kit    # validate UI-kit import and boundary rules
 pnpm check:docker    # build the standalone image and validate nginx/njs config
-pnpm test            # unit tests
+pnpm test            # broad local regression suite (Tier 3)
+pnpm test:tier1      # release-critical provider/runtime gate
+pnpm test:tier2      # blocking app-contract suite
+pnpm test:tier3      # broad regression suite
 pnpm build:ha-panel  # build bundled Home Assistant custom panel assets
 pnpm storybook:build # static Storybook build for GitHub Pages
 ```

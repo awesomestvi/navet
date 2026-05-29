@@ -2,13 +2,10 @@ import { useState } from 'react';
 import { readNavetLightState } from '@/app/core/navet-device-state';
 import { useBrightnessPresets } from '@/app/features/lighting/hooks/use-brightness-presets';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
-import {
-  useProviderConnectionState,
-  useProviderDevice,
-  useProviderEntitySnapshot,
-} from '@/app/hooks';
+import { useProviderEntityModel, useProviderEntitySnapshot } from '@/app/hooks';
 import { useCardSettingsDialog } from '@/app/hooks/use-card-settings-dialog';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
+import { hasIntegrationLightFeatureService } from '@/app/services/integration-light-feature.service';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
@@ -31,8 +28,8 @@ export function useLightCardController({
   size,
   isEditMode,
 }: LightCardControllerParams): LightCardController {
-  const providerDevice = useProviderDevice(id);
-  const providerState = readNavetLightState(providerDevice);
+  const providerEntity = useProviderEntityModel(id);
+  const providerState = readNavetLightState(providerEntity);
   const resolvedInitialState =
     providerState?.value === 'on' ? true : providerState?.value === 'off' ? false : initialState;
   const resolvedInitialBrightness =
@@ -49,12 +46,11 @@ export function useLightCardController({
   const [tintColor, setTintColor] = useState('');
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const scopedId = parseProviderScopedId(id);
-  const nativeId = scopedId?.nativeId ?? id;
   const resolvedProviderId =
-    providerDevice?.providerId ?? providerId ?? scopedId?.providerId ?? currentProviderId;
-  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
-
-  const isProviderConnected = useProviderConnectionState(resolvedProviderId);
+    providerEntity?.providerId ?? providerId ?? scopedId?.providerId ?? currentProviderId;
+  const supportsAdvancedLightControls = hasIntegrationLightFeatureService(
+    scopedId ? id : `${resolvedProviderId}:${id}`
+  );
   const liveEntity = useProviderEntitySnapshot(id);
   const brightnessPresets = useBrightnessPresets(id);
   const rememberLightState = useLightMemoryStore((state) => state.rememberState);
@@ -65,8 +61,6 @@ export function useLightCardController({
     onBrightnessPresetValueChange,
   } = useLightPresetActions(id);
 
-  const isHomeAssistantLight =
-    isHomeAssistantProvider && isProviderConnected && nativeId.startsWith('light.');
   const {
     isSmall,
     padding,
@@ -80,14 +74,14 @@ export function useLightCardController({
   } = useLightCardDisplay({
     selectedIcon,
     size,
-    providerId,
     liveEntity,
     initialTemp: resolvedInitialTemp,
     providerState,
+    supportsAdvancedLightControls,
   });
 
   useLightOnStateSync({ initialState: resolvedInitialState, liveEntity, providerState, setIsOn });
-  const syncLightWithHomeAssistant = useLightServiceSync({ id, providerId, isHomeAssistantLight });
+  const syncLight = useLightServiceSync({ id });
 
   const {
     brightness,
@@ -113,14 +107,14 @@ export function useLightCardController({
     maxColorTemp,
     supportsColorTemperature,
     rememberLightState,
-    syncLightWithHomeAssistant,
+    syncLight,
   });
   const { currentEffect, effectOptions, onEffectSelect, supportsEffects } = useLightEffectSync({
-    isHomeAssistantLight,
+    supportsAdvancedLightControls,
     isOn,
     liveEntity,
     setIsOn,
-    syncLight: syncLightWithHomeAssistant,
+    syncLight,
   });
 
   const { cardInteraction, showPresetOverflow, showSettingsButton } = useLightCardInteraction({

@@ -1,24 +1,24 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import {
+  getProviderFeatureMatrix,
+  getProviderRuntimeRegistration,
+  hasProviderCapability,
+  listProviderRuntimeRegistrations,
+} from '@navet/app/provider-runtime-registry';
 import type {
   PlatformCameraStream,
   PlatformCameraStreamType,
 } from '@/app/platform/provider-feature-models';
+import { integrationSessionRuntime } from '@/auth/integration-session-runtime';
 import {
+  INTEGRATION_PROVIDER_IDS,
   INTEGRATION_PROVIDERS,
   type IntegrationProviderDefinition,
   type IntegrationProviderId,
 } from '../types/provider';
 import { getCurrentIntegrationProviderIdFromStore } from './integration-provider-context.service';
-import {
-  getIntegrationProviderAdapter,
-  getIntegrationProviderFeatureMatrix,
-  listImplementedIntegrationProviders,
-  listIntegrationProviderAdapters,
-  requireIntegrationProviderCapability,
-} from './integration-registry.service';
 
 export function getCurrentIntegrationSession() {
-  return authSessionManager.getSession();
+  return integrationSessionRuntime.getSession();
 }
 
 export function getCurrentIntegrationProviderId(): IntegrationProviderId {
@@ -34,15 +34,22 @@ export function listSupportedIntegrationProviders(): IntegrationProviderDefiniti
 }
 
 export function listImplementedIntegrationProvidersForRuntime(): IntegrationProviderDefinition[] {
-  return listImplementedIntegrationProviders();
+  return INTEGRATION_PROVIDER_IDS.filter(
+    (providerId) =>
+      getProviderRuntimeRegistration(providerId).implementationStatus === 'implemented'
+  ).map((providerId) => INTEGRATION_PROVIDERS[providerId]);
 }
 
 export function listIntegrationRuntimeAdapters() {
-  return listIntegrationProviderAdapters();
+  const registrations = listProviderRuntimeRegistrations();
+  return INTEGRATION_PROVIDER_IDS.map((providerId, index) => ({
+    provider: INTEGRATION_PROVIDERS[providerId],
+    ...registrations[index],
+  }));
 }
 
 export function getCurrentIntegrationFeatureMatrix() {
-  return getIntegrationProviderFeatureMatrix(getCurrentIntegrationProviderId());
+  return getProviderFeatureMatrix(getCurrentIntegrationProviderId());
 }
 
 export async function signCurrentIntegrationPath(path: string, expiresSeconds?: number) {
@@ -50,11 +57,16 @@ export async function signCurrentIntegrationPath(path: string, expiresSeconds?: 
 }
 
 export async function getCurrentIntegrationSignedPath(path: string, expiresSeconds?: number) {
-  const adapter = getIntegrationProviderAdapter(getCurrentIntegrationProviderId());
-  requireIntegrationProviderCapability(adapter, 'pathSigning');
+  const providerId = getCurrentIntegrationProviderId();
+  const adapter = getProviderRuntimeRegistration(providerId);
+  if (!hasProviderCapability(providerId, 'pathSigning')) {
+    throw new Error(
+      `Path signing is not implemented yet for provider ${INTEGRATION_PROVIDERS[providerId].label}`
+    );
+  }
 
   if (!adapter.signPath) {
-    throw new Error(`${adapter.provider.label} does not support signed paths`);
+    throw new Error(`${INTEGRATION_PROVIDERS[providerId].label} does not support signed paths`);
   }
 
   return await adapter.signPath(path, expiresSeconds);
@@ -71,11 +83,16 @@ export async function getCurrentIntegrationCameraStreamUrl(
   entityId: string,
   format: PlatformCameraStreamType
 ): Promise<PlatformCameraStream> {
-  const adapter = getIntegrationProviderAdapter(getCurrentIntegrationProviderId());
-  requireIntegrationProviderCapability(adapter, 'cameraStreams');
+  const providerId = getCurrentIntegrationProviderId();
+  const adapter = getProviderRuntimeRegistration(providerId);
+  if (!hasProviderCapability(providerId, 'cameraStreams')) {
+    throw new Error(
+      `Camera streams are not implemented yet for provider ${INTEGRATION_PROVIDERS[providerId].label}`
+    );
+  }
 
   if (!adapter.getCameraStream) {
-    throw new Error(`${adapter.provider.label} does not support camera streams`);
+    throw new Error(`${INTEGRATION_PROVIDERS[providerId].label} does not support camera streams`);
   }
 
   return await adapter.getCameraStream(entityId, format);

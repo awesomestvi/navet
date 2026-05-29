@@ -1,5 +1,5 @@
+import type { NavetDevice } from '@navet/app/internal/compat-models';
 import { describe, expect, it } from 'vitest';
-import type { NavetDevice } from '@/app/core/navet';
 import { createEmptyDeviceCollection } from '@/app/core/navet-device-collections';
 import type { DeviceCollection } from '@/app/types/device.types';
 import { buildAggregatedRooms, buildAggregatedRoomsFromNavetDevices } from '../provider-rooms';

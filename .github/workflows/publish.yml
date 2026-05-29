@@ -22,7 +22,11 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/navet
 
 jobs:
+  provider-platform:
+    uses: ./.github/workflows/provider-platform-validation.yml
+
   docker:
+    needs: provider-platform
     runs-on: ubuntu-latest
 
     steps:

@@ -2,6 +2,7 @@ import type { IntegrationProviderId } from '@/app/types/provider';
 import { createProviderScopedId, parseProviderScopedId } from './provider-ids';
 
 const LEGACY_HOME_ASSISTANT_ENTITY_ID_PATTERN = /^[a-z0-9_]+\.[a-z0-9_]+(?:[a-z0-9_/-]*)?$/i;
+const LEGACY_HOME_ASSISTANT_PROVIDER_ID: IntegrationProviderId = 'home_assistant';
 
 export function isLegacyHomeAssistantEntityId(value: string): boolean {
   return LEGACY_HOME_ASSISTANT_ENTITY_ID_PATTERN.test(value);
@@ -17,10 +18,10 @@ export function resolveHomeAssistantEntityId(
 
   const scopedId = parseProviderScopedId(value);
   if (scopedId) {
-    return scopedId.providerId === 'home_assistant' ? scopedId.nativeId : null;
+    return scopedId.providerId === LEGACY_HOME_ASSISTANT_PROVIDER_ID ? scopedId.nativeId : null;
   }
 
-  if (providerId === 'home_assistant') {
+  if (providerId === LEGACY_HOME_ASSISTANT_PROVIDER_ID) {
     return value;
   }
 
@@ -29,7 +30,7 @@ export function resolveHomeAssistantEntityId(
 
 export function ensureCanonicalEntityId(
   value: string,
-  defaultProviderId: IntegrationProviderId = 'home_assistant'
+  legacyDefaultProviderId: IntegrationProviderId = LEGACY_HOME_ASSISTANT_PROVIDER_ID
 ): string {
   if (!value) {
     return value;
@@ -40,7 +41,9 @@ export function ensureCanonicalEntityId(
   }
 
   if (isLegacyHomeAssistantEntityId(value)) {
-    return createProviderScopedId(defaultProviderId, value);
+    // Legacy compatibility only. Shared app state should prefer canonical/provider-scoped ids
+    // before values reach this helper.
+    return createProviderScopedId(legacyDefaultProviderId, value);
   }
 
   return value;
@@ -48,20 +51,20 @@ export function ensureCanonicalEntityId(
 
 export function ensureCanonicalEntityIds(
   values: string[],
-  defaultProviderId: IntegrationProviderId = 'home_assistant'
+  legacyDefaultProviderId: IntegrationProviderId = LEGACY_HOME_ASSISTANT_PROVIDER_ID
 ): string[] {
   return Array.from(
-    new Set(values.map((value) => ensureCanonicalEntityId(value, defaultProviderId)))
+    new Set(values.map((value) => ensureCanonicalEntityId(value, legacyDefaultProviderId)))
   );
 }
 
 export function normalizePersistedEntityRecord<T>(
   value: Record<string, T>,
-  defaultProviderId: IntegrationProviderId = 'home_assistant'
+  legacyDefaultProviderId: IntegrationProviderId = LEGACY_HOME_ASSISTANT_PROVIDER_ID
 ): Record<string, T> {
   return Object.fromEntries(
     Object.entries(value).map(([id, entry]) => [
-      ensureCanonicalEntityId(id, defaultProviderId),
+      ensureCanonicalEntityId(id, legacyDefaultProviderId),
       entry,
     ])
   );

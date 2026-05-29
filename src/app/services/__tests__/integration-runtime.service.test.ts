@@ -63,6 +63,8 @@ describe('integration-runtime.service', () => {
       'home_assistant',
       'homey',
       'openhab',
+      'hubitat',
+      'smartthings',
     ]);
   });
 
@@ -70,6 +72,7 @@ describe('integration-runtime.service', () => {
     expect(listImplementedIntegrationProvidersForRuntime().map((provider) => provider.id)).toEqual([
       'home_assistant',
       'homey',
+      'openhab',
     ]);
   });
 

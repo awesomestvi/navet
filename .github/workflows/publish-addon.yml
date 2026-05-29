@@ -26,7 +26,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  provider-platform:
+    uses: ./.github/workflows/provider-platform-validation.yml
+
   publish-addon:
+    needs: provider-platform
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

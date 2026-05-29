@@ -14,6 +14,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import type { NavetRoomDescriptor } from '@navet/app/internal/compat-models';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -26,7 +27,6 @@ import {
 } from '@/app/components/primitives';
 import { getDndTransformStyle } from '@/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import type { NavetRoomDescriptor } from '@/app/core/navet';
 import { useI18n, useTheme } from '@/app/hooks';
 import { buildManageableRoomReferences } from '@/app/platform/provider-room-management';
 import { integrationAdminService } from '@/app/services/integration-admin.service';

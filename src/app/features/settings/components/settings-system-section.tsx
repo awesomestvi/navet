@@ -72,7 +72,10 @@ function getSupportedProviderFeatureLabels(
 
 export function SettingsSystemSection({ controller }: SettingsSystemSectionProps) {
   const { t } = useI18n();
-  const [homeAssistantUrl, setHomeAssistantUrl] = useState('');
+  const [providerUrls, setProviderUrls] = useState<Record<string, string>>({
+    home_assistant: '',
+    openhab: '',
+  });
   const {
     activeProviderId,
     config,
@@ -124,10 +127,10 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                     ) : null}
                   </div>
                   <p className={`mt-2 text-sm leading-relaxed ${styles.subtleColor}`}>
-                    {provider.id === 'openhab'
-                      ? t('settings.system.providers.openhabLater')
-                      : provider.baseUrl
-                        ? provider.baseUrl
+                    {provider.baseUrl
+                      ? provider.baseUrl
+                      : provider.status === 'planned'
+                        ? t('settings.system.providers.notConnected')
                         : t('settings.system.providers.notConnected')}
                   </p>
                   {provider.error ? (
@@ -187,17 +190,26 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                 </div>
               </div>
 
-              {provider.id === 'home_assistant' && !provider.isConnected ? (
+              {(provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session') &&
+              !provider.isConnected ? (
                 <form
                   className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void handleConnectProvider('home_assistant', homeAssistantUrl.trim());
+                    void handleConnectProvider(
+                      provider.id,
+                      providerUrls[provider.id]?.trim() ?? ''
+                    );
                   }}
                 >
                   <Input
-                    value={homeAssistantUrl}
-                    onChange={(event) => setHomeAssistantUrl(event.target.value)}
+                    value={providerUrls[provider.id] ?? ''}
+                    onChange={(event) =>
+                      setProviderUrls((current) => ({
+                        ...current,
+                        [provider.id]: event.target.value,
+                      }))
+                    }
                     placeholder={t('settings.system.providers.homeAssistantUrlPlaceholder')}
                     leading={<Home className={`h-4 w-4 ${styles.subtleColor}`} />}
                     inputClassName={styles.textColor}

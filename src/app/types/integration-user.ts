@@ -1,5 +1,3 @@
-import type { HassUser } from 'home-assistant-js-websocket';
-
 export interface IntegrationUser {
   id?: string;
   name: string;
@@ -9,7 +7,16 @@ export interface IntegrationUser {
   email?: string | null;
 }
 
-export function fromHassUser(user: HassUser | null | undefined): IntegrationUser | null {
+interface HomeAssistantUserLike {
+  id?: string;
+  name?: string | null;
+  is_owner?: boolean;
+  is_admin?: boolean;
+}
+
+export function fromHassUser(
+  user: HomeAssistantUserLike | null | undefined
+): IntegrationUser | null {
   if (!user?.name) {
     return null;
   }

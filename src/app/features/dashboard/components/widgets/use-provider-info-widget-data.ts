@@ -1,6 +1,6 @@
+import type { NavetEntity } from '@navet/core/types';
 import { useMemo } from 'react';
-import type { NavetDevice } from '@/app/core/navet';
-import { mapNavetDevicesToDeviceCollection } from '@/app/core/navet-device-collections';
+import { mapNavetEntitiesToDeviceCollection } from '@/app/core/navet-device-collections';
 import { type AvailableSensor, inferSensorIcon, type SensorReading } from '@/app/features/sensors';
 import { useIntegrationStore } from '@/app/hooks';
 import { integrationSelectors } from '@/app/stores/selectors';
@@ -19,9 +19,7 @@ export interface ProviderInfoWidgetDataResult {
 }
 
 function getSelectableSensorId(device: SensorDevice): string {
-  return device.providerId === 'home_assistant'
-    ? (device.nativeId ?? device.id)
-    : (device.canonicalId ?? device.id);
+  return device.canonicalId ?? device.id;
 }
 
 function getSensorCategory(deviceClass: string | undefined): AvailableSensor['category'] {
@@ -124,14 +122,16 @@ export function useProviderInfoWidgetData(
   _options: ProviderInfoWidgetDataOptions
 ): ProviderInfoWidgetDataResult {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
 
   return useMemo(() => {
     const providerId = resolveProviderIdForSensorSelection(sensorEntityIds, currentProviderId);
-    const providerDevices = Object.values(devicesByCanonicalId).filter(
-      (device): device is NavetDevice => device.providerId === providerId
+    const providerEntities = Object.values(providerEntitiesByCanonicalId).filter(
+      (entity): entity is NavetEntity => entity.providerId === providerId
     );
-    const sensors = mapNavetDevicesToDeviceCollection(providerDevices).sensors;
+    const sensors = mapNavetEntitiesToDeviceCollection(providerEntities).sensors;
     const lookup = buildSensorLookup(sensors, providerId);
 
     const availableSensors = sensors
@@ -153,5 +153,5 @@ export function useProviderInfoWidgetData(
     });
 
     return { availableSensors, currentSensors };
-  }, [currentProviderId, devicesByCanonicalId, sensorEntityIds]);
+  }, [currentProviderId, providerEntitiesByCanonicalId, sensorEntityIds]);
 }

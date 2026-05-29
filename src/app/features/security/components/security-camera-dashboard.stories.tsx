@@ -1,12 +1,11 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { type ReactNode, useEffect } from 'react';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
-import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import type { ThemeMode } from '@/app/stores/theme-store';
 import { useThemeStore } from '@/app/stores/theme-store';
 import { noopCardSizeChange } from '@/app/storybook/story-frames';
-import type { CameraDevice, LockDevice } from '@/app/types/device.types';
+import type { CameraDevice, LockDevice, SensorDevice } from '@/app/types/device.types';
 import cameraSampleImage from '@/assets/camera-sample.webp';
 import { buildSecurityCameraDashboardModel } from '../utils/security-camera-dashboard-model';
 import { SecurityCameraDashboard } from './security-camera-dashboard';
@@ -136,29 +135,40 @@ const locks: LockDevice[] = [
   },
 ];
 
-const securityEntities: PlatformEntitySnapshotMap = {
-  'binary_sensor.entry_motion': {
-    entityId: 'binary_sensor.entry_motion',
-    state: 'on',
-    attributes: { friendly_name: 'Entry Motion', device_class: 'motion' },
-    lastChanged: '2026-05-15T20:12:00.000Z',
-    lastUpdated: '2026-05-15T20:12:00.000Z',
+const securitySensors: SensorDevice[] = [
+  {
+    id: 'binary_sensor.entry_motion',
+    nativeId: 'binary_sensor.entry_motion',
+    name: 'Entry Motion',
+    room: 'Entrance',
+    size: 'small',
+    value: 'on',
+    unit: '',
+    deviceClass: 'motion',
+    status: 'active',
   },
-  'binary_sensor.patio_door': {
-    entityId: 'binary_sensor.patio_door',
-    state: 'on',
-    attributes: { friendly_name: 'Patio Door', device_class: 'door' },
-    lastChanged: '2026-05-15T20:06:00.000Z',
-    lastUpdated: '2026-05-15T20:06:00.000Z',
+  {
+    id: 'binary_sensor.patio_door',
+    nativeId: 'binary_sensor.patio_door',
+    name: 'Patio Door',
+    room: 'Garden',
+    size: 'small',
+    value: 'on',
+    unit: '',
+    deviceClass: 'door',
+    status: 'active',
   },
-  'alarm_control_panel.home': {
-    entityId: 'alarm_control_panel.home',
-    state: 'armed_home',
-    attributes: { friendly_name: 'Home Alarm' },
-    lastChanged: '2026-05-15T19:00:00.000Z',
-    lastUpdated: '2026-05-15T19:00:00.000Z',
+  {
+    id: 'alarm_control_panel.home',
+    nativeId: 'alarm_control_panel.home',
+    name: 'Home Alarm',
+    room: 'Entrance',
+    size: 'small',
+    value: 'armed_home',
+    unit: '',
+    status: 'active',
   },
-};
+];
 
 const labels = {
   title: 'Security Cameras',
@@ -185,13 +195,13 @@ const labels = {
 interface SecurityDashboardStoryProps {
   cameras: CameraDevice[];
   locks: LockDevice[];
-  entities: PlatformEntitySnapshotMap;
+  sensors: SensorDevice[];
 }
 
-function SecurityDashboardStory({ cameras, locks, entities }: SecurityDashboardStoryProps) {
+function SecurityDashboardStory({ cameras, locks, sensors }: SecurityDashboardStoryProps) {
   const { theme } = useThemeStore();
   const surface = getThemeSurfaceTokens(theme);
-  const model = buildSecurityCameraDashboardModel({ cameras, locks }, entities);
+  const model = buildSecurityCameraDashboardModel({ cameras, locks, sensors });
 
   return (
     <div className="min-h-screen bg-[#050608] p-4 md:p-6">
@@ -221,7 +231,7 @@ const meta = {
   args: {
     cameras: [liveCamera, idleCamera, gardenCamera, utilityCamera, unavailableCamera],
     locks,
-    entities: securityEntities,
+    sensors: securitySensors,
   },
 } satisfies Meta<typeof SecurityDashboardStory>;
 
@@ -235,7 +245,7 @@ export const SnapshotOnlyCurrentHaData: Story = {
   args: {
     cameras: [utilityCamera],
     locks,
-    entities: {},
+    sensors: [],
   },
 };
 
@@ -243,20 +253,11 @@ export const NoSecurityIssues: Story = {
   args: {
     cameras: [liveCamera, idleCamera, gardenCamera],
     locks: locks.map((lock) => ({ ...lock, state: true })),
-    entities: {
-      'binary_sensor.entry_motion': {
-        ...securityEntities['binary_sensor.entry_motion'],
-        state: 'off',
-      },
-      'binary_sensor.patio_door': {
-        ...securityEntities['binary_sensor.patio_door'],
-        state: 'off',
-      },
-      'alarm_control_panel.home': {
-        ...securityEntities['alarm_control_panel.home'],
-        state: 'disarmed',
-      },
-    },
+    sensors: securitySensors.map((sensor) =>
+      sensor.id === 'alarm_control_panel.home'
+        ? { ...sensor, value: 'disarmed', status: 'clear' }
+        : { ...sensor, value: 'off', status: 'clear' }
+    ),
   },
 };
 

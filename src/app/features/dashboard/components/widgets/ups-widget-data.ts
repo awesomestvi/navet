@@ -52,6 +52,12 @@ interface UpsRegistryContext {
 
 interface BuildUpsDeviceOptionsParams extends UpsRegistryContext {
   entities: PlatformEntitySnapshotMap | null | undefined;
+  classificationHints?: Record<
+    string,
+    {
+      deviceClass?: string;
+    }
+  >;
   formatOptions?: Parameters<typeof formatSensorValue>[1];
 }
 
@@ -112,15 +118,13 @@ function getEntityUnit(entity: PlatformEntitySnapshot) {
       : '';
 }
 
-function getDeviceClass(entity: PlatformEntitySnapshot) {
-  return typeof entity.attributes?.device_class === 'string'
-    ? entity.attributes.device_class.toLowerCase()
-    : undefined;
-}
-
-function classifyUpsMetric(entityId: string, entity: PlatformEntitySnapshot): UpsMetricKind | null {
+function classifyUpsMetric(
+  entityId: string,
+  entity: PlatformEntitySnapshot,
+  classificationHints: BuildUpsDeviceOptionsParams['classificationHints']
+): UpsMetricKind | null {
   const searchText = buildSearchText(entityId, entity);
-  const deviceClass = getDeviceClass(entity);
+  const deviceClass = classificationHints?.[entityId]?.deviceClass?.toLowerCase();
   const unit = getEntityUnit(entity);
 
   if (searchText.includes('battery charge') || deviceClass === 'battery') {
@@ -253,6 +257,7 @@ export function buildUpsDeviceOptions({
   areas = [],
   deviceRegistry = [],
   entityRegistry = [],
+  classificationHints,
   formatOptions,
 }: BuildUpsDeviceOptionsParams): UpsDeviceOption[] {
   if (!entities) {
@@ -288,7 +293,7 @@ export function buildUpsDeviceOptions({
             return [];
           }
 
-          const kind = classifyUpsMetric(entityId, entity);
+          const kind = classifyUpsMetric(entityId, entity, classificationHints);
           if (!kind) {
             return [];
           }

@@ -1,6 +1,7 @@
+import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { NavetProviderSession } from '@/app/core/navet';
+import type { NavetProviderSession } from '@/app/internal/compat';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { AuthProvider, useAuthSession } from '@/auth/AuthProvider';
 import { type AuthSession, type HomeAssistantAuthSession, isHomeyAuthSession } from '@/auth/types';
@@ -27,7 +28,6 @@ import {
   bootstrapIntegrationSession,
   teardownIntegrationSession,
 } from './services/integration-bootstrap.service';
-import { getIntegrationProviderContract } from './services/integration-registry.service';
 import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
@@ -147,7 +147,7 @@ function AppContent() {
       (Object.keys(sessions) as IntegrationProviderId[])
         .map((providerId) => [
           providerId,
-          getIntegrationProviderContract(providerId).bootstrapSession?.(sessions) ?? null,
+          getRegisteredProviderContract(providerId).bootstrapSession?.(sessions) ?? null,
         ])
         .filter((entry): entry is [IntegrationProviderId, NavetProviderSession] =>
           Boolean(entry[1])

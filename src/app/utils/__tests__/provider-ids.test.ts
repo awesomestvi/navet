@@ -18,6 +18,10 @@ describe('provider-ids', () => {
       providerId: 'homey',
       nativeId: 'device-123',
     });
+    expect(parseProviderScopedId('smartthings:device-456')).toEqual({
+      providerId: 'smartthings',
+      nativeId: 'device-456',
+    });
   });
 
   it('returns null for invalid provider-scoped ids', () => {

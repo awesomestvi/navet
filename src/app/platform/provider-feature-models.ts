@@ -24,6 +24,19 @@ export interface PlatformCameraCapabilities {
   streamTypes: PlatformCameraStreamType[];
 }
 
+export interface PlatformCameraLiveState {
+  isStreamCapable: boolean;
+  isStillImageOnly: boolean;
+  motionDetectionEnabled: boolean | null;
+}
+
+export interface PlatformCameraCompanionState {
+  entityId: string;
+  type: 'motion';
+  detected: boolean;
+  changedAt: string | null;
+}
+
 export interface PlatformCameraStream {
   url: string;
 }

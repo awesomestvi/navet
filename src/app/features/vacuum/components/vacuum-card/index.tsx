@@ -10,7 +10,7 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { cn } from '@/app/components/ui/utils';
 import {
   useI18n,
-  useProviderDevice,
+  useProviderEntityModel,
   useProviderEntityRegistryEntries,
   useProviderEntitySnapshot,
   useProviderEntitySnapshots,
@@ -175,10 +175,10 @@ export const VacuumCard = memo(function VacuumCard({
   isEditMode: _isEditMode,
 }: VacuumCardProps) {
   const resolvedSize = normalizeVacuumCardSize(size);
-  const providerDevice = useProviderDevice(id);
+  const providerEntity = useProviderEntityModel(id);
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId =
-    providerDevice?.providerId ??
+    providerEntity?.providerId ??
     providerId ??
     parseProviderScopedId(id)?.providerId ??
     currentProviderId;

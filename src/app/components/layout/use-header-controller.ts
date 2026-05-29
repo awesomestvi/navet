@@ -14,7 +14,9 @@ export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
   const user = useIntegrationStore(integrationSelectors.currentUser);
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -47,39 +49,39 @@ export function useHeaderController() {
     return fullName.split(/\s+/)[0];
   }, [t, user?.name]);
 
-  const matchedPersonDevice = useMemo(() => {
+  const matchedPersonEntity = useMemo(() => {
     const normalizedUserName = user?.name?.trim().toLowerCase();
     if (!normalizedUserName) {
       return null;
     }
 
     return (
-      Object.values(devicesByCanonicalId).find((device) => {
-        if (device.providerId !== currentProviderId || device.kind !== 'person') {
+      Object.values(providerEntitiesByCanonicalId).find((entity) => {
+        if (entity.providerId !== currentProviderId || entity.type !== 'person') {
           return false;
         }
 
-        return device.name.trim().toLowerCase() === normalizedUserName;
+        return entity.name.trim().toLowerCase() === normalizedUserName;
       }) ?? null
     );
-  }, [currentProviderId, devicesByCanonicalId, user?.name]);
+  }, [currentProviderId, providerEntitiesByCanonicalId, user?.name]);
 
-  const matchedPersonState = readNavetPersonState(matchedPersonDevice);
+  const matchedPersonState = readNavetPersonState(matchedPersonEntity);
   const avatarRequestKey = [
-    matchedPersonDevice?.resources?.primary_image?.path,
+    matchedPersonEntity?.resources?.primary_image?.path,
     matchedPersonState?.entityPicture,
-    matchedPersonDevice?.providerId,
+    matchedPersonEntity?.providerId,
   ]
     .filter(Boolean)
     .join('::');
   const avatarResource = useProviderResource({
-    deviceId: matchedPersonDevice?.canonicalId ?? '',
+    deviceId: matchedPersonEntity?.canonicalId ?? '',
     kind: 'primary_image',
-    attrs: matchedPersonDevice?.resources?.primary_image?.path
-      ? { entity_picture: matchedPersonDevice.resources.primary_image.path }
+    attrs: matchedPersonEntity?.resources?.primary_image?.path
+      ? { entity_picture: matchedPersonEntity.resources.primary_image.path }
       : undefined,
     fallbackPicture: matchedPersonState?.entityPicture,
-    providerId: matchedPersonDevice?.providerId,
+    providerId: matchedPersonEntity?.providerId,
     requestKey: avatarRequestKey,
   });
 

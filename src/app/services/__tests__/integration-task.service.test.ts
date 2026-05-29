@@ -3,7 +3,8 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { automationEntityFactory } from '@/test/fixtures/home-assistant/entities/automation';
 import { lightEntityFactory } from '@/test/fixtures/home-assistant/entities/light';
 
-const { getAutomationConfigMock } = vi.hoisted(() => ({
+const { callServiceMock, getAutomationConfigMock } = vi.hoisted(() => ({
+  callServiceMock: vi.fn(),
   getAutomationConfigMock: vi.fn(),
 }));
 
@@ -16,6 +17,7 @@ vi.mock('../home-assistant.service', async () => {
     ...actual,
     homeAssistantService: {
       ...actual.homeAssistantService,
+      callService: callServiceMock,
       getAutomationConfig: getAutomationConfigMock,
     },
   };
@@ -87,5 +89,18 @@ describe('integration-task.service', () => {
     await expect(
       integrationTaskService.getAutomationDetails('homey:automation.arrival')
     ).rejects.toThrow('Automation details are not supported for the current integration yet');
+  });
+
+  it('routes automation triggers through the provider task feature service', async () => {
+    await integrationTaskService.triggerAutomation('automation.arrival');
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      'automation',
+      'trigger',
+      {},
+      {
+        entity_id: 'automation.arrival',
+      }
+    );
   });
 });

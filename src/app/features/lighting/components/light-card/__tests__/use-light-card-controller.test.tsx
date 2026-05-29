@@ -23,12 +23,16 @@ vi.mock('@/app/hooks', () => ({
     t: (key: string) => key,
   })),
   useProviderDevice: vi.fn(() => null),
-  useProviderConnectionState: vi.fn(() => true),
+  useProviderEntityModel: vi.fn(() => null),
   useProviderEntitySnapshot: vi.fn(() => ({
     entityId: 'light.kitchen',
     state: 'on',
     attributes: {},
   })),
+}));
+
+vi.mock('@/app/services/integration-light-feature.service', () => ({
+  hasIntegrationLightFeatureService: vi.fn(() => true),
 }));
 
 vi.mock('../../hooks/use-brightness-presets', () => ({

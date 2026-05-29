@@ -16,6 +16,7 @@ Assume Navet may run on Raspberry Pi-class kiosk hardware.
 
 ## Current Hotspots
 
+- `src/providers/`
 - `src/app/features/dashboard/`
 - `src/app/features/media/`
 - `src/app/features/security/`

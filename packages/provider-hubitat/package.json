@@ -1,0 +1,10 @@
+{
+  "name": "@navet/provider-hubitat",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hubitat-adapter": "./src/hubitat-adapter.ts",
+    "./hubitat-runtime-registration": "./src/hubitat-runtime-registration.ts"
+  }
+}

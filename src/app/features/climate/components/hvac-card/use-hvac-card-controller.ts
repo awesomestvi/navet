@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isCompactCardSize } from '@/app/components/shared/card-size-selector';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
@@ -20,9 +21,9 @@ import {
   resolveClimateTemperatureUnit,
 } from '@/app/hooks/entity-utils';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { integrationClimateFeatureService } from '@/app/services/integration-climate-feature.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
@@ -97,10 +98,18 @@ function resolveClimateTemperatureServiceData(
   entityId: string,
   liveEntity: PlatformEntitySnapshot | undefined,
   nextTemp: number
-): { temperature: number } | { target_temp_low?: number; target_temp_high?: number } {
+): {
+  serviceDomain: 'climate' | 'water_heater';
+  temperature?: number;
+  targetTemperatureLow?: number;
+  targetTemperatureHigh?: number;
+} {
   const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
   if (!liveEntity || nativeEntityId.startsWith('water_heater.')) {
-    return { temperature: nextTemp };
+    return {
+      serviceDomain: nativeEntityId.startsWith('water_heater.') ? 'water_heater' : 'climate',
+      temperature: nextTemp,
+    };
   }
 
   const attrs = liveEntity.attributes;
@@ -108,51 +117,33 @@ function resolveClimateTemperatureServiceData(
   const targetHigh = parseNumberish(attrs?.target_temp_high);
 
   if (targetLow === null && targetHigh === null) {
-    return { temperature: nextTemp };
+    return { serviceDomain: 'climate', temperature: nextTemp };
   }
 
   const action = typeof attrs?.hvac_action === 'string' ? attrs.hvac_action.toLowerCase() : '';
   const mode = typeof liveEntity.state === 'string' ? liveEntity.state.toLowerCase() : '';
 
   if ((action.includes('cool') || mode === 'cool') && targetHigh !== null) {
-    return { target_temp_high: nextTemp };
+    return { serviceDomain: 'climate', targetTemperatureHigh: nextTemp };
   }
 
   if ((action.includes('heat') || mode === 'heat') && targetLow !== null) {
-    return { target_temp_low: nextTemp };
+    return { serviceDomain: 'climate', targetTemperatureLow: nextTemp };
   }
 
   const currentTarget = resolveClimateTargetTemperature(liveEntity);
   if (currentTarget !== null && targetLow !== null && targetHigh !== null) {
     const delta = nextTemp - currentTarget;
     return {
-      target_temp_low: Number((targetLow + delta).toFixed(3)),
-      target_temp_high: Number((targetHigh + delta).toFixed(3)),
+      serviceDomain: 'climate',
+      targetTemperatureLow: Number((targetLow + delta).toFixed(3)),
+      targetTemperatureHigh: Number((targetHigh + delta).toFixed(3)),
     };
   }
 
-  return targetHigh !== null ? { target_temp_high: nextTemp } : { target_temp_low: nextTemp };
-}
-
-function resolveClimateModeServiceRequest(
-  entityId: string,
-  nextMode: string
-): { domain: 'climate' | 'water_heater'; service: string; serviceData: Record<string, unknown> } {
-  const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
-
-  if (nativeEntityId.startsWith('water_heater.')) {
-    return {
-      domain: 'water_heater',
-      service: 'set_operation_mode',
-      serviceData: { operation_mode: nextMode },
-    };
-  }
-
-  return {
-    domain: 'climate',
-    service: 'set_hvac_mode',
-    serviceData: { hvac_mode: nextMode },
-  };
+  return targetHigh !== null
+    ? { serviceDomain: 'climate', targetTemperatureHigh: nextTemp }
+    : { serviceDomain: 'climate', targetTemperatureLow: nextTemp };
 }
 
 export function useHVACCardController({
@@ -183,7 +174,6 @@ export function useHVACCardController({
   | 'isEditMode'
   | 'size'
 > & { sourceTemperatureUnit?: TemperatureUnit }) {
-  const nativeEntityId = parseProviderScopedId(id)?.nativeId ?? id;
   const { t } = useI18n();
   const [targetTemp, setTargetTemp] = useState(initialTemp);
   const [currentTemp, setCurrentTemp] = useState(initialCurrentTemp);
@@ -194,11 +184,11 @@ export function useHVACCardController({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const providerDevice = useProviderDevice(id);
+  const providerEntity = useProviderEntityModel(id);
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
-  const providerState = readNavetClimateState(providerDevice);
+  const providerState = readNavetClimateState(providerEntity);
   const resolvedProviderId =
-    providerDevice?.providerId ??
+    providerEntity?.providerId ??
     providerId ??
     parseProviderScopedId(id)?.providerId ??
     currentProviderId;
@@ -270,14 +260,8 @@ export function useHVACCardController({
 
   const { queue: queueTargetTempSync } = useHaCommandQueue((nextTemp: number) =>
     runTemperatureAction(async () => {
-      const serviceData = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
-      await dispatchEntityAction({
-        providerId: resolvedProviderId,
-        entityId: id,
-        domain: nativeEntityId.startsWith('water_heater.') ? 'water_heater' : 'climate',
-        service: 'set_temperature',
-        serviceData,
-      });
+      const temperatureUpdate = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
+      await integrationClimateFeatureService.setTargetTemperature(id, temperatureUpdate);
     }, t('climate.feedback.updateTemperatureFailed'))
   );
 
@@ -321,14 +305,14 @@ export function useHVACCardController({
       setIsOn(nextMode !== 'off');
       void runModeAction(
         async () => {
-          const request = resolveClimateModeServiceRequest(id, nextMode);
-          await dispatchEntityAction({
-            providerId: resolvedProviderId,
-            entityId: id,
-            domain: request.domain,
-            service: request.service,
-            serviceData: request.serviceData,
-          });
+          await dispatchEntityCommand(
+            {
+              type: 'set_climate_mode',
+              entityId: id,
+              mode: nextMode,
+            },
+            resolvedProviderId
+          );
         },
         t('climate.feedback.updateModeFailed'),
         {

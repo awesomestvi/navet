@@ -195,7 +195,7 @@ export const deMessages = {
   'settings.system.providers.notConnected': 'Auf diesem Gerät nicht verbunden',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
-    'openHAB-Unterstützung ist geplant, aber noch nicht verfügbar.',
+    'openHAB verbindet sich über den eigenständigen URL-Anmeldefluss.',
   'settings.system.providers.status.connected': 'Verbunden',
   'settings.system.providers.status.connecting': 'Verbindet',
   'settings.system.providers.status.reconnecting': 'Verbindet erneut',

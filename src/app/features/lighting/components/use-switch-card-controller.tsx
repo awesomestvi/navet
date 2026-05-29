@@ -3,7 +3,7 @@ import { isExtraSmallCardSize, isTinyCardSize } from '@/app/components/shared/ca
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import {
   useI18n,
-  useProviderDevice,
+  useProviderEntityModel,
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
   useProviderSwitchTopology,
@@ -42,10 +42,10 @@ export function useSwitchCardController({
   const [isOn, setIsOn] = useState(initialState);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
-  const providerDevice = useProviderDevice(id);
+  const providerEntity = useProviderEntityModel(id);
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId =
-    providerDevice?.providerId ??
+    providerEntity?.providerId ??
     providerId ??
     parseProviderScopedId(id)?.providerId ??
     currentProviderId;

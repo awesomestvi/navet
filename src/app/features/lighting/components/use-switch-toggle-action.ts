@@ -1,6 +1,7 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { useCallback } from 'react';
 import { useServiceActionHandler } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { callIntegrationService } from '@/app/services/integration-service-call.service';
 import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface UseSwitchToggleActionParams {
@@ -31,12 +32,13 @@ export function useSwitchToggleAction({
       setIsOn(true);
       void runAction(
         async () => {
-          await dispatchEntityAction({
-            providerId,
-            entityId: id,
-            domain: resolvedServiceDomain,
-            service: 'turn_on',
-          });
+          await dispatchEntityCommand(
+            {
+              type: 'turn_on',
+              entityId: id,
+            },
+            providerId
+          );
           resetTimerRef.current = window.setTimeout(() => setIsOn(false), 700);
         },
         updateSwitchFailedMessage,
@@ -51,7 +53,7 @@ export function useSwitchToggleAction({
       setIsOn(true);
       void runAction(
         async () => {
-          await dispatchEntityAction({
+          await callIntegrationService({
             providerId,
             entityId: id,
             domain: resolvedServiceDomain,
@@ -70,13 +72,15 @@ export function useSwitchToggleAction({
     const nextIsOn = !isOn;
     setIsOn(nextIsOn);
     void runAction(
-      () =>
-        dispatchEntityAction({
-          providerId,
-          entityId: id,
-          domain: resolvedServiceDomain,
-          service: nextIsOn ? 'turn_on' : 'turn_off',
-        }),
+      async () => {
+        await dispatchEntityCommand(
+          {
+            type: nextIsOn ? 'turn_on' : 'turn_off',
+            entityId: id,
+          },
+          providerId
+        );
+      },
       updateSwitchFailedMessage,
       {
         onError: () => setIsOn(!nextIsOn),

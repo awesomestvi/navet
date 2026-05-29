@@ -6,9 +6,11 @@ import { useIntegrationStore } from './use-integration-store';
 import { useProviderEntityRegistryEntries } from './use-provider-entity';
 
 const EMPTY_IDS: string[] = [];
-
-/** HVAC sibling domains: fan, switch, input_boolean, script, button, input_button */
-const HVAC_SIBLING_PATTERN = /^(fan|switch|input_boolean|script|button|input_button)\./;
+const HOME_ASSISTANT_TOPOLOGY_PATTERNS = {
+  hvac: /^(fan|switch|input_boolean|script|button|input_button)\./,
+  switch: /^switch\./,
+} as const;
+type ProviderTopologyRole = 'hvac' | 'switch' | 'camera';
 
 function selectEmptyRegistryDeviceIds(): RegistryDeviceIdsSlice {
   return { deviceId: null, siblingIds: EMPTY_IDS };
@@ -50,6 +52,26 @@ function collectDeviceSiblingIds(
   return { deviceId, siblingIds };
 }
 
+function includeProviderTopologyEntry(
+  providerId: IntegrationProviderId,
+  role: ProviderTopologyRole,
+  entry: PlatformEntityRegistryEntry
+): boolean {
+  if (role === 'camera') {
+    return true;
+  }
+
+  if (providerId !== 'home_assistant') {
+    return false;
+  }
+
+  if (role === 'hvac') {
+    return HOME_ASSISTANT_TOPOLOGY_PATTERNS.hvac.test(entry.entityId);
+  }
+
+  return HOME_ASSISTANT_TOPOLOGY_PATTERNS.switch.test(entry.entityId);
+}
+
 function resolveProviderRegistryTarget(
   entityId: string,
   currentProviderId: IntegrationProviderId
@@ -84,12 +106,12 @@ export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceI
 
   return useMemo(
     () =>
-      runtimeEntityId
+      runtimeEntityId && providerId
         ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
-            HVAC_SIBLING_PATTERN.test(entry.entityId)
+            includeProviderTopologyEntry(providerId, 'hvac', entry)
           )
         : selectEmptyRegistryDeviceIds(),
-    [registry, runtimeEntityId]
+    [providerId, registry, runtimeEntityId]
   );
 }
 
@@ -110,12 +132,12 @@ export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDevic
 
   return useMemo(
     () =>
-      runtimeEntityId
+      runtimeEntityId && providerId
         ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
-            entry.entityId.startsWith('switch.')
+            includeProviderTopologyEntry(providerId, 'switch', entry)
           )
         : selectEmptyRegistryDeviceIds(),
-    [registry, runtimeEntityId]
+    [providerId, registry, runtimeEntityId]
   );
 }
 
@@ -136,10 +158,12 @@ export function useCameraRegistryDeviceTopology(entityId: string): RegistryDevic
 
   return useMemo(
     () =>
-      runtimeEntityId
-        ? collectDeviceSiblingIds(registry, runtimeEntityId, () => true)
+      runtimeEntityId && providerId
+        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+            includeProviderTopologyEntry(providerId, 'camera', entry)
+          )
         : selectEmptyRegistryDeviceIds(),
-    [registry, runtimeEntityId]
+    [providerId, registry, runtimeEntityId]
   );
 }
 

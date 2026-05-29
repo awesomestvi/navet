@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import {
   useProviderEntityRegistryEntries,
   useProviderEntitySnapshot,
@@ -73,11 +73,11 @@ function useResolvedMediaRuntime(options: {
 }) {
   const { entityId, providerId } = options;
 
-  const providerDevice = useProviderDevice(entityId);
+  const providerEntity = useProviderEntityModel(entityId);
   const scopedEntity = parseProviderScopedId(entityId);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId =
-    providerId ?? providerDevice?.providerId ?? scopedEntity?.providerId ?? currentProviderId;
+    providerId ?? providerEntity?.providerId ?? scopedEntity?.providerId ?? currentProviderId;
   const runtimeEntityId = resolvedProviderId ? getProviderNativeId(entityId) : null;
 
   return useMemo(

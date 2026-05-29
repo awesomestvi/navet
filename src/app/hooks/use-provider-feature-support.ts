@@ -1,8 +1,8 @@
-import {
-  getIntegrationProviderFeatureMatrix,
-  type IntegrationProviderFeature,
-  type IntegrationProviderFeatureMatrix,
-} from '@/app/services/integration-registry.service';
+import { getProviderFeatureMatrix } from '@navet/app/provider-runtime-registry';
+import type {
+  IntegrationProviderFeature,
+  IntegrationProviderFeatureMatrix,
+} from '@navet/app/provider-runtime-types';
 import { integrationStore } from '@/app/stores/integration-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
@@ -34,7 +34,7 @@ export function useProviderFeatureMatrix(
 ): IntegrationProviderFeatureMatrix {
   const authSession = useOptionalAuthSession();
   const resolvedProviderId = resolveCurrentProviderId(providerId, authSession?.providerId);
-  return getIntegrationProviderFeatureMatrix(resolvedProviderId);
+  return getProviderFeatureMatrix(resolvedProviderId);
 }
 
 export function useEntityProviderFeatureMatrix(
@@ -42,7 +42,7 @@ export function useEntityProviderFeatureMatrix(
 ): IntegrationProviderFeatureMatrix {
   const authSession = useOptionalAuthSession();
   const resolvedProviderId = resolveProviderIdForFeatureSupport(entityId, authSession?.providerId);
-  return getIntegrationProviderFeatureMatrix(resolvedProviderId);
+  return getProviderFeatureMatrix(resolvedProviderId);
 }
 
 export function useProviderFeature(

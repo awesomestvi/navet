@@ -195,7 +195,7 @@ export const esMessages = {
   'settings.system.providers.notConnected': 'No conectado en este dispositivo',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
-    'La compatibilidad con openHAB está prevista pero aún no está disponible.',
+    'openHAB se conecta mediante el flujo autónomo con URL.',
   'settings.system.providers.status.connected': 'Conectado',
   'settings.system.providers.status.connecting': 'Conectando',
   'settings.system.providers.status.reconnecting': 'Reconectando',

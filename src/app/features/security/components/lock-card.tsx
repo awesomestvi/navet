@@ -15,7 +15,7 @@ import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-sh
 import { getCardStateSurfaceStyleTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getEntityIconPillStyles } from '@/app/components/shared/theme/entity-icon-pill-styles';
 import { readNavetLockState } from '@/app/core/navet-device-state';
-import { useI18n, useProviderDevice, useServiceActionHandler, useTheme } from '@/app/hooks';
+import { useI18n, useProviderEntityModel, useServiceActionHandler, useTheme } from '@/app/hooks';
 import { integrationSecurityFeatureService } from '@/app/services/integration-security-feature.service';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
 
@@ -35,9 +35,13 @@ function resolveLockCardSize(_size: CardSize): 'small' {
 function isVehicleLockEntity(
   entityId: string,
   name: string,
-  attributes: Record<string, unknown> | undefined
+  presentation: 'vehicle' | 'standard' | undefined
 ) {
-  const haystack = `${entityId} ${name} ${String(attributes?.device_class ?? '')}`.toLowerCase();
+  if (presentation === 'vehicle') {
+    return true;
+  }
+
+  const haystack = `${entityId} ${name}`.toLowerCase();
 
   return [
     'car',
@@ -63,8 +67,8 @@ export const LockCard = memo(function LockCard({
   const [isLocked, setIsLocked] = useState(initialState);
   const [pendingTargetLocked, setPendingTargetLocked] = useState<boolean | null>(null);
   const [isPendingAction, setIsPendingAction] = useState(false);
-  const providerDevice = useProviderDevice(id);
-  const providerState = readNavetLockState(providerDevice);
+  const providerEntity = useProviderEntityModel(id);
+  const providerState = readNavetLockState(providerEntity);
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
 
@@ -92,9 +96,7 @@ export const LockCard = memo(function LockCard({
   const cardShell = getCardShellSurfaceTokens(theme);
   const securitySurface = getSecurityCardSurfaceTokens(theme);
   const resolvedSize = resolveLockCardSize(size);
-  const isVehicleLock = isVehicleLockEntity(id, name, {
-    device_class: providerState?.deviceClass,
-  });
+  const isVehicleLock = isVehicleLockEntity(id, name, providerState?.presentation);
   const displayIsLocked = pendingTargetLocked ?? isLocked;
   const IconComponent = isVehicleLock ? CarFront : displayIsLocked ? Lock : Unlock;
   const pendingLabel =

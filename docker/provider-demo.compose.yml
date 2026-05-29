@@ -1,0 +1,35 @@
+services:
+  navet:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NAVET_ENABLE_DEMO: "false"
+    image: navet:provider-demo
+    ports:
+      - "8080:80"
+    env_file:
+      - ../.env
+    volumes:
+      - navet-provider-demo-data:/data
+    restart: unless-stopped
+
+  openhab:
+    image: openhab/openhab:latest
+    ports:
+      - "8081:8080"
+    environment:
+      CRYPTO_POLICY: unlimited
+      EXTRA_JAVA_OPTS: -Duser.timezone=UTC
+      OPENHAB_HTTP_PORT: 8080
+    volumes:
+      - openhab-provider-demo-conf:/openhab/conf
+      - openhab-provider-demo-userdata:/openhab/userdata
+      - openhab-provider-demo-addons:/openhab/addons
+    restart: unless-stopped
+
+volumes:
+  navet-provider-demo-data:
+  openhab-provider-demo-conf:
+  openhab-provider-demo-userdata:
+  openhab-provider-demo-addons:

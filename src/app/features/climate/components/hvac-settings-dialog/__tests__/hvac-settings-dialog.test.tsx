@@ -11,8 +11,44 @@ const { serviceMock } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityCommand: async ({
+    type,
+    entityId,
+  }: {
+    type: 'turn_on' | 'turn_off';
+    entityId: string;
+  }) => {
+    const nativeEntityId = entityId.replace(/^[^:]+:/, '');
+    const domain = nativeEntityId.includes('.')
+      ? nativeEntityId.split('.', 1)[0] || 'homeassistant'
+      : 'homeassistant';
+    await serviceMock.callService(domain, type, {}, { entity_id: nativeEntityId });
+    return {
+      accepted: true,
+      requiresEventConfirmation: true,
+    };
+  },
+}));
+
+vi.mock('@/app/services/integration-service-call.service', () => ({
+  callIntegrationService: async ({
+    entityId,
+    domain,
+    service,
+    serviceData = {},
+  }: {
+    entityId?: string;
+    domain: string;
+    service: string;
+    serviceData?: Record<string, unknown>;
+  }) =>
+    await serviceMock.callService(
+      domain,
+      service,
+      serviceData,
+      entityId ? { entity_id: entityId } : {}
+    ),
 }));
 
 function renderDialog(overrides: Partial<HVACSettingsDialogProps> = {}) {
@@ -175,6 +211,35 @@ describe('HVACSettingsDialog', () => {
       'set_preset_mode',
       { preset_mode: 'sleep' },
       { entity_id: 'fan.hallway' }
+    );
+  });
+
+  it('runs script sibling controls through the generic command path', () => {
+    renderDialog({
+      siblingEntities: [
+        {
+          id: 'script.goodnight',
+          entity: {
+            entityId: 'script.goodnight',
+            state: 'off',
+            attributes: {
+              friendly_name: 'Good night',
+            },
+            lastChanged: '2026-05-17T00:00:00.000Z',
+            lastUpdated: '2026-05-17T00:00:00.000Z',
+          },
+        },
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^Controls$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Good night/i }));
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'script',
+      'turn_on',
+      {},
+      { entity_id: 'script.goodnight' }
     );
   });
 });

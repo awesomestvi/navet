@@ -1,4 +1,4 @@
-import type { NavetRoomDescriptor } from '@/app/core/navet';
+import type { NavetRoomDescriptor } from '@navet/app/internal/compat-models';
 import type { AllViewGrouping } from '@/app/features/dashboard';
 
 export interface MobileHeaderRoomReorderConfig {

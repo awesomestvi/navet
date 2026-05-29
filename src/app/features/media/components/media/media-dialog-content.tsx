@@ -98,7 +98,8 @@ export function MediaDialogContent({
     soundModeList,
   });
   const hasSpotifyControls =
-    featureMatrix.mediaControls && hasSpotifyPlaybackControls(entities, entityRegistry, entityId);
+    featureMatrix.mediaControls &&
+    hasSpotifyPlaybackControls(entities, entityRegistry, capabilities.canPlayMedia);
   const hasGroupingControls = supportsGrouping;
   const shouldRenderMediaTab =
     (hasMediaControls && (featureMatrix.mediaControls || featureMatrix.mediaBrowse)) ||

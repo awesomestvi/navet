@@ -1,5 +1,5 @@
+import type { NavetEntity } from '@navet/core/types';
 import type { DeviceCollection } from '@/app/types/device.types';
-import type { NavetDevice, NavetProviderSnapshot } from './navet';
 
 export function createEmptyDeviceCollection(): DeviceCollection {
   return {
@@ -23,6 +23,12 @@ export function createEmptyDeviceCollection(): DeviceCollection {
   };
 }
 
+type EntityStateRecord = Record<string, unknown>;
+
+function readEntityState(entity: NavetEntity): EntityStateRecord {
+  return entity.attributes && typeof entity.attributes === 'object' ? entity.attributes : {};
+}
+
 function readNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
@@ -40,43 +46,48 @@ function readStringArray(value: unknown): string[] | undefined {
   return strings.length > 0 ? strings : undefined;
 }
 
-function toBaseDevice(device: NavetDevice) {
+function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
   return {
-    id: device.canonicalId,
-    name: device.name,
-    room: device.room,
-    size: readString(device.state.size, 'small') as
+    id: entity.canonicalId,
+    name: entity.name,
+    room: entity.room ?? 'Unknown',
+    size: readString(state.size, 'small') as
       | 'small'
       | 'medium'
       | 'large'
       | 'extra-large'
       | 'medium-vertical',
-    providerId: device.providerId,
-    nativeId: device.nativeId,
-    canonicalId: device.canonicalId,
-    resources: device.resources
+    providerId: entity.providerId,
+    nativeId: entity.externalId,
+    canonicalId: entity.canonicalId,
+    resources: entity.resources
       ? {
-          primaryImage: device.resources.primary_image,
-          artwork: device.resources.media_artwork,
-          snapshot: device.resources.camera_snapshot,
-          stream: device.resources.camera_stream,
+          primaryImage: entity.resources.primary_image,
+          artwork: entity.resources.media_artwork,
+          snapshot: entity.resources.camera_snapshot,
+          stream: entity.resources.camera_stream,
         }
       : undefined,
   };
 }
 
-export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): DeviceCollection {
+function resolveEntityValue(entity: NavetEntity, state: EntityStateRecord) {
+  return 'value' in state ? state.value : entity.primaryState;
+}
+
+export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): DeviceCollection {
   const collection = createEmptyDeviceCollection();
 
-  for (const device of devices) {
-    const base = toBaseDevice(device);
-    const state = device.state;
+  for (const entity of entities) {
+    const state = readEntityState(entity);
+    const base = toBaseDevice(entity, state);
+    const value = resolveEntityValue(entity, state);
 
-    switch (device.kind) {
+    switch (entity.type) {
       case 'light':
         collection.lights.push({
           ...base,
-          state: state.value === 'on' || state.on === true,
+          state: value === 'on' || state.on === true,
           brightness: readNumber(state.brightnessPct, 0),
           temp: readNumber(state.colorTemperatureKelvin, 0),
         });
@@ -84,7 +95,7 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
       case 'fan':
         collection.fans.push({
           ...base,
-          state: state.value === 'on' || state.on === true,
+          state: value === 'on' || state.on === true,
           percentage: readNumber(state.percentage, 0),
           presetMode: typeof state.presetMode === 'string' ? state.presetMode : undefined,
           presetModes: readStringArray(state.presetModes),
@@ -93,7 +104,7 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
       case 'switch':
         collection.switches.push({
           ...base,
-          state: state.value === 'on' || state.on === true,
+          state: value === 'on' || state.on === true,
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           serviceDomain: typeof state.serviceDomain === 'string' ? state.serviceDomain : undefined,
           serviceAction: typeof state.serviceAction === 'string' ? state.serviceAction : undefined,
@@ -108,23 +119,26 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
       case 'helper':
         collection.helpers.push({
           ...base,
-          state: state.value === 'on' || state.on === true,
+          state: value === 'on' || state.on === true,
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           serviceDomain: typeof state.serviceDomain === 'string' ? state.serviceDomain : undefined,
           serviceAction: typeof state.serviceAction === 'string' ? state.serviceAction : undefined,
         });
         break;
       case 'sensor':
+      case 'binary_sensor':
+      case 'energy':
+      case 'unknown':
         collection.sensors.push({
           ...base,
           value:
-            typeof state.value === 'string'
-              ? state.value
-              : typeof state.value === 'number'
-                ? String(state.value)
-                : state.value === true
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : value === true
                   ? 'Detected'
-                  : state.value === false
+                  : value === false
                     ? 'Clear'
                     : '',
           unit: readString(state.unit, ''),
@@ -140,7 +154,28 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
             typeof state.status === 'string'
               ? (state.status as DeviceCollection['sensors'][number]['status'])
               : undefined,
-          lastUpdated: typeof state.lastUpdated === 'string' ? state.lastUpdated : undefined,
+          lastUpdated:
+            typeof state.lastUpdated === 'string'
+              ? state.lastUpdated
+              : typeof state.last_updated === 'string'
+                ? state.last_updated
+                : entity.lastUpdated,
+        });
+        break;
+      case 'grouped_sensor':
+        collection['grouped-sensors'].push({
+          ...base,
+          sensors: Array.isArray(state.sensors)
+            ? (state.sensors as DeviceCollection['grouped-sensors'][number]['sensors'])
+            : [],
+          accentColor:
+            state.accentColor === 'teal' ||
+            state.accentColor === 'blue' ||
+            state.accentColor === 'purple' ||
+            state.accentColor === 'amber' ||
+            state.accentColor === 'emerald'
+              ? state.accentColor
+              : undefined,
         });
         break;
       case 'climate':
@@ -162,20 +197,67 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
               : undefined,
         });
         break;
-      case 'media':
+      case 'weather':
+        collection.weather.push({
+          ...base,
+          temperature: readNumber(state.temperature, 0),
+          temperatureUnit:
+            state.temperatureUnit === 'celsius' || state.temperatureUnit === 'fahrenheit'
+              ? state.temperatureUnit
+              : undefined,
+          feelsLikeTemperature:
+            typeof state.feelsLikeTemperature === 'number' ? state.feelsLikeTemperature : undefined,
+          feelsLikeTemperatureUnit:
+            state.feelsLikeTemperatureUnit === 'celsius' ||
+            state.feelsLikeTemperatureUnit === 'fahrenheit'
+              ? state.feelsLikeTemperatureUnit
+              : undefined,
+          location: readString(state.location, base.room),
+          condition: readString(state.condition, ''),
+          humidity: readNumber(state.humidity, 0),
+          windSpeed: readNumber(state.windSpeed, 0),
+          windSpeedUnit: typeof state.windSpeedUnit === 'string' ? state.windSpeedUnit : undefined,
+          windGustSpeed: typeof state.windGustSpeed === 'number' ? state.windGustSpeed : undefined,
+          pressure: readNumber(state.pressure, 0),
+          pressureUnit: typeof state.pressureUnit === 'string' ? state.pressureUnit : undefined,
+          uvIndex: typeof state.uvIndex === 'number' ? state.uvIndex : undefined,
+          cloudCoverage: typeof state.cloudCoverage === 'number' ? state.cloudCoverage : undefined,
+          precipitation: readNumber(state.precipitation, 0),
+          precipitationUnit: readString(state.precipitationUnit, ''),
+          sunrise: readString(state.sunrise, ''),
+          sunset: readString(state.sunset, ''),
+          daylight: readString(state.daylight, ''),
+          rainForecast: readString(state.rainForecast, ''),
+          highTemp: readNumber(state.highTemp, 0),
+          highTempUnit:
+            state.highTempUnit === 'celsius' || state.highTempUnit === 'fahrenheit'
+              ? state.highTempUnit
+              : undefined,
+          lowTemp: readNumber(state.lowTemp, 0),
+          lowTempUnit:
+            state.lowTempUnit === 'celsius' || state.lowTempUnit === 'fahrenheit'
+              ? state.lowTempUnit
+              : undefined,
+          forecastMode:
+            state.forecastMode === 'weekly' || state.forecastMode === 'hourly'
+              ? state.forecastMode
+              : 'weekly',
+          forecast: Array.isArray(state.forecast)
+            ? (state.forecast as DeviceCollection['weather'][number]['forecast'])
+            : [],
+        });
+        break;
+      case 'media_player':
         collection.media.push({
           ...base,
-          title: readString(state.title, device.name),
+          title: readString(state.title, entity.name),
           artist: readString(state.artist, ''),
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
           source: typeof state.source === 'string' ? state.source : undefined,
           sourceList: readStringArray(state.sourceList),
           entityPicture: typeof state.entityPicture === 'string' ? state.entityPicture : undefined,
-          state:
-            state.value === 'playing' || state.value === 'paused' || state.value === 'idle'
-              ? state.value
-              : 'off',
+          state: value === 'playing' || value === 'paused' || value === 'idle' ? value : 'off',
           volume: readNumber(state.volume, 0),
           isMuted: state.isMuted === true,
           elapsedSeconds:
@@ -184,6 +266,10 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
             typeof state.durationSeconds === 'number' ? state.durationSeconds : undefined,
           positionUpdatedAt:
             typeof state.positionUpdatedAt === 'string' ? state.positionUpdatedAt : undefined,
+          mediaCapabilities:
+            state.mediaCapabilities && typeof state.mediaCapabilities === 'object'
+              ? (state.mediaCapabilities as DeviceCollection['media'][number]['mediaCapabilities'])
+              : undefined,
           supportsGrouping: state.supportsGrouping === true,
           supportsPreviousTrack: state.supportsPreviousTrack !== false,
           supportsNextTrack: state.supportsNextTrack !== false,
@@ -209,7 +295,7 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
       case 'lock':
         collection.locks.push({
           ...base,
-          state: state.value === 'locked' || state.locked === true,
+          state: value === 'locked' || state.locked === true,
         });
         break;
       case 'scene':
@@ -219,7 +305,7 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
         collection.persons.push({
           ...base,
           location: readString(state.location, ''),
-          state: state.value === 'home' ? 'home' : 'away',
+          state: value === 'home' ? 'home' : 'away',
           entityPicture: typeof state.entityPicture === 'string' ? state.entityPicture : undefined,
         });
         break;
@@ -245,13 +331,23 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
         collection.cameras.push({
           ...base,
           entityPicture: typeof state.entityPicture === 'string' ? state.entityPicture : undefined,
-          state: readString(state.value, ''),
+          state: readString(value, ''),
           supportedFeatures:
             typeof state.supportedFeatures === 'number' ? state.supportedFeatures : undefined,
           isStreamCapable: state.isStreamCapable === true,
           isStillImageOnly: state.isStillImageOnly === true,
-          lastChanged: typeof state.lastChanged === 'string' ? state.lastChanged : undefined,
-          lastUpdated: typeof state.lastUpdated === 'string' ? state.lastUpdated : undefined,
+          lastChanged:
+            typeof state.lastChanged === 'string'
+              ? state.lastChanged
+              : typeof state.last_changed === 'string'
+                ? state.last_changed
+                : undefined,
+          lastUpdated:
+            typeof state.lastUpdated === 'string'
+              ? state.lastUpdated
+              : typeof state.last_updated === 'string'
+                ? state.last_updated
+                : entity.lastUpdated,
           motionDetected: state.motionDetected === true,
           motionChangedAt:
             typeof state.motionChangedAt === 'string' ? state.motionChangedAt : undefined,
@@ -263,32 +359,4 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
   }
 
   return collection;
-}
-
-export function mapProviderSnapshotsToDeviceCollection(
-  snapshots: NavetProviderSnapshot[]
-): DeviceCollection {
-  return snapshots.reduce<DeviceCollection>((collection, snapshot) => {
-    const next = mapNavetDevicesToDeviceCollection(snapshot.devices);
-
-    collection.lights.push(...next.lights);
-    collection.fans.push(...next.fans);
-    collection.hvac.push(...next.hvac);
-    collection.climate.push(...next.climate);
-    collection.media.push(...next.media);
-    collection.weather.push(...next.weather);
-    collection.switches.push(...next.switches);
-    collection.helpers.push(...next.helpers);
-    collection.covers.push(...next.covers);
-    collection.locks.push(...next.locks);
-    collection.scenes.push(...next.scenes);
-    collection.persons.push(...next.persons);
-    collection.sensors.push(...next.sensors);
-    collection.vacuums.push(...next.vacuums);
-    collection.calendars.push(...next.calendars);
-    collection.cameras.push(...next.cameras);
-    collection['grouped-sensors'].push(...next['grouped-sensors']);
-
-    return collection;
-  }, createEmptyDeviceCollection());
 }

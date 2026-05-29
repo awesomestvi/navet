@@ -25,6 +25,22 @@
     /* Paths */
     "paths": {
       "@/*": ["./src/*"],
+      "@navet/core": ["./packages/core/src/index.ts"],
+      "@navet/core/*": ["./packages/core/src/*"],
+      "@navet/ui": ["./packages/ui/src/index.ts"],
+      "@navet/ui/*": ["./packages/ui/src/*"],
+      "@navet/app": ["./packages/app/src/index.ts"],
+      "@navet/app/*": ["./packages/app/src/*"],
+      "@navet/provider-homeassistant": ["./packages/provider-homeassistant/src/index.ts"],
+      "@navet/provider-homeassistant/*": ["./packages/provider-homeassistant/src/*"],
+      "@navet/provider-homey": ["./packages/provider-homey/src/index.ts"],
+      "@navet/provider-homey/*": ["./packages/provider-homey/src/*"],
+      "@navet/provider-hubitat": ["./packages/provider-hubitat/src/index.ts"],
+      "@navet/provider-hubitat/*": ["./packages/provider-hubitat/src/*"],
+      "@navet/provider-openhab": ["./packages/provider-openhab/src/index.ts"],
+      "@navet/provider-openhab/*": ["./packages/provider-openhab/src/*"],
+      "@navet/provider-smartthings": ["./packages/provider-smartthings/src/index.ts"],
+      "@navet/provider-smartthings/*": ["./packages/provider-smartthings/src/*"],
       "@docker/*": ["./docker/*"],
       "@scripts/*": ["./scripts/*"]
     },
@@ -32,6 +48,6 @@
     /* Type declarations */
     "typeRoots": ["node_modules/@types", "src/types"]
   },
-  "include": ["src"],
+  "include": ["src", "packages"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

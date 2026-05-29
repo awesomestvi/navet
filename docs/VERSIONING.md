@@ -1,5 +1,8 @@
 # Versioning
 
+Maintainer reference. This file describes Navet's release line and versioning policy rather than
+normal product usage.
+
 Navet currently uses pre-`1.0` semantic versioning.
 
 ## Current Line

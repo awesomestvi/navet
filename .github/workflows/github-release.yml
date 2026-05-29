@@ -14,7 +14,11 @@ permissions:
   contents: write
 
 jobs:
+  provider-platform:
+    uses: ./.github/workflows/provider-platform-validation.yml
+
   release:
+    needs: provider-platform
     runs-on: ubuntu-latest
 
     steps:

@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { memo, useState } from 'react';
 import { BaseCard } from '@/app/components/primitives';
@@ -16,7 +17,6 @@ import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { TinyCardWatermark } from '@/app/components/shared/tiny-card-watermark';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { IntegrationProviderId } from '@/app/types/provider';
 
 interface SceneCardProps {
@@ -59,16 +59,9 @@ export const SceneCard = memo(function SceneCard({
     }
 
     setIsActivating(true);
-    void runAction(
-      () =>
-        dispatchEntityAction({
-          providerId,
-          entityId: id,
-          domain: 'scene',
-          service: 'turn_on',
-        }),
-      t('scene.activateFailed')
-    ).finally(() => {
+    void runAction(async () => {
+      await dispatchEntityCommand({ type: 'turn_on', entityId: id }, providerId);
+    }, t('scene.activateFailed')).finally(() => {
       setIsActivating(false);
     });
   };

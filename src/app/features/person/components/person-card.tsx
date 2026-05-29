@@ -5,7 +5,7 @@ import { BaseCard } from '@/app/components/primitives';
 import { type CardSize, getStandardCardPadding } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { readNavetPersonState } from '@/app/core/navet-device-state';
-import { useI18n, useProviderDevice, useProviderResource, useTheme } from '@/app/hooks';
+import { useI18n, useProviderEntityModel, useProviderResource, useTheme } from '@/app/hooks';
 import { getPersonCardSurfaceTokens } from './person-card-surface-tokens';
 
 interface PersonCardProps {
@@ -70,27 +70,27 @@ export const PersonCard = memo(function PersonCard({
   const { t } = useI18n();
   const { theme, colors } = useTheme();
   const cardShell = getCardShellSurfaceTokens(theme);
-  const providerDevice = useProviderDevice(id);
-  const providerState = readNavetPersonState(providerDevice);
+  const providerEntity = useProviderEntityModel(id);
+  const providerState = readNavetPersonState(providerEntity);
   const liveState: 'home' | 'away' =
     providerState?.value === 'home' ? 'home' : providerState?.value === 'away' ? 'away' : state;
   const fallbackPicture =
     typeof providerState?.entityPicture === 'string' ? providerState.entityPicture : entityPicture;
   const pictureRequestKey = [
-    providerDevice?.resources?.primary_image?.path,
+    providerEntity?.resources?.primary_image?.path,
     fallbackPicture,
-    providerDevice?.providerId,
+    providerEntity?.providerId,
   ]
     .filter(Boolean)
     .join('::');
   const primaryImageResource = useProviderResource({
     deviceId: id,
     kind: 'primary_image',
-    attrs: providerDevice?.resources?.primary_image?.path
-      ? { entity_picture: providerDevice.resources.primary_image.path }
+    attrs: providerEntity?.resources?.primary_image?.path
+      ? { entity_picture: providerEntity.resources.primary_image.path }
       : undefined,
     fallbackPicture,
-    providerId: providerDevice?.providerId,
+    providerId: providerEntity?.providerId,
     requestKey: pictureRequestKey,
   });
   const batteryLevel =

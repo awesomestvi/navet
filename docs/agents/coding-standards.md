@@ -69,4 +69,4 @@ These rules apply to all code written for Navet.
 
 - UI and theming specifics live in [../../design-system/UI-GUIDELINES.md](../../design-system/UI-GUIDELINES.md).
 - Storybook-specific authoring rules live in [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md).
-- Repo structure and key files live in [project-map.md](project-map.md).
+- Repo structure and active architecture direction live in [architecture.md](architecture.md).

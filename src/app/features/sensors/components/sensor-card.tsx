@@ -8,7 +8,7 @@ import {
 } from '@/app/components/shared/card-size-selector';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { readNavetSensorState } from '@/app/core/navet-device-state';
-import { useI18n, useProviderDevice, useTheme } from '@/app/hooks';
+import { useI18n, useProviderEntityModel, useTheme } from '@/app/hooks';
 import { inferSensorDisplayIcon } from '@/app/hooks/device-mappers';
 import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
@@ -57,8 +57,8 @@ export const InfoCard = memo(function InfoCard({
   const { theme } = useTheme();
   const { t } = useI18n();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const providerDevice = useProviderDevice(id);
-  const providerState = readNavetSensorState(providerDevice);
+  const providerEntity = useProviderEntityModel(id);
+  const providerState = readNavetSensorState(providerEntity);
   const liveDeviceClass = providerState?.deviceClass ?? deviceClass;
   const liveValue = typeof providerState?.value === 'string' ? providerState.value : value;
   const liveUnit = typeof providerState?.unit === 'string' ? providerState.unit : unit;

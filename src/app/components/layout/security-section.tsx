@@ -9,16 +9,7 @@ import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { AddEntityDialog, useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { SecurityCameraDashboard } from '@/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@/app/features/security/utils/security-camera-dashboard-model';
-import {
-  useCardState,
-  useDevices,
-  useEditMode,
-  useI18n,
-  useIntegrationStore,
-  useProviderEntitySnapshots,
-  useThemeMode,
-} from '@/app/hooks';
-import { integrationSelectors } from '@/app/stores/selectors';
+import { useCardState, useDevices, useEditMode, useI18n, useThemeMode } from '@/app/hooks';
 import { SectionCustomizeShell } from './section-customize-shell';
 
 export function SecuritySection() {
@@ -26,11 +17,6 @@ export function SecuritySection() {
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDevices();
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const entities = useProviderEntitySnapshots({
-    providerId: currentProviderId,
-    enabled: currentProviderId === 'home_assistant',
-  });
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
@@ -46,6 +32,7 @@ export function SecuritySection() {
       ...devices,
       cameras: devices.cameras.filter((device) => !hiddenEntityIdSet.has(device.id)),
       locks: devices.locks.filter((device) => !hiddenEntityIdSet.has(device.id)),
+      sensors: devices.sensors,
     }),
     [devices, hiddenEntityIdSet]
   );
@@ -86,7 +73,7 @@ export function SecuritySection() {
     [hideEntity, t]
   );
   const { cardSizes, updateCardSize } = useCardState(devices);
-  const model = buildSecurityCameraDashboardModel(visibleDevices, entities);
+  const model = buildSecurityCameraDashboardModel(visibleDevices);
 
   if (devices.cameras.length === 0 && devices.locks.length === 0) {
     return (

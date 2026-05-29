@@ -1,3 +1,4 @@
+import type { NavetEntity } from '@navet/core/types';
 import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'react';
 import { CardErrorBoundary } from '@/app/components/shared/card-error-boundary';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
@@ -17,6 +18,7 @@ import { useI18n, useIntegrationStore } from '@/app/hooks';
 import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceMetric } from '@/app/types/device.types';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 
 interface DeviceData {
@@ -34,6 +36,7 @@ interface CardRendererOptions {
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
+type CardProviderId = IntegrationProviderId | undefined;
 
 const CalendarCard = lazy(async () => {
   const module = await import('@/app/features/calendar');
@@ -128,39 +131,48 @@ function readUnavailableState(device: DeviceData): string | undefined {
   return undefined;
 }
 
-function readProviderDeviceStateValue(
-  device: NonNullable<ReturnType<typeof resolveAvailabilityDevice>>
+function readProviderEntityStateValue(
+  entity: NonNullable<ReturnType<typeof resolveAvailabilityEntity>>
 ): string | undefined {
-  switch (device.kind) {
+  switch (entity.type) {
     case 'camera':
-      return readNavetCameraState(device)?.value;
+      return readNavetCameraState(entity)?.value;
     case 'climate':
     case 'hvac':
-      return readNavetClimateState(device)?.value;
+      return readNavetClimateState(entity)?.value;
     case 'cover':
-      return readNavetCoverState(device)?.value;
+      return readNavetCoverState(entity)?.value;
     case 'lock':
-      return readNavetLockState(device)?.value;
-    case 'media':
-      return readNavetMediaState(device)?.value;
+      return readNavetLockState(entity)?.value;
+    case 'media_player':
+      return readNavetMediaState(entity)?.value;
     case 'person':
-      return readNavetPersonState(device)?.value;
+      return readNavetPersonState(entity)?.value;
     case 'sensor':
-    case 'grouped-sensor':
-      return readNavetSensorState(device)?.value;
+    case 'binary_sensor':
+    case 'grouped_sensor':
+    case 'energy':
+    case 'unknown':
+      return readNavetSensorState(entity)?.value;
     default:
-      return typeof device.state?.value === 'string' ? device.state.value : undefined;
+      return typeof entity.attributes?.value === 'string'
+        ? entity.attributes.value
+        : typeof entity.primaryState === 'string'
+          ? entity.primaryState
+          : undefined;
   }
 }
 
-function resolveAvailabilityDevice(
+function resolveAvailabilityEntity(
   deviceId: string,
-  devicesByCanonicalId: ReturnType<typeof integrationSelectors.devicesByCanonicalId>,
+  providerEntitiesByCanonicalId: ReturnType<
+    typeof integrationSelectors.providerEntitiesByCanonicalId
+  >,
   currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
-) {
+): NavetEntity | null {
   return (
-    devicesByCanonicalId[deviceId] ??
-    devicesByCanonicalId[
+    providerEntitiesByCanonicalId[deviceId] ??
+    providerEntitiesByCanonicalId[
       parseProviderScopedId(deviceId)
         ? deviceId
         : createProviderScopedId(currentProviderId, deviceId)
@@ -180,7 +192,9 @@ function EntityAvailabilityFrame({
 }) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const shouldReducePaintEffects = effectsQuality !== 'high';
   const entityIds = useMemo(() => {
@@ -194,16 +208,16 @@ function EntityAvailabilityFrame({
   const entityStates = useMemo(
     () =>
       entityIds.map((entityId) => {
-        const providerDevice = resolveAvailabilityDevice(
+        const providerEntity = resolveAvailabilityEntity(
           entityId,
-          devicesByCanonicalId,
+          providerEntitiesByCanonicalId,
           currentProviderId
         );
-        return providerDevice
-          ? readProviderDeviceStateValue(providerDevice)
+        return providerEntity
+          ? readProviderEntityStateValue(providerEntity)
           : readUnavailableState(device);
       }),
-    [currentProviderId, device, devicesByCanonicalId, entityIds]
+    [currentProviderId, device, entityIds, providerEntitiesByCanonicalId]
   );
   const isUnavailable =
     entityIds.length > 0 &&
@@ -250,7 +264,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       initialState={device.state as boolean | undefined}
       initialBrightness={device.brightness as number | undefined}
       initialTemp={device.temp as number | undefined}
@@ -265,7 +279,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       initialState={device.state as boolean | undefined}
       initialPercentage={device.percentage as number | undefined}
       size={size}
@@ -279,7 +293,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       headerSubtitle={headerSubtitleOverride}
       initialTemp={(device.temperature ?? device.temp) as number | undefined}
       initialCurrentTemp={device.currentTemperature as number | undefined}
@@ -299,7 +313,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       headerSubtitle={headerSubtitleOverride}
       initialTemp={device.temperature as number | undefined}
       initialCurrentTemp={device.currentTemperature as number | undefined}
@@ -391,7 +405,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       size={size}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       initialState={device.state as boolean | undefined}
       entityType={device.entityType as string | undefined}
       serviceDomain={device.serviceDomain as string | undefined}
@@ -409,7 +423,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       size={size}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       initialState={device.state as boolean | undefined}
       entityType={device.entityType as string | undefined}
       serviceDomain={device.serviceDomain as string | undefined}
@@ -460,7 +474,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}
@@ -532,7 +546,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     <VacuumCard
       id={device.id as string}
       name={device.name as string}
-      providerId={device.providerId as 'home_assistant' | 'homey' | 'openhab' | undefined}
+      providerId={device.providerId as CardProviderId}
       room={device.room as string}
       status={device.status as VacuumStatus}
       battery={device.battery as number}

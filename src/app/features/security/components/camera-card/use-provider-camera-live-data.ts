@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import { readNavetCameraState } from '@/app/core/navet-device-state';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import {
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
 } from '@/app/hooks/use-provider-entity';
 import { useProviderHealth } from '@/app/hooks/use-provider-health';
 import type {
+  PlatformCameraCompanionState,
+  PlatformCameraLiveState,
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
@@ -18,24 +21,39 @@ function selectEmptyDeviceRecord() {
 }
 
 export interface ProviderCameraLiveData {
+  companionStates: PlatformCameraCompanionState[];
   connected: boolean;
   deviceEntities: Record<string, PlatformEntitySnapshot | undefined>;
-  isHomeAssistantProvider: boolean;
   liveEntity: PlatformEntitySnapshot | undefined;
+  liveState: PlatformCameraLiveState;
+}
+
+function isMotionCompanionEntity(
+  entityId: string,
+  entity: { attributes?: Record<string, unknown> } | undefined
+) {
+  const searchText = `${entityId} ${
+    typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : ''
+  }`.toLowerCase();
+
+  return (
+    entityId.startsWith('binary_sensor.') &&
+    ['motion', 'occupancy', 'presence', 'pir'].some((token) => searchText.includes(token))
+  );
 }
 
 export function useProviderCameraLiveData(
   entityId: string,
   deviceEntityIds: string[]
 ): ProviderCameraLiveData {
-  const providerDevice = useProviderDevice(entityId);
+  const providerEntity = useProviderEntityModel(entityId);
   const resolvedProviderId =
-    providerDevice?.providerId ?? parseProviderScopedId(entityId)?.providerId;
+    providerEntity?.providerId ?? parseProviderScopedId(entityId)?.providerId;
   const runtimeEntityId = useMemo(
     () => (resolvedProviderId ? getProviderNativeId(entityId) : null),
     [entityId, resolvedProviderId]
   );
-  const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
+  const providerState = readNavetCameraState(providerEntity);
   const providerHealth = useProviderHealth(resolvedProviderId ?? 'home_assistant');
   const liveEntity = useProviderEntitySnapshot(entityId);
   const deviceEntityRecord = useProviderEntitySnapshotRecord(deviceEntityIds, {
@@ -56,10 +74,43 @@ export function useProviderCameraLiveData(
     );
   }, [deviceEntityIds, deviceEntityRecord, runtimeEntityId]);
 
+  const liveState = useMemo<PlatformCameraLiveState>(() => {
+    return {
+      isStreamCapable: providerState?.isStreamCapable === true,
+      isStillImageOnly: providerState?.isStillImageOnly === true,
+      motionDetectionEnabled:
+        typeof providerState?.motionDetectionEnabled === 'boolean'
+          ? providerState.motionDetectionEnabled
+          : null,
+    };
+  }, [
+    providerState?.isStillImageOnly,
+    providerState?.isStreamCapable,
+    providerState?.motionDetectionEnabled,
+  ]);
+
+  const companionStates = useMemo<PlatformCameraCompanionState[]>(() => {
+    return Object.entries(deviceEntities).flatMap(([nativeEntityId, entity]) => {
+      if (!entity || !isMotionCompanionEntity(nativeEntityId, entity)) {
+        return [];
+      }
+
+      return [
+        {
+          entityId: nativeEntityId,
+          type: 'motion',
+          detected: entity.state === 'on' || entity.state === 'home' || entity.state === 'detected',
+          changedAt: entity.lastChanged ?? entity.lastUpdated ?? null,
+        },
+      ];
+    });
+  }, [deviceEntities]);
+
   return {
-    connected: isHomeAssistantProvider ? providerHealth.connected : false,
+    companionStates,
+    connected: providerHealth.connected,
     deviceEntities,
-    isHomeAssistantProvider,
     liveEntity,
+    liveState,
   };
 }

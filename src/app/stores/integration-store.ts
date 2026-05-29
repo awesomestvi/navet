@@ -1,25 +1,33 @@
-import { createStore } from 'zustand/vanilla';
+import {
+  mapProviderEntityToNavetDevice,
+  mapProviderRoomToNavetRoom,
+  mapProviderStateToCompatibilitySnapshot,
+} from '@navet/app/internal/compat-entity';
 import type {
   NavetDevice,
   NavetProviderRuntimeState,
-  NavetProviderSession,
   NavetProviderSnapshot,
   NavetRoom,
   NavetRoomDescriptor,
-} from '@/app/core/navet';
+} from '@navet/app/internal/compat-models';
 import {
-  buildHomeAssistantNavetRooms,
-  buildHomeyNavetRooms,
-  mapHomeAssistantEntitiesToNavetDevices,
-  mapHomeySnapshotToNavetDevices,
-} from '@/app/core/navet-mappers';
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+  buildHomeAssistantCompatibilitySnapshot,
+  buildHomeyCompatibilitySnapshot,
+} from '@navet/app/internal/compat-snapshot-builders';
+import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
+import type { NavetEntity, NavetEntityEvent, NavetProviderState } from '@navet/core/types';
+import {
+  createDashboardEntityView,
+  type DashboardEntityView,
+} from '@navet/ui/dashboard-entity-view';
+import { createStore } from 'zustand/vanilla';
+import type { NavetProviderSession } from '@/app/internal/compat';
 import type { ProviderHealth } from '@/app/platform/types';
 import { homeyService } from '@/app/services/homey.service';
-import { getIntegrationProviderContract } from '@/app/services/integration-registry.service';
 import type { IntegrationUser } from '@/app/types/integration-user';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
+import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@/app/types/provider';
+import { integrationSessionRuntime } from '@/auth/integration-session-runtime';
 import { type HomeAssistantStore, homeAssistantStore } from './home-assistant-store';
 
 export interface HomeyRuntimeSlice {
@@ -36,6 +44,9 @@ interface IntegrationRuntimeState {
   currentProviderId: IntegrationProviderId;
   providerSessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>;
   providerSnapshots: Partial<Record<IntegrationProviderId, NavetProviderSnapshot>>;
+  providerEntitiesByCanonicalId: Record<string, NavetEntity>;
+  providerEntityViewsByCanonicalId: Record<string, DashboardEntityView>;
+  providerEvents: NavetEntityEvent[];
   devicesByCanonicalId: Record<string, NavetDevice>;
   roomsByCanonicalId: Record<string, NavetRoom>;
   roomDescriptors: NavetRoomDescriptor[];
@@ -65,70 +76,120 @@ function getSafeHomeySnapshot() {
 function getProviderSessionsSnapshot(): Partial<
   Record<IntegrationProviderId, NavetProviderSession>
 > {
-  const snapshot = authSessionManager.getSnapshot();
+  const snapshot = integrationSessionRuntime.getSnapshot();
   const sessions = snapshot.sessions ?? {};
+  const sessionEntries = (Object.keys(sessions) as IntegrationProviderId[])
+    .map((providerId): [IntegrationProviderId, NavetProviderSession | null] => [
+      providerId,
+      getRegisteredProviderContract(providerId).bootstrapSession?.(sessions) ?? null,
+    ])
+    .filter((entry): entry is [IntegrationProviderId, NavetProviderSession] => entry[1] !== null);
 
-  return Object.fromEntries(
-    (Object.keys(sessions) as IntegrationProviderId[])
-      .map((providerId) => [
-        providerId,
-        getIntegrationProviderContract(providerId).bootstrapSession?.(sessions) ?? null,
-      ])
-      .filter((entry): entry is [IntegrationProviderId, NavetProviderSession] => Boolean(entry[1]))
-  ) as Partial<Record<IntegrationProviderId, NavetProviderSession>>;
+  return Object.fromEntries(sessionEntries) as Partial<
+    Record<IntegrationProviderId, NavetProviderSession>
+  >;
 }
 
 function resolveInitialCurrentProviderId(
   sessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>
 ): IntegrationProviderId {
-  const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey', 'openhab'];
+  const providerOrder = INTEGRATION_PROVIDER_IDS;
   return providerOrder.find((providerId) => sessions[providerId]) ?? 'home_assistant';
 }
 
-function buildProviderSnapshots(homeAssistantState: HomeAssistantStore): {
-  providerSnapshots: Partial<Record<IntegrationProviderId, NavetProviderSnapshot>>;
+function createEmptyProviderSnapshot(providerId: IntegrationProviderId): NavetProviderSnapshot {
+  return {
+    providerId,
+    connected: false,
+    devices: [],
+    rooms: [],
+  };
+}
+
+function buildCompatibilityProviderSnapshots(
+  homeAssistantState: HomeAssistantStore
+): Partial<Record<IntegrationProviderId, NavetProviderSnapshot>> {
+  const homeySnapshot = getSafeHomeySnapshot();
+
+  return {
+    home_assistant: buildHomeAssistantCompatibilitySnapshot({
+      connected: homeAssistantState.connected,
+      entities: homeAssistantState.entities,
+      areas: homeAssistantState.areas,
+      deviceRegistry: homeAssistantState.deviceRegistry,
+      entityRegistry: homeAssistantState.entityRegistry,
+    }),
+    homey: buildHomeyCompatibilitySnapshot(homeySnapshot),
+    openhab: createEmptyProviderSnapshot('openhab'),
+    hubitat: createEmptyProviderSnapshot('hubitat'),
+    smartthings: createEmptyProviderSnapshot('smartthings'),
+  };
+}
+
+function collectProviderStates(): Partial<Record<IntegrationProviderId, NavetProviderState>> {
+  return Object.fromEntries(
+    INTEGRATION_PROVIDER_IDS.flatMap((providerId) => {
+      try {
+        const contract = getRegisteredProviderContract(providerId);
+        if (typeof contract.getState === 'function') {
+          return [[providerId, contract.getState()] as const];
+        }
+      } catch {
+        // Some startup and unit-test paths still initialize the store before provider registrations.
+      }
+
+      return [];
+    })
+  ) as Partial<Record<IntegrationProviderId, NavetProviderState>>;
+}
+
+function collectProviderSnapshots(
+  homeAssistantState: HomeAssistantStore
+): Partial<Record<IntegrationProviderId, NavetProviderSnapshot>> {
+  const compatibilitySnapshots = buildCompatibilityProviderSnapshots(homeAssistantState);
+  const providerStates = collectProviderStates();
+
+  return Object.fromEntries(
+    INTEGRATION_PROVIDER_IDS.map((providerId) => {
+      return [
+        providerId,
+        providerStates[providerId]
+          ? mapProviderStateToCompatibilitySnapshot(providerStates[providerId])
+          : (compatibilitySnapshots[providerId] ?? createEmptyProviderSnapshot(providerId)),
+      ];
+    })
+  ) as Partial<Record<IntegrationProviderId, NavetProviderSnapshot>>;
+}
+
+function indexProviderState(
+  providerStates: Partial<Record<IntegrationProviderId, NavetProviderState>>,
+  providerSnapshots: Partial<Record<IntegrationProviderId, NavetProviderSnapshot>>
+): {
+  providerEntitiesByCanonicalId: Record<string, NavetEntity>;
+  providerEntityViewsByCanonicalId: Record<string, DashboardEntityView>;
   devicesByCanonicalId: Record<string, NavetDevice>;
   roomsByCanonicalId: Record<string, NavetRoom>;
 } {
-  const homeAssistantDevices = mapHomeAssistantEntitiesToNavetDevices({
-    entities: homeAssistantState.entities,
-    areas: homeAssistantState.areas,
-    deviceRegistry: homeAssistantState.deviceRegistry,
-    entityRegistry: homeAssistantState.entityRegistry,
-  });
-  const homeAssistantRooms = buildHomeAssistantNavetRooms({
-    entities: homeAssistantState.entities,
-    areas: homeAssistantState.areas,
-    deviceRegistry: homeAssistantState.deviceRegistry,
-    entityRegistry: homeAssistantState.entityRegistry,
-  });
-  const homeySnapshot = getSafeHomeySnapshot();
-  const homeyDevices = mapHomeySnapshotToNavetDevices(homeySnapshot);
-  const homeyRooms = buildHomeyNavetRooms(homeySnapshot);
-
-  const providerSnapshots: Partial<Record<IntegrationProviderId, NavetProviderSnapshot>> = {
-    home_assistant: {
-      providerId: 'home_assistant',
-      connected: homeAssistantState.connected,
-      devices: homeAssistantDevices,
-      rooms: homeAssistantRooms,
-    },
-    homey: {
-      providerId: 'homey',
-      connected: homeySnapshot.connected,
-      devices: homeyDevices,
-      rooms: homeyRooms,
-    },
-    openhab: {
-      providerId: 'openhab',
-      connected: false,
-      devices: [],
-      rooms: [],
-    },
-  };
-
+  const providerEntitiesByCanonicalId: Record<string, NavetEntity> = {};
+  const providerEntityViewsByCanonicalId: Record<string, DashboardEntityView> = {};
   const devicesByCanonicalId: Record<string, NavetDevice> = {};
   const roomsByCanonicalId: Record<string, NavetRoom> = {};
+
+  for (const providerState of Object.values(providerStates)) {
+    if (!providerState) {
+      continue;
+    }
+
+    for (const entity of providerState.entities) {
+      providerEntitiesByCanonicalId[entity.canonicalId] = entity;
+      providerEntityViewsByCanonicalId[entity.canonicalId] = createDashboardEntityView(entity);
+      devicesByCanonicalId[entity.canonicalId] = mapProviderEntityToNavetDevice(entity);
+    }
+
+    for (const room of providerState.rooms) {
+      roomsByCanonicalId[room.canonicalId] = mapProviderRoomToNavetRoom(room);
+    }
+  }
 
   for (const providerSnapshot of Object.values(providerSnapshots)) {
     if (!providerSnapshot) {
@@ -136,19 +197,107 @@ function buildProviderSnapshots(homeAssistantState: HomeAssistantStore): {
     }
 
     for (const device of providerSnapshot.devices) {
-      devicesByCanonicalId[device.canonicalId] = device;
+      if (!(device.canonicalId in devicesByCanonicalId)) {
+        devicesByCanonicalId[device.canonicalId] = device;
+      }
     }
 
     for (const room of providerSnapshot.rooms) {
-      roomsByCanonicalId[room.canonicalId] = room;
+      if (!(room.canonicalId in roomsByCanonicalId)) {
+        roomsByCanonicalId[room.canonicalId] = room;
+      }
     }
   }
 
   return {
-    providerSnapshots,
+    providerEntitiesByCanonicalId,
+    providerEntityViewsByCanonicalId,
     devicesByCanonicalId,
     roomsByCanonicalId,
   };
+}
+
+function buildProviderSnapshots(homeAssistantState: HomeAssistantStore): {
+  providerStates: Partial<Record<IntegrationProviderId, NavetProviderState>>;
+  providerSnapshots: Partial<Record<IntegrationProviderId, NavetProviderSnapshot>>;
+  providerEntitiesByCanonicalId: Record<string, NavetEntity>;
+  providerEntityViewsByCanonicalId: Record<string, DashboardEntityView>;
+  devicesByCanonicalId: Record<string, NavetDevice>;
+  roomsByCanonicalId: Record<string, NavetRoom>;
+} {
+  const providerStates = collectProviderStates();
+  const providerSnapshots = collectProviderSnapshots(homeAssistantState);
+  const {
+    providerEntitiesByCanonicalId,
+    providerEntityViewsByCanonicalId,
+    devicesByCanonicalId,
+    roomsByCanonicalId,
+  } = indexProviderState(providerStates, providerSnapshots);
+
+  return {
+    providerStates,
+    providerSnapshots,
+    providerEntitiesByCanonicalId,
+    providerEntityViewsByCanonicalId,
+    devicesByCanonicalId,
+    roomsByCanonicalId,
+  };
+}
+
+function filterProviderEntities(
+  entitiesByCanonicalId: Record<string, NavetEntity>,
+  providerId: IntegrationProviderId
+): Record<string, NavetEntity> {
+  return Object.fromEntries(
+    Object.entries(entitiesByCanonicalId).filter(([, entity]) => entity.providerId === providerId)
+  );
+}
+
+function collectProviderEntityEvents(
+  providerId: IntegrationProviderId,
+  previousEntitiesByCanonicalId: Record<string, NavetEntity>,
+  nextEntitiesByCanonicalId: Record<string, NavetEntity>
+): NavetEntityEvent[] {
+  const events: NavetEntityEvent[] = [];
+  const timestamp = new Date().toISOString();
+
+  for (const [entityId, entity] of Object.entries(nextEntitiesByCanonicalId)) {
+    const previousEntity = previousEntitiesByCanonicalId[entityId];
+
+    if (!previousEntity) {
+      events.push({
+        type: 'entity_added',
+        providerId,
+        entityId,
+        entity,
+        at: timestamp,
+      });
+      continue;
+    }
+
+    if (JSON.stringify(previousEntity) !== JSON.stringify(entity)) {
+      events.push({
+        type: 'entity_updated',
+        providerId,
+        entityId,
+        entity,
+        at: timestamp,
+      });
+    }
+  }
+
+  for (const entityId of Object.keys(previousEntitiesByCanonicalId)) {
+    if (!(entityId in nextEntitiesByCanonicalId)) {
+      events.push({
+        type: 'entity_removed',
+        providerId,
+        entityId,
+        at: timestamp,
+      });
+    }
+  }
+
+  return events;
 }
 
 function normalizeRoomName(name: string) {
@@ -192,13 +341,30 @@ function buildProviderRuntime(
       entitiesHydrated: false,
       registriesHydrated: false,
     }),
+    hubitat: createProviderRuntimeState('hubitat', {
+      connected: false,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: false,
+    }),
+    smartthings: createProviderRuntimeState('smartthings', {
+      connected: false,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: false,
+      registriesHydrated: false,
+    }),
   };
 }
 
 function buildRoomDescriptors(homeAssistantState: HomeAssistantStore): NavetRoomDescriptor[] {
   const descriptorMap = new Map<string, NavetRoomDescriptor>();
   const homeySnapshot = getSafeHomeySnapshot();
-  const { roomsByCanonicalId } = buildProviderSnapshots(homeAssistantState);
+  const { roomsByCanonicalId } = indexProviderState(
+    collectProviderStates(),
+    collectProviderSnapshots(homeAssistantState)
+  );
 
   const upsertRoomDescriptor = (
     name: string,
@@ -293,7 +459,7 @@ function getInitialProviderHealth(): Record<IntegrationProviderId, ProviderHealt
         connected: false,
         connecting: false,
         reconnecting: false,
-        implementationStatus: provider.id === 'openhab' ? 'planned' : 'implemented',
+        implementationStatus: getImplementationStatus(provider.id),
         lastError: null,
       },
     ])
@@ -332,57 +498,94 @@ function createProviderHealthFromHomey(
 function getImplementationStatus(
   providerId: IntegrationProviderId
 ): ProviderHealth['implementationStatus'] {
-  return providerId === 'openhab' ? 'planned' : 'implemented';
+  const implementedProviderIds = new Set<IntegrationProviderId>([
+    'home_assistant',
+    'homey',
+    'openhab',
+  ]);
+  return implementedProviderIds.has(providerId) ? 'implemented' : 'planned';
 }
 
 export const integrationStore = createStore<IntegrationStore>()((set) => {
   const syncHomeAssistantState = (state: HomeAssistantStore) => {
-    const { providerSnapshots, devicesByCanonicalId, roomsByCanonicalId } =
-      buildProviderSnapshots(state);
+    const {
+      providerSnapshots,
+      providerEntitiesByCanonicalId,
+      providerEntityViewsByCanonicalId,
+      devicesByCanonicalId,
+      roomsByCanonicalId,
+    } = buildProviderSnapshots(state);
     const providerRuntime = buildProviderRuntime(state);
     const roomDescriptors = buildRoomDescriptors(state);
 
-    set((current) => ({
-      ...current,
-      currentUser: current.currentUser ?? state.user,
-      providerSnapshots,
-      providerRuntime,
-      devicesByCanonicalId,
-      roomsByCanonicalId,
-      roomDescriptors,
-      providerHealth: {
-        ...current.providerHealth,
-        home_assistant: createProviderHealthFromHomeAssistant(
-          state,
-          getImplementationStatus('home_assistant')
-        ),
-      },
-    }));
+    set((current) => {
+      const providerEvents = collectProviderEntityEvents(
+        'home_assistant',
+        filterProviderEntities(current.providerEntitiesByCanonicalId, 'home_assistant'),
+        filterProviderEntities(providerEntitiesByCanonicalId, 'home_assistant')
+      );
+
+      return {
+        ...current,
+        currentUser: current.currentUser ?? state.user,
+        providerSnapshots,
+        providerEntitiesByCanonicalId,
+        providerEntityViewsByCanonicalId,
+        providerEvents: [...current.providerEvents, ...providerEvents].slice(-100),
+        providerRuntime,
+        devicesByCanonicalId,
+        roomsByCanonicalId,
+        roomDescriptors,
+        providerHealth: {
+          ...current.providerHealth,
+          home_assistant: createProviderHealthFromHomeAssistant(
+            state,
+            getImplementationStatus('home_assistant')
+          ),
+        },
+      };
+    });
   };
 
   const syncHomeyState = () => {
     const snapshot = getSafeHomeySnapshot();
     const homeAssistantState = homeAssistantStore.getState();
-    const { providerSnapshots, devicesByCanonicalId, roomsByCanonicalId } =
-      buildProviderSnapshots(homeAssistantState);
+    const {
+      providerSnapshots,
+      providerEntitiesByCanonicalId,
+      providerEntityViewsByCanonicalId,
+      devicesByCanonicalId,
+      roomsByCanonicalId,
+    } = buildProviderSnapshots(homeAssistantState);
     const providerRuntime = buildProviderRuntime(homeAssistantState);
     const roomDescriptors = buildRoomDescriptors(homeAssistantState);
 
-    set((current) => ({
-      ...current,
-      homey: {
-        connected: snapshot.connected,
-      },
-      providerSnapshots,
-      providerRuntime,
-      devicesByCanonicalId,
-      roomsByCanonicalId,
-      roomDescriptors,
-      providerHealth: {
-        ...current.providerHealth,
-        homey: createProviderHealthFromHomey(getImplementationStatus('homey')),
-      },
-    }));
+    set((current) => {
+      const providerEvents = collectProviderEntityEvents(
+        'homey',
+        filterProviderEntities(current.providerEntitiesByCanonicalId, 'homey'),
+        filterProviderEntities(providerEntitiesByCanonicalId, 'homey')
+      );
+
+      return {
+        ...current,
+        homey: {
+          connected: snapshot.connected,
+        },
+        providerSnapshots,
+        providerEntitiesByCanonicalId,
+        providerEntityViewsByCanonicalId,
+        providerEvents: [...current.providerEvents, ...providerEvents].slice(-100),
+        providerRuntime,
+        devicesByCanonicalId,
+        roomsByCanonicalId,
+        roomDescriptors,
+        providerHealth: {
+          ...current.providerHealth,
+          homey: createProviderHealthFromHomey(getImplementationStatus('homey')),
+        },
+      };
+    });
   };
 
   const currentHomeAssistantState = homeAssistantStore.getState();
@@ -415,6 +618,9 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     selectedProviderIds: ['home_assistant', 'homey'],
     providerSessions: initialProviderSessions,
     providerSnapshots: initialCanonicalState.providerSnapshots,
+    providerEntitiesByCanonicalId: initialCanonicalState.providerEntitiesByCanonicalId,
+    providerEntityViewsByCanonicalId: initialCanonicalState.providerEntityViewsByCanonicalId,
+    providerEvents: [],
     providerRuntime: initialProviderRuntime,
     devicesByCanonicalId: initialCanonicalState.devicesByCanonicalId,
     roomsByCanonicalId: initialCanonicalState.roomsByCanonicalId,

@@ -166,6 +166,22 @@ importers:
         specifier: ^4.1.6
         version: 4.1.6(@types/node@25.9.0)(@vitest/browser-playwright@4.1.6)(@vitest/coverage-v8@4.1.6)(jsdom@29.1.1)(vite@8.0.13(@types/node@25.9.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))
 
+  packages/app: {}
+
+  packages/core: {}
+
+  packages/provider-homeassistant: {}
+
+  packages/provider-homey: {}
+
+  packages/provider-hubitat: {}
+
+  packages/provider-openhab: {}
+
+  packages/provider-smartthings: {}
+
+  packages/ui: {}
+
 packages:
 
   '@adobe/css-tools@4.4.4':

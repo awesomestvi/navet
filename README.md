@@ -8,75 +8,39 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 [Storybook](https://awesomestvi.github.io/navet/storybook/) ·
 [Security notes](docs/PUBLIC_LAUNCH_SECURITY.md)
 
-Current release: `0.3.0`
+## What Navet Is
 
-## Summary
+Navet turns supported smart-home platforms into a dedicated control surface.
 
-Navet turns supported smart-home providers into a dedicated control surface. It is strongest on
-Home Assistant today, includes implemented Homey support through the standalone runtime path, and
-uses provider-scoped architecture rather than Home Assistant-first UI contracts.
+It currently supports:
 
-Current runtime surfaces:
+- Home Assistant across custom panel, add-on, and standalone modes
+- Homey through the standalone login flow
+- openHAB through the standalone URL-session flow
 
-- Home Assistant custom panel through HACS
-- Home Assistant add-on through Ingress
-- standalone Docker or hosted standalone app
-- localhost development
+Hubitat and SmartThings have package scaffolding in the repo, but they are not available runtime
+options yet.
 
-Current provider reality:
+## What You Get
 
-- Home Assistant: implemented and most mature
-- Homey: implemented through standalone OAuth-backed flows
-- openHAB: planned, not shipped
-
-## What Navet Includes
-
-- room-driven Home dashboard plus dedicated `energy`, `climate`, `security`, `lights`, `media`,
+- a room-driven Home dashboard plus dedicated `energy`, `climate`, `security`, `lights`, `media`,
   `tasks`, and `settings` sections
-- entity cards for common Home Assistant domains such as lights, switches, fans, climate, covers,
-  locks, cameras, media players, weather, calendars, people, sensors, scenes, and vacuums
-- dashboard editing with card ordering, resizing, locking, visibility, room assignment, and Home
-  overview layout control
-- custom widgets including info, RSS, photo frame, note, battery, UPS, energy now, button, and map
-- localization, theme selection, PWA install support, kiosk-friendly behavior, and shared
-  dashboard/profile persistence for Docker and add-on deployments
-
-## Architecture Direction
-
-Navet is a multi-provider frontend built around Navet-owned contracts and provider/runtime seams.
-
-The canonical architecture reference is
-[docs/technical/multi-backend-migration-guide.md](docs/technical/multi-backend-migration-guide.md).
-In current repo terms, shared work should build on:
-
-- `src/app/core/`
-- `src/app/platform/`
-- `src/app/stores/`
-- `src/app/hooks/`
-- `src/auth/`
-- `src/app/features/`
-
-Provider-specific behavior belongs primarily in:
-
-- `src/app/infrastructure/home-assistant/`
-- `src/app/services/`
-- `src/app/stores/home-assistant-store.ts`
-
-Current provider lifecycle and shared resource seams are centered in:
-
-- `src/app/services/integration-registry.service.ts`
-- `src/app/services/integration-bootstrap.service.ts`
-- `src/app/services/integration-resource.service.ts`
+- cards for lights, switches, fans, climate, covers, locks, cameras, media players, weather,
+  calendars, people, sensors, scenes, and vacuums
+- dashboard editing with ordering, resizing, locking, visibility, room assignment, and import or
+  export
+- custom widgets including info, RSS, photo, note, battery, UPS, energy-now, button, and map
+- themes, localization, PWA install support, and persistence for standalone and add-on deployments
 
 ## Install And Run
 
-### Home Assistant custom panel
+### Home Assistant Custom Panel
 
-This is the recommended Home Assistant-native path for Home Assistant OS and Supervised users.
+This is the recommended Home Assistant-native path.
 
 1. In HACS, add `https://github.com/awesomestvi/navet` as a custom repository with category
    `Integration`.
-2. Download `Navet`.
+2. Install `Navet`.
 3. Restart Home Assistant.
 4. Add the `Navet` integration from `Settings -> Devices & services`.
 5. Open Navet from the Home Assistant sidebar.
@@ -84,28 +48,27 @@ This is the recommended Home Assistant-native path for Home Assistant OS and Sup
 Behavior:
 
 - served by Home Assistant at `/navet`
-- uses the injected Home Assistant frontend session
+- uses the existing Home Assistant frontend session
 - does not show a separate Navet login screen
 
-### Home Assistant add-on
+### Home Assistant Add-on
 
-Use the add-on when you specifically want Navet hosted as a Home Assistant add-on with Ingress.
+Use the add-on when you want Navet packaged and managed inside Home Assistant through Ingress.
 
-1. Add the repository `https://github.com/awesomestvi/navet` to the Home Assistant add-on store.
+1. Add `https://github.com/awesomestvi/navet` to the Home Assistant add-on store.
 2. Install `Navet`.
-3. Optionally set `dashboard_config_url` to import an existing Navet dashboard config on first
-   launch.
-4. Start the add-on and open Navet from the sidebar through Ingress.
+3. Optionally set `dashboard_config_url` to preload a dashboard config on first launch.
+4. Start the add-on and open Navet from the sidebar.
 
 Behavior:
 
-- uses the existing Home Assistant frontend session through Ingress
+- uses the Home Assistant frontend session through Ingress
 - keeps the direct host port disabled by default
 - uses OAuth only when opened outside Ingress through an optional direct port
 
 ### Standalone Docker
 
-For standalone deployments, create a `docker-compose.yml`:
+For standalone deployments:
 
 ```yaml
 services:
@@ -128,15 +91,16 @@ Start it:
 docker compose up -d
 ```
 
-Open `http://localhost:8080`.
+Then open `http://localhost:8080`.
 
 Standalone behavior:
 
-- Home Assistant uses OAuth authorization-code login
-- Homey support is also entered from the standalone login flow
-- same-origin runtime endpoints store auth and shared dashboard profile state under `/data`
+- Home Assistant uses OAuth
+- Homey uses its own standalone OAuth flow
+- openHAB uses a URL-session flow
+- auth and profile state are stored through same-origin runtime endpoints under `/data`
 
-To enable Homey OAuth, add:
+To enable Homey login:
 
 ```yaml
 services:
@@ -146,20 +110,19 @@ services:
       NAVET_HOMEY_CLIENT_SECRET: your-athom-client-secret
 ```
 
-Set `NAVET_HOMEY_REDIRECT_URI` only when Navet cannot infer the public callback URL correctly from
-the incoming request path.
+Set `NAVET_HOMEY_REDIRECT_URI` only if Navet cannot infer the public callback URL correctly.
 
 ## Returning Users
 
-Navet no longer uses manual Home Assistant long-lived token entry in the normal app flow.
+Navet no longer relies on manual Home Assistant long-lived token entry in the normal app flow.
 
 Legacy browser auth entries such as `ha_auth_config`, `ha-dashboard-config`, and
-`navet-auth-config` are removed during auth initialization so stale values do not keep controlling
-runtime behavior.
+`navet-auth-config` are cleared during startup so stale values do not keep steering runtime
+behavior.
 
-Dashboard config is separate from authentication. If you want to restore an existing dashboard into
-a new browser or a fresh `/data` volume, use Navet's exported dashboard config and restore it on
-first launch with `dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
+Dashboard config is separate from authentication. To restore an existing dashboard into a new
+browser or a fresh `/data` volume, use an exported dashboard config together with
+`dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
 
 ## Development
 
@@ -177,9 +140,30 @@ pnpm dev
 
 Open the local Vite URL, usually `http://localhost:5173`.
 
-For local Home Assistant testing, enter the Home Assistant base URL in Navet and complete the OAuth
-flow. For Homey testing, use the Homey option from the same login screen and provide the required
-Homey OAuth environment configuration.
+For local testing:
+
+- Home Assistant: enter the Home Assistant base URL in Navet and complete OAuth
+- Homey: use the Homey option from the login screen with the required OAuth environment variables
+- openHAB: use the openHAB option from the login screen and provide the base URL
+
+## Repo Shape
+
+Navet now has real package surfaces:
+
+```text
+packages/
+  core/
+  ui/
+  provider-homeassistant/
+  provider-homey/
+  provider-openhab/
+  provider-hubitat/
+  provider-smartthings/
+  app/
+```
+
+The repo still contains `src/` implementation paths, but the package split is real and is the
+right mental model for contributors.
 
 ## Commands
 
@@ -188,6 +172,9 @@ Core commands:
 ```bash
 pnpm dev
 pnpm test
+pnpm test:tier1
+pnpm test:tier2
+pnpm test:tier3
 pnpm test:coverage
 pnpm storybook
 pnpm storybook:build
@@ -197,17 +184,23 @@ pnpm check:docker
 pnpm build:ha-panel
 ```
 
-Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default agent-run
-commands. See [docs/agents/commands.md](docs/agents/commands.md).
+Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default
+agent-run commands.
+
+For provider validation and the local openHAB demo workflow, see
+[docs/PROVIDER_RELEASE_VALIDATION.md](docs/PROVIDER_RELEASE_VALIDATION.md).
 
 ## Docs
 
-- [docs/README.md](docs/README.md)
-- [docs/technical/multi-backend-migration-guide.md](docs/technical/multi-backend-migration-guide.md)
-- [docs/technical/REACT_ZUSTAND.md](docs/technical/REACT_ZUSTAND.md)
+Start with [docs/README.md](docs/README.md).
+
+Useful entry points:
+
 - [docs/DOCKER_HOME_ASSISTANT_ADDON.md](docs/DOCKER_HOME_ASSISTANT_ADDON.md)
 - [docs/WIDGETS.md](docs/WIDGETS.md)
-- [docs/STORYBOOK_WORKFLOW.md](docs/STORYBOOK_WORKFLOW.md)
+- [docs/PUBLIC_LAUNCH_SECURITY.md](docs/PUBLIC_LAUNCH_SECURITY.md)
+- [docs/ROADMAP.md](docs/ROADMAP.md)
+- [docs/agents/architecture.md](docs/agents/architecture.md)
 
 ## Screenshots
 

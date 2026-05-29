@@ -1,52 +1,67 @@
-# Public Launch Security Checklist
+# Public Deployment Security
 
-Navet is a browser-executed smart-home control surface. Treat provider URLs, sessions, media
-resources, camera snapshots, RSS feeds, and imported dashboard data as sensitive.
+Use this checklist when Navet is reachable outside a private local network.
 
-## Release Gates
+Navet is a smart-home control surface. Treat provider sessions, camera and media URLs, imported
+dashboard data, and external feeds as sensitive.
 
-- run dependency and deployment security checks before public release
-- keep `pnpm typecheck` and `pnpm check` as user-run release gates per repo policy
-- do not publish builds that contain real provider tokens, private URLs, or bundled credentials
-- public demos must use `/demo` only and must not connect to live providers
-- serve public deployments behind HTTPS
+## Basic Rules
 
-## Auth And Session Rules
+- serve Navet behind HTTPS
+- do not ship real provider credentials in static assets, demo content, or exported configs
+- use least-privilege provider accounts where possible
+- keep public demos on `/demo` only
+- validate release and deployment changes before publishing
 
-- standalone runtime stores OAuth-backed session state behind same-origin endpoints, not in bundled
-  runtime config
-- do not reintroduce manual token-entry login paths
-- do not place access or refresh tokens in imported dashboard config, static assets, or public demo
-  content
-- prefer least-privilege provider users for shared dashboard devices
+## Authentication
 
-## Proxy Rules
+- standalone runtime stores session state behind same-origin endpoints, not in bundled config
+- do not reintroduce manual token-entry login flows
+- do not put access or refresh tokens into dashboard exports
+- do not expose provider secrets in public files or logs
 
-Current sensitive same-origin endpoints include:
+## Sensitive Runtime Endpoints
+
+Important same-origin endpoints include:
 
 - `/__navet_auth__/session`
 - `/__navet_profile__/default`
 - `/__navet_ha_proxy__/`
 - `/__navet_rss_proxy__`
 
-Rules:
+Keep them tightly scoped:
 
-- keep them scoped to the configured deployment and current provider/runtime behavior
-- do not turn them into general-purpose arbitrary fetch or redirect endpoints
-- keep URL validation and host restrictions in place
-- do not leak provider tokens through query strings
+- validate target URLs and hosts
+- avoid token leakage in query strings
+- prevent arbitrary proxying or redirects
+- keep resource rewriting and signing in place
 
-## Resource Rules
+## External Resources
 
-- camera, media, artwork, and entity-picture handling must go through shared URL and resource
-  resolution seams
-- imported URLs, RSS links, photo-frame URLs, map resources, and notification links must be
-  validated before use
-- keep fallback UI behavior when authenticated or signed resources fail
+Pay extra attention to:
 
-## Deployment Rules
+- camera snapshots and streams
+- media artwork and entity pictures
+- RSS feeds and links
+- imported photo URLs
+- map tiles and tracker resources
+- notification links
 
-- nginx security headers in Docker and add-on builds must stay aligned with the current runtime
-  behavior
-- add HSTS only at a guaranteed HTTPS terminator
-- do not weaken security constraints just to simplify localhost or LAN-only development
+If a resource can no longer be resolved safely, fail closed or fall back to a neutral placeholder.
+
+## Deployment Notes
+
+- keep nginx security headers aligned across Docker and add-on deployments
+- enable HSTS only at a real HTTPS terminator
+- do not weaken production security just to simplify localhost development
+
+## Release Gates
+
+Before a public release:
+
+- run the provider validation flow
+- run Docker validation with `pnpm check:docker`
+- keep `pnpm typecheck` and `pnpm check` as user-run gates per repo policy
+
+If a deployment change might weaken auth, proxying, or resource handling, treat that as a release
+blocker until reviewed.

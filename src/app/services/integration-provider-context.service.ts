@@ -1,10 +1,6 @@
 import { integrationStore } from '@/app/stores/integration-store';
-import type { IntegrationProviderId } from '@/app/types/provider';
+import { type IntegrationProviderId, isIntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
-
-function isIntegrationProviderId(value: string): value is IntegrationProviderId {
-  return value === 'home_assistant' || value === 'homey' || value === 'openhab';
-}
 
 export function getCurrentIntegrationProviderIdFromStore(): IntegrationProviderId {
   return integrationStore.getState().currentProviderId;

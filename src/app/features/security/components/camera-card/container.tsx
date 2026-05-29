@@ -10,13 +10,13 @@ import {
 import { readNavetCameraState } from '@/app/core/navet-device-state';
 import { usePlatformCameraPresentation } from '@/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useProviderCameraTopology } from '@/app/hooks';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import type {
   PlatformCameraStreamType,
   PlatformEntitySnapshot,
 } from '@/app/platform/provider-feature-models';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
+import { getCurrentCameraPanelHass } from '@/app/services/integration-camera-runtime.service';
 import { normalizeResourceUrl } from '@/app/services/integration-resource.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import {
@@ -46,25 +46,6 @@ import {
 import type { CameraCardProps } from './types';
 import { useProviderCameraLiveData } from './use-provider-camera-live-data';
 import { CameraCardView } from './view';
-
-function isMotionEntity(
-  entityId: string,
-  entity: { attributes?: Record<string, unknown> } | undefined
-) {
-  const deviceClass =
-    typeof entity?.attributes?.device_class === 'string' ? entity.attributes.device_class : '';
-  const searchText =
-    `${entityId} ${typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : ''}`.toLowerCase();
-
-  return (
-    deviceClass === 'motion' ||
-    deviceClass === 'occupancy' ||
-    searchText.includes('motion') ||
-    searchText.includes('occupancy') ||
-    searchText.includes('presence') ||
-    searchText.includes('pir')
-  );
-}
 
 function parseTimestamp(value: unknown): number | null {
   if (typeof value !== 'string' || value.length === 0) {
@@ -105,7 +86,7 @@ function canUseGo2RtcCameraCard() {
   return (
     typeof customElements !== 'undefined' &&
     Boolean(customElements.get('webrtc-camera')) &&
-    Boolean(homeAssistantService.getPanelHass())
+    Boolean(getCurrentCameraPanelHass())
   );
 }
 
@@ -182,13 +163,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   name,
   room,
   entityPicture: initialEntityPicture,
-  supportedFeatures: initialSupportedFeatures,
   isStreamCapable: initialIsStreamCapable,
   size,
   isEditMode,
 }: CameraCardProps) {
   const { runtime } = useAuthSession();
-  const providerDevice = useProviderDevice(id);
+  const providerEntity = useProviderEntityModel(id);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
@@ -204,7 +184,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const updateCameraGo2RtcDefaults = useSettingsStore(settingsSelectors.updateCameraGo2RtcDefaults);
   const updateCameraGo2RtcConfig = useSettingsStore(settingsSelectors.updateCameraGo2RtcConfig);
   const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
-  const { connected, deviceEntities, liveEntity } = useProviderCameraLiveData(id, deviceEntityIds);
+  const { companionStates, connected, deviceEntities, liveEntity, liveState } =
+    useProviderCameraLiveData(id, deviceEntityIds);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
@@ -217,7 +198,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const now = useCameraClock();
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const providerState = readNavetCameraState(providerDevice);
+  const providerState = readNavetCameraState(providerEntity);
   const liveEntityPicture =
     readImageUrl(liveAttrs?.entity_picture) ?? readImageUrl(liveAttrs?.entity_picture_local);
   const initialSnapshotUrl =
@@ -251,22 +232,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const isRunning = liveEntity
     ? liveEntity.state !== 'off' && !isUnavailable
     : Boolean(snapshotUrl);
-  const supportedFeatures =
-    typeof liveAttrs?.supported_features === 'number'
-      ? liveAttrs.supported_features
-      : typeof liveAttrs?.supported_features === 'string'
-        ? Number(liveAttrs.supported_features)
-        : (providerState?.supportedFeatures ?? initialSupportedFeatures);
   const isStreamCapable =
     hasGo2RtcFeed ||
     frontendStreamTypes.length > 0 ||
-    (typeof supportedFeatures === 'number' && Number.isFinite(supportedFeatures)
-      ? (supportedFeatures & 2) === 2
-      : (initialIsStreamCapable ?? false));
-  const motionDetectionEnabled =
-    typeof liveAttrs?.motion_detection_enabled === 'boolean'
-      ? liveAttrs.motion_detection_enabled
-      : null;
+    liveState.isStreamCapable ||
+    providerState?.isStreamCapable === true ||
+    (initialIsStreamCapable ?? false);
+  const motionDetectionEnabled = liveState.motionDetectionEnabled;
   const statusChangedAt =
     parseTimestamp(liveEntity?.lastChanged) ?? parseTimestamp(liveEntity?.lastUpdated);
   const hasSnapshot = Boolean(snapshotUrl);
@@ -427,24 +399,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       .filter((entry): entry is { id: string; entity: PlatformEntitySnapshot } => entry !== null);
   }, [deviceEntityIds, deviceEntities]);
 
-  const motionEntity = useMemo(() => {
-    for (const eid of deviceEntityIds) {
-      if (!eid.startsWith('binary_sensor.')) continue;
-      const entity = deviceEntities[eid];
-      if (entity && isMotionEntity(eid, entity)) {
-        return { id: eid, entity };
-      }
-    }
-    return null;
-  }, [deviceEntityIds, deviceEntities]);
-
-  const motionDetected =
-    motionEntity?.entity?.state === 'on' ||
-    motionEntity?.entity?.state === 'home' ||
-    motionEntity?.entity?.state === 'detected';
-  const motionChangedAt =
-    parseTimestamp(motionEntity?.entity?.lastChanged) ??
-    parseTimestamp(motionEntity?.entity?.lastUpdated);
+  const motionState = companionStates.find((state) => state.type === 'motion') ?? null;
+  const motionDetected = motionState?.detected ?? false;
+  const motionChangedAt = parseTimestamp(motionState?.changedAt);
 
   const handleRefresh = useCallback(() => {
     setFailedStreamTypes([]);

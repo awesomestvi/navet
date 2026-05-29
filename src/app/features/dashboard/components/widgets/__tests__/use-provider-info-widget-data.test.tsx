@@ -8,6 +8,43 @@ describe('useProviderInfoWidgetData', () => {
     integrationStore.setState({
       ...integrationStore.getState(),
       currentProviderId: 'homey',
+      providerEntitiesByCanonicalId: {
+        'homey:ups-1#measure_battery': {
+          id: 'homey:ups-1#measure_battery',
+          canonicalId: 'homey:ups-1#measure_battery',
+          providerId: 'homey',
+          externalId: 'ups-1#measure_battery',
+          type: 'sensor',
+          name: 'UPS Battery',
+          room: 'Office',
+          primaryState: '81',
+          availability: 'available',
+          capabilities: [],
+          attributes: {
+            value: '81',
+            unit: '%',
+            deviceClass: 'battery',
+            sourceDeviceId: 'ups-1',
+          },
+        },
+        'home_assistant:sensor.kitchen_temperature': {
+          id: 'home_assistant:sensor.kitchen_temperature',
+          canonicalId: 'home_assistant:sensor.kitchen_temperature',
+          providerId: 'home_assistant',
+          externalId: 'sensor.kitchen_temperature',
+          type: 'sensor',
+          name: 'Kitchen Temperature',
+          room: 'Kitchen',
+          primaryState: '22.1',
+          availability: 'available',
+          capabilities: [],
+          attributes: {
+            value: '22.1',
+            unit: 'C',
+            deviceClass: 'temperature',
+          },
+        },
+      },
       devicesByCanonicalId: {
         'homey:ups-1#measure_battery': {
           id: 'homey:ups-1#measure_battery',
@@ -69,10 +106,11 @@ describe('useProviderInfoWidgetData', () => {
     ]);
   });
 
-  it('still resolves legacy Home Assistant native ids from normalized provider data', () => {
+  it('resolves legacy Home Assistant native ids to canonical widget selections', () => {
     integrationStore.setState({
       ...integrationStore.getState(),
       currentProviderId: 'home_assistant',
+      providerEntitiesByCanonicalId: integrationStore.getState().providerEntitiesByCanonicalId,
       devicesByCanonicalId: integrationStore.getState().devicesByCanonicalId,
     });
 
@@ -85,7 +123,7 @@ describe('useProviderInfoWidgetData', () => {
 
     expect(result.current.currentSensors).toEqual([
       expect.objectContaining({
-        id: 'sensor.kitchen_temperature',
+        id: 'home_assistant:sensor.kitchen_temperature',
         label: 'Kitchen Temperature',
         value: '22.1',
         unit: 'C',

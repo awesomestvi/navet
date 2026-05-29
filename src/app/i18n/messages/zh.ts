@@ -528,7 +528,7 @@ export const zhMessages = {
   'settings.system.providers.makeActive': '设为当前',
   'settings.system.providers.notConnected': '此设备上未连接',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
-  'settings.system.providers.openhabLater': 'openHAB 支持已规划，但暂未提供。',
+  'settings.system.providers.openhabLater': 'openHAB 通过独立的 URL 流程连接。',
   'settings.system.providers.status.connected': '已连接',
   'settings.system.providers.status.connecting': '连接中',
   'settings.system.providers.status.reconnecting': '重新连接中',

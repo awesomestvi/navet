@@ -191,8 +191,7 @@ export const ptMessages = {
   'settings.system.providers.makeActive': 'Tornar ativo',
   'settings.system.providers.notConnected': 'Não conectado neste dispositivo',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
-  'settings.system.providers.openhabLater':
-    'O suporte ao openHAB está planejado, mas ainda não está disponível.',
+  'settings.system.providers.openhabLater': 'O openHAB se conecta pelo fluxo autônomo com URL.',
   'settings.system.providers.status.connected': 'Conectado',
   'settings.system.providers.status.connecting': 'Conectando',
   'settings.system.providers.status.reconnecting': 'Reconectando',

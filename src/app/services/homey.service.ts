@@ -1,5 +1,5 @@
+import type { IntegrationServiceTarget } from '@/app/types/integration-service';
 import type { HomeySnapshot } from '../types/homey';
-import type { IntegrationServiceTarget } from './integration-registry.service';
 
 export interface HomeyCapabilityCommand {
   deviceId: string;

@@ -1,21 +1,22 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { buttonEntityFixtures } from '@/test/fixtures/home-assistant/entities/button';
 import { sceneEntityFixtures } from '@/test/fixtures/home-assistant/entities/scene';
 import { renderWithProviders } from '@/test/render';
 import { ButtonWidget } from '../button-widget';
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: {
-    callService: vi.fn(),
-  },
+const { callIntegrationServiceMock } = vi.hoisted(() => ({
+  callIntegrationServiceMock: vi.fn(),
+}));
+
+vi.mock('@/app/services/integration-service-call.service', () => ({
+  callIntegrationService: callIntegrationServiceMock,
 }));
 
 describe('ButtonWidget', () => {
   beforeEach(() => {
-    vi.mocked(homeAssistantService.callService).mockReset();
-    vi.mocked(homeAssistantService.callService).mockResolvedValue(undefined);
+    callIntegrationServiceMock.mockReset();
+    callIntegrationServiceMock.mockResolvedValue(undefined);
   });
 
   it('runs the configured Home Assistant action without bubbling to the card container', async () => {
@@ -37,12 +38,12 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
 
     await waitFor(() => {
-      expect(homeAssistantService.callService).toHaveBeenCalledWith(
-        'scene',
-        'turn_on',
-        {},
-        { entity_id: sceneEntityFixtures.normal.entity_id }
-      );
+      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+        entityId: sceneEntityFixtures.normal.entity_id,
+        domain: 'scene',
+        service: 'turn_on',
+        serviceData: {},
+      });
     });
     expect(onCardClick).not.toHaveBeenCalled();
   });
@@ -63,12 +64,12 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Doorbell Chime' }));
 
     await waitFor(() => {
-      expect(homeAssistantService.callService).toHaveBeenCalledWith(
-        'button',
-        'press',
-        { volume: 'high' },
-        { entity_id: buttonEntityFixtures.normal.entity_id }
-      );
+      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+        entityId: buttonEntityFixtures.normal.entity_id,
+        domain: 'button',
+        service: 'press',
+        serviceData: { volume: 'high' },
+      });
     });
   });
 
@@ -86,7 +87,7 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Unsafe' }));
 
     await waitFor(() => {
-      expect(homeAssistantService.callService).not.toHaveBeenCalled();
+      expect(callIntegrationServiceMock).not.toHaveBeenCalled();
     });
   });
 

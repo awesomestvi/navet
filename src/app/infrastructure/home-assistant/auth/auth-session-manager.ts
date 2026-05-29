@@ -1,32 +1,21 @@
 import type { Auth } from 'home-assistant-js-websocket';
-import type { IntegrationProviderId } from '@/app/types/provider';
+import {
+  INTEGRATION_PROVIDER_IDS,
+  type IntegrationProviderId,
+  isIntegrationProviderId,
+} from '@/app/types/provider';
 import { haIngressAuth } from '@/auth/adapters/haIngressAuth';
 import { haPanelAuth } from '@/auth/adapters/haPanelAuth';
 import { homeyOAuthAuth } from '@/auth/adapters/homeyOAuthAuth';
+import { openhabUrlSessionAuth } from '@/auth/adapters/openhabUrlSessionAuth';
 import { standaloneOAuthAuth } from '@/auth/adapters/standaloneOAuthAuth';
+import type { AuthSessionSnapshot } from '@/auth/session-runtime-types';
 import type { AuthAdapter, AuthSession, AuthSessionMap } from '@/auth/types';
-import {
-  type NavetRuntimeKind,
-  type RuntimeAuthMode,
-  toLegacyAuthRuntime,
-} from '../runtime/runtime-context';
+import { toLegacyAuthRuntime } from '../runtime/runtime-context';
 import { getRuntimeContext } from '../runtime/runtime-detector';
 
 const STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
 const LAST_ACTIVE_PROVIDER_KEY = 'navet_active_provider';
-
-export interface AuthSessionSnapshot {
-  providerId: IntegrationProviderId;
-  runtime: NavetRuntimeKind;
-  authMode: RuntimeAuthMode;
-  haBaseUrl: string | null;
-  accessToken?: string;
-  expiresAt?: number;
-  userId?: string;
-  isAuthenticated: boolean;
-  sessions: AuthSessionMap;
-  authenticatedProviderIds: IntegrationProviderId[];
-}
 
 type AuthStateListener = (snapshot: AuthSessionSnapshot, session: AuthSession | null) => void;
 
@@ -38,6 +27,7 @@ const LEGACY_ADAPTERS: Record<ReturnType<typeof toLegacyAuthRuntime>, AuthAdapte
 
 const PROVIDER_ADAPTERS: Partial<Record<IntegrationProviderId, AuthAdapter>> = {
   homey: homeyOAuthAuth,
+  openhab: openhabUrlSessionAuth,
 };
 
 function readStoredActiveProviderId(): IntegrationProviderId | null {
@@ -46,7 +36,7 @@ function readStoredActiveProviderId(): IntegrationProviderId | null {
   }
 
   const value = window.localStorage.getItem(LAST_ACTIVE_PROVIDER_KEY);
-  return value === 'home_assistant' || value === 'homey' || value === 'openhab' ? value : null;
+  return value && isIntegrationProviderId(value) ? value : null;
 }
 
 function writeStoredActiveProviderId(providerId: IntegrationProviderId | null): void {
@@ -65,8 +55,7 @@ function writeStoredActiveProviderId(providerId: IntegrationProviderId | null): 
 function buildSnapshot(session: AuthSession | null, sessions: AuthSessionMap): AuthSessionSnapshot {
   const runtime = getRuntimeContext().kind;
   const authenticatedProviderIds = Object.keys(sessions).filter(
-    (providerId): providerId is IntegrationProviderId =>
-      providerId === 'home_assistant' || providerId === 'homey' || providerId === 'openhab'
+    (providerId): providerId is IntegrationProviderId => isIntegrationProviderId(providerId)
   );
 
   if (!session) {
@@ -164,8 +153,7 @@ export class AuthSessionManager {
       return this.activeProviderId;
     }
 
-    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey'];
-    return providerOrder.find((providerId) => this.sessions[providerId]) ?? null;
+    return INTEGRATION_PROVIDER_IDS.find((providerId) => this.sessions[providerId]) ?? null;
   }
 
   private updateSessions(
@@ -187,7 +175,7 @@ export class AuthSessionManager {
 
   async init(): Promise<AuthSessionSnapshot> {
     const legacyStoredSession = readStoredIntegrationSession();
-    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey'];
+    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey', 'openhab'];
     const discoveredSessions: AuthSessionMap = {};
 
     if (legacyStoredSession?.providerId === 'openhab') {

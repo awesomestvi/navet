@@ -1,13 +1,12 @@
+import {
+  getProviderRuntimeRegistration,
+  hasProviderFeature,
+} from '@navet/app/provider-runtime-registry';
 import type { ProviderCalendarFeatureService } from '@/app/platform/provider-feature-services';
 import {
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
-import {
-  getIntegrationProviderAdapter,
-  getIntegrationProviderCalendarFeatureService,
-  hasIntegrationProviderFeature,
-} from './integration-registry.service';
 
 function resolveCalendarProviderId(entityId: string) {
   return resolveIntegrationProviderId(entityId);
@@ -15,14 +14,17 @@ function resolveCalendarProviderId(entityId: string) {
 
 function getCalendarFeatureService(entityId: string) {
   const providerId = resolveCalendarProviderId(entityId);
-  const adapter = getIntegrationProviderAdapter(providerId);
-  if (!hasIntegrationProviderFeature(adapter, 'calendar')) {
+  if (!hasProviderFeature(providerId, 'calendar')) {
     throw new Error('Calendar events are not supported for the current integration yet');
+  }
+  const service = getProviderRuntimeRegistration(providerId).calendarFeatureService;
+  if (!service) {
+    throw new Error('Calendar support is not implemented yet for the current integration');
   }
 
   return {
     nativeEntityId: getNativeIntegrationEntityId(entityId),
-    service: getIntegrationProviderCalendarFeatureService(providerId),
+    service,
   };
 }
 

@@ -1,5 +1,5 @@
+import { homeAssistantEnergyFeatureService } from '@navet/provider-homeassistant/homeassistant-energy-feature.service';
 import { describe, expect, it, vi } from 'vitest';
-import { homeAssistantEnergyFeatureService } from '../home-assistant-energy-feature.service';
 
 describe('homeAssistantEnergyFeatureService', () => {
   it('maps Home Assistant energy prefs into a Navet energy source config', async () => {

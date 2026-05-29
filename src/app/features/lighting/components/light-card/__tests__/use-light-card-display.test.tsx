@@ -22,6 +22,7 @@ describe('useLightCardDisplay', () => {
           min_color_temp_kelvin: 2800,
           max_color_temp_kelvin: 5100,
         }),
+        supportsAdvancedLightControls: true,
       })
     );
 
@@ -39,6 +40,7 @@ describe('useLightCardDisplay', () => {
         size: 'small',
         initialTemp: 0,
         liveEntity: undefined,
+        supportsAdvancedLightControls: false,
       })
     );
 
@@ -53,6 +55,7 @@ describe('useLightCardDisplay', () => {
         size: 'extra-small',
         initialTemp: 0,
         liveEntity: undefined,
+        supportsAdvancedLightControls: false,
       })
     );
 
@@ -64,9 +67,10 @@ describe('useLightCardDisplay', () => {
       useLightCardDisplay({
         selectedIcon: '',
         size: 'small',
-        providerId: 'homey',
         initialTemp: 4600,
         liveEntity: undefined,
+        providerState: { colorTemperatureKelvin: 4600 },
+        supportsAdvancedLightControls: false,
       })
     );
 

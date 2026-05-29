@@ -1,26 +1,27 @@
+import {
+  getProviderRuntimeRegistration,
+  hasProviderFeature,
+} from '@navet/app/provider-runtime-registry';
 import type { ProviderNotificationFeatureService } from '@/app/platform/provider-feature-services';
 import {
   getCurrentIntegrationProviderIdFromStore,
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
-import {
-  getIntegrationProviderAdapter,
-  getIntegrationProviderNotificationFeatureService,
-  hasIntegrationProviderFeature,
-} from './integration-registry.service';
 
 function resolveNotificationProviderId(entityId?: string) {
   return resolveIntegrationProviderId(entityId);
 }
 
 function getNotificationFeatureService(providerId = getCurrentIntegrationProviderIdFromStore()) {
-  const adapter = getIntegrationProviderAdapter(providerId);
-  if (!hasIntegrationProviderFeature(adapter, 'notifications')) {
+  if (!hasProviderFeature(providerId, 'notifications')) {
     throw new Error('Notifications are not supported for the current integration yet');
   }
-
-  return getIntegrationProviderNotificationFeatureService(providerId);
+  const service = getProviderRuntimeRegistration(providerId).notificationFeatureService;
+  if (!service) {
+    throw new Error('Notifications are not implemented yet for the current integration');
+  }
+  return service;
 }
 
 export const integrationNotificationFeatureService: ProviderNotificationFeatureService = {
@@ -38,12 +39,13 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
   },
   installUpdate: (entityId) => {
     const providerId = resolveNotificationProviderId(entityId);
-    const adapter = getIntegrationProviderAdapter(providerId);
-    if (!hasIntegrationProviderFeature(adapter, 'notifications')) {
+    if (!hasProviderFeature(providerId, 'notifications')) {
       throw new Error('Update installation is not supported for the current integration yet');
     }
-
-    const service = getIntegrationProviderNotificationFeatureService(providerId);
+    const service = getProviderRuntimeRegistration(providerId).notificationFeatureService;
+    if (!service) {
+      throw new Error('Notifications are not implemented yet for the current integration');
+    }
     return service.installUpdate(getNativeIntegrationEntityId(entityId));
   },
   restartSystem: async () => {

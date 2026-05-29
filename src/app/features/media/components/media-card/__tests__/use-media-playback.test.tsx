@@ -2,8 +2,11 @@ import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHookWithProviders } from '@/test/render';
 
-const { dispatchEntityActionMock, runActionMock } = vi.hoisted(() => ({
-  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
+const { dispatchEntityCommandMock, runActionMock } = vi.hoisted(() => ({
+  dispatchEntityCommandMock: vi.fn().mockResolvedValue({
+    accepted: true,
+    requiresEventConfirmation: true,
+  }),
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
 }));
 
@@ -12,7 +15,7 @@ vi.mock('@/app/hooks', () => ({
 }));
 
 vi.mock('@/app/services/integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
+  dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
 import { useMediaPlayback } from '../use-media-playback';
@@ -40,10 +43,36 @@ describe('useMediaPlayback', () => {
 
     act(() => result.current.togglePlay());
 
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
       entityId: 'media_player.living_room',
-      domain: 'media_player',
-      service: 'media_play_pause',
+      type: 'play_pause',
+    });
+  });
+
+  it('emits previous and next track commands when supported', () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaPlayback({
+        entityId: 'media_player.living_room',
+        canPreviousTrack: true,
+        canNextTrack: true,
+        shuffleEnabled: false,
+        repeatMode: 'off',
+        t: (key) => key,
+      })
+    );
+
+    act(() => {
+      result.current.handlePrevious();
+      result.current.handleNext();
+    });
+
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(1, {
+      entityId: 'media_player.living_room',
+      type: 'previous_track',
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(2, {
+      entityId: 'media_player.living_room',
+      type: 'next_track',
     });
   });
 
@@ -62,20 +91,18 @@ describe('useMediaPlayback', () => {
     );
 
     act(() => result.current.cycleRepeat());
-    expect(dispatchEntityActionMock).toHaveBeenLastCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenLastCalledWith({
       entityId: 'media_player.living_room',
-      domain: 'media_player',
-      service: 'repeat_set',
-      serviceData: { repeat: 'all' },
+      type: 'set_repeat_mode',
+      repeatMode: 'all',
     });
 
     rerender({ repeatMode: 'all' });
     act(() => result.current.cycleRepeat());
-    expect(dispatchEntityActionMock).toHaveBeenLastCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenLastCalledWith({
       entityId: 'media_player.living_room',
-      domain: 'media_player',
-      service: 'repeat_set',
-      serviceData: { repeat: 'one' },
+      type: 'set_repeat_mode',
+      repeatMode: 'one',
     });
   });
 
@@ -93,11 +120,10 @@ describe('useMediaPlayback', () => {
 
     act(() => result.current.toggleShuffle());
 
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
       entityId: 'media_player.office',
-      domain: 'media_player',
-      service: 'shuffle_set',
-      serviceData: { shuffle: false },
+      type: 'set_shuffle',
+      shuffle: false,
     });
   });
 
@@ -137,7 +163,7 @@ describe('useMediaPlayback', () => {
       result.current.handleNext();
     });
 
-    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
+    expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
     expect(runActionMock).not.toHaveBeenCalled();
   });
 });

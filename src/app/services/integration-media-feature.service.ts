@@ -1,63 +1,80 @@
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { ProviderMediaFeatureService } from '@/app/platform/provider-feature-services';
 import {
   getCurrentIntegrationProviderIdFromStore,
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
-import { getIntegrationProviderMediaFeatureService } from './integration-registry.service';
 
 function resolveMediaProviderId(entityId: string) {
   return resolveIntegrationProviderId(entityId);
 }
 
+function getMediaFeatureService(providerId: ReturnType<typeof resolveMediaProviderId>) {
+  const service = getProviderRuntimeRegistration(providerId).mediaFeatureService;
+  if (!service) {
+    throw new Error('Media controls are not implemented yet for the current integration');
+  }
+  return service;
+}
+
 export const integrationMediaFeatureService: ProviderMediaFeatureService = {
   playMedia: async (entityId, media) =>
-    await getIntegrationProviderMediaFeatureService(resolveMediaProviderId(entityId)).playMedia(
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).playMedia(
       getNativeIntegrationEntityId(entityId),
       media
     ),
   browseMediaPlayer: async (entityId, media) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).browseMediaPlayer(getNativeIntegrationEntityId(entityId), media),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).browseMediaPlayer(
+      getNativeIntegrationEntityId(entityId),
+      media
+    ),
   searchMediaPlayer: async (entityId, query, media) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).searchMediaPlayer(getNativeIntegrationEntityId(entityId), query, media),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).searchMediaPlayer(
+      getNativeIntegrationEntityId(entityId),
+      query,
+      media
+    ),
   selectMediaPlayerSource: async (entityId, source) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).selectMediaPlayerSource(getNativeIntegrationEntityId(entityId), source),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).selectMediaPlayerSource(
+      getNativeIntegrationEntityId(entityId),
+      source
+    ),
   selectMediaPlayerSoundMode: async (entityId, soundMode) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).selectMediaPlayerSoundMode(getNativeIntegrationEntityId(entityId), soundMode),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).selectMediaPlayerSoundMode(
+      getNativeIntegrationEntityId(entityId),
+      soundMode
+    ),
   seekMediaPlayer: async (entityId, seekPosition) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).seekMediaPlayer(getNativeIntegrationEntityId(entityId), seekPosition),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).seekMediaPlayer(
+      getNativeIntegrationEntityId(entityId),
+      seekPosition
+    ),
   clearMediaPlayerPlaylist: async (entityId) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).clearMediaPlayerPlaylist(getNativeIntegrationEntityId(entityId)),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).clearMediaPlayerPlaylist(
+      getNativeIntegrationEntityId(entityId)
+    ),
   updateMediaPlayerPower: async (entityId, state) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).updateMediaPlayerPower(getNativeIntegrationEntityId(entityId), state),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).updateMediaPlayerPower(
+      getNativeIntegrationEntityId(entityId),
+      state
+    ),
   sendRemoteCommand: async (entityId, command) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).sendRemoteCommand(getNativeIntegrationEntityId(entityId), command),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).sendRemoteCommand(
+      getNativeIntegrationEntityId(entityId),
+      command
+    ),
   browseMediaSource: async (mediaContentId) =>
-    await getIntegrationProviderMediaFeatureService(
-      getCurrentIntegrationProviderIdFromStore()
-    ).browseMediaSource(mediaContentId),
+    await getMediaFeatureService(getCurrentIntegrationProviderIdFromStore()).browseMediaSource(
+      mediaContentId
+    ),
   resolveMediaSource: async (mediaContentId) =>
-    await getIntegrationProviderMediaFeatureService(
-      getCurrentIntegrationProviderIdFromStore()
-    ).resolveMediaSource(mediaContentId),
+    await getMediaFeatureService(getCurrentIntegrationProviderIdFromStore()).resolveMediaSource(
+      mediaContentId
+    ),
   fetchMediaThumbnailDataUrl: async (entityId, messageClient) =>
-    await getIntegrationProviderMediaFeatureService(
-      resolveMediaProviderId(entityId)
-    ).fetchMediaThumbnailDataUrl(getNativeIntegrationEntityId(entityId), messageClient),
+    await getMediaFeatureService(resolveMediaProviderId(entityId)).fetchMediaThumbnailDataUrl(
+      getNativeIntegrationEntityId(entityId),
+      messageClient
+    ),
 };

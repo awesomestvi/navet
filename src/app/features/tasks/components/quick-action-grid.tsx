@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { Clapperboard, Play } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Panel, Tag } from '@/app/components/primitives';
@@ -5,7 +6,6 @@ import { getDashboardCardFootprint } from '@/app/components/shared/card-size-sel
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { SwitchCard } from '@/app/features/lighting';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { QuickActionRoutine } from '../types';
 
 interface QuickActionGridProps {
@@ -59,12 +59,9 @@ function QuickActionCard({ action, shouldReduceMotion }: QuickActionCardProps) {
   const handleRun = () => {
     setIsRunning(true);
     void runAction(
-      () =>
-        dispatchEntityAction({
-          entityId: action.id,
-          domain: action.type,
-          service: 'turn_on',
-        }),
+      async () => {
+        await dispatchEntityCommand({ type: 'turn_on', entityId: action.id });
+      },
       t('tasks.quickActions.triggerFailed', { name: action.name })
     ).finally(() => {
       setIsRunning(false);

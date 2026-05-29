@@ -1,30 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { dispatchEntityActionMock, dispatchServiceActionMock, getConnectionMock } = vi.hoisted(
-  () => ({
-    dispatchEntityActionMock: vi.fn(),
-    dispatchServiceActionMock: vi.fn(),
-    getConnectionMock: vi.fn(),
-  })
-);
+const { callServiceMock, getConnectionMock } = vi.hoisted(() => ({
+  callServiceMock: vi.fn(),
+  getConnectionMock: vi.fn(),
+}));
 
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
+    callService: callServiceMock,
     getConnection: getConnectionMock,
   },
-}));
-
-vi.mock('../integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
-  dispatchServiceAction: dispatchServiceActionMock,
 }));
 
 import { integrationNotificationFeatureService } from '../integration-notification-feature.service';
 
 describe('integrationNotificationFeatureService', () => {
   beforeEach(() => {
-    dispatchEntityActionMock.mockReset();
-    dispatchServiceActionMock.mockReset();
+    callServiceMock.mockReset();
     getConnectionMock.mockReset();
   });
 
@@ -85,22 +77,21 @@ describe('integrationNotificationFeatureService', () => {
     await integrationNotificationFeatureService.installUpdate('update.router');
     await integrationNotificationFeatureService.restartSystem();
 
-    expect(dispatchServiceActionMock).toHaveBeenNthCalledWith(1, {
-      domain: 'persistent_notification',
-      service: 'dismiss',
-      serviceData: {
-        notification_id: 'disk',
-      },
-    });
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
-      entityId: 'update.router',
-      domain: 'update',
-      service: 'install',
-    });
-    expect(dispatchServiceActionMock).toHaveBeenNthCalledWith(2, {
-      domain: 'homeassistant',
-      service: 'restart',
-    });
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'persistent_notification',
+      'dismiss',
+      { notification_id: 'disk' },
+      undefined
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'update',
+      'install',
+      {},
+      { entity_id: 'update.router' }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(3, 'homeassistant', 'restart', {}, undefined);
   });
 
   it('rejects update installation for non-Home Assistant providers', () => {

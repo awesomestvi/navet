@@ -21,6 +21,34 @@ vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
 }));
 
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityAction: async ({
+    domain,
+    service,
+    serviceData = {},
+    entityId,
+  }: {
+    domain: string;
+    service: string;
+    serviceData?: Record<string, unknown>;
+    entityId: string;
+  }) => await serviceMock.callService(domain, service, serviceData, { entity_id: entityId }),
+  dispatchEntityCommand: async ({
+    type,
+    entityId,
+  }: {
+    type: 'start' | 'stop' | 'return_home';
+    entityId: string;
+  }) => {
+    const service = type === 'start' ? 'start' : type === 'stop' ? 'pause' : 'return_to_base';
+    await serviceMock.callService('vacuum', service, {}, { entity_id: entityId });
+    return {
+      accepted: true,
+      requiresEventConfirmation: true,
+    };
+  },
+}));
+
 import { useVacuumControl } from '../use-vacuum-control';
 
 describe('useVacuumControl', () => {

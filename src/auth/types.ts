@@ -1,14 +1,15 @@
 import type { Auth } from 'home-assistant-js-websocket';
-import type { RuntimeAuthMode } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
 import type { HomeyCloudHomey, HomeySnapshot } from '@/app/types/homey';
 import type { IntegrationUser } from '@/app/types/integration-user';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import type { AuthRuntime } from './runtime';
+import type { AuthRuntime } from './runtime-types';
+
+export type AuthMode = 'ha_frontend_session' | 'ingress_session' | 'oauth';
 
 export interface BaseAuthSession {
   providerId: IntegrationProviderId;
   runtime: AuthRuntime;
-  authMode: RuntimeAuthMode;
+  authMode: AuthMode;
   haBaseUrl: string;
   hassUrl: string;
   auth?: Auth;
@@ -33,7 +34,20 @@ export interface OpenHABAuthSession extends BaseAuthSession {
   providerId: 'openhab';
 }
 
-export type AuthSession = HomeAssistantAuthSession | HomeyAuthSession | OpenHABAuthSession;
+export interface HubitatAuthSession extends BaseAuthSession {
+  providerId: 'hubitat';
+}
+
+export interface SmartThingsAuthSession extends BaseAuthSession {
+  providerId: 'smartthings';
+}
+
+export type AuthSession =
+  | HomeAssistantAuthSession
+  | HomeyAuthSession
+  | OpenHABAuthSession
+  | HubitatAuthSession
+  | SmartThingsAuthSession;
 
 export interface AuthAdapter {
   readonly providerId: IntegrationProviderId;
