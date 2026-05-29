@@ -29,14 +29,14 @@ describe('LoginPage', () => {
     window.__NAVET_CONFIG__ = {};
   });
 
-  it('renders a URL-only OAuth login form', () => {
+  it('starts with provider selection before showing provider-specific fields', () => {
     fetchDiscoveryMock.mockResolvedValue(null);
     chooseDiscoveryMock.mockReturnValue(null);
 
     renderWithProviders(<LoginPage />);
 
-    expect(screen.getByRole('heading', { name: 'Connect to Home Assistant' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Smart Home URL')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose your smart home' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Smart Home URL')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Homey' })).toBeInTheDocument();
     expect(screen.queryByLabelText(/token/i)).not.toBeInTheDocument();
   });
@@ -54,8 +54,12 @@ describe('LoginPage', () => {
     chooseDiscoveryMock.mockReturnValue('http://homeassistant.local:8123');
 
     renderWithProviders(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Home Assistant' }));
 
-    const urlInput = screen.getByLabelText('Smart Home URL') as HTMLInputElement;
+    expect(screen.queryByRole('button', { name: 'Homey' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'openHAB' })).not.toBeInTheDocument();
+
+    const urlInput = screen.getByLabelText('Home Assistant URL') as HTMLInputElement;
     await waitFor(() => expect(urlInput.value).toBe('http://homeassistant.local:8123'));
     expect(urlInput).toBeEnabled();
     expect(
@@ -71,8 +75,9 @@ describe('LoginPage', () => {
     loginMock.mockResolvedValue(undefined);
 
     renderWithProviders(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Home Assistant' }));
 
-    fireEvent.change(screen.getByLabelText('Smart Home URL'), {
+    fireEvent.change(screen.getByLabelText('Home Assistant URL'), {
       target: { value: 'https://ha.example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -90,13 +95,14 @@ describe('LoginPage', () => {
     chooseDiscoveryMock.mockReturnValue(null);
 
     renderWithProviders(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Home Assistant' }));
 
     await waitFor(() =>
       expect(
         screen.getByText('You’ll sign in on Home Assistant, then return to Navet.')
       ).toBeInTheDocument()
     );
-    expect(screen.getByLabelText('Smart Home URL')).toBeEnabled();
+    expect(screen.getByLabelText('Home Assistant URL')).toBeEnabled();
   });
 
   it('starts Homey OAuth without asking for URL or token input', async () => {

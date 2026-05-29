@@ -551,6 +551,31 @@ export const enMessages = {
   'lighting.feedback.updateSwitchFailed': 'Failed to update switch',
   'login.title': 'Navet',
   'login.subtitle': 'Connect to your smart home',
+  'login.providerChooser.title': 'Choose your smart home',
+  'login.providerChooser.description': 'Select the platform Navet should connect to.',
+  'login.connectProviderTitle': 'Connect to {provider}',
+  'login.providerUrlLabel': '{provider} URL',
+  'login.providerIntro.urlSession': 'Enter your {provider} URL to connect directly from Navet.',
+  'login.providerIntro.urlOauth': 'Enter your {provider} URL to continue with OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Continue with {provider} Cloud OAuth, then choose which {provider} Navet should use.',
+  'login.providers.home_assistant.detail':
+    'Use your Home Assistant URL, then finish sign-in with OAuth.',
+  'login.providers.homey.detail':
+    'Sign in with Homey Cloud, then choose the Homey Navet should use.',
+  'login.providers.openhab.detail': 'Connect straight to your openHAB server with its base URL.',
+  'login.providers.unavailable.detail':
+    'Provider scaffolding exists, but login is not available yet.',
+  'login.actions.continue': 'Continue',
+  'login.actions.back': 'Back',
+  'login.hint.cloudOauth':
+    'You’ll sign in with {signInProvider}, return to Navet, and pick a {provider} if your account has more than one.',
+  'login.hint.urlSession':
+    'Navet will connect directly to your {provider} using the base URL you provide.',
+  'login.hint.discoverySearching': 'Looking for Home Assistant...',
+  'login.hint.discoveryFound':
+    'Found Home Assistant on your network. You can edit the URL before continuing.',
+  'login.hint.oauthReturn': 'You’ll sign in on {provider}, then return to Navet.',
   'login.urlLabel': 'Smart Home URL',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Your smart home server address',

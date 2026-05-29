@@ -4,7 +4,7 @@ import { expect, within } from 'storybook/test';
 import { MediaCard } from '@/app/features/media';
 import { getStoryDocsDescription } from '@/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@/app/storybook/story-frames';
-import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
+import artworksOriginal from '@/assets/artworks-original.jpg';
 
 function MediaCardStory(args: Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>) {
   return (
@@ -31,7 +31,7 @@ const meta = {
     title: 'Smells Like Teen Spirit',
     artist: 'Nirvana',
     entityType: 'Speaker',
-    entityPicture: nevermindAlbumArt,
+    entityPicture: artworksOriginal,
     state: 'playing',
     volume: 42,
     isMuted: false,

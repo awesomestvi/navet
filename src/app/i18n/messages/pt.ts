@@ -558,6 +558,33 @@ export const ptMessages = {
   'lighting.feedback.updateSwitchFailed': 'Falha ao atualizar o interruptor',
   'login.title': 'Navet',
   'login.subtitle': 'Conecte-se à sua casa inteligente',
+  'login.providerChooser.title': 'Escolha sua casa inteligente',
+  'login.providerChooser.description': 'Selecione a plataforma à qual o Navet deve se conectar.',
+  'login.connectProviderTitle': 'Conectar a {provider}',
+  'login.providerUrlLabel': 'URL do {provider}',
+  'login.providerIntro.urlSession':
+    'Informe a URL do {provider} para conectar diretamente pelo Navet.',
+  'login.providerIntro.urlOauth': 'Informe a URL do {provider} para continuar com OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Continue com o OAuth em nuvem do {provider} e depois escolha qual {provider} o Navet deve usar.',
+  'login.providers.home_assistant.detail':
+    'Use a URL do Home Assistant e depois conclua o login com OAuth.',
+  'login.providers.homey.detail':
+    'Entre com o Homey Cloud e depois escolha qual Homey o Navet deve usar.',
+  'login.providers.openhab.detail':
+    'Conecte-se diretamente ao seu servidor openHAB usando a URL base.',
+  'login.providers.unavailable.detail':
+    'A estrutura do provedor existe, mas o login ainda não está disponível.',
+  'login.actions.continue': 'Continuar',
+  'login.actions.back': 'Voltar',
+  'login.hint.cloudOauth':
+    'Você entrará com {signInProvider}, voltará ao Navet e escolherá um {provider} se sua conta tiver mais de um.',
+  'login.hint.urlSession':
+    'O Navet se conectará diretamente ao {provider} usando a URL base informada.',
+  'login.hint.discoverySearching': 'Procurando Home Assistant...',
+  'login.hint.discoveryFound':
+    'Home Assistant encontrado na sua rede. Você pode editar a URL antes de continuar.',
+  'login.hint.oauthReturn': 'Você fará login no {provider} e depois voltará ao Navet.',
   'login.urlLabel': 'URL da casa inteligente',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Endereço do servidor da sua casa inteligente',

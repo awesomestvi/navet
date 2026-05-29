@@ -564,6 +564,32 @@ export const esMessages = {
   'lighting.feedback.updateSwitchFailed': 'No se pudo actualizar el interruptor',
   'login.title': 'Navet',
   'login.subtitle': 'Conecta tu hogar inteligente',
+  'login.providerChooser.title': 'Elige tu hogar inteligente',
+  'login.providerChooser.description': 'Selecciona la plataforma a la que Navet debe conectarse.',
+  'login.connectProviderTitle': 'Conectar a {provider}',
+  'login.providerUrlLabel': 'URL de {provider}',
+  'login.providerIntro.urlSession':
+    'Introduce la URL de {provider} para conectarte directamente desde Navet.',
+  'login.providerIntro.urlOauth': 'Introduce la URL de {provider} para continuar con OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Continúa con OAuth en la nube de {provider} y luego elige qué {provider} debe usar Navet.',
+  'login.providers.home_assistant.detail':
+    'Usa tu URL de Home Assistant y después completa el inicio de sesión con OAuth.',
+  'login.providers.homey.detail':
+    'Inicia sesión con Homey Cloud y luego elige el Homey que Navet debe usar.',
+  'login.providers.openhab.detail': 'Conéctate directamente a tu servidor openHAB con su URL base.',
+  'login.providers.unavailable.detail':
+    'La estructura del proveedor existe, pero el inicio de sesión aún no está disponible.',
+  'login.actions.continue': 'Continuar',
+  'login.actions.back': 'Volver',
+  'login.hint.cloudOauth':
+    'Iniciarás sesión con {signInProvider}, volverás a Navet y elegirás un {provider} si tu cuenta tiene más de uno.',
+  'login.hint.urlSession':
+    'Navet se conectará directamente a {provider} usando la URL base que indiques.',
+  'login.hint.discoverySearching': 'Buscando Home Assistant...',
+  'login.hint.discoveryFound':
+    'Se encontró Home Assistant en tu red. Puedes editar la URL antes de continuar.',
+  'login.hint.oauthReturn': 'Iniciarás sesión en {provider} y luego volverás a Navet.',
   'login.urlLabel': 'URL del hogar inteligente',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'La dirección del servidor de tu hogar inteligente',

@@ -565,6 +565,34 @@ export const frMessages = {
   'lighting.feedback.updateSwitchFailed': 'Impossible de mettre à jour l’interrupteur',
   'login.title': 'Navet',
   'login.subtitle': 'Connectez votre maison connectée',
+  'login.providerChooser.title': 'Choisissez votre maison connectée',
+  'login.providerChooser.description':
+    'Sélectionnez la plateforme à laquelle Navet doit se connecter.',
+  'login.connectProviderTitle': 'Connecter {provider}',
+  'login.providerUrlLabel': 'URL {provider}',
+  'login.providerIntro.urlSession':
+    'Saisissez l’URL de {provider} pour vous connecter directement depuis Navet.',
+  'login.providerIntro.urlOauth': 'Saisissez l’URL de {provider} pour continuer avec OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Continuez avec le cloud OAuth de {provider}, puis choisissez quel {provider} Navet doit utiliser.',
+  'login.providers.home_assistant.detail':
+    'Utilisez votre URL Home Assistant, puis terminez la connexion avec OAuth.',
+  'login.providers.homey.detail':
+    'Connectez-vous avec Homey Cloud, puis choisissez le Homey que Navet doit utiliser.',
+  'login.providers.openhab.detail':
+    'Connectez-vous directement à votre serveur openHAB avec son URL de base.',
+  'login.providers.unavailable.detail':
+    'Le squelette du provider existe, mais la connexion n’est pas encore disponible.',
+  'login.actions.continue': 'Continuer',
+  'login.actions.back': 'Retour',
+  'login.hint.cloudOauth':
+    'Vous vous connecterez avec {signInProvider}, reviendrez dans Navet, puis choisirez un {provider} si votre compte en contient plusieurs.',
+  'login.hint.urlSession':
+    'Navet se connectera directement à {provider} avec l’URL de base que vous fournissez.',
+  'login.hint.discoverySearching': 'Recherche de Home Assistant...',
+  'login.hint.discoveryFound':
+    'Home Assistant a été trouvé sur votre réseau. Vous pouvez modifier l’URL avant de continuer.',
+  'login.hint.oauthReturn': 'Vous vous connecterez sur {provider}, puis reviendrez dans Navet.',
   'login.urlLabel': 'URL de la maison connectée',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Adresse du serveur de votre maison connectée',

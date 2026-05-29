@@ -564,6 +564,33 @@ export const deMessages = {
   'lighting.feedback.updateSwitchFailed': 'Schalter konnte nicht aktualisiert werden',
   'login.title': 'Navet',
   'login.subtitle': 'Mit deinem Smart Home verbinden',
+  'login.providerChooser.title': 'Wähle dein Smart Home',
+  'login.providerChooser.description': 'Wähle die Plattform, mit der Navet sich verbinden soll.',
+  'login.connectProviderTitle': 'Mit {provider} verbinden',
+  'login.providerUrlLabel': '{provider}-URL',
+  'login.providerIntro.urlSession':
+    'Gib deine {provider}-URL ein, um dich direkt aus Navet zu verbinden.',
+  'login.providerIntro.urlOauth': 'Gib deine {provider}-URL ein, um mit OAuth fortzufahren.',
+  'login.providerIntro.cloudOauth':
+    'Fahre mit {provider} Cloud OAuth fort und wähle dann aus, welches {provider} Navet verwenden soll.',
+  'login.providers.home_assistant.detail':
+    'Verwende deine Home-Assistant-URL und schließe dann die Anmeldung mit OAuth ab.',
+  'login.providers.homey.detail':
+    'Melde dich mit Homey Cloud an und wähle dann das Homey aus, das Navet verwenden soll.',
+  'login.providers.openhab.detail':
+    'Verbinde dich direkt mit deinem openHAB-Server über seine Basis-URL.',
+  'login.providers.unavailable.detail':
+    'Das Provider-Grundgerüst ist vorhanden, aber die Anmeldung ist noch nicht verfügbar.',
+  'login.actions.continue': 'Weiter',
+  'login.actions.back': 'Zurück',
+  'login.hint.cloudOauth':
+    'Du meldest dich bei {signInProvider} an, kehrst zu Navet zurück und wählst ein {provider}, wenn dein Konto mehr als eines hat.',
+  'login.hint.urlSession':
+    'Navet verbindet sich direkt mit {provider} über die von dir angegebene Basis-URL.',
+  'login.hint.discoverySearching': 'Suche nach Home Assistant...',
+  'login.hint.discoveryFound':
+    'Home Assistant in deinem Netzwerk gefunden. Du kannst die URL vor dem Fortfahren bearbeiten.',
+  'login.hint.oauthReturn': 'Du meldest dich bei {provider} an und kehrst dann zu Navet zurück.',
   'login.urlLabel': 'Smart-Home-URL',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Die Adresse deines Smart-Home-Servers',

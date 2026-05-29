@@ -54,8 +54,8 @@ import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
+import artworksOriginal from '@/assets/artworks-original.jpg';
 import cameraSampleImage from '@/assets/camera-sample.webp';
-import nevermindAlbumArt from '@/assets/nevermind-album-art.jpg';
 
 type DemoSection = Section;
 
@@ -669,7 +669,7 @@ function ProductGrid() {
             title="Morning Mix"
             artist="Navet Radio"
             entityType="Speaker"
-            entityPicture={nevermindAlbumArt}
+            entityPicture={artworksOriginal}
             state="playing"
             volume={42}
             isMuted={false}
@@ -1308,7 +1308,7 @@ function RoomShot({ room }: { room: string }) {
             title="Aerial"
             artist="Navet Studio"
             entityType="TV"
-            entityPicture={nevermindAlbumArt}
+            entityPicture={artworksOriginal}
             state="playing"
             volume={42}
             isMuted={false}

@@ -786,6 +786,33 @@ export const itMessages = {
   'lighting.feedback.updateSwitchFailed': 'Impossibile aggiornare l’interruttore',
   'login.title': 'Connetti Home Assistant',
   'login.subtitle': 'Inserisci l’URL di Home Assistant per collegare Navet alla tua casa.',
+  'login.providerChooser.title': 'Scegli la tua smart home',
+  'login.providerChooser.description': 'Seleziona la piattaforma a cui Navet deve collegarsi.',
+  'login.connectProviderTitle': 'Connetti a {provider}',
+  'login.providerUrlLabel': 'URL {provider}',
+  'login.providerIntro.urlSession':
+    'Inserisci l’URL di {provider} per connetterti direttamente da Navet.',
+  'login.providerIntro.urlOauth': 'Inserisci l’URL di {provider} per continuare con OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Continua con il cloud OAuth di {provider}, poi scegli quale {provider} Navet deve usare.',
+  'login.providers.home_assistant.detail':
+    'Usa l’URL di Home Assistant, poi completa l’accesso con OAuth.',
+  'login.providers.homey.detail':
+    'Accedi con Homey Cloud, poi scegli quale Homey deve usare Navet.',
+  'login.providers.openhab.detail':
+    'Collegati direttamente al tuo server openHAB usando il suo URL di base.',
+  'login.providers.unavailable.detail':
+    'L’impalcatura del provider esiste, ma l’accesso non è ancora disponibile.',
+  'login.actions.continue': 'Continua',
+  'login.actions.back': 'Indietro',
+  'login.hint.cloudOauth':
+    'Accederai con {signInProvider}, tornerai in Navet e sceglierai un {provider} se il tuo account ne ha più di uno.',
+  'login.hint.urlSession':
+    'Navet si collegherà direttamente a {provider} usando l’URL di base che fornisci.',
+  'login.hint.discoverySearching': 'Ricerca di Home Assistant...',
+  'login.hint.discoveryFound':
+    'Home Assistant trovato nella tua rete. Puoi modificare l’URL prima di continuare.',
+  'login.hint.oauthReturn': 'Effettuerai l’accesso su {provider}, poi tornerai in Navet.',
   'login.urlLabel': 'URL Home Assistant',
   'login.urlPlaceholder': 'https://homeassistant.local:8123',
   'login.urlHelp': 'Usa l’indirizzo completo della tua istanza Home Assistant.',
