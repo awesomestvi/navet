@@ -15,7 +15,7 @@ import { EntityRoomSelector } from '@/app/components/shared/entity-room-selector
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { cn } from '@/app/components/ui/utils';
 import { useI18n } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
+import { integrationAdminService } from '@/app/services/integration-admin.service';
 
 interface CardDialogHeaderProps {
   title: string;
@@ -134,7 +134,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
       if (onTitleChange) {
         await onTitleChange(nextTitle);
       } else if (entityId) {
-        await homeAssistantService.updateEntityName(entityId, nextTitle);
+        await integrationAdminService.updateEntityName(entityId, nextTitle);
       }
       setDisplayTitle(nextTitle);
       if (entityId && !onTitleChange) {

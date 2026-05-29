@@ -1,10 +1,17 @@
 import type {
+  HaEnergyEntityMap,
+  HaEnergyEntityRegistryEntry,
+} from '@/app/features/energy/services/energy-ha-service';
+import type { EnergySourceConfig } from '@/app/features/energy/types/energy.types';
+import type {
   PlatformAutomationDetails,
   PlatformCalendarEvent,
   PlatformCalendarRequestOptions,
   PlatformCameraCapabilities,
   PlatformCameraStream,
   PlatformCameraStreamType,
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshotMap,
   PlatformMediaBrowseResult,
   PlatformMessageClient,
   PlatformNotificationRequestOptions,
@@ -92,11 +99,30 @@ export interface ProviderSecurityFeatureService {
 export interface ProviderAdminFeatureService {
   createRoom: (name: string) => Promise<PlatformRoomReference>;
   updateEntityRoom: (entityId: string, roomId: string | null) => Promise<void>;
+  updateEntityName: (entityId: string, name: string) => Promise<void>;
   deleteRoom: (roomId: string) => Promise<void>;
 }
 
 export interface ProviderHistoryFeatureService {
   getMessageClient: () => PlatformMessageClient | null;
+}
+
+export interface ProviderEnergyFeatureService {
+  getSourceConfig: (messageClient: PlatformMessageClient) => Promise<EnergySourceConfig>;
+  augmentSourceConfig: (
+    config: EnergySourceConfig,
+    entities: HaEnergyEntityMap,
+    entityRegistry?: HaEnergyEntityRegistryEntry[]
+  ) => EnergySourceConfig;
+}
+
+export interface ProviderEntityRuntimeService {
+  getEntitySnapshots: () => PlatformEntitySnapshotMap | null;
+  subscribeEntitySnapshots: (listener: () => void) => () => void;
+  getEntityRegistryEntries: () => PlatformEntityRegistryEntry[];
+  subscribeEntityRegistryEntries: (listener: () => void) => () => void;
+  getConfig: () => unknown | null;
+  subscribeConfig: (listener: () => void) => () => void;
 }
 
 export interface ProviderCalendarFeatureService {

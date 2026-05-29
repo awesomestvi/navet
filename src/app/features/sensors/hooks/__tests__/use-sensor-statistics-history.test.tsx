@@ -1,6 +1,6 @@
 import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import * as integrationHistoryServiceModule from '@/app/services/integration-history.service';
 import { renderHookWithProviders } from '@/test/render';
 import { useSensorStatisticsHistory } from '../use-sensor-statistics-history';
 
@@ -49,7 +49,9 @@ describe('useSensorStatisticsHistory', () => {
         unit_of_measurement: '°C',
       },
     });
-    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
+    vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
+      messageClient
+    );
 
     const { result } = renderHookWithProviders(() =>
       useSensorStatisticsHistory('sensor.kitchen_temperature')
@@ -68,7 +70,9 @@ describe('useSensorStatisticsHistory', () => {
       sendMessagePromise: vi.fn(),
     };
 
-    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
+    vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
+      messageClient
+    );
 
     useProviderEntitySnapshotMock
       .mockReturnValueOnce({
@@ -122,7 +126,9 @@ describe('useSensorStatisticsHistory', () => {
         unit_of_measurement: '°C',
       },
     });
-    vi.spyOn(integrationHistoryService, 'getMessageClient').mockReturnValue(messageClient);
+    vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
+      messageClient
+    );
 
     const { result } = renderHookWithProviders(() =>
       useSensorStatisticsHistory('homey:sensor.office_temperature')

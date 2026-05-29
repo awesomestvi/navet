@@ -1,12 +1,12 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderAdminFeatureService } from '@/app/platform/provider-feature-services';
 import { parsePlatformRoomReference } from '@/app/platform/provider-room-management';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { getCurrentIntegrationProviderIdFromStore } from './integration-provider-context.service';
 import { getIntegrationProviderAdminFeatureService } from './integration-registry.service';
 
 function getCurrentProviderId(): IntegrationProviderId {
-  return authSessionManager.getSnapshot().providerId;
+  return getCurrentIntegrationProviderIdFromStore();
 }
 
 function getProviderLabel(providerId: IntegrationProviderId): string {
@@ -37,6 +37,10 @@ export const integrationAdminService: ProviderAdminFeatureService = {
     }
 
     await getIntegrationProviderAdminFeatureService(providerId).updateEntityRoom(entityId, roomId);
+  },
+  updateEntityName: async (entityId, name) => {
+    const providerId = resolveEntityProviderId(entityId);
+    await getIntegrationProviderAdminFeatureService(providerId).updateEntityName(entityId, name);
   },
   deleteRoom: async (roomId) => {
     const parsedRoom = parsePlatformRoomReference(roomId);

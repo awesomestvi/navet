@@ -9,7 +9,7 @@ import type {
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import { resolveHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { getProviderNativeId } from '@/app/utils/provider-ids';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 const PLAY_MEDIA_FEATURE = 512;
@@ -120,7 +120,7 @@ export function hasSpotifyPlaybackControls(
   entityRegistry: PlatformEntityRegistryEntry[],
   entityId: string
 ) {
-  const currentEntityId = resolveHomeAssistantEntityId(entityId, 'home_assistant') ?? entityId;
+  const currentEntityId = getProviderNativeId(entityId);
   const currentEntity = entities?.[currentEntityId];
   return (
     getSpotifyTargets(entities, entityRegistry).length > 0 ||
@@ -136,7 +136,7 @@ export function MediaSpotifyPlayback({
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
   const { entities, entityRegistry } = useProviderMediaPlaybackData(entityId);
-  const currentEntityId = resolveHomeAssistantEntityId(entityId, 'home_assistant') ?? entityId;
+  const currentEntityId = getProviderNativeId(entityId);
   const currentEntity = entities?.[currentEntityId];
   const spotifyTargets = useMemo(
     () => getSpotifyTargets(entities, entityRegistry),

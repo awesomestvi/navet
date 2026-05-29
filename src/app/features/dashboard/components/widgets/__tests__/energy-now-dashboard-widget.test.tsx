@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import { integrationStore } from '@/app/stores/integration-store';
 import { renderWithProviders } from '@/test/render';
 import { EnergyNowDashboardWidget } from '../energy-now-dashboard-widget';
 
@@ -17,7 +17,7 @@ vi.mock('@/app/features/energy', () => ({
 
 describe('EnergyNowDashboardWidget', () => {
   beforeEach(() => {
-    authSessionManager.replaceSession(null);
+    integrationStore.getState().setCurrentProviderId('home_assistant');
     energyDashboardMock.useEnergyLoadHistory.mockReturnValue([]);
     energyDashboardMock.useProviderEnergyNow.mockReturnValue({
       currentLoadW: 420,
@@ -110,13 +110,7 @@ describe('EnergyNowDashboardWidget', () => {
   });
 
   it('shows a provider capability fallback when the active provider does not support energy', () => {
-    authSessionManager.replaceSession({
-      providerId: 'homey',
-      runtime: 'standalone-oauth',
-      authMode: 'oauth',
-      haBaseUrl: 'https://homey.example.com',
-      hassUrl: 'https://homey.example.com',
-    });
+    integrationStore.getState().setCurrentProviderId('homey');
 
     renderWithProviders(<EnergyNowDashboardWidget />);
 

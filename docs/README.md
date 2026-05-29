@@ -7,6 +7,8 @@ This directory indexes the active documentation for the current codebase.
 - [../README.md](../README.md): product overview, install paths, commands, and architecture summary
 - [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md):
   canonical architecture reference
+- [technical/multi-backend-migration-status.md](technical/multi-backend-migration-status.md):
+  current migration audit against the architecture guide
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md): state ownership and store/runtime flow
 - [DOCKER_HOME_ASSISTANT_ADDON.md](DOCKER_HOME_ASSISTANT_ADDON.md): deployment and runtime-mode guide
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md): Storybook workflow and story ownership rules
@@ -22,6 +24,7 @@ This directory indexes the active documentation for the current codebase.
 ## Architecture And Contributor Docs
 
 - [technical/multi-backend-migration-guide.md](technical/multi-backend-migration-guide.md)
+- [technical/multi-backend-migration-status.md](technical/multi-backend-migration-status.md)
 - [technical/REACT_ZUSTAND.md](technical/REACT_ZUSTAND.md)
 - [agents/architecture.md](agents/architecture.md)
 - [agents/project-map.md](agents/project-map.md)

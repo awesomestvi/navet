@@ -8,7 +8,7 @@ import {
   useProviderEntitySnapshot,
 } from '@/app/hooks';
 import { useCardSettingsDialog } from '@/app/hooks/use-card-settings-dialog';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
@@ -47,12 +47,11 @@ export function useLightCardController({
   const { isOpen, onOpen, onClose } = useCardSettingsDialog();
   const [selectedIcon, setSelectedIcon] = useState('');
   const [tintColor, setTintColor] = useState('');
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const scopedId = parseProviderScopedId(id);
   const nativeId = scopedId?.nativeId ?? id;
   const resolvedProviderId =
-    providerDevice?.providerId ??
-    providerId ??
-    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+    providerDevice?.providerId ?? providerId ?? scopedId?.providerId ?? currentProviderId;
   const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
 
   const isProviderConnected = useProviderConnectionState(resolvedProviderId);

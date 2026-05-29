@@ -1,10 +1,9 @@
-import { useCallback, useMemo } from 'react';
-import { shallow } from 'zustand/shallow';
-import type { HomeAssistantEntityRegistryEntry } from '@/app/services/home-assistant.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { resolveHomeAssistantEntityId as resolveProviderHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
-import { useHomeAssistant } from './use-home-assistant';
+import { useMemo } from 'react';
+import type { PlatformEntityRegistryEntry } from '@/app/platform/provider-feature-models';
+import type { IntegrationProviderId } from '@/app/types/provider';
+import { getProviderNativeId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { useIntegrationStore } from './use-integration-store';
+import { useProviderEntityRegistryEntries } from './use-provider-entity';
 
 const EMPTY_IDS: string[] = [];
 
@@ -26,38 +25,22 @@ export interface RegistryDeviceIdsSlice {
 
 export type ProviderDeviceTopology = RegistryDeviceIdsSlice;
 
-function registryDeviceIdsEqual(a: RegistryDeviceIdsSlice, b: RegistryDeviceIdsSlice): boolean {
-  if (a.deviceId !== b.deviceId) {
-    return false;
-  }
-
-  if (a.siblingIds.length !== b.siblingIds.length) {
-    return false;
-  }
-
-  for (let i = 0; i < a.siblingIds.length; i++) {
-    if (a.siblingIds[i] !== b.siblingIds[i]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function collectDeviceSiblingIds(
-  registry: HomeAssistantEntityRegistryEntry[],
+  registry: PlatformEntityRegistryEntry[],
   entityId: string,
-  includeEntity: (e: HomeAssistantEntityRegistryEntry) => boolean
+  includeEntity: (e: PlatformEntityRegistryEntry) => boolean
 ): RegistryDeviceIdsSlice {
-  const self = registry.find((entry) => entry.entity_id === entityId);
-  const deviceId = self?.device_id ?? null;
+  const self = registry.find((entry) => entry.entityId === entityId);
+  const deviceId = self?.deviceId ?? null;
   if (!deviceId) {
     return { deviceId: null, siblingIds: EMPTY_IDS };
   }
 
   const siblingIds = registry
-    .filter((e) => e.device_id === deviceId && e.entity_id !== entityId && includeEntity(e))
-    .map((e) => e.entity_id);
+    .filter(
+      (entry) => entry.deviceId === deviceId && entry.entityId !== entityId && includeEntity(entry)
+    )
+    .map((entry) => entry.entityId);
 
   if (siblingIds.length === 0) {
     return { deviceId, siblingIds: EMPTY_IDS };
@@ -67,25 +50,46 @@ function collectDeviceSiblingIds(
   return { deviceId, siblingIds };
 }
 
-function resolveHomeAssistantEntityId(entityId: string): string | null {
-  return resolveProviderHomeAssistantEntityId(entityId);
+function resolveProviderRegistryTarget(
+  entityId: string,
+  currentProviderId: IntegrationProviderId
+): {
+  providerId: IntegrationProviderId | null;
+  runtimeEntityId: string | null;
+} {
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return {
+      providerId: scopedId.providerId,
+      runtimeEntityId: scopedId.nativeId,
+    };
+  }
+
+  return {
+    providerId: currentProviderId,
+    runtimeEntityId: getProviderNativeId(entityId),
+  };
 }
 
 export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
-  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
-  const selector = useCallback(
-    (state: HomeAssistantStore) =>
-      homeAssistantEntityId
-        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (e) =>
-            HVAC_SIBLING_PATTERN.test(e.entity_id)
-          )
-        : { deviceId: null, siblingIds: EMPTY_IDS },
-    [homeAssistantEntityId]
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
+  const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(
+    entityId,
+    currentProviderId
   );
+  const registry = useProviderEntityRegistryEntries({
+    providerId: providerId ?? undefined,
+    enabled: Boolean(providerId && runtimeEntityId),
+  });
 
-  return useHomeAssistant(
-    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
-    registryDeviceIdsEqual
+  return useMemo(
+    () =>
+      runtimeEntityId
+        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+            HVAC_SIBLING_PATTERN.test(entry.entityId)
+          )
+        : selectEmptyRegistryDeviceIds(),
+    [registry, runtimeEntityId]
   );
 }
 
@@ -94,20 +98,24 @@ export function useProviderHvacTopology(entityId: string): ProviderDeviceTopolog
 }
 
 export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
-  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
-  const selector = useCallback(
-    (state: HomeAssistantStore) =>
-      homeAssistantEntityId
-        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (e) =>
-            e.entity_id.startsWith('switch.')
-          )
-        : { deviceId: null, siblingIds: EMPTY_IDS },
-    [homeAssistantEntityId]
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
+  const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(
+    entityId,
+    currentProviderId
   );
+  const registry = useProviderEntityRegistryEntries({
+    providerId: providerId ?? undefined,
+    enabled: Boolean(providerId && runtimeEntityId),
+  });
 
-  return useHomeAssistant(
-    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
-    registryDeviceIdsEqual
+  return useMemo(
+    () =>
+      runtimeEntityId
+        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+            entry.entityId.startsWith('switch.')
+          )
+        : selectEmptyRegistryDeviceIds(),
+    [registry, runtimeEntityId]
   );
 }
 
@@ -116,18 +124,22 @@ export function useProviderSwitchTopology(entityId: string): ProviderDeviceTopol
 }
 
 export function useCameraRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
-  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
-  const selector = useCallback(
-    (state: HomeAssistantStore) =>
-      homeAssistantEntityId
-        ? collectDeviceSiblingIds(state.entityRegistry, homeAssistantEntityId, (_e) => true)
-        : { deviceId: null, siblingIds: EMPTY_IDS },
-    [homeAssistantEntityId]
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
+  const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(
+    entityId,
+    currentProviderId
   );
+  const registry = useProviderEntityRegistryEntries({
+    providerId: providerId ?? undefined,
+    enabled: Boolean(providerId && runtimeEntityId),
+  });
 
-  return useHomeAssistant(
-    homeAssistantEntityId ? selector : selectEmptyRegistryDeviceIds,
-    registryDeviceIdsEqual
+  return useMemo(
+    () =>
+      runtimeEntityId
+        ? collectDeviceSiblingIds(registry, runtimeEntityId, () => true)
+        : selectEmptyRegistryDeviceIds(),
+    [registry, runtimeEntityId]
   );
 }
 
@@ -150,91 +162,41 @@ export interface EntityRoomRegistryContext {
 
 export type ProviderEntityRoomContext = EntityRoomRegistryContext;
 
-function entityRoomRegistryContextEqual(
-  a: EntityRoomRegistryContext,
-  b: EntityRoomRegistryContext
-): boolean {
-  if (a.deviceAreaId !== b.deviceAreaId) {
-    return false;
-  }
-
-  if (a.entry === b.entry) {
-    return true;
-  }
-
-  if (!a.entry || !b.entry) {
-    return a.entry === b.entry;
-  }
-
-  return (
-    a.entry.entity_id === b.entry.entity_id &&
-    a.entry.area_id === b.entry.area_id &&
-    a.entry.device_id === b.entry.device_id
-  );
-}
-
 export function useEntityRoomRegistryContext(entityId: string): EntityRoomRegistryContext {
-  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
-  const selector = useCallback(
-    (state: HomeAssistantStore): EntityRoomRegistryContext => {
-      if (!homeAssistantEntityId) {
-        return { entry: null, deviceAreaId: null };
-      }
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
+  const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(
+    entityId,
+    currentProviderId
+  );
+  const registry = useProviderEntityRegistryEntries({
+    providerId: providerId ?? undefined,
+    enabled: Boolean(providerId && runtimeEntityId),
+  });
 
-      const raw = state.entityRegistry.find((e) => e.entity_id === homeAssistantEntityId);
-      const entry = raw
+  return useMemo((): EntityRoomRegistryContext => {
+    if (!runtimeEntityId) {
+      return selectEmptyEntityRoomRegistryContext();
+    }
+
+    const raw = registry.find((entry) => entry.entityId === runtimeEntityId);
+    const siblingEntries = raw?.deviceId
+      ? registry.filter((entry) => entry.deviceId === raw.deviceId)
+      : [];
+    const deviceAreaId = siblingEntries.find((entry) => entry.areaId != null)?.areaId ?? null;
+
+    return {
+      entry: raw
         ? {
-            entity_id: raw.entity_id,
-            area_id: raw.area_id ?? null,
-            device_id: raw.device_id ?? null,
+            entity_id: raw.entityId,
+            area_id: raw.areaId ?? null,
+            device_id: raw.deviceId ?? null,
           }
-        : null;
-
-      const did = entry?.device_id;
-      const deviceAreaId = did
-        ? (state.deviceRegistry.find((d) => d.id === did)?.area_id ?? null)
-        : null;
-
-      return { entry, deviceAreaId };
-    },
-    [homeAssistantEntityId]
-  );
-
-  return useHomeAssistant(
-    homeAssistantEntityId ? selector : selectEmptyEntityRoomRegistryContext,
-    entityRoomRegistryContextEqual
-  );
+        : null,
+      deviceAreaId,
+    };
+  }, [registry, runtimeEntityId]);
 }
 
 export function useProviderEntityRoomContext(entityId: string): ProviderEntityRoomContext {
   return useEntityRoomRegistryContext(entityId);
-}
-
-/**
- * Hook to resolve registry maps for room/area lookups
- * Used by device mapping hooks to determine entity locations
- */
-export function useRegistryRoomResolver() {
-  const areas = useHomeAssistant(homeAssistantSelectors.areas, shallow);
-  const deviceRegistry = useHomeAssistant(homeAssistantSelectors.deviceRegistry, shallow);
-  const entityRegistry = useHomeAssistant(homeAssistantSelectors.entityRegistry, shallow);
-
-  const areaMap = useMemo(() => new Map(areas.map((area) => [area.area_id, area.name])), [areas]);
-  const entityRegistryMap = useMemo(
-    () => new Map(entityRegistry.map((registryEntry) => [registryEntry.entity_id, registryEntry])),
-    [entityRegistry]
-  );
-  const deviceRegistryMap = useMemo(
-    () => new Map(deviceRegistry.map((device) => [device.id, device])),
-    [deviceRegistry]
-  );
-
-  return {
-    areaMap,
-    areas,
-    deviceRegistry,
-    deviceRegistryMap,
-    entityRegistry,
-    entityRegistryMap,
-  };
 }

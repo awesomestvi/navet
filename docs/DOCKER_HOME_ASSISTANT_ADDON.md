@@ -16,6 +16,7 @@ Navet is a Vite-built frontend with runtime-specific session handling:
 - add-on through Ingress: uses the authenticated Home Assistant Ingress session
 - standalone Docker or standalone dev app: uses OAuth-backed provider login
 - standalone Homey access: enters through the same standalone login flow
+- provider session bootstrap and teardown are routed through the shared provider adapter registry
 
 Current provider support in these flows:
 

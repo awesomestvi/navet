@@ -1,19 +1,11 @@
 import type {
+  CameraPlaybackPlan,
   PlatformCameraStream,
   PlatformCameraStreamType,
 } from '@/app/platform/provider-feature-models';
+import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
-import type { ResolvedMediaResource } from '../resources/resource-types';
-
-export interface CameraPlaybackPlan {
-  primary: ResolvedMediaResource;
-  fallbacks: ResolvedMediaResource[];
-  refreshPolicy: {
-    snapshotRefreshMs?: number;
-    retryDelaysMs: number[];
-  };
-}
 
 interface CameraPlaybackPlanInput {
   entityId: string;
@@ -72,7 +64,7 @@ export class CameraMediaService {
           kind: 'unavailable',
           cacheKey: `${input.entityId}:snapshot`,
           authStrategy: 'none',
-        } satisfies ResolvedMediaResource);
+        } satisfies ResolvedPlatformResource);
 
     if (input.isUnavailable || !input.isRunning || input.preferredMode === 'snapshot') {
       return {
@@ -85,7 +77,7 @@ export class CameraMediaService {
       };
     }
 
-    const resources: ResolvedMediaResource[] = [];
+    const resources: ResolvedPlatformResource[] = [];
 
     for (const feedKind of getFeedOrder(input.preferredTransport)) {
       if (failedTransports.has(feedKind)) {

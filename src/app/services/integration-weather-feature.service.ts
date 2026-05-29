@@ -1,6 +1,8 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderWeatherFeatureService } from '@/app/platform/provider-feature-services';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getNativeIntegrationEntityId,
+  resolveIntegrationProviderId,
+} from './integration-provider-context.service';
 import {
   getIntegrationProviderAdapter,
   getIntegrationProviderWeatherFeatureService,
@@ -8,7 +10,7 @@ import {
 } from './integration-registry.service';
 
 function resolveWeatherProviderId(entityId: string) {
-  return parseProviderScopedId(entityId)?.providerId ?? authSessionManager.getSnapshot().providerId;
+  return resolveIntegrationProviderId(entityId);
 }
 
 function getWeatherFeatureService(entityId: string) {
@@ -19,7 +21,7 @@ function getWeatherFeatureService(entityId: string) {
   }
 
   return {
-    nativeEntityId: parseProviderScopedId(entityId)?.nativeId ?? entityId,
+    nativeEntityId: getNativeIntegrationEntityId(entityId),
     service: getIntegrationProviderWeatherFeatureService(providerId),
   };
 }

@@ -48,6 +48,7 @@ Provider layers own:
 
 - auth and session details
 - runtime detection
+- provider session bootstrap and teardown
 - REST and WebSocket transport
 - backend raw payload parsing
 - resource rewriting and proxy behavior
@@ -67,6 +68,8 @@ Provider layers own:
 - `src/auth/AuthProvider.tsx` resolves runtime and provider sessions.
 - `src/app/runtime/app-mode.ts` exposes coarse runtime helpers for feature flows that truly need
   mode awareness.
+- `src/app/services/integration-registry.service.ts` is the provider adapter seam for provider
+  session lifecycle, feature capabilities, and resource normalization.
 - `src/app/stores/home-assistant-store.ts` tracks Home Assistant provider state.
 - `src/app/stores/integration-store.ts` aggregates provider runtime state and normalized snapshots.
 - `src/app/hooks/use-provider-runtime.ts` and store selectors are the preferred app-facing read

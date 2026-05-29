@@ -7,7 +7,7 @@ import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-re
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n } from '@/app/hooks';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
+import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import { isMediaPlayerProxyUrl } from '@/app/utils/home-assistant-url';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { getMediaDisplayVolume } from './media-card-style-utils';
@@ -26,7 +26,7 @@ import { useStableMediaArtwork } from './use-stable-media-artwork';
 interface MediaSmallViewProps {
   entityId: string;
   artwork?: string | null;
-  artworkResource?: ResolvedMediaResource | null;
+  artworkResource?: ResolvedPlatformResource | null;
   onArtworkError?: (imageUrl?: string | null) => void;
   entityName: string;
   entityTypeKey: MediaEntityTypeKey;

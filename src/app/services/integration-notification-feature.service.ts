@@ -1,6 +1,9 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderNotificationFeatureService } from '@/app/platform/provider-feature-services';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getCurrentIntegrationProviderIdFromStore,
+  getNativeIntegrationEntityId,
+  resolveIntegrationProviderId,
+} from './integration-provider-context.service';
 import {
   getIntegrationProviderAdapter,
   getIntegrationProviderNotificationFeatureService,
@@ -8,13 +11,10 @@ import {
 } from './integration-registry.service';
 
 function resolveNotificationProviderId(entityId?: string) {
-  return (
-    (entityId ? parseProviderScopedId(entityId)?.providerId : null) ??
-    authSessionManager.getSnapshot().providerId
-  );
+  return resolveIntegrationProviderId(entityId);
 }
 
-function getNotificationFeatureService(providerId = authSessionManager.getSnapshot().providerId) {
+function getNotificationFeatureService(providerId = getCurrentIntegrationProviderIdFromStore()) {
   const adapter = getIntegrationProviderAdapter(providerId);
   if (!hasIntegrationProviderFeature(adapter, 'notifications')) {
     throw new Error('Notifications are not supported for the current integration yet');
@@ -44,7 +44,7 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
     }
 
     const service = getIntegrationProviderNotificationFeatureService(providerId);
-    return service.installUpdate(parseProviderScopedId(entityId)?.nativeId ?? entityId);
+    return service.installUpdate(getNativeIntegrationEntityId(entityId));
   },
   restartSystem: async () => {
     const service = getNotificationFeatureService();

@@ -17,6 +17,7 @@ import type {
 } from '@/app/platform/provider-feature-models';
 import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
+import { normalizeResourceUrl } from '@/app/services/integration-resource.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import {
   type CameraFeedMode,
@@ -26,7 +27,6 @@ import {
   resolveCameraGo2RtcConfig,
   useSettingsStore,
 } from '@/app/stores/settings-store';
-import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { useAuthSession } from '@/auth/AuthProvider';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
@@ -89,7 +89,7 @@ function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
     return undefined;
   }
 
-  return resolveHomeAssistantProxyUrl(imageUrl) ?? imageUrl;
+  return normalizeResourceUrl(imageUrl, 'home_assistant') ?? imageUrl;
 }
 
 function readFrontendStreamTypes(value: unknown) {

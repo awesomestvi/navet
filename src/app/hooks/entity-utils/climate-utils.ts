@@ -12,6 +12,23 @@ export function resolveHomeAssistantTemperatureUnit(
   return normalizeTemperatureUnit(config?.unit_system?.temperature);
 }
 
+export function resolveProviderTemperatureUnit(
+  config:
+    | {
+        unit_system?: { temperature?: unknown };
+        temperature_unit?: unknown;
+        temperatureUnit?: unknown;
+      }
+    | null
+    | undefined
+) {
+  return (
+    normalizeTemperatureUnit(config?.temperature_unit) ??
+    normalizeTemperatureUnit(config?.temperatureUnit) ??
+    normalizeTemperatureUnit(config?.unit_system?.temperature)
+  );
+}
+
 export function resolveClimateTemperatureUnit(
   entity: ClimateEntityLike | undefined,
   fallbackUnit?: unknown

@@ -5,7 +5,6 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { useI18n, useTheme } from '@/app/hooks';
 import { useErrorStore } from '@/app/stores';
-import { homeAssistantStore } from '@/app/stores/home-assistant-store';
 import { appErrorSelectors } from '@/app/stores/selectors';
 import { getPublicAssetUrl } from '@/app/utils/public-assets';
 
@@ -24,6 +23,7 @@ export const ErrorDisplay = memo(function ErrorDisplay({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const error = useErrorStore(appErrorSelectors.error);
+  const clearError = useErrorStore(appErrorSelectors.clearError);
   const logoSrc = getPublicAssetUrl('logo.svg');
   const isLightTheme = theme === 'light';
   const isBlack = theme === 'black';
@@ -35,9 +35,9 @@ export const ErrorDisplay = memo(function ErrorDisplay({
       ? 'bg-[radial-gradient(circle_at_50%_34%,rgba(249,115,22,0.30)_0%,rgba(249,115,22,0.13)_24%,transparent_46%),linear-gradient(180deg,#050505_0%,#000_100%)]'
       : 'bg-[radial-gradient(circle_at_50%_34%,rgba(249,115,22,0.30)_0%,rgba(249,115,22,0.12)_24%,transparent_46%),linear-gradient(180deg,#060a12_0%,#030712_100%)]';
   const panelSurface = `${surface.border} ${surface.panelMuted} ${surface.cardShadow}`;
-  /** Clears the overlay and HA connection error (see `homeAssistantStore.clearError`). */
+  /** Clears the shared error overlay without reaching into provider-specific state. */
   const dismissError = () => {
-    homeAssistantStore.getState().clearError();
+    clearError();
   };
 
   if (!error) return null;

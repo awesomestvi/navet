@@ -1,40 +1,79 @@
-import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
-import { useMemo } from 'react';
-import { shallow } from 'zustand/shallow';
-import { resolveHomeAssistantTemperatureUnit } from '@/app/hooks/entity-utils';
-import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
+import { useMemo, useSyncExternalStore } from 'react';
+import { resolveProviderTemperatureUnit } from '@/app/hooks/entity-utils';
 import type {
   PlatformEntityRegistryEntry,
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors, integrationSelectors } from '@/app/stores/selectors';
+import { getIntegrationProviderEntityRuntimeService } from '@/app/services/integration-registry.service';
+import { integrationSelectors } from '@/app/stores/selectors';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { resolveHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
-import type { HomeAssistantEntityRegistryEntry } from '../services/home-assistant.service';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderDevice } from './use-provider-device';
 
-const EMPTY_ENTITY_SNAPSHOTS: PlatformEntitySnapshotMap = {};
 const EMPTY_ENTITY_SNAPSHOT_RECORD: Record<string, PlatformEntitySnapshot | undefined> = {};
-const EMPTY_HASS_ENTITY_REGISTRY: HomeAssistantEntityRegistryEntry[] = [];
-const EMPTY_HASS_ENTITY_RECORD: Record<string, HassEntity | undefined> = {};
+const EMPTY_ENTITY_SNAPSHOTS: PlatformEntitySnapshotMap = {};
+const EMPTY_ENTITY_REGISTRY: PlatformEntityRegistryEntry[] = [];
+const EMPTY_PROVIDER_CONFIG = null;
+type ProviderTemperatureConfig = {
+  unit_system?: { temperature?: unknown };
+  temperature_unit?: unknown;
+  temperatureUnit?: unknown;
+};
 
 function selectUndefinedEntity() {
   return undefined;
 }
 
-function selectEmptyHassEntities(): HassEntities | null {
-  return null;
+function subscribeNoop() {
+  return () => {};
 }
 
-function selectEmptyHassEntityRegistry(): HomeAssistantEntityRegistryEntry[] {
-  return EMPTY_HASS_ENTITY_REGISTRY;
+function useProviderEntityRuntimeSnapshots(
+  providerId: IntegrationProviderId | undefined,
+  enabled: boolean
+): PlatformEntitySnapshotMap | null {
+  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+
+  return useSyncExternalStore(
+    enabled && runtimeService ? runtimeService.subscribeEntitySnapshots : subscribeNoop,
+    enabled && runtimeService ? runtimeService.getEntitySnapshots : () => null,
+    () => null
+  );
 }
 
-function selectEmptyHassEntityRecord() {
-  return EMPTY_HASS_ENTITY_RECORD;
+function useProviderEntityRuntimeRegistry(
+  providerId: IntegrationProviderId | undefined,
+  enabled: boolean
+): PlatformEntityRegistryEntry[] {
+  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+
+  return useSyncExternalStore(
+    enabled && runtimeService ? runtimeService.subscribeEntityRegistryEntries : subscribeNoop,
+    enabled && runtimeService
+      ? runtimeService.getEntityRegistryEntries
+      : () => EMPTY_ENTITY_REGISTRY,
+    () => EMPTY_ENTITY_REGISTRY
+  );
+}
+
+function useProviderConfigRuntime(providerId: IntegrationProviderId | undefined, enabled: boolean) {
+  const runtimeService = providerId ? getIntegrationProviderEntityRuntimeService(providerId) : null;
+
+  return useSyncExternalStore(
+    enabled && runtimeService ? runtimeService.subscribeConfig : subscribeNoop,
+    enabled && runtimeService ? runtimeService.getConfig : () => EMPTY_PROVIDER_CONFIG,
+    () => EMPTY_PROVIDER_CONFIG
+  );
+}
+
+function normalizeProviderTemperatureConfig(config: unknown): ProviderTemperatureConfig | null {
+  if (!config || typeof config !== 'object') {
+    return null;
+  }
+
+  return config as ProviderTemperatureConfig;
 }
 
 export function toPlatformEntitySnapshot(
@@ -78,44 +117,53 @@ export function toPlatformEntityRegistryEntry(entry: {
 
 function resolveEntityProviderId(
   entityId: string,
-  providerId: IntegrationProviderId | undefined
+  providerId: IntegrationProviderId | undefined,
+  currentProviderId: IntegrationProviderId
 ): IntegrationProviderId | undefined {
   if (providerId) {
     return providerId;
   }
 
-  const resolvedHomeAssistantEntityId = resolveHomeAssistantEntityId(entityId);
-  if (resolvedHomeAssistantEntityId) {
-    return 'home_assistant';
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return scopedId.providerId;
   }
 
-  return undefined;
+  return currentProviderId;
+}
+
+function resolveProviderRuntimeEntityId(
+  entityId: string,
+  providerId: IntegrationProviderId | undefined
+): string | null {
+  if (!entityId || !providerId) {
+    return null;
+  }
+
+  const scopedId = parseProviderScopedId(entityId);
+  if (scopedId) {
+    return scopedId.providerId === providerId ? scopedId.nativeId : null;
+  }
+
+  return entityId;
 }
 
 export function useProviderEntitySnapshot(entityId: string): PlatformEntitySnapshot | undefined {
   const providerDevice = useProviderDevice(entityId);
-  const resolvedProviderId = resolveEntityProviderId(entityId, providerDevice?.providerId);
-  const homeAssistantEntityId = useMemo(
-    () =>
-      resolvedProviderId === 'home_assistant'
-        ? resolveHomeAssistantEntityId(entityId, resolvedProviderId)
-        : null,
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const resolvedProviderId = resolveEntityProviderId(
+    entityId,
+    providerDevice?.providerId,
+    currentProviderId
+  );
+  const runtimeEntityId = useMemo(
+    () => resolveProviderRuntimeEntityId(entityId, resolvedProviderId),
     [entityId, resolvedProviderId]
   );
+  const entities = useProviderEntityRuntimeSnapshots(resolvedProviderId, Boolean(runtimeEntityId));
+  const entity = runtimeEntityId ? entities?.[runtimeEntityId] : selectUndefinedEntity();
 
-  const entity = useHomeAssistant(
-    homeAssistantEntityId
-      ? homeAssistantSelectors.entity(homeAssistantEntityId)
-      : selectUndefinedEntity
-  );
-
-  return useMemo(
-    () =>
-      entity && homeAssistantEntityId
-        ? toPlatformEntitySnapshot(homeAssistantEntityId, entity)
-        : undefined,
-    [entity, homeAssistantEntityId]
-  );
+  return useMemo(() => (entity && runtimeEntityId ? entity : undefined), [entity, runtimeEntityId]);
 }
 
 export function useProviderEntitySnapshots(options?: {
@@ -125,25 +173,7 @@ export function useProviderEntitySnapshots(options?: {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = options?.providerId ?? currentProviderId;
   const enabled = options?.enabled ?? true;
-
-  const entities = useHomeAssistant(
-    enabled && resolvedProviderId === 'home_assistant'
-      ? homeAssistantSelectors.entities
-      : selectEmptyHassEntities
-  );
-
-  return useMemo(() => {
-    if (!entities) {
-      return null;
-    }
-
-    return Object.fromEntries(
-      Object.entries(entities).map(([snapshotEntityId, entity]) => [
-        snapshotEntityId,
-        toPlatformEntitySnapshot(snapshotEntityId, entity),
-      ])
-    );
-  }, [entities]);
+  return useProviderEntityRuntimeSnapshots(resolvedProviderId, enabled);
 }
 
 export function useProviderEntityRegistryEntries(options?: {
@@ -153,14 +183,7 @@ export function useProviderEntityRegistryEntries(options?: {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = options?.providerId ?? currentProviderId;
   const enabled = options?.enabled ?? true;
-
-  const entityRegistry = useHomeAssistant(
-    enabled && resolvedProviderId === 'home_assistant'
-      ? homeAssistantSelectors.entityRegistry
-      : selectEmptyHassEntityRegistry
-  );
-
-  return useMemo(() => entityRegistry.map(toPlatformEntityRegistryEntry), [entityRegistry]);
+  return useProviderEntityRuntimeRegistry(resolvedProviderId, enabled);
 }
 
 export function useProviderEntitySnapshotRecord(
@@ -176,28 +199,21 @@ export function useProviderEntitySnapshotRecord(
   const resolvedEntityIds = useMemo(
     () =>
       entityIds
-        .map((entityId) => resolveHomeAssistantEntityId(entityId, resolvedProviderId) ?? entityId)
+        .map((entityId) => resolveProviderRuntimeEntityId(entityId, resolvedProviderId) ?? entityId)
         .filter((entityId, index, ids) => ids.indexOf(entityId) === index),
     [entityIds, resolvedProviderId]
   );
+  const entities = useProviderEntityRuntimeSnapshots(resolvedProviderId, enabled);
 
-  const entityRecord = useHomeAssistant(
-    enabled && resolvedProviderId === 'home_assistant'
-      ? (state: HomeAssistantStore) => {
-          if (!resolvedEntityIds.length || !state.entities) {
-            return EMPTY_HASS_ENTITY_RECORD;
-          }
+  const entityRecord = useMemo(() => {
+    if (!resolvedEntityIds.length || !entities) {
+      return EMPTY_ENTITY_SNAPSHOT_RECORD;
+    }
 
-          return Object.fromEntries(
-            resolvedEntityIds.map((entityId) => {
-              const entity = state.entities?.[entityId];
-              return [entityId, entity];
-            })
-          );
-        }
-      : selectEmptyHassEntityRecord,
-    shallow
-  );
+    return Object.fromEntries(
+      resolvedEntityIds.map((snapshotEntityId) => [snapshotEntityId, entities[snapshotEntityId]])
+    );
+  }, [entities, resolvedEntityIds]);
 
   return useMemo(() => {
     if (!resolvedEntityIds.length) {
@@ -207,10 +223,7 @@ export function useProviderEntitySnapshotRecord(
     return Object.fromEntries(
       resolvedEntityIds.map((snapshotEntityId) => {
         const entity = entityRecord[snapshotEntityId];
-        return [
-          snapshotEntityId,
-          entity ? toPlatformEntitySnapshot(snapshotEntityId, entity) : undefined,
-        ];
+        return [snapshotEntityId, entity];
       })
     );
   }, [entityRecord, resolvedEntityIds]);
@@ -219,11 +232,11 @@ export function useProviderEntitySnapshotRecord(
 export function useProviderTemperatureUnit(providerId?: IntegrationProviderId) {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
+  const config = useProviderConfigRuntime(resolvedProviderId, true);
 
-  return useHomeAssistant(
-    resolvedProviderId === 'home_assistant'
-      ? (state: HomeAssistantStore) => resolveHomeAssistantTemperatureUnit(state.config)
-      : () => undefined
+  return useMemo(
+    () => resolveProviderTemperatureUnit(normalizeProviderTemperatureConfig(config)) ?? undefined,
+    [config]
   );
 }
 

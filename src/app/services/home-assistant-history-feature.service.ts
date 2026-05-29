@@ -1,6 +1,6 @@
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import type { ProviderHistoryFeatureService } from '@/app/platform/provider-feature-services';
+import { homeAssistantService } from '@/app/services/home-assistant.service';
 
-// Energy history/statistics are still Home Assistant specific.
-// Keep the explicit alias at the feature boundary even while the underlying
-// implementation remains the shared provider service instance.
-export const homeAssistantHistoryFeatureService = integrationHistoryService;
+export const homeAssistantHistoryFeatureService: ProviderHistoryFeatureService = {
+  getMessageClient: () => homeAssistantService.getConnection(),
+};

@@ -20,9 +20,11 @@ import {
   type TvRemoteAction,
 } from '@/app/features/media/tv-remote-commands';
 import { useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import { resolveHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { integrationSelectors } from '@/app/stores/selectors';
+import { getProviderNativeId, parseProviderScopedId } from '@/app/utils/provider-ids';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
@@ -57,11 +59,12 @@ export function useMediaCardController({
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
   const providerDevice = useProviderDevice(entityId);
-  const homeAssistantEntityId = resolveHomeAssistantEntityId(entityId, providerDevice?.providerId);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId =
-    providerDevice?.providerId ?? (homeAssistantEntityId ? 'home_assistant' : undefined);
-  const remoteEntityId = homeAssistantEntityId
-    ? `remote.${homeAssistantEntityId.split('.').slice(1).join('.')}`
+    providerDevice?.providerId ?? parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
+  const runtimeEntityId = resolvedProviderId ? getProviderNativeId(entityId) : '';
+  const remoteEntityId = runtimeEntityId
+    ? `remote.${runtimeEntityId.split('.').slice(1).join('.')}`
     : '';
   const liveEntity = useProviderMediaEntity(entityId);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
@@ -316,7 +319,7 @@ export function useMediaCardController({
   const remoteAvailable = isTv && Boolean(remoteEntity);
   const remoteRegistryEntry = entityRegistry.find((entry) => entry.entityId === remoteEntityId);
   const mediaRegistryEntry = entityRegistry.find(
-    (entry) => entry.entityId === (homeAssistantEntityId ?? entityId)
+    (entry) => entry.entityId === (runtimeEntityId || entityId)
   );
   const remoteFriendlyName =
     typeof remoteEntity?.attributes?.friendly_name === 'string'

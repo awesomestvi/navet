@@ -1,13 +1,9 @@
-import { shallow } from 'zustand/shallow';
 import { useIntegrationStore } from '@/app/hooks';
-import { useHomeAssistant } from '@/app/hooks/use-home-assistant';
-import { selectUpdateDomainEntities } from '@/app/infrastructure/home-assistant/home-assistant-domain-selectors';
+import { useProviderEntitySnapshots } from '@/app/hooks/use-provider-entity';
 import type {
-  PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
   PlatformUpdateNotificationCandidate,
 } from '@/app/platform/provider-feature-models';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { integrationSelectors } from '@/app/stores/selectors';
 
 const EMPTY_UPDATE_ENTITIES: PlatformEntitySnapshotMap = {};
@@ -79,42 +75,25 @@ export function mapHomeAssistantUpdateCandidates(
   });
 }
 
-function toPlatformEntitySnapshot(
-  entityId: string,
-  entity: {
-    state: string;
-    attributes?: Record<string, unknown>;
-    last_changed?: string;
-    last_updated?: string;
+function selectProviderUpdateEntities(
+  entities: PlatformEntitySnapshotMap | null
+): PlatformEntitySnapshotMap {
+  if (!entities) {
+    return EMPTY_UPDATE_ENTITIES;
   }
-): PlatformEntitySnapshot {
-  return {
-    entityId,
-    state: entity.state,
-    attributes: (entity.attributes as Record<string, unknown> | undefined) ?? {},
-    lastChanged: entity.last_changed,
-    lastUpdated: entity.last_updated,
-  };
-}
-
-function selectProviderUpdateEntities(state: HomeAssistantStore): PlatformEntitySnapshotMap {
-  const updateEntities = selectUpdateDomainEntities(state);
 
   return Object.fromEntries(
-    Object.entries(updateEntities).map(([entityId, entity]) => [
-      entityId,
-      toPlatformEntitySnapshot(entityId, entity),
-    ])
+    Object.entries(entities).filter(([entityId]) => entityId.startsWith('update.'))
   );
 }
 
 export function useProviderUpdateCandidates(): PlatformUpdateNotificationCandidate[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const isHomeAssistantProvider = currentProviderId === 'home_assistant';
-  const updateEntities = useHomeAssistant(
-    isHomeAssistantProvider ? selectProviderUpdateEntities : selectNoUpdateEntities,
-    shallow
-  );
+  const entities = useProviderEntitySnapshots({ enabled: isHomeAssistantProvider });
+  const updateEntities = isHomeAssistantProvider
+    ? selectProviderUpdateEntities(entities)
+    : selectNoUpdateEntities();
 
   if (!isHomeAssistantProvider) {
     return [];

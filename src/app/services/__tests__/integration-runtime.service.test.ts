@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import { integrationStore } from '@/app/stores/integration-store';
 import { expectProviderFeatureMatrixSubset } from '@/test/provider-contract-assertions';
 import {
   getCurrentIntegrationCameraStream,
@@ -28,6 +29,7 @@ vi.mock('../home-assistant.service', () => ({
 describe('integration-runtime.service', () => {
   beforeEach(() => {
     authSessionManager.replaceSession(null);
+    integrationStore.getState().setCurrentProviderId('home_assistant');
   });
 
   it('defaults to Home Assistant as the current provider', () => {
@@ -110,10 +112,12 @@ describe('integration-runtime.service', () => {
       haBaseUrl: 'https://homey.example.com',
       hassUrl: 'https://homey.example.com',
     });
+    integrationStore.getState().setCurrentProviderId('homey');
 
     expectProviderFeatureMatrixSubset(getCurrentIntegrationFeatureMatrix(), {
       lighting: true,
       sensors: true,
+      rooms: true,
       mediaBrowse: false,
       notifications: false,
     });
@@ -145,6 +149,7 @@ describe('integration-runtime.service', () => {
       haBaseUrl: 'https://homey.example.com',
       hassUrl: 'https://homey.example.com',
     });
+    integrationStore.getState().setCurrentProviderId('homey');
 
     await expect(signCurrentIntegrationPath('/api/test')).rejects.toThrow(
       'Path signing is not implemented yet for provider Homey'

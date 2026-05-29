@@ -8,6 +8,7 @@ import {
   type IntegrationProviderDefinition,
   type IntegrationProviderId,
 } from '../types/provider';
+import { getCurrentIntegrationProviderIdFromStore } from './integration-provider-context.service';
 import {
   getIntegrationProviderAdapter,
   getIntegrationProviderFeatureMatrix,
@@ -21,7 +22,7 @@ export function getCurrentIntegrationSession() {
 }
 
 export function getCurrentIntegrationProviderId(): IntegrationProviderId {
-  return authSessionManager.getSnapshot().providerId;
+  return getCurrentIntegrationProviderIdFromStore();
 }
 
 export function getCurrentIntegrationProvider(): IntegrationProviderDefinition {

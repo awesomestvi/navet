@@ -62,6 +62,12 @@ Provider-specific behavior belongs primarily in:
 - `src/app/services/`
 - `src/app/stores/home-assistant-store.ts`
 
+Current provider lifecycle and shared resource seams are centered in:
+
+- `src/app/services/integration-registry.service.ts`
+- `src/app/services/integration-bootstrap.service.ts`
+- `src/app/services/integration-resource.service.ts`
+
 ## Install And Run
 
 ### Home Assistant custom panel

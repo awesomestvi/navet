@@ -212,6 +212,15 @@ export interface PlatformCameraPresentation {
   availableStreamTypes: string[];
 }
 
+export interface CameraPlaybackPlan {
+  primary: import('./resources').ResolvedPlatformResource;
+  fallbacks: import('./resources').ResolvedPlatformResource[];
+  refreshPolicy: {
+    snapshotRefreshMs?: number;
+    retryDelaysMs: number[];
+  };
+}
+
 export interface PlatformEnergySourceOption {
   id: string;
   name: string;

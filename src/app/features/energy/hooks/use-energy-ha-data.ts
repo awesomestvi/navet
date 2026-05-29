@@ -1,17 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { shallow } from 'zustand/shallow';
-import { useHomeAssistant } from '@/app/hooks';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { haEntityStructureEqual } from '@/app/utils/ha-entity-structure-equal';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  useProviderEntityRegistryEntries,
+  useProviderEntitySnapshots,
+} from '@/app/hooks/use-provider-entity';
+import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
+import { getIntegrationProviderEnergyFeatureService } from '@/app/services/integration-registry.service';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
-import {
-  augmentConfigWithLivePowerEntities,
-  getEnergyPrefs,
-  mapPrefsToConfig,
-} from '../services/energy-ha-service';
+import type { HaEnergyEntityRegistryEntry } from '../services/energy-ha-service';
 import type {
   EnergyConsumer,
   EnergyDeviceSource,
@@ -23,18 +19,6 @@ import type {
   EnergyStat,
 } from '../types/energy.types';
 import { useEnergyStatisticsToday } from './use-energy-statistics-today';
-
-function selectNoConnection() {
-  return null;
-}
-
-function selectNoEntities() {
-  return null;
-}
-
-function selectNoRegistry() {
-  return [];
-}
 
 export type EnergyEntityMap = Record<
   string,
@@ -371,6 +355,15 @@ type HaWsErrorLike = {
   message?: unknown;
 };
 
+function toHomeAssistantEnergyRegistryEntries(
+  entityRegistry: ReturnType<typeof useProviderEntityRegistryEntries>
+): HaEnergyEntityRegistryEntry[] {
+  return entityRegistry.map((entry) => ({
+    entity_id: entry.entityId,
+    device_id: entry.deviceId,
+  }));
+}
+
 export function isMissingEnergyPrefsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -400,16 +393,17 @@ export function useEnergyHaData(
   currentLoadStatisticId?: string;
   haSourceConfig: EnergySourceConfig | null;
 } {
-  const connection = useHomeAssistant(
-    enabled ? homeAssistantSelectors.connection : selectNoConnection
-  );
-  const entityStructure = useHomeAssistant(
-    enabled ? homeAssistantSelectors.entities : selectNoEntities,
-    haEntityStructureEqual
-  );
-  const entityRegistry = useHomeAssistant(
-    enabled ? homeAssistantSelectors.entityRegistry : selectNoRegistry,
-    shallow
+  const entityStructure = useProviderEntitySnapshots({
+    providerId: 'home_assistant',
+    enabled,
+  });
+  const providerEntityRegistry = useProviderEntityRegistryEntries({
+    providerId: 'home_assistant',
+    enabled,
+  });
+  const entityRegistry = useMemo(
+    () => toHomeAssistantEnergyRegistryEntries(providerEntityRegistry),
+    [providerEntityRegistry]
   );
   const [haSourceConfig, setHaSourceConfig] = useState<EnergySourceConfig | null>(null);
 
@@ -422,16 +416,16 @@ export function useEnergyHaData(
     let cancelled = false;
 
     async function fetchEnergyPrefs() {
-      const activeMessageClient = connection ?? integrationHistoryService.getMessageClient();
+      const activeMessageClient = getIntegrationHistoryMessageClient('home_assistant');
       if (!activeMessageClient) {
         setHaSourceConfig(null);
         return;
       }
 
       try {
-        const prefs = await getEnergyPrefs(activeMessageClient);
         if (!cancelled) {
-          setHaSourceConfig(mapPrefsToConfig(prefs));
+          const energyFeatureService = getIntegrationProviderEnergyFeatureService('home_assistant');
+          setHaSourceConfig(await energyFeatureService.getSourceConfig(activeMessageClient));
         }
       } catch (error) {
         if (!isMissingEnergyPrefsError(error)) {
@@ -448,20 +442,22 @@ export function useEnergyHaData(
     return () => {
       cancelled = true;
     };
-  }, [connection, enabled]);
+  }, [enabled]);
 
   const isConfigured = hasEnergySourceConfig(haSourceConfig);
-  const runtimeSourceConfig = useMemo(
-    () =>
-      haSourceConfig && entityStructure
-        ? augmentConfigWithLivePowerEntities(haSourceConfig, entityStructure, entityRegistry)
-        : haSourceConfig,
-    [entityRegistry, entityStructure, haSourceConfig]
-  );
+  const runtimeSourceConfig = useMemo(() => {
+    if (!haSourceConfig || !entityStructure) {
+      return haSourceConfig;
+    }
 
-  // Build the list of entity IDs that are directly named in the config. This
-  // drives a narrow subscription so we only re-render when a relevant entity
-  // changes instead of on every HA entity update.
+    const energyFeatureService = getIntegrationProviderEnergyFeatureService('home_assistant');
+    return energyFeatureService.augmentSourceConfig(
+      haSourceConfig,
+      entityStructure,
+      entityRegistry
+    );
+  }, [entityRegistry, entityStructure, haSourceConfig]);
+
   const configEntityIds = useMemo(() => {
     if (!runtimeSourceConfig) return [] as string[];
     return [
@@ -480,23 +476,24 @@ export function useEnergyHaData(
     ].filter((id): id is string => Boolean(id));
   }, [runtimeSourceConfig]);
 
-  const configEntitySelector = useCallback(
-    (state: HomeAssistantStore) => {
-      const entities = state.entities;
-      if (!entities || !configEntityIds.length) return null as EnergyEntityMap | null;
-      const result: EnergyEntityMap = {};
-      for (const id of configEntityIds) {
-        const entity = entities[id];
-        if (entity) result[id] = entity;
-      }
-      return result;
-    },
-    [configEntityIds]
-  );
+  const configEntities = useMemo(() => {
+    if (!entityStructure || !configEntityIds.length) {
+      return null as EnergyEntityMap | null;
+    }
 
-  // Subscribe only to the configured entity IDs. shallow equality prevents
-  // re-renders when the same entity references are returned.
-  const configEntities = useHomeAssistant(configEntitySelector, shallow);
+    const result: EnergyEntityMap = {};
+    for (const id of configEntityIds) {
+      const entity = entityStructure[id];
+      if (entity) {
+        result[id] = {
+          entity_id: entity.entityId,
+          state: entity.state,
+          attributes: entity.attributes,
+        };
+      }
+    }
+    return result;
+  }, [configEntityIds, entityStructure]);
 
   const energyStatisticIds = useMemo(() => {
     if (!haSourceConfig) {

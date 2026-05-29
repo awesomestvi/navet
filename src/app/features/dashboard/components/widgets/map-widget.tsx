@@ -14,10 +14,10 @@ import {
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, usePrimaryColor, useThemeMode } from '@/app/hooks';
+import { normalizeResourceUrl } from '@/app/services/integration-resource.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
-import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
 import { BoundsFitter } from './map-bounds-fitter';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { buildMarkerIcon } from './map-marker-icon';
@@ -125,8 +125,10 @@ export const MapWidget = memo(function MapWidget({
       markers.map((marker) => ({
         ...marker,
         entityPicture: marker.entityPicture
-          ? (resolveHomeAssistantProxyUrl(getCompactHomeAssistantImageUrl(marker.entityPicture)) ??
-            undefined)
+          ? (normalizeResourceUrl(
+              getCompactHomeAssistantImageUrl(marker.entityPicture),
+              'home_assistant'
+            ) ?? undefined)
           : undefined,
       })),
     [markers]

@@ -1,6 +1,6 @@
 import type { NavetResourceKind } from '@/app/core/navet';
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
+import { integrationStore } from '@/app/stores/integration-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { getIntegrationProviderContract } from './integration-registry.service';
@@ -19,7 +19,7 @@ function resolveProviderId(
   return (
     providerId ??
     parseProviderScopedId(entityId)?.providerId ??
-    authSessionManager.getSnapshot().providerId
+    integrationStore.getState().currentProviderId
   );
 }
 
@@ -34,6 +34,20 @@ export async function resolvePlatformArtwork({
     fallbackPicture,
     providerId,
   });
+}
+
+export function normalizeResourceUrl(
+  resourceUrl: string,
+  providerId?: IntegrationProviderId
+): string | null {
+  if (!resourceUrl) {
+    return null;
+  }
+
+  const resolvedProviderId = resolveProviderId(resourceUrl, providerId);
+  const contract = getIntegrationProviderContract(resolvedProviderId);
+
+  return contract.normalizeResourceUrl?.(resourceUrl) ?? resourceUrl;
 }
 
 export async function resolveResource(
