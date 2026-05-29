@@ -39,6 +39,23 @@ export function useHomeAssistantUpsWidgetData(options: { use24HourTime: boolean 
     () => ({ locale, use24HourTime: options.use24HourTime }),
     [locale, options.use24HourTime]
   );
+  const classificationHints = useMemo(
+    () =>
+      entities
+        ? Object.fromEntries(
+            Object.entries(entities).map(([entityId, entity]) => [
+              entityId,
+              {
+                deviceClass:
+                  typeof entity.attributes?.device_class === 'string'
+                    ? entity.attributes.device_class
+                    : undefined,
+              },
+            ])
+          )
+        : {},
+    [entities]
+  );
   const platformEntities = useMemo(
     () =>
       entities
@@ -76,9 +93,17 @@ export function useHomeAssistantUpsWidgetData(options: { use24HourTime: boolean 
         areas: platformAreas,
         deviceRegistry: platformDeviceRegistry,
         entityRegistry: platformEntityRegistry,
+        classificationHints,
         formatOptions,
       }),
-    [formatOptions, platformAreas, platformDeviceRegistry, platformEntities, platformEntityRegistry]
+    [
+      classificationHints,
+      formatOptions,
+      platformAreas,
+      platformDeviceRegistry,
+      platformEntities,
+      platformEntityRegistry,
+    ]
   );
 
   return {

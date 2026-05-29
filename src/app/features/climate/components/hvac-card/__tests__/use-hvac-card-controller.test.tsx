@@ -22,8 +22,58 @@ vi.mock('@/app/hooks', async () => {
   };
 });
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityCommand: async (command: {
+    type: 'set_climate_mode';
+    entityId: string;
+    mode: string;
+  }) => {
+    const { entityId, mode } = command;
+    const isWaterHeater = entityId.startsWith('water_heater.');
+    await serviceMock.callService(
+      isWaterHeater ? 'water_heater' : 'climate',
+      isWaterHeater ? 'set_operation_mode' : 'set_hvac_mode',
+      isWaterHeater ? { operation_mode: mode } : { hvac_mode: mode },
+      { entity_id: entityId }
+    );
+    return {
+      accepted: true,
+      requiresEventConfirmation: true,
+    };
+  },
+}));
+
+vi.mock('@/app/services/integration-climate-feature.service', () => ({
+  integrationClimateFeatureService: {
+    setTargetTemperature: async (
+      entityId: string,
+      update: {
+        serviceDomain?: 'climate' | 'water_heater';
+        temperature?: number;
+        targetTemperatureLow?: number;
+        targetTemperatureHigh?: number;
+      }
+    ) => {
+      const serviceData =
+        typeof update.temperature === 'number'
+          ? { temperature: update.temperature }
+          : {
+              ...(typeof update.targetTemperatureLow === 'number'
+                ? { target_temp_low: update.targetTemperatureLow }
+                : {}),
+              ...(typeof update.targetTemperatureHigh === 'number'
+                ? { target_temp_high: update.targetTemperatureHigh }
+                : {}),
+            };
+
+      await serviceMock.callService(
+        update.serviceDomain ?? (entityId.startsWith('water_heater.') ? 'water_heater' : 'climate'),
+        'set_temperature',
+        serviceData,
+        { entity_id: entityId }
+      );
+    },
+  },
 }));
 
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';

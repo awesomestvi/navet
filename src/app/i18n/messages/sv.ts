@@ -192,8 +192,7 @@ export const svMessages = {
   'settings.system.providers.makeActive': 'Gör aktiv',
   'settings.system.providers.notConnected': 'Inte ansluten på den här enheten',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
-  'settings.system.providers.openhabLater':
-    'Stöd för openHAB är planerat men inte tillgängligt ännu.',
+  'settings.system.providers.openhabLater': 'openHAB ansluter via det fristående URL-flödet.',
   'settings.system.providers.status.connected': 'Ansluten',
   'settings.system.providers.status.connecting': 'Ansluter',
   'settings.system.providers.status.reconnecting': 'Återansluter',

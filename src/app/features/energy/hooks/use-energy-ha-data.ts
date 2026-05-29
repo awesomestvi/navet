@@ -1,10 +1,10 @@
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { useEffect, useMemo, useState } from 'react';
 import {
   useProviderEntityRegistryEntries,
   useProviderEntitySnapshots,
 } from '@/app/hooks/use-provider-entity';
 import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
-import { getIntegrationProviderEnergyFeatureService } from '@/app/services/integration-registry.service';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
 import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
 import type { HaEnergyEntityRegistryEntry } from '../services/energy-ha-service';
@@ -424,7 +424,13 @@ export function useEnergyHaData(
 
       try {
         if (!cancelled) {
-          const energyFeatureService = getIntegrationProviderEnergyFeatureService('home_assistant');
+          const energyFeatureService =
+            getProviderRuntimeRegistration('home_assistant').energyFeatureService;
+          if (!energyFeatureService) {
+            throw new Error(
+              'Energy dashboards are not implemented yet for provider Home Assistant'
+            );
+          }
           setHaSourceConfig(await energyFeatureService.getSourceConfig(activeMessageClient));
         }
       } catch (error) {
@@ -450,7 +456,11 @@ export function useEnergyHaData(
       return haSourceConfig;
     }
 
-    const energyFeatureService = getIntegrationProviderEnergyFeatureService('home_assistant');
+    const energyFeatureService =
+      getProviderRuntimeRegistration('home_assistant').energyFeatureService;
+    if (!energyFeatureService) {
+      return haSourceConfig;
+    }
     return energyFeatureService.augmentSourceConfig(
       haSourceConfig,
       entityStructure,

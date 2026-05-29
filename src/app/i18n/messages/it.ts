@@ -204,7 +204,7 @@ export const itMessages = {
   'settings.system.providers.notConnected': 'Non connesso su questo dispositivo',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater':
-    'Il supporto openHAB è pianificato ma non ancora disponibile.',
+    'openHAB si connette tramite il flusso standalone con URL.',
   'settings.system.providers.status.connected': 'Connesso',
   'settings.system.providers.status.connecting': 'Connessione',
   'settings.system.providers.status.reconnecting': 'Riconnessione',

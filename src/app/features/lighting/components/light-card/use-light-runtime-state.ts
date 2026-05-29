@@ -18,7 +18,7 @@ interface UseLightRuntimeStateParams {
   maxColorTemp: number;
   supportsColorTemperature: boolean;
   rememberLightState: (id: string, state: { brightness?: number; colorTemp?: number }) => void;
-  syncLightWithHomeAssistant: (options: LightUpdateOptions) => Promise<void>;
+  syncLight: (options: LightUpdateOptions) => Promise<void>;
 }
 
 export function useLightRuntimeState({
@@ -33,7 +33,7 @@ export function useLightRuntimeState({
   maxColorTemp,
   supportsColorTemperature,
   rememberLightState,
-  syncLightWithHomeAssistant,
+  syncLight,
 }: UseLightRuntimeStateParams) {
   const rememberedState = useLightMemoryStore.getState().getRememberedState(id);
 
@@ -51,7 +51,7 @@ export function useLightRuntimeState({
     initialBrightness,
     liveEntity,
     providerState,
-    syncLight: syncLightWithHomeAssistant,
+    syncLight,
     rememberLightState,
   });
 
@@ -75,7 +75,7 @@ export function useLightRuntimeState({
     providerState,
     minColorTemp,
     maxColorTemp,
-    syncLight: syncLightWithHomeAssistant,
+    syncLight,
     rememberLightState,
     lastBrightnessRef,
     brightness,
@@ -89,7 +89,7 @@ export function useLightRuntimeState({
     maxColorTemp,
     selectedColor,
     supportsColorTemperature,
-    syncLightWithHomeAssistant,
+    syncLightWithHomeAssistant: syncLight,
     lastBrightnessRef,
     lastColorTempRef,
     pendingBrightnessRef,

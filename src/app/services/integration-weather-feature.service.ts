@@ -1,13 +1,12 @@
+import {
+  getProviderRuntimeRegistration,
+  hasProviderFeature,
+} from '@navet/app/provider-runtime-registry';
 import type { ProviderWeatherFeatureService } from '@/app/platform/provider-feature-services';
 import {
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
-import {
-  getIntegrationProviderAdapter,
-  getIntegrationProviderWeatherFeatureService,
-  hasIntegrationProviderFeature,
-} from './integration-registry.service';
 
 function resolveWeatherProviderId(entityId: string) {
   return resolveIntegrationProviderId(entityId);
@@ -15,14 +14,17 @@ function resolveWeatherProviderId(entityId: string) {
 
 function getWeatherFeatureService(entityId: string) {
   const providerId = resolveWeatherProviderId(entityId);
-  const adapter = getIntegrationProviderAdapter(providerId);
-  if (!hasIntegrationProviderFeature(adapter, 'weather')) {
+  if (!hasProviderFeature(providerId, 'weather')) {
     throw new Error('Weather forecasts are not supported for the current integration yet');
+  }
+  const service = getProviderRuntimeRegistration(providerId).weatherFeatureService;
+  if (!service) {
+    throw new Error('Weather support is not implemented yet for the current integration');
   }
 
   return {
     nativeEntityId: getNativeIntegrationEntityId(entityId),
-    service: getIntegrationProviderWeatherFeatureService(providerId),
+    service,
   };
 }
 

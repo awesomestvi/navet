@@ -1,109 +1,109 @@
-# Docker And Home Assistant Add-on
+# Deployment Guide
 
-This guide documents the currently implemented packaging and runtime model for Navet.
+This guide is for Home Assistant users.
 
-## Supported Packaging Surfaces
+Navet has three Home Assistant deployment paths:
 
-- Home Assistant custom panel through `custom_components/navet`
-- standalone Docker container
-- Home Assistant add-on through Ingress
+- Home Assistant custom panel
+- Home Assistant add-on
+- standalone Docker connected to Home Assistant
 
-## Runtime Model
-
-Navet is a Vite-built frontend with runtime-specific session handling:
-
-- custom panel: uses the injected Home Assistant frontend session
-- add-on through Ingress: uses the authenticated Home Assistant Ingress session
-- standalone Docker or standalone dev app: uses OAuth-backed provider login
-- standalone Homey access: enters through the same standalone login flow
-- provider session bootstrap and teardown are routed through the shared provider adapter registry
-
-Current provider support in these flows:
-
-- Home Assistant: implemented across panel, add-on, and standalone
-- Homey: implemented through the standalone runtime path
-- openHAB: planned, not implemented
+Use the custom panel if you want the cleanest Home Assistant-native experience. Use the add-on if
+you specifically want Navet packaged and managed as an add-on. Use standalone Docker when you want
+Navet to run as its own app while still connecting to Home Assistant.
 
 ## Home Assistant Custom Panel
 
-The custom panel is packaged as the `custom_components/navet` integration.
+This is the recommended setup for Home Assistant users.
 
-Current behavior:
+What to expect:
 
-- registers a sidebar panel at `/navet`
-- serves bundled frontend assets from `/api/navet/static/`
-- loads `navet-panel.js`
-- uses the current Home Assistant frontend session
+- Navet is served at `/navet`
+- the Home Assistant frontend session is reused
+- there is no separate Navet login screen
 
-Build command:
+Setup:
+
+1. Add `https://github.com/awesomestvi/navet` as a custom HACS repository with category
+   `Integration`.
+2. Install `Navet`.
+3. Restart Home Assistant.
+4. Add the `Navet` integration from `Settings -> Devices & services`.
+5. Open Navet from the Home Assistant sidebar.
+
+If you rebuild panel assets locally:
 
 ```bash
 pnpm build:ha-panel
 ```
 
-The build writes panel assets into `custom_components/navet/frontend/`.
+That writes the bundled panel assets to `custom_components/navet/frontend/`.
+
+## Home Assistant Add-on
+
+The add-on lives in [`addons/navet`](/Users/vishal/Development/Github/Navet/Navet/addons/navet).
+
+What to expect:
+
+- Navet runs behind Home Assistant Ingress
+- the Home Assistant frontend session is reused
+- the direct host port is off by default
+- `dashboard_config_url` can preload a dashboard on first launch
+- if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
+
+Use this when you want Home Assistant to own installation, lifecycle, and sidebar access.
 
 ## Standalone Docker
 
-Standalone Docker serves the app with nginx and generates runtime config at startup.
+Standalone Docker runs Navet as its own nginx-hosted app and persists state in `/data`.
 
-Important current behavior:
+What to expect:
 
-- auth and shared profile state are persisted through same-origin endpoints under `/data`
-- RSS proxy requests are handled through the nginx `njs` layer
-- Home Assistant runs through OAuth-backed standalone login
-- Homey also uses the standalone login flow
+- Home Assistant login uses OAuth
+- dashboard/profile state is stored through same-origin runtime endpoints under `/data`
 
-Useful runtime environment variables:
-
-- `NAVET_HASS_URL`
-- `NAVET_DASHBOARD_CONFIG_URL`
-- `NAVET_HOMEY_CLIENT_ID`
-- `NAVET_HOMEY_CLIENT_SECRET`
-- `NAVET_HOMEY_REDIRECT_URI` only when auto-inferred callback URLs are not correct
-
-Example:
+Example `docker-compose.yml`:
 
 ```yaml
 services:
   navet:
     image: ghcr.io/awesomestvi/navet:latest
+    container_name: navet
+    restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
       - navet-data:/data
-    environment:
-      NAVET_HOMEY_CLIENT_ID: your-athom-client-id
-      NAVET_HOMEY_CLIENT_SECRET: your-athom-client-secret
 
 volumes:
   navet-data:
 ```
 
-## Home Assistant Add-on
+Start it with:
 
-The add-on is the Ingress-hosted packaging surface under `addons/navet/`.
+```bash
+docker compose up -d
+```
 
-Current behavior:
+Then open `http://localhost:8080`.
 
-- runs behind Home Assistant Ingress
-- uses the current authenticated Home Assistant frontend session
-- does not require manual `hass_url` or token entry
-- keeps the direct host port disabled by default
-- can optionally import a dashboard config on first launch through `dashboard_config_url`
-- falls back to standalone-style OAuth only when opened outside Ingress through an optional direct
-  port
+### Other Useful Environment Variables
 
-## Returning Users And Legacy Token Options
+- `NAVET_HASS_URL`
+- `NAVET_DASHBOARD_CONFIG_URL`
 
-Navet no longer uses manual Home Assistant long-lived token entry in the normal Docker, add-on, or
-dev flow.
+## Returning Users
 
-Legacy browser auth keys are cleared during auth initialization so stale values do not keep
-controlling runtime behavior. Existing stored add-on options such as old `hass_url` or `token`
-values may still be tolerated during upgrade, but Navet does not use them.
+Navet no longer uses manual Home Assistant long-lived token entry in normal use.
 
-## Local Validation
+During startup, it clears old browser auth keys such as `ha_auth_config`, `ha-dashboard-config`,
+and `navet-auth-config` so stale values do not keep steering the app.
+
+Dashboard import is separate from authentication. If you want to restore an existing dashboard into
+a fresh browser or a new `/data` volume, use an exported dashboard config together with
+`dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
+
+## Validation
 
 For Docker packaging validation:
 
@@ -111,12 +111,5 @@ For Docker packaging validation:
 pnpm check:docker
 ```
 
-This validates the generated runtime nginx and `njs` configuration through the real container
-entrypoint.
-
-## Release Notes
-
-- `latest` is the public standalone image release tag
-- `dev` and `sha-*` images are used for development and workflow-driven testing
-- the custom panel ships from the repository source and requires `pnpm build:ha-panel`
-- the add-on pulls prebuilt images published by CI
+For release validation, see
+[PROVIDER_RELEASE_VALIDATION.md](PROVIDER_RELEASE_VALIDATION.md).

@@ -1,9 +1,9 @@
+import { getProviderFeatureMatrix } from '@navet/app/provider-runtime-registry';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@/app/constants/theme-options';
 import { useDashboardEntitiesStore } from '@/app/features/dashboard';
 import { useI18n, useIntegrationStore, useProviderHealth, useTheme } from '@/app/hooks';
-import { getIntegrationProviderFeatureMatrix } from '@/app/services/integration-registry.service';
 import { type EntityInteractionMode, useSettingsStore } from '@/app/stores';
 import { useNavigationStore } from '@/app/stores/navigation-store';
 import { integrationSelectors } from '@/app/stores/selectors';
@@ -148,7 +148,7 @@ export function useSettingsSectionController() {
         const health = providerHealth.find((entry) => entry.providerId === provider.id);
         const session = sessions[provider.id];
         const status: ProviderCardStatus =
-          provider.id === 'openhab'
+          health?.implementationStatus === 'planned'
             ? 'planned'
             : health?.reconnecting
               ? 'reconnecting'
@@ -163,15 +163,16 @@ export function useSettingsSectionController() {
         return {
           id: provider.id,
           label: provider.label,
+          loginMode: provider.loginMode,
           status,
           isActive: activeProviderId === provider.id,
           isConnected: Boolean(session),
-          canConnect: provider.id !== 'openhab',
+          canConnect: provider.loginMode !== 'unavailable',
           canDisconnect: Boolean(session),
           baseUrl: session?.hassUrl ?? null,
           error: health?.lastError ?? null,
           implementationStatus: health?.implementationStatus ?? 'planned',
-          featureMatrix: getIntegrationProviderFeatureMatrix(provider.id),
+          featureMatrix: getProviderFeatureMatrix(provider.id),
         };
       }),
     [activeProviderId, providerHealth, sessions]

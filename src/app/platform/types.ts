@@ -29,13 +29,6 @@ export interface PlatformEntity extends PlatformIdentity {
   capabilities: PlatformCapability[];
 }
 
-export interface PlatformActionIntent {
-  targetId: string;
-  providerId?: ProviderId;
-  action: PlatformCapability | string;
-  payload?: Record<string, unknown>;
-}
-
 export interface PlatformDevice extends PlatformEntity {
   kind:
     | 'light'
@@ -89,11 +82,6 @@ export interface ProviderRuntimeAdapter {
 export interface ProviderSnapshotAdapter {
   providerId: ProviderId;
   subscribe: (listener: () => void) => () => void;
-}
-
-export interface ProviderActionAdapter {
-  providerId: ProviderId;
-  dispatchAction: (intent: PlatformActionIntent) => Promise<void>;
 }
 
 export interface ProviderResourceAdapter {

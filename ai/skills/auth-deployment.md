@@ -1,41 +1,50 @@
 # Auth And Deployment
 
-Read this file before changing auth, runtime detection, proxy behavior, session persistence, or
+Read this before changing auth, runtime detection, proxy behavior, session persistence, or
 deployment-mode handling.
 
-## Supported Runtime Surfaces
+## Runtime Surfaces
 
-Current runtime surfaces:
+Navet currently runs in:
 
 - Home Assistant custom panel
 - Home Assistant add-on through Ingress
-- standalone Docker or hosted standalone app
+- standalone Docker or hosted standalone mode
 - localhost development
 
-Current provider reality:
+## Provider Reality
 
 - Home Assistant is implemented across panel, add-on, and standalone flows
-- Homey is implemented through the standalone runtime path
-- openHAB remains planned
+- Homey is implemented through the standalone cloud OAuth flow
+- openHAB is implemented through the standalone URL-session flow
+- Hubitat and SmartThings have scaffolding, but they are not available runtime providers yet
 
 ## Rules
 
-- keep auth and runtime ownership in `src/auth/` and provider-specific infrastructure seams
+- keep auth and runtime orchestration in `src/auth/` and provider runtime registrations
+- keep deployment-specific URL rewriting out of feature components
+- preserve same-origin session and proxy constraints for standalone and add-on flows
+- keep Home Assistant-specific runtime assumptions inside Home Assistant-owned seams
 - do not reintroduce manual token-entry login paths
-- do not push deployment-specific URL rewriting into feature components
-- preserve same-origin session and proxy constraints for standalone Docker and add-on flows
-- keep Home Assistant-specific runtime assumptions inside the Home Assistant adapter boundary
 
 ## Current Repo Areas
 
 - `src/auth/`
-- `src/app/infrastructure/home-assistant/auth/`
-- `src/app/infrastructure/home-assistant/runtime/`
+- `src/app/infrastructure/home-assistant/`
 - `src/app/runtime/`
+- `src/providers/homeassistant/`
+- `src/providers/homey/`
+- `src/providers/openhab/`
+- `packages/provider-homeassistant/`
+- `packages/provider-homey/`
+- `packages/provider-openhab/`
 - `docker/`
 - `addons/`
 
-## Required Follow-Through
+## Follow-Through
 
-Auth or runtime changes should update tests and the relevant deployment docs in `README.md`,
-`docs/DOCKER_HOME_ASSISTANT_ADDON.md`, and add-on or custom-component READMEs when behavior changed.
+If auth or deployment behavior changes, update:
+
+- `README.md`
+- `docs/DOCKER_HOME_ASSISTANT_ADDON.md`
+- relevant add-on or custom-component docs

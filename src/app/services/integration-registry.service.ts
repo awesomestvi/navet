@@ -1,247 +1,25 @@
-import type {
-  NavetActionIntent,
-  NavetProviderContract,
-  NavetProviderSnapshot,
-  NavetResourceResolveRequest,
-} from '@/app/core/navet';
+import type { NavetProviderContract } from '@navet/app/internal/compat';
 import {
-  buildHomeAssistantProviderSnapshot,
-  buildHomeyProviderSnapshot,
-} from '@/app/core/provider-snapshot-builders';
+  getRegisteredProviderContract,
+  getRegisteredSmartHomeProviderAdapter,
+} from '@navet/app/provider-contract-registry';
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type {
-  PlatformCameraStream,
-  PlatformCameraStreamType,
-} from '@/app/platform/provider-feature-models';
-import type {
-  ProviderAdminFeatureService,
-  ProviderCalendarFeatureService,
-  ProviderCameraFeatureService,
-  ProviderEnergyFeatureService,
-  ProviderEntityRuntimeService,
-  ProviderHistoryFeatureService,
-  ProviderMediaFeatureService,
-  ProviderNotificationFeatureService,
-  ProviderTaskFeatureService,
-  ProviderWeatherFeatureService,
-} from '@/app/platform/provider-feature-services';
-import type { ResolvedPlatformResource } from '@/app/platform/resources';
-import { homeAssistantStore } from '@/app/stores/home-assistant-store';
-import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
-import type { AuthSession, AuthSessionMap } from '@/auth/types';
+  IntegrationProviderCapability,
+  IntegrationProviderFeature,
+  IntegrationProviderFeatureMatrix,
+  IntegrationProviderRuntimeRegistration,
+} from '@navet/app/provider-runtime-types';
+import type { SmartHomeProviderAdapter } from '@navet/core/provider-contract';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
 import { INTEGRATION_PROVIDERS } from '../types/provider';
-import { homeAssistantService } from './home-assistant.service';
-import { homeAssistantAdminFeatureService } from './home-assistant-admin-feature.service';
-import { homeAssistantCalendarFeatureService } from './home-assistant-calendar-feature.service';
-import { homeAssistantCameraFeatureService } from './home-assistant-camera-feature.service';
-import { homeAssistantEnergyFeatureService } from './home-assistant-energy-feature.service';
-import { homeAssistantEntityRuntimeService } from './home-assistant-entity-runtime.service';
-import { homeAssistantHistoryFeatureService } from './home-assistant-history-feature.service';
-import { homeAssistantMediaFeatureService } from './home-assistant-media-feature.service';
-import { homeAssistantNotificationFeatureService } from './home-assistant-notification-feature.service';
-import type { HomeAssistantPanelHass } from './home-assistant-panel-adapter';
-import { homeAssistantTaskFeatureService } from './home-assistant-task-feature.service';
-import { homeAssistantWeatherFeatureService } from './home-assistant-weather-feature.service';
-import { homeyService } from './homey.service';
-import { ensureHomeyApiClientConfigured } from './homey-api-client.service';
-import { homeyEntityRuntimeService } from './homey-entity-runtime.service';
 
-export interface IntegrationServiceTarget {
-  entity_id?: string | string[];
-  area_id?: string | string[];
-  device_id?: string | string[];
-}
-
-export interface IntegrationProviderCapabilities {
-  serviceActions: boolean;
-  pathSigning: boolean;
-  cameraStreams: boolean;
-}
-
-export type IntegrationProviderCapability = keyof IntegrationProviderCapabilities;
-
-export interface IntegrationProviderFeatureMatrix {
-  rooms: boolean;
-  lighting: boolean;
-  sensors: boolean;
-  climate: boolean;
-  mediaControls: boolean;
-  mediaBrowse: boolean;
-  mediaArtwork: boolean;
-  cameraSnapshot: boolean;
-  cameraStreams: boolean;
-  energyNow: boolean;
-  calendar: boolean;
-  weather: boolean;
-  notifications: boolean;
-  tasks: boolean;
-}
-
-export type IntegrationProviderFeature = keyof IntegrationProviderFeatureMatrix;
-
-export type IntegrationProviderImplementationStatus = 'implemented' | 'planned';
-
-export interface IntegrationProviderAdapter {
-  contract: NavetProviderContract;
+interface IntegrationProviderAdapterBase {
   provider: IntegrationProviderDefinition;
-  implementationStatus: IntegrationProviderImplementationStatus;
-  capabilities: IntegrationProviderCapabilities;
-  featureMatrix: IntegrationProviderFeatureMatrix;
-  callService?: (
-    domain: string,
-    service: string,
-    serviceData?: Record<string, unknown>,
-    target?: IntegrationServiceTarget
-  ) => Promise<void>;
-  signPath?: (path: string, expiresSeconds?: number) => Promise<string>;
-  getCameraStream?: (
-    entityId: string,
-    format: PlatformCameraStreamType
-  ) => Promise<PlatformCameraStream>;
-  adminFeatureService?: ProviderAdminFeatureService;
-  calendarFeatureService?: ProviderCalendarFeatureService;
-  cameraFeatureService?: ProviderCameraFeatureService;
-  energyFeatureService?: ProviderEnergyFeatureService;
-  entityRuntimeService?: ProviderEntityRuntimeService;
-  historyFeatureService?: ProviderHistoryFeatureService;
-  mediaFeatureService?: ProviderMediaFeatureService;
-  notificationFeatureService?: ProviderNotificationFeatureService;
-  taskFeatureService?: ProviderTaskFeatureService;
-  weatherFeatureService?: ProviderWeatherFeatureService;
 }
 
-function payloadBoolean(payload: Record<string, unknown>, key: string): boolean {
-  return payload[key] === true;
-}
-
-function resolveActionProviderPayload(intent: NavetActionIntent) {
-  const payload = intent.payload ?? {};
-
-  return {
-    domain: typeof payload.domain === 'string' ? payload.domain : null,
-    service: typeof payload.service === 'string' ? payload.service : null,
-    target: payload.target as IntegrationServiceTarget | undefined,
-    serviceData:
-      payload.serviceData && typeof payload.serviceData === 'object'
-        ? (payload.serviceData as Record<string, unknown>)
-        : payload,
-  };
-}
-
-function getHomeAssistantSnapshot(): NavetProviderSnapshot {
-  return buildHomeAssistantProviderSnapshot({
-    connected: homeAssistantService.isConnected(),
-    entities: homeAssistantService.getEntities(),
-    areas: homeAssistantService.getAreas(),
-    deviceRegistry: homeAssistantService.getDeviceRegistry(),
-    entityRegistry: homeAssistantService.getEntityRegistry(),
-  });
-}
-
-function getHomeySnapshot(): NavetProviderSnapshot {
-  return buildHomeyProviderSnapshot(homeyService.getSnapshot());
-}
-
-function createProviderSessionMap(
-  sessions: AuthSessionMap
-): Partial<Record<IntegrationProviderId, AuthSession>> {
-  return Object.fromEntries(
-    Object.entries(sessions).filter((entry): entry is [IntegrationProviderId, AuthSession] =>
-      Boolean(entry[1])
-    )
-  ) as Partial<Record<IntegrationProviderId, AuthSession>>;
-}
-
-function buildProviderSession(
-  session: AuthSession,
-  connected: boolean
-): {
-  providerId: AuthSession['providerId'];
-  connected: boolean;
-  runtime: AuthSession['runtime'];
-  authMode: AuthSession['authMode'];
-} {
-  return {
-    providerId: session.providerId,
-    connected,
-    runtime: session.runtime,
-    authMode: session.authMode,
-  };
-}
-
-async function dispatchHomeAssistantAction(intent: NavetActionIntent) {
-  const entityId = intent.targetId.replace(/^home_assistant:/, '');
-  const entityDomain = entityId.split('.', 1)[0] || 'homeassistant';
-  const payload = intent.payload ?? {};
-
-  switch (intent.actionId) {
-    case 'toggle':
-      await homeAssistantService.callService(
-        entityDomain,
-        payloadBoolean(payload, 'state') ? 'turn_on' : 'turn_off',
-        {},
-        { entity_id: entityId }
-      );
-      return;
-    case 'brightness':
-      await homeAssistantService.callService(
-        'light',
-        'turn_on',
-        { brightness_pct: payload.value },
-        { entity_id: entityId }
-      );
-      return;
-    case 'color_temperature':
-      await homeAssistantService.callService(
-        'light',
-        'turn_on',
-        { kelvin: payload.value },
-        { entity_id: entityId }
-      );
-      return;
-    case 'fan_speed':
-      await homeAssistantService.callService(
-        'fan',
-        'set_percentage',
-        { percentage: payload.value },
-        { entity_id: entityId }
-      );
-      return;
-    case 'service': {
-      const { domain, service, target, serviceData } = resolveActionProviderPayload(intent);
-      if (!domain || !service) {
-        throw new Error('Legacy service actions require domain and service');
-      }
-      await homeAssistantService.callService(domain, service, serviceData, target);
-      return;
-    }
-    default:
-      throw new Error(`Unsupported Home Assistant action: ${intent.actionId}`);
-  }
-}
-
-async function resolveHomeAssistantResource(
-  request: NavetResourceResolveRequest
-): Promise<ResolvedPlatformResource> {
-  if (request.kind !== 'media_artwork') {
-    return {
-      id: request.deviceId,
-      kind: 'unavailable',
-      cacheKey: request.deviceId,
-      authStrategy: 'none',
-    };
-  }
-
-  const { mediaArtworkService } = await import(
-    '@/app/infrastructure/home-assistant/home-assistant-infrastructure'
-  );
-
-  return mediaArtworkService.resolveArtwork(
-    request.deviceId.replace(/^home_assistant:/, ''),
-    request.attrs ?? {},
-    request.fallbackPicture
-  );
-}
+export type IntegrationProviderAdapter = IntegrationProviderAdapterBase &
+  IntegrationProviderRuntimeRegistration;
 
 const CAPABILITY_MESSAGES: Record<IntegrationProviderCapability, string> = {
   serviceActions: 'Service actions are not implemented yet',
@@ -266,260 +44,46 @@ const FEATURE_MESSAGES: Record<IntegrationProviderFeature, string> = {
   tasks: 'Task support is not implemented yet',
 };
 
-function createUnsupportedProviderAdapter(
-  providerId: Exclude<IntegrationProviderId, 'home_assistant'>
+function createIntegrationProviderAdapter(
+  providerId: IntegrationProviderId
 ): IntegrationProviderAdapter {
-  const provider = INTEGRATION_PROVIDERS[providerId];
-
   return {
-    contract: {
-      providerId,
-      getSnapshot: () => ({
-        providerId,
-        connected: false,
-        devices: [],
-        rooms: [],
-      }),
-      dispatchAction: async () => {
-        throw new Error(`${provider.label} actions are not implemented yet`);
-      },
-    },
-    provider,
-    implementationStatus: 'planned',
-    capabilities: {
-      serviceActions: false,
-      pathSigning: false,
-      cameraStreams: false,
-    },
-    featureMatrix: {
-      rooms: false,
-      lighting: false,
-      sensors: false,
-      climate: false,
-      mediaControls: false,
-      mediaBrowse: false,
-      mediaArtwork: false,
-      cameraSnapshot: false,
-      cameraStreams: false,
-      energyNow: false,
-      calendar: false,
-      weather: false,
-      notifications: false,
-      tasks: false,
-    },
+    provider: INTEGRATION_PROVIDERS[providerId],
+    ...getProviderRuntimeRegistration(providerId),
   };
 }
 
-const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
-  home_assistant: {
-    contract: {
-      providerId: 'home_assistant',
-      bootstrapSession: (sessions) => {
-        const session = createProviderSessionMap(sessions).home_assistant;
-        return session ? buildProviderSession(session, homeAssistantService.isConnected()) : null;
-      },
-      initializeSession: async (session) => {
-        if (session.providerId !== 'home_assistant') {
-          return;
-        }
-
-        await homeAssistantStore.getState().connect(session);
-      },
-      attachRuntimeBridge: (bridge) => {
-        homeAssistantStore.getState().syncPanelHass(bridge as HomeAssistantPanelHass);
-      },
-      teardownSession: () => {
-        homeAssistantStore.getState().disconnect();
-      },
-      getSnapshot: getHomeAssistantSnapshot,
-      subscribeSnapshot: (listener) => {
-        const unsubscribers = [
-          homeAssistantService.addListener('entities', listener),
-          homeAssistantService.addListener('registries', listener),
-          homeAssistantService.addListener('connection', listener),
-        ];
-
-        return () => {
-          for (const unsubscribe of unsubscribers) {
-            unsubscribe();
-          }
-        };
-      },
-      dispatchAction: dispatchHomeAssistantAction,
-      resolveResource: resolveHomeAssistantResource,
-      normalizeResourceUrl: (resourceUrl) =>
-        resolveHomeAssistantProxyUrl(resourceUrl) ?? resourceUrl,
-    },
-    provider: INTEGRATION_PROVIDERS.home_assistant,
-    implementationStatus: 'implemented',
-    capabilities: {
-      serviceActions: true,
-      pathSigning: true,
-      cameraStreams: true,
-    },
-    featureMatrix: {
-      rooms: true,
-      lighting: true,
-      sensors: true,
-      climate: true,
-      mediaControls: true,
-      mediaBrowse: true,
-      mediaArtwork: true,
-      cameraSnapshot: true,
-      cameraStreams: true,
-      energyNow: true,
-      calendar: true,
-      weather: true,
-      notifications: true,
-      tasks: true,
-    },
-    callService: async (domain, service, serviceData = {}, target) =>
-      homeAssistantService.callService(domain, service, serviceData, target),
-    signPath: async (path, expiresSeconds) => {
-      const signed = await homeAssistantService.signPath(path, expiresSeconds);
-      return signed.path;
-    },
-    getCameraStream: async (entityId, format) =>
-      await homeAssistantService.getCameraStreamUrl(entityId, format),
-    adminFeatureService: homeAssistantAdminFeatureService,
-    calendarFeatureService: homeAssistantCalendarFeatureService,
-    cameraFeatureService: homeAssistantCameraFeatureService,
-    energyFeatureService: homeAssistantEnergyFeatureService,
-    entityRuntimeService: homeAssistantEntityRuntimeService,
-    historyFeatureService: homeAssistantHistoryFeatureService,
-    mediaFeatureService: homeAssistantMediaFeatureService,
-    notificationFeatureService: homeAssistantNotificationFeatureService,
-    taskFeatureService: homeAssistantTaskFeatureService,
-    weatherFeatureService: homeAssistantWeatherFeatureService,
-  },
-  homey: {
-    contract: {
-      providerId: 'homey',
-      bootstrapSession: (sessions) => {
-        const session = createProviderSessionMap(sessions).homey;
-        return session ? buildProviderSession(session, homeyService.getSnapshot().connected) : null;
-      },
-      initializeSession: async (session) => {
-        if (session.providerId !== 'homey') {
-          return;
-        }
-
-        ensureHomeyApiClientConfigured();
-
-        if ('homeySnapshot' in session && session.homeySnapshot) {
-          homeyService.replaceSnapshot({
-            connected: session.homeySnapshot.connected,
-            devices: session.homeySnapshot.devices,
-            zones: session.homeySnapshot.zones,
-          });
-          return;
-        }
-
-        await homeyService.loadSnapshot();
-      },
-      teardownSession: () => {
-        homeyService.resetSnapshot();
-      },
-      getSnapshot: getHomeySnapshot,
-      subscribeSnapshot: (listener) => homeyService.subscribe(() => listener()),
-      dispatchAction: async (intent) => {
-        const entityId = intent.targetId.replace(/^homey:/, '');
-        const target = { entity_id: entityId };
-        const payload = intent.payload ?? {};
-
-        switch (intent.actionId) {
-          case 'toggle':
-            await homeyService.callService(
-              'switch',
-              payloadBoolean(payload, 'state') ? 'turn_on' : 'turn_off',
-              {},
-              target
-            );
-            return;
-          case 'brightness':
-            await homeyService.callService(
-              'light',
-              'turn_on',
-              { brightness_pct: payload.value },
-              target
-            );
-            return;
-          case 'color_temperature':
-            await homeyService.callService('light', 'turn_on', { kelvin: payload.value }, target);
-            return;
-          case 'fan_speed':
-            await homeyService.callService(
-              'fan',
-              'set_percentage',
-              { percentage: payload.value },
-              target
-            );
-            return;
-          case 'service': {
-            const {
-              domain,
-              service,
-              target: legacyTarget,
-              serviceData,
-            } = resolveActionProviderPayload(intent);
-            if (!domain || !service) {
-              throw new Error('Legacy service actions require domain and service');
-            }
-            await homeyService.callService(domain, service, serviceData, legacyTarget);
-            return;
-          }
-          default:
-            throw new Error(`Unsupported Homey action: ${intent.actionId}`);
-        }
-      },
-      resolveResource: (request) => ({
-        id: request.deviceId,
-        kind: 'unavailable',
-        cacheKey: request.deviceId,
-        authStrategy: 'none',
-      }),
-      normalizeResourceUrl: (resourceUrl) => resourceUrl,
-    },
-    provider: INTEGRATION_PROVIDERS.homey,
-    implementationStatus: 'implemented',
-    capabilities: {
-      serviceActions: true,
-      pathSigning: false,
-      cameraStreams: false,
-    },
-    featureMatrix: {
-      rooms: true,
-      lighting: true,
-      sensors: true,
-      climate: false,
-      mediaControls: false,
-      mediaBrowse: false,
-      mediaArtwork: false,
-      cameraSnapshot: false,
-      cameraStreams: false,
-      energyNow: false,
-      calendar: false,
-      weather: false,
-      notifications: false,
-      tasks: false,
-    },
-    callService: async (domain, service, serviceData = {}, target) =>
-      await homeyService.callService(domain, service, serviceData, target),
-    entityRuntimeService: homeyEntityRuntimeService,
-  },
-  openhab: createUnsupportedProviderAdapter('openhab'),
-};
+var integrationProviderAdapters:
+  | Partial<Record<IntegrationProviderId, IntegrationProviderAdapter>>
+  | undefined;
 
 export function getIntegrationProviderAdapter(
   providerId: IntegrationProviderId
 ): IntegrationProviderAdapter {
-  return ADAPTERS[providerId];
+  if (!integrationProviderAdapters) {
+    integrationProviderAdapters = {};
+  }
+
+  const existing = integrationProviderAdapters[providerId];
+  if (existing) {
+    return existing;
+  }
+
+  const adapter = createIntegrationProviderAdapter(providerId);
+  integrationProviderAdapters[providerId] = adapter;
+  return adapter;
+}
+
+export function getSmartHomeProviderAdapter(
+  providerId: IntegrationProviderId
+): SmartHomeProviderAdapter {
+  return getRegisteredSmartHomeProviderAdapter(providerId);
 }
 
 export function getIntegrationProviderContract(
   providerId: IntegrationProviderId
 ): NavetProviderContract {
-  return getIntegrationProviderAdapter(providerId).contract;
+  return getRegisteredProviderContract(providerId);
 }
 
 export function createMissingIntegrationCapabilityError(
@@ -585,7 +149,9 @@ export function listImplementedIntegrationProviders(): IntegrationProviderDefini
 }
 
 export function listIntegrationProviderAdapters(): IntegrationProviderAdapter[] {
-  return Object.values(ADAPTERS);
+  return (['home_assistant', 'homey', 'openhab', 'hubitat', 'smartthings'] as const).map(
+    (providerId) => getIntegrationProviderAdapter(providerId)
+  );
 }
 
 function requireFeatureService<T>(

@@ -16,6 +16,34 @@ vi.mock('@/app/services/home-assistant.service', () => ({
   homeAssistantService: serviceMock,
 }));
 
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityCommand: async ({
+    type,
+    entityId,
+    percentage,
+  }: {
+    type: 'turn_on' | 'turn_off' | 'set_fan_speed';
+    entityId: string;
+    percentage?: number;
+  }) => {
+    const domain = entityId.split('.', 1)[0] || 'fan';
+    if (type === 'set_fan_speed') {
+      await serviceMock.callService(
+        'fan',
+        'set_percentage',
+        { percentage },
+        { entity_id: entityId }
+      );
+    } else {
+      await serviceMock.callService(domain, type, {}, { entity_id: entityId });
+    }
+    return {
+      accepted: true,
+      requiresEventConfirmation: true,
+    };
+  },
+}));
+
 function createFanEntity(percentage: number, state = 'on') {
   const entity = fanEntityFactory({
     friendly_name: 'Ceiling Fan',

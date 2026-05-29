@@ -1,13 +1,19 @@
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { ProviderTaskFeatureService } from '@/app/platform/provider-feature-services';
 import {
   getCurrentIntegrationProviderIdFromStore,
   getNativeIntegrationEntityId,
   resolveIntegrationProviderId,
 } from './integration-provider-context.service';
-import { getIntegrationProviderTaskFeatureService } from './integration-registry.service';
 
 function getCurrentTaskFeatureService() {
-  return getIntegrationProviderTaskFeatureService(getCurrentIntegrationProviderIdFromStore());
+  const service = getProviderRuntimeRegistration(
+    getCurrentIntegrationProviderIdFromStore()
+  ).taskFeatureService;
+  if (!service) {
+    throw new Error('Task support is not implemented yet for the current integration');
+  }
+  return service;
 }
 
 export const integrationTaskService: ProviderTaskFeatureService = {
@@ -19,7 +25,18 @@ export const integrationTaskService: ProviderTaskFeatureService = {
     if (providerId !== 'home_assistant') {
       throw new Error('Automation details are not supported for the current integration yet');
     }
-    const service = getIntegrationProviderTaskFeatureService(providerId);
+    const service = getProviderRuntimeRegistration(providerId).taskFeatureService;
+    if (!service) {
+      throw new Error('Task support is not implemented yet for the current integration');
+    }
     return await service.getAutomationDetails(getNativeIntegrationEntityId(entityId));
+  },
+  triggerAutomation: async (entityId) => {
+    const providerId = resolveIntegrationProviderId(entityId);
+    const service = getProviderRuntimeRegistration(providerId).taskFeatureService;
+    if (!service) {
+      throw new Error('Task support is not implemented yet for the current integration');
+    }
+    await service.triggerAutomation(getNativeIntegrationEntityId(entityId));
   },
 };

@@ -1,6 +1,6 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { useCallback, useState } from 'react';
 import { useI18n, useServiceActionHandler } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import type { VacuumStatus } from './vacuum-utils';
 
@@ -32,42 +32,21 @@ export function useVacuumControl({
   const { t } = useI18n();
 
   const handleStartCleaning = useCallback(() => {
-    void runAction(
-      () =>
-        dispatchEntityAction({
-          providerId,
-          entityId,
-          domain: 'vacuum',
-          service: 'start',
-        }),
-      t('vacuum.feedback.startFailed')
-    );
+    void runAction(async () => {
+      await dispatchEntityCommand({ type: 'start', entityId }, providerId);
+    }, t('vacuum.feedback.startFailed'));
   }, [entityId, providerId, runAction, t]);
 
   const handlePause = useCallback(() => {
-    void runAction(
-      () =>
-        dispatchEntityAction({
-          providerId,
-          entityId,
-          domain: 'vacuum',
-          service: 'pause',
-        }),
-      t('vacuum.feedback.pauseFailed')
-    );
+    void runAction(async () => {
+      await dispatchEntityCommand({ type: 'stop', entityId }, providerId);
+    }, t('vacuum.feedback.pauseFailed'));
   }, [entityId, providerId, runAction, t]);
 
   const handleReturnHome = useCallback(() => {
-    void runAction(
-      () =>
-        dispatchEntityAction({
-          providerId,
-          entityId,
-          domain: 'vacuum',
-          service: 'return_to_base',
-        }),
-      t('vacuum.feedback.returnFailed')
-    );
+    void runAction(async () => {
+      await dispatchEntityCommand({ type: 'return_home', entityId }, providerId);
+    }, t('vacuum.feedback.returnFailed'));
   }, [entityId, providerId, runAction, t]);
 
   return {

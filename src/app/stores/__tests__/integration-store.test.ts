@@ -6,7 +6,7 @@ import { integrationStore } from '../integration-store';
 import { homeAssistantSelectors } from '../selectors';
 
 describe('integrationStore', () => {
-  it('tracks provider health for Home Assistant and Homey', async () => {
+  it('tracks provider health for implemented providers', async () => {
     await resetAppStores();
 
     homeAssistantStore.setState({
@@ -30,6 +30,12 @@ describe('integrationStore', () => {
     expect(integrationStore.getState().providerHealth.homey).toMatchObject({
       providerId: 'homey',
       connected: true,
+      implementationStatus: 'implemented',
+    });
+    expect(integrationStore.getState().providerHealth.openhab).toMatchObject({
+      providerId: 'openhab',
+      connected: false,
+      implementationStatus: 'implemented',
     });
     expect(integrationStore.getState().providerRuntime.home_assistant).toMatchObject({
       providerId: 'home_assistant',
@@ -134,6 +140,26 @@ describe('integrationStore', () => {
       ])
     );
     expect(
+      integrationStore.getState().providerEntitiesByCanonicalId['home_assistant:light.kitchen']
+    ).toMatchObject({
+      canonicalId: 'home_assistant:light.kitchen',
+      externalId: 'light.kitchen',
+      type: 'light',
+      primaryState: 'on',
+      capabilities: expect.arrayContaining(['toggle', 'brightness']),
+    });
+    expect(
+      integrationStore.getState().providerEntityViewsByCanonicalId['home_assistant:light.kitchen']
+    ).toMatchObject({
+      canonicalId: 'home_assistant:light.kitchen',
+      externalId: 'light.kitchen',
+      type: 'light',
+      size: 'small',
+      attributes: expect.objectContaining({
+        brightnessPct: 100,
+      }),
+    });
+    expect(
       integrationStore.getState().devicesByCanonicalId['home_assistant:light.kitchen']
     ).toMatchObject({
       room: 'Unassigned',
@@ -189,5 +215,45 @@ describe('integrationStore', () => {
       entitiesHydrated: true,
       registriesHydrated: false,
     });
+  });
+
+  it('records provider-neutral entity events from provider adapter updates', async () => {
+    await resetAppStores();
+
+    homeAssistantStore.setState({
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'off',
+          attributes: { friendly_name: 'Kitchen Light' },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    homeAssistantStore.setState({
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'on',
+          attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:05:00.000Z',
+          context: { id: 'ctx', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    expect(integrationStore.getState().providerEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'entity_updated',
+          providerId: 'home_assistant',
+          entityId: 'home_assistant:light.kitchen',
+        }),
+      ])
+    );
   });
 });

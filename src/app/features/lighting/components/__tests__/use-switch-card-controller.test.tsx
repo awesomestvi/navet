@@ -3,7 +3,7 @@ import { renderHookWithProviders } from '@/test/render';
 
 vi.mock('@/app/hooks', () => ({
   useI18n: () => ({ t: (key: string) => key }),
-  useProviderDevice: vi.fn(() => null),
+  useProviderEntityModel: vi.fn(() => null),
   useProviderEntitySnapshot: vi.fn(() => undefined),
   useProviderEntitySnapshotRecord: vi.fn(() => ({})),
   useProviderSwitchTopology: () => ({ deviceId: null, siblingIds: [] }),

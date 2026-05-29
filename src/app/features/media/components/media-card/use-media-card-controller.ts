@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  getMediaPlayerCapabilities,
-  hasMediaPlayerGroupingSupport,
-  hasMediaPlayerNextTrackSupport,
-  hasMediaPlayerPreviousTrackSupport,
-} from '@/app/constants/media-player-features';
+import { getMediaPlayerCapabilities } from '@/app/constants/media-player-features';
 import { readNavetMediaState } from '@/app/core/navet-device-state';
 import { isTvMediaDevice, normalizeMediaPlaybackState } from '@/app/features/media';
 import {
@@ -21,7 +16,7 @@ import {
 } from '@/app/features/media/tv-remote-commands';
 import { useI18n, useServiceActionHandler } from '@/app/hooks';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
 import { integrationSelectors } from '@/app/stores/selectors';
 import { getProviderNativeId, parseProviderScopedId } from '@/app/utils/provider-ids';
@@ -53,22 +48,23 @@ export function useMediaCardController({
   initialSupportsGrouping = false,
   initialSupportsPreviousTrack = true,
   initialSupportsNextTrack = true,
-  initialSupportedFeatures,
+  initialMediaCapabilities,
+  initialSupportedFeatures: _initialSupportedFeatures,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
   const { t } = useI18n();
   const isTv = isTvMediaDevice(deviceClass);
-  const providerDevice = useProviderDevice(entityId);
+  const providerEntity = useProviderEntityModel(entityId);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const resolvedProviderId =
-    providerDevice?.providerId ?? parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
+    providerEntity?.providerId ?? parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
   const runtimeEntityId = resolvedProviderId ? getProviderNativeId(entityId) : '';
   const remoteEntityId = runtimeEntityId
     ? `remote.${runtimeEntityId.split('.').slice(1).join('.')}`
     : '';
   const liveEntity = useProviderMediaEntity(entityId);
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const providerState = readNavetMediaState(providerDevice);
+  const providerState = readNavetMediaState(providerEntity);
   const remoteEntity = useProviderMediaCompanionEntity(entityId, 'remote');
   const entityRegistry = useProviderMediaEntityRegistry(entityId);
   const resolvedInitialState = liveEntity
@@ -100,40 +96,26 @@ export function useMediaCardController({
       : typeof providerState?.durationSeconds === 'number'
         ? providerState.durationSeconds
         : (initialDurationSeconds ?? 0);
-  const resolvedInitialSupportedFeatures =
-    typeof liveAttrs?.supported_features === 'number'
-      ? liveAttrs.supported_features
-      : typeof providerState?.supportedFeatures === 'number'
-        ? providerState.supportedFeatures
-        : initialSupportedFeatures;
-  const mediaCapabilities =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? getMediaPlayerCapabilities(resolvedInitialSupportedFeatures)
-      : {
-          ...getMediaPlayerCapabilities(0),
-          canGroup: initialSupportsGrouping,
-          canMuteVolume: true,
-          canNextTrack: initialSupportsNextTrack,
-          canPlay: true,
-          canPreviousTrack: initialSupportsPreviousTrack,
-          canSetVolume: true,
-        };
-  const canSetVolume =
-    typeof resolvedInitialSupportedFeatures === 'number' ? mediaCapabilities.canSetVolume : true;
-  const canMuteVolume =
-    typeof resolvedInitialSupportedFeatures === 'number' ? mediaCapabilities.canMuteVolume : true;
+  const mediaCapabilities = providerState?.mediaCapabilities ??
+    initialMediaCapabilities ?? {
+      ...getMediaPlayerCapabilities(0),
+      canGroup: providerState?.supportsGrouping ?? initialSupportsGrouping,
+      canMuteVolume: true,
+      canNextTrack: providerState?.supportsNextTrack ?? initialSupportsNextTrack,
+      canPlay: true,
+      canPreviousTrack: providerState?.supportsPreviousTrack ?? initialSupportsPreviousTrack,
+      canSetVolume: true,
+    };
+  const canSetVolume = mediaCapabilities?.canSetVolume ?? true;
+  const canMuteVolume = mediaCapabilities?.canMuteVolume ?? true;
   const resolvedInitialSupportsGrouping =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? hasMediaPlayerGroupingSupport(resolvedInitialSupportedFeatures)
-      : initialSupportsGrouping;
+    mediaCapabilities?.canGroup ?? providerState?.supportsGrouping ?? initialSupportsGrouping;
   const canPreviousTrack =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? hasMediaPlayerPreviousTrackSupport(resolvedInitialSupportedFeatures)
-      : initialSupportsPreviousTrack;
+    mediaCapabilities?.canPreviousTrack ??
+    providerState?.supportsPreviousTrack ??
+    initialSupportsPreviousTrack;
   const canNextTrack =
-    typeof resolvedInitialSupportedFeatures === 'number'
-      ? hasMediaPlayerNextTrackSupport(resolvedInitialSupportedFeatures)
-      : initialSupportsNextTrack;
+    mediaCapabilities?.canNextTrack ?? providerState?.supportsNextTrack ?? initialSupportsNextTrack;
   // Only subscribe to all media player entities if grouping is actually supported.
   // Use the resolved live capability when available so grouping stays functional
   // even when the initial prop was stale.
@@ -282,6 +264,7 @@ export function useMediaCardController({
     initialMuted,
     initialElapsedSeconds,
     initialDurationSeconds,
+    initialMediaCapabilities: mediaCapabilities ?? undefined,
     initialSupportsGrouping,
     initialGroupMembers,
     isAdjustingVolume,

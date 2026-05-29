@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { Fan, Sliders, Thermometer } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
 import {
@@ -15,7 +16,7 @@ import { getHVACGaugeColor } from '@/app/features/climate/utils/hvac-styles';
 import { convertCelsiusPresetToSourceUnit } from '@/app/features/climate/utils/hvac-temperature-presets';
 import { getHvacTemperatureStatusLabel } from '@/app/features/climate/utils/hvac-temperature-status-label';
 import { useI18n, useTheme } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { callIntegrationService } from '@/app/services/integration-service-call.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
@@ -337,16 +338,15 @@ function ClimateSiblingControlRow({
 
   const handlePress = useCallback(async () => {
     if (domain === 'fan') {
-      await dispatchEntityAction({
+      await dispatchEntityCommand({
+        type: isOn ? 'turn_off' : 'turn_on',
         entityId,
-        domain: 'fan',
-        service: isOn ? 'turn_off' : 'turn_on',
       });
       return;
     }
 
     if (domain === 'button' || domain === 'input_button') {
-      await dispatchEntityAction({
+      await callIntegrationService({
         entityId,
         domain,
         service: 'press',
@@ -355,25 +355,22 @@ function ClimateSiblingControlRow({
     }
 
     if (domain === 'script') {
-      await dispatchEntityAction({
+      await dispatchEntityCommand({
+        type: 'turn_on',
         entityId,
-        domain: 'script',
-        service: 'turn_on',
       });
       return;
     }
 
-    const serviceDomain = domain === 'input_boolean' ? 'input_boolean' : 'switch';
-    await dispatchEntityAction({
+    await dispatchEntityCommand({
+      type: isOn ? 'turn_off' : 'turn_on',
       entityId,
-      domain: serviceDomain,
-      service: isOn ? 'turn_off' : 'turn_on',
     });
   }, [domain, entityId, isOn]);
 
   const setFanPercentage = useCallback(
     async (percentage: number) => {
-      await dispatchEntityAction({
+      await callIntegrationService({
         entityId,
         domain: 'fan',
         service: 'set_percentage',
@@ -385,7 +382,7 @@ function ClimateSiblingControlRow({
 
   const setFanPresetMode = useCallback(
     async (presetMode: string) => {
-      await dispatchEntityAction({
+      await callIntegrationService({
         entityId,
         domain: 'fan',
         service: 'set_preset_mode',

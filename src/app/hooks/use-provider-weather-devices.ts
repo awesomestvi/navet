@@ -48,10 +48,10 @@ function resolveEntityName(
 function resolveEntityRoom(
   _scopedEntityId: string,
   entity: { attributes?: Record<string, unknown> },
-  deviceRoom?: string
+  entityRoom?: string
 ) {
   return (
-    deviceRoom ||
+    entityRoom ||
     (typeof entity.attributes?.room === 'string' ? entity.attributes.room : null) ||
     (typeof entity.attributes?.area === 'string' ? entity.attributes.area : null) ||
     (typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : null) ||
@@ -65,7 +65,9 @@ export function useProviderWeatherDevices(
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
   const supportsWeather = useProviderFeature('weather', resolvedProviderId);
-  const devicesByCanonicalId = useIntegrationStore((state) => state.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    (state) => state.providerEntitiesByCanonicalId
+  );
   const entities = useProviderEntitySnapshots({
     providerId: resolvedProviderId,
     enabled: supportsWeather,
@@ -166,7 +168,7 @@ export function useProviderWeatherDevices(
         resolveEntityRoom(
           scopedEntityId,
           weatherEntity,
-          devicesByCanonicalId[scopedEntityId]?.room
+          providerEntitiesByCanonicalId[scopedEntityId]?.room
         ),
         {
           sunEntity: entities[SUN_ENTITY_ID],
@@ -182,11 +184,11 @@ export function useProviderWeatherDevices(
   }, [
     resolvedProviderId,
     deferredWeatherForecasts,
-    devicesByCanonicalId,
     entities,
     entityRegistryMap,
     locale,
     primaryWeatherEntityId,
+    providerEntitiesByCanonicalId,
     t,
     use24HourTime,
     weatherForecastMode,

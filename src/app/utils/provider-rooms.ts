@@ -1,4 +1,5 @@
-import type { NavetDevice } from '@/app/core/navet';
+import type { NavetDevice } from '@navet/app/internal/compat-models';
+import type { NavetEntity } from '@navet/core/types';
 import type { PlatformRoom } from '@/app/platform/types';
 import type { DeviceCollection } from '@/app/types/device.types';
 import { getDeviceRoomLabel } from './device-location';
@@ -41,6 +42,37 @@ export function buildAggregatedRooms(devices: DeviceCollection): PlatformRoom[] 
   return Array.from(roomMap.values()).sort((left, right) => left.name.localeCompare(right.name));
 }
 
+export function buildAggregatedRoomsFromProviderEntities(entities: NavetEntity[]): PlatformRoom[] {
+  const roomMap = new Map<string, PlatformRoom>();
+
+  for (const entity of entities) {
+    const roomName = entity.room || '';
+    const roomKey = normalizeRoomName(roomName);
+    const existing = roomMap.get(roomKey);
+
+    if (existing) {
+      if (!existing.providerIds.includes(entity.providerId)) {
+        existing.providerIds.push(entity.providerId);
+      }
+      if (!existing.canonicalMemberIds.includes(entity.canonicalId)) {
+        existing.canonicalMemberIds.push(entity.canonicalId);
+      }
+      continue;
+    }
+
+    roomMap.set(roomKey, {
+      id: roomKey,
+      key: roomKey,
+      name: roomName,
+      providerIds: [entity.providerId],
+      canonicalMemberIds: [entity.canonicalId],
+    });
+  }
+
+  return Array.from(roomMap.values()).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+// Compatibility-only bridge while app-internal callers still center NavetDevice.
 export function buildAggregatedRoomsFromNavetDevices(devices: NavetDevice[]): PlatformRoom[] {
   const roomMap = new Map<string, PlatformRoom>();
 

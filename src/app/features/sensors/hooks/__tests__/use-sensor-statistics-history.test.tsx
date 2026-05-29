@@ -16,6 +16,10 @@ describe('useSensorStatisticsHistory', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useProviderEntitySnapshotMock.mockReset();
+    vi.spyOn(
+      integrationHistoryServiceModule,
+      'supportsIntegrationStatisticsHistory'
+    ).mockReturnValue(true);
   });
 
   it('returns recorder history for numeric sensors with statistics', async () => {
@@ -126,6 +130,10 @@ describe('useSensorStatisticsHistory', () => {
         unit_of_measurement: '°C',
       },
     });
+    vi.spyOn(
+      integrationHistoryServiceModule,
+      'supportsIntegrationStatisticsHistory'
+    ).mockReturnValue(false);
     vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
       messageClient
     );

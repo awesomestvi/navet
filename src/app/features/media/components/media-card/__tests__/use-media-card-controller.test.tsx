@@ -1,9 +1,13 @@
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getMediaPlayerCapabilities } from '@/app/constants/media-player-features';
 import { renderHookWithProviders } from '@/test/render';
 
-const { dispatchEntityActionMock, entitiesState, runActionMock, serviceMock } = vi.hoisted(() => ({
-  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
+const { dispatchEntityCommandMock, entitiesState, runActionMock, serviceMock } = vi.hoisted(() => ({
+  dispatchEntityCommandMock: vi.fn().mockResolvedValue({
+    accepted: true,
+    requiresEventConfirmation: true,
+  }),
   entitiesState: {
     entities: {} as Record<string, unknown>,
     entityRegistry: [] as Array<{ entityId: string; platform?: string | null }>,
@@ -44,7 +48,7 @@ vi.mock('@/app/services/home-assistant.service', () => ({
 }));
 
 vi.mock('@/app/services/integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
+  dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
 vi.mock('@/auth/AuthProvider', () => ({
@@ -70,6 +74,7 @@ const defaultParams = {
   initialState: 'idle' as const,
   initialVolume: 20,
   initialMuted: false,
+  initialMediaCapabilities: getMediaPlayerCapabilities(448439),
 };
 
 function setMediaEntities(includeRemote: boolean) {
@@ -130,10 +135,9 @@ describe('useMediaCardController', () => {
 
     act(() => result.current.togglePlay());
 
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
       entityId: 'media_player.kitchen',
-      domain: 'media_player',
-      service: 'media_play_pause',
+      type: 'play_pause',
     });
     expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
   });
@@ -152,7 +156,7 @@ describe('useMediaCardController', () => {
       'remote.kitchen',
       'MEDIA_PLAY_PAUSE'
     );
-    expect(dispatchEntityActionMock).not.toHaveBeenCalled();
+    expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
   });
 
   it('uses media player play-pause for Samsung TV playback while keeping Samsung remote commands', () => {
@@ -165,10 +169,9 @@ describe('useMediaCardController', () => {
     const { result } = renderHookWithProviders(() => useMediaCardController(defaultParams));
 
     act(() => result.current.togglePlay());
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
       entityId: 'media_player.kitchen',
-      domain: 'media_player',
-      service: 'media_play_pause',
+      type: 'play_pause',
     });
     expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
 

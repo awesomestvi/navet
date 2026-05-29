@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useProviderEntitySnapshot } from '@/app/hooks';
 import { getSensorDeviceClass } from '@/app/hooks/device-mappers';
-import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import {
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@/app/services/ha-recorder-statistics';
-import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
-import { integrationSelectors } from '@/app/stores/selectors';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getIntegrationHistoryMessageClient,
+  supportsIntegrationStatisticsHistory,
+} from '@/app/services/integration-history.service';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
@@ -62,32 +62,14 @@ export interface SensorStatisticsPoint {
   maxValue: number;
 }
 
-function isHomeAssistantHistoryEntityId(
-  entityId: string | undefined,
-  currentProviderId: string
-): boolean {
-  if (!entityId) {
-    return false;
-  }
-
-  const scopedId = parseProviderScopedId(entityId);
-  if (scopedId) {
-    return scopedId.providerId === 'home_assistant';
-  }
-
-  return currentProviderId === 'home_assistant';
-}
-
 export function useSensorStatisticsHistory(entityId: string | undefined) {
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantEntity = isHomeAssistantHistoryEntityId(entityId, currentProviderId);
   const entity = useProviderEntitySnapshot(entityId ?? '');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [points, setPoints] = useState<SensorStatisticsPoint[]>([]);
 
   const canFetch = useMemo(
-    () => isHomeAssistantEntity && isNumericSensor(entityId ?? '', entity),
-    [entity, entityId, isHomeAssistantEntity]
+    () => supportsIntegrationStatisticsHistory(entityId) && isNumericSensor(entityId ?? '', entity),
+    [entity, entityId]
   );
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { type Dispatch, type SetStateAction, useEffect, useRef } from 'react';
-import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
-import type { NavetMediaState } from '@/app/core/navet-device-state';
+import type { NavetMediaCapabilities, NavetMediaState } from '@/app/core/navet-device-state';
 import { normalizeMediaPlaybackState } from '@/app/features/media';
 
 function areStringArraysEqual(a: string[], b: string[]) {
@@ -28,6 +27,7 @@ interface UseMediaEntitySyncParams {
   initialMuted: boolean;
   initialElapsedSeconds?: number;
   initialDurationSeconds?: number;
+  initialMediaCapabilities?: NavetMediaCapabilities;
   initialSupportsGrouping: boolean;
   initialGroupMembers: string[];
   isAdjustingVolume: boolean;
@@ -52,6 +52,7 @@ export function useMediaEntitySync({
   initialMuted,
   initialElapsedSeconds,
   initialDurationSeconds,
+  initialMediaCapabilities,
   initialSupportsGrouping,
   initialGroupMembers,
   isAdjustingVolume,
@@ -90,15 +91,17 @@ export function useMediaEntitySync({
       const nextDuration = hasLiveDuration
         ? (attrs.media_duration as number)
         : (initialDurationSeconds ?? 0);
-      const nextSupportedFeatures =
-        typeof attrs.supported_features === 'number' ? attrs.supported_features : 0;
       const nextGroupMembers = Array.isArray(attrs.group_members)
         ? attrs.group_members.filter(
             (value): value is string => typeof value === 'string' && value.length > 0
           )
         : [];
       const resolvedGroupMembers = nextGroupMembers.length > 0 ? nextGroupMembers : [entityId];
-      const nextSupportsGrouping = hasMediaPlayerGroupingSupport(nextSupportedFeatures);
+      const nextSupportsGrouping =
+        providerState?.mediaCapabilities?.canGroup ??
+        initialMediaCapabilities?.canGroup ??
+        providerState?.supportsGrouping ??
+        initialSupportsGrouping;
 
       setState((currentState) => (currentState === nextState ? currentState : nextState));
       if (
@@ -210,6 +213,7 @@ export function useMediaEntitySync({
     initialMuted,
     initialElapsedSeconds,
     initialDurationSeconds,
+    initialMediaCapabilities,
     initialSupportsGrouping,
     initialGroupMembers,
     entityId,

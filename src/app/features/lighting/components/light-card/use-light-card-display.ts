@@ -10,7 +10,6 @@ import {
 import { TEMP_OPTIONS } from '@/app/constants/light-constants';
 import type { NavetLightState } from '@/app/core/navet-device-state';
 import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
-import type { IntegrationProviderId } from '@/app/types/provider';
 import {
   getSupportedColorTemperatureRange,
   supportsColorSelection,
@@ -20,10 +19,10 @@ import {
 interface UseLightCardDisplayParams {
   selectedIcon: string;
   size: CardSize;
-  providerId?: IntegrationProviderId;
   liveEntity: PlatformEntitySnapshot | undefined;
   initialTemp: number;
   providerState?: NavetLightState | null;
+  supportsAdvancedLightControls: boolean;
 }
 
 interface UseLightCardDisplayResult {
@@ -41,18 +40,18 @@ interface UseLightCardDisplayResult {
 export function useLightCardDisplay({
   selectedIcon,
   size,
-  providerId,
   liveEntity,
   initialTemp,
   providerState,
+  supportsAdvancedLightControls,
 }: UseLightCardDisplayParams): UseLightCardDisplayResult {
-  const isHomeAssistantProvider = !providerId || providerId === 'home_assistant';
-  const supportsColorTemperature = isHomeAssistantProvider
-    ? supportsColorTemperatureControl(liveEntity)
-    : (typeof providerState?.colorTemperatureKelvin === 'number'
-        ? providerState.colorTemperatureKelvin
-        : initialTemp) > 0;
-  const supportsColorControl = isHomeAssistantProvider && supportsColorSelection(liveEntity);
+  const supportsColorTemperature =
+    supportsColorTemperatureControl(liveEntity) ||
+    (typeof providerState?.colorTemperatureKelvin === 'number'
+      ? providerState.colorTemperatureKelvin
+      : initialTemp) > 0;
+  const supportsColorControl =
+    supportsAdvancedLightControls && Boolean(liveEntity) && supportsColorSelection(liveEntity);
   const { max: maxColorTemp, min: minColorTemp } = getSupportedColorTemperatureRange(liveEntity);
 
   const tempOptions = useMemo(

@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { Palette, Sliders, ToggleLeft } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useCallback, useState } from 'react';
@@ -28,7 +29,6 @@ import {
 } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import type { DeviceMetric } from '@/app/types/device.types';
 import { getEntityTypeLabel } from '@/app/utils/entity-type-label';
 import type { SwitchSiblingEntity } from './use-switch-card-controller';
@@ -255,10 +255,9 @@ function SwitchControlRow({
   isOn: boolean;
 }) {
   const handleToggle = useCallback(async () => {
-    await dispatchEntityAction({
+    await dispatchEntityCommand({
+      type: isOn ? 'turn_off' : 'turn_on',
       entityId,
-      domain: 'switch',
-      service: isOn ? 'turn_off' : 'turn_on',
     });
   }, [entityId, isOn]);
 

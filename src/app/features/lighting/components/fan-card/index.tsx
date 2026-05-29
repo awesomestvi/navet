@@ -1,3 +1,4 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { Fan } from 'lucide-react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { CardActionRow, CardActionRowGroup } from '@/app/components/patterns/card-action-row';
@@ -13,8 +14,7 @@ import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-sh
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getRoundControlStyles } from '@/app/components/shared/theme/round-control-styles';
 import { useI18n, useServiceActionHandler, useTheme } from '@/app/hooks';
-import { useProviderDevice } from '@/app/hooks/use-provider-device';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { getLightCardSurfaceTokens } from '../light-card/light-card-surface-tokens';
 import { SwitchSettingsDialog } from '../switch-settings-dialog';
@@ -102,7 +102,8 @@ export const FanCard = memo(function FanCard({
 }: FanCardProps) {
   const { t } = useI18n();
   const { theme, colors, accentColor } = useTheme();
-  const providerDevice = useProviderDevice(id);
+  const providerEntity = useProviderEntityModel(id);
+  const providerState = providerEntity?.attributes as Record<string, unknown> | undefined;
   const runAction = useServiceActionHandler();
   const resolvedSize = resolveFanCardSize(size);
   const [isOn, setIsOn] = useState(initialState);
@@ -117,18 +118,19 @@ export const FanCard = memo(function FanCard({
   const isSmall = isCompactCardSize(resolvedSize);
 
   useEffect(() => {
-    const state = providerDevice?.state;
-    if (!state) {
+    if (!providerState) {
       setIsOn(initialState);
       setPercentage(clampPercentage(initialPercentage));
       return;
     }
 
-    setIsOn(state.value === 'on' || state.on === true);
+    setIsOn(providerState.value === 'on' || providerState.on === true);
     setPercentage(
-      clampPercentage(typeof state.percentage === 'number' ? state.percentage : initialPercentage)
+      clampPercentage(
+        typeof providerState.percentage === 'number' ? providerState.percentage : initialPercentage
+      )
     );
-  }, [initialPercentage, initialState, providerDevice]);
+  }, [initialPercentage, initialState, providerState]);
 
   const updatePower = useCallback(
     (nextIsOn: boolean) => {
@@ -138,13 +140,15 @@ export const FanCard = memo(function FanCard({
       }
 
       void runAction(
-        () =>
-          dispatchEntityAction({
-            providerId,
-            entityId: id,
-            domain: 'fan',
-            service: nextIsOn ? 'turn_on' : 'turn_off',
-          }),
+        async () => {
+          await dispatchEntityCommand(
+            {
+              type: nextIsOn ? 'turn_on' : 'turn_off',
+              entityId: id,
+            },
+            providerId
+          );
+        },
         t('lighting.feedback.updateSwitchFailed'),
         {
           onError: () => setIsOn(!nextIsOn),
@@ -160,14 +164,16 @@ export const FanCard = memo(function FanCard({
       setIsOn(true);
       setPercentage(nextPercentage);
       void runAction(
-        () =>
-          dispatchEntityAction({
-            providerId,
-            entityId: id,
-            domain: 'fan',
-            service: 'set_percentage',
-            serviceData: { percentage: nextPercentage },
-          }),
+        async () => {
+          await dispatchEntityCommand(
+            {
+              type: 'set_fan_speed',
+              entityId: id,
+              percentage: nextPercentage,
+            },
+            providerId
+          );
+        },
         t('lighting.feedback.updateSwitchFailed'),
         {
           onError: () => setPercentage(percentage),

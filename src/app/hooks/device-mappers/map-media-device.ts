@@ -1,5 +1,6 @@
 import type { HassEntity } from 'home-assistant-js-websocket';
 import {
+  getMediaPlayerCapabilities,
   hasMediaPlayerGroupingSupport,
   hasMediaPlayerNextTrackSupport,
   hasMediaPlayerPreviousTrackSupport,
@@ -16,6 +17,7 @@ export function mapMediaDevice(
   t: TranslateFn
 ): MediaDevice {
   const supportedFeatures = parseNumberish(entity.attributes?.supported_features) ?? 0;
+  const mediaCapabilities = getMediaPlayerCapabilities(supportedFeatures);
   const mediaDeviceClass =
     typeof entity.attributes?.device_class === 'string'
       ? entity.attributes.device_class
@@ -108,6 +110,7 @@ export function mapMediaDevice(
     durationSeconds:
       typeof mediaDuration === 'number' ? Math.max(0, Math.floor(mediaDuration)) : undefined,
     positionUpdatedAt,
+    mediaCapabilities,
     supportsGrouping: hasMediaPlayerGroupingSupport(supportedFeatures),
     supportsPreviousTrack: hasMediaPlayerPreviousTrackSupport(supportedFeatures),
     supportsNextTrack: hasMediaPlayerNextTrackSupport(supportedFeatures),

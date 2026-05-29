@@ -1,0 +1,10 @@
+{
+  "name": "@navet/provider-smartthings",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./smartthings-adapter": "./src/smartthings-adapter.ts",
+    "./smartthings-runtime-registration": "./src/smartthings-runtime-registration.ts"
+  }
+}

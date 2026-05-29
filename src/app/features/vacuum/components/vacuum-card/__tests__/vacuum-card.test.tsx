@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/app/hooks', () => ({
   useI18n: () => ({ t: (key: string) => key }),
   useProviderDevice: vi.fn(() => null),
+  useProviderEntityModel: vi.fn(() => null),
   useProviderEntitySnapshot: vi.fn(() => undefined),
   useProviderEntitySnapshots: vi.fn(() => null),
   useProviderEntityRegistryEntries: vi.fn(() => []),

@@ -1,9 +1,9 @@
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { ProviderAdminFeatureService } from '@/app/platform/provider-feature-services';
 import { parsePlatformRoomReference } from '@/app/platform/provider-room-management';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { getCurrentIntegrationProviderIdFromStore } from './integration-provider-context.service';
-import { getIntegrationProviderAdminFeatureService } from './integration-registry.service';
 
 function getCurrentProviderId(): IntegrationProviderId {
   return getCurrentIntegrationProviderIdFromStore();
@@ -27,7 +27,11 @@ function resolveEntityProviderId(entityId: string): IntegrationProviderId {
 export const integrationAdminService: ProviderAdminFeatureService = {
   createRoom: async (name) => {
     const providerId = getCurrentProviderId();
-    return await getIntegrationProviderAdminFeatureService(providerId).createRoom(name);
+    const service = getProviderRuntimeRegistration(providerId).adminFeatureService;
+    if (!service) {
+      throw new Error('Room aggregation is not implemented yet for the current integration');
+    }
+    return await service.createRoom(name);
   },
   updateEntityRoom: async (entityId, roomId) => {
     const providerId = resolveEntityProviderId(entityId);
@@ -36,11 +40,19 @@ export const integrationAdminService: ProviderAdminFeatureService = {
       throw new Error(`Room ${roomId} does not belong to provider ${getProviderLabel(providerId)}`);
     }
 
-    await getIntegrationProviderAdminFeatureService(providerId).updateEntityRoom(entityId, roomId);
+    const service = getProviderRuntimeRegistration(providerId).adminFeatureService;
+    if (!service) {
+      throw new Error('Room aggregation is not implemented yet for the current integration');
+    }
+    await service.updateEntityRoom(entityId, roomId);
   },
   updateEntityName: async (entityId, name) => {
     const providerId = resolveEntityProviderId(entityId);
-    await getIntegrationProviderAdminFeatureService(providerId).updateEntityName(entityId, name);
+    const service = getProviderRuntimeRegistration(providerId).adminFeatureService;
+    if (!service) {
+      throw new Error('Room aggregation is not implemented yet for the current integration');
+    }
+    await service.updateEntityName(entityId, name);
   },
   deleteRoom: async (roomId) => {
     const parsedRoom = parsePlatformRoomReference(roomId);
@@ -48,6 +60,10 @@ export const integrationAdminService: ProviderAdminFeatureService = {
       throw new Error(`Invalid room reference: ${roomId}`);
     }
 
-    await getIntegrationProviderAdminFeatureService(parsedRoom.providerId).deleteRoom(roomId);
+    const service = getProviderRuntimeRegistration(parsedRoom.providerId).adminFeatureService;
+    if (!service) {
+      throw new Error('Room aggregation is not implemented yet for the current integration');
+    }
+    await service.deleteRoom(roomId);
   },
 };

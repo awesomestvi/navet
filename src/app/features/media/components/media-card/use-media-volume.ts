@@ -1,8 +1,8 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HA_CONTROL_DEBOUNCE_MS } from '@/app/constants/interaction-timing';
 import type { TranslateFn } from '@/app/hooks';
 import { useServiceActionHandler } from '@/app/hooks';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
 
 interface UseMediaVolumeParams {
   canMuteVolume: boolean;
@@ -55,16 +55,9 @@ export function useMediaVolume({
       if (!nextMuted && fallbackVolume > 0) {
         setVolume(fallbackVolume);
       }
-      void runVolumeAction(
-        () =>
-          dispatchEntityAction({
-            entityId,
-            domain: 'media_player',
-            service: 'volume_set',
-            serviceData: { volume_level: fallbackVolume / 100 },
-          }),
-        t('media.feedback.updateVolumeFailed')
-      );
+      void runVolumeAction(async () => {
+        await dispatchEntityCommand({ type: 'set_volume', entityId, volume: fallbackVolume });
+      }, t('media.feedback.updateVolumeFailed'));
       return;
     }
 
@@ -72,28 +65,14 @@ export function useMediaVolume({
       if (volume > 0) {
         setPreviousVolume(volume);
       }
-      void runVolumeAction(
-        () =>
-          dispatchEntityAction({
-            entityId,
-            domain: 'media_player',
-            service: 'volume_mute',
-            serviceData: { is_volume_muted: true },
-          }),
-        t('media.feedback.updateVolumeFailed')
-      );
+      void runVolumeAction(async () => {
+        await dispatchEntityCommand({ type: 'mute', entityId });
+      }, t('media.feedback.updateVolumeFailed'));
       return;
     }
-    void runVolumeAction(
-      () =>
-        dispatchEntityAction({
-          entityId,
-          domain: 'media_player',
-          service: 'volume_mute',
-          serviceData: { is_volume_muted: false },
-        }),
-      t('media.feedback.updateVolumeFailed')
-    );
+    void runVolumeAction(async () => {
+      await dispatchEntityCommand({ type: 'unmute', entityId });
+    }, t('media.feedback.updateVolumeFailed'));
   }, [canMuteVolume, canSetVolume, entityId, isMuted, previousVolume, runVolumeAction, t, volume]);
 
   const handleVolumeChange = useCallback(
@@ -122,19 +101,9 @@ export function useMediaVolume({
         if (pendingVolume === null) return;
         void runVolumeAction(async () => {
           if (shouldUnmute) {
-            await dispatchEntityAction({
-              entityId,
-              domain: 'media_player',
-              service: 'volume_mute',
-              serviceData: { is_volume_muted: false },
-            });
+            await dispatchEntityCommand({ type: 'unmute', entityId });
           }
-          await dispatchEntityAction({
-            entityId,
-            domain: 'media_player',
-            service: 'volume_set',
-            serviceData: { volume_level: pendingVolume / 100 },
-          });
+          await dispatchEntityCommand({ type: 'set_volume', entityId, volume: pendingVolume });
         }, t('media.feedback.updateVolumeFailed'));
       }, HA_CONTROL_DEBOUNCE_MS);
     },
@@ -169,19 +138,9 @@ export function useMediaVolume({
     }
     void runVolumeAction(async () => {
       if (shouldUnmute) {
-        await dispatchEntityAction({
-          entityId,
-          domain: 'media_player',
-          service: 'volume_mute',
-          serviceData: { is_volume_muted: false },
-        });
+        await dispatchEntityCommand({ type: 'unmute', entityId });
       }
-      await dispatchEntityAction({
-        entityId,
-        domain: 'media_player',
-        service: 'volume_set',
-        serviceData: { volume_level: pendingVolume / 100 },
-      });
+      await dispatchEntityCommand({ type: 'set_volume', entityId, volume: pendingVolume });
     }, t('media.feedback.updateVolumeFailed'));
   }, [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]);
 

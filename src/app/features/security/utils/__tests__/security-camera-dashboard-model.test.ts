@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
-import type { CameraDevice, LockDevice } from '@/app/types/device.types';
+import type { CameraDevice, LockDevice, SensorDevice } from '@/app/types/device.types';
 import {
   buildSecurityCameraDashboardModel,
   isStillImageUtilityCamera,
@@ -36,15 +35,20 @@ function lock(overrides: Partial<LockDevice> & Pick<LockDevice, 'id' | 'name'>):
   };
 }
 
-function toSnapshotMapEntry(
-  entityId: string,
-  state: string,
-  attributes: Record<string, unknown> = {}
-) {
+function sensor(
+  overrides: Partial<SensorDevice> & Pick<SensorDevice, 'id' | 'name'>
+): SensorDevice {
   return {
-    entityId,
-    state,
-    attributes,
+    id: overrides.id,
+    name: overrides.name,
+    room: overrides.room ?? 'Entrance',
+    size: overrides.size ?? 'small',
+    value: overrides.value ?? 'on',
+    unit: overrides.unit ?? '',
+    deviceClass: overrides.deviceClass,
+    canonicalId: overrides.canonicalId,
+    nativeId: overrides.nativeId,
+    status: overrides.status ?? 'active',
   };
 }
 
@@ -74,6 +78,7 @@ describe('security camera dashboard model', () => {
         }),
       ],
       locks: [],
+      sensors: [],
     });
 
     expect(model.primaryCameras.map((item) => item.id)).toEqual(['camera.front_door']);
@@ -84,37 +89,49 @@ describe('security camera dashboard model', () => {
   });
 
   it('derives related security status from locks and binary sensors', () => {
-    const entities = {
-      'binary_sensor.entry_motion': toSnapshotMapEntry('binary_sensor.entry_motion', 'on', {
-        device_class: 'motion',
-        friendly_name: 'Entry Motion',
-      }),
-      'binary_sensor.patio_door': toSnapshotMapEntry('binary_sensor.patio_door', 'on', {
-        device_class: 'door',
-        friendly_name: 'Patio Door',
-      }),
-      'alarm_control_panel.home': toSnapshotMapEntry('alarm_control_panel.home', 'armed_home'),
-      'siren.hallway': toSnapshotMapEntry('siren.hallway', 'on'),
-    } satisfies PlatformEntitySnapshotMap;
-
-    const model = buildSecurityCameraDashboardModel(
-      {
-        cameras: [
-          camera({
-            id: 'camera.garage',
-            name: 'Garage',
-            room: 'Garage',
-            isStreamCapable: true,
-            isStillImageOnly: false,
-          }),
-        ],
-        locks: [
-          lock({ id: 'lock.front_door', name: 'Front Door', state: true }),
-          lock({ id: 'lock.back_door', name: 'Back Door', state: false }),
-        ],
-      },
-      entities
-    );
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'camera.garage',
+          name: 'Garage',
+          room: 'Garage',
+          isStreamCapable: true,
+          isStillImageOnly: false,
+        }),
+      ],
+      locks: [
+        lock({ id: 'lock.front_door', name: 'Front Door', state: true }),
+        lock({ id: 'lock.back_door', name: 'Back Door', state: false }),
+      ],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.entry_motion',
+          nativeId: 'binary_sensor.entry_motion',
+          name: 'Entry Motion',
+          deviceClass: 'motion',
+          status: 'active',
+        }),
+        sensor({
+          id: 'binary_sensor.patio_door',
+          nativeId: 'binary_sensor.patio_door',
+          name: 'Patio Door',
+          deviceClass: 'door',
+          status: 'active',
+        }),
+        sensor({
+          id: 'alarm_control_panel.home',
+          nativeId: 'alarm_control_panel.home',
+          name: 'Home Alarm',
+          status: 'active',
+        }),
+        sensor({
+          id: 'siren.hallway',
+          nativeId: 'siren.hallway',
+          name: 'Hallway Siren',
+          status: 'active',
+        }),
+      ],
+    });
 
     expect(model.summary.motionCount).toBe(1);
     expect(model.summary.openSensorCount).toBe(1);
@@ -144,6 +161,7 @@ describe('security camera dashboard model', () => {
         }),
       ],
       locks: [],
+      sensors: [],
     });
 
     expect(model.primaryCameras.map((item) => item.id)).toEqual(['camera.a', 'camera.z']);

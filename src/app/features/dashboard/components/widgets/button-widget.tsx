@@ -23,10 +23,7 @@ import {
   sanitizeButtonEntityId,
 } from '@/app/features/dashboard/utils/button-widget-security';
 import { useI18n, useTheme } from '@/app/hooks';
-import {
-  dispatchEntityAction,
-  dispatchServiceAction,
-} from '@/app/services/integration-action.service';
+import { callIntegrationService } from '@/app/services/integration-service-call.service';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
 
 export interface ButtonWidgetData {
@@ -252,20 +249,12 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
     setIsPressed(true);
     setTimeout(() => setIsPressed(false), 400);
     try {
-      if (entityId) {
-        await dispatchEntityAction({
-          entityId,
-          domain: serviceCall.domain,
-          service: serviceCall.service,
-          serviceData: data.serviceData ?? {},
-        });
-      } else {
-        await dispatchServiceAction({
-          domain: serviceCall.domain,
-          service: serviceCall.service,
-          serviceData: data.serviceData ?? {},
-        });
-      }
+      await callIntegrationService({
+        entityId,
+        domain: serviceCall.domain,
+        service: serviceCall.service,
+        serviceData: data.serviceData ?? {},
+      });
     } catch (error) {
       console.error('[ButtonWidget] Service call failed:', error);
       toast.error(t('widgets.button.callFailed', { service: data.service }));

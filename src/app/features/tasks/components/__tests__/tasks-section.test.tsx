@@ -13,6 +13,11 @@ const { callServiceMock } = vi.hoisted(() => ({
   callServiceMock: vi.fn().mockResolvedValue(undefined),
 }));
 
+function getDomain(entityId: string) {
+  const nativeId = entityId.replace(/^[^:]+:/, '');
+  return nativeId.includes('.') ? nativeId.split('.', 1)[0] || 'homeassistant' : 'homeassistant';
+}
+
 vi.mock('@/app/services/home-assistant.service', async () => {
   const actual = await vi.importActual<typeof import('@/app/services/home-assistant.service')>(
     '@/app/services/home-assistant.service'
@@ -39,6 +44,22 @@ vi.mock('@/app/services/home-assistant.service', async () => {
     },
   };
 });
+
+vi.mock('@/app/services/integration-action.service', () => ({
+  dispatchEntityCommand: async ({
+    type,
+    entityId,
+  }: {
+    type: 'turn_on' | 'turn_off';
+    entityId: string;
+  }) => {
+    await callServiceMock(getDomain(entityId), type, {}, { entity_id: entityId });
+    return {
+      accepted: true,
+      requiresEventConfirmation: true,
+    };
+  },
+}));
 
 import { TasksSection } from '@/app/features/tasks/index';
 

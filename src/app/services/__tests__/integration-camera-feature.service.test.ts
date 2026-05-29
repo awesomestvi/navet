@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   addCameraWebRtcCandidateMock,
-  dispatchEntityActionMock,
+  callServiceMock,
   disableCameraMotionDetectionMock,
   enableCameraMotionDetectionMock,
   getCameraCapabilitiesMock,
@@ -11,7 +11,7 @@ const {
   subscribeCameraWebRtcOfferMock,
 } = vi.hoisted(() => ({
   addCameraWebRtcCandidateMock: vi.fn(),
-  dispatchEntityActionMock: vi.fn(),
+  callServiceMock: vi.fn(),
   disableCameraMotionDetectionMock: vi.fn(),
   enableCameraMotionDetectionMock: vi.fn(),
   getCameraCapabilitiesMock: vi.fn(),
@@ -20,13 +20,10 @@ const {
   subscribeCameraWebRtcOfferMock: vi.fn(),
 }));
 
-vi.mock('../integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
-}));
-
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
     addCameraWebRtcCandidate: addCameraWebRtcCandidateMock,
+    callService: callServiceMock,
     disableCameraMotionDetection: disableCameraMotionDetectionMock,
     enableCameraMotionDetection: enableCameraMotionDetectionMock,
     getCameraCapabilities: getCameraCapabilitiesMock,
@@ -41,8 +38,8 @@ import { integrationCameraFeatureService } from '../integration-camera-feature.s
 describe('integrationCameraFeatureService', () => {
   beforeEach(() => {
     addCameraWebRtcCandidateMock.mockReset();
+    callServiceMock.mockReset();
     disableCameraMotionDetectionMock.mockReset();
-    dispatchEntityActionMock.mockReset();
     enableCameraMotionDetectionMock.mockReset();
     getCameraCapabilitiesMock.mockReset();
     getCameraStreamUrlMock.mockReset();
@@ -58,22 +55,36 @@ describe('integrationCameraFeatureService', () => {
     );
     await integrationCameraFeatureService.setCameraAccessoryValue('number.camera_brightness', 55);
 
-    expect(dispatchEntityActionMock).toHaveBeenNthCalledWith(1, {
-      entityId: 'switch.camera_motion',
-      domain: 'switch',
-      service: 'turn_off',
-    });
-    expect(dispatchEntityActionMock).toHaveBeenNthCalledWith(2, {
-      entityId: 'select.camera_ir_mode',
-      domain: 'select',
-      service: 'select_option',
-      serviceData: { option: 'auto' },
-    });
-    expect(dispatchEntityActionMock).toHaveBeenNthCalledWith(3, {
-      entityId: 'number.camera_brightness',
-      domain: 'number',
-      service: 'set_value',
-      serviceData: { value: 55 },
-    });
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'switch',
+      'turn_off',
+      {},
+      {
+        entity_id: 'switch.camera_motion',
+      }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'select',
+      'select_option',
+      {
+        option: 'auto',
+      },
+      {
+        entity_id: 'select.camera_ir_mode',
+      }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      3,
+      'number',
+      'set_value',
+      {
+        value: 55,
+      },
+      {
+        entity_id: 'number.camera_brightness',
+      }
+    );
   });
 });

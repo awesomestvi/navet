@@ -13,6 +13,7 @@ resources, or Home Assistant-specific tests.
 
 Home Assistant-specific behavior currently lives primarily in:
 
+- `src/providers/homeassistant/`
 - `src/app/infrastructure/home-assistant/`
 - `src/app/services/`
 - `src/app/stores/home-assistant-store.ts`
@@ -27,6 +28,8 @@ Home Assistant-specific behavior currently lives primarily in:
 - do not leak Home Assistant raw types or URL construction into shared UI when a provider seam
   already exists
 - keep Home Assistant-specific behavior scoped to the Home Assistant adapter boundary
+- prefer moving new Home Assistant-facing mapping, command translation, auth-sensitive resource
+  logic, and event handling into `src/providers/homeassistant/`
 
 ## Required Follow-Through
 

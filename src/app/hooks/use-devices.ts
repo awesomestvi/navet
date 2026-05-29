@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { mapNavetDevicesToDeviceCollection } from '@/app/core/navet-device-collections';
+import { mapNavetEntitiesToDeviceCollection } from '@/app/core/navet-device-collections';
 import { integrationSelectors } from '../stores/selectors';
 import type { DeviceCollection } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
@@ -10,21 +10,23 @@ import { useProviderWeatherDevicesCollection } from './use-provider-weather-devi
 
 export const useAggregatedDevices = (): DeviceCollection => {
   const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
-  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
   const calendars = useProviderCalendarDevicesCollection();
   const weather = useProviderWeatherDevicesCollection();
 
   return useMemo(() => {
-    const selectedDevices = Object.values(devicesByCanonicalId).filter((device) =>
-      selectedProviderIds.includes(device.providerId)
+    const selectedEntities = Object.values(providerEntitiesByCanonicalId).filter((entity) =>
+      selectedProviderIds.includes(entity.providerId)
     );
-    const collection = mapNavetDevicesToDeviceCollection(selectedDevices);
+    const collection = mapNavetEntitiesToDeviceCollection(selectedEntities);
 
     collection.calendars = calendars;
     collection.weather = weather;
 
     return collection;
-  }, [calendars, devicesByCanonicalId, selectedProviderIds, weather]);
+  }, [calendars, providerEntitiesByCanonicalId, selectedProviderIds, weather]);
 };
 export const useDevices = (): DeviceCollection => useAggregatedDevices();
 export const useProviderDevices = (providerId: IntegrationProviderId): DeviceCollection => {

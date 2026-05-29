@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  type AuthSessionSnapshot,
-  authSessionManager,
-} from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
-import { toLegacyAuthRuntime } from '@/app/infrastructure/home-assistant/runtime/runtime-context';
-import { getRuntimeContext } from '@/app/infrastructure/home-assistant/runtime/runtime-detector';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '@/app/types/provider';
 import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
+import {
+  type IntegrationSessionSnapshot,
+  integrationSessionRuntime,
+} from './integration-session-runtime';
 import type { AuthRuntime } from './runtime';
 import type { AuthSession, AuthSessionMap } from './types';
 
@@ -14,7 +12,7 @@ interface AuthContextValue {
   providerId: IntegrationProviderId;
   provider: IntegrationProviderDefinition;
   runtime: AuthRuntime;
-  snapshot: AuthSessionSnapshot;
+  snapshot: IntegrationSessionSnapshot;
   session: AuthSession | null;
   sessions: AuthSessionMap;
   ready: boolean;
@@ -36,9 +34,11 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const runtime = toLegacyAuthRuntime(getRuntimeContext().kind);
+  const runtime = integrationSessionRuntime.getAuthRuntime();
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [snapshot, setSnapshot] = useState<AuthSessionSnapshot>(authSessionManager.getSnapshot());
+  const [snapshot, setSnapshot] = useState<IntegrationSessionSnapshot>(
+    integrationSessionRuntime.getSnapshot()
+  );
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     setReady(false);
     setError(null);
-    const unsubscribe = authSessionManager.subscribe((nextSnapshot, nextSession) => {
+    const unsubscribe = integrationSessionRuntime.subscribe((nextSnapshot, nextSession) => {
       if (cancelled) {
         return;
       }
@@ -61,12 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(nextSession);
     });
 
-    void authSessionManager
+    void integrationSessionRuntime
       .init()
       .then((nextSnapshot) => {
         if (cancelled) return;
         setSnapshot(nextSnapshot);
-        setSession(authSessionManager.getSession());
+        setSession(integrationSessionRuntime.getSession());
       })
       .catch((err) => {
         if (cancelled) return;
@@ -90,11 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const delay = Math.max(5_000, session.expiresAt - Date.now() - 60_000);
     const timeoutId = window.setTimeout(() => {
-      void authSessionManager
+      void integrationSessionRuntime
         .refresh()
         .then((nextSnapshot) => {
           setSnapshot(nextSnapshot);
-          setSession(authSessionManager.getSession());
+          setSession(integrationSessionRuntime.getSession());
           setError(null);
         })
         .catch((err) => {
@@ -119,35 +119,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hassUrl: session?.hassUrl ?? null,
       haBaseUrl: session?.haBaseUrl ?? null,
       login: async (input) => {
-        const nextSnapshot = await authSessionManager.login(input);
+        const nextSnapshot = await integrationSessionRuntime.login(input);
         setSnapshot(nextSnapshot);
-        setSession(authSessionManager.getSession());
+        setSession(integrationSessionRuntime.getSession());
         setError(null);
       },
       logout: async (providerId) => {
         if (!providerId || providerId === session?.providerId) {
           setSession(null);
         }
-        await authSessionManager.logout(providerId);
-        setSnapshot(authSessionManager.getSnapshot());
-        setSession(authSessionManager.getSession());
+        await integrationSessionRuntime.logout(providerId);
+        setSnapshot(integrationSessionRuntime.getSnapshot());
+        setSession(integrationSessionRuntime.getSession());
       },
       refresh: async (providerId) => {
-        const nextSnapshot = await authSessionManager.refresh(providerId);
-        const nextSession = authSessionManager.getSession();
+        const nextSnapshot = await integrationSessionRuntime.refresh(providerId);
+        const nextSession = integrationSessionRuntime.getSession();
         setSnapshot(nextSnapshot);
         setSession(nextSession);
         return nextSession;
       },
       replaceSession: (nextSession) => {
-        const nextSnapshot = authSessionManager.replaceSession(nextSession);
+        const nextSnapshot = integrationSessionRuntime.replaceSession(nextSession);
         setSnapshot(nextSnapshot);
         setSession(nextSession);
       },
       setActiveProvider: (providerId) => {
-        const nextSnapshot = authSessionManager.setActiveProvider(providerId);
+        const nextSnapshot = integrationSessionRuntime.setActiveProvider(providerId);
         setSnapshot(nextSnapshot);
-        setSession(authSessionManager.getSession());
+        setSession(integrationSessionRuntime.getSession());
       },
     }),
     [runtime, snapshot, session, ready, error]

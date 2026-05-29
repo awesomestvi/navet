@@ -189,7 +189,7 @@ export const enMessages = {
   'settings.system.providers.makeActive': 'Make active',
   'settings.system.providers.notConnected': 'Not connected on this device',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
-  'settings.system.providers.openhabLater': 'openHAB support is planned but not available yet.',
+  'settings.system.providers.openhabLater': 'openHAB connects through the standalone URL flow.',
   'settings.system.providers.status.connected': 'Connected',
   'settings.system.providers.status.connecting': 'Connecting',
   'settings.system.providers.status.reconnecting': 'Reconnecting',

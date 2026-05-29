@@ -1,5 +1,5 @@
+import type { NavetRoomDescriptor } from '@navet/app/internal/compat-models';
 import { isAllRooms } from '@/app/constants/rooms';
-import type { NavetRoomDescriptor } from '@/app/core/navet';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
 
 export interface MobileHeaderActionAvailability extends MobileHeaderEditActions {

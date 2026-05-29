@@ -1,5 +1,5 @@
+import type { NavetResourceKind } from '@navet/core/types';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { NavetResourceKind } from '@/app/core/navet';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import { resolveResource } from '@/app/services/integration-resource.service';
 import type { IntegrationProviderId } from '@/app/types/provider';

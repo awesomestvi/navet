@@ -1,61 +1,65 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { ProviderSecurityFeatureService } from '@/app/platform/provider-feature-services';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
+import {
+  getNativeIntegrationEntityId,
+  resolveIntegrationProviderId,
+} from './integration-provider-context.service';
 
-function resolveCoverService(
-  base: 'open' | 'close' | 'stop' | 'set_position',
-  mode: 'position' | 'tilt'
-) {
-  if (base === 'set_position') {
-    return mode === 'tilt' ? 'set_cover_tilt_position' : 'set_cover_position';
+function getSecurityFeatureService(entityId: string) {
+  const providerId = resolveIntegrationProviderId(entityId);
+  const service = getProviderRuntimeRegistration(providerId).securityFeatureService;
+  if (!service) {
+    throw new Error('Security actions are not implemented yet for the current integration');
   }
-
-  if (base === 'open') {
-    return mode === 'tilt' ? 'open_cover_tilt' : 'open_cover';
-  }
-
-  if (base === 'close') {
-    return mode === 'tilt' ? 'close_cover_tilt' : 'close_cover';
-  }
-
-  return mode === 'tilt' ? 'stop_cover_tilt' : 'stop_cover';
+  return service;
 }
 
 export const integrationSecurityFeatureService: ProviderSecurityFeatureService = {
-  lockEntity: (entityId) =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'lock',
-      service: 'lock',
-    }),
-  unlockEntity: (entityId) =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'lock',
-      service: 'unlock',
-    }),
-  openCover: (entityId, mode = 'position') =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'cover',
-      service: resolveCoverService('open', mode),
-    }),
-  closeCover: (entityId, mode = 'position') =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'cover',
-      service: resolveCoverService('close', mode),
-    }),
-  stopCover: (entityId, mode = 'position') =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'cover',
-      service: resolveCoverService('stop', mode),
-    }),
-  setCoverPosition: (entityId, position, mode = 'position') =>
-    dispatchEntityAction({
-      entityId,
-      domain: 'cover',
-      service: resolveCoverService('set_position', mode),
-      serviceData: mode === 'tilt' ? { tilt_position: position } : { position },
-    }),
+  lockEntity: async (entityId) => {
+    await dispatchEntityCommand({ type: 'lock', entityId });
+  },
+  unlockEntity: async (entityId) => {
+    await dispatchEntityCommand({ type: 'unlock', entityId });
+  },
+  openCover: async (entityId, mode = 'position') => {
+    if (mode === 'position') {
+      await dispatchEntityCommand({ type: 'open', entityId });
+      return;
+    }
+
+    await getSecurityFeatureService(entityId).openCover(
+      getNativeIntegrationEntityId(entityId),
+      mode
+    );
+  },
+  closeCover: async (entityId, mode = 'position') => {
+    if (mode === 'position') {
+      await dispatchEntityCommand({ type: 'close', entityId });
+      return;
+    }
+
+    await getSecurityFeatureService(entityId).closeCover(
+      getNativeIntegrationEntityId(entityId),
+      mode
+    );
+  },
+  stopCover: async (entityId, mode = 'position') => {
+    if (mode === 'position') {
+      await dispatchEntityCommand({ type: 'stop', entityId });
+      return;
+    }
+
+    await getSecurityFeatureService(entityId).stopCover(
+      getNativeIntegrationEntityId(entityId),
+      mode
+    );
+  },
+  setCoverPosition: async (entityId, position, mode = 'position') => {
+    await getSecurityFeatureService(entityId).setCoverPosition(
+      getNativeIntegrationEntityId(entityId),
+      position,
+      mode
+    );
+  },
 };

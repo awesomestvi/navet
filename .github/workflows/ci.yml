@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  frontend:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -43,8 +43,57 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
-
       - name: Build app
         run: pnpm build
+
+  tier-1-release-critical:
+    uses: ./.github/workflows/provider-platform-validation.yml
+
+  tier-2-blocking-app-contracts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pinned pnpm
+        run: corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tier 2 blocking app-contract tests
+        run: pnpm test:tier2
+
+  tier-3-broad-regression:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pinned pnpm
+        run: corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tier 3 broad regression tests
+        run: pnpm test:tier3

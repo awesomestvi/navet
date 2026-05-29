@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { useProviderDevice } from '@/app/internal/compat-hooks';
 import { integrationStore } from '@/app/stores/integration-store';
 import { renderHookWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
-import { useProviderDevice } from '../use-provider-device';
 
 describe('useProviderDevice', () => {
   it('falls back to legacy Home Assistant entity ids without treating arbitrary dotted ids as Home Assistant', async () => {

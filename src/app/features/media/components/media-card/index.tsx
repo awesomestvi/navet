@@ -4,6 +4,7 @@ import { type CardSize, getCompactCardSize } from '@/app/components/shared/card-
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
+import type { NavetMediaCapabilities } from '@/app/core/navet-device-state';
 import { useTheme } from '@/app/hooks';
 import type { ThemeMode } from '@/app/stores/theme-store';
 import { MediaLargeView } from '../media/media-large-view';
@@ -74,6 +75,7 @@ interface MediaCardProps {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  mediaCapabilities?: NavetMediaCapabilities;
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;
   supportsNextTrack?: boolean;
@@ -106,6 +108,7 @@ export const MediaCard = memo(function MediaCard({
   elapsedSeconds: initialElapsedSeconds,
   durationSeconds: initialDurationSeconds,
   positionUpdatedAt: initialPositionUpdatedAt,
+  mediaCapabilities: initialMediaCapabilities,
   supportsGrouping: initialSupportsGrouping,
   supportsPreviousTrack: initialSupportsPreviousTrack,
   supportsNextTrack: initialSupportsNextTrack,
@@ -183,6 +186,7 @@ export const MediaCard = memo(function MediaCard({
     initialElapsedSeconds,
     initialDurationSeconds,
     initialPositionUpdatedAt,
+    initialMediaCapabilities,
     initialSupportsGrouping,
     initialSupportsPreviousTrack,
     initialSupportsNextTrack,

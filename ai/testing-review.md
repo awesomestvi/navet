@@ -1,96 +1,78 @@
 # Navet Test Review
 
-This document is the current audit baseline for future agents. It classifies existing tests by confidence and explains which areas should not be trusted without rewrite.
+This file is the audit baseline for test quality. It now follows Navet's tier model so the quality
+review and the workflow reality stay aligned.
 
-## What Was Kept
+Use [../docs/testing/test-tier-inventory.md](../docs/testing/test-tier-inventory.md) for the full
+grouped inventory. Use this file for high-signal exceptions and rewrite/delete guidance.
 
-These tests are worth keeping because they validate documented Home Assistant-adjacent behavior, user-visible behavior, deployment/runtime contracts, or realistic fixture handling.
+## Tier 1: Keep
+
+These tests protect release-critical behavior and should stay blocking.
 
 - `src/app/infrastructure/home-assistant/resources/__tests__/resource-resolver.test.ts`
-  - Keep. Validates proxy rewriting, panel behavior, signed paths, and unsafe URL rejection at the resource boundary.
 - `src/app/utils/__tests__/home-assistant-url.test.ts`
-  - Keep. Covers ingress, panel, stale proxy stripping, camera and media proxy paths, and unsafe URL rejection.
+- `src/app/utils/__tests__/rss-proxy-security.test.ts`
 - `src/auth/__tests__/adapters.test.ts`
-  - Keep. Covers panel, ingress, standalone OAuth, malformed callback handling, refresh, and logout cleanup with realistic auth-session flows.
 - `src/auth/__tests__/runtime.test.ts`
-  - Keep. Small but useful runtime-mode contract coverage for panel, ingress, and standalone modes.
-- `src/app/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx`
-  - Keep. High-value external resource coverage for thumbnail fallback, signed artwork, proxy behavior, panel mode, Docker proxying, and ingress paths.
-- `src/app/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx`
-  - Keep. High-value live media coverage for HLS, ingress-aware proxying, vendor stream URLs, and runtime-specific camera playback behavior.
-- `src/app/services/__tests__/ha-entity-service.test.ts`
-  - Keep. Validates Home Assistant service names and payload shapes for climate, media, and camera actions.
+- `src/auth/__tests__/homeAssistantDiscovery.test.ts`
+- `src/auth/__tests__/homey-oauth-auth.test.ts`
 - `src/app/features/auth/__tests__/login-page.test.tsx`
-  - Keep. Validates the user-facing OAuth-only login flow without reintroducing token-based UX.
+- `src/app/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx`
+- `src/app/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx`
 - `src/app/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx`
-  - Keep. Validates ingress-aware RSS proxying, dedupe behavior, and user-facing feed ordering.
-- `src/app/hooks/device-mappers/__tests__/map-climate-device.test.ts`
-  - Keep. Uses shared fixtures and checks realistic climate and water-heater contract behavior.
-- `src/app/hooks/device-mappers/__tests__/map-cover-device.test.ts`
-  - Keep. Uses shared fixtures and covers malformed-but-plausible cover attributes.
-- `src/app/features/tasks/utils/__tests__/map-automation-tasks.test.ts`
-  - Keep. Useful user-facing task mapping coverage with realistic automation shapes and optional metadata handling.
-- `src/app/features/dashboard/components/widgets/__tests__/map-image-url.test.ts`
-  - Keep. Small but valid coverage for Home Assistant image-serve URL rewriting and signed query preservation.
+- `src/providers/homeassistant/homeassistant-contract.test.ts`
+- `src/providers/homey/homey-contract.test.ts`
+- `src/providers/openhab/openhab-contract.test.ts`
+- `src/providers/planned/planned-provider-contract.test.ts`
 
-## Tests That Need Rewriting
+## Tier 2: Keep
 
-These tests have useful intent, but they should not be treated as fully trustworthy until they are tied more directly to Home Assistant docs, runtime contracts, or stronger fixtures.
+These tests protect important app contracts and should stay blocking in main CI.
+
+- `src/app/stores/__tests__/integration-store.test.ts`
+- `src/app/services/__tests__/integration-runtime.service.test.ts`
+- `src/app/services/__tests__/integration-registry.service.test.ts`
+- `src/app/services/__tests__/integration-action.service.test.ts`
+- `src/app/services/__tests__/ha-entity-service.test.ts`
+- `src/app/platform/__tests__/provider-room-management.test.ts`
+- the rest of the curated Tier 2 service/store/platform suites in
+  `docs/testing/test-tier-inventory.md`
+
+## Tier 4: Rewrite
+
+These tests have useful intent but should not be treated as trustworthy until they are rebuilt
+against stronger fixtures or documentation-backed behavior.
 
 - `src/app/hooks/device-mappers/__tests__/map-sensor-device.test.ts`
-  - Rewrite. Sensor handling is high-risk and should be backed by documented `device_class`, `state_class`, unit, and malformed attribute fixtures instead of mapper-shaped assumptions.
 - `src/app/hooks/device-mappers/__tests__/map-weather-device.test.ts`
-  - Rewrite. Weather coverage needs documented forecast and optional-field fixtures from real integrations.
 - `src/app/hooks/device-mappers/__tests__/map-fan-device.test.ts`
-  - Rewrite. Fan contracts should be checked against documented percentage, preset, and unavailable-state behavior.
 - `src/app/features/vacuum/components/vacuum/__tests__/use-vacuum-control.test.tsx`
-  - Rewrite. Vacuum behavior varies materially by vendor; coverage should be fixture-backed with real Roborock and Dreame payloads.
 - `src/app/features/security/components/__tests__/lock-card.test.tsx`
-  - Rewrite. Keep the UX intent, but add contract-backed states such as `jammed`, `unknown`, and `unavailable`.
 - `src/app/features/security/components/cover-card/__tests__/cover-card.test.tsx`
-  - Rewrite. Card behavior should be aligned with documented cover states, tilt support, and partial position data.
 - `src/app/features/lighting/components/light-card/__tests__/light-card.test.tsx`
-  - Rewrite. Light tests are valuable, but they need stronger grouped-light, color-mode, and malformed-attribute coverage from Home Assistant fixtures.
 - `src/app/features/climate/components/hvac-card/__tests__/use-hvac-card-controller.test.tsx`
-  - Rewrite. HVAC control assumptions should be checked against documented `hvac_modes`, target ranges, and missing-attribute cases.
 - `src/app/features/tasks/components/__tests__/tasks-section.test.tsx`
-  - Rewrite. Good product coverage, but task behavior should be anchored to realistic `script`, `automation`, and `todo` fixtures.
 - `src/app/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts`
-  - Rewrite. Needs documented all-day and timed event fixtures from real Home Assistant calendar payloads.
 - `src/app/hooks/__tests__/use-ha-devices.test.tsx`
-  - Rewrite. Device aggregation is important, but it should rely on realistic mixed-domain fixtures instead of UI-shaped synthetic entity collections.
 - `src/app/hooks/__tests__/ha-entity-utils.test.ts`
-  - Rewrite. Utilities touching Home Assistant states need stronger fixture-backed malformed and unavailable cases.
 
-## Tests That Should Be Deleted Or Replaced
+## Tier 4: Delete Or Replace
 
-There are no current baseline entries in this category.
+Current baseline:
 
-The previous repo-file string-inspection tests in `src/app/utils/__tests__/` were removed because they only mirrored implementation text instead of validating runtime behavior or documented contracts.
+- no required deletes in this pass
+- future implementation-shaped smoke tests should be deleted instead of grandfathered into Tier 3
 
-## Home Assistant Docs And Assumptions To Check Next
+## Ongoing Gaps
 
-- WebSocket auth flow and camera stream messages
-- REST auth failure handling
-- camera proxy and stream URL behavior
-- media player artwork and signed resource handling
-- ingress and custom-panel same-origin behavior
-- calendar event payload shape
-- climate, fan, vacuum, and weather platform docs
+- fixture validation for shared and provider fixtures
+- stronger invalid-token and expired-token flows
+- more documented coverage for helper domains such as `number`, `select`, and `input_select`
+- better vendor-backed fixtures for camera, media, climate, vacuum, and weather behavior
 
-## Gaps In Current Coverage
+## Working Rule
 
-- fixture validation tests that guarantee shared fixtures remain realistic
-- explicit invalid-token and expired-token UX flows across all supported modes
-- contract-backed helper-domain coverage for `input_boolean`, `input_select`, `number`, and `select`
-- fallback behavior for unsupported or malformed entity domains
-- broader coverage for `person`, `device_tracker`, `image`, and `alarm_control_panel`
-- stronger vendor-backed fixtures for camera, media, vacuum, and climate domains
-
-## Current High-Risk Areas
-
-- camera streams and snapshot fallback across panel, ingress, and standalone runtimes
-- album artwork and authenticated media URLs
-- ingress-aware proxying and stale URL rewriting
-- auth/session recovery and logout cleanup
-- mapper logic for climate, sensor, weather, fan, and vacuum entities
+If a test is broad, shallow, and easy to break for non-user-visible reasons, it belongs in Tier 3
+at best and Tier 4 if the fixture model is weak. If it protects runtime, auth, security, resource
+resolution, or shared provider/app contracts, it belongs in Tier 1 or Tier 2.

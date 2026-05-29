@@ -1,3 +1,5 @@
+import type { NavetMediaCapabilities } from '@/app/core/navet-device-state';
+
 export interface UseMediaCardControllerParams {
   entityId: string;
   entityName: string;
@@ -17,6 +19,7 @@ export interface UseMediaCardControllerParams {
   initialSupportsGrouping?: boolean;
   initialSupportsPreviousTrack?: boolean;
   initialSupportsNextTrack?: boolean;
+  initialMediaCapabilities?: NavetMediaCapabilities;
   initialSupportedFeatures?: number;
   initialGroupMembers?: string[];
 }

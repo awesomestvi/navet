@@ -1,9 +1,15 @@
+import { dispatchEntityCommand } from '@navet/app/commands';
 import { useCallback, useMemo } from 'react';
-import { hasMediaPlayerGroupingSupport } from '@/app/constants/media-player-features';
+import { readNavetMediaState } from '@/app/core/navet-device-state';
 import type { TranslateFn } from '@/app/hooks';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
-import { getProviderNativeId } from '@/app/utils/provider-ids';
+import { integrationSelectors } from '@/app/stores/selectors';
+import {
+  createProviderScopedId,
+  getProviderNativeId,
+  parseProviderScopedId,
+} from '@/app/utils/provider-ids';
 
 interface UseMediaGroupingParams {
   entityId: string;
@@ -20,7 +26,12 @@ export function useMediaGrouping({
   runAction,
   t,
 }: UseMediaGroupingParams) {
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
   const nativeEntityId = getProviderNativeId(entityId);
+  const resolvedProviderId = parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
 
   const availableGroupingPlayers = useMemo(
     () =>
@@ -29,10 +40,15 @@ export function useMediaGrouping({
           (entity): entity is NonNullable<typeof entity> =>
             Boolean(entity) &&
             entity.entityId.startsWith('media_player.') &&
-            entity.entityId !== nativeEntityId &&
-            typeof entity.attributes?.supported_features === 'number' &&
-            hasMediaPlayerGroupingSupport(entity.attributes.supported_features)
+            entity.entityId !== nativeEntityId
         )
+        .filter((entity) => {
+          const providerEntity =
+            providerEntitiesByCanonicalId[
+              createProviderScopedId(resolvedProviderId, entity.entityId)
+            ];
+          return readNavetMediaState(providerEntity)?.supportsGrouping === true;
+        })
         .map((entity) => ({
           id: entity.entityId,
           name:
@@ -41,7 +57,7 @@ export function useMediaGrouping({
               : entity.entityId,
           isAttached: groupMembers.includes(entity.entityId),
         })),
-    [entities, groupMembers, nativeEntityId]
+    [entities, groupMembers, nativeEntityId, providerEntitiesByCanonicalId, resolvedProviderId]
   );
 
   const attachGroupMember = useCallback(
@@ -53,16 +69,13 @@ export function useMediaGrouping({
         return;
       }
 
-      void runAction(
-        () =>
-          dispatchEntityAction({
-            entityId,
-            domain: 'media_player',
-            service: 'join',
-            serviceData: { group_members: nextGroupMembers },
-          }),
-        t('media.feedback.groupAttachFailed')
-      );
+      void runAction(async () => {
+        await dispatchEntityCommand({
+          type: 'join_group',
+          entityId,
+          members: nextGroupMembers,
+        });
+      }, t('media.feedback.groupAttachFailed'));
     },
     [entityId, groupMembers, runAction, t]
   );
@@ -73,15 +86,9 @@ export function useMediaGrouping({
         return;
       }
 
-      void runAction(
-        () =>
-          dispatchEntityAction({
-            entityId: memberEntityId,
-            domain: 'media_player',
-            service: 'unjoin',
-          }),
-        t('media.feedback.groupDetachFailed')
-      );
+      void runAction(async () => {
+        await dispatchEntityCommand({ type: 'leave_group', entityId: memberEntityId });
+      }, t('media.feedback.groupDetachFailed'));
     },
     [entityId, runAction, t]
   );

@@ -1,0 +1,11 @@
+{
+  "name": "@navet/provider-homey",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./homey-adapter": "./src/homey-adapter.ts",
+    "./homey-mappers": "./src/homey-mappers.ts",
+    "./homey-runtime-registration": "./src/homey-runtime-registration.ts"
+  }
+}

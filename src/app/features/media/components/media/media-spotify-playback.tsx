@@ -1,18 +1,17 @@
 import { Music2, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button, Input, Select } from '@/app/components/primitives';
+import { readNavetMediaState } from '@/app/core/navet-device-state';
 import { useProviderMediaPlaybackData } from '@/app/features/media/hooks/use-provider-media-playback-data';
 import { useI18n, useServiceActionHandler } from '@/app/hooks';
+import { useProviderEntityModel } from '@/app/hooks/use-provider-device';
 import type {
   PlatformEntityRegistryEntry,
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import { getProviderNativeId } from '@/app/utils/provider-ids';
 import type { MediaDialogController } from './use-media-dialog-controller';
-
-const PLAY_MEDIA_FEATURE = 512;
 
 interface SpotifyPlaybackTarget {
   entityId: string;
@@ -43,12 +42,6 @@ function getSourceList(entity?: PlatformEntitySnapshot) {
         (value): value is string => typeof value === 'string' && value.trim().length > 0
       )
     : [];
-}
-
-function getSupportedFeatures(entity?: PlatformEntitySnapshot) {
-  return typeof entity?.attributes?.supported_features === 'number'
-    ? entity.attributes.supported_features
-    : 0;
 }
 
 function isSpotifyEntity(
@@ -118,14 +111,9 @@ function getSpotifyTargets(
 export function hasSpotifyPlaybackControls(
   entities: PlatformEntitySnapshotMap | null,
   entityRegistry: PlatformEntityRegistryEntry[],
-  entityId: string
+  directPlaybackSupported: boolean
 ) {
-  const currentEntityId = getProviderNativeId(entityId);
-  const currentEntity = entities?.[currentEntityId];
-  return (
-    getSpotifyTargets(entities, entityRegistry).length > 0 ||
-    (getSupportedFeatures(currentEntity) & PLAY_MEDIA_FEATURE) === PLAY_MEDIA_FEATURE
-  );
+  return getSpotifyTargets(entities, entityRegistry).length > 0 || directPlaybackSupported;
 }
 
 export function MediaSpotifyPlayback({
@@ -136,14 +124,13 @@ export function MediaSpotifyPlayback({
   const { t } = useI18n();
   const runAction = useServiceActionHandler();
   const { entities, entityRegistry } = useProviderMediaPlaybackData(entityId);
-  const currentEntityId = getProviderNativeId(entityId);
-  const currentEntity = entities?.[currentEntityId];
+  const providerEntity = useProviderEntityModel(entityId);
+  const providerState = readNavetMediaState(providerEntity);
   const spotifyTargets = useMemo(
     () => getSpotifyTargets(entities, entityRegistry),
     [entities, entityRegistry]
   );
-  const directPlaybackSupported =
-    (getSupportedFeatures(currentEntity) & PLAY_MEDIA_FEATURE) === PLAY_MEDIA_FEATURE;
+  const directPlaybackSupported = providerState?.mediaCapabilities?.canPlayMedia === true;
   const [mediaContentId, setMediaContentId] = useState('');
   const [selectedTargetId, setSelectedTargetId] = useState(() => spotifyTargets[0]?.entityId ?? '');
   const selectedTarget = spotifyTargets.find((target) => target.entityId === selectedTargetId);

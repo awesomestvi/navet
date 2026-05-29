@@ -8,6 +8,7 @@ import type {
   PlatformCalendarEvent,
   PlatformCalendarRequestOptions,
   PlatformCameraCapabilities,
+  PlatformCameraLiveState,
   PlatformCameraStream,
   PlatformCameraStreamType,
   PlatformEntityRegistryEntry,
@@ -59,8 +60,23 @@ export interface ProviderMediaFeatureService {
   ) => Promise<string | null>;
 }
 
+export interface ProviderLightUpdateOptions {
+  state?: 'on' | 'off';
+  brightnessPct?: number;
+  kelvin?: number;
+  rgbColor?: [number, number, number];
+  hsColor?: [number, number];
+  xyColor?: [number, number];
+  effect?: string;
+}
+
+export interface ProviderLightFeatureService {
+  updateLight: (entityId: string, options: ProviderLightUpdateOptions) => Promise<void>;
+}
+
 export interface ProviderCameraFeatureService {
   getCameraCapabilities: (entityId: string) => Promise<PlatformCameraCapabilities>;
+  getCameraLiveState?: (entityId: string) => Promise<PlatformCameraLiveState>;
   getCameraStreamUrl: (
     entityId: string,
     format?: PlatformCameraStreamType
@@ -96,6 +112,20 @@ export interface ProviderSecurityFeatureService {
   ) => Promise<void>;
 }
 
+export interface ProviderClimateTemperatureUpdate {
+  serviceDomain?: 'climate' | 'water_heater';
+  temperature?: number;
+  targetTemperatureLow?: number;
+  targetTemperatureHigh?: number;
+}
+
+export interface ProviderClimateFeatureService {
+  setTargetTemperature: (
+    entityId: string,
+    update: ProviderClimateTemperatureUpdate
+  ) => Promise<void>;
+}
+
 export interface ProviderAdminFeatureService {
   createRoom: (name: string) => Promise<PlatformRoomReference>;
   updateEntityRoom: (entityId: string, roomId: string | null) => Promise<void>;
@@ -105,6 +135,8 @@ export interface ProviderAdminFeatureService {
 
 export interface ProviderHistoryFeatureService {
   getMessageClient: () => PlatformMessageClient | null;
+  supportsStatisticsHistory?: (entityId: string) => boolean;
+  supportsEnergyStatistics?: (entityId: string) => boolean;
 }
 
 export interface ProviderEnergyFeatureService {
@@ -157,4 +189,5 @@ export interface ProviderTaskFeatureService {
   getTaskRuntimeSnapshot: () => PlatformTaskRuntimeSnapshot;
   subscribeTaskRuntimeSnapshot: (listener: () => void) => () => void;
   getAutomationDetails: (entityId: string) => Promise<PlatformAutomationDetails>;
+  triggerAutomation: (entityId: string) => Promise<void>;
 }

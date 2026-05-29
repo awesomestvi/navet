@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
-import { integrationSelectors } from '@/app/stores/selectors';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getIntegrationHistoryMessageClient,
+  supportsIntegrationEnergyStatistics,
+} from '@/app/services/integration-history.service';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
@@ -11,22 +11,6 @@ import type { EnergySeriesPoint } from '../types/energy.types';
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const FALLBACK_POINT_COUNT = 12;
-
-function isHomeAssistantStatisticId(
-  entityId: string | undefined,
-  currentProviderId: string
-): boolean {
-  if (!entityId) {
-    return false;
-  }
-
-  const scopedId = parseProviderScopedId(entityId);
-  if (scopedId) {
-    return scopedId.providerId === 'home_assistant';
-  }
-
-  return currentProviderId === 'home_assistant';
-}
 
 function formatBucketLabel(timestampMs: number, index: number, total: number) {
   if (index === total - 1) {
@@ -88,13 +72,12 @@ export function useEnergyLoadHistory(
 ): EnergySeriesPoint[] {
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId, currentProviderId);
+  const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
 
   useEffect(() => {
     const fallbackSeedKey = entityId ?? `load:${Math.round(fallbackCurrentLoadW)}`;
 
-    if (!enabled || !isHomeAssistantEntity || !entityId) {
+    if (!enabled || !supportsStatistics || !entityId) {
       setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
       return;
     }
@@ -143,7 +126,7 @@ export function useEnergyLoadHistory(
         clearInterval(timerRef.current);
       }
     };
-  }, [enabled, entityId, fallbackCurrentLoadW, isHomeAssistantEntity]);
+  }, [enabled, entityId, fallbackCurrentLoadW, supportsStatistics]);
 
   return points;
 }

@@ -6,6 +6,11 @@ import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surfa
 import { navetTypographyTokens } from '@/app/components/system/tokens';
 import { getRuntimeConfig } from '@/app/config/runtime-config';
 import { useI18n, useTheme } from '@/app/hooks';
+import {
+  INTEGRATION_PROVIDER_IDS,
+  INTEGRATION_PROVIDERS,
+  type IntegrationProviderId,
+} from '@/app/types/provider';
 import { getPublicAssetUrl } from '@/app/utils/public-assets';
 import { useAuthSession } from '@/auth/AuthProvider';
 import {
@@ -14,21 +19,30 @@ import {
 } from '@/auth/homeAssistantDiscovery';
 
 export function LoginPage() {
+  const selectableProviders = INTEGRATION_PROVIDER_IDS.filter(
+    (candidateId) => INTEGRATION_PROVIDERS[candidateId].loginMode !== 'unavailable'
+  );
   const initialUrl = useRef(getRuntimeConfig().hassUrl ?? '');
   const urlInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(!initialUrl.current);
   const [discoveredUrl, setDiscoveredUrl] = useState<string | null>(null);
-  const [providerId, setProviderId] = useState<'home_assistant' | 'homey'>('home_assistant');
+  const [providerId, setProviderId] = useState<IntegrationProviderId>(
+    selectableProviders[0] ?? 'home_assistant'
+  );
   const { login } = useAuthSession();
   const { theme } = useTheme();
   const { t } = useI18n();
+  const provider = INTEGRATION_PROVIDERS[providerId];
+  const requiresUrl = provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session';
+  const usesOAuthRedirect =
+    provider.loginMode === 'url_oauth' || provider.loginMode === 'cloud_oauth';
   const surface = getThemeSurfaceTokens(theme);
   const logoSrc = getPublicAssetUrl('logo.svg');
 
   useEffect(() => {
-    if (providerId !== 'home_assistant') {
+    if (!provider.supportsDiscovery) {
       setIsDiscovering(false);
       return;
     }
@@ -65,7 +79,7 @@ export function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [providerId]);
+  }, [provider.supportsDiscovery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +87,7 @@ export function LoginPage() {
 
     setIsLoading(true);
     try {
-      if (providerId === 'homey') {
+      if (!requiresUrl) {
         await login({ providerId });
       } else {
         const hassUrl = urlInputRef.current?.value.trim() ?? '';
@@ -132,12 +146,14 @@ export function LoginPage() {
           <h1
             className={`mx-auto mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
           >
-            {providerId === 'homey' ? 'Connect to Homey' : 'Connect to Home Assistant'}
+            {requiresUrl ? `Connect to ${provider.label}` : `Connect to ${provider.label}`}
           </h1>
           <p className={`mx-auto mt-3 max-w-md text-sm leading-relaxed ${mutedColor}`}>
-            {providerId === 'homey'
-              ? 'Continue with Homey Cloud OAuth, then choose which Homey Navet should use.'
-              : 'Enter your Home Assistant URL to continue with OAuth.'}
+            {provider.loginMode === 'url_session'
+              ? `Enter your ${provider.label} URL to connect directly from Navet.`
+              : requiresUrl
+                ? `Enter your ${provider.label} URL to continue with OAuth.`
+                : `Continue with ${provider.label} Cloud OAuth, then choose which ${provider.label} Navet should use.`}
           </p>
 
           <form
@@ -150,31 +166,31 @@ export function LoginPage() {
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.025)_22%,transparent_58%)]" />
             <div className="relative space-y-5">
-              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 p-1">
-                <button
-                  type="button"
-                  onClick={() => setProviderId('home_assistant')}
-                  className={`rounded-xl px-3 py-2 text-sm ${
-                    providerId === 'home_assistant'
-                      ? 'bg-orange-500 text-white'
-                      : `${textColor} ${surface.hoverBg}`
-                  }`}
-                >
-                  Home Assistant
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProviderId('homey')}
-                  className={`rounded-xl px-3 py-2 text-sm ${
-                    providerId === 'homey'
-                      ? 'bg-orange-500 text-white'
-                      : `${textColor} ${surface.hoverBg}`
-                  }`}
-                >
-                  Homey
-                </button>
+              <div
+                className={`grid gap-2 rounded-2xl border border-white/10 p-1`}
+                style={{
+                  gridTemplateColumns: `repeat(${selectableProviders.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {selectableProviders.map((candidateId) => {
+                  const candidate = INTEGRATION_PROVIDERS[candidateId];
+                  const isSelected = candidateId === providerId;
+
+                  return (
+                    <button
+                      key={candidateId}
+                      type="button"
+                      onClick={() => setProviderId(candidateId)}
+                      className={`rounded-xl px-3 py-2 text-sm ${
+                        isSelected ? 'bg-orange-500 text-white' : `${textColor} ${surface.hoverBg}`
+                      }`}
+                    >
+                      {candidate.label}
+                    </button>
+                  );
+                })}
               </div>
-              {providerId === 'home_assistant' ? (
+              {requiresUrl ? (
                 <FieldBlock
                   label={t('login.urlLabel')}
                   htmlFor="url"
@@ -210,7 +226,7 @@ export function LoginPage() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    {providerId === 'homey' ? 'Connecting to Homey...' : t('login.connecting')}
+                    {requiresUrl ? t('login.connecting') : `Connecting to ${provider.label}...`}
                   </span>
                 ) : (
                   'Continue'
@@ -218,13 +234,17 @@ export function LoginPage() {
               </Button>
 
               <p className={`${navetTypographyTokens.helper} text-center ${mutedColor}`}>
-                {providerId === 'homey'
-                  ? 'You’ll sign in with Athom, return to Navet, and pick a Homey if your account has more than one.'
-                  : isDiscovering
-                    ? 'Looking for Home Assistant...'
-                    : discoveredUrl
-                      ? 'Found Home Assistant on your network. You can edit the URL before continuing.'
-                      : 'You’ll sign in on Home Assistant, then return to Navet.'}
+                {!requiresUrl
+                  ? `You’ll sign in with ${provider.label === 'Homey' ? 'Athom' : provider.label}, return to Navet, and pick a ${provider.label} if your account has more than one.`
+                  : provider.loginMode === 'url_session'
+                    ? 'Navet will connect to your openHAB REST API directly using the URL you provide.'
+                    : !usesOAuthRedirect
+                      ? `Connect to ${provider.label} directly from Navet.`
+                      : isDiscovering
+                        ? 'Looking for Home Assistant...'
+                        : discoveredUrl
+                          ? 'Found Home Assistant on your network. You can edit the URL before continuing.'
+                          : 'You’ll sign in on Home Assistant, then return to Navet.'}
               </p>
             </div>
           </form>

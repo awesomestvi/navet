@@ -1,0 +1,9 @@
+{
+  "name": "@navet/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dashboard-entity-view": "./src/dashboard-entity-view.ts"
+  }
+}

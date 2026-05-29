@@ -1,36 +1,50 @@
+import type { NavetEntity } from '@navet/core/types';
 import { useMemo } from 'react';
-import type { NavetDevice } from '@/app/core/navet';
 import { integrationSelectors } from '@/app/stores/selectors';
+import type { IntegrationProviderId } from '@/app/types/provider';
 import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useIntegrationStore } from './use-integration-store';
 
-export function useProviderDevice(deviceId: string): NavetDevice | null {
+function resolveProviderRecordEntry<
+  T extends { nativeId?: string; externalId?: string; canonicalId: string },
+>(
+  recordByCanonicalId: Record<string, T>,
+  deviceId: string,
+  currentProviderId: IntegrationProviderId
+): T | null {
+  const directMatch = recordByCanonicalId[deviceId];
+  if (directMatch) {
+    return directMatch;
+  }
+
+  const scopedId = parseProviderScopedId(deviceId);
+  if (scopedId) {
+    return (
+      recordByCanonicalId[createProviderScopedId(scopedId.providerId, scopedId.nativeId)] ?? null
+    );
+  }
+
+  const currentProviderMatch =
+    recordByCanonicalId[createProviderScopedId(currentProviderId, deviceId)];
+  if (currentProviderMatch) {
+    return currentProviderMatch;
+  }
+
+  return (
+    Object.values(recordByCanonicalId).find((entry) => {
+      const nativeId = 'nativeId' in entry ? entry.nativeId : entry.externalId;
+      return nativeId === deviceId || entry.canonicalId === deviceId;
+    }) ?? null
+  );
+}
+
+export function useProviderEntityModel(entityId: string): NavetEntity | null {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const devicesByCanonicalId = useIntegrationStore(integrationSelectors.devicesByCanonicalId);
+  const entitiesByCanonicalId = useIntegrationStore(
+    integrationSelectors.providerEntitiesByCanonicalId
+  );
 
   return useMemo(() => {
-    const directMatch = devicesByCanonicalId[deviceId];
-    if (directMatch) {
-      return directMatch;
-    }
-
-    const scopedId = parseProviderScopedId(deviceId);
-    if (scopedId) {
-      return (
-        devicesByCanonicalId[createProviderScopedId(scopedId.providerId, scopedId.nativeId)] ?? null
-      );
-    }
-
-    const currentProviderMatch =
-      devicesByCanonicalId[createProviderScopedId(currentProviderId, deviceId)];
-    if (currentProviderMatch) {
-      return currentProviderMatch;
-    }
-
-    return (
-      Object.values(devicesByCanonicalId).find(
-        (device) => device.nativeId === deviceId || device.canonicalId === deviceId
-      ) ?? null
-    );
-  }, [currentProviderId, deviceId, devicesByCanonicalId]);
+    return resolveProviderRecordEntry(entitiesByCanonicalId, entityId, currentProviderId);
+  }, [currentProviderId, entitiesByCanonicalId, entityId]);
 }

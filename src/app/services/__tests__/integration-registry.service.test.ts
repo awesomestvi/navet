@@ -7,8 +7,10 @@ import {
   createMissingIntegrationCapabilityError,
   createMissingIntegrationFeatureError,
   getIntegrationProviderAdapter,
+  getIntegrationProviderContract,
   getIntegrationProviderEnergyFeatureService,
   getIntegrationProviderFeatureMatrix,
+  getSmartHomeProviderAdapter,
   listAvailableIntegrationProviders,
   listImplementedIntegrationProviders,
 } from '../integration-registry.service';
@@ -28,12 +30,24 @@ vi.mock('../home-assistant.service', () => ({
     callService: callServiceMock,
     signPath: signPathMock,
     getCameraStreamUrl: getCameraStreamUrlMock,
+    isConnected: () => false,
+    getEntities: () => ({}),
+    getAreas: () => [],
+    getDeviceRegistry: () => [],
+    getEntityRegistry: () => [],
+    addListener: () => () => {},
   },
 }));
 
 vi.mock('../homey.service', () => ({
   homeyService: {
     callService: homeyCallServiceMock,
+    getSnapshot: () => ({
+      connected: false,
+      devices: {},
+      zones: {},
+    }),
+    subscribe: () => () => {},
   },
 }));
 
@@ -45,15 +59,18 @@ describe('integration-registry.service', () => {
     homeyCallServiceMock.mockReset();
   });
 
-  it('lists all available providers and marks Home Assistant and Homey as implemented', () => {
+  it('lists all available providers and marks Home Assistant, Homey, and openHAB as implemented', () => {
     expect(listAvailableIntegrationProviders().map((provider) => provider.id)).toEqual([
       'home_assistant',
       'homey',
       'openhab',
+      'hubitat',
+      'smartthings',
     ]);
     expect(listImplementedIntegrationProviders().map((provider) => provider.id)).toEqual([
       'home_assistant',
       'homey',
+      'openhab',
     ]);
   });
 
@@ -168,6 +185,41 @@ describe('integration-registry.service', () => {
     expectProviderFeatureClaims(getIntegrationProviderAdapter('homey'), {
       supported: ['rooms', 'lighting', 'sensors'],
       unsupported: ['mediaBrowse', 'notifications', 'calendar'],
+    });
+  });
+
+  it('exposes a provider-contract compatibility adapter for implemented providers', async () => {
+    const adapter = getSmartHomeProviderAdapter('home_assistant');
+
+    await expect(adapter.listEntities()).resolves.toEqual(expect.any(Array));
+    await expect(adapter.subscribeToEvents(() => undefined)).resolves.toEqual(expect.any(Function));
+  });
+
+  it('reuses the same provider contract instance for registry and compatibility adapter wiring', () => {
+    expect(getIntegrationProviderAdapter('home_assistant').contract).toBe(
+      getIntegrationProviderContract('home_assistant')
+    );
+    expect(getIntegrationProviderAdapter('homey').contract).toBe(
+      getIntegrationProviderContract('homey')
+    );
+  });
+
+  it('exposes planned providers through empty compatibility adapters and stable contract instances', async () => {
+    const adapter = getIntegrationProviderAdapter('hubitat');
+    const providerContractAdapter = getSmartHomeProviderAdapter('hubitat');
+    const contract = getIntegrationProviderContract('hubitat');
+
+    expect(adapter.implementationStatus).toBe('planned');
+    expect(contract).toBe(getIntegrationProviderContract('hubitat'));
+    expect(providerContractAdapter).toBe(getSmartHomeProviderAdapter('hubitat'));
+
+    await expect(providerContractAdapter.listEntities()).resolves.toEqual([]);
+    await expect(providerContractAdapter.getEntity('hubitat:light.kitchen')).resolves.toBeNull();
+    await expect(contract.getState()).toEqual({
+      providerId: 'hubitat',
+      connected: false,
+      entities: [],
+      rooms: [],
     });
   });
 });

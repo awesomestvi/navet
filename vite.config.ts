@@ -1015,6 +1015,20 @@ export default defineConfig(({ mode }) => {
       alias: {
         // Alias @ to the src directory
         '@': path.resolve(__dirname, './src'),
+        '@navet/core': path.resolve(__dirname, './packages/core/src'),
+        '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
+        '@navet/app': path.resolve(__dirname, './packages/app/src'),
+        '@navet/provider-homeassistant': path.resolve(
+          __dirname,
+          './packages/provider-homeassistant/src'
+        ),
+        '@navet/provider-homey': path.resolve(__dirname, './packages/provider-homey/src'),
+        '@navet/provider-hubitat': path.resolve(__dirname, './packages/provider-hubitat/src'),
+        '@navet/provider-openhab': path.resolve(__dirname, './packages/provider-openhab/src'),
+        '@navet/provider-smartthings': path.resolve(
+          __dirname,
+          './packages/provider-smartthings/src'
+        ),
         '@docker': path.resolve(__dirname, './docker'),
         '@scripts': path.resolve(__dirname, './scripts'),
         ...(isStorybook

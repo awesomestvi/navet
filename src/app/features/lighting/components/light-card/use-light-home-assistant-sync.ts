@@ -2,75 +2,28 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useLightMemoryStore } from '@/app/features/lighting/stores/light-memory-store';
 import { useI18n } from '@/app/hooks';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
-import { dispatchEntityAction } from '@/app/services/integration-action.service';
-import type { IntegrationProviderId } from '@/app/types/provider';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import type { ProviderLightUpdateOptions } from '@/app/platform/provider-feature-services';
+import { integrationLightFeatureService } from '@/app/services/integration-light-feature.service';
 import { clampKelvin, clampPercentage } from './light-card-utils';
 
-export interface LightUpdateOptions {
-  state?: 'on' | 'off';
-  brightnessPct?: number;
-  kelvin?: number;
-  rgbColor?: [number, number, number];
-  hsColor?: [number, number];
-  xyColor?: [number, number];
-  effect?: string;
+export type LightUpdateOptions = ProviderLightUpdateOptions;
+
+function hasAdvancedLightUpdate(options: LightUpdateOptions): boolean {
+  return Boolean(options.effect || options.rgbColor || options.hsColor || options.xyColor);
 }
 
-interface UseLightServiceSyncParams {
-  id: string;
-  providerId?: IntegrationProviderId;
-  isHomeAssistantLight: boolean;
-}
-
-export function useLightServiceSync({
-  id,
-  providerId,
-  isHomeAssistantLight,
-}: UseLightServiceSyncParams) {
+export function useLightServiceSync({ id }: { id: string }) {
   const { t } = useI18n();
 
   return useCallback(
     async (options: LightUpdateOptions) => {
       try {
-        const nativeEntityId = parseProviderScopedId(id)?.nativeId ?? id;
-
-        if (providerId && providerId !== 'home_assistant') {
-          if (options.effect || options.rgbColor || options.hsColor || options.xyColor) {
-            throw new Error('This light control is not supported for the current integration yet');
-          }
-
-          if (options.state === 'off') {
-            await dispatchEntityAction({
-              providerId,
-              entityId: id,
-              domain: 'light',
-              service: 'turn_off',
-            });
-            return;
-          }
-
-          await dispatchEntityAction({
-            providerId,
-            entityId: id,
-            domain: 'light',
-            service: 'turn_on',
-            serviceData: {
-              ...(typeof options.brightnessPct === 'number'
-                ? { brightness_pct: options.brightnessPct }
-                : {}),
-              ...(typeof options.kelvin === 'number' ? { kelvin: options.kelvin } : {}),
-            },
-          });
+        if (hasAdvancedLightUpdate(options)) {
+          await integrationLightFeatureService.updateLight(id, options);
           return;
         }
 
-        if (!isHomeAssistantLight) {
-          return;
-        }
-
-        await homeAssistantService.updateLight(nativeEntityId, options);
+        await integrationLightFeatureService.applyBasicLightUpdate(id, options);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t('lighting.feedback.updateLightFailed')
@@ -78,7 +31,7 @@ export function useLightServiceSync({
         throw error;
       }
     },
-    [id, isHomeAssistantLight, providerId, t]
+    [id, t]
   );
 }
 

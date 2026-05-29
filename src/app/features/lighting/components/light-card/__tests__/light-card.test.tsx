@@ -7,22 +7,60 @@ import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { LightCard } from '..';
 
-const { serviceMock } = vi.hoisted(() => ({
-  serviceMock: {
+const { advancedLightServiceMock } = vi.hoisted(() => ({
+  advancedLightServiceMock: {
     updateLight: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-const { dispatchEntityActionMock } = vi.hoisted(() => ({
-  dispatchEntityActionMock: vi.fn().mockResolvedValue(undefined),
+const { dispatchEntityCommandMock } = vi.hoisted(() => ({
+  dispatchEntityCommandMock: vi.fn().mockResolvedValue({
+    accepted: true,
+    requiresEventConfirmation: true,
+  }),
 }));
 
-vi.mock('@/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@/app/services/integration-light-feature.service', () => ({
+  hasIntegrationLightFeatureService: vi.fn(
+    (entityId: string) => entityId.startsWith('light.') || entityId.startsWith('home_assistant:')
+  ),
+  integrationLightFeatureService: {
+    applyBasicLightUpdate: async (entityId: string, options: Record<string, unknown>) => {
+      if (options.state === 'off') {
+        await dispatchEntityCommandMock({ type: 'turn_off', entityId });
+        return;
+      }
+
+      if (
+        options.state === 'on' &&
+        typeof options.brightnessPct !== 'number' &&
+        typeof options.kelvin !== 'number'
+      ) {
+        await dispatchEntityCommandMock({ type: 'turn_on', entityId });
+      }
+
+      if (typeof options.brightnessPct === 'number') {
+        await dispatchEntityCommandMock({
+          type: 'set_brightness',
+          entityId,
+          brightness: options.brightnessPct,
+        });
+      }
+
+      if (typeof options.kelvin === 'number') {
+        await dispatchEntityCommandMock({
+          type: 'set_color_temperature',
+          entityId,
+          kelvin: options.kelvin,
+        });
+      }
+    },
+    updateLight: advancedLightServiceMock.updateLight,
+  },
 }));
 
 vi.mock('@/app/services/integration-action.service', () => ({
-  dispatchEntityAction: dispatchEntityActionMock,
+  dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
 function createLightEntity(state: 'on' | 'off' = 'on') {
@@ -84,13 +122,16 @@ describe('LightCard', () => {
 
     fireEvent.click(toggleButton);
 
-    expect(serviceMock.updateLight).toHaveBeenCalledWith('light.desk_lamp', { state: 'off' });
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+      type: 'turn_off',
+      entityId: 'light.desk_lamp',
+    });
     expect(card).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByText('Controls')).not.toBeInTheDocument();
 
     fireEvent.click(card);
 
-    expect(serviceMock.updateLight).toHaveBeenCalledTimes(1);
+    expect(dispatchEntityCommandMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Controls')).toBeInTheDocument();
   });
 
@@ -120,7 +161,7 @@ describe('LightCard', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Choose light effect' }));
     fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Fire' }));
 
-    expect(serviceMock.updateLight).toHaveBeenCalledWith('light.desk_lamp', {
+    expect(advancedLightServiceMock.updateLight).toHaveBeenCalledWith('light.desk_lamp', {
       state: 'on',
       effect: 'Fire',
     });
@@ -170,16 +211,14 @@ describe('LightCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle Desk Lamp' }));
 
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
-      providerId: 'homey',
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+      type: 'turn_off',
       entityId: 'homey:light_1',
-      domain: 'light',
-      service: 'turn_off',
     });
-    expect(serviceMock.updateLight).not.toHaveBeenCalled();
+    expect(advancedLightServiceMock.updateLight).not.toHaveBeenCalled();
   });
 
-  it('turns on a Homey light without sending unsupported HA-only light options', () => {
+  it('turns on a Homey light without sending unsupported HA-only light options', async () => {
     renderWithProviders(
       <LightCard
         id="homey:light_1"
@@ -197,15 +236,17 @@ describe('LightCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle Desk Lamp' }));
 
-    expect(dispatchEntityActionMock).toHaveBeenCalledWith({
-      providerId: 'homey',
+    await Promise.resolve();
+
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(1, {
+      type: 'set_brightness',
       entityId: 'homey:light_1',
-      domain: 'light',
-      service: 'turn_on',
-      serviceData: {
-        brightness_pct: 65,
-        kelvin: 3000,
-      },
+      brightness: 65,
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(2, {
+      type: 'set_color_temperature',
+      entityId: 'homey:light_1',
+      kelvin: 3000,
     });
   });
 });

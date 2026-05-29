@@ -1,4 +1,5 @@
 import type { CardSize } from '../components/shared/card-size-selector';
+import type { NavetMediaCapabilities } from '../core/navet-device-state';
 import type { SensorIconType } from '../features/sensors';
 import type { PlatformResourceDescriptor } from '../platform/resources';
 import type { WeatherForecastMode } from '../stores/settings-store';
@@ -116,6 +117,7 @@ export interface MediaDevice extends BaseDevice {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  mediaCapabilities?: NavetMediaCapabilities;
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;
   supportsNextTrack?: boolean;

@@ -6,7 +6,7 @@ resource rewriting, or authenticated provider resources.
 ## Rules
 
 - do not assume browser-direct URLs are valid across panel, Ingress, and standalone runtime modes
-- keep provider-specific resource rewriting inside resolver and infrastructure seams
+- keep provider-specific resource rewriting inside resolver and provider adapter seams
 - treat resource URLs as potentially authenticated, signed, relative, proxied, or expired
 - keep fallback UI behavior when resources fail
 
@@ -14,6 +14,7 @@ resource rewriting, or authenticated provider resources.
 
 - `src/app/infrastructure/home-assistant/resources/`
 - `src/app/infrastructure/home-assistant/media/`
+- `src/providers/homeassistant/`
 - `src/app/utils/home-assistant-url.ts`
 - `src/app/utils/home-assistant-connection-target.ts`
 - `src/app/utils/url-security.ts`

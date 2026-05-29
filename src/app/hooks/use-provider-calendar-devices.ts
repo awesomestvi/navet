@@ -40,10 +40,10 @@ function resolveEntityName(
 function resolveEntityRoom(
   _scopedEntityId: string,
   entity: { attributes?: Record<string, unknown> },
-  deviceRoom?: string
+  entityRoom?: string
 ) {
   return (
-    deviceRoom ||
+    entityRoom ||
     (typeof entity.attributes?.room === 'string' ? entity.attributes.room : null) ||
     (typeof entity.attributes?.area === 'string' ? entity.attributes.area : null) ||
     (typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : null) ||
@@ -57,7 +57,9 @@ export function useProviderCalendarDevices(
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
   const supportsCalendar = useProviderFeature('calendar', resolvedProviderId);
-  const devicesByCanonicalId = useIntegrationStore((state) => state.devicesByCanonicalId);
+  const providerEntitiesByCanonicalId = useIntegrationStore(
+    (state) => state.providerEntitiesByCanonicalId
+  );
   const entities = useProviderEntitySnapshots({
     providerId: resolvedProviderId,
     enabled: supportsCalendar,
@@ -153,7 +155,11 @@ export function useProviderCalendarDevices(
           entityId,
           entity,
           resolveEntityName(entityId, entity, entityRegistryMap.get(entityId)?.name),
-          resolveEntityRoom(scopedEntityId, entity, devicesByCanonicalId[scopedEntityId]?.room),
+          resolveEntityRoom(
+            scopedEntityId,
+            entity,
+            providerEntitiesByCanonicalId[scopedEntityId]?.room
+          ),
           {
             calendarEvents: deferredCalendarEvents,
             locale,
@@ -207,10 +213,10 @@ export function useProviderCalendarDevices(
     calendarEntityIds,
     resolvedProviderId,
     deferredCalendarEvents,
-    devicesByCanonicalId,
     entities,
     entityRegistryMap,
     locale,
+    providerEntitiesByCanonicalId,
     t,
     use24HourTime,
   ]);

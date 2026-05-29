@@ -1,6 +1,7 @@
 import { act, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
+import { getMediaPlayerCapabilities } from '@/app/constants/media-player-features';
 import { renderHookWithProviders } from '@/test/render';
 import { useMediaEntitySync } from '../use-media-entity-sync';
 
@@ -40,6 +41,7 @@ describe('useMediaEntitySync', () => {
           initialMuted: false,
           initialElapsedSeconds: 0,
           initialDurationSeconds: 0,
+          initialMediaCapabilities: getMediaPlayerCapabilities(12),
           initialSupportsGrouping: false,
           initialGroupMembers: [],
           isAdjustingVolume: false,
@@ -111,6 +113,7 @@ describe('useMediaEntitySync', () => {
           initialMuted: false,
           initialElapsedSeconds: 0,
           initialDurationSeconds: 0,
+          initialMediaCapabilities: getMediaPlayerCapabilities(12),
           initialSupportsGrouping: false,
           initialGroupMembers: [],
           isAdjustingVolume: false,
