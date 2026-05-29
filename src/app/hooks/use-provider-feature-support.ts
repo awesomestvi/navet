@@ -1,9 +1,9 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import {
   getIntegrationProviderFeatureMatrix,
   type IntegrationProviderFeature,
   type IntegrationProviderFeatureMatrix,
 } from '@/app/services/integration-registry.service';
+import { integrationStore } from '@/app/stores/integration-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useOptionalAuthSession } from '@/auth/AuthProvider';
@@ -12,7 +12,7 @@ function resolveCurrentProviderId(
   providerId: IntegrationProviderId | undefined,
   authProviderId: IntegrationProviderId | undefined
 ): IntegrationProviderId {
-  return providerId ?? authProviderId ?? authSessionManager.getSnapshot().providerId;
+  return providerId ?? authProviderId ?? integrationStore.getState().currentProviderId;
 }
 
 export function resolveProviderIdForFeatureSupport(

@@ -9,8 +9,6 @@ const { runActionMock, serviceMock } = vi.hoisted(() => ({
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
   serviceMock: {
     callService: vi.fn().mockResolvedValue(undefined),
-    setClimateHvacMode: vi.fn().mockResolvedValue(undefined),
-    setClimateTemperature: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -79,7 +77,12 @@ describe('useHVACCardController', () => {
       result.current.commitDisplayTargetTemp(73);
     });
 
-    expect(serviceMock.setClimateTemperature).toHaveBeenCalledWith('climate.hallway', 73);
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'climate',
+      'set_temperature',
+      { temperature: 73 },
+      { entity_id: 'climate.hallway' }
+    );
   });
 
   it('uses the live entity temperature unit when the initial card props omit it', async () => {
@@ -115,7 +118,12 @@ describe('useHVACCardController', () => {
       result.current.commitDisplayTargetTemp(73);
     });
 
-    expect(serviceMock.setClimateTemperature).toHaveBeenCalledWith('climate.hallway', 73);
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'climate',
+      'set_temperature',
+      { temperature: 73 },
+      { entity_id: 'climate.hallway' }
+    );
   });
 
   it('falls back to the Home Assistant config temperature unit when the entity omits it', async () => {
@@ -155,7 +163,12 @@ describe('useHVACCardController', () => {
       result.current.commitDisplayTargetTemp(73);
     });
 
-    expect(serviceMock.setClimateTemperature).toHaveBeenCalledWith('climate.hallway', 73);
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'climate',
+      'set_temperature',
+      { temperature: 73 },
+      { entity_id: 'climate.hallway' }
+    );
   });
 
   it('syncs numeric string temperatures from live Home Assistant entities', () => {
@@ -262,7 +275,33 @@ describe('useHVACCardController', () => {
       { target_temp_high: 25 },
       { entity_id: 'climate.hallway' }
     );
-    expect(serviceMock.setClimateTemperature).not.toHaveBeenCalled();
+    expect(serviceMock.callService).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatches water heater mode changes through operation-mode services', async () => {
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'water_heater.boiler',
+        name: 'Boiler',
+        initialTemp: 48,
+        initialCurrentTemp: 48,
+        initialMode: 'eco',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    await act(async () => {
+      result.current.setMode('performance');
+    });
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'water_heater',
+      'set_operation_mode',
+      { operation_mode: 'performance' },
+      { entity_id: 'water_heater.boiler' }
+    );
   });
 
   it('treats the entity state as the canonical live HVAC mode', () => {

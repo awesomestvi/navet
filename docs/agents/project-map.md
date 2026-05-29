@@ -48,6 +48,9 @@ src/
 | `src/app/core/navet.ts` | Navet-owned device, room, provider, action, and resource contracts |
 | `src/app/core/navet-mappers.ts` | Provider-to-Navet normalization entry points |
 | `src/app/platform/provider-feature-services.ts` | Provider feature service interfaces |
+| `src/app/services/integration-registry.service.ts` | Provider adapter registry for lifecycle, capabilities, feature services, and resource normalization |
+| `src/app/services/integration-bootstrap.service.ts` | Shared provider session bootstrap and teardown entry surface |
+| `src/app/services/integration-resource.service.ts` | Shared provider resource resolution and normalized resource URL entry surface |
 | `src/app/stores/integration-store.ts` | Cross-provider runtime aggregation and normalized provider snapshot state |
 | `src/app/stores/home-assistant-store.ts` | Home Assistant provider runtime slice |
 | `src/app/hooks/use-provider-runtime.ts` | Main app-facing provider runtime hook |
@@ -90,7 +93,7 @@ scenes, rss, vacuum, and auth flows.
 ## Current Provider Model
 
 - `home_assistant`: implemented and most mature
-- `homey`: implemented through shared runtime and service paths, but not feature-parity complete
+- `homey`: implemented through shared runtime, entity-runtime, and service paths, but not feature-parity complete
 - `openhab`: present in provider IDs and planning surfaces, not implemented as a runtime yet
 
 ## Rules Of Thumb

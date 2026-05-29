@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ThemeType } from '@/app/hooks/use-theme';
-import type { ResolvedMediaResource } from '@/app/infrastructure/home-assistant/resources/resource-types';
+import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {
@@ -14,7 +14,7 @@ export interface MediaArtworkPalette {
 export interface MediaArtworkPaletteSource {
   url?: string | null;
   cacheKey?: string;
-  authStrategy?: ResolvedMediaResource['authStrategy'];
+  authStrategy?: ResolvedPlatformResource['authStrategy'];
   source?: string;
 }
 
@@ -55,7 +55,7 @@ const ARTWORK_PALETTE_CLEAR_DELAY_MS = 700;
 
 export function getMediaArtworkPaletteSource(
   artwork: string | null | undefined,
-  artworkResource?: ResolvedMediaResource | null
+  artworkResource?: ResolvedPlatformResource | null
 ): MediaArtworkPaletteSource | null {
   if (!artwork) {
     return null;

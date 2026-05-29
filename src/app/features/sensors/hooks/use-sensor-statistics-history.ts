@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
 import { useProviderEntitySnapshot } from '@/app/hooks';
 import { getSensorDeviceClass } from '@/app/hooks/device-mappers';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import {
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@/app/services/ha-recorder-statistics';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
@@ -61,7 +62,10 @@ export interface SensorStatisticsPoint {
   maxValue: number;
 }
 
-function isHomeAssistantHistoryEntityId(entityId: string | undefined): boolean {
+function isHomeAssistantHistoryEntityId(
+  entityId: string | undefined,
+  currentProviderId: string
+): boolean {
   if (!entityId) {
     return false;
   }
@@ -71,11 +75,12 @@ function isHomeAssistantHistoryEntityId(entityId: string | undefined): boolean {
     return scopedId.providerId === 'home_assistant';
   }
 
-  return isLegacyHomeAssistantEntityId(entityId);
+  return currentProviderId === 'home_assistant';
 }
 
 export function useSensorStatisticsHistory(entityId: string | undefined) {
-  const isHomeAssistantEntity = isHomeAssistantHistoryEntityId(entityId);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const isHomeAssistantEntity = isHomeAssistantHistoryEntityId(entityId, currentProviderId);
   const entity = useProviderEntitySnapshot(entityId ?? '');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [points, setPoints] = useState<SensorStatisticsPoint[]>([]);
@@ -93,7 +98,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
     const stableEntityId = entityId;
 
     async function fetchHistory() {
-      const activeMessageClient = integrationHistoryService.getMessageClient();
+      const activeMessageClient = getIntegrationHistoryMessageClient(stableEntityId);
       if (!activeMessageClient) {
         setPoints([]);
         return;

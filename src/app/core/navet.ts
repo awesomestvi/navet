@@ -1,7 +1,7 @@
 import type { ProviderMediaFeatureService } from '@/app/platform/provider-feature-services';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import type { AuthSessionMap } from '@/auth/types';
+import type { AuthSession, AuthSessionMap } from '@/auth/types';
 
 export type NavetCapability =
   | 'toggle'
@@ -141,11 +141,15 @@ export interface NavetResourceResolveRequest {
 export interface NavetProviderContract {
   providerId: IntegrationProviderId;
   bootstrapSession?: (sessions: AuthSessionMap) => NavetProviderSession | null;
+  initializeSession?: (session: AuthSession) => Promise<void>;
+  attachRuntimeBridge?: (bridge: unknown) => void;
+  teardownSession?: () => void;
   getSnapshot: () => NavetProviderSnapshot;
   subscribeSnapshot?: (listener: () => void) => () => void;
   dispatchAction: (intent: NavetActionIntent) => Promise<void>;
   resolveResource?: (
     request: NavetResourceResolveRequest
   ) => Promise<ResolvedPlatformResource> | ResolvedPlatformResource;
+  normalizeResourceUrl?: (resourceUrl: string) => string | null;
   media?: ProviderMediaFeatureService;
 }

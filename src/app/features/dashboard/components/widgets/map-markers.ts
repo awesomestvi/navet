@@ -1,4 +1,4 @@
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
+import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import type { MapMarker } from './map-types';
 
 export function normalizeMarkerName(value: string | undefined) {
@@ -18,8 +18,9 @@ export function readEntityPicture(attributes: Record<string, unknown>) {
   );
 }
 
-export function selectMapMarkersFromHa(store: HomeAssistantStore): MapMarker[] {
-  const { entities } = store;
+export function selectMapMarkersFromEntities(
+  entities: PlatformEntitySnapshotMap | null
+): MapMarker[] {
   if (!entities) return [];
 
   const personPicturesByName = new Map<string, string>();

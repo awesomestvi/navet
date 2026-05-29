@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
+import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
@@ -11,7 +12,10 @@ const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const FALLBACK_POINT_COUNT = 12;
 
-function isHomeAssistantStatisticId(entityId: string | undefined): boolean {
+function isHomeAssistantStatisticId(
+  entityId: string | undefined,
+  currentProviderId: string
+): boolean {
   if (!entityId) {
     return false;
   }
@@ -21,7 +25,7 @@ function isHomeAssistantStatisticId(entityId: string | undefined): boolean {
     return scopedId.providerId === 'home_assistant';
   }
 
-  return isLegacyHomeAssistantEntityId(entityId);
+  return currentProviderId === 'home_assistant';
 }
 
 function formatBucketLabel(timestampMs: number, index: number, total: number) {
@@ -84,7 +88,8 @@ export function useEnergyLoadHistory(
 ): EnergySeriesPoint[] {
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const isHomeAssistantEntity = isHomeAssistantStatisticId(entityId, currentProviderId);
 
   useEffect(() => {
     const fallbackSeedKey = entityId ?? `load:${Math.round(fallbackCurrentLoadW)}`;
@@ -97,7 +102,7 @@ export function useEnergyLoadHistory(
     const resolvedEntityId = entityId;
 
     async function fetchHistory() {
-      const activeMessageClient = integrationHistoryService.getMessageClient();
+      const activeMessageClient = getIntegrationHistoryMessageClient(resolvedEntityId);
       if (!activeMessageClient) {
         setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
         return;

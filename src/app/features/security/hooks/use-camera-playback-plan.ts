@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { cameraMediaService } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
-import type { CameraPlaybackPlan } from '@/app/infrastructure/home-assistant/media/camera-media-service';
-import type { PlatformCameraStreamType } from '@/app/platform/provider-feature-models';
+import type {
+  CameraPlaybackPlan,
+  PlatformCameraStreamType,
+} from '@/app/platform/provider-feature-models';
+import { getCameraPlaybackPlan } from '@/app/services/integration-camera-runtime.service';
 import type { CameraFeedMode } from '@/app/stores/settings-store';
 
 interface UseCameraPlaybackPlanOptions {
@@ -49,8 +51,7 @@ export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
   useEffect(() => {
     let cancelled = false;
 
-    void cameraMediaService
-      .getPlaybackPlan(stableOptions)
+    void getCameraPlaybackPlan(stableOptions)
       .then((nextPlan) => {
         if (!cancelled) {
           setPlan(nextPlan);

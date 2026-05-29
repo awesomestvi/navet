@@ -72,6 +72,7 @@ const DEVICE_CATEGORY_HINTS: [string, EnergyConsumerCategory][] = [
   ['charger', 'ev_charger'],
   ['hvac', 'hvac'],
   ['heat_pump', 'hvac'],
+  ['heat pump', 'hvac'],
   ['aircon', 'hvac'],
   ['water_heater', 'water_heater'],
   ['boiler', 'water_heater'],

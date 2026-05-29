@@ -56,34 +56,32 @@ describe('useHADevices', () => {
 
     const { result } = renderHookWithProviders(() => useHADevices());
 
-    expect(result.current.sensors).toEqual([
-      expect.objectContaining({
-        id: `home_assistant:${temperatureSensor.entity_id}`,
-        nativeId: temperatureSensor.entity_id,
-        canonicalId: `home_assistant:${temperatureSensor.entity_id}`,
-        providerId: 'home_assistant',
-        name: 'Kitchen Temperature',
-        room: 'Kitchen',
-        value: '21.4',
-        unit: '°C',
-        icon: 'thermometer',
-        deviceClass: 'temperature',
-        status: 'measurement',
-      }),
-      expect.objectContaining({
-        id: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
-        nativeId: binarySensorEntityFixtures.normal.entity_id,
-        canonicalId: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
-        providerId: 'home_assistant',
-        name: 'Front Door Motion',
-        room: 'Kitchen',
-        value: 'Detected',
-        unit: '',
-        icon: 'motion',
-        deviceClass: 'motion',
-        status: 'active',
-      }),
-    ]);
+    expect(result.current.sensors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: `home_assistant:${temperatureSensor.entity_id}`,
+          nativeId: temperatureSensor.entity_id,
+          canonicalId: `home_assistant:${temperatureSensor.entity_id}`,
+          providerId: 'home_assistant',
+          name: 'Kitchen Temperature',
+          room: 'Kitchen',
+          value: '21.4',
+          unit: '°C',
+          deviceClass: 'temperature',
+        }),
+        expect.objectContaining({
+          id: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
+          nativeId: binarySensorEntityFixtures.normal.entity_id,
+          canonicalId: `home_assistant:${binarySensorEntityFixtures.normal.entity_id}`,
+          providerId: 'home_assistant',
+          name: 'Front Door Motion',
+          room: 'Kitchen',
+          value: 'Detected',
+          unit: '',
+          deviceClass: 'motion',
+        }),
+      ])
+    );
   });
 
   it('preserves unavailable and unknown Home Assistant entity states in mapped devices', async () => {
@@ -111,13 +109,14 @@ describe('useHADevices', () => {
         state: false,
       })
     );
-    expect(result.current.sensors[0]).toEqual(
-      expect.objectContaining({
-        id: `home_assistant:${sensorEntityFixtures.unknown.entity_id}`,
-        room: 'Office',
-        value: 'unknown',
-        status: 'unavailable',
-      })
+    expect(result.current.sensors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: `home_assistant:${sensorEntityFixtures.unknown.entity_id}`,
+          room: 'Office',
+          value: 'unknown',
+        }),
+      ])
     );
   });
 

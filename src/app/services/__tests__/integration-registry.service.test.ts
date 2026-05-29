@@ -7,6 +7,7 @@ import {
   createMissingIntegrationCapabilityError,
   createMissingIntegrationFeatureError,
   getIntegrationProviderAdapter,
+  getIntegrationProviderEnergyFeatureService,
   getIntegrationProviderFeatureMatrix,
   listAvailableIntegrationProviders,
   listImplementedIntegrationProviders,
@@ -94,6 +95,9 @@ describe('integration-registry.service', () => {
     await expect(adapter.getCameraStream?.('camera.front', 'hls')).resolves.toEqual({
       url: '/api/hls/test.m3u8',
     });
+    expect(getIntegrationProviderEnergyFeatureService('home_assistant')).toBe(
+      adapter.energyFeatureService
+    );
   });
 
   it('exposes Homey as an implemented adapter with service actions enabled', async () => {
@@ -157,11 +161,12 @@ describe('integration-registry.service', () => {
     expectProviderFeatureMatrixSubset(getIntegrationProviderFeatureMatrix('homey'), {
       lighting: true,
       sensors: true,
+      rooms: true,
       mediaBrowse: false,
       notifications: false,
     });
     expectProviderFeatureClaims(getIntegrationProviderAdapter('homey'), {
-      supported: ['lighting', 'sensors', 'rooms'],
+      supported: ['rooms', 'lighting', 'sensors'],
       unsupported: ['mediaBrowse', 'notifications', 'calendar'],
     });
   });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { integrationMediaFeatureService } from '@/app/services/integration-media-feature.service';
-import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
+import { normalizeResourceUrl } from '@/app/services/integration-resource.service';
 import { sanitizeImageUrl } from '@/app/utils/url-security';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
 
@@ -28,7 +28,7 @@ async function resolveMediaSourceImageUrl(mediaContentId: string) {
     return null;
   }
 
-  return resolveHomeAssistantProxyUrl(resolved.url) ?? resolved.url;
+  return normalizeResourceUrl(resolved.url, 'home_assistant') ?? resolved.url;
 }
 
 async function collectMediaSourceImageUrls(mediaSourceId: string) {

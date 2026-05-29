@@ -1,12 +1,10 @@
-import { useCallback } from 'react';
-import { shallow } from 'zustand/shallow';
-import { useHomeAssistant, useIntegrationStore } from '@/app/hooks';
-import { selectFeedreaderEventEntities } from '@/app/infrastructure/home-assistant/home-assistant-domain-selectors';
+import { useMemo } from 'react';
+import { useIntegrationStore } from '@/app/hooks';
+import { useProviderEntitySnapshots } from '@/app/hooks/use-provider-entity';
 import type {
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@/app/platform/provider-feature-models';
-import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 import { integrationSelectors } from '@/app/stores/selectors';
 
 const EMPTY_FEEDREADER_ENTITIES: PlatformEntitySnapshotMap = {};
@@ -15,64 +13,63 @@ function selectEmptyFeedreaderEntities(): PlatformEntitySnapshotMap {
   return EMPTY_FEEDREADER_ENTITIES;
 }
 
-function toPlatformEntitySnapshot(
-  entityId: string,
-  entity: {
-    state: string;
-    attributes?: Record<string, unknown>;
-    last_changed?: string;
-    last_updated?: string;
+function selectFeedreaderEventEntities(
+  entities: PlatformEntitySnapshotMap | null
+): PlatformEntitySnapshotMap {
+  if (!entities) {
+    return {};
   }
-): PlatformEntitySnapshot {
-  return {
-    entityId,
-    state: entity.state,
-    attributes: (entity.attributes as Record<string, unknown> | undefined) ?? {},
-    lastChanged: entity.last_changed,
-    lastUpdated: entity.last_updated,
-  };
+
+  const out: PlatformEntitySnapshotMap = {};
+  for (const [entityId, entity] of Object.entries(entities)) {
+    if (!entityId.startsWith('event.')) {
+      continue;
+    }
+
+    const attributes = entity.attributes as Record<string, unknown> | undefined;
+    if (
+      typeof attributes?.link === 'string' &&
+      (entityId.includes('feedreader') ||
+        typeof attributes?.title === 'string' ||
+        typeof attributes?.attribution === 'string')
+    ) {
+      out[entityId] = entity;
+    }
+  }
+
+  return out;
 }
 
-function selectAllFeedreaderEntities(state: HomeAssistantStore): PlatformEntitySnapshotMap {
-  const entities = selectFeedreaderEventEntities(state);
+function mapFeedreaderEntities(
+  entities: PlatformEntitySnapshotMap | null,
+  entityIds?: string[]
+): PlatformEntitySnapshotMap {
+  const feedreaderEntities = selectFeedreaderEventEntities(entities);
+
+  if (!entityIds?.length) {
+    return feedreaderEntities;
+  }
 
   return Object.fromEntries(
-    Object.entries(entities).map(([entityId, entity]) => [
-      entityId,
-      toPlatformEntitySnapshot(entityId, entity),
-    ])
+    entityIds
+      .map((entityId) => {
+        const entity = feedreaderEntities[entityId];
+        return entity ? [entityId, entity] : null;
+      })
+      .filter((entry): entry is [string, PlatformEntitySnapshot] => entry !== null)
   );
 }
 
 export function useProviderFeedreaderEntities(entityIds?: string[]): PlatformEntitySnapshotMap {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const isHomeAssistantProvider = currentProviderId === 'home_assistant';
-  const narrowedSelector = useCallback(
-    (state: HomeAssistantStore): PlatformEntitySnapshotMap => {
-      if (!entityIds?.length) {
-        return selectAllFeedreaderEntities(state);
-      }
+  const entities = useProviderEntitySnapshots({ enabled: isHomeAssistantProvider });
 
-      const feedreaderEntities = selectFeedreaderEventEntities(state);
-
-      return Object.fromEntries(
-        entityIds
-          .map((entityId) => {
-            const entity = feedreaderEntities[entityId];
-            return entity ? [entityId, toPlatformEntitySnapshot(entityId, entity)] : null;
-          })
-          .filter((entry): entry is [string, PlatformEntitySnapshot] => entry !== null)
-      );
-    },
-    [entityIds]
-  );
-
-  return useHomeAssistant(
-    isHomeAssistantProvider
-      ? entityIds?.length
-        ? narrowedSelector
-        : selectAllFeedreaderEntities
-      : selectEmptyFeedreaderEntities,
-    shallow
+  return useMemo(
+    () =>
+      isHomeAssistantProvider
+        ? mapFeedreaderEntities(entities, entityIds)
+        : selectEmptyFeedreaderEntities(),
+    [entities, entityIds, isHomeAssistantProvider]
   );
 }

@@ -19,13 +19,12 @@ import {
   resolveClimateTargetTemperature,
   resolveClimateTemperatureUnit,
 } from '@/app/hooks/entity-utils';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import { useProviderDevice } from '@/app/hooks/use-provider-device';
 import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { dispatchEntityAction } from '@/app/services/integration-action.service';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import {
   convertDisplayTemperatureToSourceUnit,
@@ -135,6 +134,27 @@ function resolveClimateTemperatureServiceData(
   return targetHigh !== null ? { target_temp_high: nextTemp } : { target_temp_low: nextTemp };
 }
 
+function resolveClimateModeServiceRequest(
+  entityId: string,
+  nextMode: string
+): { domain: 'climate' | 'water_heater'; service: string; serviceData: Record<string, unknown> } {
+  const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
+
+  if (nativeEntityId.startsWith('water_heater.')) {
+    return {
+      domain: 'water_heater',
+      service: 'set_operation_mode',
+      serviceData: { operation_mode: nextMode },
+    };
+  }
+
+  return {
+    domain: 'climate',
+    service: 'set_hvac_mode',
+    serviceData: { hvac_mode: nextMode },
+  };
+}
+
 export function useHVACCardController({
   id,
   name,
@@ -175,11 +195,13 @@ export function useHVACCardController({
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const providerDevice = useProviderDevice(id);
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const providerState = readNavetClimateState(providerDevice);
   const resolvedProviderId =
     providerDevice?.providerId ??
     providerId ??
-    (isLegacyHomeAssistantEntityId(nativeEntityId) ? 'home_assistant' : undefined);
+    parseProviderScopedId(id)?.providerId ??
+    currentProviderId;
   const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
   const liveEntity = useProviderEntitySnapshot(id);
   const homeAssistantTemperatureUnit = useProviderTemperatureUnit(resolvedProviderId);
@@ -249,15 +271,10 @@ export function useHVACCardController({
   const { queue: queueTargetTempSync } = useHaCommandQueue((nextTemp: number) =>
     runTemperatureAction(async () => {
       const serviceData = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
-      if ('temperature' in serviceData) {
-        await homeAssistantService.setClimateTemperature(nativeEntityId, serviceData.temperature);
-        return;
-      }
-
       await dispatchEntityAction({
-        providerId,
+        providerId: resolvedProviderId,
         entityId: id,
-        domain: 'climate',
+        domain: nativeEntityId.startsWith('water_heater.') ? 'water_heater' : 'climate',
         service: 'set_temperature',
         serviceData,
       });
@@ -303,7 +320,16 @@ export function useHVACCardController({
       setMode(nextMode);
       setIsOn(nextMode !== 'off');
       void runModeAction(
-        () => homeAssistantService.setClimateHvacMode(id, nextMode),
+        async () => {
+          const request = resolveClimateModeServiceRequest(id, nextMode);
+          await dispatchEntityAction({
+            providerId: resolvedProviderId,
+            entityId: id,
+            domain: request.domain,
+            service: request.service,
+            serviceData: request.serviceData,
+          });
+        },
         t('climate.feedback.updateModeFailed'),
         {
           onError: () => {
@@ -313,7 +339,7 @@ export function useHVACCardController({
         }
       );
     },
-    [id, isOn, mode, runModeAction, t]
+    [id, isOn, mode, resolvedProviderId, runModeAction, t]
   );
 
   useHvacEntitySync({

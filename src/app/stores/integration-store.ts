@@ -16,6 +16,7 @@ import {
 import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderHealth } from '@/app/platform/types';
 import { homeyService } from '@/app/services/homey.service';
+import { getIntegrationProviderContract } from '@/app/services/integration-registry.service';
 import type { IntegrationUser } from '@/app/types/integration-user';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
@@ -68,16 +69,20 @@ function getProviderSessionsSnapshot(): Partial<
   const sessions = snapshot.sessions ?? {};
 
   return Object.fromEntries(
-    Object.entries(sessions).map(([providerId, session]) => [
-      providerId,
-      {
-        providerId: session.providerId,
-        connected: session.providerId === 'home_assistant' ? true : Boolean(session),
-        runtime: session.runtime,
-        authMode: session.authMode,
-      },
-    ])
+    (Object.keys(sessions) as IntegrationProviderId[])
+      .map((providerId) => [
+        providerId,
+        getIntegrationProviderContract(providerId).bootstrapSession?.(sessions) ?? null,
+      ])
+      .filter((entry): entry is [IntegrationProviderId, NavetProviderSession] => Boolean(entry[1]))
   ) as Partial<Record<IntegrationProviderId, NavetProviderSession>>;
+}
+
+function resolveInitialCurrentProviderId(
+  sessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>
+): IntegrationProviderId {
+  const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey', 'openhab'];
+  return providerOrder.find((providerId) => sessions[providerId]) ?? 'home_assistant';
 }
 
 function buildProviderSnapshots(homeAssistantState: HomeAssistantStore): {
@@ -384,6 +389,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   const initialCanonicalState = buildProviderSnapshots(currentHomeAssistantState);
   const initialProviderRuntime = buildProviderRuntime(currentHomeAssistantState);
   const initialRoomDescriptors = buildRoomDescriptors(currentHomeAssistantState);
+  const initialProviderSessions = getProviderSessionsSnapshot();
   const initialProviderHealth = {
     ...getInitialProviderHealth(),
     home_assistant: createProviderHealthFromHomeAssistant(
@@ -405,9 +411,9 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     },
     availableProviderIds: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
     providers: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
-    currentProviderId: authSessionManager.getSnapshot().providerId,
+    currentProviderId: resolveInitialCurrentProviderId(initialProviderSessions),
     selectedProviderIds: ['home_assistant', 'homey'],
-    providerSessions: getProviderSessionsSnapshot(),
+    providerSessions: initialProviderSessions,
     providerSnapshots: initialCanonicalState.providerSnapshots,
     providerRuntime: initialProviderRuntime,
     devicesByCanonicalId: initialCanonicalState.devicesByCanonicalId,

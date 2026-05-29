@@ -134,6 +134,8 @@ export function mapNavetDevicesToDeviceCollection(devices: NavetDevice[]): Devic
               : undefined,
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
+          sourceDeviceId:
+            typeof state.sourceDeviceId === 'string' ? state.sourceDeviceId : undefined,
           status:
             typeof state.status === 'string'
               ? (state.status as DeviceCollection['sensors'][number]['status'])

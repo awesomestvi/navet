@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@/app/constants';
-import { integrationHistoryService } from '@/app/services/integration-history.service';
+import { getIntegrationHistoryMessageClient } from '@/app/services/integration-history.service';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsToday } from '../services/energy-statistics-service';
 
@@ -36,7 +36,7 @@ export function useEnergyStatisticsToday(
     setHasLoaded(false);
 
     async function fetchStats() {
-      const activeMessageClient = integrationHistoryService.getMessageClient();
+      const activeMessageClient = getIntegrationHistoryMessageClient('home_assistant');
       if (!activeMessageClient) return;
       try {
         const result = await getCachedEnergyStatistics(

@@ -9,8 +9,8 @@ import {
   useProviderSwitchTopology,
   useTheme,
 } from '@/app/hooks';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import type { SwitchCardProps } from './switch-card.types';
 import { useSwitchCardAppearance } from './use-switch-card-appearance';
@@ -43,11 +43,12 @@ export function useSwitchCardController({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const providerDevice = useProviderDevice(id);
-  const nativeId = parseProviderScopedId(id)?.nativeId ?? id;
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId =
     providerDevice?.providerId ??
     providerId ??
-    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+    parseProviderScopedId(id)?.providerId ??
+    currentProviderId;
   const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
 
   useSwitchResetTimerCleanup(resetTimerRef);

@@ -83,6 +83,7 @@ These are the adapter seams where backend-specific behavior belongs:
 - `src/app/services/`
   - provider-facing service facades
   - Home Assistant transport and feature services
+  - provider runtime entity-access seams for generic hooks
   - Homey service and client integration
 - `src/app/stores/home-assistant-store.ts`
   - provider-specific runtime slice for Home Assistant entities, registries, and connection state
@@ -154,15 +155,20 @@ Do not introduce new shared-surface code that:
 - provider IDs and provider definitions
 - cross-provider runtime aggregation in `src/app/stores/integration-store.ts`
 - Navet-owned device, room, resource, and action contracts in `src/app/core/`
+- adapter-owned provider session bootstrap and teardown through `src/app/services/integration-registry.service.ts`
 - Home Assistant provider infrastructure under `src/app/infrastructure/home-assistant/`
 - Homey service integration and snapshot mapping paths
+- provider entity runtime services for shared hooks across Home Assistant and Homey
+- adapter-owned resource normalization and resource resolution entry points through
+  `src/app/services/integration-resource.service.ts`
 - provider-aware dashboard and feature flows that consume normalized or provider-scoped data
 
 ### Planned or incomplete
 
 - openHAB runtime and adapter implementation
 - deeper parity between Home Assistant and Homey feature services
-- further reduction of remaining Home Assistant-first assumptions in older hooks and feature paths
+- further reduction of remaining Home Assistant-first assumptions in older hooks, tests, stories,
+  and feature paths
 - broader provider feature contracts where only Home Assistant currently implements the behavior
 
 ## Documentation Rules

@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { TranslateFn } from '@/app/i18n/index';
 import type { WeatherDevice } from '@/app/types/device.types';
 import { normalizeTemperatureUnit, type TemperatureUnit } from '@/app/utils/temperature';
@@ -11,6 +10,10 @@ import {
 } from '../entity-utils';
 
 type WeatherForecastEntry = Record<string, unknown>;
+type WeatherEntityLike = {
+  state: string;
+  attributes?: Record<string, unknown>;
+};
 
 function resolveTemperatureUnit(...values: unknown[]): TemperatureUnit | undefined {
   for (const value of values) {
@@ -27,7 +30,7 @@ interface WeatherContext {
   locale: string;
   t: TranslateFn;
   use24HourTime: boolean;
-  sunEntity?: HassEntity;
+  sunEntity?: WeatherEntityLike;
   config?: Record<string, unknown> | null;
   weatherForecastMode: 'weekly' | 'hourly';
   storedForecasts?: { daily: WeatherForecastEntry[]; hourly: WeatherForecastEntry[] };
@@ -35,7 +38,7 @@ interface WeatherContext {
 
 export function mapWeatherDevice(
   entityId: string,
-  entity: HassEntity,
+  entity: WeatherEntityLike,
   name: string,
   room: string,
   context: WeatherContext

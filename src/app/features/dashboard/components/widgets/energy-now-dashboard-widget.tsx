@@ -9,10 +9,15 @@ import {
   useEnergyLoadHistory,
   useProviderEnergyNow,
 } from '@/app/features/energy';
-import { useAreaRooms, useI18n, useProviderFeature, useTheme } from '@/app/hooks';
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
+import {
+  useAreaRooms,
+  useI18n,
+  useIntegrationStore,
+  useProviderFeature,
+  useTheme,
+} from '@/app/hooks';
+import { integrationSelectors } from '@/app/stores/selectors';
 import { INTEGRATION_PROVIDERS } from '@/app/types/provider';
-import { useOptionalAuthSession } from '@/auth/AuthProvider';
 import { EnergyNowSettingsDialog, type EnergySourceOption } from './energy-now-settings-dialog';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
@@ -44,7 +49,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const rooms = useAreaRooms();
-  const authSession = useOptionalAuthSession();
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const energyNow = useProviderEnergyNow();
   const supportsEnergyNow = useProviderFeature('energyNow');
@@ -131,9 +136,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   );
 
   if (!supportsEnergyNow) {
-    const providerLabel =
-      authSession?.provider.label ??
-      INTEGRATION_PROVIDERS[authSessionManager.getSnapshot().providerId].label;
+    const providerLabel = INTEGRATION_PROVIDERS[currentProviderId].label;
     return renderEmptyCard(t('integration.featureUnavailable', { provider: providerLabel }), false);
   }
 

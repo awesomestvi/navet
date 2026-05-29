@@ -16,10 +16,10 @@ import {
   useProviderEntitySnapshots,
   useTheme,
 } from '@/app/hooks';
+import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useVacuumControl } from '../vacuum/use-vacuum-control';
 import { VacuumControlsMedium } from '../vacuum/vacuum-controls-medium';
@@ -176,11 +176,12 @@ export const VacuumCard = memo(function VacuumCard({
 }: VacuumCardProps) {
   const resolvedSize = normalizeVacuumCardSize(size);
   const providerDevice = useProviderDevice(id);
-  const nativeId = parseProviderScopedId(id)?.nativeId ?? id;
+  const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId =
     providerDevice?.providerId ??
     providerId ??
-    (isLegacyHomeAssistantEntityId(nativeId) ? 'home_assistant' : undefined);
+    parseProviderScopedId(id)?.providerId ??
+    currentProviderId;
   const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
   const readStringList = (value: unknown) =>
     Array.isArray(value)

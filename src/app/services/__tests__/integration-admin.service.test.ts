@@ -1,24 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { integrationStore } from '@/app/stores/integration-store';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
 
-const { createAreaMock, updateEntityAreaMock, deleteAreaMock } = vi.hoisted(() => ({
-  createAreaMock: vi.fn(),
-  updateEntityAreaMock: vi.fn(),
-  deleteAreaMock: vi.fn(),
-}));
-
-vi.mock('@/app/infrastructure/home-assistant/auth/auth-session-manager', () => ({
-  authSessionManager: {
-    getSnapshot: () => ({
-      providerId: 'home_assistant',
-    }),
-  },
-}));
+const { createAreaMock, updateEntityAreaMock, updateEntityNameMock, deleteAreaMock } = vi.hoisted(
+  () => ({
+    createAreaMock: vi.fn(),
+    updateEntityAreaMock: vi.fn(),
+    updateEntityNameMock: vi.fn(),
+    deleteAreaMock: vi.fn(),
+  })
+);
 
 vi.mock('../home-assistant.service', () => ({
   homeAssistantService: {
     createArea: createAreaMock,
     updateEntityArea: updateEntityAreaMock,
+    updateEntityName: updateEntityNameMock,
     deleteArea: deleteAreaMock,
   },
 }));
@@ -27,8 +24,10 @@ import { integrationAdminService } from '../integration-admin.service';
 
 describe('integrationAdminService', () => {
   beforeEach(() => {
+    integrationStore.getState().setCurrentProviderId('home_assistant');
     createAreaMock.mockReset();
     updateEntityAreaMock.mockReset();
+    updateEntityNameMock.mockReset();
     deleteAreaMock.mockReset();
   });
 
@@ -57,5 +56,13 @@ describe('integrationAdminService', () => {
 
     expect(updateEntityAreaMock).toHaveBeenCalledWith('light.kitchen', 'kitchen');
     expect(deleteAreaMock).toHaveBeenCalledWith('kitchen');
+  });
+
+  it('passes entity rename updates through the provider admin adapter', async () => {
+    updateEntityNameMock.mockResolvedValue(undefined);
+
+    await integrationAdminService.updateEntityName('home_assistant:light.kitchen', 'Kitchen');
+
+    expect(updateEntityNameMock).toHaveBeenCalledWith('light.kitchen', 'Kitchen');
   });
 });

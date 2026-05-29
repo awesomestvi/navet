@@ -188,6 +188,7 @@ export interface SensorDevice extends BaseDevice {
   icon?: SensorIconType;
   entityType?: string;
   deviceClass?: string;
+  sourceDeviceId?: string;
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
   lastUpdated?: string;
 }

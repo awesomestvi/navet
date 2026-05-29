@@ -1,7 +1,6 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import { useEffect, useRef } from 'react';
-import { homeAssistantSelectors } from '@/app/stores/selectors';
-import { useHomeAssistant } from './use-home-assistant';
+import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
+import { useProviderEntitySnapshot } from './use-provider-entity';
 
 export interface UseHaEntitySyncOptions<TLocal, THA> {
   /** Entity ID to watch */
@@ -65,7 +64,7 @@ export function useHaEntitySync<TLocal, THA>({
   comparatorRef.current = comparator;
   onEntityChangeRef.current = onEntityChange;
 
-  const entity = useHomeAssistant(homeAssistantSelectors.entity(entityId)) as THA | undefined;
+  const entity = useProviderEntitySnapshot(entityId) as THA | undefined;
 
   useEffect(() => {
     if (!enabled || !entity) {
@@ -94,7 +93,7 @@ export function useHaBinaryStateSync(
   useHaEntitySync({
     entityId,
     localState: { isOn },
-    transformer: (entity: HassEntity) => ({ isOn: entity.state === 'on' }),
+    transformer: (entity: PlatformEntitySnapshot) => ({ isOn: entity.state === 'on' }),
     comparator: (local, ha) => local.isOn === ha.isOn,
     onEntityChange: (newState) => onStateChange(newState.isOn),
     enabled,

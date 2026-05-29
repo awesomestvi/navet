@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { homeAssistantResourceResolver } from '@/app/infrastructure/home-assistant/home-assistant-infrastructure';
-import { homeAssistantService } from '@/app/services/home-assistant.service';
 import { integrationCameraFeatureService } from '@/app/services/integration-camera-feature.service';
+import {
+  getCurrentCameraPanelHass,
+  resolveCameraStreamResource,
+} from '@/app/services/integration-camera-runtime.service';
 import type { CameraGo2RtcConfig } from '@/app/stores/settings-store';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
@@ -120,14 +122,7 @@ function HlsCameraPlayer({
         }
 
         const streamUrl =
-          (
-            await homeAssistantResourceResolver.resolve({
-              kind: 'camera_stream',
-              entityId,
-              stream: 'hls',
-              rawPath: stream.url,
-            })
-          ).url ?? stream.url;
+          (await resolveCameraStreamResource(entityId, 'hls', stream.url)).url ?? stream.url;
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = streamUrl;
           await video.play().catch(() => undefined);
@@ -632,7 +627,7 @@ function Go2RtcCustomCardPlayer({
 
   useEffect(() => {
     const container = containerRef.current;
-    const hass = homeAssistantService.getPanelHass();
+    const hass = getCurrentCameraPanelHass();
     const customElementConstructor = customElements.get('webrtc-camera');
 
     if (!container || !hass || !customElementConstructor) {

@@ -1,4 +1,3 @@
-import type { HassEntity } from 'home-assistant-js-websocket';
 import type { TranslateFn } from '@/app/i18n/index';
 import type { CalendarDevice } from '@/app/types/device.types';
 import {
@@ -9,6 +8,10 @@ import {
 } from '../entity-utils';
 
 type CalendarServiceEvent = Record<string, unknown>;
+type CalendarEntityLike = {
+  state: string;
+  attributes?: Record<string, unknown>;
+};
 
 interface CalendarContext {
   locale: string;
@@ -19,7 +22,7 @@ interface CalendarContext {
 
 export function mapCalendarSources(
   entityId: string,
-  entity: HassEntity,
+  entity: CalendarEntityLike,
   name: string,
   room: string,
   context: CalendarContext

@@ -16,23 +16,35 @@ import type {
   ProviderAdminFeatureService,
   ProviderCalendarFeatureService,
   ProviderCameraFeatureService,
+  ProviderEnergyFeatureService,
+  ProviderEntityRuntimeService,
+  ProviderHistoryFeatureService,
   ProviderMediaFeatureService,
   ProviderNotificationFeatureService,
   ProviderTaskFeatureService,
   ProviderWeatherFeatureService,
 } from '@/app/platform/provider-feature-services';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
+import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { resolveHomeAssistantProxyUrl } from '@/app/utils/home-assistant-url';
+import type { AuthSession, AuthSessionMap } from '@/auth/types';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
 import { INTEGRATION_PROVIDERS } from '../types/provider';
 import { homeAssistantService } from './home-assistant.service';
 import { homeAssistantAdminFeatureService } from './home-assistant-admin-feature.service';
 import { homeAssistantCalendarFeatureService } from './home-assistant-calendar-feature.service';
 import { homeAssistantCameraFeatureService } from './home-assistant-camera-feature.service';
+import { homeAssistantEnergyFeatureService } from './home-assistant-energy-feature.service';
+import { homeAssistantEntityRuntimeService } from './home-assistant-entity-runtime.service';
+import { homeAssistantHistoryFeatureService } from './home-assistant-history-feature.service';
 import { homeAssistantMediaFeatureService } from './home-assistant-media-feature.service';
 import { homeAssistantNotificationFeatureService } from './home-assistant-notification-feature.service';
+import type { HomeAssistantPanelHass } from './home-assistant-panel-adapter';
 import { homeAssistantTaskFeatureService } from './home-assistant-task-feature.service';
 import { homeAssistantWeatherFeatureService } from './home-assistant-weather-feature.service';
 import { homeyService } from './homey.service';
+import { ensureHomeyApiClientConfigured } from './homey-api-client.service';
+import { homeyEntityRuntimeService } from './homey-entity-runtime.service';
 
 export interface IntegrationServiceTarget {
   entity_id?: string | string[];
@@ -89,6 +101,9 @@ export interface IntegrationProviderAdapter {
   adminFeatureService?: ProviderAdminFeatureService;
   calendarFeatureService?: ProviderCalendarFeatureService;
   cameraFeatureService?: ProviderCameraFeatureService;
+  energyFeatureService?: ProviderEnergyFeatureService;
+  entityRuntimeService?: ProviderEntityRuntimeService;
+  historyFeatureService?: ProviderHistoryFeatureService;
   mediaFeatureService?: ProviderMediaFeatureService;
   notificationFeatureService?: ProviderNotificationFeatureService;
   taskFeatureService?: ProviderTaskFeatureService;
@@ -125,6 +140,33 @@ function getHomeAssistantSnapshot(): NavetProviderSnapshot {
 
 function getHomeySnapshot(): NavetProviderSnapshot {
   return buildHomeyProviderSnapshot(homeyService.getSnapshot());
+}
+
+function createProviderSessionMap(
+  sessions: AuthSessionMap
+): Partial<Record<IntegrationProviderId, AuthSession>> {
+  return Object.fromEntries(
+    Object.entries(sessions).filter((entry): entry is [IntegrationProviderId, AuthSession] =>
+      Boolean(entry[1])
+    )
+  ) as Partial<Record<IntegrationProviderId, AuthSession>>;
+}
+
+function buildProviderSession(
+  session: AuthSession,
+  connected: boolean
+): {
+  providerId: AuthSession['providerId'];
+  connected: boolean;
+  runtime: AuthSession['runtime'];
+  authMode: AuthSession['authMode'];
+} {
+  return {
+    providerId: session.providerId,
+    connected,
+    runtime: session.runtime,
+    authMode: session.authMode,
+  };
 }
 
 async function dispatchHomeAssistantAction(intent: NavetActionIntent) {
@@ -272,6 +314,23 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
   home_assistant: {
     contract: {
       providerId: 'home_assistant',
+      bootstrapSession: (sessions) => {
+        const session = createProviderSessionMap(sessions).home_assistant;
+        return session ? buildProviderSession(session, homeAssistantService.isConnected()) : null;
+      },
+      initializeSession: async (session) => {
+        if (session.providerId !== 'home_assistant') {
+          return;
+        }
+
+        await homeAssistantStore.getState().connect(session);
+      },
+      attachRuntimeBridge: (bridge) => {
+        homeAssistantStore.getState().syncPanelHass(bridge as HomeAssistantPanelHass);
+      },
+      teardownSession: () => {
+        homeAssistantStore.getState().disconnect();
+      },
       getSnapshot: getHomeAssistantSnapshot,
       subscribeSnapshot: (listener) => {
         const unsubscribers = [
@@ -288,6 +347,8 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
       },
       dispatchAction: dispatchHomeAssistantAction,
       resolveResource: resolveHomeAssistantResource,
+      normalizeResourceUrl: (resourceUrl) =>
+        resolveHomeAssistantProxyUrl(resourceUrl) ?? resourceUrl,
     },
     provider: INTEGRATION_PROVIDERS.home_assistant,
     implementationStatus: 'implemented',
@@ -323,6 +384,9 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
     adminFeatureService: homeAssistantAdminFeatureService,
     calendarFeatureService: homeAssistantCalendarFeatureService,
     cameraFeatureService: homeAssistantCameraFeatureService,
+    energyFeatureService: homeAssistantEnergyFeatureService,
+    entityRuntimeService: homeAssistantEntityRuntimeService,
+    historyFeatureService: homeAssistantHistoryFeatureService,
     mediaFeatureService: homeAssistantMediaFeatureService,
     notificationFeatureService: homeAssistantNotificationFeatureService,
     taskFeatureService: homeAssistantTaskFeatureService,
@@ -331,6 +395,31 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
   homey: {
     contract: {
       providerId: 'homey',
+      bootstrapSession: (sessions) => {
+        const session = createProviderSessionMap(sessions).homey;
+        return session ? buildProviderSession(session, homeyService.getSnapshot().connected) : null;
+      },
+      initializeSession: async (session) => {
+        if (session.providerId !== 'homey') {
+          return;
+        }
+
+        ensureHomeyApiClientConfigured();
+
+        if ('homeySnapshot' in session && session.homeySnapshot) {
+          homeyService.replaceSnapshot({
+            connected: session.homeySnapshot.connected,
+            devices: session.homeySnapshot.devices,
+            zones: session.homeySnapshot.zones,
+          });
+          return;
+        }
+
+        await homeyService.loadSnapshot();
+      },
+      teardownSession: () => {
+        homeyService.resetSnapshot();
+      },
       getSnapshot: getHomeySnapshot,
       subscribeSnapshot: (listener) => homeyService.subscribe(() => listener()),
       dispatchAction: async (intent) => {
@@ -389,6 +478,7 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
         cacheKey: request.deviceId,
         authStrategy: 'none',
       }),
+      normalizeResourceUrl: (resourceUrl) => resourceUrl,
     },
     provider: INTEGRATION_PROVIDERS.homey,
     implementationStatus: 'implemented',
@@ -415,6 +505,7 @@ const ADAPTERS: Record<IntegrationProviderId, IntegrationProviderAdapter> = {
     },
     callService: async (domain, service, serviceData = {}, target) =>
       await homeyService.callService(domain, service, serviceData, target),
+    entityRuntimeService: homeyEntityRuntimeService,
   },
   openhab: createUnsupportedProviderAdapter('openhab'),
 };
@@ -533,6 +624,18 @@ export function getIntegrationProviderMediaFeatureService(providerId: Integratio
     'mediaControls',
     (adapter) => adapter.mediaFeatureService
   );
+}
+
+export function getIntegrationProviderEntityRuntimeService(providerId: IntegrationProviderId) {
+  return getIntegrationProviderAdapter(providerId).entityRuntimeService ?? null;
+}
+
+export function getIntegrationProviderEnergyFeatureService(providerId: IntegrationProviderId) {
+  return requireFeatureService(providerId, 'energyNow', (adapter) => adapter.energyFeatureService);
+}
+
+export function getIntegrationProviderHistoryFeatureService(providerId: IntegrationProviderId) {
+  return getIntegrationProviderAdapter(providerId).historyFeatureService ?? null;
 }
 
 export function getIntegrationProviderNotificationFeatureService(

@@ -10,6 +10,9 @@ const { dispatchEntityActionMock, entitiesState, runActionMock, serviceMock } = 
   },
   runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
   serviceMock: {
+    addListener: vi.fn(() => () => {}),
+    getEntities: vi.fn(() => entitiesState.entities),
+    getEntityRegistry: vi.fn(() => entitiesState.entityRegistry),
     selectMediaPlayerSource: vi.fn().mockResolvedValue(undefined),
     selectMediaPlayerSoundMode: vi.fn().mockResolvedValue(undefined),
     seekMediaPlayer: vi.fn().mockResolvedValue(undefined),
@@ -102,6 +105,9 @@ function setMediaEntities(includeRemote: boolean) {
 describe('useMediaCardController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serviceMock.addListener.mockImplementation(() => () => {});
+    serviceMock.getEntities.mockImplementation(() => entitiesState.entities);
+    serviceMock.getEntityRegistry.mockImplementation(() => entitiesState.entityRegistry);
     setMediaEntities(true);
   });
 

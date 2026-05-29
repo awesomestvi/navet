@@ -1,55 +1,53 @@
-import { authSessionManager } from '@/app/infrastructure/home-assistant/auth/auth-session-manager';
 import type { ProviderCameraFeatureService } from '@/app/platform/provider-feature-services';
-import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import {
+  getNativeIntegrationEntityId,
+  resolveIntegrationProviderId,
+} from './integration-provider-context.service';
 import { getIntegrationProviderCameraFeatureService } from './integration-registry.service';
 
 function resolveCameraProviderId(entityId: string) {
-  return parseProviderScopedId(entityId)?.providerId ?? authSessionManager.getSnapshot().providerId;
-}
-
-function getNativeEntityId(entityId: string) {
-  return parseProviderScopedId(entityId)?.nativeId ?? entityId;
+  return resolveIntegrationProviderId(entityId);
 }
 
 export const integrationCameraFeatureService: ProviderCameraFeatureService = {
   getCameraCapabilities: async (entityId) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).getCameraCapabilities(getNativeEntityId(entityId)),
+    ).getCameraCapabilities(getNativeIntegrationEntityId(entityId)),
   getCameraStreamUrl: async (entityId, format) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).getCameraStreamUrl(getNativeEntityId(entityId), format),
+    ).getCameraStreamUrl(getNativeIntegrationEntityId(entityId), format),
   getWebRtcClientConfiguration: async (entityId) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).getWebRtcClientConfiguration(getNativeEntityId(entityId)),
+    ).getWebRtcClientConfiguration(getNativeIntegrationEntityId(entityId)),
   subscribeCameraWebRtcOffer: async (entityId, offer, callback) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).subscribeCameraWebRtcOffer(getNativeEntityId(entityId), offer, callback),
+    ).subscribeCameraWebRtcOffer(getNativeIntegrationEntityId(entityId), offer, callback),
   addCameraWebRtcCandidate: async (entityId, sessionId, candidate) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).addCameraWebRtcCandidate(getNativeEntityId(entityId), sessionId, candidate),
+    ).addCameraWebRtcCandidate(getNativeIntegrationEntityId(entityId), sessionId, candidate),
   toggleCameraAccessory: async (entityId, state) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).toggleCameraAccessory(getNativeEntityId(entityId), state),
+    ).toggleCameraAccessory(getNativeIntegrationEntityId(entityId), state),
   selectCameraAccessoryOption: async (entityId, option) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).selectCameraAccessoryOption(getNativeEntityId(entityId), option),
+    ).selectCameraAccessoryOption(getNativeIntegrationEntityId(entityId), option),
   setCameraAccessoryValue: async (entityId, value) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).setCameraAccessoryValue(getNativeEntityId(entityId), value),
+    ).setCameraAccessoryValue(getNativeIntegrationEntityId(entityId), value),
   enableCameraMotionDetection: async (entityId) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).enableCameraMotionDetection(getNativeEntityId(entityId)),
+    ).enableCameraMotionDetection(getNativeIntegrationEntityId(entityId)),
   disableCameraMotionDetection: async (entityId) =>
     await getIntegrationProviderCameraFeatureService(
       resolveCameraProviderId(entityId)
-    ).disableCameraMotionDetection(getNativeEntityId(entityId)),
+    ).disableCameraMotionDetection(getNativeIntegrationEntityId(entityId)),
 };

@@ -1,4 +1,4 @@
-import { useIntegrationStore } from '@/app/hooks';
+import { useIntegrationStore, useProviderHealth } from '@/app/hooks';
 import type { PlatformNotificationSnapshot } from '@/app/platform/provider-feature-models';
 import { integrationSelectors } from '@/app/stores/selectors';
 import { useHaNotificationData } from './use-ha-notification-data';
@@ -10,10 +10,11 @@ const EMPTY_NOTIFICATION_SNAPSHOT: PlatformNotificationSnapshot = {
 
 export function useProviderNotificationSnapshot(): PlatformNotificationSnapshot {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantProvider = currentProviderId === 'home_assistant';
-  const homeAssistantSnapshot = useHaNotificationData(isHomeAssistantProvider);
+  const providerHealth = useProviderHealth(currentProviderId);
+  const canLoadNotifications = currentProviderId === 'home_assistant' && providerHealth.connected;
+  const homeAssistantSnapshot = useHaNotificationData(canLoadNotifications);
 
-  if (!isHomeAssistantProvider) {
+  if (!canLoadNotifications) {
     return EMPTY_NOTIFICATION_SNAPSHOT;
   }
 

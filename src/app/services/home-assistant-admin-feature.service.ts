@@ -22,6 +22,9 @@ export const homeAssistantAdminFeatureService: ProviderAdminFeatureService = {
       parsedRoom?.nativeId ?? null
     );
   },
+  updateEntityName: async (entityId, name) => {
+    await homeAssistantService.updateEntityName(getProviderNativeId(entityId), name);
+  },
   deleteRoom: async (roomId) => {
     const parsedRoom = parsePlatformRoomReference(roomId);
     if (!parsedRoom) {

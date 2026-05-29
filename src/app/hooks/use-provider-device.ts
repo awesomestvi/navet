@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { NavetDevice } from '@/app/core/navet';
 import { integrationSelectors } from '@/app/stores/selectors';
-import { isLegacyHomeAssistantEntityId } from '@/app/utils/provider-entity-id';
 import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useIntegrationStore } from './use-integration-store';
 
@@ -22,11 +21,16 @@ export function useProviderDevice(deviceId: string): NavetDevice | null {
       );
     }
 
+    const currentProviderMatch =
+      devicesByCanonicalId[createProviderScopedId(currentProviderId, deviceId)];
+    if (currentProviderMatch) {
+      return currentProviderMatch;
+    }
+
     return (
-      devicesByCanonicalId[createProviderScopedId(currentProviderId, deviceId)] ??
-      (isLegacyHomeAssistantEntityId(deviceId)
-        ? (devicesByCanonicalId[createProviderScopedId('home_assistant', deviceId)] ?? null)
-        : null)
+      Object.values(devicesByCanonicalId).find(
+        (device) => device.nativeId === deviceId || device.canonicalId === deviceId
+      ) ?? null
     );
   }, [currentProviderId, deviceId, devicesByCanonicalId]);
 }

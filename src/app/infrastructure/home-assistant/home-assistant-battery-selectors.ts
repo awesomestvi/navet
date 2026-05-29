@@ -1,20 +1,27 @@
 import type { HomeAssistantStore } from '@/app/stores/home-assistant-store';
 
-export interface HaBatterySensorRow {
+export interface PlatformBatterySensorRow {
   id: string;
   name: string;
   level: number;
 }
 
-export function selectBatterySensorRowsFromHa(
-  state: Pick<HomeAssistantStore, 'entities'>
-): HaBatterySensorRow[] {
-  const entities = state.entities;
+export type HaBatterySensorRow = PlatformBatterySensorRow;
+
+type BatteryEntitySnapshot = {
+  entityId?: string;
+  state: string;
+  attributes?: Record<string, unknown>;
+};
+
+export function mapBatterySensorRowsFromEntities(
+  entities: Record<string, BatteryEntitySnapshot> | null
+): PlatformBatterySensorRow[] {
   if (!entities) {
     return [];
   }
 
-  const rows: HaBatterySensorRow[] = [];
+  const rows: PlatformBatterySensorRow[] = [];
   for (const [id, entity] of Object.entries(entities)) {
     if (!id.startsWith('sensor.')) {
       continue;
@@ -41,9 +48,15 @@ export function selectBatterySensorRowsFromHa(
   return rows;
 }
 
+export function selectBatterySensorRowsFromHa(
+  state: Pick<HomeAssistantStore, 'entities'>
+): PlatformBatterySensorRow[] {
+  return mapBatterySensorRowsFromEntities(state.entities);
+}
+
 export function haBatterySensorRowsEqual(
-  a: HaBatterySensorRow[],
-  b: HaBatterySensorRow[]
+  a: PlatformBatterySensorRow[],
+  b: PlatformBatterySensorRow[]
 ): boolean {
   if (a === b) {
     return true;
