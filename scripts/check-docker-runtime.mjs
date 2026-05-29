@@ -1,6 +1,3 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 function run(command, args, options = {}) {
@@ -38,7 +35,6 @@ function ensureDockerAvailable() {
 }
 
 const imageTag = `navet-docker-runtime-check:${Date.now()}`;
-const tempDataDir = mkdtempSync(join(tmpdir(), 'navet-docker-runtime-check-'));
 
 try {
   ensureDockerAvailable();
@@ -50,8 +46,8 @@ try {
     '--rm',
     '-e',
     'NAVET_HASS_URL=http://homeassistant.local:8123',
-    '-v',
-    `${tempDataDir}:/data`,
+    '--tmpfs',
+    '/data',
     imageTag,
     'nginx',
     '-t',
@@ -60,5 +56,4 @@ try {
   spawnSync('docker', ['image', 'rm', '-f', imageTag], {
     stdio: 'ignore',
   });
-  rmSync(tempDataDir, { recursive: true, force: true });
 }

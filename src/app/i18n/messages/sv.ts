@@ -559,6 +559,31 @@ export const svMessages = {
   'lighting.feedback.updateSwitchFailed': 'Det gick inte att uppdatera brytaren',
   'login.title': 'Navet',
   'login.subtitle': 'Anslut till ditt smarta hem',
+  'login.providerChooser.title': 'Välj ditt smarta hem',
+  'login.providerChooser.description': 'Välj plattformen som Navet ska ansluta till.',
+  'login.connectProviderTitle': 'Anslut till {provider}',
+  'login.providerUrlLabel': '{provider} URL',
+  'login.providerIntro.urlSession':
+    'Ange URL:en till {provider} för att ansluta direkt från Navet.',
+  'login.providerIntro.urlOauth': 'Ange URL:en till {provider} för att fortsätta med OAuth.',
+  'login.providerIntro.cloudOauth':
+    'Fortsätt med {provider} Cloud OAuth och välj sedan vilken {provider} Navet ska använda.',
+  'login.providers.home_assistant.detail':
+    'Använd din Home Assistant-URL och slutför sedan inloggningen med OAuth.',
+  'login.providers.homey.detail':
+    'Logga in med Homey Cloud och välj sedan vilken Homey Navet ska använda.',
+  'login.providers.openhab.detail': 'Anslut direkt till din openHAB-server med dess bas-URL.',
+  'login.providers.unavailable.detail':
+    'Provider-stöd finns påbörjat, men inloggning är inte tillgänglig ännu.',
+  'login.actions.continue': 'Fortsätt',
+  'login.actions.back': 'Tillbaka',
+  'login.hint.cloudOauth':
+    'Du loggar in med {signInProvider}, återvänder till Navet och väljer en {provider} om ditt konto har fler än en.',
+  'login.hint.urlSession': 'Navet ansluter direkt till {provider} med bas-URL:en du anger.',
+  'login.hint.discoverySearching': 'Söker efter Home Assistant...',
+  'login.hint.discoveryFound':
+    'Home Assistant hittades på ditt nätverk. Du kan ändra URL:en innan du fortsätter.',
+  'login.hint.oauthReturn': 'Du loggar in på {provider} och återvänder sedan till Navet.',
   'login.urlLabel': 'URL till smarta hemmet',
   'login.urlPlaceholder': 'http://homeassistant.local:8123',
   'login.urlHelp': 'Adressen till din smarta hem-server',

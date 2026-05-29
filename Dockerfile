@@ -8,7 +8,7 @@ RUN corepack enable && pnpm install --frozen-lockfile
 COPY . .
 RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
-FROM --platform=$TARGETPLATFORM nginx:1.27-alpine
+FROM nginx:1.27-alpine
 
 COPY docker/nginx.main.conf /etc/nginx/nginx.conf
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js

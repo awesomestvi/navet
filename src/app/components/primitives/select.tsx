@@ -10,6 +10,7 @@ import { cn } from '@/app/components/ui/utils';
 import { useTheme } from '@/app/hooks';
 
 type SelectSize = 'default' | 'small';
+type SelectVariant = 'default' | 'ghost';
 
 const SELECT_SIZE_CLASS_NAMES: Record<SelectSize, string> = {
   default: 'px-4 py-3',
@@ -23,6 +24,7 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
   indicatorClassName?: string;
   accentColorOverride?: string;
   size?: SelectSize;
+  variant?: SelectVariant;
   children: ReactNode;
 }
 
@@ -35,6 +37,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     indicatorClassName,
     accentColorOverride,
     size = 'default',
+    variant = 'default',
     onBlur,
     onFocus,
     disabled,
@@ -49,6 +52,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const resolvedAccentColor = accentColorOverride ?? accentColor;
 
   const baseBorderColor = invalid ? (theme === 'light' ? '#dc2626' : '#f87171') : undefined;
+  const themeClassName =
+    variant === 'ghost'
+      ? theme === 'light'
+        ? 'border-transparent bg-transparent text-gray-700'
+        : 'border-transparent bg-transparent text-white/78'
+      : theme === 'light'
+        ? 'border-gray-200 bg-gray-100 text-gray-900'
+        : theme === 'black'
+          ? 'border-white/16 bg-black text-white'
+          : theme === 'glass'
+            ? 'border-white/16 bg-white/8 text-white'
+            : 'border-zinc-800 bg-zinc-900 text-white';
 
   return (
     <div className={cn('relative', containerClassName)}>
@@ -70,13 +85,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           navetRadiusTokens.field,
           SELECT_SIZE_CLASS_NAMES[size],
           navetTypographyTokens.control,
-          theme === 'light'
-            ? 'border-gray-200 bg-gray-100 text-gray-900'
-            : theme === 'black'
-              ? 'border-white/16 bg-black text-white'
-              : theme === 'glass'
-                ? 'border-white/16 bg-white/8 text-white'
-                : 'border-zinc-800 bg-zinc-900 text-white',
+          themeClassName,
           selectClassName
         )}
         style={{
