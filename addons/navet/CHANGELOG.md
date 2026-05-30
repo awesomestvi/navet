@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Updated Navet to `0.3.1`
+- Fixed custom action card fields clearing during editing
+- Improved light button card brightness and color behavior
+- Media cards now show artwork more efficiently
+
 ## 0.3.0
 
 - Updated Navet to `0.3.0`

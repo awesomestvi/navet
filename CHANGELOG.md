@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.1 - 2026-05-30
+
+## New
+
+- Homey is now available through its standalone OAuth login flow.
+- openHAB is now available through the standalone URL-session flow.
+- Navet now ships real provider-neutral package surfaces for `@navet/core`, `@navet/ui`, provider packages, and `@navet/app`.
+
+## Fixed
+
+- Custom action card configuration fields now keep their values reliably instead of unexpectedly clearing during editing.
+- Login recovery, callback handling, and shipped artwork assets are more reliable in standalone deployments.
+
+## Improved
+
+- Light button cards now show brightness controls more appropriately and avoid misleading color treatment when the entity does not support the same lighting behavior.
+- Media cards now show artwork more efficiently.
+- Provider validation, boundary checks, and release workflows now better protect Home Assistant, Homey, and openHAB behavior.
+- Internal provider runtime, registration, and snapshot handling are cleaner, making shared dashboard features work more consistently across providers.
+
 ## 0.3.0 - 2026-05-27
 
 Navet expands dashboard widgets and device controls while making Home Assistant sign-in and proxy-backed resources more reliable.
