@@ -25,6 +25,15 @@ export function createEmptyDeviceCollection(): DeviceCollection {
 
 type EntityStateRecord = Record<string, unknown>;
 
+type DeviceSuppressionIndexes = {
+  deviceIdsWithPrimaryCards: Set<string>;
+  deviceIdsWithSensorCards: Set<string>;
+  deviceIdsWithClimateEntity: Set<string>;
+  deviceIdsWithFanEntity: Set<string>;
+  deviceIdsWithVacuumEntity: Set<string>;
+  primarySwitchCanonicalIdByDeviceId: Map<string, string>;
+};
+
 function readEntityState(entity: NavetEntity): EntityStateRecord {
   return entity.attributes && typeof entity.attributes === 'object' ? entity.attributes : {};
 }
@@ -75,13 +84,142 @@ function resolveEntityValue(entity: NavetEntity, state: EntityStateRecord) {
   return 'value' in state ? state.value : entity.primaryState;
 }
 
+function readOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function readDeviceId(state: EntityStateRecord): string | undefined {
+  return readOptionalString(state.deviceId) ?? readOptionalString(state.sourceDeviceId);
+}
+
+function isSuppressedEntityCategory(state: EntityStateRecord) {
+  return state.entityCategory === 'config' || state.entityCategory === 'diagnostic';
+}
+
+function hasPrimaryCardType(entity: NavetEntity) {
+  return [
+    'light',
+    'switch',
+    'fan',
+    'climate',
+    'hvac',
+    'cover',
+    'lock',
+    'media_player',
+    'vacuum',
+    'camera',
+  ].includes(entity.type);
+}
+
+function getSwitchPrimarySortKey(entity: NavetEntity): [number, number, string] {
+  const state = readEntityState(entity);
+  const categoryPenalty =
+    state.entityCategory === 'config' ? 100 : state.entityCategory === 'diagnostic' ? 200 : 0;
+  const objectId = entity.externalId.includes('.')
+    ? entity.externalId.split('.').slice(1).join('.').toLowerCase()
+    : entity.externalId.toLowerCase();
+  const friendlyName = entity.name.toLowerCase();
+  const helperKeywordPenalty =
+    /(boost|timer|speed|mode|humidity|light|brightness|delay|interval|preset|continuous|trickle|gateway|restart|reboot|update|oscillat|swing|display|buzzer|beep|indicator|child[_\s-]?lock|led)/.test(
+      `${objectId} ${friendlyName}`
+    )
+      ? 20
+      : 0;
+
+  return [categoryPenalty + helperKeywordPenalty, objectId.length, objectId];
+}
+
+function compareSortKeys(left: [number, number, string], right: [number, number, string]) {
+  if (left[0] !== right[0]) {
+    return left[0] - right[0];
+  }
+
+  if (left[1] !== right[1]) {
+    return left[1] - right[1];
+  }
+
+  return left[2].localeCompare(right[2]);
+}
+
+function buildDeviceSuppressionIndexes(entities: NavetEntity[]): DeviceSuppressionIndexes {
+  const indexes: DeviceSuppressionIndexes = {
+    deviceIdsWithPrimaryCards: new Set<string>(),
+    deviceIdsWithSensorCards: new Set<string>(),
+    deviceIdsWithClimateEntity: new Set<string>(),
+    deviceIdsWithFanEntity: new Set<string>(),
+    deviceIdsWithVacuumEntity: new Set<string>(),
+    primarySwitchCanonicalIdByDeviceId: new Map<string, string>(),
+  };
+
+  for (const entity of entities) {
+    const state = readEntityState(entity);
+    const deviceId = readDeviceId(state);
+
+    if (!deviceId) {
+      continue;
+    }
+
+    if (hasPrimaryCardType(entity)) {
+      indexes.deviceIdsWithPrimaryCards.add(deviceId);
+    }
+
+    if (
+      entity.type === 'sensor' ||
+      entity.type === 'binary_sensor' ||
+      entity.type === 'energy' ||
+      entity.type === 'unknown' ||
+      entity.type === 'grouped_sensor'
+    ) {
+      indexes.deviceIdsWithSensorCards.add(deviceId);
+    }
+
+    if (entity.type === 'climate' || entity.type === 'hvac') {
+      indexes.deviceIdsWithClimateEntity.add(deviceId);
+    }
+
+    if (entity.type === 'fan') {
+      indexes.deviceIdsWithFanEntity.add(deviceId);
+    }
+
+    if (entity.type === 'vacuum') {
+      indexes.deviceIdsWithVacuumEntity.add(deviceId);
+    }
+
+    if (entity.type !== 'switch') {
+      continue;
+    }
+
+    const currentPrimaryId = indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId);
+    if (!currentPrimaryId) {
+      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
+      continue;
+    }
+
+    const currentPrimary = entities.find((candidate) => candidate.canonicalId === currentPrimaryId);
+    if (!currentPrimary) {
+      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
+      continue;
+    }
+
+    if (
+      compareSortKeys(getSwitchPrimarySortKey(entity), getSwitchPrimarySortKey(currentPrimary)) < 0
+    ) {
+      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
+    }
+  }
+
+  return indexes;
+}
+
 export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): DeviceCollection {
   const collection = createEmptyDeviceCollection();
+  const indexes = buildDeviceSuppressionIndexes(entities);
 
   for (const entity of entities) {
     const state = readEntityState(entity);
     const base = toBaseDevice(entity, state);
     const value = resolveEntityValue(entity, state);
+    const deviceId = readDeviceId(state);
 
     switch (entity.type) {
       case 'light':
@@ -102,6 +240,24 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         });
         break;
       case 'switch':
+        if (isSuppressedEntityCategory(state)) {
+          break;
+        }
+        if (deviceId && indexes.deviceIdsWithVacuumEntity.has(deviceId)) {
+          break;
+        }
+        if (deviceId && indexes.deviceIdsWithClimateEntity.has(deviceId)) {
+          break;
+        }
+        if (deviceId && indexes.deviceIdsWithFanEntity.has(deviceId)) {
+          break;
+        }
+        if (
+          deviceId &&
+          indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId) !== entity.canonicalId
+        ) {
+          break;
+        }
         collection.switches.push({
           ...base,
           state: value === 'on' || state.on === true,
@@ -117,6 +273,14 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         });
         break;
       case 'helper':
+        if (
+          deviceId &&
+          (indexes.deviceIdsWithPrimaryCards.has(deviceId) ||
+            indexes.deviceIdsWithSensorCards.has(deviceId)) &&
+          indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId) !== entity.canonicalId
+        ) {
+          break;
+        }
         collection.helpers.push({
           ...base,
           state: value === 'on' || state.on === true,
@@ -129,6 +293,9 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
       case 'binary_sensor':
       case 'energy':
       case 'unknown':
+        if (deviceId && indexes.deviceIdsWithPrimaryCards.has(deviceId)) {
+          break;
+        }
         collection.sensors.push({
           ...base,
           value:

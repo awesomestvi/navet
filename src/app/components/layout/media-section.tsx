@@ -7,10 +7,108 @@ import { InteractivePill } from '@/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { AddEntityDialog, useDashboardEntitiesStore } from '@/app/features/dashboard';
+import {
+  getMediaEntityTypeKey,
+  type MediaEntityTypeKey,
+} from '@/app/features/media/components/media-card/get-media-entity-type-key';
 import { useDevices, useEditMode, useI18n, useTheme } from '@/app/hooks';
-import type { DeviceWithType } from '@/app/types/device.types';
+import type { MediaDevice } from '@/app/types/device.types';
 import { EntityGrid } from './entity-grid';
 import { SectionCustomizeShell } from './section-customize-shell';
+
+type MediaSectionDevice = MediaDevice & { type: 'media' };
+
+type MediaSectionGroup = {
+  key: string;
+  title: string;
+  singularLabel: string;
+  pluralLabel: string;
+  devices: MediaSectionDevice[];
+};
+
+type MediaSectionLabels = {
+  audioTitle: string;
+  audioSingular: string;
+  audioPlural: string;
+  tvTitle: string;
+  tvSingular: string;
+  tvPlural: string;
+  typeLabels: Record<MediaEntityTypeKey, string>;
+};
+
+const AUDIO_MEDIA_TYPE_KEYS = new Set<MediaEntityTypeKey>([
+  'media.type.player',
+  'media.type.speaker',
+  'media.type.receiver',
+  'media.type.soundbar',
+]);
+
+export function buildMediaSections(
+  mediaDevices: MediaSectionDevice[],
+  labels: MediaSectionLabels
+): MediaSectionGroup[] {
+  const audioDevices: MediaSectionDevice[] = [];
+  const tvDevices: MediaSectionDevice[] = [];
+  const otherGroups = new Map<MediaEntityTypeKey, MediaSectionDevice[]>();
+
+  for (const device of mediaDevices) {
+    const mediaTypeKey = getMediaEntityTypeKey(device.entityType, device.deviceClass);
+
+    if (AUDIO_MEDIA_TYPE_KEYS.has(mediaTypeKey)) {
+      audioDevices.push(device);
+      continue;
+    }
+
+    if (mediaTypeKey === 'media.type.tv') {
+      tvDevices.push(device);
+      continue;
+    }
+
+    const existing = otherGroups.get(mediaTypeKey);
+    if (existing) {
+      existing.push(device);
+    } else {
+      otherGroups.set(mediaTypeKey, [device]);
+    }
+  }
+
+  const groupedSections: MediaSectionGroup[] = [];
+
+  if (audioDevices.length > 0) {
+    groupedSections.push({
+      key: 'audio',
+      title: labels.audioTitle,
+      singularLabel: labels.audioSingular,
+      pluralLabel: labels.audioPlural,
+      devices: audioDevices,
+    });
+  }
+
+  if (tvDevices.length > 0) {
+    groupedSections.push({
+      key: 'tv',
+      title: labels.tvTitle,
+      singularLabel: labels.tvSingular,
+      pluralLabel: labels.tvPlural,
+      devices: tvDevices,
+    });
+  }
+
+  for (const [mediaTypeKey, groupedDevices] of otherGroups) {
+    const singularLabel = labels.typeLabels[mediaTypeKey];
+    const pluralLabel = groupedDevices.length > 1 ? `${singularLabel}s` : singularLabel;
+
+    groupedSections.push({
+      key: mediaTypeKey,
+      title: pluralLabel,
+      singularLabel,
+      pluralLabel,
+      devices: groupedDevices,
+    });
+  }
+
+  return groupedSections;
+}
 
 export function MediaSection() {
   const { t } = useI18n();
@@ -65,102 +163,44 @@ export function MediaSection() {
   const openAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(true), []);
   const closeAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(false), []);
 
-  const playerType = t('media.type.player');
-  const speakerType = t('media.type.speaker');
-  const receiverType = t('media.type.receiver');
-  const soundbarType = t('media.type.soundbar');
-  const tvType = t('media.type.tv');
   const audioTitle = t('sections.media.audio.title');
   const audioSingular = t('sections.media.audio.singular');
   const audioPlural = t('sections.media.audio.plural');
   const tvTitle = t('sections.media.tv.title');
   const tvSingular = t('sections.media.tv.singular');
   const tvPlural = t('sections.media.tv.plural');
+  const typeLabels = useMemo<MediaSectionLabels['typeLabels']>(
+    () => ({
+      'media.type.player': t('media.type.player'),
+      'media.type.tv': t('media.type.tv'),
+      'media.type.speaker': t('media.type.speaker'),
+      'media.type.receiver': t('media.type.receiver'),
+      'media.type.setTopBox': t('media.type.setTopBox'),
+      'media.type.streamingBox': t('media.type.streamingBox'),
+      'media.type.soundbar': t('media.type.soundbar'),
+    }),
+    [t]
+  );
 
   const sections = useMemo(() => {
-    const audioTypes = new Set([playerType, speakerType, receiverType, soundbarType]);
-    const audioDevices: DeviceWithType[] = [];
-    const tvDevices: DeviceWithType[] = [];
-    const otherGroups = new Map<string, DeviceWithType[]>();
-
-    for (const device of mediaDevices) {
-      const typeLabel =
-        typeof device.entityType === 'string' && device.entityType.trim()
-          ? device.entityType
-          : playerType;
-
-      if (audioTypes.has(typeLabel)) {
-        audioDevices.push(device);
-        continue;
-      }
-
-      if (typeLabel === tvType) {
-        tvDevices.push(device);
-        continue;
-      }
-
-      const existing = otherGroups.get(typeLabel);
-      if (existing) {
-        existing.push(device);
-      } else {
-        otherGroups.set(typeLabel, [device]);
-      }
-    }
-
-    const groupedSections: Array<{
-      key: string;
-      title: string;
-      singularLabel: string;
-      pluralLabel: string;
-      devices: DeviceWithType[];
-    }> = [];
-
-    if (audioDevices.length > 0) {
-      groupedSections.push({
-        key: 'audio',
-        title: audioTitle,
-        singularLabel: audioSingular,
-        pluralLabel: audioPlural,
-        devices: audioDevices,
-      });
-    }
-
-    if (tvDevices.length > 0) {
-      groupedSections.push({
-        key: 'tv',
-        title: tvTitle,
-        singularLabel: tvSingular,
-        pluralLabel: tvPlural,
-        devices: tvDevices,
-      });
-    }
-
-    for (const [label, groupedDevices] of otherGroups) {
-      const groupTitle = groupedDevices.length > 1 ? `${label}s` : label;
-
-      groupedSections.push({
-        key: label,
-        title: groupTitle,
-        singularLabel: label,
-        pluralLabel: groupTitle,
-        devices: groupedDevices,
-      });
-    }
-
-    return groupedSections;
+    return buildMediaSections(mediaDevices, {
+      audioTitle,
+      audioSingular,
+      audioPlural,
+      tvTitle,
+      tvSingular,
+      tvPlural,
+      typeLabels,
+    });
   }, [
     audioPlural,
     audioSingular,
     audioTitle,
     mediaDevices,
-    playerType,
-    receiverType,
-    soundbarType,
-    speakerType,
     tvPlural,
     tvSingular,
     tvTitle,
-    tvType,
+    typeLabels,
   ]);
 
   if (allMediaDevices.length === 0) {

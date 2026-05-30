@@ -108,6 +108,20 @@ export function supportsColorTemperatureControl(entity?: PlatformEntitySnapshot)
   );
 }
 
+export function supportsBrightnessControl(entity?: PlatformEntitySnapshot): boolean {
+  if (!entity) {
+    return true;
+  }
+
+  const colorModes = getSupportedColorModes(entity);
+  return (
+    colorModes.size === 0 ||
+    [...colorModes].some((mode) => mode !== 'onoff') ||
+    typeof entity.attributes?.brightness === 'number' ||
+    typeof entity.attributes?.brightness_pct === 'number'
+  );
+}
+
 export function supportsColorSelection(entity?: PlatformEntitySnapshot): boolean {
   if (!entity) {
     return true;

@@ -532,6 +532,7 @@ export const esMessages = {
   'lighting.chooseCustomColor': 'Elegir color personalizado',
   'lighting.customColorPicker': 'Selector de color personalizado',
   'lighting.brightness': 'Brillo',
+  'lighting.fanSpeed': 'Velocidad del ventilador',
   'lighting.colors': 'Colores',
   'lighting.brightnessPresets': 'Preajustes de brillo',
   'lighting.editBrightnessPresets': 'Editar preajustes de brillo',

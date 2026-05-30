@@ -6,6 +6,7 @@ import {
 } from '@/app/components/shared/card-size-selector';
 import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { useI18n, useTheme } from '@/app/hooks';
+import type { TranslationKey } from '@/app/i18n';
 import type { CardSize } from '../card-size-selector';
 import { getDeviceEditorSurfaceTokens } from './device-editor-surface-tokens';
 
@@ -19,6 +20,10 @@ interface BrightnessSliderProps {
   size?: CardSize;
   activeColor?: string | null;
   presentation?: 'card' | 'dialog';
+  min?: number;
+  max?: number;
+  step?: number;
+  labelKey?: TranslationKey;
 }
 
 export const BrightnessSlider = memo(function BrightnessSlider({
@@ -31,6 +36,10 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   size = 'medium',
   activeColor: activeColorOverride,
   presentation = 'card',
+  min = 1,
+  max = 100,
+  step = 1,
+  labelKey = 'lighting.brightness',
 }: BrightnessSliderProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -69,13 +78,15 @@ export const BrightnessSlider = memo(function BrightnessSlider({
         ? `${activeColor}f2`
         : activeColor
     : theme === 'light'
-      ? '#f3f4f6'
-      : '#d1d5db';
+      ? '#d1d5db'
+      : '#3a3a42';
   const thumbRing = isOn
     ? `${activeColor}66`
     : theme === 'light'
-      ? '#9ca3af'
-      : 'rgba(255,255,255,0.24)';
+      ? 'rgba(107,114,128,0.22)'
+      : 'rgba(255,255,255,0.1)';
+  const thumbShadowClass = isOn ? 'shadow-lg' : theme === 'light' ? 'shadow-sm' : 'shadow-none';
+  const label = t(labelKey);
 
   return (
     <div>
@@ -95,7 +106,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
             }
             style={isDialogPresentation ? undefined : { color: textTokens.subtitleColor }}
           >
-            {t('lighting.brightness')}
+            {label}
           </span>
           <span
             className={
@@ -113,19 +124,19 @@ export const BrightnessSlider = memo(function BrightnessSlider({
         value={value}
         onValueChange={onChange}
         onValueCommit={onCommit}
-        min={1}
-        max={100}
-        step={1}
+        min={min}
+        max={max}
+        step={step}
         disabled={disabled}
         dataCardInteractive
-        ariaLabel={t('lighting.brightness')}
+        ariaLabel={label}
         rootClassName={`relative flex items-center w-full select-none touch-none ${heightClass}`}
         trackClassName={`relative grow rounded-full ${trackHeightClass} ${trackBg}`}
         rangeClassName="absolute h-full rounded-full"
         thumbClassName={`block ${thumbSizeClass} rounded-full ${
           useDialogControlSize ? 'border-2' : ''
-        } shadow-lg focus:outline-none cursor-pointer touch-none`}
-        touchThumbClassName="block h-6 w-6 rounded-full shadow-lg focus:outline-none cursor-pointer touch-none"
+        } ${thumbShadowClass} focus:outline-none cursor-pointer touch-none`}
+        touchThumbClassName={`block h-6 w-6 rounded-full ${thumbShadowClass} focus:outline-none cursor-pointer touch-none`}
         rangeStyle={{
           backgroundImage: rangeBg,
         }}

@@ -20,6 +20,7 @@ interface LightCardActionRowProps {
   currentTempColor: string;
   isKelvinMode: boolean;
   isColorMode: boolean;
+  supportsBrightness: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
   supportsEffects: boolean;
@@ -46,6 +47,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   currentTempColor,
   isKelvinMode,
   isColorMode,
+  supportsBrightness,
   supportsColorTemperature,
   supportsColorControl,
   supportsEffects,
@@ -65,6 +67,12 @@ export const LightCardActionRow = memo(function LightCardActionRow({
 }: LightCardActionRowProps) {
   const { theme } = useTheme();
   const gapClass = size === 'small' ? 'gap-1.5' : 'gap-2.5';
+  const isColorTriggerActive =
+    isColorMode ||
+    (isOn &&
+      supportsColorControl &&
+      typeof currentColor === 'string' &&
+      /^#[0-9a-fA-F]{6}$/.test(currentColor));
   const leftControls = (
     <div className={`flex min-w-0 items-center ${gapClass}`}>
       {supportsColorTemperature && (
@@ -80,7 +88,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
         <CustomColorTrigger
           isOn={isOn}
           currentColor={colorSwatchColor || currentColor}
-          isActive={isColorMode}
+          isActive={isColorTriggerActive}
           onActivate={onColorActivate}
           onColorChange={onColorChange}
         />
@@ -97,18 +105,20 @@ export const LightCardActionRow = memo(function LightCardActionRow({
         />
       )}
 
-      <div className={`flex min-w-0 items-center ${gapClass}`}>
-        <BrightnessPresetsInline
-          presets={brightnessPresets}
-          currentBrightness={brightness}
-          isOn={isOn}
-          onBrightnessChange={onBrightnessCommit}
-          size={size}
-          maxVisible={presetMaxVisible}
-          overflow={presetOverflow}
-          buttonVariant="soft"
-        />
-      </div>
+      {supportsBrightness && (
+        <div className={`flex min-w-0 items-center ${gapClass}`}>
+          <BrightnessPresetsInline
+            presets={brightnessPresets}
+            currentBrightness={brightness}
+            isOn={isOn}
+            onBrightnessChange={onBrightnessCommit}
+            size={size}
+            maxVisible={presetMaxVisible}
+            overflow={presetOverflow}
+            buttonVariant="soft"
+          />
+        </div>
+      )}
     </div>
   );
 

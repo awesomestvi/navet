@@ -130,6 +130,37 @@ export function useLightBrightnessSync({
     };
   }, []);
 
+  useEffect(() => {
+    if (isAdjustingBrightness) {
+      return;
+    }
+
+    if (!isOn) {
+      setBrightness((currentBrightness) => {
+        if (currentBrightness > 0) {
+          lastBrightnessRef.current = currentBrightness;
+          rememberLightState(id, { brightness: currentBrightness });
+        }
+
+        return 0;
+      });
+      return;
+    }
+
+    setBrightness((currentBrightness) => {
+      if (currentBrightness > 0) {
+        return currentBrightness;
+      }
+
+      const latestRememberedState = useLightMemoryStore.getState().getRememberedState(id);
+      const restoredBrightness =
+        latestRememberedState?.brightness ?? (initialBrightness > 0 ? initialBrightness : 100);
+      const nextBrightness = clampPercentage(restoredBrightness, 1);
+      lastBrightnessRef.current = nextBrightness;
+      return nextBrightness;
+    });
+  }, [id, initialBrightness, isAdjustingBrightness, isOn, rememberLightState]);
+
   const { queue: queueBrightnessSync } = useHaCommandQueue((pct: number) =>
     syncLight({ state: 'on', brightnessPct: pct })
   );

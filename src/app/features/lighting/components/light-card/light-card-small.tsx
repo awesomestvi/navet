@@ -32,6 +32,7 @@ interface LightCardSmallProps {
   activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
+  supportsBrightness: boolean;
   supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
@@ -67,6 +68,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   activeColor,
   IconComponent,
   iconText,
+  supportsBrightness,
   supportsEffects,
   supportsColorControl,
   supportsColorTemperature,
@@ -112,29 +114,33 @@ export const LightCardSmall = memo(function LightCardSmall({
         className={`flex-1 flex flex-col ${isExtraSmall ? 'justify-between gap-1' : 'justify-end gap-4'}`}
       >
         {isExtraSmall ? (
-          <div className="flex min-h-5 items-center gap-1.5">
-            <div className="min-w-0 flex-1">
-              <BrightnessSlider
-                value={brightness}
-                onChange={onBrightnessChange}
-                onCommit={onBrightnessCommit}
-                isOn={isOn}
-                size="extra-small"
-                showLabel={false}
-                activeColor={activeColor}
-              />
-            </div>
+          (supportsBrightness || showSettingsButton) && (
+            <div className="flex min-h-5 items-center gap-1.5">
+              {supportsBrightness && (
+                <div className="min-w-0 flex-1">
+                  <BrightnessSlider
+                    value={brightness}
+                    onChange={onBrightnessChange}
+                    onCommit={onBrightnessCommit}
+                    isOn={isOn}
+                    size="extra-small"
+                    showLabel={false}
+                    activeColor={activeColor}
+                  />
+                </div>
+              )}
 
-            {showSettingsButton && (
-              <CardSettingsActionButton
-                {...settingsButtonProps}
-                theme={theme}
-                size="extra-small"
-                tone={isOn ? 'default' : 'muted'}
-                variant="soft"
-              />
-            )}
-          </div>
+              {showSettingsButton && (
+                <CardSettingsActionButton
+                  {...settingsButtonProps}
+                  theme={theme}
+                  size="extra-small"
+                  tone={isOn ? 'default' : 'muted'}
+                  variant="soft"
+                />
+              )}
+            </div>
+          )
         ) : isKelvinMode && supportsColorTemperature ? (
           <KelvinSlider
             value={colorTemp}
@@ -148,7 +154,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             showLabel
             activeColor={activeColor}
           />
-        ) : (
+        ) : supportsBrightness ? (
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
@@ -158,7 +164,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             showLabel
             activeColor={activeColor}
           />
-        )}
+        ) : null}
 
         {!isExtraSmall && (
           <LightCardActionRow
@@ -169,6 +175,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             currentTempColor={currentTempColor}
             isKelvinMode={isKelvinMode}
             isColorMode={isColorMode}
+            supportsBrightness={supportsBrightness}
             supportsColorTemperature={supportsColorTemperature}
             supportsColorControl={supportsColorControl}
             supportsEffects={supportsEffects}

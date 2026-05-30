@@ -519,6 +519,7 @@ export const enMessages = {
   'lighting.chooseCustomColor': 'Choose custom color',
   'lighting.customColorPicker': 'Custom color picker',
   'lighting.brightness': 'Brightness',
+  'lighting.fanSpeed': 'Fan Speed',
   'lighting.colors': 'Colors',
   'lighting.brightnessPresets': 'Brightness Presets',
   'lighting.editBrightnessPresets': 'Edit Brightness Presets',

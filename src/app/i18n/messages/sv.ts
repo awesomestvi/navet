@@ -527,6 +527,7 @@ export const svMessages = {
   'lighting.chooseCustomColor': 'Välj egen färg',
   'lighting.customColorPicker': 'Välj egen färg',
   'lighting.brightness': 'Ljusstyrka',
+  'lighting.fanSpeed': 'Fläkthastighet',
   'lighting.colors': 'Färger',
   'lighting.brightnessPresets': 'Ljusstyrkeförval',
   'lighting.editBrightnessPresets': 'Redigera ljusstyrkeförval',

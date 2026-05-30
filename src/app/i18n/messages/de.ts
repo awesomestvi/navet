@@ -532,6 +532,7 @@ export const deMessages = {
   'lighting.chooseCustomColor': 'Benutzerdefinierte Farbe wählen',
   'lighting.customColorPicker': 'Benutzerdefinierte Farbe',
   'lighting.brightness': 'Helligkeit',
+  'lighting.fanSpeed': 'Lüftergeschwindigkeit',
   'lighting.colors': 'Farben',
   'lighting.brightnessPresets': 'Helligkeitsvorgaben',
   'lighting.editBrightnessPresets': 'Helligkeitsvorgaben bearbeiten',

@@ -8,6 +8,7 @@ import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-he
 import { getCardActionControlSizes } from '@/app/components/shared/card-action-control-sizes';
 import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { BrightnessSlider } from '@/app/components/shared/device-editor';
 import { getBrightnessPresetSelectedStyle } from '@/app/components/shared/device-editor/brightness-preset-styles';
 import { useEntityCardInteractionController } from '@/app/components/shared/entity-card-interaction-controller';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
@@ -159,29 +160,45 @@ export const FanCard = memo(function FanCard({
   );
 
   const updateSpeed = useCallback(
-    (speed: FanSpeed) => {
-      const nextPercentage = FAN_SPEED_PERCENTAGES[speed];
+    (nextPercentage: number) => {
+      const clampedPercentage = Math.max(1, clampPercentage(nextPercentage));
+      const previousIsOn = isOn;
       setIsOn(true);
-      setPercentage(nextPercentage);
+      setPercentage(clampedPercentage);
       void runAction(
         async () => {
           await dispatchEntityCommand(
             {
               type: 'set_fan_speed',
               entityId: id,
-              percentage: nextPercentage,
+              percentage: clampedPercentage,
             },
             providerId
           );
         },
         t('lighting.feedback.updateSwitchFailed'),
         {
-          onError: () => setPercentage(percentage),
+          onError: () => {
+            setIsOn(previousIsOn);
+            setPercentage(percentage);
+          },
         }
       );
     },
-    [id, percentage, providerId, runAction, t]
+    [id, isOn, percentage, providerId, runAction, t]
   );
+
+  const updateSpeedPreset = useCallback(
+    (speed: FanSpeed) => {
+      updateSpeed(FAN_SPEED_PERCENTAGES[speed]);
+    },
+    [updateSpeed]
+  );
+
+  const previewSpeed = useCallback((nextPercentage: number) => {
+    setIsOn(true);
+    setPercentage(Math.max(1, clampPercentage(nextPercentage)));
+  }, []);
 
   const cardInteraction = useEntityCardInteractionController({
     ariaLabel: name,
@@ -207,6 +224,7 @@ export const FanCard = memo(function FanCard({
   const actionSize = getCardActionControlSizes(isSmall ? 'small' : 'medium');
   const activeSpeedColor = fanAccentColor;
   const FanIcon = HeaderIconComponent ?? Fan;
+  const sliderSize = resolvedSize === 'extra-small' ? 'extra-small' : isSmall ? 'small' : 'medium';
 
   return (
     <>
@@ -264,55 +282,65 @@ export const FanCard = memo(function FanCard({
             }
           />
 
-          <div className="flex-1" />
+          <div className="flex-1 flex flex-col justify-end gap-4">
+            <BrightnessSlider
+              value={Math.max(1, percentage || FAN_SPEED_PERCENTAGES.low)}
+              onChange={previewSpeed}
+              onCommit={updateSpeed}
+              isOn={isOn}
+              size={sliderSize}
+              showLabel={resolvedSize !== 'extra-small'}
+              activeColor={surfaceTokens.contentAccentColor}
+              labelKey="lighting.fanSpeed"
+            />
+            <CardActionRow
+              theme={theme}
+              size={isSmall ? 'small' : 'medium'}
+              leftContent={
+                <CardActionRowGroup>
+                  {FAN_SPEED_ACTIONS.map(({ speed, label }) => {
+                    const active = activeSpeed === speed;
 
-          <CardActionRow
-            theme={theme}
-            size={isSmall ? 'small' : 'medium'}
-            leftContent={
-              <CardActionRowGroup>
-                {FAN_SPEED_ACTIONS.map(({ speed, label }) => {
-                  const active = activeSpeed === speed;
-
-                  return (
-                    <button
-                      key={speed}
-                      type="button"
-                      aria-label={`Fan ${label}`}
-                      aria-pressed={active}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        updateSpeed(speed);
-                      }}
-                      style={
-                        active
-                          ? getBrightnessPresetSelectedStyle(theme, activeSpeedColor, isOn)
-                          : undefined
-                      }
-                      className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
-                        active
-                          ? roundControl.selectedText
-                          : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
-                      }`}
-                    >
-                      <Fan className={getFanSpeedIconClass(speed, isSmall)} />
-                    </button>
-                  );
-                })}
-              </CardActionRowGroup>
-            }
-            rightContent={
-              <div className="relative z-[3]">
-                <CardSettingsActionButton
-                  {...cardInteraction.settingsButtonProps}
-                  theme={theme}
-                  size={isSmall ? 'small' : 'medium'}
-                  tone={isOn ? 'default' : 'muted'}
-                  variant="soft"
-                />
-              </div>
-            }
-          />
+                    return (
+                      <button
+                        key={speed}
+                        type="button"
+                        aria-label={`Fan ${label}`}
+                        aria-pressed={active}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          updateSpeedPreset(speed);
+                        }}
+                        style={
+                          active
+                            ? getBrightnessPresetSelectedStyle(theme, activeSpeedColor, isOn)
+                            : undefined
+                        }
+                        className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                          active
+                            ? roundControl.selectedText
+                            : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
+                        }`}
+                      >
+                        <Fan className={getFanSpeedIconClass(speed, isSmall)} />
+                      </button>
+                    );
+                  })}
+                </CardActionRowGroup>
+              }
+              rightContent={
+                <div className="relative z-[3]">
+                  <CardSettingsActionButton
+                    {...cardInteraction.settingsButtonProps}
+                    theme={theme}
+                    size={isSmall ? 'small' : 'medium'}
+                    tone={isOn ? 'default' : 'muted'}
+                    variant="soft"
+                  />
+                </div>
+              }
+            />
+          </div>
         </div>
       </BaseCard>
 

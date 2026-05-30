@@ -468,12 +468,13 @@ export class HomeAssistantResourceResolver {
         return resource;
       }
 
+      const signedResource = this.resolveSync({ kind: 'absolute_url', url: signedPath }, options);
+
       return {
         ...resource,
-        url: `${haBaseUrl}${signedPath}`,
-        authStrategy: 'none',
+        ...signedResource,
         metadata: {
-          ...resource.metadata,
+          ...signedResource.metadata,
           source: 'ha_signed_path',
         },
       };

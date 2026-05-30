@@ -10,6 +10,8 @@ import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-sh
 import { readNavetSensorState } from '@/app/core/navet-device-state';
 import { useI18n, useProviderEntityModel, useTheme } from '@/app/hooks';
 import { inferSensorDisplayIcon } from '@/app/hooks/device-mappers';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
 import { SensorHistorySparkline } from './sensor-history-sparkline';
@@ -56,6 +58,8 @@ export const InfoCard = memo(function InfoCard({
 }: InfoCardProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const locale = useSettingsStore(settingsSelectors.language);
+  const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const providerEntity = useProviderEntityModel(id);
   const providerState = readNavetSensorState(providerEntity);
@@ -69,18 +73,21 @@ export const InfoCard = memo(function InfoCard({
       id,
       defaultIcon: resolvedIcon,
     });
-  const displayModel = buildInfoDisplayModel({
-    id,
-    name,
-    room: _room,
-    value: liveValue,
-    unit: liveUnit,
-    icon: resolvedIcon,
-    entityType: subtitle ?? providerState?.entityType,
-    deviceClass: liveDeviceClass,
-    status: liveStatus,
-    size,
-  });
+  const displayModel = buildInfoDisplayModel(
+    {
+      id,
+      name,
+      room: _room,
+      value: liveValue,
+      unit: liveUnit,
+      icon: resolvedIcon,
+      entityType: subtitle ?? providerState?.entityType,
+      deviceClass: liveDeviceClass,
+      status: liveStatus,
+      size,
+    },
+    { locale, use24HourTime }
+  );
   const cardShell = getCardShellSurfaceTokens(theme);
   const toneClasses = INFO_TONE_CLASSES[displayModel.tone];
   const isVeryCompact = isTinyCardSize(size) || isExtraSmallCardSize(size);

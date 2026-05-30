@@ -754,6 +754,7 @@ export const itMessages = {
   'lighting.chooseCustomColor': 'Scegli colore personalizzato',
   'lighting.customColorPicker': 'Selettore colore personalizzato',
   'lighting.brightness': 'Luminosità',
+  'lighting.fanSpeed': 'Velocità della ventola',
   'lighting.colors': 'Colori',
   'lighting.brightnessPresets': 'Preset luminosità',
   'lighting.editBrightnessPresets': 'Modifica preset luminosità',

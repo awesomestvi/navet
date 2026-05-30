@@ -20,6 +20,12 @@ import {
   isValidAuthData,
 } from './scripts/vite-auth-session-store'
 import {
+  buildDashboardProfileMetadata,
+  createViteDashboardProfileStore,
+  isValidDashboardProfileData,
+} from './scripts/vite-dashboard-profile-store'
+import { normalizeViteProxyTargetPath } from './scripts/vite-proxy-path'
+import {
   createViteHomeySessionStore,
   type HomeySessionData,
   isValidHomeySessionData,
@@ -39,6 +45,7 @@ const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
 const AUTH_SESSION_MAX_BYTES = 16 * 1024
 const HOMEY_SESSION_MAX_BYTES = 8 * 1024
+const DASHBOARD_PROFILE_MAX_BYTES = 1024 * 1024
 
 async function assertPublicHostname(hostname: string) {
   const normalizedHostname = hostname.toLowerCase()
@@ -164,6 +171,7 @@ function rssProxyPlugin() {
 }
 
 function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | null) {
+  const proxyBasePath = '/__navet_ha_proxy__'
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
       res.statusCode = 400
@@ -197,7 +205,8 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
       }
 
       const upstreamOrigin = new URL(upstreamBaseUrl)
-      const targetUrl = new URL(req.url, upstreamOrigin)
+      const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
+      const targetUrl = new URL(targetPath, upstreamOrigin)
       if (targetUrl.origin !== upstreamOrigin.origin) {
         res.statusCode = 400
         res.end('Invalid proxy target')
@@ -266,6 +275,7 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
 }
 
 function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
+  const proxyBasePath = '/__navet_homey_proxy__'
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
       res.statusCode = 400
@@ -300,7 +310,7 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
       }
 
       const upstreamOrigin = new URL(upstreamBaseUrl)
-      const targetPath = req.url.replace(/^\/__navet_homey_proxy__/, '') || '/'
+      const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
       const targetUrl = new URL(targetPath, upstreamOrigin)
       if (targetUrl.origin !== upstreamOrigin.origin) {
         res.statusCode = 400
@@ -461,6 +471,147 @@ function authSessionStorePlugin() {
         return authSessionStore.getAuthSession()
       },
     },
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  }
+}
+
+function dashboardProfileStorePlugin() {
+  const dashboardProfileStore = createViteDashboardProfileStore()
+
+  const setNoStoreHeaders = (res: ServerResponse) => {
+    res.setHeader('Cache-Control', 'no-store')
+  }
+
+  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+    res.statusCode = statusCode
+    setNoStoreHeaders(res)
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify(payload))
+  }
+
+  const sendNoContent = (res: ServerResponse) => {
+    res.statusCode = 204
+    setNoStoreHeaders(res)
+    res.end()
+  }
+
+  const applyMetadataHeaders = (
+    res: ServerResponse,
+    metadata: { etag: string; lastModified: string }
+  ) => {
+    res.setHeader('ETag', metadata.etag)
+    res.setHeader('Last-Modified', metadata.lastModified)
+  }
+
+  const readRequestBody = async (req: IncomingMessage) => {
+    const chunks: Buffer[] = []
+    let size = 0
+
+    for await (const chunk of req) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      size += buffer.byteLength
+      if (size > DASHBOARD_PROFILE_MAX_BYTES) {
+        throw new Error('Dashboard profile is too large')
+      }
+      chunks.push(buffer)
+    }
+
+    return Buffer.concat(chunks).toString('utf8')
+  }
+
+  const isFreshRequest = (
+    req: IncomingMessage,
+    metadata: { etag: string; lastModified: string }
+  ) => {
+    const ifNoneMatch = req.headers['if-none-match']
+    if (typeof ifNoneMatch === 'string' && ifNoneMatch === metadata.etag) {
+      return true
+    }
+
+    const ifModifiedSince = req.headers['if-modified-since']
+    return typeof ifModifiedSince === 'string' && ifModifiedSince === metadata.lastModified
+  }
+
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.method === 'GET') {
+      const serializedProfile = dashboardProfileStore.getSerializedProfile()
+      if (!serializedProfile) {
+        sendNoContent(res)
+        return
+      }
+
+      const metadata =
+        dashboardProfileStore.getProfileMetadata() ??
+        buildDashboardProfileMetadata(serializedProfile, {
+          mtimeMs: Date.now(),
+          mtime: new Date(),
+        })
+
+      if (isFreshRequest(req, metadata)) {
+        res.statusCode = 304
+        setNoStoreHeaders(res)
+        applyMetadataHeaders(res, metadata)
+        res.end()
+        return
+      }
+
+      res.statusCode = 200
+      setNoStoreHeaders(res)
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      applyMetadataHeaders(res, metadata)
+      res.end(serializedProfile)
+      return
+    }
+
+    if (req.method === 'PUT') {
+      try {
+        const body = await readRequestBody(req)
+        if (!body) {
+          sendJson(res, 400, { error: 'Missing dashboard profile body' })
+          return
+        }
+
+        const parsed = JSON.parse(body)
+        if (!isValidDashboardProfileData(parsed)) {
+          sendJson(res, 400, { error: 'Unsupported dashboard profile' })
+          return
+        }
+
+        dashboardProfileStore.saveProfile(parsed)
+        const metadata = dashboardProfileStore.getProfileMetadata()
+
+        res.statusCode = 200
+        setNoStoreHeaders(res)
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        if (metadata) {
+          applyMetadataHeaders(res, metadata)
+        }
+        res.end(JSON.stringify({ ok: true, updatedAt: parsed.exportedAt ?? null }))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : ''
+        if (message === 'Dashboard profile is too large') {
+          sendJson(res, 413, { error: message })
+          return
+        }
+
+        sendJson(res, 400, { error: 'Unable to save dashboard profile' })
+      }
+      return
+    }
+
+    res.setHeader('Allow', 'GET, PUT')
+    sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_profile__/default', async (req, res) => {
+      await handleRequest(req, res)
+    })
+  }
+
+  return {
+    name: 'navet-dashboard-profile-store',
     configureServer: registerMiddleware,
     configurePreviewServer: registerMiddleware,
   }
@@ -920,12 +1071,14 @@ export default defineConfig(({ mode }) => {
     commandLine.includes('chromatic')
 
   const authSessionPlugin = authSessionStorePlugin()
+  const dashboardProfilePlugin = dashboardProfileStorePlugin()
   const homeySessionPlugin = homeySessionStorePlugin()
   const plugins: PluginOption[] = [
     react(),
     tailwindcss(),
     rssProxyPlugin(),
     authSessionPlugin,
+    dashboardProfilePlugin,
     homeySessionPlugin,
     homeAssistantProxyPlugin(
       () =>

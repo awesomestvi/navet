@@ -252,7 +252,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
       await callHomeAssistantService(
         'light',
         'turn_on',
-        { kelvin: command.kelvin },
+        { color_temp_kelvin: command.kelvin },
         { entity_id: entity.externalId }
       );
       return;
