@@ -38,6 +38,8 @@ docs. If you are changing the codebase, use the contributor docs.
   Shared provider contract and responsibilities.
 - [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
   Rules for shared UI and view models.
+- [architecture/marketing-website.md](architecture/marketing-website.md)
+  Marketing website structure, reuse rules, and content boundaries.
 - [testing/provider-testing-strategy.md](testing/provider-testing-strategy.md)
   Testing layers and fixture guidance.
 - [testing/test-tier-inventory.md](testing/test-tier-inventory.md)

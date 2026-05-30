@@ -11,6 +11,7 @@ import {
   loadEnv,
   type PluginOption,
   type PreviewServer,
+  type UserConfig,
   type ViteDevServer,
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -1061,6 +1062,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
   const enableDemo = (env.NAVET_ENABLE_DEMO ?? process.env.NAVET_ENABLE_DEMO ?? 'true') !== 'false'
+  const buildTarget = env.NAVET_BUILD_TARGET ?? process.env.NAVET_BUILD_TARGET ?? 'app'
   const lifecycleEvent = process.env.npm_lifecycle_event ?? ''
   const commandLine = process.argv.join(' ')
   const isStorybook =
@@ -1070,171 +1072,230 @@ export default defineConfig(({ mode }) => {
     commandLine.includes('storybook') ||
     commandLine.includes('chromatic')
 
-  const authSessionPlugin = authSessionStorePlugin()
-  const dashboardProfilePlugin = dashboardProfileStorePlugin()
-  const homeySessionPlugin = homeySessionStorePlugin()
-  const plugins: PluginOption[] = [
-    react(),
-    tailwindcss(),
-    rssProxyPlugin(),
-    authSessionPlugin,
-    dashboardProfilePlugin,
-    homeySessionPlugin,
-    homeAssistantProxyPlugin(
-      () =>
-        (
-          authSessionPlugin as PluginOption & {
-            api?: { getAuthSession?: () => HomeAssistantAuthData | null }
-          }
-        ).api?.getAuthSession?.() ?? null
-    ),
-    homeyProxyPlugin(
-      () =>
-        (
-          homeySessionPlugin as PluginOption & {
-            api?: { getHomeySession?: () => HomeySessionData | null }
-          }
-        ).api?.getHomeySession?.() ?? null
-    ),
-  ]
-
-  if (!isStorybook) {
-    plugins.push(
-      VitePWA({
-        registerType: 'autoUpdate',
-        injectRegister: false,
-        manifestFilename: 'site.webmanifest',
-        includeAssets: [
-          'favicon.svg',
-          'favicon-32x32.svg',
-          'apple-touch-icon.png',
-          'logo.svg',
-          'logo-horizontal.svg',
-          'logo-horizontal-light.svg',
-          'pwa-192.png',
-          'pwa-512.png',
-        ],
-        manifest: {
-          name: 'Navet',
-          short_name: 'Navet',
-          description: 'A smart home dashboard built for calm, app-like control surfaces.',
-          start_url: './',
-          scope: './',
-          display: 'standalone',
-          orientation: 'portrait-primary',
-          background_color: '#0a0a0a',
-          theme_color: '#0a0a0a',
-          categories: ['productivity', 'utilities', 'lifestyle'],
-          icons: [
-            {
-              src: './pwa-192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable',
-            },
-            {
-              src: './pwa-512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable',
-            },
-            {
-              src: './favicon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'any',
-            },
-          ],
-        },
-        workbox: {
-          navigateFallback: './index.html',
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-          globIgnores: ['config.js'],
-        },
-      })
-    )
-  }
-
-  return {
-    base: './',
-    cacheDir: '.cache/vite',
-    envPrefix: ['VITE_'],
-    define: {
-      __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
-      __NAVET_ENABLE_DEMO__: JSON.stringify(enableDemo),
-    },
-    plugins,
-    resolve: {
-      alias: {
-        // Alias @ to the src directory
-        '@': path.resolve(__dirname, './src'),
-        '@navet/core': path.resolve(__dirname, './packages/core/src'),
-        '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
-        '@navet/app': path.resolve(__dirname, './packages/app/src'),
-        '@navet/provider-homeassistant': path.resolve(
-          __dirname,
-          './packages/provider-homeassistant/src'
-        ),
-        '@navet/provider-homey': path.resolve(__dirname, './packages/provider-homey/src'),
-        '@navet/provider-hubitat': path.resolve(__dirname, './packages/provider-hubitat/src'),
-        '@navet/provider-openhab': path.resolve(__dirname, './packages/provider-openhab/src'),
-        '@navet/provider-smartthings': path.resolve(
-          __dirname,
-          './packages/provider-smartthings/src'
-        ),
-        '@docker': path.resolve(__dirname, './docker'),
-        '@scripts': path.resolve(__dirname, './scripts'),
-        ...(isStorybook
-          ? {
+  const resolveConfig = {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@navet/core': path.resolve(__dirname, './packages/core/src'),
+      '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
+      '@navet/app': path.resolve(__dirname, './packages/app/src'),
+      '@navet/provider-homeassistant': path.resolve(__dirname, './packages/provider-homeassistant/src'),
+      '@navet/provider-homey': path.resolve(__dirname, './packages/provider-homey/src'),
+      '@navet/provider-hubitat': path.resolve(__dirname, './packages/provider-hubitat/src'),
+      '@navet/provider-openhab': path.resolve(__dirname, './packages/provider-openhab/src'),
+      '@navet/provider-smartthings': path.resolve(__dirname, './packages/provider-smartthings/src'),
+      '@docker': path.resolve(__dirname, './docker'),
+      '@scripts': path.resolve(__dirname, './scripts'),
+      ...(isStorybook
+        ? {
             'virtual:pwa-register': path.resolve(
               __dirname,
               './src/test/mocks/virtual-pwa-register.ts'
             ),
           }
-          : {}),
-      },
-    },
-
-    // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
-    assetsInclude: ['**/*.svg'],
-
-    build: {
-      modulePreload: {
-        resolveDependencies(_filename, deps, context) {
-          if (context.hostType !== 'html') {
-            return deps
-          }
-
-          return deps.filter((dependency) => !isLazyHtmlPreload(dependency))
-        },
-      },
-      chunkSizeWarningLimit: 500,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            const appChunkName = getAppChunkName(id)
-            if (appChunkName) {
-              return appChunkName
-            }
-
-            return getVendorChunkName(id)
-          },
-        },
-      },
-    },
-    server: {
-      host: 'navet.local',
-      port: 5200,
-      strictPort: true,
-      proxy: hassUrl
-        ? {
-          '/api': {
-            target: hassUrl,
-            changeOrigin: true,
-            secure: false,
-          },
-        }
-        : undefined,
+        : {}),
     },
   }
+
+  const baseBuildConfig = {
+    modulePreload: {
+      resolveDependencies(_filename: string, deps: string[], context: { hostType: string }) {
+        if (context.hostType !== 'html') {
+          return deps
+        }
+
+        return deps.filter((dependency) => !isLazyHtmlPreload(dependency))
+      },
+    },
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          const appChunkName = getAppChunkName(id)
+          if (appChunkName) {
+            return appChunkName
+          }
+
+          return getVendorChunkName(id)
+        },
+      },
+    },
+  } satisfies NonNullable<UserConfig['build']>
+
+  function createAppPlugins() {
+    const authSessionPlugin = authSessionStorePlugin()
+    const dashboardProfilePlugin = dashboardProfileStorePlugin()
+    const homeySessionPlugin = homeySessionStorePlugin()
+    const appPlugins: PluginOption[] = [
+      react(),
+      tailwindcss(),
+      rssProxyPlugin(),
+      authSessionPlugin,
+      dashboardProfilePlugin,
+      homeySessionPlugin,
+      homeAssistantProxyPlugin(
+        () =>
+          (
+            authSessionPlugin as PluginOption & {
+              api?: { getAuthSession?: () => HomeAssistantAuthData | null }
+            }
+          ).api?.getAuthSession?.() ?? null
+      ),
+      homeyProxyPlugin(
+        () =>
+          (
+            homeySessionPlugin as PluginOption & {
+              api?: { getHomeySession?: () => HomeySessionData | null }
+            }
+          ).api?.getHomeySession?.() ?? null
+      ),
+    ]
+
+    if (!isStorybook) {
+      appPlugins.push(
+        VitePWA({
+          registerType: 'autoUpdate',
+          injectRegister: false,
+          manifestFilename: 'site.webmanifest',
+          includeAssets: [
+            'favicon.svg',
+            'favicon-32x32.svg',
+            'apple-touch-icon.png',
+            'logo.svg',
+            'logo-horizontal.svg',
+            'logo-horizontal-light.svg',
+            'pwa-192.png',
+            'pwa-512.png',
+          ],
+          manifest: {
+            name: 'Navet',
+            short_name: 'Navet',
+            description: 'A smart home dashboard built for calm, app-like control surfaces.',
+            start_url: './',
+            scope: './',
+            display: 'standalone',
+            orientation: 'portrait-primary',
+            background_color: '#0a0a0a',
+            theme_color: '#0a0a0a',
+            categories: ['productivity', 'utilities', 'lifestyle'],
+            icons: [
+              {
+                src: './pwa-192.png',
+                sizes: '192x192',
+                type: 'image/png',
+                purpose: 'any maskable',
+              },
+              {
+                src: './pwa-512.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'any maskable',
+              },
+              {
+                src: './favicon.svg',
+                sizes: 'any',
+                type: 'image/svg+xml',
+                purpose: 'any',
+              },
+            ],
+          },
+          workbox: {
+            navigateFallback: './index.html',
+            globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+            globIgnores: ['config.js'],
+          },
+        })
+      )
+    }
+
+    return appPlugins
+  }
+
+  function createSharedConfig(overrides: UserConfig): UserConfig {
+    return {
+      base: './',
+      envPrefix: ['VITE_'],
+      define: {
+        __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+        __NAVET_ENABLE_DEMO__: JSON.stringify(enableDemo),
+      },
+      resolve: resolveConfig,
+      assetsInclude: ['**/*.svg'],
+      ...overrides,
+    }
+  }
+
+  function createAppConfig(config: {
+    cacheDir: string
+    outDir?: string
+    emptyOutDir?: boolean
+    input?: string | Record<string, string>
+  }): UserConfig {
+    return createSharedConfig({
+      cacheDir: config.cacheDir,
+      plugins: createAppPlugins(),
+      build: {
+        ...baseBuildConfig,
+        outDir: config.outDir,
+        emptyOutDir: config.emptyOutDir,
+        rollupOptions: {
+          ...baseBuildConfig.rollupOptions,
+          ...(config.input ? { input: config.input } : {}),
+          output: baseBuildConfig.rollupOptions?.output,
+        },
+      },
+      server: {
+        host: 'navet.local',
+        port: 5200,
+        strictPort: true,
+        proxy: hassUrl
+          ? {
+              '/api': {
+                target: hassUrl,
+                changeOrigin: true,
+                secure: false,
+              },
+            }
+          : undefined,
+      },
+    })
+  }
+
+  function createWebsiteConfig(config: {
+    cacheDir: string
+    outDir: string
+    emptyOutDir?: boolean
+  }): UserConfig {
+    return createSharedConfig({
+      root: path.resolve(__dirname, 'website'),
+      publicDir: path.resolve(__dirname, 'public'),
+      cacheDir: config.cacheDir,
+      plugins: [react(), tailwindcss()],
+      build: {
+        ...baseBuildConfig,
+        outDir: config.outDir,
+        emptyOutDir: config.emptyOutDir,
+      },
+    })
+  }
+
+  if (buildTarget === 'website') {
+    return createWebsiteConfig({
+      cacheDir: path.resolve(__dirname, '.cache/vite-website'),
+      outDir: path.resolve(__dirname, 'dist'),
+    })
+  }
+
+  if (buildTarget === 'all') {
+    return createAppConfig({
+      cacheDir: path.resolve(__dirname, '.cache/vite-pages-demo'),
+      outDir: path.resolve(__dirname, 'dist'),
+      emptyOutDir: true,
+      input: {
+        index: path.resolve(__dirname, 'website/index.html'),
+        'demo/index': path.resolve(__dirname, 'demo/index.html'),
+      },
+    })
+  }
+
+  return createAppConfig({ cacheDir: '.cache/vite' })
 })

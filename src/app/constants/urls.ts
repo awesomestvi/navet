@@ -19,7 +19,7 @@ export const OPENSTREETMAP_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyri
 export const CARTO_ATTRIBUTION_URL = 'https://carto.com/attributions';
 
 /** GitHub repository URL */
-export const GITHUB_REPO_URL = 'https://github.com/anomalyco/opencode';
+export const GITHUB_REPO_URL = 'https://github.com/awesomestvi/navet';
 
 /** Documentation URLs */
 export const DOCS_URLS = {

@@ -1,0 +1,153 @@
+import type { ComponentProps } from 'react';
+import demoHomeImage from '@/../docs/marketing/assets/screenshots/navet-ipad-landscape-home.jpg';
+import demoMobileImage from '@/../docs/marketing/assets/screenshots/navet-mobile-pwa-home.jpg';
+import demoTabletImage from '@/../docs/marketing/assets/screenshots/navet-tablet-portrait-home.jpg';
+import type { CalendarCard } from '@/app/features/calendar';
+import type { HVACCard } from '@/app/features/climate';
+import type { MediaCard } from '@/app/features/media';
+import type { VacuumCard } from '@/app/features/vacuum';
+import type { WeatherCard } from '@/app/features/weather';
+import artworksOriginal from '@/assets/artworks-original.jpg';
+
+export const MARKETING_SCREENSHOTS = [
+  {
+    src: demoHomeImage,
+    alt: 'Navet home dashboard shown on a landscape iPad layout',
+    label: 'Landscape dashboard',
+  },
+  {
+    src: demoTabletImage,
+    alt: 'Navet home dashboard shown on a portrait tablet layout',
+    label: 'Portrait tablet',
+  },
+  {
+    src: demoMobileImage,
+    alt: 'Navet home dashboard shown on a phone layout',
+    label: 'Phone layout',
+  },
+] as const;
+
+export const MARKETING_PREVIEW_CARDS = {
+  weather: {
+    id: 'weather.home',
+    location: 'Stockholm, Sweden',
+    temperature: 18,
+    feelsLikeTemperature: 17,
+    condition: 'partly-cloudy',
+    humidity: 58,
+    windSpeed: 12,
+    windSpeedUnit: 'km/h',
+    windGustSpeed: 18,
+    pressure: 1014,
+    pressureUnit: 'hPa',
+    uvIndex: 4.2,
+    cloudCoverage: 36,
+    precipitation: 0.1,
+    precipitationUnit: 'mm',
+    sunrise: '05:11',
+    sunset: '21:17',
+    daylight: '16h 06m',
+    rainForecast: 'Dry through the afternoon',
+    forecastMode: 'weekly',
+    forecast: [
+      { day: 'Mon', condition: 'sunny', high: 20, low: 11 },
+      { day: 'Tue', condition: 'partly-cloudy', high: 19, low: 10 },
+      { day: 'Wed', condition: 'rainy', high: 16, low: 9 },
+      { day: 'Thu', condition: 'cloudy', high: 17, low: 10 },
+      { day: 'Fri', condition: 'sunny', high: 21, low: 12 },
+      { day: 'Sat', condition: 'sunny', high: 22, low: 13 },
+      { day: 'Sun', condition: 'partly-cloudy', high: 18, low: 11 },
+    ],
+    highTemp: 20,
+    lowTemp: 11,
+    size: 'medium',
+    isEditMode: false,
+  } satisfies Omit<ComponentProps<typeof WeatherCard>, 'onSizeChange'>,
+  calendar: {
+    id: 'calendar.family',
+    name: 'Family Calendar',
+    room: 'Home',
+    events: [
+      {
+        id: 'waste',
+        title: 'Waste pickup',
+        startTime: '--',
+        endTime: '--',
+        timeDisplay: '--',
+        startDateTime: '2026-06-01T00:00:00.000Z',
+        isAllDay: true,
+        type: 'event',
+        color: '#f59e0b',
+        sortKey: '2026-06-01T00:00:00.000Z',
+      },
+      {
+        id: 'installer',
+        title: 'Call with installer',
+        startTime: '13:00',
+        endTime: '13:30',
+        timeDisplay: '13:00',
+        startDateTime: '2026-06-02T13:00:00.000Z',
+        endDateTime: '2026-06-02T13:30:00.000Z',
+        type: 'call',
+        color: '#34d399',
+        sortKey: '2026-06-02T13:00:00.000Z',
+      },
+      {
+        id: 'review',
+        title: 'Design review',
+        startTime: '18:30',
+        endTime: '19:15',
+        timeDisplay: '18:30',
+        startDateTime: '2026-06-03T18:30:00.000Z',
+        endDateTime: '2026-06-03T19:15:00.000Z',
+        type: 'meeting',
+        color: '#60a5fa',
+        sortKey: '2026-06-03T18:30:00.000Z',
+      },
+    ],
+    inEditMode: false,
+    size: 'medium',
+  } satisfies Omit<ComponentProps<typeof CalendarCard>, 'onSizeChange'>,
+  hvac: {
+    id: 'climate.main_floor',
+    name: 'Main Floor HVAC',
+    room: 'Hallway',
+    initialTemp: 22,
+    initialCurrentTemp: 21,
+    initialMode: 'cool',
+    initialAction: 'cooling',
+    initialState: true,
+    size: 'medium',
+    isEditMode: false,
+  } satisfies Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>,
+  media: {
+    id: 'media_player.living_room_speaker',
+    name: 'Living Room Speaker',
+    room: 'Living Room',
+    title: 'Smells Like Teen Spirit',
+    artist: 'Nirvana',
+    entityType: 'Speaker',
+    entityPicture: artworksOriginal,
+    state: 'playing',
+    volume: 42,
+    isMuted: false,
+    elapsedSeconds: 86,
+    durationSeconds: 243,
+    positionUpdatedAt: '2026-05-30T10:15:00.000Z',
+    supportsGrouping: true,
+    groupMembers: ['Kitchen Speaker'],
+    size: 'medium',
+    isEditMode: false,
+  } satisfies Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>,
+  vacuum: {
+    id: 'vacuum.robby',
+    name: 'Robby',
+    room: 'Ground Floor',
+    status: 'cleaning',
+    battery: 74,
+    cleanedArea: '42 m²',
+    cleaningTime: '38 min',
+    size: 'medium',
+    isEditMode: false,
+  } satisfies Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'>,
+} as const;
