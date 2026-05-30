@@ -144,7 +144,7 @@ export function getWeatherSvgOverlayTransform(size: CardSize) {
   }
 
   if (size === 'medium') {
-    return 'translateY(-4%)';
+    return 'translateY(-7%)';
   }
 
   return 'translateY(-3%)';

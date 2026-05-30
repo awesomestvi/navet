@@ -21,7 +21,7 @@ export function PassageWaveOverlaySvg({
     size === 'large'
       ? 'translateY(-24%) scaleY(1)'
       : size === 'medium'
-        ? 'translateY(-24%) scaleY(0.94)'
+        ? 'translateY(-30%) scaleY(0.94)'
         : 'translateY(-23%) scaleY(0.88)';
 
   return (

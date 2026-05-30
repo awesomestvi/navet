@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/app/components/primitives/loading-spinner';
+import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { isAllRooms } from '@/app/constants/rooms';
 import { useI18n } from '@/app/hooks';
 import { useErrorStore } from '@/app/stores';
@@ -70,9 +71,13 @@ export function DashboardPage() {
             : undefined
         }
       >
-        <DashboardSectionRouter controller={controller} />
+        <RenderProfiler id="DashboardPage:SectionRouter">
+          <DashboardSectionRouter controller={controller} />
+        </RenderProfiler>
       </div>
-      <DashboardOverlays controller={controller} />
+      <RenderProfiler id="DashboardPage:Overlays">
+        <DashboardOverlays controller={controller} />
+      </RenderProfiler>
     </>
   );
 }

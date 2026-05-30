@@ -1,50 +1,35 @@
 import type { NavetEntity } from '@navet/core/types';
-import { useMemo } from 'react';
 import { integrationSelectors } from '@/app/stores/selectors';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 import { useIntegrationStore } from './use-integration-store';
 
-function resolveProviderRecordEntry<
-  T extends { nativeId?: string; externalId?: string; canonicalId: string },
->(
-  recordByCanonicalId: Record<string, T>,
-  deviceId: string,
+function getLookupProviderIds(
+  entityId: string,
   currentProviderId: IntegrationProviderId
-): T | null {
-  const directMatch = recordByCanonicalId[deviceId];
-  if (directMatch) {
-    return directMatch;
-  }
-
-  const scopedId = parseProviderScopedId(deviceId);
+): IntegrationProviderId[] {
+  const scopedId = parseProviderScopedId(entityId);
   if (scopedId) {
-    return (
-      recordByCanonicalId[createProviderScopedId(scopedId.providerId, scopedId.nativeId)] ?? null
-    );
+    return [scopedId.providerId];
   }
 
-  const currentProviderMatch =
-    recordByCanonicalId[createProviderScopedId(currentProviderId, deviceId)];
-  if (currentProviderMatch) {
-    return currentProviderMatch;
-  }
-
-  return (
-    Object.values(recordByCanonicalId).find((entry) => {
-      const nativeId = 'nativeId' in entry ? entry.nativeId : entry.externalId;
-      return nativeId === deviceId || entry.canonicalId === deviceId;
-    }) ?? null
-  );
+  return currentProviderId === 'home_assistant'
+    ? ['home_assistant']
+    : [currentProviderId, 'home_assistant'];
 }
 
 export function useProviderEntityModel(entityId: string): NavetEntity | null {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const entitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
-  );
+  const lookupProviderIds = getLookupProviderIds(entityId, currentProviderId);
 
-  return useMemo(() => {
-    return resolveProviderRecordEntry(entitiesByCanonicalId, entityId, currentProviderId);
-  }, [currentProviderId, entitiesByCanonicalId, entityId]);
+  return useIntegrationStore((state) => {
+    for (const providerId of lookupProviderIds) {
+      const entity = integrationSelectors.providerEntityByLookup(providerId, entityId)(state);
+      if (entity) {
+        return entity;
+      }
+    }
+
+    return null;
+  }, Object.is);
 }

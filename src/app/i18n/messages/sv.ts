@@ -28,6 +28,7 @@ export const svMessages = {
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',
   'settings.nav.dashboard': 'Dashboard',
+  'settings.nav.experimental': 'Experimentellt',
   'settings.nav.system': 'System',
   'settings.nav.project': 'Projekt',
   'settings.appearance.sectionTitle': 'Utseende',
@@ -93,18 +94,18 @@ export const svMessages = {
   'settings.dashboard.keepAwake.description':
     'Försök att hindra delade skärmar från att somna medan Navet är öppet.',
   'settings.dashboard.keepAwake.caveat':
-    'Experimentellt. Navet försöker först använda webbläsarens wake lock och faller sedan tillbaka till tyst ljud om det behövs.',
+    'Navet försöker först använda webbläsarens wake lock och faller sedan tillbaka till tyst ljud om det behövs.',
   'settings.dashboard.keepAwake.statusLabel': 'Status för vakenhållning',
   'settings.dashboard.keepAwake.experimental': 'Experimentellt',
   'settings.dashboard.keepAwake.bestEffort':
-    'Funktionen är best effort. Vissa inbyggda webbläsare och svagare skärmar kan fortfarande somna eller blockera autoplay.',
+    'Funktionen är best effort. Navet fortsätter att försöka, men vissa inbyggda webbläsare och svagare skärmar kan fortfarande somna eller blockera autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tryck för att aktivera reservljud',
   'settings.dashboard.keepAwake.activationHint':
-    'Vissa enheter kräver ett tryck innan tyst ljud kan hålla skärmen vaken.',
+    'Navet försöker igen vid nästa tryck var som helst. Använd knappen om du vill utlösa det direkt.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Aktiv via webbläsarens wake lock',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Aktiv via tyst reservljud',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'Väntar på ett tryck för att starta reservljud',
+    'Väntar på nästa interaktion för att starta reservljud automatiskt igen',
   'settings.dashboard.keepAwake.status.blocked': 'Blockerad av den här webbläsaren eller enheten',
   'settings.dashboard.keepAwake.status.unsupported':
     'Stöds inte av den här webbläsaren eller enheten',
@@ -159,6 +160,9 @@ export const svMessages = {
     'Inkluderar tema, layout, rumsordning, kortordning, dold enhetsstatus, egna widgets och ljusförval. Både export och import använder YAML. Anslutnings-URL och token utelämnas avsiktligt.',
   'settings.dashboard.backup.export': 'Exportera konfiguration',
   'settings.dashboard.backup.import': 'Importera konfiguration',
+  'settings.experimental.sectionTitle': 'Experimentellt',
+  'settings.experimental.sectionDescription':
+    'Valfria funktioner och enhetsbeteenden som fungerar i bästa fall medan stöd mellan webbläsare och väggpaneler fortfarande sätter sig.',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Anslutningsdetaljer, providerhantering och återställningsåtgärder för den här Navet-enheten.',
@@ -180,7 +184,7 @@ export const svMessages = {
     'Granska den aktiva providern, öppna den direkt eller nollställ den sparade anslutningen.',
   'settings.system.connection.connectedTo': 'Ansluten till',
   'settings.system.connection.notConnected': 'Inte ansluten',
-  'settings.system.connection.openHomeAssistant': 'Öppna Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Öppna',
   'settings.system.connection.reset': 'Nollställ anslutning',
   'settings.system.providers.title': 'Providers',
   'settings.system.providers.description':

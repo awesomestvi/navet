@@ -18,6 +18,7 @@ interface CalendarContext {
   t: TranslateFn;
   use24HourTime: boolean;
   calendarEvents: Record<string, CalendarServiceEvent[]>;
+  eventLookupId?: string;
 }
 
 export function mapCalendarSources(
@@ -27,8 +28,8 @@ export function mapCalendarSources(
   room: string,
   context: CalendarContext
 ): NonNullable<CalendarDevice['sources']> {
-  const { calendarEvents, locale, t, use24HourTime } = context;
-  const rawEvents = calendarEvents[entityId] ?? [];
+  const { calendarEvents, eventLookupId, locale, t, use24HourTime } = context;
+  const rawEvents = calendarEvents[eventLookupId ?? entityId] ?? [];
   const fallbackTitle =
     typeof entity.attributes?.message === 'string' ? entity.attributes.message : '';
   const fallbackLocation =

@@ -1,43 +1,9 @@
 import type { NavetDevice, NavetRoom } from '@navet/app/internal/compat-models';
 import { useMemo } from 'react';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
-import { integrationCompatibilitySelectors } from '@/app/internal/compat-selectors';
 import { integrationSelectors } from '@/app/stores/selectors';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
-
-function resolveProviderRecordEntry<
-  T extends { nativeId?: string; externalId?: string; canonicalId: string },
->(
-  recordByCanonicalId: Record<string, T>,
-  deviceId: string,
-  currentProviderId: IntegrationProviderId
-): T | null {
-  const directMatch = recordByCanonicalId[deviceId];
-  if (directMatch) {
-    return directMatch;
-  }
-
-  const scopedId = parseProviderScopedId(deviceId);
-  if (scopedId) {
-    return (
-      recordByCanonicalId[createProviderScopedId(scopedId.providerId, scopedId.nativeId)] ?? null
-    );
-  }
-
-  const currentProviderMatch =
-    recordByCanonicalId[createProviderScopedId(currentProviderId, deviceId)];
-  if (currentProviderMatch) {
-    return currentProviderMatch;
-  }
-
-  return (
-    Object.values(recordByCanonicalId).find((entry) => {
-      const nativeId = 'nativeId' in entry ? entry.nativeId : entry.externalId;
-      return nativeId === deviceId || entry.canonicalId === deviceId;
-    }) ?? null
-  );
-}
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
 
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
@@ -45,36 +11,55 @@ function normalizeRoomName(name: string) {
 
 export function useProviderDevice(deviceId: string): NavetDevice | null {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const devicesByCanonicalId = useIntegrationStore(
-    integrationCompatibilitySelectors.devicesByCanonicalId
-  );
+  const lookupProviderIds =
+    currentProviderId === 'home_assistant' || parseProviderScopedId(deviceId)
+      ? [parseProviderScopedId(deviceId)?.providerId ?? currentProviderId]
+      : ([currentProviderId, 'home_assistant'] as const);
 
-  return useMemo(() => {
-    return resolveProviderRecordEntry(devicesByCanonicalId, deviceId, currentProviderId);
-  }, [currentProviderId, deviceId, devicesByCanonicalId]);
+  return useIntegrationStore((state) => {
+    for (const providerId of lookupProviderIds) {
+      const device = integrationSelectors.providerDeviceByLookup(providerId, deviceId)(state);
+      if (device) {
+        return device;
+      }
+    }
+
+    return null;
+  }, Object.is);
 }
 
 export function useNavetDevices(): NavetDevice[] {
-  const devicesByCanonicalId = useIntegrationStore(
-    integrationCompatibilitySelectors.devicesByCanonicalId
-  );
   const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const providerDeviceRecords = useIntegrationStore(
+    (state) =>
+      selectedProviderIds.map(
+        (providerId) => integrationSelectors.providerDevicesByProviderId(state)[providerId] ?? {}
+      ),
+    (left, right) =>
+      left.length === right.length && left.every((record, index) => record === right[index])
+  );
 
   return useMemo(
     () =>
-      Object.values(devicesByCanonicalId)
-        .filter((device) => selectedProviderIds.includes(device.providerId))
+      providerDeviceRecords
+        .flatMap((record) => Object.values(record))
         .sort((left, right) => left.name.localeCompare(right.name)),
-    [devicesByCanonicalId, selectedProviderIds]
+    [providerDeviceRecords]
   );
 }
 
 export function useNavetProviderDevices(providerId: IntegrationProviderId): NavetDevice[] {
-  const devices = useNavetDevices();
+  const devicesByCanonicalId = useIntegrationStore(
+    (state) => integrationSelectors.providerDevicesByProviderId(state)[providerId] ?? {},
+    Object.is
+  );
 
   return useMemo(
-    () => devices.filter((device) => device.providerId === providerId),
-    [devices, providerId]
+    () =>
+      Object.values(devicesByCanonicalId).sort((left, right) =>
+        left.name.localeCompare(right.name)
+      ),
+    [devicesByCanonicalId]
   );
 }
 

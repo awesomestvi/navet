@@ -19,7 +19,8 @@ import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors'
 import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceMetric } from '@/app/types/device.types';
 import type { IntegrationProviderId } from '@/app/types/provider';
-import { createProviderScopedId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { areRecordValuesEqual } from '@/app/utils/structural-equality';
 
 interface DeviceData {
   id: string;
@@ -163,21 +164,36 @@ function readProviderEntityStateValue(
   }
 }
 
+function resolveAvailabilityProviderId(
+  deviceId: string,
+  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
+) {
+  return parseProviderScopedId(deviceId)?.providerId ?? currentProviderId;
+}
+
 function resolveAvailabilityEntity(
   deviceId: string,
-  providerEntitiesByCanonicalId: ReturnType<
-    typeof integrationSelectors.providerEntitiesByCanonicalId
-  >,
-  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
+  availabilityEntitiesById: Record<string, NavetEntity | null>
 ): NavetEntity | null {
-  return (
-    providerEntitiesByCanonicalId[deviceId] ??
-    providerEntitiesByCanonicalId[
-      parseProviderScopedId(deviceId)
-        ? deviceId
-        : createProviderScopedId(currentProviderId, deviceId)
-    ] ??
-    null
+  return availabilityEntitiesById[deviceId] ?? null;
+}
+
+export function useAvailabilityEntitiesForCard(
+  entityIds: string[],
+  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
+) {
+  return useIntegrationStore(
+    (state) =>
+      Object.fromEntries(
+        entityIds.map((entityId) => {
+          const providerId = resolveAvailabilityProviderId(entityId, currentProviderId);
+          return [
+            entityId,
+            integrationSelectors.providerEntityByLookup(providerId, entityId)(state),
+          ];
+        })
+      ) as Record<string, NavetEntity | null>,
+    areRecordValuesEqual
   );
 }
 
@@ -192,9 +208,6 @@ function EntityAvailabilityFrame({
 }) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
-  );
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const shouldReducePaintEffects = effectsQuality !== 'high';
   const entityIds = useMemo(() => {
@@ -205,19 +218,16 @@ function EntityAvailabilityFrame({
 
     return typeof device.id === 'string' ? [device.id] : [];
   }, [device]);
+  const availabilityEntitiesById = useAvailabilityEntitiesForCard(entityIds, currentProviderId);
   const entityStates = useMemo(
     () =>
       entityIds.map((entityId) => {
-        const providerEntity = resolveAvailabilityEntity(
-          entityId,
-          providerEntitiesByCanonicalId,
-          currentProviderId
-        );
+        const providerEntity = resolveAvailabilityEntity(entityId, availabilityEntitiesById);
         return providerEntity
           ? readProviderEntityStateValue(providerEntity)
           : readUnavailableState(device);
       }),
-    [currentProviderId, device, entityIds, providerEntitiesByCanonicalId]
+    [availabilityEntitiesById, device, entityIds]
   );
   const isUnavailable =
     entityIds.length > 0 &&

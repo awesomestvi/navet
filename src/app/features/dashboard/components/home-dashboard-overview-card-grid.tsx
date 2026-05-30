@@ -144,7 +144,10 @@ export const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const { t } = useI18n();
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const { effectsQuality, lowPowerMode } = useSettingsStore((state) => ({
+    effectsQuality: settingsSelectors.effectsQuality(state),
+    lowPowerMode: settingsSelectors.lowPowerMode(state),
+  }));
   const optimizeOffscreenPaint = !isEditMode && effectsQuality !== 'high';
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
@@ -178,7 +181,7 @@ export const CardGrid = memo(function CardGrid({
   }, [onOpenAddCardDialog]);
 
   const autoScale =
-    renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;
+    renderedGridCols <= 1 || outerWidth <= 0 ? 1 : Math.min(1, outerWidth / targetGridWidth);
   const isAutoScaled = autoScale < 0.999;
   const outerContainerStyle = useMemo(
     () => (isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined),
@@ -217,7 +220,11 @@ export const CardGrid = memo(function CardGrid({
     [addCardSlotCols]
   );
 
-  const visibleCount = useProgressiveBatching(cardIds.length, isEditMode, !sortable);
+  const visibleCount = useProgressiveBatching(
+    cardIds.length,
+    isEditMode || lowPowerMode,
+    !sortable
+  );
   const visibleCardIds = useMemo(() => {
     // Sortable home sections must render every `HomeCardSlot` so `SortableContext`
     // items match the mounted sortable nodes during drag measurement.

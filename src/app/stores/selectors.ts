@@ -191,10 +191,53 @@ export const integrationSelectors = {
   providers: (state: IntegrationStore) => state.providers,
   currentProviderId: (state: IntegrationStore) => state.currentProviderId,
   providerSessions: (state: IntegrationStore) => state.providerSessions,
+  providerEntitiesByProviderId: (state: IntegrationStore) => state.providerEntitiesByProviderId,
+  providerEntitiesForId:
+    (providerId: keyof IntegrationStore['providerEntitiesByProviderId']) =>
+    (state: IntegrationStore) =>
+      state.providerEntitiesByProviderId[providerId] ?? {},
+  providerEntityLookupForId:
+    (providerId: keyof IntegrationStore['providerEntityLookupByProviderId']) =>
+    (state: IntegrationStore) =>
+      state.providerEntityLookupByProviderId[providerId] ?? {},
+  providerEntityByLookup:
+    (providerId: keyof IntegrationStore['providerEntitiesByProviderId'], entityId: string) =>
+    (state: IntegrationStore) => {
+      const entities = state.providerEntitiesByProviderId[providerId] ?? {};
+      const canonicalId =
+        entities[entityId]?.canonicalId ??
+        state.providerEntityLookupByProviderId[providerId]?.[entityId];
+
+      return canonicalId ? (entities[canonicalId] ?? null) : null;
+    },
   providerEntitiesByCanonicalId: (state: IntegrationStore) => state.providerEntitiesByCanonicalId,
+  providerEntityViewsByProviderId: (state: IntegrationStore) =>
+    state.providerEntityViewsByProviderId,
   providerEntityViewsByCanonicalId: (state: IntegrationStore) =>
     state.providerEntityViewsByCanonicalId,
+  providerDevicesByProviderId: (state: IntegrationStore) => state.providerDevicesByProviderId,
+  providerDeviceLookupForId:
+    (providerId: keyof IntegrationStore['providerDeviceLookupByProviderId']) =>
+    (state: IntegrationStore) =>
+      state.providerDeviceLookupByProviderId[providerId] ?? {},
+  providerDeviceByLookup:
+    (providerId: keyof IntegrationStore['providerDevicesByProviderId'], deviceId: string) =>
+    (state: IntegrationStore) => {
+      const devices = state.providerDevicesByProviderId[providerId] ?? {};
+      const canonicalId =
+        devices[deviceId]?.canonicalId ??
+        state.providerDeviceLookupByProviderId[providerId]?.[deviceId];
+
+      return canonicalId ? (devices[canonicalId] ?? null) : null;
+    },
+  providerDeviceCollectionById:
+    (providerId: keyof IntegrationStore['providerDeviceCollectionsByProviderId']) =>
+    (state: IntegrationStore) =>
+      state.providerDeviceCollectionsByProviderId[providerId],
+  providerDeviceCollectionsByProviderId: (state: IntegrationStore) =>
+    state.providerDeviceCollectionsByProviderId,
   providerEvents: (state: IntegrationStore) => state.providerEvents,
+  providerRoomsByProviderId: (state: IntegrationStore) => state.providerRoomsByProviderId,
   roomsByCanonicalId: (state: IntegrationStore) => state.roomsByCanonicalId,
   roomDescriptors: (state: IntegrationStore) => state.roomDescriptors,
   availableProviderIds: (state: IntegrationStore) => state.availableProviderIds,

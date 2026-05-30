@@ -29,6 +29,7 @@ export const frMessages = {
   'settings.nav.localization': 'Localisation',
   'settings.nav.interaction': 'Interaction',
   'settings.nav.dashboard': 'Tableau de bord',
+  'settings.nav.experimental': 'Expérimental',
   'settings.nav.system': 'Système',
   'settings.nav.project': 'Projet',
   'settings.appearance.sectionTitle': 'Apparence',
@@ -95,18 +96,18 @@ export const frMessages = {
   'settings.dashboard.keepAwake.description':
     'Tente d’empêcher les écrans partagés de se mettre en veille pendant que Navet reste ouvert.',
   'settings.dashboard.keepAwake.caveat':
-    'Expérimental. Navet essaie d’abord le wake lock du navigateur puis bascule vers un audio silencieux si nécessaire.',
+    'Navet essaie d’abord le wake lock du navigateur puis bascule vers un audio silencieux si nécessaire.',
   'settings.dashboard.keepAwake.statusLabel': 'État du maintien éveillé',
   'settings.dashboard.keepAwake.experimental': 'Expérimental',
   'settings.dashboard.keepAwake.bestEffort':
-    'Fonction best effort uniquement. Certains navigateurs intégrés et écrans à faible consommation peuvent quand même se mettre en veille ou bloquer l’autoplay.',
+    'Fonctionnement en best effort uniquement. Navet continuera à réessayer, mais certains navigateurs intégrés et écrans basse consommation peuvent quand même se mettre en veille ou bloquer l’autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Touchez pour activer l’audio de secours',
   'settings.dashboard.keepAwake.activationHint':
-    'Certains appareils demandent un premier toucher avant que l’audio silencieux puisse garder l’écran éveillé.',
+    'Navet réessaiera au prochain appui n’importe où. Utilisez ce bouton si vous voulez le déclencher immédiatement.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Actif via le wake lock du navigateur',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Actif via l’audio silencieux de secours',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'En attente d’un toucher pour démarrer l’audio de secours',
+    'En attente de la prochaine interaction pour relancer automatiquement l’audio de secours',
   'settings.dashboard.keepAwake.status.blocked': 'Bloqué par ce navigateur ou cet appareil',
   'settings.dashboard.keepAwake.status.unsupported':
     'Non pris en charge par ce navigateur ou cet appareil',
@@ -161,6 +162,9 @@ export const frMessages = {
     'Inclut le thème, la mise en page, l’ordre des pièces, l’ordre des cartes, les entités masquées, les widgets personnalisés et les préréglages lumineux. Export et import utilisent YAML. L’URL de connexion et le token sont volontairement exclus.',
   'settings.dashboard.backup.export': 'Exporter la config',
   'settings.dashboard.backup.import': 'Importer la config',
+  'settings.experimental.sectionTitle': 'Expérimental',
+  'settings.experimental.sectionDescription':
+    'Fonctions optionnelles et comportements d’appareil en mode best effort encore en cours de stabilisation selon les navigateurs et les panneaux muraux.',
   'settings.system.sectionTitle': 'Système',
   'settings.system.sectionDescription':
     'Détails de connexion, gestion des fournisseurs et actions de récupération pour cet appareil Navet.',
@@ -182,7 +186,7 @@ export const frMessages = {
     'Consultez le fournisseur actif, ouvrez-le directement ou réinitialisez la connexion enregistrée.',
   'settings.system.connection.connectedTo': 'Connecté à',
   'settings.system.connection.notConnected': 'Non connecté',
-  'settings.system.connection.openHomeAssistant': 'Ouvrir Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Ouvrir',
   'settings.system.connection.reset': 'Réinitialiser la connexion',
   'settings.system.providers.title': 'Fournisseurs',
   'settings.system.providers.description':

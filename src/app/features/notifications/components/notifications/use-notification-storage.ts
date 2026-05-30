@@ -37,8 +37,10 @@ export interface NotificationStorageState {
   setPendingUpdateInstalls: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export function useNotificationStorage(): NotificationStorageState {
-  const updateCandidates = useProviderUpdateCandidates();
+export function useNotificationStorage(options?: {
+  syncUpdateCandidates?: boolean;
+}): NotificationStorageState {
+  const updateCandidates = useProviderUpdateCandidates(options?.syncUpdateCandidates ?? true);
   const [readNotifications, setReadNotificationsState] = useState<string[]>(() =>
     loadNotificationIds(READ_NOTIFICATIONS_STORAGE_KEY)
   );

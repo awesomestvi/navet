@@ -4,6 +4,8 @@ import {
   getCardGridAutoRowsStyle,
 } from '@/app/components/shared/card-size-selector';
 import { useBreakpointCols } from '@/app/hooks/use-breakpoint-cols';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 import type { DeviceWithType } from '@/app/types/device.types';
 import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
@@ -35,6 +37,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   onUpdateCard,
   showHero,
 }: PresentationCardGridProps) {
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
@@ -61,7 +64,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     useAutoScaledGridMeasurements(targetGridWidth);
 
   const autoScale =
-    renderedGridCols > 1 && outerWidth > 0 ? Math.min(1, outerWidth / targetGridWidth) : 1;
+    renderedGridCols <= 1 || outerWidth <= 0 ? 1 : Math.min(1, outerWidth / targetGridWidth);
   const isAutoScaled = autoScale < 0.999;
   const outerContainerStyle = useMemo(
     () => (isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined),
@@ -90,7 +93,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     [breakpointCols, microCardMinWidth, renderedGridCols]
   );
 
-  const visibleCount = useProgressiveBatching(cardIds.length, false);
+  const visibleCount = useProgressiveBatching(cardIds.length, lowPowerMode);
   const visibleCardIds = useMemo(() => {
     if (!Number.isFinite(visibleCount)) {
       return cardIds;

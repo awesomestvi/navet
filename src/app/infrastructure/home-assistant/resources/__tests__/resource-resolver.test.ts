@@ -146,4 +146,33 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.kind).toBe('unavailable');
     expect(resource.url).toBeUndefined();
   });
+
+  it('reuses cached resources for semantically identical refs and options', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const resolver = new HomeAssistantResourceResolver(() => null);
+
+    const first = resolver.resolveSync(
+      {
+        kind: 'media_artwork',
+        entityId: 'media_player.living_room',
+        rawPath: homeAssistantUrlFixtures.relativeMediaArtwork,
+      },
+      {
+        preferProxy: true,
+      }
+    );
+    const second = resolver.resolveSync(
+      {
+        kind: 'media_artwork',
+        entityId: 'media_player.living_room',
+        rawPath: homeAssistantUrlFixtures.relativeMediaArtwork,
+      },
+      {
+        preferProxy: true,
+      }
+    );
+
+    expect(second).toBe(first);
+  });
 });

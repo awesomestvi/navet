@@ -1,6 +1,7 @@
 import type { NavetProviderContract } from '@navet/app/internal/compat';
 import { INTEGRATION_PROVIDERS, type IntegrationProviderId } from '@/app/types/provider';
 import { parseProviderScopedId } from '@/app/utils/provider-ids';
+import { areDataEqual } from '@/app/utils/structural-equality';
 import { integrationSessionRuntime } from '@/auth/integration-session-runtime';
 import { ProviderAuthRequiredError } from './errors';
 import type { SmartHomeProviderAdapter } from './provider-contract';
@@ -94,7 +95,7 @@ export function createSnapshotBackedProviderAdapter({
               continue;
             }
 
-            if (JSON.stringify(previous) !== JSON.stringify(entity)) {
+            if (!areDataEqual(previous, entity)) {
               callback({
                 type: 'entity_updated',
                 providerId,

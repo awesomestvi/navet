@@ -1,5 +1,7 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useDevices, useSearch } from '@/app/hooks';
+import { settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
 
 const DEVICE_GROUPS = [
   { domain: 'light', type: 'lights', deviceKey: 'lights' },
@@ -18,11 +20,17 @@ const DEVICE_GROUPS = [
 export function useHeaderSearch() {
   const { searchQuery, setSearchQuery, setFilteredDeviceIds, clearSearch, isSearchActive } =
     useSearch();
-  const devices = useDevices();
-  const deferredDevices = useDeferredValue(devices);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const shouldLoadDevices =
+    !lowPowerMode || isSearchFocused || isMobileSearchOpen || searchQuery.trim().length > 0;
+  const devices = useDevices({
+    enabled: shouldLoadDevices,
+    includeFeatureCollections: false,
+  });
+  const deferredDevices = useDeferredValue(devices);
 
   useEffect(() => {
     const query = searchQuery.toLowerCase().trim();

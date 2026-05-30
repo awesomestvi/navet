@@ -29,6 +29,7 @@ export const deMessages = {
   'settings.nav.localization': 'Lokalisierung',
   'settings.nav.interaction': 'Interaktion',
   'settings.nav.dashboard': 'Dashboard',
+  'settings.nav.experimental': 'Experimentell',
   'settings.nav.system': 'System',
   'settings.nav.project': 'Projekt',
   'settings.appearance.sectionTitle': 'Darstellung',
@@ -95,18 +96,18 @@ export const deMessages = {
   'settings.dashboard.keepAwake.description':
     'Versucht zu verhindern, dass gemeinsame Bildschirme in den Ruhezustand gehen, während Navet geöffnet ist.',
   'settings.dashboard.keepAwake.caveat':
-    'Experimentell. Navet versucht zuerst Browser Wake Lock und fällt bei Bedarf auf lautloses Audio zurück.',
+    'Navet versucht zuerst Browser Wake Lock und fällt bei Bedarf auf lautloses Audio zurück.',
   'settings.dashboard.keepAwake.statusLabel': 'Wachhalte-Status',
   'settings.dashboard.keepAwake.experimental': 'Experimentell',
   'settings.dashboard.keepAwake.bestEffort':
-    'Nur als Best-Effort. Manche eingebetteten Browser und schwächeren Displays können trotzdem einschlafen oder Autoplay blockieren.',
+    'Nur als Best-Effort. Navet versucht es weiter, aber manche eingebetteten Browser und schwächeren Displays können trotzdem einschlafen oder Autoplay blockieren.',
   'settings.dashboard.keepAwake.activateFallback': 'Tippen, um Audio-Fallback zu aktivieren',
   'settings.dashboard.keepAwake.activationHint':
-    'Einige Geräte benötigen einen ersten Tipp, bevor lautloses Audio den Bildschirm wach halten kann.',
+    'Navet versucht es beim nächsten Tippen irgendwo erneut. Mit dieser Taste kannst du es sofort auslösen.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Aktiv über Browser Wake Lock',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Aktiv über lautlosen Audio-Fallback',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'Wartet auf einen Tipp, um den Audio-Fallback zu starten',
+    'Wartet auf die nächste Interaktion, um den Audio-Fallback automatisch neu zu starten',
   'settings.dashboard.keepAwake.status.blocked': 'Von diesem Browser oder Gerät blockiert',
   'settings.dashboard.keepAwake.status.unsupported':
     'Von diesem Browser oder Gerät nicht unterstützt',
@@ -161,6 +162,9 @@ export const deMessages = {
     'Enthält Thema, Layout, Raumreihenfolge, Kartenreihenfolge, ausgeblendete Geräte, benutzerdefinierte Widgets und Licht-Presets. Export und Import verwenden YAML. Verbindungs-URL und Token werden absichtlich ausgelassen.',
   'settings.dashboard.backup.export': 'Konfiguration exportieren',
   'settings.dashboard.backup.import': 'Konfiguration importieren',
+  'settings.experimental.sectionTitle': 'Experimentell',
+  'settings.experimental.sectionDescription':
+    'Optionale Funktionen und Best-Effort-Geräteverhalten, die sich über Browser und Wandpanels hinweg noch einpendeln.',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Verbindungsdetails, Provider-Verwaltung und Wiederherstellungsaktionen für dieses Navet-Gerät.',
@@ -182,7 +186,7 @@ export const deMessages = {
     'Prüfe das aktive Provider-Ziel, öffne es direkt oder setze die gespeicherte Verbindung zurück.',
   'settings.system.connection.connectedTo': 'Verbunden mit',
   'settings.system.connection.notConnected': 'Nicht verbunden',
-  'settings.system.connection.openHomeAssistant': 'Home Assistant öffnen',
+  'settings.system.connection.openHomeAssistant': 'Öffnen',
   'settings.system.connection.reset': 'Verbindung zurücksetzen',
   'settings.system.providers.title': 'Provider',
   'settings.system.providers.description':

@@ -1,12 +1,11 @@
 import type { NavetEntity } from '@navet/core/types';
-import { mapNavetEntitiesToDeviceCollection } from '@/app/core/navet-device-collections';
 import type {
   UpsDeviceOption,
   UpsMetricKind,
   UpsMetricOption,
 } from '@/app/features/dashboard/components/widgets/ups-widget-data';
 import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
-import type { SensorDevice } from '@/app/types/device.types';
+import type { DeviceCollection, SensorDevice } from '@/app/types/device.types';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
 
@@ -117,7 +116,7 @@ function toHomeyUpsEntityMap(sensors: SensorDevice[]): PlatformEntitySnapshotMap
   );
 }
 
-function resolveHomeyUpsSourceDeviceId(device: SensorDevice): string {
+export function resolveHomeyUpsSourceDeviceId(device: SensorDevice): string {
   if (device.sourceDeviceId) {
     return device.sourceDeviceId;
   }
@@ -131,7 +130,7 @@ function resolveHomeyUpsSourceDeviceId(device: SensorDevice): string {
 
 function buildHomeyUpsDeviceOptions(
   sensors: SensorDevice[],
-  providerEntitiesByCanonicalId: Record<string, NavetEntity>
+  sourceDevicesBySourceDeviceId: Record<string, NavetEntity | null>
 ): UpsDeviceOption[] {
   const sensorsBySourceDevice = new Map<string, SensorDevice[]>();
 
@@ -155,13 +154,7 @@ function buildHomeyUpsDeviceOptions(
         return [];
       }
 
-      const sourceDevice = Object.values(providerEntitiesByCanonicalId).find(
-        (entity) =>
-          entity.providerId === 'homey' &&
-          entity.externalId === sourceDeviceId &&
-          entity.type !== 'sensor' &&
-          entity.type !== 'binary_sensor'
-      );
+      const sourceDevice = sourceDevicesBySourceDeviceId[sourceDeviceId];
       const statusOptions = metrics.filter((metric) => metric.kind === 'status');
 
       return [
@@ -189,25 +182,23 @@ function buildHomeyUpsDeviceOptions(
 
 export function resolveProviderUpsWidgetData({
   currentProviderId,
-  providerEntitiesByCanonicalId,
+  providerDeviceCollection,
+  sourceDevicesBySourceDeviceId,
   homeAssistantData,
 }: {
   currentProviderId: IntegrationProviderId;
-  providerEntitiesByCanonicalId: Record<string, NavetEntity>;
+  providerDeviceCollection: DeviceCollection;
+  sourceDevicesBySourceDeviceId: Record<string, NavetEntity | null>;
   homeAssistantData: ProviderUpsWidgetDataResult;
 }): ProviderUpsWidgetDataResult {
   if (currentProviderId === 'home_assistant') {
     return homeAssistantData;
   }
 
-  const sensors = mapNavetEntitiesToDeviceCollection(
-    Object.values(providerEntitiesByCanonicalId).filter(
-      (entity): entity is NavetEntity => entity.providerId === 'homey'
-    )
-  ).sensors;
+  const sensors = providerDeviceCollection.sensors;
 
   return {
-    devices: buildHomeyUpsDeviceOptions(sensors, providerEntitiesByCanonicalId),
+    devices: buildHomeyUpsDeviceOptions(sensors, sourceDevicesBySourceDeviceId),
     entities: toHomeyUpsEntityMap(sensors),
     formatOptions: homeAssistantData.formatOptions,
   };

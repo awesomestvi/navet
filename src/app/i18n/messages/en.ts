@@ -28,6 +28,7 @@ export const enMessages = {
   'settings.nav.localization': 'Localization',
   'settings.nav.interaction': 'Interaction',
   'settings.nav.dashboard': 'Dashboard',
+  'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'System',
   'settings.nav.project': 'Project',
   'settings.appearance.sectionTitle': 'Appearance',
@@ -91,18 +92,18 @@ export const enMessages = {
   'settings.dashboard.keepAwake.description':
     'Try to prevent shared screens from sleeping while Navet stays open.',
   'settings.dashboard.keepAwake.caveat':
-    'Experimental. Navet first requests browser wake lock, then falls back to silent audio if needed.',
+    'Navet first requests browser wake lock, then falls back to silent audio if needed.',
   'settings.dashboard.keepAwake.statusLabel': 'Keep-awake status',
   'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
-    'Best effort only. Some embedded browsers and low-power displays may still sleep or block autoplay.',
+    'Best effort only. Navet keeps retrying, but some embedded browsers and low-power displays may still sleep or block autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tap to activate fallback audio',
   'settings.dashboard.keepAwake.activationHint':
-    'Some devices require one tap before silent audio can keep the screen awake.',
+    'Navet will retry on the next tap anywhere. Use this button if you want to trigger it immediately.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Active via browser wake lock',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Active via silent audio fallback',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'Waiting for one tap to start fallback audio',
+    'Waiting for the next interaction to restart fallback audio automatically',
   'settings.dashboard.keepAwake.status.blocked': 'Blocked by this browser or device',
   'settings.dashboard.keepAwake.status.unsupported': 'Unsupported on this browser or device',
   'settings.dashboard.entityVisibility.title': 'Entity visibility',
@@ -156,6 +157,9 @@ export const enMessages = {
     'Includes theme, layout, room order, card order, hidden entity state, custom widgets, and light preset settings. Export and import both use YAML. Connection URL and token are intentionally left out.',
   'settings.dashboard.backup.export': 'Export config',
   'settings.dashboard.backup.import': 'Import config',
+  'settings.experimental.sectionTitle': 'Experimental',
+  'settings.experimental.sectionDescription':
+    'Opt-in features and best-effort device behaviors that are still settling across browsers and wall panels.',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Connection details, provider management, and recovery actions for this Navet device.',
@@ -177,7 +181,7 @@ export const enMessages = {
     'Review the active provider target, open it directly, or reset the saved connection.',
   'settings.system.connection.connectedTo': 'Connected to',
   'settings.system.connection.notConnected': 'Not connected',
-  'settings.system.connection.openHomeAssistant': 'Open Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Open',
   'settings.system.connection.reset': 'Reset connection',
   'settings.system.providers.title': 'Providers',
   'settings.system.providers.description':

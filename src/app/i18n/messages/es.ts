@@ -28,6 +28,7 @@ export const esMessages = {
   'settings.nav.localization': 'Localización',
   'settings.nav.interaction': 'Interacción',
   'settings.nav.dashboard': 'Panel',
+  'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
   'settings.nav.project': 'Proyecto',
   'settings.appearance.sectionTitle': 'Apariencia',
@@ -94,19 +95,19 @@ export const esMessages = {
   'settings.dashboard.keepAwake.description':
     'Intenta evitar que las pantallas compartidas se duerman mientras Navet permanece abierto.',
   'settings.dashboard.keepAwake.caveat':
-    'Experimental. Navet primero intenta usar wake lock del navegador y luego recurre a audio silencioso si hace falta.',
+    'Navet primero intenta usar wake lock del navegador y luego recurre a audio silencioso si hace falta.',
   'settings.dashboard.keepAwake.statusLabel': 'Estado de pantalla activa',
   'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
-    'Solo funciona como best effort. Algunos navegadores integrados y pantallas de bajo consumo aún pueden dormir o bloquear el autoplay.',
+    'Solo funciona como best effort. Navet seguirá reintentándolo, pero algunos navegadores integrados y pantallas de bajo consumo aún pueden dormir o bloquear el autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tocar para activar el audio de respaldo',
   'settings.dashboard.keepAwake.activationHint':
-    'Algunos dispositivos requieren un toque antes de que el audio silencioso pueda mantener la pantalla despierta.',
+    'Navet volverá a intentarlo en el próximo toque en cualquier parte. Usa este botón si quieres activarlo de inmediato.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Activo mediante wake lock del navegador',
   'settings.dashboard.keepAwake.status.audio-fallback':
     'Activo mediante audio silencioso de respaldo',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'Esperando un toque para iniciar el audio de respaldo',
+    'Esperando la próxima interacción para reiniciar automáticamente el audio de respaldo',
   'settings.dashboard.keepAwake.status.blocked': 'Bloqueado por este navegador o dispositivo',
   'settings.dashboard.keepAwake.status.unsupported':
     'No compatible con este navegador o dispositivo',
@@ -161,6 +162,9 @@ export const esMessages = {
     'Incluye tema, diseño, orden de habitaciones, orden de tarjetas, estado de entidades ocultas, widgets personalizados y ajustes predefinidos de luces. La exportación y la importación usan YAML. La URL de conexión y el token se excluyen intencionalmente.',
   'settings.dashboard.backup.export': 'Exportar configuración',
   'settings.dashboard.backup.import': 'Importar configuración',
+  'settings.experimental.sectionTitle': 'Experimental',
+  'settings.experimental.sectionDescription':
+    'Funciones opcionales y comportamientos del dispositivo de mejor esfuerzo que todavía se están asentando entre navegadores y paneles de pared.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Detalles de conexión, gestión de proveedores y acciones de recuperación para este dispositivo Navet.',
@@ -182,7 +186,7 @@ export const esMessages = {
     'Revisa el proveedor activo, ábrelo directamente o restablece la conexión guardada.',
   'settings.system.connection.connectedTo': 'Conectado a',
   'settings.system.connection.notConnected': 'Sin conectar',
-  'settings.system.connection.openHomeAssistant': 'Abrir Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Abrir',
   'settings.system.connection.reset': 'Restablecer conexión',
   'settings.system.providers.title': 'Proveedores',
   'settings.system.providers.description':

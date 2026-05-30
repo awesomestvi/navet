@@ -88,6 +88,45 @@ function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBust
   return `${url}${separator}_t=${encodeURIComponent(String(cacheBustKey))}`;
 }
 
+function serializeCacheKeyPart(value: unknown): string {
+  if (value == null) {
+    return '';
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(serializeCacheKeyPart).join(',')}]`;
+  }
+
+  if (typeof value === 'object') {
+    return `{${Object.keys(value as Record<string, unknown>)
+      .sort()
+      .map(
+        (key) =>
+          `${encodeURIComponent(key)}:${serializeCacheKeyPart((value as Record<string, unknown>)[key])}`
+      )
+      .join(',')}}`;
+  }
+
+  return encodeURIComponent(String(value));
+}
+
+function buildResourceCacheKey(
+  runtime: ReturnType<typeof getRuntimeContext>,
+  haBaseUrl: string | null | undefined,
+  ref: HaResourceRef,
+  options: ResolveOptions
+) {
+  return [
+    runtime.kind,
+    runtime.appBasePath,
+    haBaseUrl ?? '',
+    serializeCacheKeyPart(ref),
+    serializeCacheKeyPart(options.cacheBustKey),
+    options.preferProxy ? 'proxy' : '',
+    options.allowDirect ? 'direct' : '',
+  ].join('|');
+}
+
 export class HomeAssistantResourceResolver {
   private cache = new ResourceCache();
 
@@ -120,15 +159,7 @@ export class HomeAssistantResourceResolver {
     const runtime = getRuntimeContext();
     const session = this.getSession();
     const haBaseUrl = session?.haBaseUrl ?? runtime.haBaseUrl;
-    const cacheKey = JSON.stringify([
-      runtime.kind,
-      runtime.appBasePath,
-      haBaseUrl,
-      ref,
-      options.cacheBustKey,
-      options.preferProxy,
-      options.allowDirect,
-    ]);
+    const cacheKey = buildResourceCacheKey(runtime, haBaseUrl, ref, options);
     const cached = this.cache.get(cacheKey);
     if (cached) {
       return cached;

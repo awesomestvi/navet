@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Updated Navet to `0.4.0`
+- Added clearer system/provider settings and a dedicated experimental keep-device-awake section
+- Fixed weather and calendar cards disappearing from Home dashboards
+- Improved dashboard responsiveness by deferring heavier map widget loading work
+- Improved dashboard section loading, shared snapshot handling, and provider-backed card reliability
+
 ## 0.3.1
 
 - Updated Navet to `0.3.1`

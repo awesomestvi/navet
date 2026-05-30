@@ -75,22 +75,36 @@ describe('useMediaGrouping', () => {
     integrationStore.setState((current) => ({
       ...current,
       currentProviderId: 'home_assistant',
-      providerEntitiesByCanonicalId: {
-        'home_assistant:media_player.kitchen': createProviderEntity(
-          'media_player.kitchen',
-          'Kitchen Speaker',
-          true
-        ),
-        'home_assistant:media_player.living_room': createProviderEntity(
-          'media_player.living_room',
-          'Living Room Speaker',
-          true
-        ),
-        'home_assistant:media_player.office': createProviderEntity(
-          'media_player.office',
-          'Office Speaker',
-          false
-        ),
+      providerEntitiesByProviderId: {
+        ...current.providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:media_player.kitchen': createProviderEntity(
+            'media_player.kitchen',
+            'Kitchen Speaker',
+            true
+          ),
+          'home_assistant:media_player.living_room': createProviderEntity(
+            'media_player.living_room',
+            'Living Room Speaker',
+            true
+          ),
+          'home_assistant:media_player.office': createProviderEntity(
+            'media_player.office',
+            'Office Speaker',
+            false
+          ),
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...current.providerEntityLookupByProviderId,
+        home_assistant: {
+          'media_player.kitchen': 'home_assistant:media_player.kitchen',
+          'home_assistant:media_player.kitchen': 'home_assistant:media_player.kitchen',
+          'media_player.living_room': 'home_assistant:media_player.living_room',
+          'home_assistant:media_player.living_room': 'home_assistant:media_player.living_room',
+          'media_player.office': 'home_assistant:media_player.office',
+          'home_assistant:media_player.office': 'home_assistant:media_player.office',
+        },
       },
     }));
   });

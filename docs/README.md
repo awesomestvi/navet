@@ -3,12 +3,24 @@
 This folder is split by audience. If you are trying to get Navet running, start with the user
 docs. If you are changing the codebase, use the contributor docs.
 
+## Setup Guides
+
+- [Home Assistant custom panel](DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-custom-panel)
+- [Home Assistant add-on](DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-add-on)
+- [Home Assistant standalone Docker](DOCKER_HOME_ASSISTANT_ADDON.md#standalone-docker)
+- [Homey standalone setup](HOMEY.md)
+- [openHAB standalone setup](OPENHAB.md)
+
 ## User Docs
 
 - [../README.md](../README.md)
   Overview, supported providers, install options, and development basics.
 - [DOCKER_HOME_ASSISTANT_ADDON.md](DOCKER_HOME_ASSISTANT_ADDON.md)
   Deployment guide for Home Assistant panel, Home Assistant add-on, and standalone Docker.
+- [HOMEY.md](HOMEY.md)
+  Standalone setup guide for Homey users.
+- [OPENHAB.md](OPENHAB.md)
+  Standalone setup guide for openHAB users.
 - [WIDGETS.md](WIDGETS.md)
   What Navet widgets exist today and how they behave.
 - [PUBLIC_LAUNCH_SECURITY.md](PUBLIC_LAUNCH_SECURITY.md)
@@ -47,6 +59,8 @@ are not the normal starting point:
 
 ## Design, Brand, Legal
 
+- [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
+- [../SECURITY.md](../SECURITY.md)
 - [../design-system/README.md](../design-system/README.md)
 - [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md)
 - [branding/BRANDING.md](branding/BRANDING.md)

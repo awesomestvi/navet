@@ -256,4 +256,137 @@ describe('integrationStore', () => {
       ])
     );
   });
+
+  it('reuses unchanged provider slices when Home Assistant publishes an equivalent payload', async () => {
+    await resetAppStores();
+
+    const kitchenEntity = {
+      entity_id: 'light.kitchen',
+      state: 'on',
+      attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+      last_changed: '2024-01-01T00:00:00.000Z',
+      last_updated: '2024-01-01T00:00:00.000Z',
+      context: { id: 'ctx', parent_id: null, user_id: null },
+    };
+
+    homeAssistantStore.setState({
+      connected: true,
+      areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
+      entities: {
+        'light.kitchen': kitchenEntity,
+      },
+    });
+    homeyService.replaceSnapshot({
+      connected: true,
+      devices: {},
+      zones: {
+        kitchen: { id: 'kitchen', name: 'Kitchen' },
+      },
+    });
+
+    const previousState = integrationStore.getState();
+    const previousEntity =
+      previousState.providerEntitiesByCanonicalId['home_assistant:light.kitchen'];
+    const previousView =
+      previousState.providerEntityViewsByCanonicalId['home_assistant:light.kitchen'];
+    const previousDevice = previousState.devicesByCanonicalId['home_assistant:light.kitchen'];
+    const previousRoomDescriptors = previousState.roomDescriptors;
+    const previousHomeyCollection = previousState.providerDeviceCollectionsByProviderId.homey;
+
+    homeAssistantStore.setState({
+      connected: true,
+      areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
+      entities: {
+        'light.kitchen': {
+          ...kitchenEntity,
+          attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+        },
+      },
+    });
+
+    const nextState = integrationStore.getState();
+
+    expect(nextState.providerEntitiesByCanonicalId['home_assistant:light.kitchen']).toBe(
+      previousEntity
+    );
+    expect(nextState.providerEntityViewsByCanonicalId['home_assistant:light.kitchen']).toBe(
+      previousView
+    );
+    expect(nextState.devicesByCanonicalId['home_assistant:light.kitchen']).toBe(previousDevice);
+    expect(nextState.roomDescriptors).toBe(previousRoomDescriptors);
+    expect(nextState.providerDeviceCollectionsByProviderId.homey).toBe(previousHomeyCollection);
+  });
+
+  it('updates only changed derived entries for Home Assistant entities', async () => {
+    await resetAppStores();
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'off',
+          attributes: { friendly_name: 'Kitchen Light' },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-1', parent_id: null, user_id: null },
+        },
+        'light.hall': {
+          entity_id: 'light.hall',
+          state: 'on',
+          attributes: { friendly_name: 'Hall Light', brightness: 200 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-2', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    const previousState = integrationStore.getState();
+    const previousKitchenEntity =
+      previousState.providerEntitiesByCanonicalId['home_assistant:light.kitchen'];
+    const previousHallEntity =
+      previousState.providerEntitiesByCanonicalId['home_assistant:light.hall'];
+    const previousKitchenView =
+      previousState.providerEntityViewsByCanonicalId['home_assistant:light.kitchen'];
+    const previousHallView =
+      previousState.providerEntityViewsByCanonicalId['home_assistant:light.hall'];
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'on',
+          attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:05:00.000Z',
+          context: { id: 'ctx-1', parent_id: null, user_id: null },
+        },
+        'light.hall': {
+          entity_id: 'light.hall',
+          state: 'on',
+          attributes: { friendly_name: 'Hall Light', brightness: 200 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-2', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    const nextState = integrationStore.getState();
+
+    expect(nextState.providerEntitiesByCanonicalId['home_assistant:light.kitchen']).not.toBe(
+      previousKitchenEntity
+    );
+    expect(nextState.providerEntityViewsByCanonicalId['home_assistant:light.kitchen']).not.toBe(
+      previousKitchenView
+    );
+    expect(nextState.providerEntitiesByCanonicalId['home_assistant:light.hall']).toBe(
+      previousHallEntity
+    );
+    expect(nextState.providerEntityViewsByCanonicalId['home_assistant:light.hall']).toBe(
+      previousHallView
+    );
+  });
 });
