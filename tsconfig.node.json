@@ -9,7 +9,6 @@
   "include": [
     "scripts/*.ts",
     "vite.config.ts",
-    "vite.panel.config.ts",
-    "src/app/utils/rss-proxy-security.ts"
+    "vite.panel.config.ts"
   ]
 }
