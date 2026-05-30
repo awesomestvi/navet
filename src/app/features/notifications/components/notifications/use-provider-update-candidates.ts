@@ -87,9 +87,9 @@ function selectProviderUpdateEntities(
   );
 }
 
-export function useProviderUpdateCandidates(): PlatformUpdateNotificationCandidate[] {
+export function useProviderUpdateCandidates(enabled = true): PlatformUpdateNotificationCandidate[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const isHomeAssistantProvider = currentProviderId === 'home_assistant';
+  const isHomeAssistantProvider = enabled && currentProviderId === 'home_assistant';
   const entities = useProviderEntitySnapshots({ enabled: isHomeAssistantProvider });
   const updateEntities = isHomeAssistantProvider
     ? selectProviderUpdateEntities(entities)

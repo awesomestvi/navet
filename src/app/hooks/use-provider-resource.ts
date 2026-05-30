@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ResolvedPlatformResource } from '@/app/platform/resources';
 import { resolveResource } from '@/app/services/integration-resource.service';
 import type { IntegrationProviderId } from '@/app/types/provider';
+import { areArraysEqual, areDataEqual } from '@/app/utils/structural-equality';
 
 interface UseProviderResourceOptions {
   deviceId: string;
@@ -17,7 +18,15 @@ function resourceEquals(
   left: ResolvedPlatformResource | null,
   right: ResolvedPlatformResource | null
 ) {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return areDataEqual(left, right);
+}
+
+function normalizeAttrsEntries(attrs?: Record<string, unknown>): Array<[string, unknown]> {
+  if (!attrs) {
+    return [];
+  }
+
+  return Object.entries(attrs).sort(([left], [right]) => left.localeCompare(right));
 }
 
 export function useProviderResource({
@@ -29,31 +38,27 @@ export function useProviderResource({
   requestKey: _requestKey,
 }: UseProviderResourceOptions) {
   const [resource, setResource] = useState<ResolvedPlatformResource | null>(null);
-  const attrsKey = useMemo(() => {
-    if (!attrs) {
-      return '';
-    }
-
-    return JSON.stringify(
-      Object.entries(attrs).sort(([left], [right]) => left.localeCompare(right))
-    );
-  }, [attrs]);
+  const normalizedAttrEntries = useMemo(() => normalizeAttrsEntries(attrs), [attrs]);
   const stableAttrsRef = useRef<{
-    key: string;
+    entries: Array<[string, unknown]>;
     value: Record<string, unknown> | undefined;
   }>({
-    key: '',
+    entries: [],
     value: undefined,
   });
 
-  if (stableAttrsRef.current.key !== attrsKey) {
+  if (
+    !areArraysEqual(
+      stableAttrsRef.current.entries,
+      normalizedAttrEntries,
+      ([leftKey, leftValue], [rightKey, rightValue]) =>
+        leftKey === rightKey && areDataEqual(leftValue, rightValue)
+    )
+  ) {
     stableAttrsRef.current = {
-      key: attrsKey,
-      value: attrs
-        ? Object.fromEntries(
-            Object.entries(attrs).sort(([left], [right]) => left.localeCompare(right))
-          )
-        : undefined,
+      entries: normalizedAttrEntries,
+      value:
+        normalizedAttrEntries.length > 0 ? Object.fromEntries(normalizedAttrEntries) : undefined,
     };
   }
 

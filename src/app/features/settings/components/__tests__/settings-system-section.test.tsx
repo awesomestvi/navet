@@ -163,6 +163,12 @@ describe('SettingsSystemSection', () => {
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
+    expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
+    expect(screen.getByText('Camera live streams')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
+
     expect(screen.getByText('Homey')).toBeInTheDocument();
     expect(screen.getByText('openHAB')).toBeInTheDocument();
     expect(screen.getAllByText('Not connected on this device').length).toBeGreaterThan(0);
@@ -205,12 +211,12 @@ describe('SettingsSystemSection', () => {
         id: 'homey',
         label: 'Homey',
         loginMode: 'oauth',
-        status: 'disconnected',
-        isActive: false,
-        isConnected: false,
+        status: 'connected',
+        isActive: true,
+        isConnected: true,
         canConnect: true,
-        canDisconnect: false,
-        baseUrl: null,
+        canDisconnect: true,
+        baseUrl: 'https://homey.example.com',
         error: null,
         implementationStatus: 'implemented',
         featureMatrix: {
@@ -233,11 +239,13 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Manage 1 other providers' }));
+
     fireEvent.click(screen.getByRole('button', { name: 'Make active' }));
     expect(controller.setActiveProvider).toHaveBeenCalledWith('home_assistant');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
-    expect(controller.handleConnectProvider).toHaveBeenCalledWith('homey');
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
   });
 
   it('submits a Home Assistant URL and disconnects connected providers', () => {
@@ -302,16 +310,19 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
     fireEvent.change(screen.getByPlaceholderText('https://homeassistant.local:8123'), {
       target: { value: 'https://ha.example.com' },
     });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Connect' })[1]);
     expect(controller.handleConnectProvider).toHaveBeenCalledWith(
       'home_assistant',
       'https://ha.example.com'
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Disconnect' })[1]);
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
   });
 });

@@ -9,6 +9,7 @@ import { resetAppStores } from '@/test/store-reset';
 import {
   filterDeviceCollectionByProvider,
   mergeDeviceCollections,
+  useAggregatedDevices,
   useDevices,
 } from '../use-devices';
 
@@ -186,68 +187,38 @@ describe('useDevices', () => {
     await resetAppStores();
 
     integrationStore.setState({
-      providerEntitiesByCanonicalId: {
-        'home_assistant:light.kitchen': {
-          id: 'home_assistant:light.kitchen',
-          canonicalId: 'home_assistant:light.kitchen',
-          providerId: 'home_assistant',
-          externalId: 'light.kitchen',
-          type: 'light',
-          name: 'Kitchen Light',
-          room: 'Kitchen',
-          primaryState: 'on',
-          availability: 'available',
-          capabilities: [],
-          attributes: {
-            value: 'on',
-            brightnessPct: 100,
-            colorTemperatureKelvin: 3200,
-          },
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          lights: [
+            {
+              id: 'home_assistant:light.kitchen',
+              nativeId: 'light.kitchen',
+              canonicalId: 'home_assistant:light.kitchen',
+              providerId: 'home_assistant',
+              name: 'Kitchen Light',
+              room: 'Kitchen',
+              size: 'small',
+              state: true,
+              brightness: 100,
+              temp: 3200,
+            },
+          ],
         },
-        'homey:switch_1': {
-          id: 'homey:switch_1',
-          canonicalId: 'homey:switch_1',
-          providerId: 'homey',
-          externalId: 'switch_1',
-          type: 'switch',
-          name: 'Coffee Machine',
-          room: 'Living Room',
-          primaryState: 'off',
-          availability: 'available',
-          capabilities: [],
-          attributes: {
-            value: 'off',
-          },
-        },
-      },
-      devicesByCanonicalId: {
-        'home_assistant:light.kitchen': {
-          id: 'light.kitchen',
-          canonicalId: 'home_assistant:light.kitchen',
-          nativeId: 'light.kitchen',
-          providerId: 'home_assistant',
-          kind: 'light',
-          name: 'Kitchen Light',
-          room: 'Kitchen',
-          capabilities: [],
-          state: {
-            value: 'on',
-            brightnessPct: 100,
-            colorTemperatureKelvin: 3200,
-          },
-        },
-        'homey:switch_1': {
-          id: 'homey:switch_1',
-          canonicalId: 'homey:switch_1',
-          nativeId: 'switch_1',
-          providerId: 'homey',
-          kind: 'switch',
-          name: 'Coffee Machine',
-          room: 'Living Room',
-          capabilities: [],
-          state: {
-            value: 'off',
-          },
+        homey: {
+          ...createEmptyDeviceCollection(),
+          switches: [
+            {
+              id: 'homey:switch_1',
+              nativeId: 'switch_1',
+              canonicalId: 'homey:switch_1',
+              providerId: 'homey',
+              name: 'Coffee Machine',
+              room: 'Living Room',
+              size: 'small',
+              state: false,
+            },
+          ],
         },
       },
       selectedProviderIds: ['home_assistant', 'homey'],
@@ -267,5 +238,36 @@ describe('useDevices', () => {
         providerId: 'homey',
       }),
     ]);
+  });
+
+  it('returns an empty device collection when disabled', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant', 'homey'],
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          lights: [
+            {
+              id: 'home_assistant:light.kitchen',
+              nativeId: 'light.kitchen',
+              canonicalId: 'home_assistant:light.kitchen',
+              providerId: 'home_assistant',
+              name: 'Kitchen Light',
+              room: 'Kitchen',
+              size: 'small',
+              state: true,
+              brightness: 100,
+              temp: 3200,
+            },
+          ],
+        },
+      },
+    });
+
+    const { result } = renderHookWithProviders(() => useAggregatedDevices({ enabled: false }));
+
+    expect(result.current).toEqual(createEmptyDeviceCollection());
   });
 });

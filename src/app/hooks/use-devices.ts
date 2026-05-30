@@ -4,39 +4,86 @@ import { integrationSelectors } from '../stores/selectors';
 import type { DeviceCollection } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
 import { getAllRooms } from '../utils/device-location';
+import { areArraysEqual } from '../utils/structural-equality';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderCalendarDevicesCollection } from './use-provider-calendar-devices';
 import { useProviderWeatherDevicesCollection } from './use-provider-weather-devices';
 
-export const useAggregatedDevices = (): DeviceCollection => {
-  const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
+const EMPTY_SELECTED_PROVIDER_IDS: IntegrationProviderId[] = [];
+const EMPTY_DEVICE_COLLECTION = Object.freeze(mapNavetEntitiesToDeviceCollection([]));
+const EMPTY_DEVICE_COLLECTIONS: DeviceCollection[] = [];
+
+interface UseDevicesOptions {
+  enabled?: boolean;
+  includeFeatureCollections?: boolean;
+}
+
+export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollection => {
+  const enabled = options?.enabled ?? true;
+  const includeFeatureCollections = options?.includeFeatureCollections ?? true;
+  const selectedProviderIds = useIntegrationStore(
+    (state) =>
+      enabled ? integrationSelectors.selectedProviderIds(state) : EMPTY_SELECTED_PROVIDER_IDS,
+    areArraysEqual
   );
-  const calendars = useProviderCalendarDevicesCollection();
-  const weather = useProviderWeatherDevicesCollection();
+  const selectedProviderCollections = useIntegrationStore(
+    (state) =>
+      enabled
+        ? selectedProviderIds.map(
+            (providerId) =>
+              integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
+              EMPTY_DEVICE_COLLECTION
+          )
+        : EMPTY_DEVICE_COLLECTIONS,
+    (left, right) => areArraysEqual(left, right, Object.is)
+  );
+  const calendars = useProviderCalendarDevicesCollection(undefined, {
+    enabled: enabled && includeFeatureCollections,
+  });
+  const weather = useProviderWeatherDevicesCollection(undefined, {
+    enabled: enabled && includeFeatureCollections,
+  });
 
   return useMemo(() => {
-    const selectedEntities = Object.values(providerEntitiesByCanonicalId).filter((entity) =>
-      selectedProviderIds.includes(entity.providerId)
-    );
-    const collection = mapNavetEntitiesToDeviceCollection(selectedEntities);
+    if (!enabled) {
+      return {
+        ...EMPTY_DEVICE_COLLECTION,
+        calendars: [],
+        weather: [],
+      };
+    }
+
+    const collection =
+      selectedProviderCollections.length === 1
+        ? { ...selectedProviderCollections[0] }
+        : mergeDeviceCollections(...selectedProviderCollections);
 
     collection.calendars = calendars;
     collection.weather = weather;
 
     return collection;
-  }, [calendars, providerEntitiesByCanonicalId, selectedProviderIds, weather]);
+  }, [calendars, enabled, selectedProviderCollections, weather]);
 };
-export const useDevices = (): DeviceCollection => useAggregatedDevices();
+export const useDevices = (options?: UseDevicesOptions): DeviceCollection =>
+  useAggregatedDevices(options);
 export const useProviderDevices = (providerId: IntegrationProviderId): DeviceCollection => {
-  const devices = useAggregatedDevices();
-
-  return useMemo(
-    () => filterDeviceCollectionByProvider(devices, providerId),
-    [devices, providerId]
+  return useIntegrationStore(
+    (state) =>
+      integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
+      EMPTY_DEVICE_COLLECTION,
+    Object.is
   );
 };
+export const useProviderDeviceCollection = useProviderDevices;
+export const useProviderSensorCollection = (providerId: IntegrationProviderId) =>
+  useIntegrationStore(
+    (state) =>
+      (
+        integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
+        EMPTY_DEVICE_COLLECTION
+      ).sensors,
+    Object.is
+  );
 export const useCalendarDevicesCollection = () => useProviderCalendarDevicesCollection();
 export const useWeatherDevicesCollection = () => useProviderWeatherDevicesCollection();
 export const useProviderCalendarCollections = useProviderCalendarDevicesCollection;

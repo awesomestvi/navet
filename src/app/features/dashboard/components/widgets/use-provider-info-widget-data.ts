@@ -1,8 +1,7 @@
-import type { NavetEntity } from '@navet/core/types';
 import { useMemo } from 'react';
-import { mapNavetEntitiesToDeviceCollection } from '@/app/core/navet-device-collections';
 import { type AvailableSensor, inferSensorIcon, type SensorReading } from '@/app/features/sensors';
 import { useIntegrationStore } from '@/app/hooks';
+import { useProviderSensorCollection } from '@/app/hooks/use-devices';
 import { integrationSelectors } from '@/app/stores/selectors';
 import type { SensorDevice } from '@/app/types/device.types';
 import type { IntegrationProviderId } from '@/app/types/provider';
@@ -122,16 +121,13 @@ export function useProviderInfoWidgetData(
   _options: ProviderInfoWidgetDataOptions
 ): ProviderInfoWidgetDataResult {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
+  const providerId = useMemo(
+    () => resolveProviderIdForSensorSelection(sensorEntityIds, currentProviderId),
+    [currentProviderId, sensorEntityIds]
   );
+  const sensors = useProviderSensorCollection(providerId);
 
   return useMemo(() => {
-    const providerId = resolveProviderIdForSensorSelection(sensorEntityIds, currentProviderId);
-    const providerEntities = Object.values(providerEntitiesByCanonicalId).filter(
-      (entity): entity is NavetEntity => entity.providerId === providerId
-    );
-    const sensors = mapNavetEntitiesToDeviceCollection(providerEntities).sensors;
     const lookup = buildSensorLookup(sensors, providerId);
 
     const availableSensors = sensors
@@ -153,5 +149,5 @@ export function useProviderInfoWidgetData(
     });
 
     return { availableSensors, currentSensors };
-  }, [currentProviderId, providerEntitiesByCanonicalId, sensorEntityIds]);
+  }, [providerId, sensorEntityIds, sensors]);
 }

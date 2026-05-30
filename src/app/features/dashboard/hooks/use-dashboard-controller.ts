@@ -1,6 +1,11 @@
 import { startTransition, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { ALL_ROOMS_ID, HOME_WIDGET_ROOM, isAllRooms } from '@/app/constants/rooms';
+import {
+  ALL_ROOMS_ID,
+  ENERGY_WIDGET_ROOM,
+  HOME_WIDGET_ROOM,
+  isAllRooms,
+} from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
 import {
   useAggregatedRooms,
@@ -16,16 +21,22 @@ import {
 } from '@/app/hooks';
 import { useDevices } from '@/app/hooks/use-devices';
 import { isStandaloneMode } from '@/app/runtime/app-mode';
-import { providerRuntimeSelectors } from '@/app/stores/selectors';
-import type { DeviceWithType } from '@/app/types/device.types';
+import { providerRuntimeSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
+import type { DeviceCollection, DeviceWithType } from '@/app/types/device.types';
 import { buildAggregatedRooms } from '@/app/utils/provider-rooms';
 import type { AllViewGrouping } from '../all-view-grid';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
+import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
 import { useAvailableRooms } from './use-available-rooms';
 import { useCardOrdering } from './use-card-ordering';
 import { useCardZones } from './use-card-zones';
 import { useDashboardCardActions } from './use-dashboard-card-actions';
-import type { DashboardController } from './use-dashboard-controller.types';
+import type {
+  DashboardClimateSectionGroup,
+  DashboardController,
+  DashboardSectionData,
+} from './use-dashboard-controller.types';
 import { useDashboardDerivedState } from './use-dashboard-derived-state';
 import { useDashboardDevicesLoaded } from './use-dashboard-devices-loaded';
 import { useDashboardDialogs } from './use-dashboard-dialogs';
@@ -37,9 +48,39 @@ import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
 import { useOnboardingController } from './use-onboarding-controller';
 
+const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
+const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
+  {
+    key: 'hvac',
+    titleKey: 'sections.climate.hvac.title',
+    orderedIds: [],
+  },
+  {
+    key: 'temperature',
+    titleKey: 'sections.climate.temperature.title',
+    orderedIds: [],
+  },
+  {
+    key: 'humidity',
+    titleKey: 'sections.climate.humidity.title',
+    orderedIds: [],
+  },
+  {
+    key: 'airQuality',
+    titleKey: 'sections.climate.airQuality.title',
+    orderedIds: [],
+  },
+  {
+    key: 'pressure',
+    titleKey: 'sections.climate.pressure.title',
+    orderedIds: [],
+  },
+];
+
 export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   const { t } = useI18n();
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const currentProviderRuntime = useIntegrationStore(
     providerRuntimeSelectors.currentProviderRuntime
   );
@@ -61,7 +102,19 @@ export function useDashboardController(): DashboardController {
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
 
-  const allDevices = useDevices();
+  const homeLayoutCardIds = useHomeDashboardLayoutStore((state) => state.cardIds);
+  const isDeviceHeavySection =
+    DASHBOARD_DEVICE_SECTION_IDS.has(activeSection) ||
+    !['energy', 'media', 'security', 'settings', 'tasks'].includes(activeSection);
+  const shouldIncludeFeatureCollections =
+    !lowPowerMode ||
+    (activeSection === 'home' &&
+      homeLayoutCardIds.some(
+        (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')
+      ));
+  const allDevices = useDevices({
+    includeFeatureCollections: shouldIncludeFeatureCollections,
+  });
   const devices = useDashboardDevices(allDevices, hiddenEntityIds, shownSensorEntityIds);
   const countableDevices = useMemo(() => {
     const shownSensorIds = new Set(shownSensorEntityIds);
@@ -120,8 +173,10 @@ export function useDashboardController(): DashboardController {
   const { cardSizes, updateCardSize } = useCardState(devices);
   const { cardOrders } = useCardOrdering(devices, rooms, allCustomCards);
   const { cardZones, updateCardZone } = useCardZones();
-  const { deviceMap } = useDeviceMap(devices);
-  const { deviceMap: availableDeviceMap } = useDeviceMap(allDevices);
+  const { deviceMap } = useDeviceMap(isDeviceHeavySection ? devices : EMPTY_DEVICE_COLLECTION);
+  const { deviceMap: availableDeviceMap } = useDeviceMap(
+    isDeviceHeavySection ? allDevices : EMPTY_DEVICE_COLLECTION
+  );
 
   const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
   const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
@@ -134,12 +189,22 @@ export function useDashboardController(): DashboardController {
   const { addableEntityIds, allEntityIds, lightDeviceMap, lightRooms, orderedCardIds } =
     useDashboardDerivedState({
       activeRoom,
+      includeLightState: activeSection === 'lights',
+      includeOrderedCardIds: isDeviceHeavySection,
       availableDeviceMap,
       cardOrders,
       deviceMap,
       hiddenEntityIds,
       rooms,
     });
+  const sectionData = useDashboardSectionData({
+    activeSection,
+    allCustomCards,
+    availableDeviceMap,
+    cardOrders,
+    deviceMap,
+    hiddenEntityIds,
+  });
 
   const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
@@ -221,6 +286,7 @@ export function useDashboardController(): DashboardController {
     roomHiddenItemCounts,
     roomItemCounts,
     rooms,
+    sectionData,
     setActiveSection,
     updateCardSize,
     updateCardZone,
@@ -228,6 +294,189 @@ export function useDashboardController(): DashboardController {
     ...dialogs,
   };
 }
+
+function getClimateDashboardGroup(
+  device: DeviceWithType
+): DashboardClimateSectionGroup['key'] | null {
+  if (device.type === 'climate' || device.type === 'hvac') {
+    return 'hvac';
+  }
+
+  if (device.type !== 'sensors') {
+    return null;
+  }
+
+  switch (String(device.deviceClass ?? '').toLowerCase()) {
+    case 'temperature':
+      return 'temperature';
+    case 'humidity':
+      return 'humidity';
+    case 'air_quality':
+    case 'carbon_dioxide':
+      return 'airQuality';
+    case 'pressure':
+      return 'pressure';
+    default:
+      return null;
+  }
+}
+
+function useDashboardSectionData({
+  activeSection,
+  allCustomCards,
+  availableDeviceMap,
+  cardOrders,
+  deviceMap,
+  hiddenEntityIds,
+}: {
+  activeSection: DashboardController['activeSection'];
+  allCustomCards: DashboardController['allCustomCards'];
+  availableDeviceMap: DashboardController['availableDeviceMap'];
+  cardOrders: DashboardController['cardOrders'];
+  deviceMap: DashboardController['deviceMap'];
+  hiddenEntityIds: string[];
+}): DashboardSectionData {
+  const hiddenLightEntityIds = useMemo(
+    () =>
+      activeSection === 'lights'
+        ? hiddenEntityIds.filter((entityId) => availableDeviceMap.get(entityId)?.type === 'lights')
+        : [],
+    [activeSection, availableDeviceMap, hiddenEntityIds]
+  );
+  const allLightDeviceMap = useMemo(
+    () =>
+      activeSection === 'lights'
+        ? new Map(
+            Array.from(availableDeviceMap.entries()).filter(
+              ([, device]) => device.type === 'lights'
+            )
+          )
+        : new Map<string, DeviceWithType>(),
+    [activeSection, availableDeviceMap]
+  );
+  const climateDeviceMap = useMemo(
+    () =>
+      activeSection === 'climate'
+        ? new Map(
+            Array.from(deviceMap.entries()).filter(
+              ([, device]) => getClimateDashboardGroup(device) !== null
+            )
+          )
+        : new Map<string, DeviceWithType>(),
+    [activeSection, deviceMap]
+  );
+  const allClimateDeviceMap = useMemo(
+    () =>
+      activeSection === 'climate'
+        ? new Map(
+            Array.from(availableDeviceMap.entries()).filter(
+              ([, device]) => getClimateDashboardGroup(device) !== null
+            )
+          )
+        : new Map<string, DeviceWithType>(),
+    [activeSection, availableDeviceMap]
+  );
+  const hiddenClimateEntityIds = useMemo(
+    () =>
+      activeSection === 'climate'
+        ? Array.from(allClimateDeviceMap.keys()).filter(
+            (entityId) => !climateDeviceMap.has(entityId)
+          )
+        : [],
+    [activeSection, allClimateDeviceMap, climateDeviceMap]
+  );
+  const climateSections = useMemo(() => {
+    if (activeSection !== 'climate') {
+      return [];
+    }
+
+    const groupedIds: Record<DashboardClimateSectionGroup['key'], string[]> = {
+      hvac: [],
+      temperature: [],
+      humidity: [],
+      airQuality: [],
+      pressure: [],
+    };
+
+    climateDeviceMap.forEach((device) => {
+      const group = getClimateDashboardGroup(device);
+      if (group) {
+        groupedIds[group].push(device.id);
+      }
+    });
+
+    return CLIMATE_DASHBOARD_GROUPS.map((group) => ({
+      ...group,
+      orderedIds: groupedIds[group.key],
+    })).filter((group) => group.orderedIds.length > 0);
+  }, [activeSection, climateDeviceMap]);
+  const energyCustomCards = useMemo(
+    () => allCustomCards.filter((card) => card.room === ENERGY_WIDGET_ROOM),
+    [allCustomCards]
+  );
+  const energyOrderedCardIds = useMemo(
+    () =>
+      activeSection === 'energy'
+        ? (cardOrders[ENERGY_WIDGET_ROOM]?.filter((id) =>
+            energyCustomCards.some((card) => card.id === id)
+          ) ?? energyCustomCards.map((card) => card.id))
+        : [],
+    [activeSection, cardOrders, energyCustomCards]
+  );
+
+  return useMemo(
+    () => ({
+      isOverviewSection: ![
+        'security',
+        'energy',
+        'tasks',
+        'climate',
+        'lights',
+        'media',
+        'settings',
+      ].includes(activeSection),
+      energyCustomCards,
+      energyOrderedCardIds,
+      hiddenLightEntityIds,
+      allLightDeviceMap,
+      climateDeviceMap,
+      allClimateDeviceMap,
+      hiddenClimateEntityIds,
+      climateSections,
+    }),
+    [
+      activeSection,
+      allClimateDeviceMap,
+      allLightDeviceMap,
+      climateDeviceMap,
+      climateSections,
+      energyCustomCards,
+      energyOrderedCardIds,
+      hiddenClimateEntityIds,
+      hiddenLightEntityIds,
+    ]
+  );
+}
+
+const EMPTY_DEVICE_COLLECTION: DeviceCollection = {
+  lights: [],
+  fans: [],
+  hvac: [],
+  climate: [],
+  media: [],
+  weather: [],
+  switches: [],
+  helpers: [],
+  covers: [],
+  locks: [],
+  scenes: [],
+  persons: [],
+  sensors: [],
+  vacuums: [],
+  calendars: [],
+  cameras: [],
+  'grouped-sensors': [],
+};
 
 function usePersistedRoomOrder(availableRooms: string[], roomOrder: string[]) {
   return useMemo(() => {

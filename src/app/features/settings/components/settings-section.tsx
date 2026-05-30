@@ -1,10 +1,11 @@
-import { Hand, Info, Languages, LayoutGrid, Palette, Server } from 'lucide-react';
-import { startTransition, useState } from 'react';
+import { FlaskConical, Hand, Info, Languages, LayoutGrid, Palette, Server } from 'lucide-react';
+import { startTransition, useEffect } from 'react';
 import { TabList, TabPanel, Tabs, TabTrigger } from '@/app/components/primitives';
-import { useI18n } from '@/app/hooks';
+import { useI18n, usePersistedState } from '@/app/hooks';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsDashboardSection } from './settings-dashboard-section';
+import { SettingsExperimentalSection } from './settings-experimental-section';
 import { SettingsInteractionSection } from './settings-interaction-section';
 import { SettingsLocalizationSection } from './settings-localization-section';
 import { SettingsProjectSection } from './settings-project-section';
@@ -16,6 +17,7 @@ type SettingsTabId =
   | 'localization'
   | 'interaction'
   | 'dashboard'
+  | 'experimental'
   | 'system'
   | 'project';
 
@@ -23,19 +25,33 @@ interface SettingsSectionProps {
   hiddenTabs?: SettingsTabId[];
 }
 
+const SETTINGS_TAB_STORAGE_KEY = 'navet-settings-active-tab';
+
 export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
   const { t } = useI18n();
   const controller = useSettingsSectionController();
-  const [activeTab, setActiveTab] = useState<SettingsTabId>('appearance');
   const hiddenTabSet = new Set<string>(hiddenTabs);
   const navItems = [
     { id: 'appearance', label: t('settings.nav.appearance'), icon: Palette },
     { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
     { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
     { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
+    { id: 'experimental', label: t('settings.nav.experimental'), icon: FlaskConical },
     { id: 'system', label: t('settings.nav.system'), icon: Server },
     { id: 'project', label: t('settings.nav.project'), icon: Info },
   ].filter(({ id }) => !hiddenTabSet.has(id));
+  const fallbackTab = (navItems[0]?.id ?? 'appearance') as SettingsTabId;
+  const [persistedTab, setPersistedTab] = usePersistedState<SettingsTabId>(
+    SETTINGS_TAB_STORAGE_KEY,
+    fallbackTab
+  );
+  const activeTab = navItems.some(({ id }) => id === persistedTab) ? persistedTab : fallbackTab;
+
+  useEffect(() => {
+    if (activeTab !== persistedTab) {
+      setPersistedTab(activeTab);
+    }
+  }, [activeTab, persistedTab, setPersistedTab]);
 
   return (
     <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
@@ -44,10 +60,10 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
 
         <Tabs
           value={activeTab}
-          defaultValue="appearance"
+          defaultValue={activeTab}
           onValueChange={(value) => {
             startTransition(() => {
-              setActiveTab(value as typeof activeTab);
+              setPersistedTab(value as SettingsTabId);
             });
           }}
         >
@@ -76,6 +92,9 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
           </TabPanel>
           <TabPanel value="dashboard">
             <SettingsDashboardSection controller={controller} />
+          </TabPanel>
+          <TabPanel value="experimental">
+            <SettingsExperimentalSection controller={controller} />
           </TabPanel>
           {hiddenTabSet.has('system') ? null : (
             <TabPanel value="system">

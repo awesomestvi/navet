@@ -220,6 +220,7 @@ export function WeatherBackground({
 }) {
   const variant = getWeatherBackgroundVariant(condition);
   const isLarge = size === 'large';
+  const isMedium = size === 'medium';
 
   if (hasCustomTint) {
     return null;
@@ -229,16 +230,26 @@ export function WeatherBackground({
 
   if (variant === 'sunny') {
     const sunClassName = pickThemeValue(theme, {
-      light: isLarge ? 'right-[-8%] top-[-10%] h-56 w-56' : 'right-[-18%] top-[-28%] h-40 w-40',
+      light: isLarge
+        ? 'right-[-8%] top-[-10%] h-56 w-56'
+        : isMedium
+          ? 'right-[-16%] top-[-34%] h-40 w-40'
+          : 'right-[-18%] top-[-28%] h-40 w-40',
       glass: isLarge
         ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-70'
-        : 'right-[-18%] top-[-28%] h-40 w-40 opacity-70',
+        : isMedium
+          ? 'right-[-16%] top-[-34%] h-40 w-40 opacity-70'
+          : 'right-[-18%] top-[-28%] h-40 w-40 opacity-70',
       dark: isLarge
         ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-84'
-        : 'right-[-18%] top-[-28%] h-40 w-40 opacity-84',
+        : isMedium
+          ? 'right-[-16%] top-[-34%] h-40 w-40 opacity-84'
+          : 'right-[-18%] top-[-28%] h-40 w-40 opacity-84',
       black: isLarge
         ? 'right-[-8%] top-[-10%] h-56 w-56 opacity-72'
-        : 'right-[-18%] top-[-28%] h-40 w-40 opacity-72',
+        : isMedium
+          ? 'right-[-16%] top-[-34%] h-40 w-40 opacity-72'
+          : 'right-[-18%] top-[-28%] h-40 w-40 opacity-72',
     });
     const sunnySurface = getSunnyThemeSurface(theme);
     return (
@@ -247,12 +258,20 @@ export function WeatherBackground({
         <div className={`absolute rounded-full bg-[#ffd364]/95 ${sunClassName}`} />
         <div
           className={`absolute rounded-full border border-[#ffd975]/48 ${
-            isLarge ? 'right-[-2%] top-[-4%] h-44 w-44' : 'right-[-10%] top-[-18%] h-32 w-32'
+            isLarge
+              ? 'right-[-2%] top-[-4%] h-44 w-44'
+              : isMedium
+                ? 'right-[-8%] top-[-24%] h-32 w-32'
+                : 'right-[-10%] top-[-18%] h-32 w-32'
           }`}
         />
         <div
           className={`absolute rounded-full border border-[#ffd975]/28 ${
-            isLarge ? 'right-[-12%] top-[-14%] h-64 w-64' : 'right-[-22%] top-[-34%] h-48 w-48'
+            isLarge
+              ? 'right-[-12%] top-[-14%] h-64 w-64'
+              : isMedium
+                ? 'right-[-20%] top-[-40%] h-48 w-48'
+                : 'right-[-22%] top-[-34%] h-48 w-48'
           }`}
         />
         {sunnySurface.themeSurfaceClassName ? (

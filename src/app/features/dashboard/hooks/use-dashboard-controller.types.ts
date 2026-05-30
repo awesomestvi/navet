@@ -1,6 +1,7 @@
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import type { useCardState, useDeviceMap } from '@/app/hooks';
 import type { Section } from '@/app/navigation/sections';
+import type { DeviceWithType } from '@/app/types/device.types';
 import type { AllViewGrouping } from '../all-view-grid';
 import type { CardTemplate } from '../components/add-card-dialog';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -10,6 +11,29 @@ import type { useCardZones } from './use-card-zones';
 import type { DashboardDialogs } from './use-dashboard-dialogs';
 import type { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import type { OnboardingController } from './use-onboarding-controller';
+
+export interface DashboardClimateSectionGroup {
+  key: 'hvac' | 'temperature' | 'humidity' | 'airQuality' | 'pressure';
+  titleKey:
+    | 'sections.climate.hvac.title'
+    | 'sections.climate.temperature.title'
+    | 'sections.climate.humidity.title'
+    | 'sections.climate.airQuality.title'
+    | 'sections.climate.pressure.title';
+  orderedIds: string[];
+}
+
+export interface DashboardSectionData {
+  isOverviewSection: boolean;
+  energyCustomCards: CustomCard[];
+  energyOrderedCardIds: string[];
+  hiddenLightEntityIds: string[];
+  allLightDeviceMap: Map<string, DeviceWithType>;
+  climateDeviceMap: Map<string, DeviceWithType>;
+  allClimateDeviceMap: Map<string, DeviceWithType>;
+  hiddenClimateEntityIds: string[];
+  climateSections: DashboardClimateSectionGroup[];
+}
 
 export type DashboardController = OnboardingController &
   DashboardDialogs & {
@@ -64,6 +88,7 @@ export type DashboardController = OnboardingController &
     roomHiddenItemCounts: Map<string, number>;
     roomItemCounts: Map<string, number>;
     rooms: string[];
+    sectionData: DashboardSectionData;
     setActiveSection: (section: Section) => void;
     updateCardSize: ReturnType<typeof useCardState>['updateCardSize'];
     updateCardZone: (id: string, zone: ZoneName) => void;

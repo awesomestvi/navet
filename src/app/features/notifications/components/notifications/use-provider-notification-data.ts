@@ -19,11 +19,13 @@ const EMPTY_NOTIFICATION_DATA: ProviderNotificationData = {
   updateCandidates: [],
 };
 
-export function useProviderNotificationData(): ProviderNotificationData {
+export function useProviderNotificationData(options?: {
+  includeUpdates?: boolean;
+}): ProviderNotificationData {
   const supportsNotifications = useProviderFeature('notifications');
   const currentProviderRuntime = useIntegrationStore(integrationSelectors.currentProviderRuntime);
   const notificationSnapshot = useProviderNotificationSnapshot();
-  const updateCandidates = useProviderUpdateCandidates();
+  const updateCandidates = useProviderUpdateCandidates(options?.includeUpdates ?? true);
   const entitiesHydrated = currentProviderRuntime.entitiesHydrated;
 
   if (!supportsNotifications) {

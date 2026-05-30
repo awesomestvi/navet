@@ -41,6 +41,7 @@ export const itMessages = {
   'settings.nav.localization': 'Localizzazione',
   'settings.nav.interaction': 'Interazione',
   'settings.nav.dashboard': 'Dashboard',
+  'settings.nav.experimental': 'Sperimentale',
   'settings.nav.system': 'Sistema',
   'settings.nav.project': 'Progetto',
   'settings.appearance.sectionTitle': 'Aspetto',
@@ -104,18 +105,18 @@ export const itMessages = {
   'settings.dashboard.keepAwake.description':
     'Prova a impedire che gli schermi condivisi vadano in standby mentre Navet resta aperto.',
   'settings.dashboard.keepAwake.caveat':
-    'Sperimentale. Navet prova prima il wake lock del browser e poi passa all’audio silenzioso se serve.',
+    'Navet prova prima il wake lock del browser e poi passa all’audio silenzioso se serve.',
   'settings.dashboard.keepAwake.statusLabel': 'Stato del mantenimento attivo',
   'settings.dashboard.keepAwake.experimental': 'Sperimentale',
   'settings.dashboard.keepAwake.bestEffort':
-    'Solo best effort. Alcuni browser incorporati e schermi a basso consumo potrebbero comunque andare in standby o bloccare l’autoplay.',
+    'Solo best effort. Navet continuerà a riprovare, ma alcuni browser incorporati e schermi a basso consumo potrebbero comunque andare in standby o bloccare l’autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tocca per attivare l’audio di fallback',
   'settings.dashboard.keepAwake.activationHint':
-    'Alcuni dispositivi richiedono un primo tocco prima che l’audio silenzioso possa mantenere attivo lo schermo.',
+    'Navet riproverà al prossimo tocco in qualunque punto. Usa questo pulsante se vuoi attivarlo subito.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Attivo tramite wake lock del browser',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Attivo tramite fallback audio silenzioso',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'In attesa di un tocco per avviare l’audio di fallback',
+    'In attesa della prossima interazione per riavviare automaticamente l’audio di fallback',
   'settings.dashboard.keepAwake.status.blocked': 'Bloccato da questo browser o dispositivo',
   'settings.dashboard.keepAwake.status.unsupported':
     'Non supportato da questo browser o dispositivo',
@@ -170,6 +171,9 @@ export const itMessages = {
     'Include tema, layout, ordine stanze, ordine schede, stato entità nascoste, widget personalizzati e impostazioni preset luci. Esportazione e importazione usano YAML. URL di connessione e token sono esclusi intenzionalmente.',
   'settings.dashboard.backup.export': 'Esporta configurazione',
   'settings.dashboard.backup.import': 'Importa configurazione',
+  'settings.experimental.sectionTitle': 'Sperimentale',
+  'settings.experimental.sectionDescription':
+    'Funzionalità opzionali e comportamenti del dispositivo best-effort che si stanno ancora assestando tra browser e pannelli a parete.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Dettagli di connessione, gestione provider e azioni di ripristino per questo dispositivo Navet.',
@@ -191,7 +195,7 @@ export const itMessages = {
     'Controlla il provider attivo, aprilo direttamente o reimposta la connessione salvata.',
   'settings.system.connection.connectedTo': 'Connesso a',
   'settings.system.connection.notConnected': 'Non connesso',
-  'settings.system.connection.openHomeAssistant': 'Apri Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Apri',
   'settings.system.connection.reset': 'Reimposta connessione',
   'settings.system.providers.title': 'Provider',
   'settings.system.providers.description':

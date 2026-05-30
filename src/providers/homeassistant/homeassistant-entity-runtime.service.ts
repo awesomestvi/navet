@@ -9,6 +9,7 @@ import {
   homeAssistantService,
 } from '@/app/services/home-assistant.service';
 import { homeAssistantStore } from '@/app/stores/home-assistant-store';
+import { areDataEqual } from '@/app/utils/structural-equality';
 
 const EMPTY_HASS_ENTITY_REGISTRY: HomeAssistantEntityRegistryEntry[] = [];
 let cachedSourceEntities: HassEntities | null | undefined;
@@ -46,7 +47,7 @@ function areEquivalentEntitySnapshots(
       entity.state !== nextEntity.state ||
       entity.last_changed !== nextEntity.last_changed ||
       entity.last_updated !== nextEntity.last_updated ||
-      JSON.stringify(entity.attributes ?? {}) !== JSON.stringify(nextEntity.attributes ?? {})
+      !areDataEqual(entity.attributes ?? {}, nextEntity.attributes ?? {})
     ) {
       return false;
     }
@@ -203,11 +204,7 @@ function getStableHomeAssistantConfigSnapshot(): HassConfig | null {
     return cachedPlatformConfig;
   }
 
-  if (
-    cachedSourceConfig &&
-    config &&
-    JSON.stringify(cachedSourceConfig) === JSON.stringify(config)
-  ) {
+  if (cachedSourceConfig && config && areDataEqual(cachedSourceConfig, config)) {
     cachedSourceConfig = config;
     return cachedPlatformConfig;
   }
@@ -226,3 +223,12 @@ export const homeAssistantEntityRuntimeService: ProviderEntityRuntimeService = {
   getConfig: () => getStableHomeAssistantConfigSnapshot(),
   subscribeConfig: (listener) => subscribeHomeAssistantEvent('config', listener),
 };
+
+export function resetHomeAssistantEntityRuntimeServiceCachesForTests() {
+  cachedSourceEntities = undefined;
+  cachedPlatformEntities = null;
+  cachedSourceRegistry = null;
+  cachedPlatformRegistry = [];
+  cachedSourceConfig = null;
+  cachedPlatformConfig = null;
+}

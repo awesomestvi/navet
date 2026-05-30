@@ -5,11 +5,8 @@ import type { TranslateFn } from '@/app/hooks';
 import { useIntegrationStore } from '@/app/hooks/use-integration-store';
 import type { PlatformEntitySnapshotMap } from '@/app/platform/provider-feature-models';
 import { integrationSelectors } from '@/app/stores/selectors';
-import {
-  createProviderScopedId,
-  getProviderNativeId,
-  parseProviderScopedId,
-} from '@/app/utils/provider-ids';
+import { getProviderNativeId, parseProviderScopedId } from '@/app/utils/provider-ids';
+import { areRecordValuesEqual } from '@/app/utils/structural-equality';
 
 interface UseMediaGroupingParams {
   entityId: string;
@@ -27,11 +24,30 @@ export function useMediaGrouping({
   t,
 }: UseMediaGroupingParams) {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
-  );
   const nativeEntityId = getProviderNativeId(entityId);
   const resolvedProviderId = parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
+  const groupingCandidateIds = useMemo(
+    () =>
+      Object.values(entities ?? {})
+        .filter(
+          (entity): entity is NonNullable<typeof entity> =>
+            Boolean(entity) &&
+            entity.entityId.startsWith('media_player.') &&
+            entity.entityId !== nativeEntityId
+        )
+        .map((entity) => entity.entityId),
+    [entities, nativeEntityId]
+  );
+  const groupingEntitiesByEntityId = useIntegrationStore(
+    (state) =>
+      Object.fromEntries(
+        groupingCandidateIds.map((candidateId) => [
+          candidateId,
+          integrationSelectors.providerEntityByLookup(resolvedProviderId, candidateId)(state),
+        ])
+      ),
+    areRecordValuesEqual
+  );
 
   const availableGroupingPlayers = useMemo(
     () =>
@@ -43,10 +59,7 @@ export function useMediaGrouping({
             entity.entityId !== nativeEntityId
         )
         .filter((entity) => {
-          const providerEntity =
-            providerEntitiesByCanonicalId[
-              createProviderScopedId(resolvedProviderId, entity.entityId)
-            ];
+          const providerEntity = groupingEntitiesByEntityId[entity.entityId];
           return readNavetMediaState(providerEntity)?.supportsGrouping === true;
         })
         .map((entity) => ({
@@ -57,7 +70,7 @@ export function useMediaGrouping({
               : entity.entityId,
           isAttached: groupMembers.includes(entity.entityId),
         })),
-    [entities, groupMembers, nativeEntityId, providerEntitiesByCanonicalId, resolvedProviderId]
+    [entities, groupMembers, groupingEntitiesByEntityId, nativeEntityId]
   );
 
   const attachGroupMember = useCallback(

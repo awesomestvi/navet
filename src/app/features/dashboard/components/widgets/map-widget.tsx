@@ -1,10 +1,9 @@
-import 'leaflet/dist/leaflet.css';
 import { MapPin } from 'lucide-react';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { AttributionControl, Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { BaseCard } from '@/app/components/primitives';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
+import { RenderProfiler } from '@/app/components/shared/render-profiler';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { normalizeCustomCardTint } from '@/app/components/shared/theme/custom-card-tint-surface';
 import {
@@ -18,13 +17,17 @@ import { normalizeResourceUrl } from '@/app/services/integration-resource.servic
 import { settingsSelectors } from '@/app/stores/selectors';
 import { useSettingsStore } from '@/app/stores/settings-store';
 import { resolveEffectsQuality } from '@/app/utils/effects-quality';
-import { BoundsFitter } from './map-bounds-fitter';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
-import { buildMarkerIcon } from './map-marker-icon';
-import { getTileUrl, TILE_ATTRIBUTION } from './map-tiles';
+import { mapMarkersEqual } from './map-markers';
+import { getTileUrl } from './map-tiles';
 import type { MapMarker } from './map-types';
 import { useProviderMapMarkers } from './use-provider-map-markers';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
+
+const MapWidgetLive = lazy(async () => {
+  const module = await import('./map-widget-live');
+  return { default: module.MapWidgetLive };
+});
 
 export interface MapWidgetProps {
   size?: CardSize;
@@ -33,11 +36,23 @@ export interface MapWidgetProps {
 }
 
 function requestDeferredMapReady(callback: () => void) {
-  const timeoutId = window.setTimeout(callback, 650);
+  const timeoutId = window.setTimeout(callback, 1200);
 
   return () => {
     window.clearTimeout(timeoutId);
   };
+}
+
+function subscribeToMapInteraction(callback: () => void) {
+  const controller = new AbortController();
+  const options = { once: true, passive: true, signal: controller.signal } as const;
+  const handleInteraction = () => callback();
+
+  window.addEventListener('pointerdown', handleInteraction, options);
+  window.addEventListener('keydown', handleInteraction, { once: true, signal: controller.signal });
+  window.addEventListener('scroll', handleInteraction, options);
+
+  return () => controller.abort();
 }
 
 function MapPlaceholder({
@@ -46,12 +61,14 @@ function MapPlaceholder({
   baseSurface,
   cardShell,
   label,
+  onActivate,
 }: {
   markerCount: number;
   mapControlSurface: ReturnType<typeof getMapControlSurfaceTokens>;
   baseSurface: ReturnType<typeof getThemeSurfaceTokens>;
   cardShell: ReturnType<typeof getCardShellSurfaceTokens>;
   label: string;
+  onActivate?: () => void;
 }) {
   return (
     <div
@@ -60,6 +77,15 @@ function MapPlaceholder({
     >
       <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
       <span className={`text-xs ${baseSurface.textMuted}`}>{markerCount > 0 ? label : ''}</span>
+      {markerCount > 0 && onActivate ? (
+        <button
+          type="button"
+          onClick={onActivate}
+          className={`pointer-events-auto rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${mapControlSurface.attributionClassName} ${baseSurface.textSecondary}`}
+        >
+          Load live map
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -107,6 +133,8 @@ export const MapWidget = memo(function MapWidget({
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isMapDeferredReady, setIsMapDeferredReady] = useState(false);
+  const [isMapActivated, setIsMapActivated] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const mapFrameStyle = useMemo(
     () => ({
       borderColor:
@@ -120,20 +148,30 @@ export const MapWidget = memo(function MapWidget({
   const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
   const homeAssistantMarkers = useProviderMapMarkers();
   const markers = staticMarkers ?? homeAssistantMarkers;
-  const resolvedMarkers = useMemo(
-    () =>
-      markers.map((marker) => ({
-        ...marker,
-        entityPicture: marker.entityPicture
-          ? (normalizeResourceUrl(
-              getCompactHomeAssistantImageUrl(marker.entityPicture),
-              'home_assistant'
-            ) ?? undefined)
-          : undefined,
-      })),
-    [markers]
-  );
-  const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
+  const stableResolvedMarkersRef = useRef<MapMarker[]>([]);
+  const resolvedMarkers = useMemo(() => {
+    const nextMarkers = markers.map((marker) => ({
+      ...marker,
+      entityPicture: marker.entityPicture
+        ? (normalizeResourceUrl(
+            getCompactHomeAssistantImageUrl(marker.entityPicture),
+            'home_assistant'
+          ) ?? undefined)
+        : undefined,
+    }));
+
+    if (mapMarkersEqual(stableResolvedMarkersRef.current, nextMarkers)) {
+      return stableResolvedMarkersRef.current;
+    }
+
+    stableResolvedMarkersRef.current = nextMarkers;
+    return nextMarkers;
+  }, [markers]);
+  const shouldRenderLiveMap =
+    resolvedMarkers.length > 0 &&
+    isMapVisible &&
+    isMapDeferredReady &&
+    (isMapActivated || hasUserInteracted);
 
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
 
@@ -173,171 +211,120 @@ export const MapWidget = memo(function MapWidget({
     return requestDeferredMapReady(() => setIsMapDeferredReady(true));
   }, [isMapVisible, resolvedMarkers.length]);
 
+  useEffect(() => {
+    if (resolvedMarkers.length === 0 || hasUserInteracted) {
+      return;
+    }
+
+    return subscribeToMapInteraction(() => setHasUserInteracted(true));
+  }, [hasUserInteracted, resolvedMarkers.length]);
+
   return (
-    <BaseCard
-      size={size}
-      fullBleed
-      frameClassName={surface.outerFrameClassName}
-      style={mapFrameStyle}
-      disableDefaultSheen
-      contentClassName="h-full"
-    >
-      <div
-        ref={mapViewportRef}
-        className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
-        style={mapInnerStyle}
+    <RenderProfiler id={`MapWidget:${size}`}>
+      <BaseCard
+        size={size}
+        fullBleed
+        frameClassName={surface.outerFrameClassName}
+        style={mapFrameStyle}
+        disableDefaultSheen
+        contentClassName="h-full"
       >
-        {surface.glowStyle ? (
-          <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
-        ) : null}
-        {resolvedMarkers.length === 0 ? (
-          <div
-            className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
-          >
-            <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
-            <span className={`text-xs ${baseSurface.textMuted}`}>
-              {t('widgets.map.noTrackers')}
-            </span>
-          </div>
-        ) : shouldRenderLiveMap ? (
-          <MapContainer
-            center={defaultCenter}
-            zoom={4}
-            zoomControl={false}
-            attributionControl={false}
-            className="dashboard-map-widget h-full w-full"
-            scrollWheelZoom
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} detectRetina={false} />
-            {!isSmallCard ? <AttributionControl prefix={false} position="bottomleft" /> : null}
-            <BoundsFitter markers={resolvedMarkers} />
-            {resolvedMarkers.map((marker) => (
-              <Marker
-                key={marker.id}
-                position={[marker.latitude, marker.longitude]}
-                icon={buildMarkerIcon(marker, accentHex)}
+        <div
+          ref={mapViewportRef}
+          className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
+          style={mapInnerStyle}
+        >
+          {surface.glowStyle ? (
+            <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+          ) : null}
+          {resolvedMarkers.length === 0 ? (
+            <div
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
+            >
+              <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
+              <span className={`text-xs ${baseSurface.textMuted}`}>
+                {t('widgets.map.noTrackers')}
+              </span>
+            </div>
+          ) : shouldRenderLiveMap ? (
+            <Suspense
+              fallback={
+                <MapPlaceholder
+                  markerCount={resolvedMarkers.length}
+                  mapControlSurface={mapControlSurface}
+                  baseSurface={baseSurface}
+                  cardShell={cardShell}
+                  label={t('widgets.map.title')}
+                />
+              }
+            >
+              <MapWidgetLive
+                accentHex={accentHex}
+                defaultCenter={defaultCenter}
+                isSmallCard={isSmallCard}
+                mapWidgetSurface={mapWidgetSurface}
+                markers={resolvedMarkers}
+                shouldReduceMapEffects={shouldReduceMapEffects}
+                theme={theme}
+                tileUrl={tileUrl}
+              />
+            </Suspense>
+          ) : (
+            <MapPlaceholder
+              markerCount={resolvedMarkers.length}
+              mapControlSurface={mapControlSurface}
+              baseSurface={baseSurface}
+              cardShell={cardShell}
+              label={t('widgets.map.title')}
+              onActivate={() => setIsMapActivated(true)}
+            />
+          )}
+          {shouldRenderLiveMap && surface.overlayClassName ? (
+            <div
+              className={`pointer-events-none absolute inset-0 z-[350] ${surface.overlayClassName}`}
+            />
+          ) : null}
+          {shouldRenderLiveMap && baseSurface.lightOverlay ? (
+            <div
+              className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
+            />
+          ) : null}
+          {shouldRenderLiveMap && mapWidgetSurface.lightOverlayBg ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-[352]"
+              style={{ background: mapWidgetSurface.lightOverlayBg }}
+            />
+          ) : null}
+
+          {isSmallCard ? (
+            <div
+              className={`pointer-events-auto absolute z-[450] border ${mapControlSurface.smallAttributionClassName} ${mapControlSurface.attributionClassName}`}
+            >
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noreferrer"
+                className={baseSurface.textSecondary}
+                aria-label="OpenStreetMap copyright"
+                title="OpenStreetMap contributors"
               >
-                <Popup>
-                  <div style={{ minWidth: 120 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 2 }}>{marker.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.7, textTransform: 'capitalize' }}>
-                      {marker.state}
-                    </div>
-                    {typeof marker.gpsAccuracy === 'number' && (
-                      <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2 }}>
-                        ±{marker.gpsAccuracy} m
-                      </div>
-                    )}
-                  </div>
-                </Popup>
-                {typeof marker.gpsAccuracy === 'number' && marker.gpsAccuracy > 0 && (
-                  <Circle
-                    center={[marker.latitude, marker.longitude]}
-                    radius={marker.gpsAccuracy}
-                    pathOptions={{
-                      color: accentHex,
-                      fillColor: accentHex,
-                      fillOpacity: 0.08,
-                      weight: 1,
-                    }}
-                  />
-                )}
-              </Marker>
-            ))}
-          </MapContainer>
-        ) : (
-          <MapPlaceholder
-            markerCount={resolvedMarkers.length}
-            mapControlSurface={mapControlSurface}
-            baseSurface={baseSurface}
-            cardShell={cardShell}
-            label={t('widgets.map.title')}
-          />
-        )}
-        {shouldRenderLiveMap && surface.overlayClassName ? (
-          <div
-            className={`pointer-events-none absolute inset-0 z-[350] ${surface.overlayClassName}`}
-          />
-        ) : null}
-        {shouldRenderLiveMap && baseSurface.lightOverlay ? (
-          <div
-            className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
-          />
-        ) : null}
-        {shouldRenderLiveMap && mapWidgetSurface.lightOverlayBg ? (
-          <div
-            className="pointer-events-none absolute inset-0 z-[352]"
-            style={{ background: mapWidgetSurface.lightOverlayBg }}
-          />
-        ) : null}
-
-        {isSmallCard ? (
-          <div
-            className={`pointer-events-auto absolute z-[450] border ${mapControlSurface.smallAttributionClassName} ${mapControlSurface.attributionClassName}`}
-          >
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noreferrer"
-              className={baseSurface.textSecondary}
-              aria-label="OpenStreetMap copyright"
-              title="OpenStreetMap contributors"
-            >
-              OSM
-            </a>{' '}
-            <span className={`mx-1 ${baseSurface.textMuted}`}>|</span>
-            <a
-              href="https://carto.com/attributions"
-              target="_blank"
-              rel="noreferrer"
-              className={baseSurface.textSecondary}
-              aria-label="CARTO attributions"
-              title="CARTO attributions"
-            >
-              CARTO
-            </a>
-          </div>
-        ) : null}
-      </div>
-
-      <style>{`
-        .dashboard-map-widget,
-        .dashboard-map-widget.leaflet-container {
-          border-radius: inherit;
-          background: transparent;
-        }
-
-        .dashboard-map-widget .leaflet-tile-pane {
-          opacity: ${mapWidgetSurface.tileOpacity};
-          filter: ${mapWidgetSurface.tileFilter};
-        }
-
-        .dashboard-map-widget .leaflet-control-attribution {
-          margin: 8px;
-          border-radius: 12px 12px 12px 20px;
-          padding: 3px 8px;
-          font-size: 10px;
-          line-height: 1.15;
-          background: ${mapWidgetSurface.attributionBg};
-          color: ${mapWidgetSurface.attributionText};
-          border: 1px solid ${mapWidgetSurface.attributionBorder};
-          backdrop-filter: ${theme === 'light' || shouldReduceMapEffects ? 'none' : 'blur(16px)'};
-        }
-
-        .dashboard-map-widget .leaflet-control-attribution a {
-          color: inherit;
-        }
-
-        .dashboard-map-widget .leaflet-popup-content-wrapper,
-        .dashboard-map-widget .leaflet-popup-tip {
-          background: ${mapWidgetSurface.popupBg};
-          color: ${mapWidgetSurface.popupText};
-          border: 1px solid ${mapWidgetSurface.popupBorder};
-          box-shadow: ${mapWidgetSurface.popupShadow};
-          backdrop-filter: ${shouldReduceMapEffects ? 'none' : 'blur(16px)'};
-        }
-      `}</style>
-    </BaseCard>
+                OSM
+              </a>{' '}
+              <span className={`mx-1 ${baseSurface.textMuted}`}>|</span>
+              <a
+                href="https://carto.com/attributions"
+                target="_blank"
+                rel="noreferrer"
+                className={baseSurface.textSecondary}
+                aria-label="CARTO attributions"
+                title="CARTO attributions"
+              >
+                CARTO
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </BaseCard>
+    </RenderProfiler>
   );
 });

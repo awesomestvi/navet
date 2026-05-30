@@ -36,8 +36,15 @@ export function formatDaylight(sunrise: unknown, sunset: unknown): string {
   const sunriseDate = new Date(sunrise);
   const sunsetDate = new Date(sunset);
   if (Number.isNaN(sunriseDate.getTime()) || Number.isNaN(sunsetDate.getTime())) return '--';
-  const diffMs = Math.max(0, sunsetDate.getTime() - sunriseDate.getTime());
-  const hours = Math.floor(diffMs / 3_600_000);
-  const minutes = Math.round((diffMs % 3_600_000) / 60_000);
+
+  const sunriseMinutes = sunriseDate.getHours() * 60 + sunriseDate.getMinutes();
+  const sunsetMinutes = sunsetDate.getHours() * 60 + sunsetDate.getMinutes();
+  const diffMinutes =
+    sunsetMinutes >= sunriseMinutes
+      ? sunsetMinutes - sunriseMinutes
+      : 24 * 60 - sunriseMinutes + sunsetMinutes;
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
   return `${hours} h ${minutes} m`;
 }

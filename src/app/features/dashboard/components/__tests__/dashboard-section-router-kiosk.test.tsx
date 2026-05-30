@@ -9,6 +9,8 @@ import { renderWithProviders } from '@/test/render';
 import { resetAppStores } from '@/test/store-reset';
 import { DashboardSectionRouter } from '../dashboard-section-router';
 
+let allViewGridRenderCount = 0;
+
 vi.mock('@/app/components/layout/room-nav', () => ({
   RoomNav: () => <nav data-testid="room-nav">Room nav</nav>,
 }));
@@ -23,24 +25,32 @@ vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: () => <main>Home dashboard</main>,
 }));
 
+vi.mock('@/app/features/dashboard/all-view-grid', () => ({
+  AllViewGrid: () => {
+    allViewGridRenderCount += 1;
+    return <div>All view grid</div>;
+  },
+}));
+
 describe('DashboardSectionRouter kiosk mode', () => {
   beforeEach(async () => {
     await resetAppStores();
+    allViewGridRenderCount = 0;
   });
 
-  it('renders RoomNav outside kiosk mode', () => {
+  it('renders RoomNav outside kiosk mode', async () => {
     renderWithProviders(<DashboardSectionRouter controller={createController()} />);
 
-    expect(screen.getByText('Home dashboard')).toBeInTheDocument();
+    expect(await screen.findByText('Home dashboard')).toBeInTheDocument();
     expect(screen.getByTestId('room-nav')).toBeInTheDocument();
   });
 
-  it('omits RoomNav in kiosk mode', () => {
+  it('omits RoomNav in kiosk mode', async () => {
     useSettingsStore.getState().updateSettings({ kioskMode: true });
 
     renderWithProviders(<DashboardSectionRouter controller={createController()} />);
 
-    expect(screen.getByText('Home dashboard')).toBeInTheDocument();
+    expect(await screen.findByText('Home dashboard')).toBeInTheDocument();
     expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
   });
 
@@ -78,6 +88,23 @@ describe('DashboardSectionRouter kiosk mode', () => {
       [kitchenHumidity.id, kitchenHumidity],
     ]);
     controller.availableDeviceMap = controller.deviceMap;
+    controller.sectionData = {
+      ...controller.sectionData,
+      climateDeviceMap: controller.deviceMap,
+      allClimateDeviceMap: controller.deviceMap,
+      climateSections: [
+        {
+          key: 'hvac',
+          titleKey: 'sections.climate.hvac.title',
+          orderedIds: [livingRoomClimate.id],
+        },
+        {
+          key: 'humidity',
+          titleKey: 'sections.climate.humidity.title',
+          orderedIds: [kitchenHumidity.id],
+        },
+      ],
+    };
     controller.cardOrders = {
       'Living Room': [livingRoomClimate.id],
       Kitchen: [kitchenHumidity.id],
@@ -89,6 +116,52 @@ describe('DashboardSectionRouter kiosk mode', () => {
     expect(screen.getByRole('heading', { name: 'Thermostats & HVAC' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();
+  });
+
+  it('does not rerender the lights section for unrelated home-layout controller churn', () => {
+    const controller = createController();
+    const light = createDevice({
+      id: 'light.kitchen',
+      name: 'Kitchen Light',
+      room: 'Kitchen',
+      type: 'lights',
+    });
+
+    controller.activeSection = 'lights';
+    controller.lightDeviceMap = new Map([[light.id, light]]);
+    controller.lightRooms = ['Kitchen'];
+    controller.availableDeviceMap = new Map([[light.id, light]]);
+    controller.sectionData = {
+      ...controller.sectionData,
+      allLightDeviceMap: controller.availableDeviceMap,
+    };
+    controller.cardOrders = { Kitchen: [light.id] };
+
+    const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(allViewGridRenderCount).toBe(1);
+
+    const nextController = {
+      ...controller,
+      homeLayout: {
+        ...controller.homeLayout,
+        cardIds: ['custom-home-card'],
+      },
+      allCustomCards: [
+        {
+          id: 'custom-home-card',
+          room: 'home',
+          type: 'note',
+          size: 'medium',
+          title: 'Home note',
+          createdAt: 1,
+        } as DashboardController['allCustomCards'][number],
+      ],
+    };
+
+    rerender(<DashboardSectionRouter controller={nextController} />);
+
+    expect(allViewGridRenderCount).toBe(1);
   });
 });
 
@@ -170,6 +243,17 @@ function createController(): DashboardController {
     roomHiddenItemCounts: new Map(),
     roomItemCounts: new Map(),
     rooms: [ALL_ROOMS_ID, 'Kitchen'],
+    sectionData: {
+      isOverviewSection: true,
+      energyCustomCards: [],
+      energyOrderedCardIds: [],
+      hiddenLightEntityIds: [],
+      allLightDeviceMap: new Map(),
+      climateDeviceMap: new Map(),
+      allClimateDeviceMap: new Map(),
+      hiddenClimateEntityIds: [],
+      climateSections: [],
+    },
     selectedCardType: null,
     selectedDevice: null,
     setActiveSection: vi.fn(),

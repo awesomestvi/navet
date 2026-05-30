@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0 - 2026-05-30
+
+## New
+
+- Settings now include a dedicated experimental section for keep-device-awake controls and clearer provider connection cards in System.
+
+## Fixed
+
+- Home dashboard cards backed by weather and calendar devices no longer disappear unexpectedly during dashboard use.
+- Shared dashboard snapshots, Home Assistant entity runtime updates, and resource-backed cards restore more consistently after provider changes.
+
+## Improved
+
+- Light and climate sections now group devices more clearly, while dashboard loading avoids unnecessary heavy device work on wall panels and low-power displays.
+- Map widgets now defer their heavier loading work so dashboards become interactive sooner.
+- Map widgets, notifications, update candidates, and media grouping behave more predictably when provider data changes.
+
 ## 0.3.1 - 2026-05-30
 
 ## New

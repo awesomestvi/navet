@@ -6,7 +6,9 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 
 [Live demo](https://awesomestvi.github.io/navet/demo/) ·
 [Storybook](https://awesomestvi.github.io/navet/storybook/) ·
-[Security notes](docs/PUBLIC_LAUNCH_SECURITY.md)
+[Security notes](docs/PUBLIC_LAUNCH_SECURITY.md) ·
+[Security policy](SECURITY.md) ·
+[Code of conduct](CODE_OF_CONDUCT.md)
 
 ## Supported Platforms
 
@@ -61,85 +63,23 @@ options yet.
 - custom widgets including info, RSS, photo, note, battery, UPS, energy-now, button, and map
 - themes, localization, PWA install support, and persistence for standalone and add-on deployments
 
-## Install And Run
+## How To Get Started
 
-### Home Assistant Custom Panel
+Choose your platform first, then open the matching setup guide:
 
-This is the recommended Home Assistant-native path.
+### Home Assistant
 
-1. In HACS, add `https://github.com/awesomestvi/navet` as a custom repository with category
-   `Integration`.
-2. Install `Navet`.
-3. Restart Home Assistant.
-4. Add the `Navet` integration from `Settings -> Devices & services`.
-5. Open Navet from the Home Assistant sidebar.
+- [Home Assistant Custom Panel](docs/DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-custom-panel)
+- [Home Assistant Add-on](docs/DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-add-on)
+- [Standalone Docker](docs/DOCKER_HOME_ASSISTANT_ADDON.md#standalone-docker)
 
-Behavior:
+### Homey
 
-- served by Home Assistant at `/navet`
-- uses the existing Home Assistant frontend session
-- does not show a separate Navet login screen
+- [Standalone Docker](docs/HOMEY.md)
 
-### Home Assistant Add-on
+### openHAB
 
-Use the add-on when you want Navet packaged and managed inside Home Assistant through Ingress.
-
-1. Add `https://github.com/awesomestvi/navet` to the Home Assistant add-on store.
-2. Install `Navet`.
-3. Optionally set `dashboard_config_url` to preload a dashboard config on first launch.
-4. Start the add-on and open Navet from the sidebar.
-
-Behavior:
-
-- uses the Home Assistant frontend session through Ingress
-- keeps the direct host port disabled by default
-- uses OAuth only when opened outside Ingress through an optional direct port
-
-### Standalone Docker
-
-For standalone deployments:
-
-```yaml
-services:
-  navet:
-    image: ghcr.io/awesomestvi/navet:latest
-    container_name: navet
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - navet-data:/data
-
-volumes:
-  navet-data:
-```
-
-Start it:
-
-```bash
-docker compose up -d
-```
-
-Then open `http://localhost:8080`.
-
-Standalone behavior:
-
-- Home Assistant uses OAuth
-- Homey uses its own standalone OAuth flow
-- openHAB uses a URL-session flow
-- auth and profile state are stored through same-origin runtime endpoints under `/data`
-
-To enable Homey login:
-
-```yaml
-services:
-  navet:
-    environment:
-      NAVET_HOMEY_CLIENT_ID: your-athom-client-id
-      NAVET_HOMEY_CLIENT_SECRET: your-athom-client-secret
-```
-
-Set `NAVET_HOMEY_REDIRECT_URI` only if Navet cannot infer the public callback URL correctly.
+- [Standalone Docker](docs/OPENHAB.md)
 
 ## Returning Users
 
@@ -226,6 +166,8 @@ Start with [docs/README.md](docs/README.md).
 Useful entry points:
 
 - [docs/DOCKER_HOME_ASSISTANT_ADDON.md](docs/DOCKER_HOME_ASSISTANT_ADDON.md)
+- [docs/HOMEY.md](docs/HOMEY.md)
+- [docs/OPENHAB.md](docs/OPENHAB.md)
 - [docs/WIDGETS.md](docs/WIDGETS.md)
 - [docs/PUBLIC_LAUNCH_SECURITY.md](docs/PUBLIC_LAUNCH_SECURITY.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)

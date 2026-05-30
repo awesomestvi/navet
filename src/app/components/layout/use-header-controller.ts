@@ -2,27 +2,37 @@ import { useMemo, useRef, useState } from 'react';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { readNavetPersonState } from '@/app/core/navet-device-state';
-import { useProviderNotifications } from '@/app/features/notifications';
+import { useNotificationBadgeCount } from '@/app/features/notifications/components/notifications/use-notification-badge-count';
 import { useI18n, useIntegrationStore, useProviderResource, useTheme } from '@/app/hooks';
-import { integrationSelectors } from '@/app/stores/selectors';
+import { integrationSelectors, settingsSelectors } from '@/app/stores/selectors';
+import { useSettingsStore } from '@/app/stores/settings-store';
+import type { PersonDevice } from '@/app/types/device.types';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
 export type HeaderController = ReturnType<typeof useHeaderController>;
+const EMPTY_PERSON_DEVICES: PersonDevice[] = [];
 
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    integrationSelectors.providerEntitiesByCanonicalId
-  );
   const user = useIntegrationStore(integrationSelectors.currentUser);
+  const shouldResolveAvatarFromProvider = !lowPowerMode && !user?.avatarUrl;
+  const providerPersons = useIntegrationStore(
+    (state) =>
+      shouldResolveAvatarFromProvider
+        ? (integrationSelectors.providerDeviceCollectionById(currentProviderId)(state)?.persons ??
+          EMPTY_PERSON_DEVICES)
+        : EMPTY_PERSON_DEVICES,
+    Object.is
+  );
   const [isMobileUtilityOpen, setIsMobileUtilityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
-  const { unreadCount } = useProviderNotifications();
+  const unreadCount = useNotificationBadgeCount({ includeUpdates: !lowPowerMode });
   const { t } = useI18n();
 
   const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();
@@ -49,22 +59,31 @@ export function useHeaderController() {
     return fullName.split(/\s+/)[0];
   }, [t, user?.name]);
 
-  const matchedPersonEntity = useMemo(() => {
+  const matchedPersonCanonicalId = useMemo(() => {
+    if (lowPowerMode || user?.avatarUrl) {
+      return null;
+    }
+
     const normalizedUserName = user?.name?.trim().toLowerCase();
     if (!normalizedUserName) {
       return null;
     }
 
     return (
-      Object.values(providerEntitiesByCanonicalId).find((entity) => {
-        if (entity.providerId !== currentProviderId || entity.type !== 'person') {
-          return false;
-        }
-
-        return entity.name.trim().toLowerCase() === normalizedUserName;
-      }) ?? null
+      providerPersons.find((person) => person.name.trim().toLowerCase() === normalizedUserName)
+        ?.canonicalId ?? null
     );
-  }, [currentProviderId, providerEntitiesByCanonicalId, user?.name]);
+  }, [lowPowerMode, providerPersons, user?.avatarUrl, user?.name]);
+  const matchedPersonEntity = useIntegrationStore(
+    (state) =>
+      matchedPersonCanonicalId
+        ? integrationSelectors.providerEntityByLookup(
+            currentProviderId,
+            matchedPersonCanonicalId
+          )(state)
+        : null,
+    Object.is
+  );
 
   const matchedPersonState = readNavetPersonState(matchedPersonEntity);
   const avatarRequestKey = [

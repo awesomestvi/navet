@@ -29,6 +29,7 @@ export const ptMessages = {
   'settings.nav.localization': 'Localização',
   'settings.nav.interaction': 'Interação',
   'settings.nav.dashboard': 'Dashboard',
+  'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
   'settings.nav.project': 'Projeto',
   'settings.appearance.sectionTitle': 'Aparência',
@@ -92,18 +93,18 @@ export const ptMessages = {
   'settings.dashboard.keepAwake.description':
     'Tenta impedir que telas compartilhadas entrem em repouso enquanto o Navet permanece aberto.',
   'settings.dashboard.keepAwake.caveat':
-    'Experimental. O Navet tenta primeiro o wake lock do navegador e depois usa áudio silencioso se necessário.',
+    'O Navet tenta primeiro o wake lock do navegador e depois usa áudio silencioso se necessário.',
   'settings.dashboard.keepAwake.statusLabel': 'Status de tela acordada',
   'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
-    'Funciona apenas em best effort. Alguns navegadores embutidos e telas de baixo consumo ainda podem dormir ou bloquear autoplay.',
+    'Funciona apenas em best effort. O Navet continuará tentando, mas alguns navegadores embutidos e telas de baixo consumo ainda podem dormir ou bloquear autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Toque para ativar o áudio de fallback',
   'settings.dashboard.keepAwake.activationHint':
-    'Alguns dispositivos exigem um primeiro toque antes que o áudio silencioso possa manter a tela acordada.',
+    'O Navet tentará novamente no próximo toque em qualquer lugar. Use este botão se quiser acionar isso imediatamente.',
   'settings.dashboard.keepAwake.status.wake-lock': 'Ativo via wake lock do navegador',
   'settings.dashboard.keepAwake.status.audio-fallback': 'Ativo via fallback de áudio silencioso',
   'settings.dashboard.keepAwake.status.pending-activation':
-    'Aguardando um toque para iniciar o áudio de fallback',
+    'Aguardando a próxima interação para reiniciar o áudio de fallback automaticamente',
   'settings.dashboard.keepAwake.status.blocked': 'Bloqueado por este navegador ou dispositivo',
   'settings.dashboard.keepAwake.status.unsupported': 'Sem suporte neste navegador ou dispositivo',
   'settings.dashboard.entityVisibility.title': 'Visibilidade das entidades',
@@ -158,6 +159,9 @@ export const ptMessages = {
     'Inclui tema, layout, ordem dos cômodos, ordem dos cards, estado de entidades ocultas, widgets personalizados e predefinições de luz. Exportação e importação usam YAML. URL de conexão e token são deixados de fora propositalmente.',
   'settings.dashboard.backup.export': 'Exportar configuração',
   'settings.dashboard.backup.import': 'Importar configuração',
+  'settings.experimental.sectionTitle': 'Experimental',
+  'settings.experimental.sectionDescription':
+    'Recursos opcionais e comportamentos do dispositivo em melhor esforço que ainda estão se ajustando entre navegadores e painéis de parede.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Detalhes da conexão, gerenciamento de provedores e ações de recuperação para este dispositivo Navet.',
@@ -179,7 +183,7 @@ export const ptMessages = {
     'Revise o provedor ativo, abra-o diretamente ou redefina a conexão salva.',
   'settings.system.connection.connectedTo': 'Conectado a',
   'settings.system.connection.notConnected': 'Não conectado',
-  'settings.system.connection.openHomeAssistant': 'Abrir o Home Assistant',
+  'settings.system.connection.openHomeAssistant': 'Abrir',
   'settings.system.connection.reset': 'Redefinir conexão',
   'settings.system.providers.title': 'Provedores',
   'settings.system.providers.description':

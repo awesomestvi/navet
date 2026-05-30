@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { SUN_ENTITY_ID, WEATHER_FORECAST_REFRESH_INTERVAL } from '@/app/constants';
 import { mapWeatherDevice } from '@/app/hooks/device-mappers';
 import { useI18n } from '@/app/i18n';
@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/app/stores/settings-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
+import { areDataEqual } from '@/app/utils/structural-equality';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useProviderEntityRegistryEntries,
@@ -60,14 +61,17 @@ function resolveEntityRoom(
 }
 
 export function useProviderWeatherDevices(
-  providerId?: IntegrationProviderId
+  providerId?: IntegrationProviderId,
+  options?: { enabled?: boolean }
 ): PlatformWeatherDevice[] {
+  const enabled = options?.enabled ?? true;
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
-  const supportsWeather = useProviderFeature('weather', resolvedProviderId);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    (state) => state.providerEntitiesByCanonicalId
+  const providerRuntime = useIntegrationStore(
+    (state) =>
+      state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
   );
+  const supportsWeather = useProviderFeature('weather', resolvedProviderId) && enabled;
   const entities = useProviderEntitySnapshots({
     providerId: resolvedProviderId,
     enabled: supportsWeather,
@@ -94,6 +98,7 @@ export function useProviderWeatherDevices(
   );
   const [weatherForecasts, setWeatherForecasts] = useState<WeatherForecastState>({});
   const deferredWeatherForecasts = useDeferredValue(weatherForecasts);
+  const lastResolvedDevicesRef = useRef<PlatformWeatherDevice[]>(EMPTY_WEATHER_DEVICES);
 
   useEffect(() => {
     if (!supportsWeather || !primaryWeatherEntityId) {
@@ -116,10 +121,17 @@ export function useProviderWeatherDevices(
 
         if (!cancelled) {
           startTransition(() => {
-            setWeatherForecasts((prev) => ({
-              ...prev,
-              [primaryWeatherEntityId]: { daily, hourly },
-            }));
+            setWeatherForecasts((prev) => {
+              const nextEntry = { daily, hourly };
+              if (areDataEqual(prev[primaryWeatherEntityId], nextEntry)) {
+                return prev;
+              }
+
+              return {
+                ...prev,
+                [primaryWeatherEntityId]: nextEntry,
+              };
+            });
           });
         }
       } catch {
@@ -145,7 +157,7 @@ export function useProviderWeatherDevices(
     };
   }, [resolvedProviderId, primaryWeatherEntityId, supportsWeather]);
 
-  return useMemo(() => {
+  const resolvedDevices = useMemo(() => {
     if (!entities || !primaryWeatherEntityId) {
       return EMPTY_WEATHER_DEVICES;
     }
@@ -158,18 +170,14 @@ export function useProviderWeatherDevices(
     const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
     return [
       mapWeatherDevice(
-        primaryWeatherEntityId,
+        scopedEntityId,
         weatherEntity,
         resolveEntityName(
           primaryWeatherEntityId,
           weatherEntity,
           entityRegistryMap.get(primaryWeatherEntityId)?.name
         ),
-        resolveEntityRoom(
-          scopedEntityId,
-          weatherEntity,
-          providerEntitiesByCanonicalId[scopedEntityId]?.room
-        ),
+        resolveEntityRoom(scopedEntityId, weatherEntity, undefined),
         {
           sunEntity: entities[SUN_ENTITY_ID],
           config: null,
@@ -188,11 +196,42 @@ export function useProviderWeatherDevices(
     entityRegistryMap,
     locale,
     primaryWeatherEntityId,
-    providerEntitiesByCanonicalId,
     t,
     use24HourTime,
     weatherForecastMode,
   ]);
+
+  useEffect(() => {
+    if (resolvedDevices.length > 0) {
+      lastResolvedDevicesRef.current = resolvedDevices;
+      return;
+    }
+
+    if (!supportsWeather) {
+      lastResolvedDevicesRef.current = EMPTY_WEATHER_DEVICES;
+      return;
+    }
+
+    if (providerRuntime.entitiesHydrated) {
+      lastResolvedDevicesRef.current = EMPTY_WEATHER_DEVICES;
+    }
+  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsWeather]);
+
+  return useMemo(() => {
+    if (resolvedDevices.length > 0) {
+      return resolvedDevices;
+    }
+
+    if (!supportsWeather) {
+      return EMPTY_WEATHER_DEVICES;
+    }
+
+    if (!providerRuntime.entitiesHydrated) {
+      return lastResolvedDevicesRef.current;
+    }
+
+    return EMPTY_WEATHER_DEVICES;
+  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsWeather]);
 }
 
 export const useProviderWeatherDevicesCollection = useProviderWeatherDevices;

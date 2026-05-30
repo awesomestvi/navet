@@ -8,10 +8,14 @@ import {
 } from '../use-keep-device-awake';
 
 interface AudioMock {
+  addEventListener: EventTarget['addEventListener'];
+  removeEventListener: EventTarget['removeEventListener'];
+  dispatchEvent: EventTarget['dispatchEvent'];
   play: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
   currentTime: number;
   loop: boolean;
+  paused: boolean;
   preload: string;
   playsInline: boolean;
   crossOrigin: string | null;
@@ -26,16 +30,22 @@ function setVisibilityState(state: DocumentVisibilityState) {
 }
 
 function createAudioMock() {
-  return {
-    play: vi.fn().mockResolvedValue(undefined),
-    pause: vi.fn(),
-    currentTime: 0,
-    loop: false,
-    preload: 'none',
-    playsInline: false,
-    crossOrigin: null,
-    src: '',
-  } satisfies AudioMock;
+  const target = new EventTarget() as EventTarget & AudioMock;
+  target.play = vi.fn().mockImplementation(async () => {
+    target.paused = false;
+  });
+  target.pause = vi.fn().mockImplementation(() => {
+    target.paused = true;
+    target.dispatchEvent(new Event('pause'));
+  });
+  target.currentTime = 0;
+  target.loop = false;
+  target.paused = true;
+  target.preload = 'none';
+  target.playsInline = false;
+  target.crossOrigin = null;
+  target.src = '';
+  return target;
 }
 
 function createWakeLockSentinel() {
@@ -75,6 +85,7 @@ describe('useKeepDeviceAwake', () => {
   afterEach(async () => {
     await __resetKeepDeviceAwakeForTests();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('uses screen wake lock when the browser supports it', async () => {
@@ -141,11 +152,57 @@ describe('useKeepDeviceAwake', () => {
 
     audioMock.play.mockResolvedValueOnce(undefined);
     await act(async () => {
-      await activateKeepDeviceAwakeFallback();
+      window.dispatchEvent(new Event('pointerdown'));
     });
 
     await waitFor(() => expect(result.current.mode).toBe('audio-fallback'));
     expect(result.current.canActivateFallback).toBe(false);
+  });
+
+  it('recovers pending activation from the first keyboard interaction', async () => {
+    audioMock.play.mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'));
+
+    const { result } = renderHook(
+      ({ enabled }: { enabled: boolean }) => {
+        useKeepDeviceAwake(enabled);
+        return useKeepDeviceAwakeSnapshot();
+      },
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => expect(result.current.mode).toBe('pending-activation'));
+
+    audioMock.play.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      window.dispatchEvent(new Event('keydown'));
+    });
+
+    await waitFor(() => expect(result.current.mode).toBe('audio-fallback'));
+  });
+
+  it('keeps manual activation available as a secondary fallback path', async () => {
+    audioMock.play.mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'));
+
+    const { result } = renderHook(
+      ({ enabled }: { enabled: boolean }) => {
+        useKeepDeviceAwake(enabled);
+        return useKeepDeviceAwakeSnapshot();
+      },
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => expect(result.current.mode).toBe('pending-activation'));
+
+    audioMock.play.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await activateKeepDeviceAwakeFallback();
+    });
+
+    await waitFor(() => expect(result.current.mode).toBe('audio-fallback'));
   });
 
   it('stops fallback audio and resets status when disabled', async () => {
@@ -201,5 +258,90 @@ describe('useKeepDeviceAwake', () => {
     });
 
     await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+  });
+
+  it('re-acquires wake lock when the browser releases the sentinel', async () => {
+    const sentinel = createWakeLockSentinel();
+    const replacementSentinel = createWakeLockSentinel();
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce(sentinel)
+      .mockResolvedValueOnce(replacementSentinel);
+    Object.defineProperty(window.navigator, 'wakeLock', {
+      configurable: true,
+      writable: true,
+      value: { request },
+    });
+
+    const { result } = renderHook(
+      ({ enabled }: { enabled: boolean }) => {
+        useKeepDeviceAwake(enabled);
+        return useKeepDeviceAwakeSnapshot();
+      },
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => expect(result.current.mode).toBe('wake-lock'));
+    expect(request).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      sentinel.dispatchEvent(new Event('release'));
+    });
+
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
+  });
+
+  it('restarts fallback audio if it pauses unexpectedly', async () => {
+    const { result } = renderHook(
+      ({ enabled }: { enabled: boolean }) => {
+        useKeepDeviceAwake(enabled);
+        return useKeepDeviceAwakeSnapshot();
+      },
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => expect(result.current.mode).toBe('audio-fallback'));
+    expect(audioMock.play).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      audioMock.paused = true;
+      audioMock.dispatchEvent(new Event('pause'));
+    });
+
+    await waitFor(() => expect(audioMock.play).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.mode).toBe('audio-fallback'));
+  });
+
+  it('tears down gesture recovery when disabled', async () => {
+    audioMock.play.mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'));
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) => {
+        useKeepDeviceAwake(enabled);
+        return useKeepDeviceAwakeSnapshot();
+      },
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => expect(result.current.mode).toBe('pending-activation'));
+    expect(audioMock.play).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      rerender({ enabled: false });
+    });
+
+    await waitFor(() => expect(result.current.mode).toBe('disabled'));
+
+    await act(async () => {
+      window.dispatchEvent(new Event('pointerdown'));
+    });
+
+    expect(audioMock.play).toHaveBeenCalledTimes(1);
   });
 });

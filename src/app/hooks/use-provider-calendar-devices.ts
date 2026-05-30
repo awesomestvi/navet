@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { CALENDAR_EVENTS_REFRESH_INTERVAL } from '@/app/constants';
 import { mapCalendarSources } from '@/app/hooks/device-mappers';
 import { useI18n } from '@/app/i18n';
@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/app/stores/settings-store';
 import type { IntegrationProviderId } from '@/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@/app/utils/device-location';
 import { createProviderScopedId } from '@/app/utils/provider-ids';
+import { areDataEqual, areStringArraysEqual } from '@/app/utils/structural-equality';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useProviderEntityRegistryEntries,
@@ -20,6 +21,7 @@ import {
 import { useProviderFeature } from './use-provider-feature-support';
 
 const EMPTY_CALENDAR_DEVICES: PlatformCalendarDevice[] = [];
+const EMPTY_CALENDAR_ENTITY_IDS: string[] = [];
 
 function resolveEntityName(
   entityId: string,
@@ -52,14 +54,17 @@ function resolveEntityRoom(
 }
 
 export function useProviderCalendarDevices(
-  providerId?: IntegrationProviderId
+  providerId?: IntegrationProviderId,
+  options?: { enabled?: boolean }
 ): PlatformCalendarDevice[] {
+  const enabled = options?.enabled ?? true;
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
-  const supportsCalendar = useProviderFeature('calendar', resolvedProviderId);
-  const providerEntitiesByCanonicalId = useIntegrationStore(
-    (state) => state.providerEntitiesByCanonicalId
+  const providerRuntime = useIntegrationStore(
+    (state) =>
+      state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
   );
+  const supportsCalendar = useProviderFeature('calendar', resolvedProviderId) && enabled;
   const entities = useProviderEntitySnapshots({
     providerId: resolvedProviderId,
     enabled: supportsCalendar,
@@ -73,13 +78,22 @@ export function useProviderCalendarDevices(
 
   const calendarEntityIds = useMemo(() => {
     if (!supportsCalendar || !entities) {
-      return [];
+      return EMPTY_CALENDAR_ENTITY_IDS;
     }
 
     return Object.keys(entities)
       .filter((entityId) => entityId.startsWith('calendar.'))
       .sort((left, right) => left.localeCompare(right));
   }, [entities, supportsCalendar]);
+  const stableCalendarEntityIdsRef = useRef<string[]>(EMPTY_CALENDAR_ENTITY_IDS);
+  const stableCalendarEntityIds = useMemo(() => {
+    if (areStringArraysEqual(stableCalendarEntityIdsRef.current, calendarEntityIds)) {
+      return stableCalendarEntityIdsRef.current;
+    }
+
+    stableCalendarEntityIdsRef.current = calendarEntityIds;
+    return calendarEntityIds;
+  }, [calendarEntityIds]);
 
   const entityRegistryMap = useMemo(
     () => new Map(entityRegistry.map((entry) => [entry.entityId, entry])),
@@ -87,9 +101,10 @@ export function useProviderCalendarDevices(
   );
   const [calendarEvents, setCalendarEvents] = useState<Record<string, PlatformCalendarEvent[]>>({});
   const deferredCalendarEvents = useDeferredValue(calendarEvents);
+  const lastResolvedDevicesRef = useRef<PlatformCalendarDevice[]>(EMPTY_CALENDAR_DEVICES);
 
   useEffect(() => {
-    if (!supportsCalendar || calendarEntityIds.length === 0) {
+    if (!supportsCalendar || stableCalendarEntityIds.length === 0) {
       startTransition(() => {
         setCalendarEvents({});
       });
@@ -107,7 +122,7 @@ export function useProviderCalendarDevices(
 
     async function refreshEvents() {
       const entries = await Promise.all(
-        calendarEntityIds.map(async (entityId) => {
+        stableCalendarEntityIds.map(async (entityId) => {
           const events = await integrationCalendarFeatureService
             .getEvents(createProviderScopedId(resolvedProviderId, entityId))
             .catch(() => []);
@@ -119,7 +134,10 @@ export function useProviderCalendarDevices(
       }
 
       startTransition(() => {
-        setCalendarEvents(Object.fromEntries(entries));
+        setCalendarEvents((previousEvents) => {
+          const nextEvents = Object.fromEntries(entries);
+          return areDataEqual(previousEvents, nextEvents) ? previousEvents : nextEvents;
+        });
       });
 
       if (!cancelled) {
@@ -135,15 +153,15 @@ export function useProviderCalendarDevices(
         clearTimeout(refreshTimer);
       }
     };
-  }, [calendarEntityIds, resolvedProviderId, supportsCalendar]);
+  }, [resolvedProviderId, stableCalendarEntityIds, supportsCalendar]);
 
-  return useMemo(() => {
-    if (!entities || calendarEntityIds.length === 0) {
+  const resolvedDevices = useMemo<PlatformCalendarDevice[]>(() => {
+    if (!entities || stableCalendarEntityIds.length === 0) {
       return EMPTY_CALENDAR_DEVICES;
     }
 
     const calendarSources: PlatformCalendarDevice['sources'] = [];
-    for (const entityId of calendarEntityIds) {
+    for (const entityId of stableCalendarEntityIds) {
       const entity = entities[entityId];
       if (!entity) {
         continue;
@@ -152,16 +170,13 @@ export function useProviderCalendarDevices(
       const scopedEntityId = createProviderScopedId(resolvedProviderId, entityId);
       calendarSources.push(
         ...mapCalendarSources(
-          entityId,
+          scopedEntityId,
           entity,
           resolveEntityName(entityId, entity, entityRegistryMap.get(entityId)?.name),
-          resolveEntityRoom(
-            scopedEntityId,
-            entity,
-            providerEntitiesByCanonicalId[scopedEntityId]?.room
-          ),
+          resolveEntityRoom(scopedEntityId, entity, undefined),
           {
             calendarEvents: deferredCalendarEvents,
+            eventLookupId: entityId,
             locale,
             t,
             use24HourTime,
@@ -182,7 +197,8 @@ export function useProviderCalendarDevices(
       'bg-orange-500',
       'bg-indigo-500',
     ] as const;
-    const singleRoom = roomSet.size === 1 ? roomSet.values().next().value : null;
+    const singleRoom =
+      roomSet.size === 1 ? ((roomSet.values().next().value as string | undefined) ?? null) : null;
     const combinedEvents = calendarSources
       .flatMap((source, index) =>
         source.events.map((event) => ({
@@ -200,7 +216,7 @@ export function useProviderCalendarDevices(
 
     return [
       {
-        id: 'calendar.navet_overview',
+        id: createProviderScopedId(resolvedProviderId, 'calendar.navet_overview'),
         name: t('calendar.defaultTitle'),
         room: singleRoom ?? UNKNOWN_ROOM_LABEL,
         size: 'medium',
@@ -210,16 +226,47 @@ export function useProviderCalendarDevices(
       },
     ];
   }, [
-    calendarEntityIds,
     resolvedProviderId,
     deferredCalendarEvents,
     entities,
     entityRegistryMap,
     locale,
-    providerEntitiesByCanonicalId,
+    stableCalendarEntityIds,
     t,
     use24HourTime,
   ]);
+
+  useEffect(() => {
+    if (resolvedDevices.length > 0) {
+      lastResolvedDevicesRef.current = resolvedDevices;
+      return;
+    }
+
+    if (!supportsCalendar) {
+      lastResolvedDevicesRef.current = EMPTY_CALENDAR_DEVICES;
+      return;
+    }
+
+    if (providerRuntime.entitiesHydrated) {
+      lastResolvedDevicesRef.current = EMPTY_CALENDAR_DEVICES;
+    }
+  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsCalendar]);
+
+  return useMemo(() => {
+    if (resolvedDevices.length > 0) {
+      return resolvedDevices;
+    }
+
+    if (!supportsCalendar) {
+      return EMPTY_CALENDAR_DEVICES;
+    }
+
+    if (!providerRuntime.entitiesHydrated) {
+      return lastResolvedDevicesRef.current;
+    }
+
+    return EMPTY_CALENDAR_DEVICES;
+  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsCalendar]);
 }
 
 export const useProviderCalendarDevicesCollection = useProviderCalendarDevices;

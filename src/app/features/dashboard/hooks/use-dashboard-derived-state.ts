@@ -4,6 +4,8 @@ import { getDeviceRoom } from '@/app/utils/device-location';
 
 interface UseDashboardDerivedStateParams {
   activeRoom: string;
+  includeLightState?: boolean;
+  includeOrderedCardIds?: boolean;
   availableDeviceMap: Map<string, DeviceWithType>;
   cardOrders: Record<string, string[]>;
   deviceMap: Map<string, DeviceWithType>;
@@ -13,6 +15,8 @@ interface UseDashboardDerivedStateParams {
 
 export function useDashboardDerivedState({
   activeRoom,
+  includeLightState = true,
+  includeOrderedCardIds = true,
   availableDeviceMap,
   cardOrders,
   deviceMap,
@@ -26,8 +30,11 @@ export function useDashboardDerivedState({
   );
 
   const lightDeviceMap = useMemo(
-    () => new Map(Array.from(deviceMap.entries()).filter(([, device]) => device.type === 'lights')),
-    [deviceMap]
+    () =>
+      includeLightState
+        ? new Map(Array.from(deviceMap.entries()).filter(([, device]) => device.type === 'lights'))
+        : new Map<string, DeviceWithType>(),
+    [deviceMap, includeLightState]
   );
 
   const lightRooms = useMemo(() => {
@@ -41,7 +48,7 @@ export function useDashboardDerivedState({
     return rooms.filter((room) => roomsWithLights.has(room));
   }, [lightDeviceMap, rooms]);
 
-  const orderedCardIds = cardOrders[activeRoom] || [];
+  const orderedCardIds = includeOrderedCardIds ? cardOrders[activeRoom] || [] : [];
 
   return {
     addableEntityIds,

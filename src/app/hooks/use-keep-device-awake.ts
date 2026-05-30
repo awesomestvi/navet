@@ -24,6 +24,8 @@ export interface KeepDeviceAwakeSnapshot {
 }
 
 const SILENT_AUDIO_URL = getPublicAssetUrl('audio/keep-awake-silence.wav');
+const RECOVERY_RETRY_DELAY_MS = 5_000;
+const HEALTH_CHECK_INTERVAL_MS = 60_000;
 const DEFAULT_SNAPSHOT: KeepDeviceAwakeSnapshot = {
   enabled: false,
   mode: 'disabled',
@@ -37,7 +39,11 @@ let desiredEnabled = false;
 let wakeLockSentinel: KeepAwakeWakeLockSentinel | null = null;
 let audioElement: HTMLAudioElement | null = null;
 let listenersAttached = false;
+let gestureRecoveryAttached = false;
 let requestToken = 0;
+let recoveryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let healthCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+let stoppingAudioFallback = false;
 
 function getWakeLockManager(): KeepAwakeWakeLockManager | null {
   if (typeof navigator === 'undefined') {
@@ -106,6 +112,8 @@ function getOrCreateAudioElement() {
     audio.setAttribute('playsinline', '');
   }
   audio.crossOrigin = 'anonymous';
+  audio.addEventListener('pause', handleAudioLifecycleEvent);
+  audio.addEventListener('ended', handleAudioLifecycleEvent);
   audioElement = audio;
   return audio;
 }
@@ -115,8 +123,10 @@ function stopAudioFallback() {
     return;
   }
 
+  stoppingAudioFallback = true;
   audioElement.pause();
   audioElement.currentTime = 0;
+  stoppingAudioFallback = false;
 }
 
 async function releaseWakeLock() {
@@ -135,9 +145,122 @@ async function releaseWakeLock() {
 
 function handleWakeLockRelease() {
   wakeLockSentinel = null;
+  scheduleRecovery(0);
 }
 
-async function startAudioFallback(token: number) {
+function clearRecoveryTimer() {
+  if (recoveryTimeoutId !== null) {
+    clearTimeout(recoveryTimeoutId);
+    recoveryTimeoutId = null;
+  }
+}
+
+function detachGestureRecoveryListeners() {
+  if (!gestureRecoveryAttached || typeof window === 'undefined') {
+    return;
+  }
+
+  window.removeEventListener('pointerdown', handleGestureRecovery);
+  window.removeEventListener('touchstart', handleGestureRecovery);
+  window.removeEventListener('keydown', handleGestureRecovery);
+  gestureRecoveryAttached = false;
+}
+
+function attachGestureRecoveryListeners() {
+  if (gestureRecoveryAttached || typeof window === 'undefined') {
+    return;
+  }
+
+  window.addEventListener('pointerdown', handleGestureRecovery, { passive: true });
+  window.addEventListener('touchstart', handleGestureRecovery, { passive: true });
+  window.addEventListener('keydown', handleGestureRecovery);
+  gestureRecoveryAttached = true;
+}
+
+function emitPendingActivationSnapshot() {
+  attachGestureRecoveryListeners();
+  emitSnapshot({
+    enabled: true,
+    mode: 'pending-activation',
+    canActivateFallback: true,
+  });
+}
+
+function scheduleRecovery(delay = RECOVERY_RETRY_DELAY_MS) {
+  if (!desiredEnabled) {
+    return;
+  }
+
+  clearRecoveryTimer();
+  recoveryTimeoutId = setTimeout(() => {
+    recoveryTimeoutId = null;
+    if (
+      !desiredEnabled ||
+      typeof document === 'undefined' ||
+      document.visibilityState === 'hidden'
+    ) {
+      return;
+    }
+
+    void acquireKeepAwake();
+  }, delay);
+}
+
+function handleAudioLifecycleEvent() {
+  if (
+    stoppingAudioFallback ||
+    !desiredEnabled ||
+    typeof document === 'undefined' ||
+    document.visibilityState === 'hidden'
+  ) {
+    return;
+  }
+
+  scheduleRecovery(0);
+}
+
+function handleGestureRecovery() {
+  if (!desiredEnabled || typeof document === 'undefined' || document.visibilityState === 'hidden') {
+    return;
+  }
+
+  detachGestureRecoveryListeners();
+  void acquireKeepAwake('gesture');
+}
+
+function startHealthChecks() {
+  if (healthCheckIntervalId !== null || typeof window === 'undefined') {
+    return;
+  }
+
+  healthCheckIntervalId = setInterval(() => {
+    if (
+      !desiredEnabled ||
+      typeof document === 'undefined' ||
+      document.visibilityState === 'hidden'
+    ) {
+      return;
+    }
+
+    if (currentSnapshot.mode === 'wake-lock' && !wakeLockSentinel) {
+      scheduleRecovery(0);
+      return;
+    }
+
+    if (currentSnapshot.mode === 'audio-fallback' && audioElement?.paused) {
+      scheduleRecovery(0);
+    }
+  }, HEALTH_CHECK_INTERVAL_MS);
+}
+
+function stopHealthChecks() {
+  if (healthCheckIntervalId !== null) {
+    clearInterval(healthCheckIntervalId);
+    healthCheckIntervalId = null;
+  }
+}
+
+async function startAudioFallback(token: number, source: 'auto' | 'manual' | 'gesture' = 'auto') {
   if (!desiredEnabled || token !== requestToken || !canUseAudioFallback()) {
     return false;
   }
@@ -147,11 +270,12 @@ async function startAudioFallback(token: number) {
   try {
     await audio.play();
     if (!desiredEnabled || token !== requestToken) {
-      audio.pause();
-      audio.currentTime = 0;
+      stopAudioFallback();
       return false;
     }
 
+    detachGestureRecoveryListeners();
+    clearRecoveryTimer();
     emitSnapshot({
       enabled: true,
       mode: 'audio-fallback',
@@ -163,16 +287,24 @@ async function startAudioFallback(token: number) {
       return false;
     }
 
-    emitSnapshot({
-      enabled: true,
-      mode: isAutoplayBlocked(error) ? 'pending-activation' : 'blocked',
-      canActivateFallback: isAutoplayBlocked(error),
-    });
+    if (isAutoplayBlocked(error) && source !== 'manual') {
+      emitPendingActivationSnapshot();
+    } else {
+      detachGestureRecoveryListeners();
+      emitSnapshot({
+        enabled: true,
+        mode: isAutoplayBlocked(error) ? 'pending-activation' : 'blocked',
+        canActivateFallback: isAutoplayBlocked(error),
+      });
+      if (!isAutoplayBlocked(error)) {
+        scheduleRecovery();
+      }
+    }
     return false;
   }
 }
 
-async function acquireKeepAwake(source: 'auto' | 'manual' = 'auto') {
+async function acquireKeepAwake(source: 'auto' | 'manual' | 'gesture' = 'auto') {
   if (!desiredEnabled || typeof document === 'undefined') {
     return;
   }
@@ -183,6 +315,7 @@ async function acquireKeepAwake(source: 'auto' | 'manual' = 'auto') {
     return;
   }
 
+  clearRecoveryTimer();
   const token = ++requestToken;
   const wakeLockSupported = supportsWakeLock();
   const audioSupported = canUseAudioFallback();
@@ -204,6 +337,7 @@ async function acquireKeepAwake(source: 'auto' | 'manual' = 'auto') {
       wakeLockSentinel = sentinel;
       wakeLockSentinel.addEventListener('release', handleWakeLockRelease);
       stopAudioFallback();
+      detachGestureRecoveryListeners();
       emitSnapshot({
         enabled: true,
         mode: 'wake-lock',
@@ -216,22 +350,21 @@ async function acquireKeepAwake(source: 'auto' | 'manual' = 'auto') {
   }
 
   if (audioSupported) {
-    const activated = await startAudioFallback(token);
-    if (
-      activated ||
-      source === 'manual' ||
-      currentSnapshot.mode === 'pending-activation' ||
-      currentSnapshot.mode === 'blocked'
-    ) {
+    const activated = await startAudioFallback(token, source);
+    if (activated || currentSnapshot.mode === 'pending-activation') {
       return;
     }
   }
 
+  detachGestureRecoveryListeners();
   emitSnapshot({
     enabled: true,
     mode: wakeLockSupported || audioSupported ? 'blocked' : 'unsupported',
     canActivateFallback: false,
   });
+  if (wakeLockSupported || audioSupported) {
+    scheduleRecovery();
+  }
 }
 
 function handleVisibilityChange() {
@@ -264,6 +397,7 @@ function attachRuntimeListeners() {
   document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('focus', handleWindowFocus);
   listenersAttached = true;
+  startHealthChecks();
 }
 
 function detachRuntimeListeners() {
@@ -274,11 +408,14 @@ function detachRuntimeListeners() {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   window.removeEventListener('focus', handleWindowFocus);
   listenersAttached = false;
+  stopHealthChecks();
 }
 
 async function disableKeepDeviceAwake() {
   desiredEnabled = false;
   requestToken += 1;
+  clearRecoveryTimer();
+  detachGestureRecoveryListeners();
   detachRuntimeListeners();
   await releaseWakeLock();
   stopAudioFallback();
@@ -290,6 +427,7 @@ async function enableKeepDeviceAwake() {
   attachRuntimeListeners();
 
   if (!supportsWakeLock() && !canUseAudioFallback()) {
+    detachGestureRecoveryListeners();
     emitSnapshot({
       enabled: true,
       mode: 'unsupported',
@@ -324,14 +462,18 @@ export async function activateKeepDeviceAwakeFallback() {
     return false;
   }
 
+  detachGestureRecoveryListeners();
+  clearRecoveryTimer();
   await releaseWakeLock();
   requestToken += 1;
-  return await startAudioFallback(requestToken);
+  return await startAudioFallback(requestToken, 'manual');
 }
 
 export async function __resetKeepDeviceAwakeForTests() {
   await disableKeepDeviceAwake();
   if (audioElement) {
+    audioElement.removeEventListener('pause', handleAudioLifecycleEvent);
+    audioElement.removeEventListener('ended', handleAudioLifecycleEvent);
     audioElement.pause();
     audioElement.src = '';
     audioElement = null;

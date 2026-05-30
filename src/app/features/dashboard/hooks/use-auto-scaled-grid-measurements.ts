@@ -7,7 +7,10 @@ interface AutoScaledGridMeasurements {
   outerWidth: number;
 }
 
-export function useAutoScaledGridMeasurements(targetGridWidth: number): AutoScaledGridMeasurements {
+export function useAutoScaledGridMeasurements(
+  targetGridWidth: number,
+  enabled = true
+): AutoScaledGridMeasurements {
   const outerRef = useRef<HTMLDivElement | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [outerWidth, setOuterWidth] = useState(0);
@@ -18,6 +21,12 @@ export function useAutoScaledGridMeasurements(targetGridWidth: number): AutoScal
   );
 
   useEffect(() => {
+    if (!enabled) {
+      setOuterWidth(0);
+      setContentHeight(0);
+      return;
+    }
+
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (
@@ -79,7 +88,7 @@ export function useAutoScaledGridMeasurements(targetGridWidth: number): AutoScal
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [shouldTrackHeight]);
+  }, [enabled, shouldTrackHeight]);
 
   return {
     contentHeight,

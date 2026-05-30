@@ -1,4 +1,3 @@
-import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import type { CardSize } from '@/app/components/shared/card-size-selector';
 import { ALL_ROOMS_ID } from '@/app/constants/rooms';
 import { STORAGE_KEYS } from '@/app/constants/storage-keys';
@@ -30,6 +29,10 @@ import {
   type WeatherMetricId,
 } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
+import {
+  parseDashboardConfigYaml,
+  stringifyDashboardConfigYaml,
+} from '@/app/utils/dashboard-config-yaml';
 import { getLegacyReducedEffectsFlags, resolveEffectsQuality } from '@/app/utils/effects-quality';
 import { notifyPersistedStateChanged } from '@/app/utils/persisted-state-events';
 import { storage } from '@/app/utils/storage';
@@ -805,7 +808,7 @@ export const importDashboardConfig = (
 
 export const downloadDashboardConfig = async (): Promise<'shared' | 'downloaded'> => {
   const payload = exportDashboardConfig();
-  const yamlContent = stringifyYaml(payload);
+  const yamlContent = await stringifyDashboardConfigYaml(payload);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const fileName = `navet-dashboard-config-${dateStamp}.yaml`;
   const blob = new Blob([yamlContent], { type: 'text/yaml;charset=utf-8' });
@@ -848,7 +851,7 @@ export const importDashboardConfigFromFile = async (file: File) => {
   }
 
   const content = (await file.text()).replace(/^\uFEFF/, '');
-  const parsed = parseYaml(content);
+  const parsed = await parseDashboardConfigYaml(content);
   importDashboardConfig(parsed);
 };
 
@@ -863,6 +866,6 @@ export const importDashboardConfigFromUrl = async (url: string) => {
   }
 
   const content = (await response.text()).replace(/^\uFEFF/, '');
-  const parsed = parseYaml(content);
+  const parsed = await parseDashboardConfigYaml(content);
   importDashboardConfig(parsed);
 };

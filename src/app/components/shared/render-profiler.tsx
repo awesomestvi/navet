@@ -1,4 +1,4 @@
-import { Profiler, type ReactNode } from 'react';
+import { Profiler, type ReactNode, useRef } from 'react';
 
 interface RenderProfilerProps {
   id: string;
@@ -7,6 +7,8 @@ interface RenderProfilerProps {
 }
 
 export function RenderProfiler({ id, children, thresholdMs = 12 }: RenderProfilerProps) {
+  const commitCountRef = useRef(0);
+
   if (!import.meta.env.DEV) {
     return children;
   }
@@ -15,12 +17,14 @@ export function RenderProfiler({ id, children, thresholdMs = 12 }: RenderProfile
     <Profiler
       id={id}
       onRender={(profileId, phase, actualDuration, baseDuration, startTime, commitTime) => {
+        commitCountRef.current += 1;
         if (actualDuration < thresholdMs) {
           return;
         }
 
         console.debug('[Navet][RenderProfiler]', {
           id: profileId,
+          commitCount: commitCountRef.current,
           phase,
           actualDuration: Number(actualDuration.toFixed(2)),
           baseDuration: Number(baseDuration.toFixed(2)),
