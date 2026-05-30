@@ -6,7 +6,7 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 
 [Live demo](https://awesomestvi.github.io/navet/demo/) ·
 [Storybook](https://awesomestvi.github.io/navet/storybook/) ·
-[Security notes](docs/PUBLIC_LAUNCH_SECURITY.md) ·
+[Security notes](SECURITY.md) ·
 [Security policy](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md)
 
@@ -69,9 +69,9 @@ Choose your platform first, then open the matching setup guide:
 
 ### Home Assistant
 
-- [Home Assistant Custom Panel](docs/DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-custom-panel)
-- [Home Assistant Add-on](docs/DOCKER_HOME_ASSISTANT_ADDON.md#home-assistant-add-on)
-- [Standalone Docker](docs/DOCKER_HOME_ASSISTANT_ADDON.md#standalone-docker)
+- [Home Assistant Custom Panel](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
+- [Home Assistant Add-on](docs/HOME_ASSISTANT.md#home-assistant-add-on)
+- [Standalone Docker](docs/HOME_ASSISTANT.md#standalone-docker)
 
 ### Homey
 
@@ -156,20 +156,17 @@ pnpm build:ha-panel
 Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default
 agent-run commands.
 
-For provider validation and the local openHAB demo workflow, see
-[docs/PROVIDER_RELEASE_VALIDATION.md](docs/PROVIDER_RELEASE_VALIDATION.md).
-
 ## Docs
 
 Start with [docs/README.md](docs/README.md).
 
 Useful entry points:
 
-- [docs/DOCKER_HOME_ASSISTANT_ADDON.md](docs/DOCKER_HOME_ASSISTANT_ADDON.md)
+- [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md)
 - [docs/HOMEY.md](docs/HOMEY.md)
 - [docs/OPENHAB.md](docs/OPENHAB.md)
 - [docs/WIDGETS.md](docs/WIDGETS.md)
-- [docs/PUBLIC_LAUNCH_SECURITY.md](docs/PUBLIC_LAUNCH_SECURITY.md)
+- [SECURITY.md](SECURITY.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)
 - [docs/agents/architecture.md](docs/agents/architecture.md)
 

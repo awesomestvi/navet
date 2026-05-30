@@ -112,4 +112,4 @@ pnpm check:docker
 ```
 
 For release validation, see
-[PROVIDER_RELEASE_VALIDATION.md](PROVIDER_RELEASE_VALIDATION.md).
+[agents/release-and-publishing.md](agents/release-and-publishing.md).

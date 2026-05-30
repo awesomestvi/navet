@@ -100,4 +100,4 @@ Validation should keep failing if:
 ## Release Validation
 
 The focused release-oriented validation flow lives in
-[../PROVIDER_RELEASE_VALIDATION.md](../PROVIDER_RELEASE_VALIDATION.md).
+[../agents/release-and-publishing.md](../agents/release-and-publishing.md).

@@ -17,7 +17,7 @@ body:
     attributes:
       label: Page or file
       description: Link the page or name the documentation file.
-      placeholder: "README.md, docs/DOCKER_HOME_ASSISTANT_ADDON.md, ..."
+      placeholder: "README.md, docs/HOME_ASSISTANT.md, ..."
     validations:
       required: true
   - type: textarea
