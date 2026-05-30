@@ -2,6 +2,8 @@
 
 This folder contains the public marketing website application structure for Navet.
 
+The website workspace entry, Vite config, and deployment package live in `apps/website/`.
+
 ## Folders
 
 - `pages/`: page-level composition only
@@ -21,4 +23,3 @@ This folder contains the public marketing website application structure for Nave
   `data/marketingContent.ts`.
 - Marketing sections should continue using shared primitives and existing dashboard cards rather
   than creating a parallel design system.
-

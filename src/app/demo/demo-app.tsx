@@ -56,6 +56,7 @@ import { defaultSettings, useSettingsStore } from '@/app/stores/settings-store';
 import { useThemeStore } from '@/app/stores/theme-store';
 import artworksOriginal from '@/assets/artworks-original.jpg';
 import cameraSampleImage from '@/assets/camera-sample.webp';
+import { AuthProvider } from '@/auth/AuthProvider';
 
 type DemoSection = Section;
 
@@ -125,7 +126,141 @@ const demoHomeAssistantConfig = {
   language: 'en',
 } satisfies HassConfig;
 
+const demoEntityTimestamp = '2026-05-16T08:00:00+00:00';
+
+function createDemoLightEntity({
+  entityId,
+  friendlyName,
+  state = 'on',
+  brightness,
+  colorTempKelvin,
+}: {
+  entityId: string;
+  friendlyName: string;
+  state?: 'on' | 'off';
+  brightness: number;
+  colorTempKelvin?: number;
+}) {
+  return {
+    entity_id: entityId,
+    state,
+    attributes: {
+      friendly_name: friendlyName,
+      brightness: Math.round((Math.max(0, Math.min(100, brightness)) / 100) * 255),
+      supported_color_modes:
+        typeof colorTempKelvin === 'number' ? ['brightness', 'color_temp'] : ['brightness'],
+      ...(typeof colorTempKelvin === 'number'
+        ? {
+            color_mode: 'color_temp',
+            color_temp_kelvin: colorTempKelvin,
+            min_color_temp_kelvin: 2700,
+            max_color_temp_kelvin: 6500,
+          }
+        : {}),
+    },
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
+    context: { id: `demo-${entityId}`, parent_id: null, user_id: null },
+  };
+}
+
+const demoLightEntities: HassEntities = {
+  'light.kitchen_island': createDemoLightEntity({
+    entityId: 'light.kitchen_island',
+    friendlyName: 'Kitchen island',
+    brightness: 72,
+    colorTempKelvin: 3600,
+  }),
+  'light.living_room': createDemoLightEntity({
+    entityId: 'light.living_room',
+    friendlyName: 'Living Room',
+    brightness: 68,
+    colorTempKelvin: 3200,
+  }),
+  'light.kitchen': createDemoLightEntity({
+    entityId: 'light.kitchen',
+    friendlyName: 'Kitchen',
+    brightness: 84,
+    colorTempKelvin: 4100,
+  }),
+  'light.bedroom': createDemoLightEntity({
+    entityId: 'light.bedroom',
+    friendlyName: 'Bedroom',
+    state: 'off',
+    brightness: 35,
+    colorTempKelvin: 2700,
+  }),
+  'light.hallway': createDemoLightEntity({
+    entityId: 'light.hallway',
+    friendlyName: 'Hallway',
+    brightness: 42,
+    colorTempKelvin: 3000,
+  }),
+  'light.kitchen_island_room': createDemoLightEntity({
+    entityId: 'light.kitchen_island_room',
+    friendlyName: 'Kitchen island',
+    brightness: 72,
+    colorTempKelvin: 3600,
+  }),
+  'light.sofa_lamp': createDemoLightEntity({
+    entityId: 'light.sofa_lamp',
+    friendlyName: 'Sofa lamp',
+    brightness: 58,
+    colorTempKelvin: 2900,
+  }),
+  'light.basement_main': createDemoLightEntity({
+    entityId: 'light.basement_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.bathroom_main': createDemoLightEntity({
+    entityId: 'light.bathroom_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.guest_room': createDemoLightEntity({
+    entityId: 'light.guest_room',
+    friendlyName: 'Bedside lamp',
+    state: 'off',
+    brightness: 35,
+    colorTempKelvin: 2700,
+  }),
+  'light.gym_main': createDemoLightEntity({
+    entityId: 'light.gym_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.office_main': createDemoLightEntity({
+    entityId: 'light.office_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.outside_main': createDemoLightEntity({
+    entityId: 'light.outside_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.toilet_main': createDemoLightEntity({
+    entityId: 'light.toilet_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+  'light.unassigned_main': createDemoLightEntity({
+    entityId: 'light.unassigned_main',
+    friendlyName: 'Main light',
+    brightness: 52,
+    colorTempKelvin: 3200,
+  }),
+};
+
 const demoHomeAssistantEntities: HassEntities = {
+  ...demoLightEntities,
   'sensor.front_door_sensor_battery': {
     entity_id: 'sensor.front_door_sensor_battery',
     state: '18',
@@ -134,8 +269,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'battery',
       unit_of_measurement: '%',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-battery-1', parent_id: null, user_id: null },
   },
   'sensor.kitchen_remote_battery': {
@@ -146,8 +281,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'battery',
       unit_of_measurement: '%',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-battery-2', parent_id: null, user_id: null },
   },
   'sensor.living_room_motion_battery': {
@@ -158,8 +293,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'battery',
       unit_of_measurement: '%',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-battery-3', parent_id: null, user_id: null },
   },
   'sensor.living_room_temp': {
@@ -170,8 +305,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'temperature',
       unit_of_measurement: 'C',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-sensor-1', parent_id: null, user_id: null },
   },
   'sensor.living_room_humidity': {
@@ -182,8 +317,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'humidity',
       unit_of_measurement: '%',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-sensor-2', parent_id: null, user_id: null },
   },
   'sensor.living_room_co2': {
@@ -194,8 +329,8 @@ const demoHomeAssistantEntities: HassEntities = {
       device_class: 'carbon_dioxide',
       unit_of_measurement: 'ppm',
     },
-    last_changed: '2026-05-16T08:00:00+00:00',
-    last_updated: '2026-05-16T08:00:00+00:00',
+    last_changed: demoEntityTimestamp,
+    last_updated: demoEntityTimestamp,
     context: { id: 'demo-sensor-3', parent_id: null, user_id: null },
   },
 };
@@ -1581,7 +1716,9 @@ function DemoContent() {
 export default function DemoApp() {
   return (
     <I18nProvider>
-      <DemoContent />
+      <AuthProvider>
+        <DemoContent />
+      </AuthProvider>
     </I18nProvider>
   );
 }

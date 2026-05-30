@@ -2,9 +2,9 @@ import { getMarketingPublicSiteUrl } from '@/app/marketing/constants/marketingLi
 import type { MarketingWebsiteRoute } from '@/app/marketing/routing/marketingWebsiteRoutes';
 import { getPublicAssetUrl } from '@/app/utils/public-assets';
 
-const DEFAULT_TITLE = 'Navet - A beautiful dashboard for Home Assistant';
+const DEFAULT_TITLE = 'Navet - A beautiful smart-home dashboard';
 const DEFAULT_DESCRIPTION =
-  'Navet gives Home Assistant users a cleaner, more polished smart-home dashboard for wall panels, tablets, desktops, and phones.';
+  'Navet is a provider-neutral smart-home dashboard with polished UI for wall panels, tablets, desktops, and phones, with the most mature support today centered on Home Assistant.';
 
 export interface MarketingWebsiteMetadata {
   title: string;
@@ -47,9 +47,9 @@ export function getMarketingWebsiteMetadata(
 
   if (route.id === 'install') {
     return {
-      title: 'Install Navet for Home Assistant',
+      title: 'Install Navet',
       description:
-        'Start with the recommended Navet install path for Home Assistant, then use advanced or standalone options when you need them.',
+        'Start with the most mature Navet install path today, then choose add-on or standalone deployment options when they better match your provider setup.',
       canonicalUrl: new URL(route.pathname.slice(1), siteUrl).toString(),
       socialImageUrl,
     };

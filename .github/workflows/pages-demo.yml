@@ -11,6 +11,7 @@ on:
       - 'docs/marketing/assets/screenshots/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'apps/website/**'
       - 'public/demo/**'
       - 'src/app/marketing/**'
       - 'src/**/*.stories.*'
@@ -18,10 +19,8 @@ on:
       - 'src/app/storybook/**'
       - 'src/app/ui-kit/**'
       - 'src/main.tsx'
-      - 'src/website/**'
       - 'src/styles/**'
       - 'vite.config.ts'
-      - 'website/**'
   workflow_dispatch:
 
 permissions:
@@ -60,17 +59,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build website and demo
-        run: NAVET_BUILD_TARGET=all pnpm exec vite build --base=/navet/
+      - name: Build website
+        run: pnpm --filter @navet/website exec vite build --base=/navet/
+
+      - name: Build demo
+        run: pnpm exec vite build --base=/navet/demo/
 
       - name: Build Storybook
         run: pnpm storybook:build
 
       - name: Stage Pages artifact
         run: |
-          mv dist pages
-          mv pages/website/index.html pages/index.html
-          rmdir pages/website
+          mv apps/website/dist pages
+          mkdir -p pages/demo
+          cp -R dist/. pages/demo
           mv .cache/storybook-static pages/storybook
           mkdir -p pages/install pages/roadmap
           cp pages/index.html pages/install/index.html

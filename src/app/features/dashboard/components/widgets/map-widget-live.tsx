@@ -12,7 +12,7 @@ interface MapWidgetLiveProps {
   defaultCenter: [number, number];
   isSmallCard: boolean;
   mapWidgetSurface: MapWidgetSurfaceTokens;
-  markers: MapMarker[];
+  markers: readonly MapMarker[];
   shouldReduceMapEffects: boolean;
   theme: ThemeType;
   tileUrl: string;

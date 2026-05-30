@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import type { MapMarker } from './map-types';
 
-export function BoundsFitter({ markers }: { markers: MapMarker[] }) {
+export function BoundsFitter({ markers }: { markers: readonly MapMarker[] }) {
   const map = useMap();
 
   useEffect(() => {

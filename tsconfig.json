@@ -25,6 +25,7 @@
     /* Paths */
     "paths": {
       "@/*": ["./src/*"],
+      "@website/*": ["./apps/website/src/*"],
       "@navet/core": ["./packages/core/src/index.ts"],
       "@navet/core/*": ["./packages/core/src/*"],
       "@navet/ui": ["./packages/ui/src/index.ts"],

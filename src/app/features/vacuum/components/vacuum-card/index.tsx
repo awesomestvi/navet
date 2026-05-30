@@ -1,12 +1,12 @@
 import { Battery, Bot, Clock3, type LucideIcon, Map as MapIcon } from 'lucide-react';
-import { memo } from 'react';
+import { type CSSProperties, memo } from 'react';
 import { BaseCard } from '@/app/components/primitives';
 import { EntityCardHeader } from '@/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@/app/components/shared/card-size-selector';
+import { getCardReadableTextTokens } from '@/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@/app/components/shared/theme/card-state-surface-tokens';
-import { getThemeSurfaceTokens } from '@/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@/app/components/ui/utils';
 import {
   useI18n,
@@ -89,11 +89,13 @@ function VacuumMetricGrid({
   metrics,
   accentClassName,
   surfaceTextClassName,
+  surfaceTextStyle,
   size,
 }: {
   metrics: VacuumMetricItem[];
   accentClassName: string;
   surfaceTextClassName: string;
+  surfaceTextStyle?: CSSProperties;
   size: VacuumCardSize;
 }) {
   const isSmall = size === 'small';
@@ -103,7 +105,10 @@ function VacuumMetricGrid({
       <div className="w-full space-y-0.5">
         {metrics.map((metric) => (
           <div key={metric.key} className="flex items-center justify-between gap-2 text-xs">
-            <span className={cn(surfaceTextClassName, 'flex min-w-0 items-center gap-1')}>
+            <span
+              className={cn(surfaceTextClassName, 'flex min-w-0 items-center gap-1')}
+              style={surfaceTextStyle}
+            >
               <metric.icon className="h-3 w-3 shrink-0" aria-hidden />
               <span className="truncate">{metric.label}</span>
             </span>
@@ -131,6 +136,7 @@ function VacuumMetricGrid({
         >
           <span
             className={cn('mb-1 flex items-center gap-1 truncate text-xs', surfaceTextClassName)}
+            style={surfaceTextStyle}
           >
             <metric.icon className="h-3 w-3 shrink-0" aria-hidden />
             <span className="truncate">{metric.label}</span>
@@ -300,7 +306,6 @@ export const VacuumCard = memo(function VacuumCard({
   const isSmall = isCompactCardSize(resolvedSize);
   const actionRowPaddingClassName = isSmall ? 'pt-2' : 'pt-4';
   const metricStackClassName = cn('flex flex-1 flex-col justify-end', isSmall ? 'gap-2' : 'gap-3');
-  const surface = getThemeSurfaceTokens(theme);
   const statusLabel = t(getVacuumStatusLabelKey(displayStatus));
   const headerTone =
     displayStatus === 'returning'
@@ -308,6 +313,12 @@ export const VacuumCard = memo(function VacuumCard({
       : displayStatus === 'cleaning' || displayStatus === 'mopping'
         ? 'primary'
         : 'neutral';
+  const headerAccentColor = headerTone === 'primary' ? accentColor : null;
+  const metricReadableTokens = getCardReadableTextTokens({
+    theme,
+    tone: headerTone,
+    accentColor: headerAccentColor,
+  });
   const areaMetric = splitMetricValue(liveCleanedArea);
   const runTimeMetric = splitMetricValue(liveCleaningTime);
   const metricItems: VacuumMetricItem[] = [
@@ -360,14 +371,16 @@ export const VacuumCard = memo(function VacuumCard({
             subtitle={subtitle}
             layout="eyebrow-first"
             size={resolvedSize}
-            accentColor={cardColors.accent}
+            accentColor={headerAccentColor}
             tone={headerTone}
+            titleClassName={stateSurface.primaryTextClassName}
+            subtitleClassName={stateSurface.mutedTextClassName}
             leading={
               <EntityCardHeaderIcon
                 IconComponent={Bot}
                 isActive={isActive}
                 size={resolvedSize}
-                baseColor={cardColors.accent}
+                baseColor={headerAccentColor}
                 tone={headerTone}
               />
             }
@@ -378,7 +391,8 @@ export const VacuumCard = memo(function VacuumCard({
               <VacuumMetricGrid
                 metrics={metricItems}
                 accentClassName={cardColors.accent}
-                surfaceTextClassName={surface.textSubtle}
+                surfaceTextClassName={stateSurface.secondaryTextClassName}
+                surfaceTextStyle={{ color: metricReadableTokens.subtitleColor }}
                 size={resolvedSize}
               />
             </div>

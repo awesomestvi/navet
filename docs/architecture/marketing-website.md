@@ -34,7 +34,8 @@ Homepage structure and copy should reinforce that message.
 - Theme tokens and surface logic stay in the existing theme/token layers.
 - Dashboard cards stay in dashboard or feature layers.
 - Marketing sections live under `src/app/marketing/`.
-- Website-specific entry and shell code live in the website layer, not in the runtime app shell.
+- Website-specific package entry and Vite config live under `apps/website/`, not in the runtime
+  app shell.
 
 Strict reuse rules:
 
@@ -89,6 +90,7 @@ Routing and links:
 - Public website routes are resolved by the marketing route helpers.
 - External links are centralized in `src/app/marketing/constants/marketingLinks.ts`.
 - This includes demo, docs/install links, GitHub, roadmap, and Storybook URLs.
+- The public website workspace root is `apps/website/`.
 
 ## Install Honesty And Performance
 

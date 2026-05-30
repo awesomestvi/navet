@@ -2,9 +2,9 @@ import { Bot, LayoutDashboard, Palette, PanelsTopLeft, Smartphone, ToggleLeft } 
 import { MARKETING_URLS } from '@/app/marketing/constants/marketingLinks';
 
 export const MARKETING_HERO_CONTENT = {
-  headline: 'A beautiful dashboard for your Home Assistant smart home',
+  headline: 'A beautiful dashboard for your smart home',
   subheadline:
-    'Navet gives you a cleaner, more polished way to control your smart home from a wall panel, tablet, desktop, or phone.',
+    'Navet gives you a cleaner, more polished way to control your smart home from a wall panel, tablet, desktop, or phone, with a provider-neutral architecture and the most mature support today centered on Home Assistant.',
   primaryCtas: [
     { label: 'Try the demo', href: MARKETING_URLS.demo, external: false },
     { label: 'Install Navet', href: '/install/', external: false },
@@ -33,8 +33,9 @@ export const MARKETING_FEATURES = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Home Assistant support',
-    description: 'Connect Navet to your existing Home Assistant setup.',
+    title: 'Multi-provider direction',
+    description:
+      'Built around shared UI and provider adapters instead of a single platform lock-in.',
     icon: Bot,
   },
   {
@@ -85,7 +86,7 @@ export const MARKETING_INSTALL_OPTIONS = [
     label: 'Recommended',
     title: 'Home Assistant Custom Panel',
     description:
-      'The cleanest Home Assistant-native setup. Navet is served inside Home Assistant and reuses the existing frontend session.',
+      'The most mature install path today. Navet is served inside Home Assistant and reuses the existing frontend session.',
     href: MARKETING_URLS.install.homeAssistantCustomPanel,
   },
   {
@@ -98,7 +99,8 @@ export const MARKETING_INSTALL_OPTIONS = [
   {
     label: 'Standalone',
     title: 'Standalone Docker',
-    description: 'Run Navet as its own app while still connecting to Home Assistant through OAuth.',
+    description:
+      'Run Navet as its own app with the same provider-neutral shell, while using the provider setup that fits your deployment.',
     href: MARKETING_URLS.install.standaloneDocker,
   },
 ] as const;
@@ -109,11 +111,16 @@ export const MARKETING_SECONDARY_INSTALLS = [
 ] as const;
 
 export const MARKETING_ROADMAP = {
-  now: ['Home Assistant support', 'Core dashboard cards', 'Themes', 'Docker install'],
+  now: [
+    'Provider-neutral app shell',
+    'Core dashboard cards',
+    'Themes',
+    'Mature Home Assistant path',
+  ],
   next: [
     'More entity coverage',
     'Easier dashboard customization',
     'Better kiosk and tablet performance',
   ],
-  later: ['More smart-home platforms', 'Provider integrations'],
+  later: ['Broader provider maturity', 'Additional provider integrations'],
 } as const;

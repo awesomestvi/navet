@@ -742,4 +742,225 @@
       transform: translateX(-50%);
     }
   }
+
+  @keyframes marketing-aurora-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(2%, -3%, 0) scale(1.08);
+    }
+    100% {
+      transform: translate3d(-2%, 2%, 0) scale(0.98);
+    }
+  }
+
+  @keyframes magic-grid-pan {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(
+        calc(var(--magic-grid-width, 60px) * -1),
+        calc(var(--magic-grid-height, 60px) * -1),
+        0
+      );
+    }
+  }
+
+  @keyframes magic-gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes magic-border-beam-travel {
+    0% {
+      transform: translateX(calc(-34% + var(--magic-beam-offset, 0%))) translateY(-12%)
+        rotate(18deg);
+      opacity: 0;
+    }
+    18% {
+      opacity: 0.95;
+    }
+    50% {
+      transform: translateX(calc(22% + var(--magic-beam-offset, 0%))) translateY(10%) rotate(18deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateX(calc(86% + var(--magic-beam-offset, 0%))) translateY(28%) rotate(18deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes magic-shine-rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .marketing-aurora {
+    position: absolute;
+    filter: blur(72px);
+    opacity: 0.46;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .marketing-aurora--amber {
+    top: -10rem;
+    right: -8rem;
+    width: 34rem;
+    height: 34rem;
+    background: radial-gradient(
+      circle,
+      rgb(249 115 22 / 0.34) 0%,
+      rgb(251 191 36 / 0.24) 30%,
+      transparent 68%
+    );
+    animation: marketing-aurora-drift 18s ease-in-out infinite;
+  }
+
+  .marketing-aurora--blue {
+    left: -10rem;
+    top: 20rem;
+    width: 30rem;
+    height: 30rem;
+    background: radial-gradient(
+      circle,
+      rgb(59 130 246 / 0.24) 0%,
+      rgb(14 165 233 / 0.18) 38%,
+      transparent 68%
+    );
+    animation: marketing-aurora-drift 22s ease-in-out infinite reverse;
+  }
+
+  .marketing-grid-mask {
+    position: absolute;
+    inset: 0;
+    mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.48), transparent 78%);
+    opacity: 0.24;
+    pointer-events: none;
+  }
+
+  .magicui-animated-grid-pattern {
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+    background-size: var(--magic-grid-width, 60px) var(--magic-grid-height, 60px);
+    animation: magic-grid-pan var(--magic-grid-duration, 20s) linear infinite;
+  }
+
+  .magicui-animated-gradient-text {
+    background-image: linear-gradient(
+      120deg,
+      var(--magic-gradient-from, #ffaa40),
+      color-mix(in oklch, var(--magic-gradient-from, #ffaa40) 60%, white 40%),
+      var(--magic-gradient-to, #9c40ff),
+      color-mix(in oklch, var(--magic-gradient-to, #9c40ff) 64%, white 36%)
+    );
+    background-size: 220% 220%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: magic-gradient-shift var(--magic-gradient-duration, 2.8s) ease infinite;
+  }
+
+  .magicui-border-beam::before {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--magic-beam-border-width, 1px));
+    width: var(--magic-beam-size, 50%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.06) 18%,
+      var(--magic-beam-from, #ffaa40) 50%,
+      var(--magic-beam-to, #9c40ff) 82%,
+      transparent 100%
+    );
+    filter: blur(14px);
+    opacity: 0;
+    animation: magic-border-beam-travel var(--magic-beam-duration, 6s) linear infinite;
+    animation-delay: var(--magic-beam-delay, 0s);
+    will-change: transform, opacity;
+  }
+
+  .magicui-border-beam--reverse::before {
+    animation-direction: reverse;
+  }
+
+  .magicui-shine-border::before {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--magic-shine-border-width, 1px));
+    border-radius: inherit;
+    padding: var(--magic-shine-border-width, 1px);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      var(--magic-shine-colors, #ffaa40, #9c40ff, #4aa8ff),
+      transparent 320deg
+    );
+    animation: magic-shine-rotate var(--magic-shine-duration, 12s) linear infinite;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0.92;
+  }
+
+  .marketing-bento-marquee-track {
+    will-change: auto;
+  }
+
+  .marketing-bento-marquee .marketing-bento-marquee-track > * {
+    pointer-events: none;
+  }
+
+  html .marketing-bento-marquee .shadow-sm,
+  html .marketing-bento-marquee .shadow-lg,
+  html .marketing-bento-marquee .shadow-xl,
+  html .marketing-bento-marquee .shadow-2xl,
+  html .marketing-bento-marquee [class*="shadow-["] {
+    box-shadow: none;
+  }
+
+  html .marketing-bento-light-card [data-ambient-light-bleed="true"] {
+    display: none;
+  }
+
+  html .marketing-bento-marquee .drop-shadow,
+  html .marketing-bento-marquee [class*="drop-shadow-["] {
+    filter: none;
+  }
+
+  html .marketing-bento-marquee [class*="backdrop-blur"] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-bento-marquee-track,
+    .marketing-aurora,
+    .magicui-animated-grid-pattern,
+    .magicui-animated-gradient-text,
+    .magicui-border-beam::before,
+    .magicui-shine-border::before {
+      animation: none;
+    }
+  }
 }
