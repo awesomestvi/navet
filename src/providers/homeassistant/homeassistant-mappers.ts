@@ -246,12 +246,22 @@ function inferHomeAssistantCapabilities(
   return [];
 }
 
-function createHomeAssistantState(entityId: string, entity: HassEntity): Record<string, unknown> {
+function createHomeAssistantState(
+  entityId: string,
+  entity: HassEntity,
+  entityEntry?: HomeAssistantEntityRegistryEntry
+): Record<string, unknown> {
   const domain = getDomain(entityId);
   const deviceClass =
     typeof entity.attributes?.device_class === 'string'
       ? entity.attributes.device_class
       : undefined;
+  const entityCategory = getEntityCategory(entityEntry);
+  const deviceId = entityEntry?.device_id ?? undefined;
+  const commonState = {
+    deviceId,
+    entityCategory: entityCategory ?? undefined,
+  };
 
   if (domain === 'climate' || domain === 'water_heater') {
     const currentTemperature = readNumberish(entity.attributes?.current_temperature);
@@ -262,6 +272,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
       currentTemperature;
 
     return {
+      ...commonState,
       value: entity.state,
       temperature: targetTemperature ?? 0,
       currentTemperature: currentTemperature ?? targetTemperature ?? 0,
@@ -304,6 +315,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
       undefined;
 
     return {
+      ...commonState,
       value: normalizedState,
       title:
         (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
@@ -347,6 +359,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
     const tiltPosition = readNumberish(entity.attributes?.current_tilt_position);
 
     return {
+      ...commonState,
       value: entity.state,
       position: position ?? tiltPosition,
       positionMode: position != null ? 'position' : tiltPosition != null ? 'tilt' : undefined,
@@ -359,6 +372,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
 
   if (domain === 'lock') {
     return {
+      ...commonState,
       value: entity.state,
       locked: entity.state === 'locked',
       deviceClass,
@@ -369,6 +383,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
 
   if (domain === 'scene') {
     return {
+      ...commonState,
       value: entity.state,
       size: 'small',
     };
@@ -377,6 +392,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
   if (domain === 'person') {
     const personState = typeof entity.state === 'string' ? entity.state : 'not_home';
     return {
+      ...commonState,
       value: personState === 'home' ? 'home' : 'away',
       location:
         personState === 'home'
@@ -415,6 +431,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
     const supportedFeatures = readNumberish(entity.attributes?.supported_features) ?? 0;
 
     return {
+      ...commonState,
       value: entity.state,
       entityPicture,
       supportedFeatures,
@@ -437,6 +454,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
       readNumberish(entity.attributes?.battery_percent);
 
     return {
+      ...commonState,
       value: entity.state,
       status: normalizeVacuumStatus(entity.attributes?.status ?? entity.state),
       battery: typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : 0,
@@ -467,6 +485,7 @@ function createHomeAssistantState(entityId: string, entity: HassEntity): Record<
   }
 
   return {
+    ...commonState,
     value: entity.state,
     brightness: entity.attributes?.brightness,
     brightnessPct:
@@ -627,7 +646,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         name,
         room || UNKNOWN_ROOM_LABEL,
         capabilities,
-        createHomeAssistantState(entityId, entity),
+        createHomeAssistantState(entityId, entity, entityEntry),
         resources
       )
     );

@@ -64,6 +64,7 @@ export function useLightCardController({
   const {
     isSmall,
     padding,
+    supportsBrightness,
     supportsColorTemperature,
     supportsColorControl,
     minColorTemp,
@@ -159,6 +160,7 @@ export function useLightCardController({
     selectedIcon,
     showPresetOverflow,
     showSettingsButton,
+    supportsBrightness,
     supportsEffects,
     supportsColorControl,
     supportsColorTemperature,

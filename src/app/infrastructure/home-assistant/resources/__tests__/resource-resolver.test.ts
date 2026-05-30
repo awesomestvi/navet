@@ -45,7 +45,7 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('same_origin');
   });
 
-  it('resolves standalone OAuth resources to signed direct Home Assistant URLs when available', async () => {
+  it('keeps standalone OAuth signed resources on the same-origin proxy when available', async () => {
     window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
     resetRuntimeContextForTests();
     const signPath = async (path: string) =>
@@ -66,8 +66,8 @@ describe('HomeAssistantResourceResolver', () => {
       url: homeAssistantUrlFixtures.relativeImageServe,
     });
 
-    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedPathFixture.path}`);
-    expect(resource.authStrategy).toBe('none');
+    expect(resource.url).toBe(`/__navet_ha_proxy__${signedPathFixture.path}`);
+    expect(resource.authStrategy).toBe('same_origin');
   });
 
   it('rewrites absolute Home Assistant URLs through ingress-aware proxy paths', () => {

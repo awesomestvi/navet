@@ -12,6 +12,7 @@ import type { NavetLightState } from '@/app/core/navet-device-state';
 import type { PlatformEntitySnapshot } from '@/app/platform/provider-feature-models';
 import {
   getSupportedColorTemperatureRange,
+  supportsBrightnessControl,
   supportsColorSelection,
   supportsColorTemperatureControl,
 } from './light-card-utils';
@@ -28,6 +29,7 @@ interface UseLightCardDisplayParams {
 interface UseLightCardDisplayResult {
   isSmall: boolean;
   padding: string;
+  supportsBrightness: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
   minColorTemp: number;
@@ -41,15 +43,16 @@ export function useLightCardDisplay({
   selectedIcon,
   size,
   liveEntity,
-  initialTemp,
+  initialTemp: _initialTemp,
   providerState,
   supportsAdvancedLightControls,
 }: UseLightCardDisplayParams): UseLightCardDisplayResult {
+  const supportsBrightness =
+    (liveEntity ? supportsBrightnessControl(liveEntity) : false) ||
+    typeof providerState?.brightnessPct === 'number';
   const supportsColorTemperature =
-    supportsColorTemperatureControl(liveEntity) ||
-    (typeof providerState?.colorTemperatureKelvin === 'number'
-      ? providerState.colorTemperatureKelvin
-      : initialTemp) > 0;
+    (liveEntity ? supportsColorTemperatureControl(liveEntity) : false) ||
+    typeof providerState?.colorTemperatureKelvin === 'number';
   const supportsColorControl =
     supportsAdvancedLightControls && Boolean(liveEntity) && supportsColorSelection(liveEntity);
   const { max: maxColorTemp, min: minColorTemp } = getSupportedColorTemperatureRange(liveEntity);
@@ -77,6 +80,7 @@ export function useLightCardDisplay({
   return {
     isSmall,
     padding,
+    supportsBrightness,
     supportsColorTemperature,
     supportsColorControl,
     minColorTemp,

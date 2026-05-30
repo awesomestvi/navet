@@ -16,7 +16,9 @@ export interface HADeviceIndexes {
   primarySwitchEntityIdByDeviceId: Map<string, string>;
   deviceIdsWithVacuumEntity: Set<string>;
   deviceIdsWithClimateEntity: Set<string>;
+  deviceIdsWithFanEntity: Set<string>;
   deviceIdsWithPrimaryCards: Set<string>;
+  deviceIdsWithSensorCards: Set<string>;
 }
 
 const PRIMARY_CARD_DOMAINS = new Set([
@@ -56,7 +58,7 @@ export function getSwitchPrimarySortKey(
       ? entity.attributes.friendly_name.toLowerCase()
       : '';
   const helperKeywordPenalty =
-    /(boost|timer|speed|mode|humidity|light|delay|interval|preset|continuous|trickle|gateway|restart|reboot|update)/.test(
+    /(boost|timer|speed|mode|humidity|light|brightness|delay|interval|preset|continuous|trickle|gateway|restart|reboot|update|oscillat|swing|display|buzzer|beep|indicator|child[_\s-]?lock|led)/.test(
       `${objectId} ${friendlyName}`
     )
       ? 20
@@ -267,7 +269,9 @@ export function buildDeviceIndexes(
     primarySwitchEntityIdByDeviceId: new Map<string, string>(),
     deviceIdsWithVacuumEntity: new Set<string>(),
     deviceIdsWithClimateEntity: new Set<string>(),
+    deviceIdsWithFanEntity: new Set<string>(),
     deviceIdsWithPrimaryCards: new Set<string>(),
+    deviceIdsWithSensorCards: new Set<string>(),
   };
 
   for (const [entityId, entity] of Object.entries(entities)) {
@@ -285,6 +289,14 @@ export function buildDeviceIndexes(
 
     if ((domain === 'climate' || domain === 'water_heater') && deviceId) {
       indexes.deviceIdsWithClimateEntity.add(deviceId);
+    }
+
+    if (domain === 'fan' && deviceId) {
+      indexes.deviceIdsWithFanEntity.add(deviceId);
+    }
+
+    if ((domain === 'sensor' || domain === 'binary_sensor') && deviceId) {
+      indexes.deviceIdsWithSensorCards.add(deviceId);
     }
 
     if (domain === 'sensor' && deviceId) {
@@ -336,7 +348,10 @@ export function shouldSuppressHelperCard(
   }
 
   const deviceId = entityRegistryMap.get(entityId)?.device_id;
-  return deviceId ? indexes.deviceIdsWithPrimaryCards.has(deviceId) : false;
+  return deviceId
+    ? indexes.deviceIdsWithPrimaryCards.has(deviceId) ||
+        indexes.deviceIdsWithSensorCards.has(deviceId)
+    : false;
 }
 
 export function shouldSkipSwitchDevice(
@@ -356,6 +371,10 @@ export function shouldSkipSwitchDevice(
   }
 
   if (deviceId && indexes.deviceIdsWithClimateEntity.has(deviceId)) {
+    return true;
+  }
+
+  if (deviceId && indexes.deviceIdsWithFanEntity.has(deviceId)) {
     return true;
   }
 

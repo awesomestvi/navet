@@ -1,3 +1,4 @@
+import { formatTimestampTime } from '@/app/hooks/entity-utils/time-format';
 import type { SensorDevice } from '@/app/types/device.types';
 import type { SensorIconType } from './sensors';
 
@@ -14,6 +15,11 @@ export interface InfoDisplayModel {
   baseColor: string;
   status: SensorDevice['status'];
   deviceClass?: string;
+}
+
+export interface InfoDisplayFormatOptions {
+  locale?: string;
+  use24HourTime?: boolean;
 }
 
 export const INFO_TONE_CLASSES: Record<InfoTone, { value: string; baseColor: string }> = {
@@ -108,7 +114,53 @@ function formatCardTypeLabel(value: string | undefined) {
     .replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
 }
 
-export function buildInfoDisplayModel(sensor: SensorDevice): InfoDisplayModel {
+function formatPressureValue(value: string) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return value;
+  }
+
+  return Number.isInteger(numericValue) ? `${numericValue}` : numericValue.toFixed(1);
+}
+
+function formatTemperatureValue(value: string) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return value;
+  }
+
+  return Number.isInteger(numericValue) ? `${numericValue}` : numericValue.toFixed(1);
+}
+
+function formatSensorDisplayValue(
+  sensor: SensorDevice,
+  deviceClass: string | undefined,
+  options: InfoDisplayFormatOptions
+) {
+  if (deviceClass === 'timestamp') {
+    return formatTimestampTime(
+      sensor.value,
+      options.locale ??
+        (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US'),
+      options.use24HourTime ?? false
+    );
+  }
+
+  if (deviceClass === 'pressure') {
+    return formatPressureValue(sensor.value);
+  }
+
+  if (deviceClass === 'temperature') {
+    return formatTemperatureValue(sensor.value);
+  }
+
+  return sensor.value;
+}
+
+export function buildInfoDisplayModel(
+  sensor: SensorDevice,
+  options: InfoDisplayFormatOptions = {}
+): InfoDisplayModel {
   const deviceClass = normalizeDeviceClass(sensor.deviceClass);
   const status = sensor.status ?? 'measurement';
   const tone = getInfoTone(deviceClass, status);
@@ -118,7 +170,7 @@ export function buildInfoDisplayModel(sensor: SensorDevice): InfoDisplayModel {
     id: sensor.id,
     title: sensor.name,
     eyebrow: formatCardTypeLabel(sensor.entityType) || formatCardTypeLabel(deviceClass) || 'Info',
-    value: sensor.value,
+    value: formatSensorDisplayValue(sensor, deviceClass, options),
     unit: sensor.unit,
     icon: sensor.icon ?? 'gauge',
     tone,

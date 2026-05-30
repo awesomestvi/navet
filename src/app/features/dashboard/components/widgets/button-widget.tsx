@@ -1,22 +1,35 @@
-import { Search, Settings2 } from 'lucide-react';
-import { type MouseEvent, type PointerEvent, useEffect, useState } from 'react';
+import { Palette, Settings2, Sliders } from 'lucide-react';
+import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { CardEmptyState } from '@/app/components/patterns';
+import {
+  CardDialogBody,
+  CardDialogHeader,
+  CardDialogSection,
+  CardDialogTabList,
+  CardDialogTabTrigger,
+  CardEmptyState,
+} from '@/app/components/patterns';
 import {
   BaseCard,
   Button,
   customCardDialogShellProps,
+  DialogFooter,
   DialogShell,
   Input,
   Textarea,
 } from '@/app/components/primitives';
+import { TabPanel, Tabs } from '@/app/components/primitives/tabs';
+import { CardSettingsActionButton } from '@/app/components/shared/card-settings-action-button';
 import {
   CustomCardTintPicker,
-  DEVICE_EDITOR_ICON_OPTIONS,
-  DialogHeader,
+  CustomScrollbar,
   getNamedIconComponent,
+  IconPicker,
 } from '@/app/components/shared/device-editor';
-import { getCustomCardTintSurface } from '@/app/components/shared/theme/custom-card-tint-surface';
+import {
+  getCustomCardTintSurface,
+  getInheritedDialogSectionStyle,
+} from '@/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@/app/components/shared/theme/theme-colors';
 import {
   parseButtonServiceCall,
@@ -59,7 +72,7 @@ function ButtonSettingsDialog({
   const [service, setService] = useState(data.service ?? '');
   const [entityId, setEntityId] = useState(data.entityId ?? '');
   const [selectedIcon, setSelectedIcon] = useState(data.icon ?? 'Zap');
-  const [iconQuery, setIconQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'controls' | 'card'>('controls');
   const [tintColor, setTintColor] = useState(data.tintColor ?? '');
   const [serviceData, setServiceData] = useState(
     data.serviceData ? JSON.stringify(data.serviceData, null, 2) : ''
@@ -69,11 +82,16 @@ function ButtonSettingsDialog({
   const dialogShell = customCardDialogShellProps(
     { panel: surface.panelClassName, border: surface.borderClassName },
     tintSurface,
-    { maxWidth: 'sm' }
+    { maxWidth: 'sm', padding: false }
   );
+  const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor || undefined);
+  const wasOpenRef = useRef(isOpen);
 
   useEffect(() => {
-    if (!isOpen) {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (!isOpen || wasOpen) {
       return;
     }
 
@@ -81,10 +99,18 @@ function ButtonSettingsDialog({
     setService(data.service ?? '');
     setEntityId(data.entityId ?? '');
     setSelectedIcon(data.icon ?? 'Zap');
-    setIconQuery('');
+    setActiveTab('controls');
     setTintColor(data.tintColor ?? '');
     setServiceData(data.serviceData ? JSON.stringify(data.serviceData, null, 2) : '');
-  }, [data, isOpen]);
+  }, [
+    data.entityId,
+    data.icon,
+    data.label,
+    data.service,
+    data.serviceData,
+    data.tintColor,
+    isOpen,
+  ]);
 
   const handleSave = () => {
     let parsedServiceData: Record<string, unknown> | undefined;
@@ -122,12 +148,11 @@ function ButtonSettingsDialog({
   };
 
   const inputClass = `w-full rounded-xl border px-3 py-2 text-sm outline-none ${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:opacity-40`;
-  const filteredIcons = iconQuery.trim()
-    ? DEVICE_EDITOR_ICON_OPTIONS.filter((icon) =>
-        `${icon.name} ${t(icon.labelKey)}`.toLowerCase().includes(iconQuery.trim().toLowerCase())
-      )
-    : DEVICE_EDITOR_ICON_OPTIONS;
   const textFieldClass = `${surface.borderClassName} bg-transparent ${surface.textPrimary} placeholder:opacity-40 rounded-xl`;
+  const fieldStyle = {
+    ...sectionStyle,
+    background: surface.subtleFill,
+  };
 
   return (
     <DialogShell
@@ -139,95 +164,99 @@ function ButtonSettingsDialog({
       contentGlowStyle={dialogShell.contentGlowStyle}
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
-      <DialogHeader title={t('widgets.button.configure')} isOn={theme !== 'light'} />
-
-      <div className="space-y-3">
-        <CustomCardTintPicker
-          value={tintColor || undefined}
-          onChange={setTintColor}
-          defaultColor="#f97316"
-          className={surface.textMuted}
-        />
-
-        <Input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder={t('widgets.button.labelPlaceholder')}
-          inputClassName={textFieldClass}
-        />
-        <Input
-          type="text"
-          value={service}
-          onChange={(e) => setService(e.target.value)}
-          placeholder={t('widgets.button.servicePlaceholder')}
-          inputClassName={textFieldClass}
-        />
-        <Input
-          type="text"
-          value={entityId}
-          onChange={(e) => setEntityId(e.target.value)}
-          placeholder={t('widgets.button.entityPlaceholder')}
-          inputClassName={textFieldClass}
-        />
-        <Textarea
-          value={serviceData}
-          onChange={(e) => setServiceData(e.target.value)}
-          placeholder={t('widgets.button.serviceDataPlaceholder')}
-          containerClassName="w-full"
-          textareaClassName={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
-        />
-
-        <div className="space-y-3">
-          <div className={`text-xs font-medium ${surface.textSecondary}`}>
-            {t('widgets.button.iconLabel')}
-          </div>
-          <Input
-            type="text"
-            value={iconQuery}
-            onChange={(e) => setIconQuery(e.target.value)}
-            placeholder={t('widgets.button.iconSearchPlaceholder')}
-            leading={<Search className={`h-4 w-4 ${surface.textMuted}`} />}
-            inputClassName={textFieldClass}
+      <CustomScrollbar isOn={theme !== 'light'} className="max-sm:min-h-0 max-sm:flex-1">
+        <CardDialogBody>
+          <CardDialogHeader
+            title={label.trim() || t('widgets.button.title')}
+            description={t('widgets.button.configure')}
+            showRoomSelector={false}
           />
-          <div className="grid max-h-48 grid-cols-6 gap-2 overflow-y-auto pr-1">
-            {filteredIcons.map((icon) => {
-              const IconComponent = icon.component;
-              const isSelected = selectedIcon === icon.name;
-              return (
-                <button
-                  type="button"
-                  key={icon.name}
-                  onClick={() => setSelectedIcon(icon.name)}
-                  className={`flex aspect-square items-center justify-center rounded-2xl border transition-all ${
-                    isSelected ? '' : `${surface.borderClassName} ${surface.textMuted}`
-                  }`}
-                  style={
-                    isSelected
-                      ? {
-                          borderColor: `${accentHex}88`,
-                          backgroundColor: `${accentHex}22`,
-                          color: accentHex,
-                        }
-                      : undefined
-                  }
-                  title={t(icon.labelKey)}
-                >
-                  <IconComponent className="h-4 w-4" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
-      <Button
-        onClick={handleSave}
-        className="mt-4 w-full rounded-xl py-2.5 text-sm hover:opacity-80"
-        style={{ backgroundColor: getThemeColorValue('blue') }}
-      >
-        {t('widgets.button.configure')}
-      </Button>
+          <Tabs
+            value={activeTab}
+            defaultValue="controls"
+            onValueChange={(value) => setActiveTab(value as 'controls' | 'card')}
+          >
+            <CardDialogTabList>
+              <CardDialogTabTrigger
+                active={activeTab === 'controls'}
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                {t('common.controls')}
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
+                active={activeTab === 'card'}
+                icon={Palette}
+                onClick={() => setActiveTab('card')}
+              >
+                {t('common.customize')}
+              </CardDialogTabTrigger>
+            </CardDialogTabList>
+
+            <TabPanel value="controls" className="mt-5 space-y-6">
+              <CardDialogSection label={t('widgets.button.title')}>
+                <div className="space-y-3">
+                  <Input
+                    type="text"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder={t('widgets.button.labelPlaceholder')}
+                    inputClassName={textFieldClass}
+                    style={fieldStyle}
+                  />
+                  <Input
+                    type="text"
+                    value={service}
+                    onChange={(e) => setService(e.target.value)}
+                    placeholder={t('widgets.button.servicePlaceholder')}
+                    inputClassName={textFieldClass}
+                    style={fieldStyle}
+                  />
+                  <Input
+                    type="text"
+                    value={entityId}
+                    onChange={(e) => setEntityId(e.target.value)}
+                    placeholder={t('widgets.button.entityPlaceholder')}
+                    inputClassName={textFieldClass}
+                    style={fieldStyle}
+                  />
+                  <Textarea
+                    value={serviceData}
+                    onChange={(e) => setServiceData(e.target.value)}
+                    placeholder={t('widgets.button.serviceDataPlaceholder')}
+                    containerClassName="w-full"
+                    textareaClassName={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
+                    style={fieldStyle}
+                  />
+                </div>
+              </CardDialogSection>
+            </TabPanel>
+
+            <TabPanel value="card" className="mt-5 space-y-6">
+              <CustomCardTintPicker
+                value={tintColor || undefined}
+                onChange={setTintColor}
+                defaultColor="#f97316"
+                className={surface.textMuted}
+              />
+              <IconPicker
+                selectedIcon={selectedIcon}
+                onIconChange={setSelectedIcon}
+                isLightOn={theme !== 'light'}
+                label={t('widgets.button.iconLabel')}
+                accentColor={accentHex}
+              />
+            </TabPanel>
+          </Tabs>
+
+          <DialogFooter>
+            <Button onClick={handleSave} variant="soft" size="small" className="rounded-xl px-4">
+              {t('widgets.button.configure')}
+            </Button>
+          </DialogFooter>
+        </CardDialogBody>
+      </CustomScrollbar>
     </DialogShell>
   );
 }
@@ -299,16 +328,18 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
       contentClassName="h-full"
     >
       <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
-        {isEditMode && isConfigured && onUpdate && (
-          <button
-            type="button"
-            onClick={handleSettingsClick}
-            onPointerDown={stopCardInteraction}
-            className={`absolute right-3 top-3 rounded-lg p-1.5 transition-opacity hover:opacity-70 ${surface.textMuted}`}
-            aria-label={t('widgets.button.configure')}
-          >
-            <Settings2 className="h-4 w-4" />
-          </button>
+        {isConfigured && onUpdate && (
+          <div className="absolute right-3 bottom-3">
+            <CardSettingsActionButton
+              theme={theme}
+              size="small"
+              variant="soft"
+              onClick={handleSettingsClick}
+              onPointerDown={stopCardInteraction}
+              aria-label={t('widgets.button.configure')}
+              accentColor={data.tintColor ?? accentHex}
+            />
+          </div>
         )}
 
         {isConfigured ? (

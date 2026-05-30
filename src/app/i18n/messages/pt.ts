@@ -526,6 +526,7 @@ export const ptMessages = {
   'lighting.chooseCustomColor': 'Escolher cor personalizada',
   'lighting.customColorPicker': 'Seletor de cor personalizada',
   'lighting.brightness': 'Brilho',
+  'lighting.fanSpeed': 'Velocidade do ventilador',
   'lighting.colors': 'Cores',
   'lighting.brightnessPresets': 'Predefinições de brilho',
   'lighting.editBrightnessPresets': 'Editar predefinições de brilho',

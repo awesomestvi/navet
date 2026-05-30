@@ -27,6 +27,7 @@ interface LightCardMediumProps {
   activeColor?: string | null;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
+  supportsBrightness: boolean;
   supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;
@@ -62,6 +63,7 @@ export const LightCardMedium = memo(function LightCardMedium({
   activeColor,
   IconComponent,
   iconText,
+  supportsBrightness,
   supportsEffects,
   supportsColorControl,
   supportsColorTemperature,
@@ -107,7 +109,7 @@ export const LightCardMedium = memo(function LightCardMedium({
             size="medium"
             activeColor={activeColor}
           />
-        ) : (
+        ) : supportsBrightness ? (
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
@@ -116,7 +118,7 @@ export const LightCardMedium = memo(function LightCardMedium({
             size="medium"
             activeColor={activeColor}
           />
-        )}
+        ) : null}
 
         <LightCardActionRow
           size="medium"
@@ -126,6 +128,7 @@ export const LightCardMedium = memo(function LightCardMedium({
           currentTempColor={currentTempColor}
           isKelvinMode={isKelvinMode}
           isColorMode={isColorMode}
+          supportsBrightness={supportsBrightness}
           supportsColorTemperature={supportsColorTemperature}
           supportsColorControl={supportsColorControl}
           supportsEffects={supportsEffects}

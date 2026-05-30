@@ -533,6 +533,7 @@ export const frMessages = {
   'lighting.chooseCustomColor': 'Choisir une couleur personnalisee',
   'lighting.customColorPicker': 'Selection de couleur personnalisee',
   'lighting.brightness': 'Luminosite',
+  'lighting.fanSpeed': 'Vitesse du ventilateur',
   'lighting.colors': 'Couleurs',
   'lighting.brightnessPresets': 'Préréglages de luminosité',
   'lighting.editBrightnessPresets': 'Modifier les préréglages de luminosité',

@@ -33,6 +33,38 @@ describe('useLightCardDisplay', () => {
     expect(result.current.tempOptions.every((option) => option.value >= 2800)).toBe(true);
   });
 
+  it('does not infer color temperature support from the initial temperature alone', () => {
+    const { result } = renderHookWithProviders(() =>
+      useLightCardDisplay({
+        selectedIcon: '',
+        size: 'small',
+        initialTemp: 3000,
+        liveEntity: makeEntity({
+          supported_color_modes: ['brightness'],
+        }),
+        supportsAdvancedLightControls: false,
+      })
+    );
+
+    expect(result.current.supportsColorTemperature).toBe(false);
+  });
+
+  it('does not mark on-off only lights as brightness-capable', () => {
+    const { result } = renderHookWithProviders(() =>
+      useLightCardDisplay({
+        selectedIcon: '',
+        size: 'small',
+        initialTemp: 0,
+        liveEntity: makeEntity({
+          supported_color_modes: ['onoff'],
+        }),
+        supportsAdvancedLightControls: false,
+      })
+    );
+
+    expect(result.current.supportsBrightness).toBe(false);
+  });
+
   it('uses emoji text when the selected icon is not a known component', () => {
     const { result } = renderHookWithProviders(() =>
       useLightCardDisplay({
@@ -76,6 +108,7 @@ describe('useLightCardDisplay', () => {
 
     expect(result.current.supportsColorTemperature).toBe(true);
     expect(result.current.supportsColorControl).toBe(false);
+    expect(result.current.supportsBrightness).toBe(false);
     expect(result.current.minColorTemp).toBe(2700);
     expect(result.current.maxColorTemp).toBe(6500);
   });

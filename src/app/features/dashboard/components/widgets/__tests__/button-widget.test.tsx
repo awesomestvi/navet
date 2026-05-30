@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buttonEntityFixtures } from '@/test/fixtures/home-assistant/entities/button';
 import { sceneEntityFixtures } from '@/test/fixtures/home-assistant/entities/scene';
@@ -108,7 +108,47 @@ describe('ButtonWidget', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
 
-    expect(screen.getByText('Action Button')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Button label')).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog');
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByPlaceholderText('Button label')).toBeInTheDocument();
+  });
+
+  it('preserves draft field edits while the dialog is open across parent rerenders', () => {
+    const onUpdate = vi.fn();
+    const view = renderWithProviders(
+      <ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+
+    const dialog = screen.getByRole('dialog');
+    const labelInput = within(dialog).getByPlaceholderText('Button label');
+
+    fireEvent.change(labelInput, { target: { value: 'Evening Scene' } });
+    view.rerender(<ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />);
+
+    expect(within(dialog).getByDisplayValue('Evening Scene')).toBeInTheDocument();
+  });
+
+  it('opens the settings dialog from the configured card edit button', () => {
+    renderWithProviders(
+      <ButtonWidget
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+          icon: 'Film',
+        }}
+        onUpdate={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Configure' })[0]);
+
+    const dialog = screen.getByRole('dialog');
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByDisplayValue('Movie Mode')).toBeInTheDocument();
   });
 });

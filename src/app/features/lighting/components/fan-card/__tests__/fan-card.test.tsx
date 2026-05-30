@@ -60,7 +60,7 @@ describe('FanCard', () => {
     vi.clearAllMocks();
   });
 
-  it('uses card click for power and action row buttons for speed', () => {
+  it('uses card click for power and exposes a shared slider plus preset speed buttons', () => {
     homeAssistantStore.setState({
       entities: {
         'fan.ceiling_fan': createFanEntity(66),
@@ -83,6 +83,10 @@ describe('FanCard', () => {
     expect(screen.getByRole('button', { name: 'Fan Medium' })).toHaveAttribute(
       'aria-pressed',
       'true'
+    );
+    expect(screen.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '66'
     );
     expect(screen.queryByRole('button', { name: 'Fan Off' })).not.toBeInTheDocument();
     expect(

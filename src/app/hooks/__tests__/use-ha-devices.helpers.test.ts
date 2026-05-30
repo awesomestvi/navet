@@ -221,6 +221,43 @@ describe('use-ha-devices helpers', () => {
     ).toBe(true);
   });
 
+  it('suppresses accessory switches attached to fan devices', () => {
+    const entities: HassEntities = {
+      'fan.xiaomi_smart_tower_fan': makeHassEntityFixture({
+        entityId: 'fan.xiaomi_smart_tower_fan',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Xiaomi Smart Tower Fan',
+          percentage: 33,
+        },
+      }),
+      'switch.xiaomi_smart_tower_fan_physical_control_locked': makeHassEntityFixture({
+        entityId: 'switch.xiaomi_smart_tower_fan_physical_control_locked',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Xiaomi Smart Tower Fan Physical Control Locked',
+        },
+      }),
+    };
+    const entityRegistryMap = createRegistryMap([
+      { entity_id: 'fan.xiaomi_smart_tower_fan', device_id: 'device-xiaomi-fan' },
+      {
+        entity_id: 'switch.xiaomi_smart_tower_fan_physical_control_locked',
+        device_id: 'device-xiaomi-fan',
+      },
+    ]);
+
+    const indexes = buildDeviceIndexes(entities, entityRegistryMap);
+
+    expect(
+      shouldSkipSwitchDevice(
+        'switch.xiaomi_smart_tower_fan_physical_control_locked',
+        entityRegistryMap.get('switch.xiaomi_smart_tower_fan_physical_control_locked'),
+        indexes
+      )
+    ).toBe(true);
+  });
+
   it('suppresses helper cards when a device already has a primary card', () => {
     const entities: HassEntities = {
       'switch.kitchen_main': makeHassEntityFixture({
@@ -250,5 +287,76 @@ describe('use-ha-devices helpers', () => {
     expect(
       shouldSuppressHelperCard('input_boolean.kitchen_timer', entityRegistryMap, indexes)
     ).toBe(true);
+  });
+
+  it('suppresses helper buttons when a device is already represented by a sensor card', () => {
+    const entities: HassEntities = {
+      'sensor.aqara_humidity_sensor_humidity': makeHassEntityFixture({
+        entityId: 'sensor.aqara_humidity_sensor_humidity',
+        state: '48',
+        attributes: {
+          friendly_name: 'Aqara Humidity Sensor Humidity',
+          device_class: 'humidity',
+          unit_of_measurement: '%',
+        },
+      }),
+      'button.aqara_humidity_sensor_identify': makeHassEntityFixture({
+        entityId: 'button.aqara_humidity_sensor_identify',
+        state: 'unknown',
+        attributes: {
+          friendly_name: 'Aqara Humidity Sensor Identify',
+        },
+      }),
+    };
+
+    const entityRegistryMap = createRegistryMap([
+      {
+        entity_id: 'sensor.aqara_humidity_sensor_humidity',
+        device_id: 'device-aqara-humidity',
+      },
+      {
+        entity_id: 'button.aqara_humidity_sensor_identify',
+        device_id: 'device-aqara-humidity',
+      },
+    ]);
+
+    const indexes = buildDeviceIndexes(entities, entityRegistryMap);
+
+    expect(
+      shouldSuppressHelperCard('button.aqara_humidity_sensor_identify', entityRegistryMap, indexes)
+    ).toBe(true);
+  });
+
+  it('does not choose brightness accessory switches as the primary switch card', () => {
+    const entities: HassEntities = {
+      'switch.xiaomi_smart_tower_fan': makeHassEntityFixture({
+        entityId: 'switch.xiaomi_smart_tower_fan',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Xiaomi Smart Tower Fan',
+        },
+      }),
+      'switch.xiaomi_smart_tower_fan_brightness': makeHassEntityFixture({
+        entityId: 'switch.xiaomi_smart_tower_fan_brightness',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Xiaomi Smart Tower Fan Brightness',
+        },
+      }),
+    };
+
+    const entityRegistryMap = createRegistryMap([
+      { entity_id: 'switch.xiaomi_smart_tower_fan', device_id: 'device-xiaomi-fan' },
+      {
+        entity_id: 'switch.xiaomi_smart_tower_fan_brightness',
+        device_id: 'device-xiaomi-fan',
+      },
+    ]);
+
+    const indexes = buildDeviceIndexes(entities, entityRegistryMap);
+
+    expect(indexes.primarySwitchEntityIdByDeviceId.get('device-xiaomi-fan')).toBe(
+      'switch.xiaomi_smart_tower_fan'
+    );
   });
 });

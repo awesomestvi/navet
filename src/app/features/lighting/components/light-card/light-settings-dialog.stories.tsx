@@ -37,6 +37,7 @@ function LightSettingsDialogStory() {
         onOpenChange={setIsOpen}
         name="Living Room Main"
         isOn
+        supportsBrightness
         supportsColorTemperature
         supportsColorControl
         currentEffect={null}

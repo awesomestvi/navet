@@ -12,6 +12,23 @@ interface EntityCardTitleBlockProps {
   subtitleStyle?: CSSProperties;
 }
 
+function formatEyebrowSubtitle(value: string | undefined) {
+  if (!value) {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return value;
+  }
+
+  if (!/^[a-z][a-z\s_-]*$/.test(trimmed)) {
+    return value;
+  }
+
+  return trimmed.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function EntityCardTitleBlock({
   title,
   subtitle,
@@ -21,12 +38,14 @@ export function EntityCardTitleBlock({
   titleStyle,
   subtitleStyle,
 }: EntityCardTitleBlockProps) {
+  const formattedSubtitle = formatEyebrowSubtitle(subtitle);
+
   if (layout === 'eyebrow-first') {
     return (
       <>
-        {subtitle ? (
+        {formattedSubtitle ? (
           <p className={subtitleClassName} style={subtitleStyle}>
-            {subtitle}
+            {formattedSubtitle}
           </p>
         ) : null}
         <h3 className={titleClassName} style={titleStyle}>
@@ -41,9 +60,9 @@ export function EntityCardTitleBlock({
       <h3 className={titleClassName} style={titleStyle}>
         {title}
       </h3>
-      {subtitle ? (
+      {formattedSubtitle ? (
         <p className={subtitleClassName} style={subtitleStyle}>
-          {subtitle}
+          {formattedSubtitle}
         </p>
       ) : null}
     </>

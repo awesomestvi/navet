@@ -47,6 +47,7 @@ export interface LightCardController {
   settingsButtonProps: HeaderIconButtonProps;
   showPresetOverflow: boolean;
   showSettingsButton: boolean;
+  supportsBrightness: boolean;
   supportsEffects: boolean;
   supportsColorControl: boolean;
   supportsColorTemperature: boolean;

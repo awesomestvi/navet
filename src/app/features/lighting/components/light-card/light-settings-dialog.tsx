@@ -36,6 +36,7 @@ interface LightSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   name: string;
   isOn: boolean;
+  supportsBrightness: boolean;
   supportsColorTemperature: boolean;
   supportsColorControl: boolean;
   minColorTemp: number;
@@ -73,6 +74,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onOpenChange,
   name,
   isOn,
+  supportsBrightness,
   supportsColorTemperature,
   supportsColorControl,
   minColorTemp,
@@ -134,13 +136,15 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
               >
                 Controls
               </CardDialogTabTrigger>
-              <CardDialogTabTrigger
-                active={activeTab === 'presets'}
-                icon={Star}
-                onClick={() => setActiveTab('presets')}
-              >
-                Presets
-              </CardDialogTabTrigger>
+              {supportsBrightness && (
+                <CardDialogTabTrigger
+                  active={activeTab === 'presets'}
+                  icon={Star}
+                  onClick={() => setActiveTab('presets')}
+                >
+                  Presets
+                </CardDialogTabTrigger>
+              )}
               <CardDialogTabTrigger
                 active={activeTab === 'card'}
                 icon={Palette}
@@ -172,20 +176,24 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                   onCustomColorChange={onCustomColorChange}
                 />
               )}
-              <BrightnessSlider
-                value={brightness}
-                onChange={onBrightnessChange}
-                onCommit={onBrightnessCommit ?? onBrightnessChange}
-                isOn={isOn}
-                disabled={!isOn}
-                presentation="dialog"
-              />
-              <BrightnessPresets
-                presets={brightnessPresets}
-                currentBrightness={brightness}
-                isOn={isOn}
-                onBrightnessChange={onBrightnessCommit ?? onBrightnessChange}
-              />
+              {supportsBrightness && (
+                <>
+                  <BrightnessSlider
+                    value={brightness}
+                    onChange={onBrightnessChange}
+                    onCommit={onBrightnessCommit ?? onBrightnessChange}
+                    isOn={isOn}
+                    disabled={!isOn}
+                    presentation="dialog"
+                  />
+                  <BrightnessPresets
+                    presets={brightnessPresets}
+                    currentBrightness={brightness}
+                    isOn={isOn}
+                    onBrightnessChange={onBrightnessCommit ?? onBrightnessChange}
+                  />
+                </>
+              )}
               {supportsEffects && effectOptions.length > 0 && (
                 <LightEffectPicker
                   currentEffect={currentEffect}
@@ -206,18 +214,20 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
               />
             </TabPanel>
 
-            <TabPanel value="presets" className="mt-5 space-y-6">
-              <BrightnessPresetEditor
-                presets={brightnessPresets}
-                isOn={isOn}
-                onPresetValueChange={onBrightnessPresetValueChange}
-                onPresetOrderChange={onBrightnessPresetOrderChange}
-                onlyApplyToThisLight={!applyBrightnessPresetsToAll}
-                onOnlyApplyToThisLightChange={(checked) =>
-                  onApplyBrightnessPresetsToAllChange(!checked)
-                }
-              />
-            </TabPanel>
+            {supportsBrightness && (
+              <TabPanel value="presets" className="mt-5 space-y-6">
+                <BrightnessPresetEditor
+                  presets={brightnessPresets}
+                  isOn={isOn}
+                  onPresetValueChange={onBrightnessPresetValueChange}
+                  onPresetOrderChange={onBrightnessPresetOrderChange}
+                  onlyApplyToThisLight={!applyBrightnessPresetsToAll}
+                  onOnlyApplyToThisLightChange={(checked) =>
+                    onApplyBrightnessPresetsToAllChange(!checked)
+                  }
+                />
+              </TabPanel>
+            )}
           </Tabs>
 
           <DialogDoneFooter label={t('common.done')} />

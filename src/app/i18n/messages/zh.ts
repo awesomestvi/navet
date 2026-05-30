@@ -215,6 +215,7 @@ export const zhMessages = {
   'lighting.customColor': '自定义颜色',
   'lighting.chooseCustomColor': '选择自定义颜色',
   'lighting.brightness': '亮度',
+  'lighting.fanSpeed': '风扇速度',
   'lighting.colors': '颜色',
   'lighting.brightnessPresets': '亮度预设',
   'lighting.lightColor': '灯光颜色',
