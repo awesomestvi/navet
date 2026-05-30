@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- Updated Navet to `0.4.1`
+- Fixed a Home dashboard edit-mode render loop that could break card-grid editing
+- Consolidated Home Assistant setup docs and moved public deployment hardening guidance into the main security policy
+
 ## 0.4.0
 
 - Updated Navet to `0.4.0`

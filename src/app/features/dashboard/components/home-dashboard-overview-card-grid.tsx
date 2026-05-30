@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -144,10 +145,12 @@ export const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const { t } = useI18n();
-  const { effectsQuality, lowPowerMode } = useSettingsStore((state) => ({
-    effectsQuality: settingsSelectors.effectsQuality(state),
-    lowPowerMode: settingsSelectors.lowPowerMode(state),
-  }));
+  const { effectsQuality, lowPowerMode } = useSettingsStore(
+    useShallow((state) => ({
+      effectsQuality: settingsSelectors.effectsQuality(state),
+      lowPowerMode: settingsSelectors.lowPowerMode(state),
+    }))
+  );
   const optimizeOffscreenPaint = !isEditMode && effectsQuality !== 'high';
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));

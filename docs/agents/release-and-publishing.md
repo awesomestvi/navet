@@ -147,4 +147,3 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 
 - Command restrictions and commit rules live in [commands.md](commands.md).
 - Versioning, release-note drafting, and the Linear fallback flow live in [../VERSIONING.md](../VERSIONING.md).
-- Provider release validation details live in [../PROVIDER_RELEASE_VALIDATION.md](../PROVIDER_RELEASE_VALIDATION.md).
