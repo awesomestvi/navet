@@ -8,6 +8,35 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 [Storybook](https://awesomestvi.github.io/navet/storybook/) ·
 [Security notes](docs/PUBLIC_LAUNCH_SECURITY.md)
 
+## Supported Platforms
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="src/assets/providers/home-assistant.svg" alt="Home Assistant" height="48"><br>
+      <strong>Home Assistant</strong><br>
+      custom panel, add-on, standalone
+    </td>
+    <td align="center" width="33%">
+      <img src="src/assets/providers/homey.png" alt="Homey" height="48"><br>
+      <strong>Homey</strong><br>
+      standalone OAuth flow
+    </td>
+    <td align="center" width="33%">
+      <img src="src/assets/providers/openhab.svg" alt="openHAB" height="48"><br>
+      <strong>openHAB</strong><br>
+      standalone URL-session flow
+    </td>
+  </tr>
+</table>
+
+## At A Glance
+
+![Supported providers](https://img.shields.io/badge/Supported%20providers-3-f97316?style=for-the-badge)
+![Home Assistant modes](https://img.shields.io/badge/Home%20Assistant%20modes-3-0f766e?style=for-the-badge)
+![Device card types](https://img.shields.io/badge/Device%20card%20types-14-1d4ed8?style=for-the-badge)
+![Custom widgets](https://img.shields.io/badge/Custom%20widgets-9-7c3aed?style=for-the-badge)
+
 ## What Navet Is
 
 Navet turns supported smart-home platforms into a dedicated control surface.
