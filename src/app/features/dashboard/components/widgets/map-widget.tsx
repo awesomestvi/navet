@@ -32,7 +32,7 @@ const MapWidgetLive = lazy(async () => {
 export interface MapWidgetProps {
   size?: CardSize;
   tintColor?: string;
-  markers?: MapMarker[];
+  markers?: readonly MapMarker[];
 }
 
 function requestDeferredMapReady(callback: () => void) {

@@ -24,7 +24,7 @@ export function MarketingDemoCtaSection() {
           <Text className="text-base font-semibold">Static sample data, real Navet UI</Text>
           <Text tone="muted">
             The public demo uses realistic fixtures so you can explore the layout, cards, and theme
-            direction without connecting your own Home Assistant instance.
+            direction without connecting your own provider runtime.
           </Text>
           <Button
             onClick={() => {

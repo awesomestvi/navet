@@ -11,7 +11,7 @@ export function MarketingInstallOptionsSection() {
     <MarketingSectionShell
       eyebrow="Install"
       title="Start with the most stable path"
-      description="For Home Assistant users, the custom panel is the recommended setup today. Advanced and standalone paths stay available when they better match your deployment."
+      description="Navet supports multiple deployment shapes. The Home Assistant custom panel is the most mature path today, while add-on and standalone setups stay available when they better match your deployment."
     >
       <div className="grid gap-4 lg:grid-cols-3">
         {MARKETING_INSTALL_OPTIONS.map((option) => (

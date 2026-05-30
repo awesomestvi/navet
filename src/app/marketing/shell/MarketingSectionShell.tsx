@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Badge, Heading, Text } from '@/app/components/primitives';
+import { Heading, Text } from '@/app/components/primitives';
 import { cn } from '@/app/components/ui/utils';
 
 interface MarketingSectionShellProps {
@@ -11,7 +11,7 @@ interface MarketingSectionShellProps {
 }
 
 export function MarketingSectionShell({
-  eyebrow,
+  eyebrow: _eyebrow,
   title,
   description,
   children,
@@ -20,7 +20,6 @@ export function MarketingSectionShell({
   return (
     <section className={cn('space-y-6 md:space-y-8', className)}>
       <div className="max-w-3xl space-y-3">
-        {eyebrow ? <Badge tone="accent">{eyebrow}</Badge> : null}
         <Heading as="h2" className="text-3xl md:text-4xl">
           {title}
         </Heading>

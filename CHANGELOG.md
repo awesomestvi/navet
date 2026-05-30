@@ -9,7 +9,7 @@
 ## Improved
 
 - Home Assistant setup guidance is now consolidated into a single deployment guide, with updated README and docs links.
-- Public deployment hardening guidance now lives directly in the security policy for easier release review and operator checks.
+- Public deployment hardening guidance now lives directly in the security policy for easier release review and operator checks
 
 ## 0.4.0 - 2026-05-30
 

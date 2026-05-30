@@ -1,0 +1,31 @@
+import type { CardSize } from '@/app/components/shared/card-size';
+import { MARKETING_BENTO_CARDS } from '@/app/marketing/data/marketingDemoData';
+
+export type BentoCardKey =
+  | keyof typeof MARKETING_BENTO_CARDS
+  | 'rss'
+  | 'note'
+  | 'map'
+  | 'photo'
+  | 'media'
+  | 'hvac'
+  | 'batteryOverview';
+
+export function getMarketingBentoCardSize(cardKey: BentoCardKey): CardSize {
+  if (cardKey === 'rss') {
+    return 'large';
+  }
+
+  if (
+    cardKey === 'note' ||
+    cardKey === 'map' ||
+    cardKey === 'photo' ||
+    cardKey === 'media' ||
+    cardKey === 'hvac' ||
+    cardKey === 'batteryOverview'
+  ) {
+    return 'medium';
+  }
+
+  return MARKETING_BENTO_CARDS[cardKey].size;
+}

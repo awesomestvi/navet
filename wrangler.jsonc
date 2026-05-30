@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "navet",
-  "pages_build_output_dir": "./dist",
+  "pages_build_output_dir": "./apps/website/dist",
   "compatibility_date": "2026-05-30"
 }

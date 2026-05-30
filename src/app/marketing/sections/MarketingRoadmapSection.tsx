@@ -21,7 +21,7 @@ export function MarketingRoadmapSection() {
     <MarketingSectionShell
       eyebrow="Roadmap"
       title="Clear about what ships now and what comes later"
-      description="Home Assistant is the mature path today. Future provider expansion stays on the roadmap until it is ready to be presented as a real supported option."
+      description="Navet is built around a provider-neutral architecture, but provider maturity is not equal yet. The roadmap keeps future platform work separate from what is genuinely production-ready today."
     >
       <div className="grid gap-4 lg:grid-cols-3">
         <RoadmapColumn title="Now" items={MARKETING_ROADMAP.now} />

@@ -18,8 +18,11 @@
     "build": "vite build",
     "build:ha-panel": "node scripts/build-ha-panel.mjs",
     "dev": "vite",
+    "website:build": "pnpm --filter @navet/website build",
+    "website:dev": "pnpm --filter @navet/website dev",
+    "website:preview": "pnpm --filter @navet/website preview",
     "release:linear": "node scripts/fetch-linear-release-issues.mjs",
-    "preview": "pnpm build && pnpm preview:config && vite preview --host 0.0.0.0 --port 4173",
+    "preview": "pnpm build && pnpm preview:config && vite preview",
     "preview:config": "node scripts/write-preview-config.mjs",
     "clean:root": "node scripts/clean-root-artifacts.mjs",
     "clean:all": "node scripts/clean-root-artifacts.mjs --all",
@@ -74,6 +77,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@rolldown/plugin-babel": "^0.2.0",
     "@biomejs/biome": "^2.4.15",
     "@storybook/addon-a11y": "^10.4.0",
     "@storybook/addon-docs": "10.4.0",
@@ -90,6 +94,7 @@
     "@vitejs/plugin-react": "6.0.2",
     "@vitest/browser-playwright": "^4.1.6",
     "@vitest/coverage-v8": "^4.1.6",
+    "babel-plugin-react-compiler": "^1.0.0",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",

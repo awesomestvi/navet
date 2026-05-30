@@ -83,7 +83,7 @@ export function selectMapMarkersFromEntities(
   });
 }
 
-export function mapMarkersEqual(a: MapMarker[], b: MapMarker[]): boolean {
+export function mapMarkersEqual(a: readonly MapMarker[], b: readonly MapMarker[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
   return a.every(

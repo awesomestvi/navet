@@ -11,10 +11,10 @@ describe('marketing website metadata', () => {
   it('applies homepage metadata', () => {
     applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.home);
 
-    expect(document.title).toBe('Navet - A beautiful dashboard for Home Assistant');
+    expect(document.title).toBe('Navet - A beautiful smart-home dashboard');
     expect(
       document.head.querySelector('meta[name="description"]')?.getAttribute('content')
-    ).toContain('Home Assistant users');
+    ).toContain('provider-neutral smart-home dashboard');
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       'https://awesomestvi.github.io/navet/'
     );
@@ -23,9 +23,9 @@ describe('marketing website metadata', () => {
   it('applies route-specific metadata', () => {
     applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.install);
 
-    expect(document.title).toBe('Install Navet for Home Assistant');
+    expect(document.title).toBe('Install Navet');
     expect(document.head.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(
-      'Install Navet for Home Assistant'
+      'Install Navet'
     );
     expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
       'https://awesomestvi.github.io/navet/install/'

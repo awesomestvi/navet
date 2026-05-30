@@ -1,5 +1,6 @@
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { lookup } from 'node:dns/promises'
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -47,6 +48,12 @@ const RSS_PROXY_TIMEOUT_MS = 10000
 const AUTH_SESSION_MAX_BYTES = 16 * 1024
 const HOMEY_SESSION_MAX_BYTES = 8 * 1024
 const DASHBOARD_PROFILE_MAX_BYTES = 1024 * 1024
+const REACT_COMPILER_INCLUDE = [
+  /[\\/]src[\\/]/,
+  /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/,
+  /[\\/]apps[\\/]website[\\/]src[\\/]/,
+]
+const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/]
 
 async function assertPublicHostname(hostname: string) {
   const normalizedHostname = hostname.toLowerCase()
@@ -1062,7 +1069,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
   const enableDemo = (env.NAVET_ENABLE_DEMO ?? process.env.NAVET_ENABLE_DEMO ?? 'true') !== 'false'
-  const buildTarget = env.NAVET_BUILD_TARGET ?? process.env.NAVET_BUILD_TARGET ?? 'app'
   const lifecycleEvent = process.env.npm_lifecycle_event ?? ''
   const commandLine = process.argv.join(' ')
   const isStorybook =
@@ -1075,6 +1081,7 @@ export default defineConfig(({ mode }) => {
   const resolveConfig = {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@website': path.resolve(__dirname, './apps/website/src'),
       '@navet/core': path.resolve(__dirname, './packages/core/src'),
       '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
       '@navet/app': path.resolve(__dirname, './packages/app/src'),
@@ -1127,6 +1134,11 @@ export default defineConfig(({ mode }) => {
     const homeySessionPlugin = homeySessionStorePlugin()
     const appPlugins: PluginOption[] = [
       react(),
+      babel({
+        include: REACT_COMPILER_INCLUDE,
+        exclude: REACT_COMPILER_EXCLUDE,
+        presets: [reactCompilerPreset()],
+      }),
       tailwindcss(),
       rssProxyPlugin(),
       authSessionPlugin,
@@ -1256,43 +1268,6 @@ export default defineConfig(({ mode }) => {
               },
             }
           : undefined,
-      },
-    })
-  }
-
-  function createWebsiteConfig(config: {
-    cacheDir: string
-    outDir: string
-    emptyOutDir?: boolean
-  }): UserConfig {
-    return createSharedConfig({
-      root: path.resolve(__dirname, 'website'),
-      publicDir: path.resolve(__dirname, 'public'),
-      cacheDir: config.cacheDir,
-      plugins: [react(), tailwindcss()],
-      build: {
-        ...baseBuildConfig,
-        outDir: config.outDir,
-        emptyOutDir: config.emptyOutDir,
-      },
-    })
-  }
-
-  if (buildTarget === 'website') {
-    return createWebsiteConfig({
-      cacheDir: path.resolve(__dirname, '.cache/vite-website'),
-      outDir: path.resolve(__dirname, 'dist'),
-    })
-  }
-
-  if (buildTarget === 'all') {
-    return createAppConfig({
-      cacheDir: path.resolve(__dirname, '.cache/vite-pages-demo'),
-      outDir: path.resolve(__dirname, 'dist'),
-      emptyOutDir: true,
-      input: {
-        index: path.resolve(__dirname, 'website/index.html'),
-        'demo/index': path.resolve(__dirname, 'demo/index.html'),
       },
     })
   }
