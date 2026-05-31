@@ -1,0 +1,621 @@
+import { getManageableRoomOrder } from '@navet/app/components/layout/mobile-layout-helpers';
+import { RoomNav } from '@navet/app/components/layout/room-nav';
+import { SectionCustomizeShell } from '@navet/app/components/layout/section-customize-shell';
+import { DashboardEmptyState } from '@navet/app/components/patterns';
+import { InteractivePill } from '@navet/app/components/primitives';
+import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
+import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
+import { buildRoomStatusSummaryItems, InfoBadgeStrip } from '@navet/app/features/sensors';
+import { useTaskRoutines } from '@navet/app/features/tasks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { useSettingsStore } from '@navet/app/stores';
+import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
+import type { DeviceWithType } from '@navet/app/types/device.types';
+import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { Lightbulb, Plus, Sparkles, Thermometer } from 'lucide-react';
+import { lazy, memo, type ReactNode, Suspense, useCallback, useMemo, useState } from 'react';
+import { AllViewGrid } from '../all-view-grid';
+import { DeviceGrid } from '../device-grid';
+import type { DashboardController } from '../hooks/use-dashboard-controller';
+import { DashboardLayout } from '../shell';
+import { AddEntityDialog } from './add-entity-dialog';
+
+const SecuritySection = lazy(async () => {
+  const module = await import('@navet/app/components/layout/security-section');
+  return { default: module.SecuritySection };
+});
+const HomeDashboardOverview = lazy(async () => {
+  const module = await import('./home-dashboard-overview');
+  return { default: module.HomeDashboardOverview };
+});
+const TasksSection = lazy(async () => {
+  const module = await import('@navet/app/components/layout/sections');
+  return { default: module.TasksSection };
+});
+const MediaSection = lazy(async () => {
+  const module = await import('@navet/app/components/layout/media-section');
+  return { default: module.MediaSection };
+});
+const EnergySection = lazy(async () => {
+  const module = await import('@navet/app/features/energy');
+  return { default: module.EnergySection };
+});
+const SettingsSection = lazy(async () => {
+  const module = await import('@navet/app/features/settings');
+  return { default: module.SettingsSection };
+});
+
+interface DashboardSectionRouterProps {
+  controller: DashboardController;
+}
+
+function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
+  return (
+    routine.enabled === true ||
+    ['active', 'on', 'scening'].includes(routine.state.trim().toLowerCase())
+  );
+}
+
+function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
+  const routines = useTaskRoutines();
+  const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
+  const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
+  const {
+    activeRoom,
+    activeSection,
+    addableEntityIds,
+    availableDeviceMap,
+    cardOrders,
+    cardSizes,
+    changeRoom,
+    customCards,
+    deviceMap,
+    handleAddEntity,
+    handleDeleteCard,
+    handleRemoveEntity,
+    handleUpdateCard,
+    hiddenEntityIds,
+    isEditMode,
+    lightDeviceMap,
+    lightRooms,
+    onOpenAddEntityDialog,
+    onToggleEditMode,
+    orderedCardIds,
+    rooms,
+    sectionData,
+    updateCardSize,
+  } = controller;
+  const manageableRooms = getManageableRoomOrder(rooms, roomDescriptors);
+  const sectionStackProps = {
+    className: 'flex flex-col gap-2 md:gap-6',
+  };
+  const totalRoutineCount =
+    routines.automations.filter(isActiveRoutine).length +
+    routines.quickActions.filter(isActiveRoutine).length;
+  const roomStatusSummaryItems = useMemo(() => {
+    if (!sectionData.isOverviewSection || isAllRooms(activeRoom) || !showSummaryBar) {
+      return [];
+    }
+
+    const routineCount =
+      routines.automations.filter(
+        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+      ).length +
+      routines.quickActions.filter(
+        (routine) => routine.room === activeRoom && isActiveRoutine(routine)
+      ).length;
+
+    return buildRoomStatusSummaryItems(availableDeviceMap, activeRoom, {
+      routineCount,
+      temperatureUnit,
+    });
+  }, [
+    activeRoom,
+    availableDeviceMap,
+    routines.automations,
+    routines.quickActions,
+    showSummaryBar,
+    temperatureUnit,
+    sectionData.isOverviewSection,
+  ]);
+  const openAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(true), []);
+  const closeAddLightEntityDialog = useCallback(() => setIsAddLightEntityDialogOpen(false), []);
+  const openAddClimateEntityDialog = useCallback(() => setIsAddClimateEntityDialogOpen(true), []);
+  const closeAddClimateEntityDialog = useCallback(() => setIsAddClimateEntityDialogOpen(false), []);
+  const handleAddLightEntity = useCallback(
+    (entityId: string) => {
+      handleAddEntity(entityId);
+    },
+    [handleAddEntity]
+  );
+  const handleAddClimateEntity = useCallback(
+    (entityId: string) => {
+      handleAddEntity(entityId);
+    },
+    [handleAddEntity]
+  );
+
+  let sectionContent: ReactNode;
+
+  if (activeSection === 'security') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner />}>
+        <SecuritySection />
+      </Suspense>
+    );
+  } else if (activeSection === 'energy') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner />}>
+        <RenderProfiler id="EnergySection">
+          <div className="space-y-6">
+            <EnergySection />
+
+            {isEditMode || sectionData.energyCustomCards.length > 0 ? (
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div
+                      className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+                    >
+                      {t('energy.band.eyebrow')}
+                    </div>
+                    <h2
+                      className={`mt-2 text-lg font-semibold tracking-tight md:text-xl ${surface.textPrimary}`}
+                    >
+                      {t('energy.customCards.title')}
+                    </h2>
+                    <p className={`mt-1.5 max-w-2xl text-sm ${surface.textSecondary}`}>
+                      {t('energy.customCards.description')}
+                    </p>
+                  </div>
+
+                  {isEditMode ? (
+                    <button
+                      type="button"
+                      onClick={() => controller.onOpenAddCardDialog()}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${surface.border} ${surface.panelMuted} ${surface.hoverBg} ${surface.textPrimary}`}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {t('dashboard.addCard.action')}
+                    </button>
+                  ) : null}
+                </div>
+
+                {sectionData.energyCustomCards.length > 0 ? (
+                  <DeviceGrid
+                    orderedCardIds={sectionData.energyOrderedCardIds}
+                    deviceMap={new Map<string, DeviceWithType>()}
+                    isEditMode={isEditMode}
+                    cardSizes={cardSizes}
+                    updateCardSize={updateCardSize}
+                    customCards={sectionData.energyCustomCards}
+                    onDeleteCard={handleDeleteCard}
+                    onUpdateCard={handleUpdateCard}
+                  />
+                ) : isEditMode ? (
+                  <div className="flex h-full items-center justify-center p-6">
+                    <DashboardEmptyState
+                      icon={Sparkles}
+                      title={t('energy.customCards.emptyTitle')}
+                      description={t('energy.customCards.emptyDescription')}
+                      actionLabel={t('dashboard.addCard.action')}
+                      onAction={() => controller.onOpenAddCardDialog()}
+                      className="w-full max-w-md"
+                    />
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+          </div>
+        </RenderProfiler>
+      </Suspense>
+    );
+  } else if (activeSection === 'tasks') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner />}>
+        <TasksSection />
+      </Suspense>
+    );
+  } else if (activeSection === 'climate') {
+    const addHiddenClimateEntityAction =
+      isEditMode && sectionData.hiddenClimateEntityIds.length > 0 ? (
+        <InteractivePill
+          intent="action"
+          size="small"
+          onClick={openAddClimateEntityDialog}
+          className={`${surface.subtleBg} ${surface.hoverBg}`}
+        >
+          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+          <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
+            {t('dashboard.addEntity.title')}
+          </span>
+        </InteractivePill>
+      ) : null;
+
+    sectionContent = (
+      <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
+        {sectionData.climateDeviceMap.size > 0 ? (
+          <SectionCustomizeShell
+            isEditMode={isEditMode}
+            onToggle={onToggleEditMode ?? (() => {})}
+            className="relative"
+            actions={addHiddenClimateEntityAction}
+          >
+            <RenderProfiler id="ClimateSection">
+              <div className="space-y-8">
+                {sectionData.climateSections.map((section) => (
+                  <section key={section.key} className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+                        {t(section.titleKey)}
+                      </h2>
+                      <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+                        {section.orderedIds.length}{' '}
+                        {section.orderedIds.length === 1
+                          ? t('sections.climate.singular')
+                          : t('sections.climate.plural')}
+                      </span>
+                    </div>
+                    <DeviceGrid
+                      orderedCardIds={section.orderedIds}
+                      deviceMap={sectionData.climateDeviceMap}
+                      isEditMode={isEditMode}
+                      cardSizes={cardSizes}
+                      updateCardSize={updateCardSize}
+                      onRemoveEntity={handleRemoveEntity}
+                      allowEntityRemoval
+                      usesHideAction
+                      getDeviceHeaderSubtitle={getDeviceRoomLabel}
+                    />
+                  </section>
+                ))}
+              </div>
+            </RenderProfiler>
+          </SectionCustomizeShell>
+        ) : (
+          <div className="flex h-full items-center justify-center p-6">
+            <DashboardEmptyState
+              icon={Thermometer}
+              title={t('sections.climate.emptyTitle')}
+              description={
+                sectionData.hiddenClimateEntityIds.length > 0
+                  ? t('sections.climate.emptyHiddenDescription')
+                  : t('sections.climate.emptyDescription')
+              }
+              actionIcon={Thermometer}
+              actionLabel={
+                sectionData.hiddenClimateEntityIds.length > 0
+                  ? t('dashboard.addEntity.title')
+                  : undefined
+              }
+              onAction={
+                sectionData.hiddenClimateEntityIds.length > 0
+                  ? openAddClimateEntityDialog
+                  : undefined
+              }
+              className="w-full max-w-md"
+            />
+          </div>
+        )}
+
+        {isAddClimateEntityDialogOpen ? (
+          <AddEntityDialog
+            open={isAddClimateEntityDialogOpen}
+            onClose={closeAddClimateEntityDialog}
+            onAddEntity={handleAddClimateEntity}
+            currentRoom={ALL_ROOMS_ID}
+            deviceMap={sectionData.allClimateDeviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={sectionData.hiddenClimateEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={t('dashboard.addEntity.descriptionWithHidden')}
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        ) : null}
+      </div>
+    );
+  } else if (activeSection === 'lights') {
+    const addHiddenLightEntityAction =
+      isEditMode && sectionData.hiddenLightEntityIds.length > 0 ? (
+        <InteractivePill
+          intent="action"
+          size="small"
+          onClick={openAddLightEntityDialog}
+          className={`${surface.subtleBg} ${surface.hoverBg}`}
+        >
+          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+          <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
+            {t('dashboard.addEntity.title')}
+          </span>
+        </InteractivePill>
+      ) : null;
+
+    sectionContent = (
+      <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
+        {lightDeviceMap.size > 0 ? (
+          <SectionCustomizeShell
+            isEditMode={isEditMode}
+            onToggle={onToggleEditMode ?? (() => {})}
+            className="relative"
+            actions={addHiddenLightEntityAction}
+          >
+            <RenderProfiler id="LightsSection">
+              <AllViewGrid
+                deviceMap={lightDeviceMap}
+                rooms={lightRooms}
+                cardOrders={cardOrders}
+                isEditMode={isEditMode}
+                cardSizes={cardSizes}
+                grouping="custom"
+                updateCardSize={updateCardSize}
+                onRemoveEntity={handleRemoveEntity}
+                allowEntityRemoval
+                usesHideAction
+              />
+            </RenderProfiler>
+          </SectionCustomizeShell>
+        ) : (
+          <div className="flex h-full items-center justify-center p-6">
+            <DashboardEmptyState
+              icon={Lightbulb}
+              title={t('dashboard.shell.noLightsTitle')}
+              description={
+                sectionData.hiddenLightEntityIds.length > 0
+                  ? t('dashboard.shell.noLightsHidden')
+                  : t('dashboard.shell.noLightsEmpty')
+              }
+              actionIcon={Lightbulb}
+              actionLabel={
+                sectionData.hiddenLightEntityIds.length > 0
+                  ? t('dashboard.addEntity.title')
+                  : undefined
+              }
+              onAction={
+                sectionData.hiddenLightEntityIds.length > 0 ? openAddLightEntityDialog : undefined
+              }
+              className="w-full max-w-md"
+            />
+          </div>
+        )}
+
+        {isAddLightEntityDialogOpen ? (
+          <AddEntityDialog
+            open={isAddLightEntityDialogOpen}
+            onClose={closeAddLightEntityDialog}
+            onAddEntity={handleAddLightEntity}
+            currentRoom={ALL_ROOMS_ID}
+            deviceMap={sectionData.allLightDeviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={sectionData.hiddenLightEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={t('dashboard.addEntity.descriptionWithHidden')}
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        ) : null}
+      </div>
+    );
+  } else if (activeSection === 'media') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner />}>
+        <MediaSection />
+      </Suspense>
+    );
+  } else if (activeSection === 'settings') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner message={t('dashboard.shell.loadingSettings')} />}>
+        <RenderProfiler id="SettingsSection">
+          <SettingsSection />
+        </RenderProfiler>
+      </Suspense>
+    );
+  } else {
+    sectionContent = (
+      <div {...sectionStackProps}>
+        {kioskMode ? null : (
+          <RoomNav
+            rooms={rooms}
+            hiddenRoomNames={controller.hiddenRoomNames}
+            roomHiddenItemCounts={controller.roomHiddenItemCounts}
+            roomItemCounts={controller.roomItemCounts}
+            activeRoom={activeRoom}
+            onRoomChange={changeRoom}
+            allViewGrouping={isAllRooms(activeRoom) ? controller.allViewGrouping : undefined}
+            isEditMode={isEditMode}
+            onRoomOrderChange={controller.onSetRoomOrder}
+            onHiddenRoomsChange={controller.onSetHiddenRoomNames}
+            onAllViewGroupingChange={
+              isAllRooms(activeRoom) ? controller.onSetAllViewGrouping : undefined
+            }
+            onToggleEditMode={onToggleEditMode}
+            onAddEntity={
+              isAllRooms(activeRoom) || addableEntityIds.length === 0
+                ? undefined
+                : onOpenAddEntityDialog
+            }
+            addEntityLabel={t('dashboard.addEntity.title')}
+          />
+        )}
+
+        {isAllRooms(activeRoom) ? (
+          <RenderProfiler id="HomeDashboardOverview">
+            <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+              <HomeDashboardOverview
+                deviceMap={controller.availableDeviceMap}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                isEditMode={isEditMode}
+                hiddenEntityCount={hiddenEntityIds.length}
+                allCustomCards={controller.allCustomCards}
+                homeLayout={controller.homeLayout}
+                removeHomeCard={controller.removeHomeCard}
+                moveHomeCard={controller.moveHomeCard}
+                setHomeLayoutMode={controller.setHomeLayoutMode}
+                addHomeSection={controller.addHomeSection}
+                addHomeColumnSection={controller.addHomeColumnSection}
+                addHomeSectionBelow={controller.addHomeSectionBelow}
+                moveHomeSection={controller.moveHomeSection}
+                moveHomeColumn={controller.moveHomeColumn}
+                renameHomeSection={controller.renameHomeSection}
+                removeHomeSection={controller.removeHomeSection}
+                resizeHomeSection={controller.resizeHomeSection}
+                onOpenAddCardDialog={controller.onOpenAddCardDialog}
+                onUpdateCard={handleUpdateCard}
+                onToggleEditMode={controller.onToggleEditMode}
+                onNavigateSection={controller.setActiveSection}
+                routineCount={totalRoutineCount}
+              />
+            </Suspense>
+          </RenderProfiler>
+        ) : (
+          <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
+            <div className="space-y-2 md:space-y-6">
+              <InfoBadgeStrip
+                items={roomStatusSummaryItems}
+                onNavigate={controller.setActiveSection}
+                ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
+              />
+              {/* Note: Will be added later */}
+              {/* <RoomOverviewPanel
+                room={activeRoom}
+                orderedCardIds={orderedCardIds}
+                deviceMap={deviceMap}
+              /> */}
+              <DeviceGrid
+                orderedCardIds={orderedCardIds}
+                deviceMap={deviceMap}
+                isEditMode={isEditMode}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                customCards={customCards}
+                onDeleteCard={handleDeleteCard}
+                onUpdateCard={handleUpdateCard}
+                onRemoveEntity={handleRemoveEntity}
+                allowEntityRemoval
+                usesHideAction
+              />
+            </div>
+          </RenderProfiler>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <DashboardLayout
+      mobileEditActions={{
+        isEditMode,
+        onToggleEditMode,
+        onAddEntity:
+          isAllRooms(activeRoom) || addableEntityIds.length === 0
+            ? undefined
+            : onOpenAddEntityDialog,
+        addEntityLabel: t('dashboard.addEntity.title'),
+        reorderRooms:
+          manageableRooms.length > 0
+            ? {
+                rooms: manageableRooms,
+                hiddenRoomNames: controller.hiddenRoomNames,
+                roomDescriptors,
+                roomHiddenItemCounts: controller.roomHiddenItemCounts,
+                roomItemCounts: controller.roomItemCounts,
+                onRoomOrderChange: controller.onSetRoomOrder,
+                onHiddenRoomsChange: controller.onSetHiddenRoomNames,
+              }
+            : undefined,
+        allViewGrouping: isAllRooms(activeRoom) ? controller.allViewGrouping : undefined,
+        onAllViewGroupingChange: isAllRooms(activeRoom)
+          ? controller.onSetAllViewGrouping
+          : undefined,
+      }}
+      mobileRoomNavigation={{
+        activeRoom,
+        onRoomChange: changeRoom,
+        rooms,
+        hiddenRoomNames: controller.hiddenRoomNames,
+      }}
+    >
+      {sectionContent}
+    </DashboardLayout>
+  );
+}
+
+function areDashboardSectionRouterPropsEqual(
+  previous: DashboardSectionRouterProps,
+  next: DashboardSectionRouterProps
+) {
+  const previousController = previous.controller;
+  const nextController = next.controller;
+
+  const hasSameCommonFields =
+    previousController.activeRoom === nextController.activeRoom &&
+    previousController.activeSection === nextController.activeSection &&
+    previousController.addableEntityIds === nextController.addableEntityIds &&
+    previousController.allViewGrouping === nextController.allViewGrouping &&
+    previousController.cardOrders === nextController.cardOrders &&
+    previousController.cardSizes === nextController.cardSizes &&
+    previousController.changeRoom === nextController.changeRoom &&
+    previousController.handleDeleteCard === nextController.handleDeleteCard &&
+    previousController.handleRemoveEntity === nextController.handleRemoveEntity &&
+    previousController.handleUpdateCard === nextController.handleUpdateCard &&
+    previousController.hiddenEntityIds === nextController.hiddenEntityIds &&
+    previousController.hiddenRoomNames === nextController.hiddenRoomNames &&
+    previousController.isEditMode === nextController.isEditMode &&
+    previousController.onOpenAddCardDialog === nextController.onOpenAddCardDialog &&
+    previousController.onOpenAddEntityDialog === nextController.onOpenAddEntityDialog &&
+    previousController.onSetAllViewGrouping === nextController.onSetAllViewGrouping &&
+    previousController.onSetHiddenRoomNames === nextController.onSetHiddenRoomNames &&
+    previousController.onSetRoomOrder === nextController.onSetRoomOrder &&
+    previousController.onToggleEditMode === nextController.onToggleEditMode &&
+    previousController.roomHiddenItemCounts === nextController.roomHiddenItemCounts &&
+    previousController.roomItemCounts === nextController.roomItemCounts &&
+    previousController.rooms === nextController.rooms &&
+    previousController.sectionData === nextController.sectionData &&
+    previousController.setActiveSection === nextController.setActiveSection &&
+    previousController.updateCardSize === nextController.updateCardSize &&
+    previousController.availableDeviceMap === nextController.availableDeviceMap &&
+    previousController.deviceMap === nextController.deviceMap;
+
+  if (!hasSameCommonFields) {
+    return false;
+  }
+
+  switch (previousController.activeSection) {
+    case 'climate':
+      return true;
+    case 'energy':
+    case 'lights':
+      return true;
+    default:
+      return (
+        previousController.allCustomCards === nextController.allCustomCards &&
+        previousController.customCards === nextController.customCards &&
+        previousController.homeLayout === nextController.homeLayout &&
+        previousController.orderedCardIds === nextController.orderedCardIds &&
+        previousController.removeHomeCard === nextController.removeHomeCard &&
+        previousController.addHomeSection === nextController.addHomeSection &&
+        previousController.addHomeColumnSection === nextController.addHomeColumnSection &&
+        previousController.addHomeSectionBelow === nextController.addHomeSectionBelow &&
+        previousController.moveHomeSection === nextController.moveHomeSection &&
+        previousController.moveHomeColumn === nextController.moveHomeColumn &&
+        previousController.renameHomeSection === nextController.renameHomeSection &&
+        previousController.removeHomeSection === nextController.removeHomeSection &&
+        previousController.resizeHomeSection === nextController.resizeHomeSection &&
+        previousController.moveHomeCard === nextController.moveHomeCard &&
+        previousController.setHomeLayoutMode === nextController.setHomeLayoutMode
+      );
+  }
+}
+
+export const DashboardSectionRouter = memo(
+  DashboardSectionRouterComponent,
+  areDashboardSectionRouterPropsEqual
+);

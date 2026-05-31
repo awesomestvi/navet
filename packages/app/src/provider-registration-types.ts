@@ -1,1 +1,1 @@
-export * from '../../../src/providers/provider-registration-types';
+export type { ProviderContractRegistration } from '@navet/core/provider-runtime-types';

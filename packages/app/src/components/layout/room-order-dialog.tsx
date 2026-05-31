@@ -1,0 +1,395 @@
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  Button,
+  DialogFooter,
+  DialogShell,
+  settingsDialogContentClass,
+} from '@navet/app/components/primitives';
+import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import { buildManageableRoomReferences } from '@navet/app/platform/provider-room-management';
+import type { NavetRoomDescriptor } from '@navet/app/provider-models';
+import { integrationAdminService } from '@navet/app/services/integration-admin.service';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+interface RoomOrderDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  rooms: string[];
+  hiddenRoomNames?: string[];
+  roomDescriptors: NavetRoomDescriptor[];
+  roomHiddenItemCounts: Map<string, number>;
+  roomEntityCounts: Map<string, number>;
+  onRoomOrderChange?: (rooms: string[]) => void;
+  onHiddenRoomsChange?: (rooms: string[]) => void;
+}
+
+export const RoomOrderDialog = memo(function RoomOrderDialog({
+  isOpen,
+  onOpenChange,
+  rooms,
+  hiddenRoomNames = [],
+  roomDescriptors,
+  roomHiddenItemCounts,
+  roomEntityCounts,
+  onRoomOrderChange,
+  onHiddenRoomsChange,
+}: RoomOrderDialogProps) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const [draftRooms, setDraftRooms] = useState(rooms);
+  const [pendingDeleteRoom, setPendingDeleteRoom] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const isDeleteDialogOpen = pendingDeleteRoom !== null;
+  const hiddenRoomSet = useMemo(() => new Set(hiddenRoomNames), [hiddenRoomNames]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftRooms(rooms);
+      setPendingDeleteRoom(null);
+      setIsSaving(false);
+    }
+  }, [isOpen, rooms]);
+
+  const deletableRoomIdByName = useMemo(() => {
+    const roomsByName = new Map<string, string>();
+
+    for (const providerId of new Set(
+      roomDescriptors.flatMap((descriptor) => descriptor.providerIds)
+    )) {
+      for (const room of buildManageableRoomReferences(roomDescriptors, providerId)) {
+        if (room.canDelete) {
+          roomsByName.set(room.name, room.id);
+        }
+      }
+    }
+
+    return roomsByName;
+  }, [roomDescriptors]);
+  const deletableRoomNames = useMemo(
+    () => new Set(deletableRoomIdByName.keys()),
+    [deletableRoomIdByName]
+  );
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 10,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    setDraftRooms((current) => {
+      const oldIndex = current.indexOf(String(active.id));
+      const newIndex = current.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) {
+        return current;
+      }
+
+      return arrayMove(current, oldIndex, newIndex);
+    });
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!pendingDeleteRoom) {
+      return;
+    }
+
+    const roomId = deletableRoomIdByName.get(pendingDeleteRoom);
+    if (!roomId) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await integrationAdminService.deleteRoom(roomId);
+      const nextRooms = draftRooms.filter((room) => room !== pendingDeleteRoom);
+      setDraftRooms(nextRooms);
+      onRoomOrderChange?.(nextRooms);
+      if (hiddenRoomSet.has(pendingDeleteRoom)) {
+        onHiddenRoomsChange?.(hiddenRoomNames.filter((room) => room !== pendingDeleteRoom));
+      }
+      toast.success(
+        t('dashboard.roomNav.reorderDialog.deleteSuccess', { room: pendingDeleteRoom })
+      );
+      setPendingDeleteRoom(null);
+    } catch (error) {
+      console.error('[RoomOrderDialog] Failed to delete room:', error);
+      toast.error(t('dashboard.roomNav.reorderDialog.deleteFailed', { room: pendingDeleteRoom }));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDone = () => {
+    onRoomOrderChange?.(draftRooms);
+    onOpenChange(false);
+  };
+
+  const toggleRoomHidden = (room: string) => {
+    if (hiddenRoomSet.has(room)) {
+      onHiddenRoomsChange?.(hiddenRoomNames.filter((hiddenRoom) => hiddenRoom !== room));
+      return;
+    }
+
+    onHiddenRoomsChange?.([...hiddenRoomNames, room]);
+  };
+
+  return (
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      contentAriaDescribedBy={undefined}
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      contentClassName={settingsDialogContentClass(surface, {
+        maxWidth: 'sm',
+        height: 'capped',
+        overflow: true,
+        padding: false,
+        animate: true,
+      })}
+    >
+      <div className="max-h-[85vh] overflow-y-auto p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <Dialog.Title className={`text-xl font-semibold ${surface.textPrimary}`}>
+              {t('dashboard.roomNav.reorderDialog.title')}
+            </Dialog.Title>
+            <Dialog.Description className={`mt-1 text-sm ${surface.textSecondary}`}>
+              {t('dashboard.roomNav.reorderDialog.description')}
+            </Dialog.Description>
+          </div>
+        </div>
+
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
+            <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
+              {draftRooms.map((room, index) => (
+                <RoomOrderDialogRow
+                  key={room}
+                  room={room}
+                  isLast={index === draftRooms.length - 1}
+                  surface={surface}
+                  entityCount={roomEntityCounts.get(room) ?? 0}
+                  hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
+                  isHidden={hiddenRoomSet.has(room)}
+                  onToggleHidden={() => toggleRoomHidden(room)}
+                  onDelete={() => setPendingDeleteRoom(room)}
+                  deleteDisabled={isSaving || !deletableRoomNames.has(room)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        <DialogFooter>
+          <Button variant="soft" size="small" onClick={handleDone} disabled={isSaving}>
+            {t('common.done')}
+          </Button>
+        </DialogFooter>
+      </div>
+
+      <DeleteRoomDialog
+        isOpen={isDeleteDialogOpen}
+        isSaving={isSaving}
+        room={pendingDeleteRoom}
+        surface={surface}
+        onClose={() => setPendingDeleteRoom(null)}
+        onConfirm={() => void handleDeleteRoom()}
+      />
+    </DialogShell>
+  );
+});
+
+interface DeleteRoomDialogProps {
+  isOpen: boolean;
+  isSaving: boolean;
+  room: string | null;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+const DeleteRoomDialog = memo(function DeleteRoomDialog({
+  isOpen,
+  isSaving,
+  room,
+  surface,
+  onClose,
+  onConfirm,
+}: DeleteRoomDialogProps) {
+  const { t } = useI18n();
+
+  return (
+    <DialogShell
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      contentAriaDescribedBy={undefined}
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      contentClassName={settingsDialogContentClass(surface, {
+        maxWidth: 'sm',
+        overflow: false,
+        padding: false,
+        animate: true,
+      })}
+    >
+      <div className="p-6">
+        <div className="space-y-2">
+          <Dialog.Title className={`text-lg font-semibold ${surface.textPrimary}`}>
+            {t('dashboard.roomNav.reorderDialog.deleteTitle')}
+          </Dialog.Title>
+          <Dialog.Description className={`text-sm ${surface.textSecondary}`}>
+            {t('dashboard.roomNav.reorderDialog.deleteDescription', {
+              room: room ?? '',
+            })}
+          </Dialog.Description>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" size="small" onClick={onClose} disabled={isSaving}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="soft"
+            size="small"
+            onClick={onConfirm}
+            loading={isSaving}
+            className="text-red-500"
+          >
+            {t('dashboard.roomNav.reorderDialog.deleteAction')}
+          </Button>
+        </DialogFooter>
+      </div>
+    </DialogShell>
+  );
+});
+
+interface RoomOrderDialogRowProps {
+  room: string;
+  isLast: boolean;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  entityCount: number;
+  hiddenCount: number;
+  isHidden: boolean;
+  onToggleHidden: () => void;
+  onDelete: () => void;
+  deleteDisabled: boolean;
+}
+
+const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
+  room,
+  isLast,
+  surface,
+  entityCount,
+  hiddenCount,
+  isHidden,
+  onToggleHidden,
+  onDelete,
+  deleteDisabled,
+}: RoomOrderDialogRowProps) {
+  const { t } = useI18n();
+  const visibleCount = Math.max(0, entityCount - hiddenCount);
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: room,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={getDndTransformStyle(transform, transition)}
+      className={`flex items-center gap-2 px-3 py-2.5 ${surface.panel} ${
+        isLast ? '' : `border-b ${surface.border}`
+      }`}
+    >
+      <button
+        type="button"
+        aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
+        className={`flex h-8 w-8 touch-none items-center justify-center rounded-full transition-colors ${surface.textSecondary} ${surface.hoverBg}`}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>{room}</div>
+        <div className={`truncate text-xs ${surface.textMuted}`}>
+          {t(
+            visibleCount <= 1
+              ? 'dashboard.roomNav.reorderDialog.itemCount.one'
+              : 'dashboard.roomNav.reorderDialog.itemCount.other',
+            { count: visibleCount }
+          )}
+          {hiddenCount > 0
+            ? ` · ${t('dashboard.roomNav.reorderDialog.hiddenCount', { count: hiddenCount })}`
+            : ''}
+          {isHidden ? ` · ${t('dashboard.roomNav.reorderDialog.roomHidden')}` : ''}
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <Button
+          iconOnly
+          size="compact"
+          variant="secondary"
+          onClick={onToggleHidden}
+          label={t(
+            isHidden
+              ? 'dashboard.roomNav.reorderDialog.showRoom'
+              : 'dashboard.roomNav.reorderDialog.hideRoom',
+            { room }
+          )}
+        >
+          {isHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </Button>
+        <Button
+          iconOnly
+          size="compact"
+          variant="soft"
+          onClick={onDelete}
+          disabled={deleteDisabled}
+          label={t('dashboard.roomNav.reorderDialog.deleteRoom', { room })}
+          className="ml-1.5 border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/12"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+});

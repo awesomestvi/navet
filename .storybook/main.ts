@@ -7,7 +7,7 @@ const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 const storybookBasePath = process.env.STORYBOOK_BASE_PATH?.trim() || './';
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(ts|tsx)'],
+  stories: ['../packages/**/*.stories.@(ts|tsx)'],
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
@@ -191,7 +191,7 @@ const config: StorybookConfig = {
           ...(typeof config.resolve === 'object' && config.resolve?.alias
             ? config.resolve.alias
             : {}),
-          '@': path.resolve(storybookDir, '../src'),
+          '@docs': path.resolve(storybookDir, '../docs'),
         },
       },
     };

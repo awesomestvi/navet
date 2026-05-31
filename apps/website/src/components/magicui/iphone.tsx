@@ -1,5 +1,5 @@
-import type { CSSProperties, HTMLAttributes } from 'react';
-import { cn } from '@/app/components/ui/utils';
+import type { HTMLAttributes } from 'react';
+import { cn } from '@navet/app/components/ui/utils';
 
 export interface IphoneProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;

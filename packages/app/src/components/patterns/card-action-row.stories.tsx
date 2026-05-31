@@ -1,0 +1,139 @@
+import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
+import { CardSettingsActionButton } from '@navet/app/components/shared/card-settings-action-button';
+import { getBrightnessPresetSelectedStyle } from '@navet/app/components/shared/device-editor/brightness-preset-styles';
+import { getRoundControlStyles } from '@navet/app/components/shared/theme/round-control-styles';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useTheme } from '@navet/app/hooks';
+import type { Meta, StoryObj } from '@storybook/react';
+import { Moon, Sparkles, SunMedium, Trash2 } from 'lucide-react';
+import { CardActionRow } from './card-action-row';
+
+function resolveStoryCardActionRowSize(size: 'small' | 'default' | 'medium' | 'large') {
+  return size === 'default' ? 'medium' : size;
+}
+
+function CardActionRowStory({
+  size = 'default',
+}: {
+  size?: 'small' | 'default' | 'medium' | 'large';
+}) {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const resolvedSize = resolveStoryCardActionRowSize(size);
+  const controlSizes = getCardActionControlSizes(resolvedSize);
+  const roundControl = getRoundControlStyles(theme);
+  const selectedStyle = getBrightnessPresetSelectedStyle(theme, '#f97316', true);
+
+  return (
+    <div
+      className={`mx-auto w-full max-w-md rounded-3xl border p-4 backdrop-blur-xl ${surface.panelMuted} ${surface.border}`}
+    >
+      <CardActionRow
+        theme={theme}
+        size={size}
+        leftContent={
+          <div className={`flex min-w-0 items-center ${size === 'small' ? 'gap-1' : 'gap-2'}`}>
+            {[
+              { icon: SunMedium, selected: false },
+              { icon: Moon, selected: true },
+              { icon: Sparkles, selected: false },
+            ].map((item, index) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={`${size}-${index}`}
+                  className={`${controlSizes.button} flex items-center justify-center rounded-full border transition-all duration-300 ${
+                    item.selected ? roundControl.selectedText : roundControl.softButton
+                  }`}
+                  style={item.selected ? selectedStyle : undefined}
+                >
+                  <Icon className={controlSizes.icon} />
+                </div>
+              );
+            })}
+          </div>
+        }
+        rightContent={<CardSettingsActionButton theme={theme} size={resolvedSize} variant="soft" />}
+        overflowItems={[
+          { key: 'rename', label: 'Rename', onSelect: () => {} },
+          { key: 'duplicate', label: 'Duplicate', onSelect: () => {} },
+          { key: 'delete', label: 'Delete', onSelect: () => {}, icon: Trash2 },
+        ]}
+      />
+    </div>
+  );
+}
+
+const meta = {
+  title: 'Components/Patterns/Card Action Row',
+  component: CardActionRowStory,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component: [
+          'Composed action-row pattern for card footers and control strips, including left control groups, optional right utility actions, and overflow menu actions.',
+          '',
+          'What this page covers:',
+          '- Density variants (`small`, `default`, `large`) mapped to card size and interaction context.',
+          '- Mixed-content row composition (preset controls + settings action + overflow commands).',
+          '- Themed control tokens for selected and unselected round-control states.',
+          '',
+          'Usage notes:',
+          '- Reuse this row as the shared composition layer for HVAC, vacuum, cover, and lighting cards.',
+          '- Prefer token calculators for control styling instead of feature-local class combinations.',
+          '',
+          'Review expectations:',
+          '- Verify density variants keep consistent rhythm and hit-area quality.',
+          '- Verify selected-state contrast remains readable across themes.',
+        ].join('\n'),
+      },
+    },
+  },
+} satisfies Meta<typeof CardActionRowStory>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Small: Story = {
+  args: { size: 'small' },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Small density variant for constrained cards and compact control clusters.',
+      },
+    },
+  },
+};
+
+export const Medium: Story = {
+  args: { size: 'default' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Default action-row density tuned for most card surfaces. `medium` remains a compatibility alias.',
+      },
+    },
+  },
+};
+
+export const Large: Story = {
+  args: { size: 'large' },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Large density variant with more relaxed spacing for touch-forward layouts.',
+      },
+    },
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

@@ -59,5 +59,6 @@ shared card should still consume a stable view model.
 
 ## Compatibility Note
 
-The repo still contains compatibility hooks and derived device snapshots. They exist to support the
-current app shell and migration leftovers. They are not the preferred API for new shared UI work.
+The repo still contains compatibility hooks and derived device snapshots inside `@navet/app`. They
+exist to support the current product shell during ongoing compatibility cleanup. They are not the
+preferred API for new shared UI work.

@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./*": "./src/*",
     "./capabilities": "./src/capabilities.ts",
     "./contract-test-suite": "./src/contract-test-suite.ts",
     "./dashboard-entity-view": "./src/dashboard-entity-view.ts",

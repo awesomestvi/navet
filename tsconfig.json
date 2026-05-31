@@ -24,7 +24,7 @@
 
     /* Paths */
     "paths": {
-      "@/*": ["./src/*"],
+      "@docs/*": ["./docs/*"],
       "@website/*": ["./apps/website/src/*"],
       "@navet/core": ["./packages/core/src/index.ts"],
       "@navet/core/*": ["./packages/core/src/*"],
@@ -47,7 +47,7 @@
     },
 
     /* Type declarations */
-    "typeRoots": ["node_modules/@types", "src/types"]
+    "typeRoots": ["node_modules/@types", "packages/app/src/types"]
   },
-  "include": ["src", "packages"]
+  "include": ["packages", "apps", "public", ".storybook"]
 }

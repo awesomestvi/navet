@@ -16,16 +16,21 @@ export default defineConfig({
     name: 'unit',
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/setupTests.ts'],
+    setupFiles: ['./packages/app/src/setupTests.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/app/**/*.{ts,tsx}'],
-      exclude: ['src/app/**/*.d.ts', 'src/app/**/index.ts', '**/*.json', '**/package.json'],
+      include: ['packages/app/src/**/*.{ts,tsx}'],
+      exclude: [
+        'packages/app/src/**/*.d.ts',
+        'packages/app/src/**/index.ts',
+        '**/*.json',
+        '**/package.json',
+      ],
     },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@docs': path.resolve(__dirname, './docs'),
       '@navet/core': path.resolve(__dirname, './packages/core/src'),
       '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
       '@navet/app': path.resolve(__dirname, './packages/app/src'),
@@ -42,7 +47,10 @@ export default defineConfig({
       ),
       '@docker': path.resolve(__dirname, './docker'),
       '@scripts': path.resolve(__dirname, './scripts'),
-      'virtual:pwa-register': path.resolve(__dirname, './src/test/mocks/virtual-pwa-register.ts'),
+      'virtual:pwa-register': path.resolve(
+        __dirname,
+        './packages/app/src/test/mocks/virtual-pwa-register.ts'
+      ),
     },
   },
 });

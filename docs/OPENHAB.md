@@ -1,12 +1,11 @@
 # openHAB Setup
 
-This guide is for Navet users connecting to openHAB.
+This guide is for openHAB users connecting to Navet.
 
 ## Before You Start
 
 You need:
 
-- a running standalone Navet app
 - an openHAB server reachable from the browser device that will run Navet
 - the base URL for that openHAB server, for example `http://openhab.local:8080`
 

@@ -16,8 +16,9 @@ packages/
   app/
 ```
 
-These package surfaces are real. The repo still has `src/` implementation paths, but contributors
-should think in terms of package ownership first.
+These package surfaces are the live runtime layout. Contributors should think in terms of package
+ownership first, with `@navet/app` acting as the assembly layer that wires provider bridges,
+runtime registration, settings, and persistence together.
 
 ## Ownership
 
@@ -44,6 +45,7 @@ they are app-internal support code. Do not treat them as the preferred shared su
 
 - `@navet/core` importing React, provider SDKs, auth flows, or backend clients
 - `@navet/ui` importing provider packages or raw backend payload types
+- provider packages importing app services, stores, auth runtimes, or infrastructure directly
 - provider packages importing app-internal compatibility code as their main input model
 - new shared code importing deep provider internals when a package entry already exists
 

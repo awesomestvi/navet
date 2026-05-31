@@ -18,8 +18,3 @@ and uses OAuth login instead of the Ingress session.
 ## Configuration
 
 - `dashboard_config_url`: optional Navet dashboard config import URL for first launch
-
-## Returning Users
-
-Legacy add-on options such as old `hass_url` and `token` values may still exist in stored add-on
-configuration during upgrades, but Navet does not use them anymore.

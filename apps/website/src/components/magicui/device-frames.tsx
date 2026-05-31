@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ImgHTMLAttributes } from 'react';
-import { cn } from '@/app/components/ui/utils';
+import { cn } from '@navet/app/components/ui/utils';
 
 interface DeviceImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
   src: string;

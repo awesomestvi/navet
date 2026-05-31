@@ -18,7 +18,6 @@ This is the recommended setup for Home Assistant users.
 
 What to expect:
 
-- Navet is served at `/navet`
 - the Home Assistant frontend session is reused
 - there is no separate Navet login screen
 
@@ -31,24 +30,13 @@ Setup:
 4. Add the `Navet` integration from `Settings -> Devices & services`.
 5. Open Navet from the Home Assistant sidebar.
 
-If you rebuild panel assets locally:
-
-```bash
-pnpm build:ha-panel
-```
-
-That writes the bundled panel assets to `custom_components/navet/frontend/`.
-
 ## Home Assistant Add-on
-
-The add-on lives in [`addons/navet`](/Users/vishal/Development/Github/Navet/Navet/addons/navet).
 
 What to expect:
 
 - Navet runs behind Home Assistant Ingress
 - the Home Assistant frontend session is reused
 - the direct host port is off by default
-- `dashboard_config_url` can preload a dashboard on first launch
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
 Use this when you want Home Assistant to own installation, lifecycle, and sidebar access.
@@ -87,11 +75,6 @@ docker compose up -d
 
 Then open `http://localhost:8080`.
 
-### Other Useful Environment Variables
-
-- `NAVET_HASS_URL`
-- `NAVET_DASHBOARD_CONFIG_URL`
-
 ## Returning Users
 
 Navet no longer uses manual Home Assistant long-lived token entry in normal use.
@@ -102,14 +85,6 @@ and `navet-auth-config` so stale values do not keep steering the app.
 Dashboard import is separate from authentication. If you want to restore an existing dashboard into
 a fresh browser or a new `/data` volume, use an exported dashboard config together with
 `dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
-
-## Validation
-
-For Docker packaging validation:
-
-```bash
-pnpm check:docker
-```
 
 For release validation, see
 [agents/release-and-publishing.md](agents/release-and-publishing.md).

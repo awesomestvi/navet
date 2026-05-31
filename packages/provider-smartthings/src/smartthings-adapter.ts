@@ -8,7 +8,8 @@ export function createSmartThingsProviderContract() {
 }
 
 export function createSmartThingsContractAdapter(
-  contract = createSmartThingsProviderContract()
+  contract = createSmartThingsProviderContract(),
+  options: Parameters<typeof createPlannedProviderContractAdapter>[2] = {}
 ) {
-  return createPlannedProviderContractAdapter('smartthings', contract);
+  return createPlannedProviderContractAdapter('smartthings', contract, options);
 }

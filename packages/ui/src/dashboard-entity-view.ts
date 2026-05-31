@@ -1,1 +1,1 @@
-export * from '../../../src/providers/core/dashboard-entity-view';
+export * from '@navet/core/dashboard-entity-view';

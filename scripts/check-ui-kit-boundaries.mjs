@@ -5,22 +5,22 @@ import path from 'node:path';
 const ROOT = process.cwd();
 
 const SHARED_DIRS = [
-  'src/app/components/primitives',
-  'src/app/components/patterns',
-  'src/app/components/shared',
-  'src/app/components/system',
-  'src/app/ui-kit',
+  'packages/app/src/components/primitives',
+  'packages/app/src/components/patterns',
+  'packages/app/src/components/shared',
+  'packages/app/src/components/system',
+  'packages/app/src/ui-kit',
 ];
 
-const PUBLIC_EXPORT_DIRS = ['src/app/components/system', 'src/app/ui-kit'];
+const PUBLIC_EXPORT_DIRS = ['packages/app/src/components/system', 'packages/app/src/ui-kit'];
 
 const LEGACY_MODAL_ALLOWLIST = new Set([
-  'src/app/features/security/components/camera-card/camera-settings-dialog.tsx',
-  'src/app/features/security/components/cover-card/view.tsx',
-  'src/app/features/climate/components/hvac-settings-dialog/index.tsx',
-  'src/app/features/weather/components/weather-card/weather-settings-dialog.tsx',
-  'src/app/features/lighting/components/light-card/light-settings-dialog.tsx',
-  'src/app/features/lighting/components/switch-settings-dialog.tsx',
+  'packages/app/src/features/security/components/camera-card/camera-settings-dialog.tsx',
+  'packages/app/src/features/security/components/cover-card/view.tsx',
+  'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+  'packages/app/src/features/weather/components/weather-card/weather-settings-dialog.tsx',
+  'packages/app/src/features/lighting/components/light-card/light-settings-dialog.tsx',
+  'packages/app/src/features/lighting/components/switch-settings-dialog.tsx',
 ]);
 
 function walk(dir) {
@@ -55,7 +55,7 @@ for (const dir of SHARED_DIRS) {
   for (const relativePath of walk(dir)) {
     const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-    if (source.includes(`@/app/features/`)) {
+    if (source.includes(`/app/features/`)) {
       violations.push(`${relativePath}: shared UI layers must not import from feature modules`);
     }
   }
@@ -71,7 +71,7 @@ for (const dir of PUBLIC_EXPORT_DIRS) {
   }
 }
 
-for (const relativePath of [...walk('src/app/components/layout'), ...walk('src/app/features')]) {
+for (const relativePath of [...walk('packages/app/src/components/layout'), ...walk('packages/app/src/features')]) {
   const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
   const hasLegacyModalRecipe =

@@ -5,6 +5,7 @@ on:
     branches:
       - '**'
   pull_request:
+  workflow_call:
 
 jobs:
   quality:
@@ -45,6 +46,12 @@ jobs:
 
       - name: Build app
         run: pnpm build
+
+      - name: Build Home Assistant panel
+        run: pnpm build:ha-panel
+
+      - name: Verify committed Home Assistant panel assets
+        run: git diff --exit-code -- custom_components/navet/frontend
 
   tier-1-release-critical:
     uses: ./.github/workflows/provider-platform-validation.yml

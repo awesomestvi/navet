@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT_DIR = process.cwd();
-const STORIES_ROOT = path.join(ROOT_DIR, 'src', 'app');
+const STORIES_ROOT = path.join(ROOT_DIR, 'packages', 'app', 'src');
 const PRIMITIVES_DIR = path.join(STORIES_ROOT, 'components', 'primitives');
 const PATTERNS_DIR = path.join(STORIES_ROOT, 'components', 'patterns');
 
@@ -131,7 +131,7 @@ for (const filePath of storyFiles) {
   }
 
   if (filePath.startsWith(PRIMITIVES_DIR)) {
-    if (source.includes(`@/app/components/system/primitives`)) {
+    if (source.includes(`/app/components/system/primitives`)) {
       violations.push({
         filePath,
         reason:
@@ -141,7 +141,7 @@ for (const filePath of storyFiles) {
   }
 
   if (filePath.startsWith(PATTERNS_DIR)) {
-    if (source.includes(`@/app/components/system/patterns`)) {
+    if (source.includes(`/app/components/system/patterns`)) {
       violations.push({
         filePath,
         reason:

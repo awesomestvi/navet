@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const APP_DIR = path.join(ROOT, 'src/app');
+const APP_DIR = path.join(ROOT, 'packages/app/src');
 
 function walk(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -49,8 +49,8 @@ for (const fullPath of walk(APP_DIR)) {
   });
 
   if (
-    /src\/app\/components\/(primitives|patterns|shared|system)\//.test(relativePath) &&
-    source.includes(`@/app/features/`)
+    /packages\/app\/src\/components\/(primitives|patterns|shared|system)\//.test(relativePath) &&
+    source.includes(`/app/features/`)
   ) {
     featureLeakFiles.push(relativePath);
   }
