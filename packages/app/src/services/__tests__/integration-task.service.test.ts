@@ -1,4 +1,5 @@
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import { integrationStore } from '@navet/app/stores/integration-store';
 import { automationEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/automation';
 import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
 import { describe, expect, it, vi } from 'vitest';
@@ -101,6 +102,24 @@ describe('integration-task.service', () => {
       {
         entity_id: 'automation.arrival',
       }
+    );
+  });
+
+  it('returns an empty task runtime snapshot for providers without task support', () => {
+    integrationStore.setState((current) => ({
+      ...current,
+      currentProviderId: 'openhab',
+    }));
+
+    expect(integrationTaskService.getTaskRuntimeSnapshot()).toEqual({
+      entities: null,
+      rooms: [],
+      devices: [],
+      entityReferences: [],
+    });
+
+    expect(typeof integrationTaskService.subscribeTaskRuntimeSnapshot(() => undefined)).toBe(
+      'function'
     );
   });
 });

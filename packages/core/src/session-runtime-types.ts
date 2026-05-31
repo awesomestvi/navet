@@ -30,6 +30,8 @@ export interface IntegrationSessionRuntimeRegistration {
     hassUrl?: string;
     haBaseUrl?: string;
     accessToken?: string;
+    username?: string;
+    password?: string;
     providerId?: IntegrationProviderId;
   }): Promise<AuthSessionSnapshot>;
   logout(providerId?: IntegrationProviderId): Promise<void>;

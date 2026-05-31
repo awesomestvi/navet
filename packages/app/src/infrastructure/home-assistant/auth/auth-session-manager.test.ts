@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authSessionManager } from './auth-session-manager';
 
 vi.mock('@navet/app/auth/adapters/haPanelAuth', () => ({
@@ -25,8 +25,9 @@ vi.mock('@navet/app/auth/adapters/standaloneOAuthAuth', () => ({
   },
 }));
 
-const { homeyInitMock } = vi.hoisted(() => ({
+const { homeyInitMock, openhabInitMock } = vi.hoisted(() => ({
   homeyInitMock: vi.fn().mockResolvedValue(null),
+  openhabInitMock: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('@navet/app/auth/adapters/homeyOAuthAuth', () => ({
@@ -37,7 +38,25 @@ vi.mock('@navet/app/auth/adapters/homeyOAuthAuth', () => ({
   },
 }));
 
+vi.mock('@navet/app/auth/adapters/openhabUrlSessionAuth', () => ({
+  openhabUrlSessionAuth: {
+    providerId: 'openhab',
+    kind: 'standalone-oauth',
+    init: openhabInitMock,
+  },
+}));
+
 describe('authSessionManager snapshot', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    authSessionManager.replaceSession(null);
+    homeyInitMock.mockReset();
+    openhabInitMock.mockReset();
+    homeyInitMock.mockResolvedValue(null);
+    openhabInitMock.mockResolvedValue(null);
+  });
+
   it('restores both Home Assistant and Homey sessions together', async () => {
     const standaloneOAuthAuthModule = await import('@navet/app/auth/adapters/standaloneOAuthAuth');
     vi.mocked(standaloneOAuthAuthModule.standaloneOAuthAuth.init).mockResolvedValueOnce({
@@ -117,5 +136,47 @@ describe('authSessionManager snapshot', () => {
       isAuthenticated: true,
       haBaseUrl: 'https://homey.example.com',
     });
+  });
+
+  it('restores stored openHAB sessions only when credentials are present', async () => {
+    localStorage.setItem(
+      'navet_auth_session',
+      JSON.stringify({
+        providerId: 'openhab',
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'http://openhab.local:8080',
+        hassUrl: 'http://openhab.local:8080',
+        username: 'navet',
+        password: 'secret',
+      })
+    );
+
+    await expect(authSessionManager.init()).resolves.toMatchObject({
+      providerId: 'openhab',
+      isAuthenticated: true,
+      sessions: {
+        openhab: expect.objectContaining({
+          hassUrl: 'http://openhab.local:8080',
+          username: 'navet',
+        }),
+      },
+    });
+    expect(localStorage.getItem('navet_auth_session')).toBeNull();
+  });
+
+  it('does not write openHAB credentials back to localStorage after session updates', () => {
+    authSessionManager.replaceSession({
+      providerId: 'openhab',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://openhab.local:8080',
+      hassUrl: 'http://openhab.local:8080',
+      username: 'navet',
+      password: 'secret',
+      proxyBaseUrl: '/__navet_openhab_proxy__',
+    });
+
+    expect(localStorage.getItem('navet_auth_session')).toBeNull();
   });
 });

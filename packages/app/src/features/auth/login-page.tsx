@@ -64,6 +64,8 @@ export function LoginPage() {
   const [isDiscovering, setIsDiscovering] = useState(!initialUrl.current);
   const [discoveredUrl, setDiscoveredUrl] = useState<string | null>(null);
   const [providerId, setProviderId] = useState<IntegrationProviderId | null>(null);
+  const [openhabUsername, setOpenhabUsername] = useState('');
+  const [openhabPassword, setOpenhabPassword] = useState('');
   const { login } = useAuthSession();
   const { theme } = useTheme();
   const { language, languageOptions, t } = useI18n();
@@ -72,6 +74,7 @@ export function LoginPage() {
   const requiresUrl = provider?.loginMode === 'url_oauth' || provider?.loginMode === 'url_session';
   const usesOAuthRedirect =
     provider?.loginMode === 'url_oauth' || provider?.loginMode === 'cloud_oauth';
+  const requiresCredentials = provider?.id === 'openhab';
   const hasSelectedProvider = provider !== null;
   const surface = getThemeSurfaceTokens(theme);
   const logoSrc = getPublicAssetUrl('logo.svg');
@@ -150,7 +153,26 @@ export function LoginPage() {
           return;
         }
 
-        await login({ providerId, hassUrl });
+        if (requiresCredentials) {
+          if (!openhabUsername.trim()) {
+            setError('Please enter your openHAB username');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!openhabPassword.trim()) {
+            setError('Please enter your openHAB password');
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        await login({
+          providerId,
+          hassUrl,
+          username: requiresCredentials ? openhabUsername.trim() : undefined,
+          password: requiresCredentials ? openhabPassword : undefined,
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('login.errors.unexpected'));
@@ -183,11 +205,13 @@ export function LoginPage() {
   const urlPlaceholder =
     provider?.id === 'openhab' ? 'http://openhab.local:8080' : t('login.urlPlaceholder');
   const introText = provider
-    ? provider.loginMode === 'url_session'
-      ? t('login.providerIntro.urlSession', { provider: provider.label })
-      : requiresUrl
-        ? t('login.providerIntro.urlOauth', { provider: provider.label })
-        : t('login.providerIntro.cloudOauth', { provider: provider.label })
+    ? provider.id === 'openhab'
+      ? 'Enter your openHAB URL, username, and password to connect directly from Navet.'
+      : provider.loginMode === 'url_session'
+        ? t('login.providerIntro.urlSession', { provider: provider.label })
+        : requiresUrl
+          ? t('login.providerIntro.urlOauth', { provider: provider.label })
+          : t('login.providerIntro.cloudOauth', { provider: provider.label })
     : t('login.providerChooser.description');
 
   return (
@@ -308,18 +332,50 @@ export function LoginPage() {
               {hasSelectedProvider && provider ? (
                 <div className="space-y-5 pt-5">
                   {requiresUrl ? (
-                    <FieldBlock label={urlFieldLabel} htmlFor="url">
-                      <Input
-                        ref={urlInputRef}
-                        id="url"
-                        type="text"
-                        defaultValue={initialUrl.current}
-                        placeholder={urlPlaceholder}
-                        leading={<Home className={`h-5 w-5 ${mutedColor}`} />}
-                        inputClassName={fieldInputClassName}
-                        disabled={isLoading}
-                      />
-                    </FieldBlock>
+                    <>
+                      <FieldBlock label={urlFieldLabel} htmlFor="url">
+                        <Input
+                          ref={urlInputRef}
+                          id="url"
+                          type="text"
+                          defaultValue={initialUrl.current}
+                          placeholder={urlPlaceholder}
+                          leading={<Home className={`h-5 w-5 ${mutedColor}`} />}
+                          inputClassName={fieldInputClassName}
+                          disabled={isLoading}
+                        />
+                      </FieldBlock>
+
+                      {requiresCredentials ? (
+                        <>
+                          <FieldBlock label="openHAB Username" htmlFor="openhab-username">
+                            <Input
+                              id="openhab-username"
+                              type="text"
+                              value={openhabUsername}
+                              onChange={(event) => setOpenhabUsername(event.target.value)}
+                              autoComplete="username"
+                              placeholder="openhab"
+                              inputClassName={fieldInputClassName}
+                              disabled={isLoading}
+                            />
+                          </FieldBlock>
+
+                          <FieldBlock label="openHAB Password" htmlFor="openhab-password">
+                            <Input
+                              id="openhab-password"
+                              type="password"
+                              value={openhabPassword}
+                              onChange={(event) => setOpenhabPassword(event.target.value)}
+                              autoComplete="current-password"
+                              placeholder="Password"
+                              inputClassName={fieldInputClassName}
+                              disabled={isLoading}
+                            />
+                          </FieldBlock>
+                        </>
+                      ) : null}
+                    </>
                   ) : null}
 
                   {error ? (
@@ -366,15 +422,17 @@ export function LoginPage() {
                           provider: provider.label,
                           signInProvider: providerSignInLabel ?? provider.label,
                         })
-                      : provider.loginMode === 'url_session'
-                        ? t('login.hint.urlSession', { provider: provider.label })
-                        : !usesOAuthRedirect
-                          ? t('login.connectProviderTitle', { provider: provider.label })
-                          : isDiscovering
-                            ? t('login.hint.discoverySearching')
-                            : discoveredUrl
-                              ? t('login.hint.discoveryFound')
-                              : t('login.hint.oauthReturn', { provider: provider.label })}
+                      : provider.id === 'openhab'
+                        ? 'Navet will connect directly to your openHAB server with the URL and credentials you provide.'
+                        : provider.loginMode === 'url_session'
+                          ? t('login.hint.urlSession', { provider: provider.label })
+                          : !usesOAuthRedirect
+                            ? t('login.connectProviderTitle', { provider: provider.label })
+                            : isDiscovering
+                              ? t('login.hint.discoverySearching')
+                              : discoveredUrl
+                                ? t('login.hint.discoveryFound')
+                                : t('login.hint.oauthReturn', { provider: provider.label })}
                   </p>
                 </div>
               ) : null}

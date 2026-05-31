@@ -1,5 +1,6 @@
 import { TabList, TabPanel, Tabs, TabTrigger } from '@navet/app/components/primitives';
 import { useI18n, usePersistedState } from '@navet/app/hooks';
+import { isProductionEnvironment } from '@navet/app/utils/environment';
 import {
   Brain,
   FlaskConical,
@@ -41,7 +42,9 @@ const SETTINGS_TAB_STORAGE_KEY = 'navet-settings-active-tab';
 export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
   const { t } = useI18n();
   const controller = useSettingsSectionController();
-  const hiddenTabSet = new Set<string>(hiddenTabs);
+  const hiddenTabSet = new Set<string>(
+    isProductionEnvironment() ? [...hiddenTabs, 'habits'] : hiddenTabs
+  );
   const navItems = [
     { id: 'appearance', label: t('settings.nav.appearance'), icon: Palette },
     { id: 'localization', label: t('settings.nav.localization'), icon: Languages },

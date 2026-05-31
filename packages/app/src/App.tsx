@@ -23,6 +23,7 @@ import {
   useAccentColor,
   useCurrentIntegrationConnectionState,
   useCurrentIntegrationStore,
+  useProviderHealth,
 } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useViewportResize } from './hooks/use-viewport-resize';
@@ -39,6 +40,7 @@ import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
 import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
+import { isProductionEnvironment } from './utils/environment';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function getConnectionAttemptKey(session: AuthSession) {
@@ -56,7 +58,7 @@ function createIngressProxyRecoverySession(
 }
 
 function AppContent() {
-  const { runtime, session, sessions, ready, logout, replaceSession } = useAuthSession();
+  const { provider, runtime, session, sessions, ready, logout, replaceSession } = useAuthSession();
   const isAuthenticated = Boolean(session);
   const needsHomeySelection =
     session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
@@ -64,8 +66,13 @@ function AppContent() {
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
   const { connected, connecting, reconnecting } = useCurrentIntegrationConnectionState();
+  const providerHealth = useProviderHealth(provider.id);
   const setCurrentProviderId = useCurrentIntegrationStore(
     integrationSelectors.setCurrentProviderId
+  );
+  const selectedProviderIds = useCurrentIntegrationStore(integrationSelectors.selectedProviderIds);
+  const setSelectedProviders = useCurrentIntegrationStore(
+    integrationSelectors.setSelectedProviders
   );
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
@@ -170,6 +177,21 @@ function AppContent() {
     const removedProviderIds = previousSessionProviderIds.current.filter(
       (previousProviderId) => !currentProviderIds.includes(previousProviderId)
     );
+    const nextSelectedProviderIds = [
+      ...selectedProviderIds.filter((providerId) => currentProviderIds.includes(providerId)),
+      ...currentProviderIds.filter(
+        (providerId) =>
+          !selectedProviderIds.includes(providerId) &&
+          !previousSessionProviderIds.current.includes(providerId)
+      ),
+    ];
+
+    if (
+      nextSelectedProviderIds.length !== selectedProviderIds.length ||
+      nextSelectedProviderIds.some((providerId, index) => providerId !== selectedProviderIds[index])
+    ) {
+      setSelectedProviders(nextSelectedProviderIds);
+    }
 
     for (const removedProviderId of removedProviderIds) {
       delete failedConnectionAttemptKeys.current[removedProviderId];
@@ -181,7 +203,7 @@ function AppContent() {
     if (!currentProviderIds.length) {
       teardownIntegrationSession(session?.providerId ?? null);
     }
-  }, [sessions, session?.providerId]);
+  }, [selectedProviderIds, session?.providerId, sessions, setSelectedProviders]);
 
   useEffect(() => {
     if (!isAuthenticated || !canResetSessionFromError) {
@@ -250,6 +272,22 @@ function AppContent() {
   }, [sessions.homey]);
 
   useEffect(() => {
+    const openhabSession = sessions.openhab;
+    if (!openhabSession || openhabSession.providerId !== 'openhab') {
+      return;
+    }
+
+    const attemptKey = getConnectionAttemptKey(openhabSession);
+    if (failedConnectionAttemptKeys.current.openhab === attemptKey) {
+      return;
+    }
+
+    void bootstrapIntegrationSession(openhabSession).catch(() => {
+      failedConnectionAttemptKeys.current.openhab = attemptKey;
+    });
+  }, [sessions.openhab]);
+
+  useEffect(() => {
     const homeAssistantSession = sessions.home_assistant;
     if (!homeAssistantSession || homeAssistantSession.providerId !== 'home_assistant' || appError) {
       return;
@@ -306,10 +344,14 @@ function AppContent() {
 
   useEffect(() => {
     initializeSearchStore();
-    initializeHabitEngine();
+    if (!isProductionEnvironment()) {
+      initializeHabitEngine();
+    }
     const stopNavigationSync = startNavigationStoreSync();
     return () => {
-      stopHabitEngine();
+      if (!isProductionEnvironment()) {
+        stopHabitEngine();
+      }
       stopNavigationSync();
     };
   }, []);
@@ -342,6 +384,8 @@ function AppContent() {
           connecting={connecting}
           reconnecting={reconnecting}
           isOnline={isOnline}
+          providerLabel={provider.label}
+          lastError={providerHealth.lastError}
         />
       ) : null}
       <Toaster />

@@ -4,8 +4,10 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { lookup } from 'node:dns/promises'
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { connect as connectNet } from 'node:net'
 import { isIP } from 'node:net'
 import { Readable } from 'node:stream'
+import { connect as connectTls } from 'node:tls'
 import path from 'path'
 import {
   defineConfig,
@@ -32,6 +34,12 @@ import {
   type HomeySessionData,
   isValidHomeySessionData,
 } from './scripts/vite-homey-session-store'
+import {
+  createViteOpenHABSessionStore,
+  type OpenHABSessionData,
+  isValidOpenHABSessionData,
+  toOpenHABBasicAuthHeader,
+} from './scripts/vite-openhab-session-store'
 import { getAppChunkName, getVendorChunkName, isLazyHtmlPreload } from './scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
@@ -47,6 +55,7 @@ const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
 const AUTH_SESSION_MAX_BYTES = 16 * 1024
 const HOMEY_SESSION_MAX_BYTES = 8 * 1024
+const OPENHAB_SESSION_MAX_BYTES = 8 * 1024
 const DASHBOARD_PROFILE_MAX_BYTES = 1024 * 1024
 const REACT_COMPILER_INCLUDE = [
   /[\\/]src[\\/]/,
@@ -379,6 +388,248 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
     },
     configurePreviewServer(server: PreviewServer) {
       server.middlewares.use('/__navet_homey_proxy__', async (req, res) => {
+        await handleRequest(req, res)
+      })
+    },
+  }
+}
+
+function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) {
+  const proxyBasePath = '/__navet_openhab_proxy__'
+  const sendUpgradeError = (socket: import('node:net').Socket, statusCode: number, message: string) => {
+    socket.write(
+      `HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`
+    )
+    socket.destroy()
+  }
+
+  const resolveOpenHABTargetUrl = (requestUrlValue: string, session: OpenHABSessionData) => {
+    const upstreamOrigin = new URL(session.hassUrl)
+    const requestUrl = new URL(requestUrlValue, 'http://localhost')
+    const targetPathname = normalizeViteProxyTargetPath(proxyBasePath, requestUrl.pathname)
+    const targetUrl = new URL(upstreamOrigin.toString())
+    targetUrl.pathname = targetPathname
+    targetUrl.search = requestUrl.search
+    if (targetUrl.origin !== upstreamOrigin.origin) {
+      throw new Error('Invalid proxy target')
+    }
+    return targetUrl
+  }
+
+  const handleUpgrade = (
+    req: IncomingMessage,
+    socket: import('node:net').Socket,
+    head: Buffer
+  ) => {
+    if (!req.url?.startsWith(proxyBasePath)) {
+      return
+    }
+
+    let decodedUrl = ''
+    try {
+      decodedUrl = decodeURIComponent(req.url)
+    } catch {
+      sendUpgradeError(socket, 400, 'Invalid proxy path')
+      return
+    }
+
+    if (req.url.includes('..') || decodedUrl.includes('..')) {
+      sendUpgradeError(socket, 400, 'Invalid proxy path')
+      return
+    }
+
+    const session = getOpenHABSession()
+    if (!session) {
+      sendUpgradeError(socket, 502, 'openHAB session is required')
+      return
+    }
+
+    let targetUrl: URL
+    try {
+      targetUrl = resolveOpenHABTargetUrl(req.url, session)
+    } catch {
+      sendUpgradeError(socket, 400, 'Invalid proxy target')
+      return
+    }
+
+    targetUrl.protocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+
+    const upstreamSocket =
+      targetUrl.protocol === 'wss:'
+        ? connectTls({
+            host: targetUrl.hostname,
+            port: targetUrl.port ? Number(targetUrl.port) : 443,
+            servername: targetUrl.hostname,
+          })
+        : connectNet({
+            host: targetUrl.hostname,
+            port: targetUrl.port ? Number(targetUrl.port) : 80,
+          })
+
+    let responseStarted = false
+
+    upstreamSocket.on('connect', () => {
+      const headerEntries = Object.entries(req.headers)
+      const forwardedHeaders = headerEntries
+        .flatMap(([name, value]) => {
+          if (!value) {
+            return []
+          }
+          const lowerName = name.toLowerCase()
+          if (lowerName === 'host' || lowerName === 'authorization' || lowerName === 'content-length') {
+            return []
+          }
+          if (Array.isArray(value)) {
+            return value.map((entry) => `${name}: ${entry}`)
+          }
+          return [`${name}: ${value}`]
+        })
+        .concat(`Host: ${targetUrl.host}`, `Authorization: ${toOpenHABBasicAuthHeader(session)}`)
+
+      upstreamSocket.write(
+        [`GET ${targetUrl.pathname}${targetUrl.search} HTTP/1.1`, ...forwardedHeaders, '', ''].join(
+          '\r\n'
+        )
+      )
+
+      if (head.length > 0) {
+        upstreamSocket.write(head)
+      }
+    })
+
+    upstreamSocket.once('data', (chunk) => {
+      responseStarted = true
+      socket.write(chunk)
+      upstreamSocket.pipe(socket)
+      socket.pipe(upstreamSocket)
+    })
+
+    upstreamSocket.on('error', () => {
+      if (!responseStarted) {
+        sendUpgradeError(socket, 502, 'Unable to connect to openHAB websocket')
+      } else {
+        socket.destroy()
+      }
+    })
+
+    socket.on('error', () => {
+      upstreamSocket.destroy()
+    })
+
+    socket.on('close', () => {
+      upstreamSocket.destroy()
+    })
+  }
+
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (!req.url) {
+      res.statusCode = 400
+      res.end('Missing proxy path')
+      return
+    }
+
+    try {
+      let decodedUrl = ''
+      try {
+        decodedUrl = decodeURIComponent(req.url)
+      } catch {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
+        return
+      }
+
+      if (req.url.includes('..') || decodedUrl.includes('..')) {
+        res.statusCode = 400
+        res.end('Invalid proxy path')
+        return
+      }
+
+      const session = getOpenHABSession()
+      const upstreamBaseUrl = session?.hassUrl ?? null
+      if (!upstreamBaseUrl) {
+        res.statusCode = 502
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'openHAB session is required' }))
+        return
+      }
+
+      const upstreamOrigin = new URL(upstreamBaseUrl)
+      const requestUrl = new URL(req.url, 'http://localhost')
+      const targetPathname = normalizeViteProxyTargetPath(proxyBasePath, requestUrl.pathname)
+      const targetUrl = new URL(upstreamOrigin.toString())
+      targetUrl.pathname = targetPathname
+      targetUrl.search = requestUrl.search
+      if (targetUrl.origin !== upstreamOrigin.origin) {
+        res.statusCode = 400
+        res.end('Invalid proxy target')
+        return
+      }
+
+      const headers = new Headers()
+      const contentType =
+        typeof req.headers['content-type'] === 'string' ? req.headers['content-type'] : null
+      const accept = typeof req.headers.accept === 'string' ? req.headers.accept : null
+      if (contentType) {
+        headers.set('Content-Type', contentType)
+      }
+      if (accept) {
+        headers.set('Accept', accept)
+      } else if (targetPathname.startsWith('/rest/')) {
+        headers.set('Accept', 'application/json')
+      }
+      if (session) {
+        headers.set('Authorization', toOpenHABBasicAuthHeader(session))
+      }
+
+      const body =
+        req.method === 'GET' || req.method === 'HEAD'
+          ? undefined
+          : await new Response(req as never).text()
+
+      const upstreamResponse = await fetch(targetUrl, {
+        method: req.method,
+        redirect: 'manual',
+        headers,
+        body,
+      })
+
+      res.statusCode = upstreamResponse.status
+      setSecurityHeaders(res)
+      const responseContentType = upstreamResponse.headers.get('content-type')
+      if (responseContentType) {
+        res.setHeader('Content-Type', responseContentType)
+      }
+
+      if (!upstreamResponse.body) {
+        res.end()
+        return
+      }
+
+      Readable.fromWeb(upstreamResponse.body as globalThis.ReadableStream<Uint8Array>).pipe(res)
+    } catch {
+      res.statusCode = 502
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unable to load openHAB resource' }))
+    }
+  }
+
+  const registerUpgradeProxy = (server: ViteDevServer | PreviewServer) => {
+    server.httpServer?.on('upgrade', (req, socket, head) => {
+      handleUpgrade(req, socket, head)
+    })
+  }
+
+  return {
+    name: 'navet-openhab-proxy',
+    configureServer(server: ViteDevServer) {
+      registerUpgradeProxy(server)
+      server.middlewares.use('/__navet_openhab_proxy__', async (req, res) => {
+        await handleRequest(req, res)
+      })
+    },
+    configurePreviewServer(server: PreviewServer) {
+      registerUpgradeProxy(server)
+      server.middlewares.use('/__navet_openhab_proxy__', async (req, res) => {
         await handleRequest(req, res)
       })
     },
@@ -1065,6 +1316,102 @@ function homeySessionStorePlugin() {
   }
 }
 
+function openhabSessionStorePlugin() {
+  const openhabSessionStore = createViteOpenHABSessionStore()
+
+  const setNoStoreHeaders = (res: ServerResponse) => {
+    res.setHeader('Cache-Control', 'no-store')
+  }
+
+  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
+    res.statusCode = statusCode
+    setNoStoreHeaders(res)
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify(payload))
+  }
+
+  const sendNoContent = (res: ServerResponse) => {
+    res.statusCode = 204
+    setNoStoreHeaders(res)
+    res.end()
+  }
+
+  const readRequestBody = async (req: IncomingMessage) => {
+    const chunks: Buffer[] = []
+    let size = 0
+
+    for await (const chunk of req) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      size += buffer.byteLength
+      if (size > OPENHAB_SESSION_MAX_BYTES) {
+        throw new Error('openHAB session is too large')
+      }
+      chunks.push(buffer)
+    }
+
+    return Buffer.concat(chunks).toString('utf8')
+  }
+
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.method === 'GET') {
+      const session = openhabSessionStore.getSerializedSession()
+      if (!session) {
+        sendNoContent(res)
+        return
+      }
+
+      res.statusCode = 200
+      setNoStoreHeaders(res)
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(session)
+      return
+    }
+
+    if (req.method === 'PUT') {
+      try {
+        const body = await readRequestBody(req)
+        const parsed = JSON.parse(body)
+        if (!isValidOpenHABSessionData(parsed)) {
+          sendJson(res, 400, { error: 'Unsupported openHAB session' })
+          return
+        }
+
+        openhabSessionStore.saveSession(parsed)
+        sendJson(res, 200, { ok: true })
+      } catch {
+        sendJson(res, 400, { error: 'Unable to save openHAB session' })
+      }
+      return
+    }
+
+    if (req.method === 'DELETE') {
+      openhabSessionStore.clearSession()
+      sendJson(res, 200, { ok: true })
+      return
+    }
+
+    res.setHeader('Allow', 'GET, PUT, DELETE')
+    sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_openhab__/session', async (req, res) => {
+      await handleRequest(req, res)
+    })
+  }
+
+  return {
+    name: 'navet-openhab-session-store',
+    api: {
+      getOpenHABSession(): OpenHABSessionData | null {
+        return openhabSessionStore.getSession()
+      },
+    },
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
@@ -1132,6 +1479,7 @@ export default defineConfig(({ mode }) => {
     const authSessionPlugin = authSessionStorePlugin()
     const dashboardProfilePlugin = dashboardProfileStorePlugin()
     const homeySessionPlugin = homeySessionStorePlugin()
+    const openhabSessionPlugin = openhabSessionStorePlugin()
     const appPlugins: PluginOption[] = [
       react(),
       babel({
@@ -1144,6 +1492,7 @@ export default defineConfig(({ mode }) => {
       authSessionPlugin,
       dashboardProfilePlugin,
       homeySessionPlugin,
+      openhabSessionPlugin,
       homeAssistantProxyPlugin(
         () =>
           (
@@ -1159,6 +1508,14 @@ export default defineConfig(({ mode }) => {
               api?: { getHomeySession?: () => HomeySessionData | null }
             }
           ).api?.getHomeySession?.() ?? null
+      ),
+      openhabProxyPlugin(
+        () =>
+          (
+            openhabSessionPlugin as PluginOption & {
+              api?: { getOpenHABSession?: () => OpenHABSessionData | null }
+            }
+          ).api?.getOpenHABSession?.() ?? null
       ),
     ]
 

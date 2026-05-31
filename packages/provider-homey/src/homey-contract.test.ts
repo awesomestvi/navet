@@ -148,7 +148,7 @@ runProviderContractTests({
       'light',
       'turn_off',
       {},
-      { entity_id: 'device-1' }
+      { entityId: 'device-1' }
     );
   },
   getLookupIds: (entity) => [entity.externalId, createProviderScopedId('homey', entity.externalId)],

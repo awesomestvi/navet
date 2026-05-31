@@ -141,7 +141,12 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   }
 
   if (!energyNow.isConnected) {
-    return renderEmptyCard(t('network.disconnectedDescription'), false);
+    return renderEmptyCard(
+      t('network.disconnectedDescription', {
+        provider: INTEGRATION_PROVIDERS[currentProviderId].label,
+      }),
+      false
+    );
   }
 
   if (!energyNow.isConfigured) {

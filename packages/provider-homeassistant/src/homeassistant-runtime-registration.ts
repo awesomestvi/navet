@@ -49,7 +49,7 @@ export function createHomeAssistantRuntimeRegistration(
       notifications: true,
       tasks: true,
     },
-    callService: async (domain, service, serviceData = {}, target) =>
+    invokeService: async (domain, service, serviceData = {}, target) =>
       callHomeAssistantService(domain, service, serviceData, target),
     signPath: async (path, expiresSeconds) => {
       const signed = await signHomeAssistantPath(path, expiresSeconds);

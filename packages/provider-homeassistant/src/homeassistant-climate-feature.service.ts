@@ -28,6 +28,6 @@ export const homeAssistantClimateFeatureService: ProviderClimateFeatureService =
       update.serviceDomain ?? (entityId.startsWith('water_heater.') ? 'water_heater' : 'climate'),
       'set_temperature',
       toServiceData(update),
-      { entity_id: entityId }
+      { entityId: entityId }
     ),
 };

@@ -872,12 +872,12 @@ export const ptMessages = {
   'network.offlineTitle': 'Você está offline',
   'network.offlineDescription':
     'A interface do app continua disponível, mas os dados ao vivo da casa inteligente e as ações precisam de conexão de rede.',
-  'network.disconnectedTitle': 'Home Assistant desconectado',
+  'network.disconnectedTitle': '{provider} desconectado',
   'network.disconnectedDescription':
-    'O Navet não consegue alcançar o Home Assistant no momento. A interface em cache continua disponível enquanto ele reconecta.',
-  'network.reconnectingTitle': 'Reconectando ao Home Assistant',
+    'O Navet não consegue alcançar {provider} no momento. A interface em cache continua disponível enquanto ele reconecta.',
+  'network.reconnectingTitle': 'Reconectando ao {provider}',
   'network.reconnectingDescription':
-    'O Navet perdeu a conexão ao vivo com o Home Assistant e está tentando reconectar agora.',
+    'O Navet perdeu a conexão ao vivo com {provider} e está tentando reconectar agora.',
   'pwa.updateAvailableTitle': 'Atualização do Navet disponível',
   'pwa.updateAvailableDescription': 'Uma nova versão foi instalada em segundo plano.',
   'pwa.reload': 'Recarregar',

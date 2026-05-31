@@ -869,12 +869,12 @@ export const svMessages = {
   'network.offlineTitle': 'Du är offline',
   'network.offlineDescription':
     'Appskalet är tillgängligt, men live-data och smarta hem-aktioner kräver en nätverksanslutning.',
-  'network.disconnectedTitle': 'Home Assistant är frånkopplat',
+  'network.disconnectedTitle': '{provider} är frånkopplat',
   'network.disconnectedDescription':
-    'Navet kan inte nå Home Assistant just nu. Cachad UI finns fortfarande tillgängligt medan appen ansluter igen.',
-  'network.reconnectingTitle': 'Återansluter till Home Assistant',
+    'Navet kan inte nå {provider} just nu. Cachad UI finns fortfarande tillgängligt medan appen ansluter igen.',
+  'network.reconnectingTitle': 'Återansluter till {provider}',
   'network.reconnectingDescription':
-    'Navet tappade liveanslutningen till Home Assistant och försöker ansluta igen nu.',
+    'Navet tappade liveanslutningen till {provider} och försöker ansluta igen nu.',
   'pwa.updateAvailableTitle': 'Navet-uppdatering tillgänglig',
   'pwa.updateAvailableDescription': 'En ny version har installerats i bakgrunden.',
   'pwa.reload': 'Ladda om',

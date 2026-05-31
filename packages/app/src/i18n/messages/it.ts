@@ -1095,10 +1095,12 @@ export const itMessages = {
   'preview.livePreview': 'Anteprima live',
   'network.offlineTitle': 'Sei offline',
   'network.offlineDescription': 'Controlla la connessione di rete e riprova.',
-  'network.disconnectedTitle': 'Home Assistant disconnesso',
-  'network.disconnectedDescription': 'Navet non è connesso a Home Assistant in questo momento.',
-  'network.reconnectingTitle': 'Riconnessione',
-  'network.reconnectingDescription': 'Navet sta provando a ripristinare la connessione.',
+  'network.disconnectedTitle': '{provider} disconnesso',
+  'network.disconnectedDescription':
+    'Navet non riesce a raggiungere {provider} in questo momento. L’interfaccia in cache resta disponibile durante la riconnessione.',
+  'network.reconnectingTitle': 'Riconnessione a {provider}',
+  'network.reconnectingDescription':
+    'Navet ha perso la connessione live con {provider} e sta provando a riconnettersi.',
   'pwa.updateAvailableTitle': 'Aggiornamento disponibile',
   'pwa.updateAvailableDescription': 'È pronta una nuova versione di Navet.',
   'pwa.reload': 'Ricarica',

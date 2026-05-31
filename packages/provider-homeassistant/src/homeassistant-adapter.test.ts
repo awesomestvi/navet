@@ -105,7 +105,7 @@ describe('homeassistant-adapter', () => {
       'light',
       'turn_on',
       { color_temp_kelvin: 3200 },
-      { entity_id: 'light.kitchen' }
+      { entityId: 'light.kitchen' }
     );
   });
 });

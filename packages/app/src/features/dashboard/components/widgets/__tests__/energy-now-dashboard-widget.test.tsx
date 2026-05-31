@@ -110,6 +110,26 @@ describe('EnergyNowDashboardWidget', () => {
   });
 
   it('shows a provider capability fallback when the active provider does not support energy', () => {
+    integrationStore.getState().setCurrentProviderId('openhab');
+    energyDashboardMock.useProviderEnergyNow.mockReturnValue({
+      currentLoadW: 0,
+      solarTodayKWh: 0,
+      solarW: 0,
+      importTodayKWh: 0,
+      importW: 0,
+      currentLoadStatisticId: undefined,
+      todayTotalUsageKWh: 0,
+      isConnected: false,
+      isConfigured: true,
+      sourceOptions: [],
+    });
+
+    renderWithProviders(<EnergyNowDashboardWidget />);
+
+    expect(screen.getByText('openHAB does not support this feature yet.')).toBeInTheDocument();
+  });
+
+  it('shows a provider capability fallback when the active provider does not support energy', () => {
     integrationStore.getState().setCurrentProviderId('homey');
 
     renderWithProviders(<EnergyNowDashboardWidget />);

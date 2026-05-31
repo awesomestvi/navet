@@ -24,6 +24,8 @@ interface NetworkStatusBannerProps {
   connecting: boolean;
   reconnecting: boolean;
   isOnline: boolean;
+  providerLabel?: string;
+  lastError?: string | null;
   /** Override the derived tone for Storybook and special cases. */
   tone?: BannerTone;
 }
@@ -33,6 +35,8 @@ export function NetworkStatusBanner({
   connecting,
   reconnecting,
   isOnline,
+  providerLabel,
+  lastError,
   tone: toneProp,
 }: NetworkStatusBannerProps) {
   const { theme } = useTheme();
@@ -51,16 +55,17 @@ export function NetworkStatusBanner({
   const title = isOffline
     ? t('network.offlineTitle')
     : reconnecting || connecting
-      ? t('network.reconnectingTitle')
-      : t('network.disconnectedTitle');
+      ? t('network.reconnectingTitle', { provider: providerLabel ?? 'provider' })
+      : t('network.disconnectedTitle', { provider: providerLabel ?? 'provider' });
   const description = isOffline
     ? t('network.offlineDescription')
     : reconnecting || connecting
-      ? t('network.reconnectingDescription')
-      : t('network.disconnectedDescription');
+      ? t('network.reconnectingDescription', { provider: providerLabel ?? 'provider' })
+      : lastError?.trim() ||
+        t('network.disconnectedDescription', { provider: providerLabel ?? 'provider' });
 
   return (
-    <div className="fixed inset-x-0 top-0 z-70 px-3 pt-3 md:px-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-70 px-3 pb-20 md:px-6 md:pb-6">
       <div
         className={`mx-auto flex max-w-3xl items-start gap-3 rounded-2xl border px-4 py-3 shadow-xl ${navetSemanticColorTokens[tone]} ${
           theme === 'glass' ? 'backdrop-blur-2xl' : 'backdrop-blur-xl'

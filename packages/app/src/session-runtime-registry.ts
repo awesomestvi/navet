@@ -27,6 +27,8 @@ export function getIntegrationSessionRuntimeRegistration(): IntegrationSessionRu
         haBaseUrl: input?.haBaseUrl,
         hassUrl: input?.hassUrl,
         accessToken: input?.accessToken,
+        username: input?.username,
+        password: input?.password,
         providerId: input?.providerId,
       }),
     logout: async (providerId) => {

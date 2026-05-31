@@ -7,6 +7,17 @@ export interface OpenHABItemStateDescription {
   }>;
 }
 
+export interface OpenHABSemanticsMetadata {
+  value?: string;
+  config?: {
+    hasLocation?: string;
+    isPointOf?: string;
+    relatesTo?: string;
+    isPartOf?: string;
+  };
+  editable?: boolean;
+}
+
 export interface OpenHABItem {
   name: string;
   type?: string;
@@ -16,10 +27,15 @@ export interface OpenHABItem {
   tags?: string[];
   groupNames?: string[];
   stateDescription?: OpenHABItemStateDescription;
+  metadata?: {
+    semantics?: OpenHABSemanticsMetadata;
+  };
   editable?: boolean;
 }
 
 export interface OpenHABSnapshot {
   connected: boolean;
   items: Record<string, OpenHABItem>;
+  reconnecting?: boolean;
+  error?: string | null;
 }

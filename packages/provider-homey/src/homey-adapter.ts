@@ -70,7 +70,7 @@ function getEntityCommandDomain(entity: NavetEntity): string {
 }
 
 async function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
-  const target = { entity_id: entity.externalId };
+  const target = { entityId: entity.externalId };
 
   switch (command.type) {
     case 'turn_on':
@@ -162,9 +162,9 @@ async function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
         command.serviceData ?? {},
         (command.target as
           | {
-              entity_id?: string | string[];
-              area_id?: string | string[];
-              device_id?: string | string[];
+              entityId?: string | string[];
+              areaId?: string | string[];
+              deviceId?: string | string[];
             }
           | undefined) ?? target
       );

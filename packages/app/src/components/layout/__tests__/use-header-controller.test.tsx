@@ -196,4 +196,194 @@ describe('useHeaderController', () => {
     expect(useProviderResourceMock).toHaveBeenCalledTimes(1);
     expect(result.current.avatarUrl).toBe('resolved:home_assistant:person.jane_doe');
   });
+
+  it('falls back to a unique first-name person match when the full names differ', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      currentUser: {
+        id: 'user-1',
+        name: 'Jane',
+        email: 'jane@example.com',
+        avatarUrl: null,
+      },
+      providerDeviceCollectionsByProviderId: {
+        ...integrationStore.getState().providerDeviceCollectionsByProviderId,
+        home_assistant: {
+          ...(integrationStore.getState().providerDeviceCollectionsByProviderId.home_assistant ?? {
+            lights: [],
+            fans: [],
+            hvac: [],
+            climate: [],
+            media: [],
+            weather: [],
+            switches: [],
+            helpers: [],
+            covers: [],
+            locks: [],
+            scenes: [],
+            persons: [],
+            sensors: [],
+            vacuums: [],
+            calendars: [],
+            cameras: [],
+            'grouped-sensors': [],
+          }),
+          persons: [
+            {
+              id: 'home_assistant:person.jane_doe',
+              canonicalId: 'home_assistant:person.jane_doe',
+              nativeId: 'person.jane_doe',
+              providerId: 'home_assistant',
+              name: 'Jane Doe',
+              room: 'Home',
+              location: 'Home',
+              size: 'small',
+              state: 'home',
+            },
+          ],
+        },
+      },
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:person.jane_doe': {
+            id: 'home_assistant:person.jane_doe',
+            canonicalId: 'home_assistant:person.jane_doe',
+            providerId: 'home_assistant',
+            externalId: 'person.jane_doe',
+            type: 'person',
+            name: 'Jane Doe',
+            room: 'Home',
+            primaryState: 'home',
+            availability: 'available',
+            capabilities: [],
+            attributes: {},
+            resources: {
+              primary_image: {
+                kind: 'primary_image',
+                providerId: 'home_assistant',
+                entityId: 'home_assistant:person.jane_doe',
+                path: '/api/image/serve/jane',
+              },
+            },
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'person.jane_doe': 'home_assistant:person.jane_doe',
+          'home_assistant:person.jane_doe': 'home_assistant:person.jane_doe',
+        },
+      },
+    });
+
+    const { result } = renderHookWithProviders(() => useHeaderController());
+
+    expect(result.current.avatarUrl).toBe('resolved:home_assistant:person.jane_doe');
+    expect(useProviderResourceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: 'home_assistant:person.jane_doe',
+        providerId: 'home_assistant',
+      })
+    );
+  });
+
+  it('resolves the avatar from a single provider person when the current user is unavailable', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      currentUser: null,
+      providerDeviceCollectionsByProviderId: {
+        ...integrationStore.getState().providerDeviceCollectionsByProviderId,
+        home_assistant: {
+          ...(integrationStore.getState().providerDeviceCollectionsByProviderId.home_assistant ?? {
+            lights: [],
+            fans: [],
+            hvac: [],
+            climate: [],
+            media: [],
+            weather: [],
+            switches: [],
+            helpers: [],
+            covers: [],
+            locks: [],
+            scenes: [],
+            persons: [],
+            sensors: [],
+            vacuums: [],
+            calendars: [],
+            cameras: [],
+            'grouped-sensors': [],
+          }),
+          persons: [
+            {
+              id: 'home_assistant:person.jane_doe',
+              canonicalId: 'home_assistant:person.jane_doe',
+              nativeId: 'person.jane_doe',
+              providerId: 'home_assistant',
+              name: 'Jane Doe',
+              room: 'Home',
+              location: 'Home',
+              size: 'small',
+              state: 'home',
+              entityPicture: '/api/image/serve/jane',
+              resources: {
+                primaryImage: {
+                  kind: 'primary_image',
+                  providerId: 'home_assistant',
+                  entityId: 'home_assistant:person.jane_doe',
+                  path: '/api/image/serve/jane',
+                },
+              },
+            },
+          ],
+        },
+      },
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:person.jane_doe': {
+            id: 'home_assistant:person.jane_doe',
+            canonicalId: 'home_assistant:person.jane_doe',
+            providerId: 'home_assistant',
+            externalId: 'person.jane_doe',
+            type: 'person',
+            name: 'Jane Doe',
+            room: 'Home',
+            primaryState: 'home',
+            availability: 'available',
+            capabilities: [],
+            attributes: {},
+            resources: {
+              primary_image: {
+                kind: 'primary_image',
+                providerId: 'home_assistant',
+                entityId: 'home_assistant:person.jane_doe',
+                path: '/api/image/serve/jane',
+              },
+            },
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'person.jane_doe': 'home_assistant:person.jane_doe',
+          'home_assistant:person.jane_doe': 'home_assistant:person.jane_doe',
+        },
+      },
+    });
+
+    const { result } = renderHookWithProviders(() => useHeaderController());
+
+    expect(result.current.avatarUrl).toBe('resolved:home_assistant:person.jane_doe');
+    expect(useProviderResourceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: 'home_assistant:person.jane_doe',
+        providerId: 'home_assistant',
+      })
+    );
+  });
 });

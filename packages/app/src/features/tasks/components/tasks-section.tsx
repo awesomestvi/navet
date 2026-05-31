@@ -7,6 +7,7 @@ import { Badge, InteractivePill, MessageBar, Panel } from '@navet/app/components
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { HabitInsightsPanel } from '@navet/app/features/habits/components/habit-insights-panel';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import { isProductionEnvironment } from '@navet/app/utils/environment';
 import { Bot, ClipboardList, Clock3, type LucideIcon, Power, PowerOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
@@ -82,6 +83,7 @@ function TasksLoadingState() {
 export function TasksSection() {
   const { formatDateTime, t } = useI18n();
   const { theme, accentColor } = useTheme();
+  const habitsVisible = !isProductionEnvironment();
   const surface = getThemeSurfaceTokens(theme);
   const controller = useAutomationDashboardController();
   const [automationFilter, setAutomationFilter] = useState<AutomationVisibilityFilter>('all');
@@ -205,7 +207,7 @@ export function TasksSection() {
           </SectionCard>
         ) : null}
 
-        <HabitInsightsPanel />
+        {habitsVisible ? <HabitInsightsPanel /> : null}
 
         <SectionCard
           title={t('sections.tasks.automations.title')}

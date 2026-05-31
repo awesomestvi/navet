@@ -1,6 +1,8 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { integrationSelectors } from '@navet/app/stores/selectors';
+import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
 import { Zap } from 'lucide-react';
 import { memo } from 'react';
 import { useEnergyDashboard } from '../hooks/use-energy-dashboard';
@@ -10,6 +12,8 @@ export const EnergySection = memo(function EnergySection() {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const providerLabel = INTEGRATION_PROVIDERS[currentProviderId].label;
   const {
     dashboard,
     energySourceDiagnostics,
@@ -27,8 +31,8 @@ export const EnergySection = memo(function EnergySection() {
       <div className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
           icon={Zap}
-          title={t('network.disconnectedTitle')}
-          description={t('network.disconnectedDescription')}
+          title={t('network.disconnectedTitle', { provider: providerLabel })}
+          description={t('network.disconnectedDescription', { provider: providerLabel })}
           className="w-full max-w-md"
         />
       </div>

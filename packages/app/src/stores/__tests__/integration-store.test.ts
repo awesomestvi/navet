@@ -1,5 +1,6 @@
 import { homeyService } from '@navet/app/services/homey.service';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import { openhabService } from '@navet/provider-openhab/openhab-service';
 import { describe, expect, it } from 'vitest';
 import { homeAssistantStore } from '../home-assistant-store';
 import { integrationStore } from '../integration-store';
@@ -20,6 +21,28 @@ describe('integrationStore', () => {
       devices: {},
       zones: {},
     });
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        LivingRoom: {
+          name: 'LivingRoom',
+          type: 'Group',
+          label: 'Living Room',
+          tags: ['Location', 'LivingRoom'],
+          groupNames: [],
+        },
+        LivingRoomLamp: {
+          name: 'LivingRoomLamp',
+          type: 'Switch',
+          label: 'Living Room Lamp',
+          state: 'ON',
+          category: 'light',
+          tags: ['Light'],
+          groupNames: ['LivingRoom'],
+        },
+      },
+      error: null,
+    });
 
     expect(integrationStore.getState().providerHealth.home_assistant).toMatchObject({
       providerId: 'home_assistant',
@@ -34,8 +57,9 @@ describe('integrationStore', () => {
     });
     expect(integrationStore.getState().providerHealth.openhab).toMatchObject({
       providerId: 'openhab',
-      connected: false,
+      connected: true,
       implementationStatus: 'implemented',
+      lastError: null,
     });
     expect(integrationStore.getState().providerRuntime.home_assistant).toMatchObject({
       providerId: 'home_assistant',
@@ -53,7 +77,256 @@ describe('integrationStore', () => {
       entitiesHydrated: false,
       registriesHydrated: true,
     });
+    expect(integrationStore.getState().providerRuntime.openhab).toMatchObject({
+      providerId: 'openhab',
+      connected: true,
+      connecting: false,
+      reconnecting: false,
+      entitiesHydrated: true,
+      registriesHydrated: true,
+    });
     expect(integrationStore.getState().currentProviderId).toBe('home_assistant');
+  });
+
+  it('publishes openHAB entities, lookups, and rooms into the shared store', async () => {
+    await resetAppStores();
+
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        LivingRoom: {
+          name: 'LivingRoom',
+          type: 'Group',
+          label: 'Living Room',
+          tags: ['Location', 'LivingRoom'],
+          groupNames: [],
+        },
+        LivingRoomLamp: {
+          name: 'LivingRoomLamp',
+          type: 'Switch',
+          label: 'Living Room Lamp',
+          state: 'ON',
+          category: 'light',
+          tags: ['Light'],
+          groupNames: ['LivingRoom'],
+        },
+      },
+      error: null,
+    });
+
+    expect(
+      integrationStore.getState().providerEntitiesByCanonicalId['openhab:LivingRoomLamp']
+    ).toMatchObject({
+      canonicalId: 'openhab:LivingRoomLamp',
+      externalId: 'LivingRoomLamp',
+      providerId: 'openhab',
+      type: 'light',
+      primaryState: 'on',
+    });
+    expect(
+      integrationStore.getState().providerEntityLookupByProviderId.openhab?.LivingRoomLamp
+    ).toBe('openhab:LivingRoomLamp');
+    expect(
+      Object.values(integrationStore.getState().providerRoomsByProviderId.openhab ?? {})
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          providerId: 'openhab',
+          name: 'Living Room',
+          memberIds: ['openhab:LivingRoomLamp'],
+        }),
+      ])
+    );
+  });
+
+  it('maps openHAB switch lights that report ON into active light devices', async () => {
+    await resetAppStores();
+
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        LivingRoom: {
+          name: 'LivingRoom',
+          type: 'Group',
+          label: 'Living Room',
+          tags: ['Location', 'LivingRoom'],
+          groupNames: [],
+        },
+        LivingRoomLamp: {
+          name: 'LivingRoomLamp',
+          type: 'Switch',
+          label: 'Living Room Lamp',
+          state: 'ON',
+          category: 'light',
+          tags: ['Light'],
+          groupNames: ['LivingRoom'],
+        },
+      },
+      error: null,
+    });
+
+    expect(
+      integrationStore.getState().providerDeviceCollectionsByProviderId.openhab?.lights
+    ).toEqual([
+      expect.objectContaining({
+        canonicalId: 'openhab:LivingRoomLamp',
+        name: 'Living Room Lamp',
+        room: 'Living Room',
+        state: true,
+      }),
+    ]);
+  });
+
+  it('maps openHAB dimmer lights at 0 brightness as off', async () => {
+    await resetAppStores();
+
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        Office: {
+          name: 'Office',
+          type: 'Group',
+          label: 'Office',
+          tags: ['Location', 'Office'],
+          groupNames: [],
+        },
+        DeskLamp: {
+          name: 'DeskLamp',
+          type: 'Dimmer',
+          label: 'Desk Lamp',
+          state: '0',
+          category: 'Light',
+          tags: ['Light'],
+          groupNames: ['Office'],
+        },
+      },
+      error: null,
+    });
+
+    expect(
+      integrationStore.getState().providerDeviceCollectionsByProviderId.openhab?.lights
+    ).toEqual([
+      expect.objectContaining({
+        canonicalId: 'openhab:DeskLamp',
+        state: false,
+        brightness: 0,
+      }),
+    ]);
+  });
+
+  it('maps openHAB equipment control points into visible light devices', async () => {
+    await resetAppStores();
+
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        lOffice: {
+          name: 'lOffice',
+          type: 'Group',
+          label: 'Office',
+          tags: ['Office'],
+          groupNames: ['lFloor_Second'],
+          metadata: {
+            semantics: {
+              value: 'Location_Indoor_Room_Office',
+              config: { isPartOf: 'lFloor_Second' },
+            },
+          },
+        },
+        Vishals_Desk_Lamp: {
+          name: 'Vishals_Desk_Lamp',
+          type: 'Group',
+          label: 'Vishal’s Desk Lamp',
+          tags: ['LightSource'],
+          groupNames: ['lOffice'],
+          metadata: {
+            semantics: {
+              value: 'Equipment_LightSource',
+              config: {
+                hasLocation: 'lOffice',
+              },
+            },
+          },
+        },
+        Vishals_Desk_Lamp_Brightness: {
+          name: 'Vishals_Desk_Lamp_Brightness',
+          type: 'Dimmer',
+          label: 'Vishal’s Desk Lamp Brightness',
+          state: 'NULL',
+          category: 'Light',
+          tags: ['Brightness', 'Control'],
+          groupNames: ['Vishals_Desk_Lamp'],
+          metadata: {
+            semantics: {
+              value: 'Point_Control',
+              config: {
+                relatesTo: 'Property_Brightness',
+                isPointOf: 'Vishals_Desk_Lamp',
+              },
+            },
+          },
+        },
+        Vishals_Desk_Lamp_Color_Temperature: {
+          name: 'Vishals_Desk_Lamp_Color_Temperature',
+          type: 'Dimmer',
+          label: 'Vishal’s Desk Lamp Color Temperature',
+          state: 'NULL',
+          category: 'ColorLight',
+          tags: ['Control', 'ColorTemperature'],
+          groupNames: ['Vishals_Desk_Lamp'],
+          metadata: {
+            semantics: {
+              value: 'Point_Control',
+              config: {
+                relatesTo: 'Property_ColorTemperature',
+                isPointOf: 'Vishals_Desk_Lamp',
+              },
+            },
+          },
+        },
+      },
+      error: null,
+    });
+
+    expect(
+      integrationStore.getState().providerDeviceCollectionsByProviderId.openhab?.lights
+    ).toEqual([
+      expect.objectContaining({
+        canonicalId: 'openhab:Vishals_Desk_Lamp_Brightness',
+        name: 'Vishal’s Desk Lamp',
+        room: 'Office',
+        state: false,
+        brightness: 0,
+      }),
+    ]);
+  });
+
+  it('marks openHAB as reconnecting while cached snapshot data remains available', async () => {
+    await resetAppStores();
+
+    openhabService.replaceSnapshot({
+      connected: true,
+      items: {
+        LivingRoomLamp: {
+          name: 'LivingRoomLamp',
+          type: 'Switch',
+          label: 'Living Room Lamp',
+          state: 'ON',
+          category: 'light',
+          tags: ['Light'],
+          groupNames: ['LivingRoom'],
+        },
+      },
+      reconnecting: true,
+      error: 'openHAB live updates disconnected. Cached UI is still available.',
+    });
+
+    expect(integrationStore.getState().providerHealth.openhab).toMatchObject({
+      providerId: 'openhab',
+      connected: true,
+      reconnecting: true,
+      lastError: 'openHAB live updates disconnected. Cached UI is still available.',
+    });
   });
 
   it('updates the active provider id separately from provider session snapshots', async () => {

@@ -32,7 +32,7 @@ export function createHomeyRuntimeRegistration(
       notifications: false,
       tasks: false,
     },
-    callService: async (domain, service, serviceData = {}, target) =>
+    invokeService: async (domain, service, serviceData = {}, target) =>
       await callHomeyService(domain, service, serviceData, target),
     entityRuntimeService: getHomeyEntityRuntimeService(),
   };

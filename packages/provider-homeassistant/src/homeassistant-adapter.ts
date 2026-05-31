@@ -122,7 +122,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'turn_on',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -132,7 +132,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'turn_off',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -141,7 +141,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'fan',
         'set_percentage',
         { percentage: command.percentage },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'play_pause':
@@ -150,7 +150,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_play_pause',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -160,7 +160,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_previous_track',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -170,7 +170,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_next_track',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -179,7 +179,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'volume_set',
         { volume_level: command.volume / 100 },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'mute':
@@ -187,7 +187,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'volume_mute',
         { is_volume_muted: true },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'unmute':
@@ -195,7 +195,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'volume_mute',
         { is_volume_muted: false },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'set_shuffle':
@@ -203,7 +203,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'shuffle_set',
         { shuffle: command.shuffle },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'set_repeat_mode':
@@ -211,7 +211,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'repeat_set',
         { repeat: command.repeatMode },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'join_group':
@@ -219,7 +219,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'media_player',
         'join',
         { group_members: command.members },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'leave_group':
@@ -228,7 +228,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'unjoin',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -239,7 +239,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         entity.externalId.startsWith('water_heater.')
           ? { operation_mode: command.mode }
           : { hvac_mode: command.mode },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'set_brightness':
@@ -247,7 +247,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'light',
         'turn_on',
         { brightness_pct: command.brightness },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'set_color_temperature':
@@ -255,7 +255,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'light',
         'turn_on',
         { color_temp_kelvin: command.kelvin },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'set_temperature':
@@ -263,17 +263,17 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         entity.externalId.startsWith('water_heater.') ? 'water_heater' : 'climate',
         'set_temperature',
         { temperature: command.temperature },
-        { entity_id: entity.externalId }
+        { entityId: entity.externalId }
       );
       return;
     case 'lock':
-      await callHomeAssistantService('lock', 'lock', {}, { entity_id: entity.externalId });
+      await callHomeAssistantService('lock', 'lock', {}, { entityId: entity.externalId });
       return;
     case 'unlock':
-      await callHomeAssistantService('lock', 'unlock', {}, { entity_id: entity.externalId });
+      await callHomeAssistantService('lock', 'unlock', {}, { entityId: entity.externalId });
       return;
     case 'open':
-      await callHomeAssistantService('cover', 'open_cover', {}, { entity_id: entity.externalId });
+      await callHomeAssistantService('cover', 'open_cover', {}, { entityId: entity.externalId });
       return;
     case 'close':
       await callHomeAssistantService(
@@ -281,15 +281,15 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'close_cover',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
     case 'start':
-      await callHomeAssistantService('vacuum', 'start', {}, { entity_id: entity.externalId });
+      await callHomeAssistantService('vacuum', 'start', {}, { entityId: entity.externalId });
       return;
     case 'stop':
-      await callHomeAssistantService('vacuum', 'pause', {}, { entity_id: entity.externalId });
+      await callHomeAssistantService('vacuum', 'pause', {}, { entityId: entity.externalId });
       return;
     case 'return_home':
       await callHomeAssistantService(
@@ -297,7 +297,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         'return_to_base',
         {},
         {
-          entity_id: entity.externalId,
+          entityId: entity.externalId,
         }
       );
       return;
@@ -306,7 +306,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         command.domain,
         command.service,
         command.serviceData ?? {},
-        command.target ?? { entity_id: entity.externalId }
+        command.target ?? { entityId: entity.externalId }
       );
       return;
     default:

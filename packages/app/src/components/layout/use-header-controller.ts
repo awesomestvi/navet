@@ -13,6 +13,48 @@ import { useHeaderSearch } from './use-header-search';
 export type HeaderController = ReturnType<typeof useHeaderController>;
 const EMPTY_PERSON_DEVICES: PersonDevice[] = [];
 
+function normalizePersonName(name: string | null | undefined): string {
+  return name?.trim().toLowerCase() ?? '';
+}
+
+function getFirstName(name: string): string {
+  return name.split(/\s+/)[0] ?? '';
+}
+
+function resolveMatchedPersonCanonicalId(
+  providerPersons: PersonDevice[],
+  userName: string | null | undefined
+): string | null {
+  const normalizedUserName = normalizePersonName(userName);
+  if (!normalizedUserName) {
+    const personsWithPictures = providerPersons.filter(
+      (person) =>
+        typeof person.entityPicture === 'string' ||
+        typeof person.resources?.primaryImage?.path === 'string'
+    );
+
+    return personsWithPictures.length === 1 ? (personsWithPictures[0]?.canonicalId ?? null) : null;
+  }
+
+  const exactMatch =
+    providerPersons.find((person) => normalizePersonName(person.name) === normalizedUserName)
+      ?.canonicalId ?? null;
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const normalizedUserFirstName = getFirstName(normalizedUserName);
+  if (!normalizedUserFirstName) {
+    return null;
+  }
+
+  const firstNameMatches = providerPersons.filter(
+    (person) => getFirstName(normalizePersonName(person.name)) === normalizedUserFirstName
+  );
+
+  return firstNameMatches.length === 1 ? (firstNameMatches[0]?.canonicalId ?? null) : null;
+}
+
 export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -64,15 +106,7 @@ export function useHeaderController() {
       return null;
     }
 
-    const normalizedUserName = user?.name?.trim().toLowerCase();
-    if (!normalizedUserName) {
-      return null;
-    }
-
-    return (
-      providerPersons.find((person) => person.name.trim().toLowerCase() === normalizedUserName)
-        ?.canonicalId ?? null
-    );
+    return resolveMatchedPersonCanonicalId(providerPersons, user?.name);
   }, [lowPowerMode, providerPersons, user?.avatarUrl, user?.name]);
   const matchedPersonEntity = useIntegrationStore(
     (state) =>

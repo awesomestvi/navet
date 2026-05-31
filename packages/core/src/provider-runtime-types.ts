@@ -57,7 +57,7 @@ export interface IntegrationProviderRuntimeRegistration {
   implementationStatus: IntegrationProviderImplementationStatus;
   capabilities: IntegrationProviderCapabilities;
   featureMatrix: IntegrationProviderFeatureMatrix;
-  callService?: (
+  invokeService?: (
     domain: string,
     service: string,
     serviceData?: Record<string, unknown>,

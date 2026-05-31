@@ -37,7 +37,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme === 'light' ? 'light' : 'dark'}
-      position={isMobileViewport ? 'bottom-center' : 'top-center'}
+      position="bottom-center"
       expand={!isMobileViewport}
       visibleToasts={isMobileViewport ? 2 : 4}
       closeButton
