@@ -147,17 +147,17 @@ describe('integration-registry.service', () => {
         notifications: false,
       },
     });
-    expect(adapter.callService).toBeDefined();
+    expect(adapter.invokeService).toBeDefined();
     expect(adapter.signPath).toBeUndefined();
     expect(adapter.getCameraStream).toBeUndefined();
 
-    await adapter.callService?.('switch', 'turn_on', {}, { entity_id: 'device-1' });
+    await adapter.invokeService?.('switch', 'turn_on', {}, { entityId: 'device-1' });
     expect(homeyCallServiceMock).toHaveBeenCalledWith(
       'switch',
       'turn_on',
       {},
       {
-        entity_id: 'device-1',
+        entityId: 'device-1',
       }
     );
 

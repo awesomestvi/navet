@@ -15,17 +15,17 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="src/assets/providers/home-assistant.svg" alt="Home Assistant" height="48"><br>
+      <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" height="48"><br>
       <strong>Home Assistant</strong><br>
       custom panel, add-on, standalone
     </td>
     <td align="center" width="33%">
-      <img src="src/assets/providers/homey.png" alt="Homey" height="48"><br>
+      <img src="packages/app/src/assets/providers/homey.png" alt="Homey" height="48"><br>
       <strong>Homey</strong><br>
       standalone OAuth flow
     </td>
     <td align="center" width="33%">
-      <img src="src/assets/providers/openhab.svg" alt="openHAB" height="48"><br>
+      <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" height="48"><br>
       <strong>openHAB</strong><br>
       standalone URL-session flow
     </td>
@@ -102,7 +102,7 @@ For local testing:
 
 - Home Assistant: enter the Home Assistant base URL in Navet and complete OAuth
 - Homey: use the Homey option from the login screen with the required OAuth environment variables
-- openHAB: use the openHAB option from the login screen and provide the base URL
+- openHAB: use the openHAB option from the login screen and provide the base URL, username, and password
 
 ## Repo Shape
 

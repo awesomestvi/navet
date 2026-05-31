@@ -13,6 +13,10 @@ const { callServiceMock } = vi.hoisted(() => ({
   callServiceMock: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@navet/app/utils/environment', () => ({
+  isProductionEnvironment: vi.fn(() => false),
+}));
+
 function getDomain(entityId: string) {
   const nativeId = entityId.replace(/^[^:]+:/, '');
   return nativeId.includes('.') ? nativeId.split('.', 1)[0] || 'homeassistant' : 'homeassistant';
@@ -66,6 +70,7 @@ vi.mock('@navet/app/commands', () => ({
 }));
 
 import { TasksSection } from '@navet/app/features/tasks/index';
+import { isProductionEnvironment } from '@navet/app/utils/environment';
 
 function setRoutineEntities() {
   const automationCoffee = automationEntityFactory({
@@ -134,6 +139,7 @@ describe('TasksSection', () => {
   beforeEach(async () => {
     await resetAppStores();
     callServiceMock.mockClear();
+    vi.mocked(isProductionEnvironment).mockReturnValue(false);
   });
 
   it('renders a loading state before Home Assistant entities hydrate', () => {
@@ -170,6 +176,16 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Scripts').length).toBeGreaterThan(0);
     expect(screen.getByText('Movie time')).toBeInTheDocument();
     expect(screen.getAllByText('Good night').length).toBeGreaterThan(0);
+  });
+
+  it('hides habit insights in production', () => {
+    vi.mocked(isProductionEnvironment).mockReturnValue(true);
+    setRoutineEntities();
+
+    renderWithProviders(<TasksSection />);
+
+    expect(screen.queryByText('Suggested routines')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
   });
 
   it('filters automations with active and disabled pills', () => {

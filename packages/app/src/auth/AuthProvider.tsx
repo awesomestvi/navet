@@ -32,6 +32,8 @@ interface AuthContextValue {
     hassUrl?: string;
     haBaseUrl?: string;
     accessToken?: string;
+    username?: string;
+    password?: string;
     providerId?: IntegrationProviderId;
   }) => Promise<void>;
   logout: (providerId?: IntegrationProviderId) => Promise<void>;

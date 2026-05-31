@@ -881,12 +881,12 @@ export const frMessages = {
   'network.offlineTitle': 'Vous êtes hors ligne',
   'network.offlineDescription':
     'L’interface de l’application reste disponible, mais les données en direct et les actions domotiques nécessitent une connexion réseau.',
-  'network.disconnectedTitle': 'Home Assistant déconnecté',
+  'network.disconnectedTitle': '{provider} déconnecté',
   'network.disconnectedDescription':
-    'Navet ne peut pas joindre Home Assistant pour le moment. L’interface mise en cache reste disponible pendant la reconnexion.',
-  'network.reconnectingTitle': 'Reconnexion à Home Assistant',
+    'Navet ne peut pas joindre {provider} pour le moment. L’interface mise en cache reste disponible pendant la reconnexion.',
+  'network.reconnectingTitle': 'Reconnexion à {provider}',
   'network.reconnectingDescription':
-    'Navet a perdu la connexion en direct à Home Assistant et tente de se reconnecter maintenant.',
+    'Navet a perdu la connexion en direct à {provider} et tente de se reconnecter maintenant.',
   'pwa.updateAvailableTitle': 'Mise à jour Navet disponible',
   'pwa.updateAvailableDescription': 'Une nouvelle version a été installée en arrière-plan.',
   'pwa.reload': 'Recharger',

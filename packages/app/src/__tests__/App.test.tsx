@@ -1,6 +1,8 @@
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { homeyService } from '@navet/app/services/homey.service';
+import { integrationStore } from '@navet/app/stores/integration-store';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import { openhabService } from '@navet/provider-openhab/openhab-service';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
@@ -208,6 +210,7 @@ describe('App Home Assistant connection recovery', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
     window.__NAVET_PANEL__ = undefined;
     window.__NAVET_CONFIG__ = undefined;
     Object.defineProperty(window, 'parent', {
@@ -274,6 +277,40 @@ describe('App Home Assistant connection recovery', () => {
         }),
       },
     });
+  });
+
+  it('hydrates a saved openHAB session without opening a Home Assistant connection', async () => {
+    vi.useRealTimers();
+    setStoredOpenHABSession();
+    const webSocketStub = class {
+      static readonly OPEN = 1;
+      readyState = 0;
+      onopen: ((event: Event) => void) | null = null;
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      onclose: ((event: CloseEvent) => void) | null = null;
+
+      send() {}
+      close() {}
+    };
+    vi.stubGlobal('WebSocket', webSocketStub);
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(screen.getByText('dashboard')).toBeInTheDocument());
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+    expect(openhabService.getSnapshot()).toMatchObject({
+      connected: true,
+      items: {
+        LivingRoomLamp: expect.objectContaining({
+          name: 'LivingRoomLamp',
+          state: 'ON',
+        }),
+      },
+    });
+    expect(integrationStore.getState().selectedProviderIds).toContain('openhab');
   });
 
   it('bootstraps Home Assistant and Homey together when both stored sessions exist', async () => {
@@ -743,6 +780,45 @@ function setStoredHomeySession() {
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
+  });
+}
+
+function setStoredOpenHABSession() {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes('/__navet_auth__/session')) {
+      return new Response(null, { status: 204 });
+    }
+
+    if (url.includes('/__navet_openhab__/session')) {
+      return new Response(
+        JSON.stringify({
+          hassUrl: 'http://192.168.68.82:8080',
+          username: 'navet',
+          password: 'secret',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (url.includes('/__navet_openhab_proxy__/rest/items?recursive=false')) {
+      return new Response(
+        JSON.stringify([
+          {
+            name: 'LivingRoomLamp',
+            type: 'Switch',
+            label: 'Living Room Lamp',
+            state: 'ON',
+            category: 'light',
+            tags: ['Light'],
+            groupNames: ['LivingRoom'],
+          },
+        ]),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(null, { status: 204 });
   });
 }
 

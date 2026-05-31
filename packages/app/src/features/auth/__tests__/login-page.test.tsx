@@ -126,4 +126,34 @@ describe('LoginPage', () => {
       })
     );
   });
+
+  it('shows openHAB credential fields and submits them with the base URL', async () => {
+    fetchDiscoveryMock.mockResolvedValue(null);
+    chooseDiscoveryMock.mockReturnValue(null);
+    loginMock.mockResolvedValue(undefined);
+
+    renderWithProviders(<LoginPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'openHAB' }));
+
+    fireEvent.change(screen.getByLabelText('openHAB URL'), {
+      target: { value: 'http://openhab.local:8080' },
+    });
+    fireEvent.change(screen.getByLabelText('openHAB Username'), {
+      target: { value: 'navet' },
+    });
+    fireEvent.change(screen.getByLabelText('openHAB Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() =>
+      expect(loginMock).toHaveBeenCalledWith({
+        providerId: 'openhab',
+        hassUrl: 'http://openhab.local:8080',
+        username: 'navet',
+        password: 'secret',
+      })
+    );
+  });
 });

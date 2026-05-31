@@ -45,6 +45,54 @@ function resolveItemRoom(
   return undefined;
 }
 
+function parseNumberishState(state: string | undefined): number | null {
+  if (typeof state !== 'string' || state.trim().length === 0) {
+    return null;
+  }
+
+  const match = state.match(/-?\d+(?:\.\d+)?/);
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeSwitchLikeState(state: string | undefined): string {
+  switch (state) {
+    case 'ON':
+      return 'on';
+    case 'OFF':
+      return 'off';
+    case 'OPEN':
+      return 'open';
+    case 'CLOSED':
+      return 'closed';
+    case 'LOCKED':
+      return 'locked';
+    case 'UNLOCKED':
+      return 'unlocked';
+    case 'NULL':
+    case 'UNDEF':
+    case undefined:
+      return 'unknown';
+    default:
+      return state;
+  }
+}
+
+function toRuntimeState(item: OpenHABItem): string {
+  if (item.type === 'Dimmer' || item.type === 'Color') {
+    const numericValue = parseNumberishState(item.state);
+    if (typeof numericValue === 'number') {
+      return numericValue > 0 ? 'on' : 'off';
+    }
+  }
+
+  return normalizeSwitchLikeState(item.state);
+}
+
 function toEntitySnapshots(snapshot: OpenHABSnapshot): PlatformEntitySnapshotMap {
   if (snapshot === cachedEntitySnapshotSource && cachedEntitySnapshots) {
     return cachedEntitySnapshots;
@@ -53,9 +101,10 @@ function toEntitySnapshots(snapshot: OpenHABSnapshot): PlatformEntitySnapshotMap
   const entities: PlatformEntitySnapshotMap = {};
 
   for (const item of Object.values(snapshot.items)) {
+    const numericValue = parseNumberishState(item.state);
     entities[item.name] = {
       entityId: item.name,
-      state: item.state ?? 'UNDEF',
+      state: toRuntimeState(item),
       attributes: {
         friendly_name: item.label ?? item.name,
         category: item.category ?? undefined,
@@ -63,6 +112,10 @@ function toEntitySnapshots(snapshot: OpenHABSnapshot): PlatformEntitySnapshotMap
         tags: item.tags ?? [],
         group_names: item.groupNames ?? [],
         room: resolveItemRoom(item, snapshot.items),
+        brightness_pct:
+          (item.type === 'Dimmer' || item.type === 'Color') && typeof numericValue === 'number'
+            ? numericValue
+            : undefined,
       },
     };
   }

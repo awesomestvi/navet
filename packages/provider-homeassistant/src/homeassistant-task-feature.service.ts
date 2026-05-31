@@ -89,5 +89,5 @@ export const homeAssistantTaskFeatureService: ProviderTaskFeatureService = {
     return { config: response.config };
   },
   triggerAutomation: async (entityId) =>
-    await callHomeAssistantService('automation', 'trigger', {}, { entity_id: entityId }),
+    await callHomeAssistantService('automation', 'trigger', {}, { entityId: entityId }),
 };

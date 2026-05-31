@@ -103,14 +103,36 @@ function isGroupItem(item: OpenHABItem): boolean {
   return typeof item.type === 'string' && item.type.startsWith('Group');
 }
 
-function resolveItemName(item: OpenHABItem): string {
-  return item.label?.trim() || item.name;
+function getSemanticsValue(item: OpenHABItem): string | undefined {
+  return item.metadata?.semantics?.value;
 }
 
-function isLightItem(item: OpenHABItem): boolean {
+function getSemanticsConfig(item: OpenHABItem) {
+  return item.metadata?.semantics?.config;
+}
+
+function resolveEquipmentItem(
+  item: OpenHABItem,
+  items: Record<string, OpenHABItem>
+): OpenHABItem | undefined {
+  const pointOf = getSemanticsConfig(item)?.isPointOf;
+  return pointOf ? items[pointOf] : undefined;
+}
+
+function resolveItemName(item: OpenHABItem, items: Record<string, OpenHABItem>): string {
+  return resolveEquipmentItem(item, items)?.label?.trim() || item.label?.trim() || item.name;
+}
+
+function isEquipmentLightItem(item: OpenHABItem, items: Record<string, OpenHABItem>): boolean {
+  const semanticsValue = getSemanticsValue(resolveEquipmentItem(item, items) ?? item);
+  return typeof semanticsValue === 'string' && semanticsValue.includes('LightSource');
+}
+
+function isLightItem(item: OpenHABItem, items: Record<string, OpenHABItem>): boolean {
   const tags = new Set(item.tags ?? []);
   const category = item.category?.toLowerCase() ?? '';
   return (
+    isEquipmentLightItem(item, items) ||
     tags.has('Light') ||
     tags.has('Lighting') ||
     category.includes('light') ||
@@ -126,6 +148,14 @@ function isLockItem(item: OpenHABItem): boolean {
 }
 
 function resolveItemRoom(item: OpenHABItem, items: Record<string, OpenHABItem>): string {
+  const explicitLocation = getSemanticsConfig(item)?.hasLocation;
+  if (explicitLocation) {
+    const locationItem = items[explicitLocation];
+    if (locationItem) {
+      return locationItem.label?.trim() || locationItem.name;
+    }
+  }
+
   const queue = [...(item.groupNames ?? [])];
   const visited = new Set<string>();
 
@@ -142,7 +172,7 @@ function resolveItemRoom(item: OpenHABItem, items: Record<string, OpenHABItem>):
     }
 
     if (isSemanticLocation(group)) {
-      return resolveItemName(group);
+      return resolveItemName(group, items);
     }
 
     queue.push(...(group.groupNames ?? []));
@@ -165,9 +195,28 @@ function parseNumberishState(state: string | undefined): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function normalizeOpenHABStateValue(value: string): string {
+  switch (value) {
+    case 'ON':
+      return 'on';
+    case 'OFF':
+      return 'off';
+    case 'OPEN':
+      return 'open';
+    case 'CLOSED':
+      return 'closed';
+    case 'LOCKED':
+      return 'locked';
+    case 'UNLOCKED':
+      return 'unlocked';
+    default:
+      return value;
+  }
+}
+
 function inferOpenHABCapabilities(item: OpenHABItem): NavetEntity['capabilities'] {
   if (item.type === 'Switch') {
-    return isLockItem(item) ? ['lock'] : isLightItem(item) ? ['toggle'] : ['toggle'];
+    return isLockItem(item) ? ['lock'] : ['toggle'];
   }
 
   if (item.type === 'Dimmer' || item.type === 'Color') {
@@ -189,30 +238,58 @@ function inferOpenHABCapabilities(item: OpenHABItem): NavetEntity['capabilities'
   return [];
 }
 
+function shouldSkipAuxiliaryControlPoint(
+  item: OpenHABItem,
+  items: Record<string, OpenHABItem>
+): boolean {
+  const semanticsConfig = getSemanticsConfig(item);
+  if (!semanticsConfig?.isPointOf) {
+    return false;
+  }
+
+  if (!isLightItem(item, items)) {
+    return false;
+  }
+
+  return semanticsConfig.relatesTo === 'Property_ColorTemperature';
+}
+
 function createOpenHABState(item: OpenHABItem): Record<string, unknown> {
   const value = item.state ?? 'UNDEF';
-  const normalizedValue = value === 'UNDEF' || value === 'NULL' ? 'unknown' : value;
+  const normalizedValue =
+    value === 'UNDEF' || value === 'NULL' ? 'unknown' : normalizeOpenHABStateValue(value);
   const numericValue = parseNumberishState(item.state);
+  const equipmentItemName = getSemanticsConfig(item)?.isPointOf;
 
   if (item.type === 'Dimmer' || item.type === 'Color') {
+    const isOn =
+      normalizedValue === 'on' ||
+      (typeof numericValue === 'number'
+        ? numericValue > 0
+        : normalizedValue !== 'off' && normalizedValue !== 'unknown');
+
     return {
       value: normalizedValue,
-      on: normalizedValue !== 'OFF' && normalizedValue !== 'unknown',
-      brightness: numericValue,
+      on: isOn,
+      brightnessPct: numericValue,
       itemType: item.type,
       category: item.category ?? undefined,
       tags: item.tags ?? [],
+      deviceId: equipmentItemName,
+      sourceDeviceId: equipmentItemName,
     };
   }
 
   if (item.type === 'Switch') {
     return {
       value: normalizedValue,
-      on: normalizedValue === 'ON',
-      locked: normalizedValue === 'LOCKED' || normalizedValue === 'ON',
+      on: normalizedValue === 'on',
+      locked: normalizedValue === 'locked' || normalizedValue === 'on',
       itemType: item.type,
       category: item.category ?? undefined,
       tags: item.tags ?? [],
+      deviceId: equipmentItemName,
+      sourceDeviceId: equipmentItemName,
     };
   }
 
@@ -239,14 +316,14 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
   const entities: NavetEntity[] = [];
 
   for (const item of Object.values(snapshot.items)) {
-    if (!item.name || isGroupItem(item)) {
+    if (!item.name || isGroupItem(item) || shouldSkipAuxiliaryControlPoint(item, snapshot.items)) {
       continue;
     }
 
     const room = resolveItemRoom(item, snapshot.items);
     const capabilities = inferOpenHABCapabilities(item);
     const state = createOpenHABState(item);
-    const name = resolveItemName(item);
+    const name = resolveItemName(item, snapshot.items);
 
     if (isLockItem(item)) {
       entities.push(createNavetEntity(item.name, 'lock', name, room, ['lock'], state));
@@ -262,7 +339,7 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
       entities.push(
         createNavetEntity(
           item.name,
-          isLightItem(item) ? 'light' : 'switch',
+          isLightItem(item, snapshot.items) ? 'light' : 'switch',
           name,
           room,
           capabilities,

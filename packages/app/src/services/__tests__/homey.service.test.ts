@@ -8,15 +8,13 @@ describe('homey.service', () => {
   });
 
   it('translates switch on actions to the onoff capability', () => {
-    expect(translateHomeyServiceAction('switch', 'turn_on', {}, { entity_id: 'device-1' })).toEqual(
-      [
-        {
-          deviceId: 'device-1',
-          capabilityId: 'onoff',
-          value: true,
-        },
-      ]
-    );
+    expect(translateHomeyServiceAction('switch', 'turn_on', {}, { entityId: 'device-1' })).toEqual([
+      {
+        deviceId: 'device-1',
+        capabilityId: 'onoff',
+        value: true,
+      },
+    ]);
   });
 
   it('translates Home Assistant brightness percentages to Homey dim values', () => {
@@ -25,7 +23,7 @@ describe('homey.service', () => {
         'light',
         'turn_on',
         { brightness_pct: 25 },
-        { entity_id: 'device-1' }
+        { entityId: 'device-1' }
       )
     ).toEqual([
       {
@@ -47,7 +45,7 @@ describe('homey.service', () => {
         'light',
         'turn_on',
         { brightness_pct: 1 },
-        { entity_id: 'device-1' }
+        { entityId: 'device-1' }
       )
     ).toEqual([
       {
@@ -65,12 +63,7 @@ describe('homey.service', () => {
 
   it('translates Home Assistant 0-255 brightness values to Homey dim values', () => {
     expect(
-      translateHomeyServiceAction(
-        'light',
-        'turn_on',
-        { brightness: 128 },
-        { entity_id: 'device-1' }
-      )
+      translateHomeyServiceAction('light', 'turn_on', { brightness: 128 }, { entityId: 'device-1' })
     ).toEqual([
       {
         deviceId: 'device-1',
@@ -87,7 +80,7 @@ describe('homey.service', () => {
 
   it('translates Kelvin light temperature values to Homey light_temperature capability values', () => {
     expect(
-      translateHomeyServiceAction('light', 'turn_on', { kelvin: 4600 }, { entity_id: 'device-1' })
+      translateHomeyServiceAction('light', 'turn_on', { kelvin: 4600 }, { entityId: 'device-1' })
     ).toEqual([
       {
         deviceId: 'device-1',
@@ -108,7 +101,7 @@ describe('homey.service', () => {
         'fan',
         'set_percentage',
         { percentage: 60 },
-        { entity_id: ['device-1', 'device-2'] }
+        { entityId: ['device-1', 'device-2'] }
       )
     ).toEqual([
       {
@@ -140,7 +133,7 @@ describe('homey.service', () => {
         'fan',
         'set_percentage',
         { percentage: 1 },
-        { entity_id: 'device-1' }
+        { entityId: 'device-1' }
       )
     ).toEqual([
       {
@@ -164,7 +157,7 @@ describe('homey.service', () => {
 
   it('fails when the Homey service is not configured', async () => {
     await expect(
-      homeyService.callService('switch', 'turn_on', {}, { entity_id: 'device-1' })
+      homeyService.callService('switch', 'turn_on', {}, { entityId: 'device-1' })
     ).rejects.toThrow('Homey integration is not configured yet');
   });
 
@@ -172,7 +165,7 @@ describe('homey.service', () => {
     const setCapabilityValue = vi.fn().mockResolvedValue(undefined);
     homeyService.setClient({ setCapabilityValue });
 
-    await homeyService.callService('switch', 'turn_off', {}, { entity_id: 'device-1' });
+    await homeyService.callService('switch', 'turn_off', {}, { entityId: 'device-1' });
 
     expect(setCapabilityValue).toHaveBeenCalledWith({
       deviceId: 'device-1',
@@ -205,7 +198,7 @@ describe('homey.service', () => {
       'light',
       'turn_on',
       { brightness_pct: 75 },
-      { entity_id: 'light_1' }
+      { entityId: 'light_1' }
     );
 
     expect(homeyService.getSnapshot().devices.light_1?.capabilitiesObj).toMatchObject({

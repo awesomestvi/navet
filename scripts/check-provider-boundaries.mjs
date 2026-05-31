@@ -63,10 +63,10 @@ const TARGETED_GUARDS = [
     paths: [
       'packages/provider-hubitat/src/hubitat-adapter.ts',
       'packages/provider-hubitat/src/hubitat-runtime-registration.ts',
-      'packages/provider-hubitat/src/internal-planned-provider.ts',
+      'packages/provider-hubitat/src/planned-provider-support.ts',
       'packages/provider-smartthings/src/smartthings-adapter.ts',
       'packages/provider-smartthings/src/smartthings-runtime-registration.ts',
-      'packages/provider-smartthings/src/internal-planned-provider.ts',
+      'packages/provider-smartthings/src/planned-provider-support.ts',
       'packages/app/src/core/provider-snapshot-builders.ts',
       'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
       'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
@@ -322,8 +322,6 @@ const REMOVED_LEGACY_FILES = [
   'packages/app/src/services/home-assistant-security-feature.service.ts',
   'packages/app/src/services/home-assistant-task-feature.service.ts',
   'packages/app/src/services/home-assistant-weather-feature.service.ts',
-  'packages/provider-hubitat/src/internal-planned-provider.ts',
-  'packages/provider-smartthings/src/internal-planned-provider.ts',
   'packages/app/src/hooks/use-navet-devices.ts',
 ];
 
@@ -393,6 +391,9 @@ for (const dir of GUARDED_DIRS) {
 
 for (const guard of TARGETED_GUARDS) {
   for (const relativePath of guard.paths) {
+    if (!fs.existsSync(path.join(ROOT, relativePath))) {
+      continue;
+    }
     const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
     for (const { pattern, message } of guard.patterns) {
       if (pattern.test(source)) {

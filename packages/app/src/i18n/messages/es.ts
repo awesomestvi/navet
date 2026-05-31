@@ -879,12 +879,12 @@ export const esMessages = {
   'network.offlineTitle': 'Estás sin conexión',
   'network.offlineDescription':
     'La interfaz de la app sigue disponible, pero los datos en vivo y las acciones del hogar inteligente necesitan conexión de red.',
-  'network.disconnectedTitle': 'Home Assistant desconectado',
+  'network.disconnectedTitle': '{provider} desconectado',
   'network.disconnectedDescription':
-    'Navet no puede conectarse a Home Assistant ahora mismo. La interfaz en caché sigue disponible mientras se reconecta.',
-  'network.reconnectingTitle': 'Reconectando a Home Assistant',
+    'Navet no puede conectarse a {provider} ahora mismo. La interfaz en caché sigue disponible mientras se reconecta.',
+  'network.reconnectingTitle': 'Reconectando a {provider}',
   'network.reconnectingDescription':
-    'Navet perdió la conexión en vivo con Home Assistant y está intentando reconectarse ahora.',
+    'Navet perdió la conexión en vivo con {provider} y está intentando reconectarse ahora.',
   'pwa.updateAvailableTitle': 'Actualización de Navet disponible',
   'pwa.updateAvailableDescription': 'Se ha instalado una nueva versión en segundo plano.',
   'pwa.reload': 'Recargar',

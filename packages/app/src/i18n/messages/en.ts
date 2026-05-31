@@ -639,7 +639,8 @@ export const enMessages = {
     'Use your Home Assistant URL, then finish sign-in with OAuth.',
   'login.providers.homey.detail':
     'Sign in with Homey Cloud, then choose the Homey Navet should use.',
-  'login.providers.openhab.detail': 'Connect straight to your openHAB server with its base URL.',
+  'login.providers.openhab.detail':
+    'Connect straight to your openHAB server with its base URL and credentials.',
   'login.providers.unavailable.detail':
     'Provider scaffolding exists, but login is not available yet.',
   'login.actions.continue': 'Continue',
@@ -932,12 +933,12 @@ export const enMessages = {
   'network.offlineTitle': 'You are offline',
   'network.offlineDescription':
     'The app shell is available, but live smart-home data and actions need a network connection.',
-  'network.disconnectedTitle': 'Home Assistant disconnected',
+  'network.disconnectedTitle': '{provider} disconnected',
   'network.disconnectedDescription':
-    'Navet cannot reach Home Assistant right now. Cached UI is still available while it reconnects.',
-  'network.reconnectingTitle': 'Reconnecting to Home Assistant',
+    'Navet cannot reach {provider} right now. Cached UI is still available while it reconnects.',
+  'network.reconnectingTitle': 'Reconnecting to {provider}',
   'network.reconnectingDescription':
-    'Navet lost its live connection to Home Assistant and is trying to reconnect now.',
+    'Navet lost its live connection to {provider} and is trying to reconnect now.',
   'pwa.updateAvailableTitle': 'Navet update available',
   'pwa.updateAvailableDescription': 'A new version has been installed in the background.',
   'pwa.reload': 'Reload',

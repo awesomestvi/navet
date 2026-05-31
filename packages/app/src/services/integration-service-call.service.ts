@@ -34,9 +34,9 @@ function normalizeTarget(target?: IntegrationServiceTarget): IntegrationServiceT
   }
 
   return {
-    entity_id: normalizeScopedValue(target.entity_id),
-    area_id: normalizeScopedValue(target.area_id),
-    device_id: normalizeScopedValue(target.device_id),
+    entityId: normalizeScopedValue(target.entityId),
+    areaId: normalizeScopedValue(target.areaId),
+    deviceId: normalizeScopedValue(target.deviceId),
   };
 }
 
@@ -51,12 +51,12 @@ export async function callIntegrationService({
   const resolvedProviderId = resolveIntegrationProviderId(entityId, providerId);
   const registration = getProviderRuntimeRegistration(resolvedProviderId);
 
-  if (!registration.callService) {
+  if (!registration.invokeService) {
     throw new Error('Service actions are not implemented yet for the current integration');
   }
 
-  await registration.callService(domain, service, serviceData, {
+  await registration.invokeService(domain, service, serviceData, {
     ...normalizeTarget(target),
-    ...(entityId ? { entity_id: getNativeIntegrationEntityId(entityId) } : {}),
+    ...(entityId ? { entityId: getNativeIntegrationEntityId(entityId) } : {}),
   });
 }

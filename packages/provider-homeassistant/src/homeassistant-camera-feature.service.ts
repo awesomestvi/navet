@@ -42,13 +42,13 @@ export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
       state === 'on' ? 'turn_on' : 'turn_off',
       {},
       {
-        entity_id: entityId,
+        entityId: entityId,
       }
     ),
   selectCameraAccessoryOption: (entityId, option) =>
-    callHomeAssistantService('select', 'select_option', { option }, { entity_id: entityId }),
+    callHomeAssistantService('select', 'select_option', { option }, { entityId: entityId }),
   setCameraAccessoryValue: (entityId, value) =>
-    callHomeAssistantService('number', 'set_value', { value }, { entity_id: entityId }),
+    callHomeAssistantService('number', 'set_value', { value }, { entityId: entityId }),
   enableCameraMotionDetection: (entityId) => enableHomeAssistantCameraMotionDetection(entityId),
   disableCameraMotionDetection: (entityId) => disableHomeAssistantCameraMotionDetection(entityId),
 };

@@ -7,7 +7,7 @@ services:
         NAVET_ENABLE_DEMO: "false"
     image: navet:local
     ports:
-      - "8080:80"
+      - "8082:80"
     env_file:
       - .env
     volumes:

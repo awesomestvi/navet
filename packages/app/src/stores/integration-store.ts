@@ -24,6 +24,7 @@ import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@navet/app/type
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
 import type { NavetEntity, NavetEntityEvent, NavetProviderState } from '@navet/core/types';
+import { openhabService } from '@navet/provider-openhab/openhab-service';
 import {
   createDashboardEntityView,
   type DashboardEntityView,
@@ -79,6 +80,18 @@ function getSafeHomeySnapshot() {
   };
 }
 
+function getSafeOpenHABSnapshot() {
+  if (typeof openhabService.getSnapshot === 'function') {
+    return openhabService.getSnapshot();
+  }
+
+  return {
+    connected: false,
+    items: {},
+    error: null,
+  };
+}
+
 function getProviderSessionsSnapshot(): Partial<
   Record<IntegrationProviderId, NavetProviderSession>
 > {
@@ -101,6 +114,13 @@ function resolveInitialCurrentProviderId(
 ): IntegrationProviderId {
   const providerOrder = INTEGRATION_PROVIDER_IDS;
   return providerOrder.find((providerId) => sessions[providerId]) ?? 'home_assistant';
+}
+
+function resolveInitialSelectedProviderIds(
+  sessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>
+): IntegrationProviderId[] {
+  const providerOrder = INTEGRATION_PROVIDER_IDS.filter((providerId) => sessions[providerId]);
+  return providerOrder.length > 0 ? providerOrder : ['home_assistant', 'homey'];
 }
 
 type ProviderScopedState = {
@@ -293,6 +313,7 @@ function buildProviderRuntime(
   homeAssistantState: HomeAssistantStore
 ): Record<IntegrationProviderId, NavetProviderRuntimeState> {
   const homeySnapshot = getSafeHomeySnapshot();
+  const openhabSnapshot = getSafeOpenHABSnapshot();
 
   return {
     home_assistant: createProviderRuntimeState('home_assistant', {
@@ -310,11 +331,11 @@ function buildProviderRuntime(
       registriesHydrated: true,
     }),
     openhab: createProviderRuntimeState('openhab', {
-      connected: false,
+      connected: openhabSnapshot.connected,
       connecting: false,
-      reconnecting: false,
-      entitiesHydrated: false,
-      registriesHydrated: false,
+      reconnecting: openhabSnapshot.reconnecting ?? false,
+      entitiesHydrated: Object.keys(openhabSnapshot.items).length > 0,
+      registriesHydrated: Object.keys(openhabSnapshot.items).length > 0,
     }),
     hubitat: createProviderRuntimeState('hubitat', {
       connected: false,
@@ -466,6 +487,21 @@ function createProviderHealthFromHomey(
     reconnecting: false,
     implementationStatus,
     lastError: null,
+  };
+}
+
+function createProviderHealthFromOpenHAB(
+  implementationStatus: ProviderHealth['implementationStatus']
+): ProviderHealth {
+  const snapshot = getSafeOpenHABSnapshot();
+
+  return {
+    providerId: 'openhab',
+    connected: snapshot.connected,
+    connecting: false,
+    reconnecting: snapshot.reconnecting ?? false,
+    implementationStatus,
+    lastError: snapshot.error ?? null,
   };
 }
 
@@ -691,6 +727,85 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     });
   };
 
+  const syncOpenHABState = () => {
+    const homeAssistantState = homeAssistantStore.getState();
+
+    set((current) => {
+      const nextOpenHABState = buildProviderScopedState(
+        'openhab',
+        homeAssistantState,
+        current.providerEntitiesByProviderId.openhab
+          ? {
+              deviceCollection:
+                current.providerDeviceCollectionsByProviderId.openhab ??
+                createEmptyDeviceCollection(),
+              devicesByCanonicalId: {},
+              entityLookupByCanonicalId: current.providerEntityLookupByProviderId.openhab ?? {},
+              entityViewsByCanonicalId: current.providerEntityViewsByProviderId.openhab ?? {},
+              entitiesByCanonicalId: current.providerEntitiesByProviderId.openhab ?? {},
+              roomsByCanonicalId: current.providerRoomsByProviderId.openhab ?? {},
+            }
+          : undefined
+      );
+      const providerEntitiesByProviderId = {
+        ...current.providerEntitiesByProviderId,
+        openhab: nextOpenHABState.entitiesByCanonicalId,
+      };
+      const providerEntityViewsByProviderId = {
+        ...current.providerEntityViewsByProviderId,
+        openhab: nextOpenHABState.entityViewsByCanonicalId,
+      };
+      const providerEntityLookupByProviderId = {
+        ...current.providerEntityLookupByProviderId,
+        openhab: nextOpenHABState.entityLookupByCanonicalId,
+      };
+      const providerDeviceCollectionsByProviderId = {
+        ...current.providerDeviceCollectionsByProviderId,
+        openhab: nextOpenHABState.deviceCollection,
+      };
+      const providerRoomsByProviderId = {
+        ...current.providerRoomsByProviderId,
+        openhab: nextOpenHABState.roomsByCanonicalId,
+      };
+      const providerEntitiesByCanonicalId = flattenProviderRecords(providerEntitiesByProviderId);
+      const providerEntityViewsByCanonicalId = flattenProviderRecords(
+        providerEntityViewsByProviderId
+      );
+      const roomsByCanonicalId = flattenProviderRecords(providerRoomsByProviderId);
+      const providerEvents = collectProviderEntityEvents(
+        'openhab',
+        current.providerEntitiesByProviderId.openhab ?? {},
+        nextOpenHABState.entitiesByCanonicalId
+      );
+      const nextOpenHABRuntime = buildProviderRuntime(homeAssistantState).openhab;
+      const providerRuntime = {
+        ...current.providerRuntime,
+        openhab: reuseValue(current.providerRuntime.openhab, nextOpenHABRuntime),
+      };
+      const nextRoomDescriptors = buildRoomDescriptors(homeAssistantState, roomsByCanonicalId);
+      const roomDescriptors = reuseValue(current.roomDescriptors, nextRoomDescriptors);
+
+      return {
+        ...current,
+        providerDeviceCollectionsByProviderId,
+        providerEntityLookupByProviderId,
+        providerEntitiesByProviderId,
+        providerEntityViewsByProviderId,
+        providerRoomsByProviderId,
+        providerEntitiesByCanonicalId,
+        providerEntityViewsByCanonicalId,
+        providerEvents: [...current.providerEvents, ...providerEvents].slice(-100),
+        providerRuntime,
+        roomsByCanonicalId,
+        roomDescriptors,
+        providerHealth: {
+          ...current.providerHealth,
+          openhab: createProviderHealthFromOpenHAB(getImplementationStatus('openhab')),
+        },
+      };
+    });
+  };
+
   const currentHomeAssistantState = homeAssistantStore.getState();
   const initialCanonicalState = buildInitialProviderScopedState(currentHomeAssistantState);
   const initialProviderRuntime = buildProviderRuntime(currentHomeAssistantState);
@@ -715,11 +830,15 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
       getImplementationStatus('home_assistant')
     ),
     homey: createProviderHealthFromHomey(getImplementationStatus('homey')),
+    openhab: createProviderHealthFromOpenHAB(getImplementationStatus('openhab')),
   };
 
   homeAssistantStore.subscribe(syncHomeAssistantState);
   if (typeof homeyService.subscribe === 'function') {
     homeyService.subscribe(syncHomeyState);
+  }
+  if (typeof openhabService.subscribe === 'function') {
+    openhabService.subscribe(syncOpenHABState);
   }
 
   return {
@@ -730,7 +849,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     availableProviderIds: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
     providers: Object.keys(INTEGRATION_PROVIDERS) as IntegrationProviderId[],
     currentProviderId: resolveInitialCurrentProviderId(initialProviderSessions),
-    selectedProviderIds: ['home_assistant', 'homey'],
+    selectedProviderIds: resolveInitialSelectedProviderIds(initialProviderSessions),
     providerSessions: initialProviderSessions,
     providerEntitiesByProviderId: initialCanonicalState.providerEntitiesByProviderId,
     providerEntityLookupByProviderId: initialCanonicalState.providerEntityLookupByProviderId,

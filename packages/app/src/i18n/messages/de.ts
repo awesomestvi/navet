@@ -881,12 +881,12 @@ export const deMessages = {
   'network.offlineTitle': 'Sie sind offline',
   'network.offlineDescription':
     'Die App-Oberfläche ist verfügbar, aber Live-Daten und Smart-Home-Aktionen benötigen eine Netzwerkverbindung.',
-  'network.disconnectedTitle': 'Home Assistant getrennt',
+  'network.disconnectedTitle': '{provider} getrennt',
   'network.disconnectedDescription':
-    'Navet kann Home Assistant im Moment nicht erreichen. Die zwischengespeicherte Oberfläche bleibt verfügbar, während die Verbindung wiederhergestellt wird.',
-  'network.reconnectingTitle': 'Verbindung zu Home Assistant wird wiederhergestellt',
+    'Navet kann {provider} im Moment nicht erreichen. Die zwischengespeicherte Oberfläche bleibt verfügbar, während die Verbindung wiederhergestellt wird.',
+  'network.reconnectingTitle': 'Verbindung zu {provider} wird wiederhergestellt',
   'network.reconnectingDescription':
-    'Navet hat die Live-Verbindung zu Home Assistant verloren und versucht jetzt, sich erneut zu verbinden.',
+    'Navet hat die Live-Verbindung zu {provider} verloren und versucht jetzt, sich erneut zu verbinden.',
   'pwa.updateAvailableTitle': 'Navet-Update verfügbar',
   'pwa.updateAvailableDescription': 'Eine neue Version wurde im Hintergrund installiert.',
   'pwa.reload': 'Neu laden',

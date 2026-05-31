@@ -75,7 +75,7 @@ export const homeAssistantNotificationFeatureService: ProviderNotificationFeatur
       undefined
     ),
   installUpdate: async (entityId) =>
-    await callHomeAssistantService('update', 'install', {}, { entity_id: entityId }),
+    await callHomeAssistantService('update', 'install', {}, { entityId: entityId }),
   restartSystem: async () =>
     await callHomeAssistantService('homeassistant', 'restart', {}, undefined),
 };

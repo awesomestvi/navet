@@ -36,6 +36,9 @@ export interface HomeyAuthSession extends BaseAuthSession {
 
 export interface OpenHABAuthSession extends BaseAuthSession {
   providerId: 'openhab';
+  username: string;
+  password: string;
+  proxyBaseUrl?: string;
 }
 
 export interface HubitatAuthSession extends BaseAuthSession {
@@ -60,6 +63,8 @@ export interface AuthAdapter {
   login?(input?: {
     hassUrl?: string;
     accessToken?: string;
+    username?: string;
+    password?: string;
     providerId?: IntegrationProviderId;
   }): Promise<AuthSession>;
   refresh?(session: AuthSession): Promise<AuthSession>;

@@ -60,7 +60,7 @@ function normalizeKelvinValue(rawValue: unknown): number | null {
 }
 
 function getTargetDeviceIds(target?: IntegrationServiceTarget): string[] {
-  const rawIds = target?.device_id ?? target?.entity_id;
+  const rawIds = target?.deviceId ?? target?.entityId;
 
   if (typeof rawIds === 'string') {
     return [rawIds];

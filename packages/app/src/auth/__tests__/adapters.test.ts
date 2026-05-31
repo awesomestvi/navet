@@ -5,6 +5,7 @@ import type { Auth } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { haIngressAuth } from '../adapters/haIngressAuth';
 import { haPanelAuth } from '../adapters/haPanelAuth';
+import { openhabUrlSessionAuth } from '../adapters/openhabUrlSessionAuth';
 import { standaloneOAuthAuth } from '../adapters/standaloneOAuthAuth';
 
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
@@ -435,5 +436,67 @@ describe('auth adapters', () => {
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({ method: 'DELETE' })
     );
+  });
+
+  it('creates an openHAB session with base URL and credentials', async () => {
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    const session = await openhabUrlSessionAuth.login?.({
+      hassUrl: 'http://openhab.local:8080/',
+      username: 'navet',
+      password: 'secret',
+    });
+
+    expect(session).toMatchObject({
+      providerId: 'openhab',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'http://openhab.local:8080',
+      hassUrl: 'http://openhab.local:8080',
+      username: 'navet',
+      password: 'secret',
+      proxyBaseUrl: '/__navet_openhab_proxy__',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_openhab__/session`,
+      expect.objectContaining({ method: 'PUT' })
+    );
+  });
+
+  it('requires openHAB credentials for URL-session login', async () => {
+    await expect(
+      openhabUrlSessionAuth.login?.({
+        hassUrl: 'http://openhab.local:8080',
+        username: 'navet',
+      })
+    ).rejects.toThrow('openHAB password is required');
+  });
+
+  it('restores an openHAB session from the same-origin session endpoint', async () => {
+    vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          hassUrl: 'http://openhab.local:8080',
+          username: 'navet',
+          password: 'secret',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+
+    const session = await openhabUrlSessionAuth.init();
+
+    expect(session).toMatchObject({
+      providerId: 'openhab',
+      hassUrl: 'http://openhab.local:8080',
+      username: 'navet',
+      password: 'secret',
+      proxyBaseUrl: '/__navet_openhab_proxy__',
+    });
   });
 });

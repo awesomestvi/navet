@@ -183,7 +183,7 @@ runProviderContractTests({
       'turn_off',
       {},
       {
-        entity_id: 'light.kitchen',
+        entityId: 'light.kitchen',
       }
     );
   },

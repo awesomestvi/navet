@@ -19,7 +19,7 @@ import type { Auth } from 'home-assistant-js-websocket';
 import { toLegacyAuthRuntime } from '../runtime/runtime-context';
 import { getRuntimeContext } from '../runtime/runtime-detector';
 
-const STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
+const LEGACY_STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
 const LAST_ACTIVE_PROVIDER_KEY = 'navet_active_provider';
 
 type AuthStateListener = (snapshot: AuthSessionSnapshot, session: AuthSession | null) => void;
@@ -89,19 +89,27 @@ function buildSnapshot(session: AuthSession | null, sessions: AuthSessionMap): A
   };
 }
 
-function readStoredIntegrationSession(): AuthSession | null {
+function readLegacyStoredIntegrationSession(): AuthSession | null {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  const raw = window.localStorage.getItem(STORED_INTEGRATION_SESSION_KEY);
+  const raw = window.localStorage.getItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
   if (!raw) {
     return null;
   }
 
   try {
     const parsed = JSON.parse(raw) as AuthSession;
-    if (!parsed || typeof parsed !== 'object' || parsed.providerId !== 'openhab') {
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      parsed.providerId !== 'openhab' ||
+      typeof parsed.username !== 'string' ||
+      parsed.username.trim().length === 0 ||
+      typeof parsed.password !== 'string' ||
+      parsed.password.length === 0
+    ) {
       return null;
     }
 
@@ -111,17 +119,12 @@ function readStoredIntegrationSession(): AuthSession | null {
   }
 }
 
-function writeStoredIntegrationSession(session: AuthSession | null): void {
+function clearLegacyStoredIntegrationSession(): void {
   if (typeof window === 'undefined') {
     return;
   }
 
-  if (!session || session.providerId !== 'openhab') {
-    window.localStorage.removeItem(STORED_INTEGRATION_SESSION_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(STORED_INTEGRATION_SESSION_KEY, JSON.stringify(session));
+  window.localStorage.removeItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
 }
 
 export class AuthSessionManager {
@@ -169,7 +172,7 @@ export class AuthSessionManager {
     const activeProviderId =
       nextActiveProviderId === undefined ? this.resolveActiveProviderId() : nextActiveProviderId;
     this.activeProviderId = activeProviderId;
-    writeStoredIntegrationSession(this.sessions.openhab ?? null);
+    clearLegacyStoredIntegrationSession();
     writeStoredActiveProviderId(activeProviderId);
     const session = this.getSession();
     const snapshot = buildSnapshot(session, this.getSessions());
@@ -179,7 +182,7 @@ export class AuthSessionManager {
   }
 
   async init(): Promise<AuthSessionSnapshot> {
-    const legacyStoredSession = readStoredIntegrationSession();
+    const legacyStoredSession = readLegacyStoredIntegrationSession();
     const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey', 'openhab'];
     const discoveredSessions: AuthSessionMap = {};
 
@@ -208,6 +211,8 @@ export class AuthSessionManager {
     haBaseUrl?: string;
     hassUrl?: string;
     accessToken?: string;
+    username?: string;
+    password?: string;
     providerId?: IntegrationProviderId;
   }): Promise<AuthSessionSnapshot> {
     const targetProviderId = input?.providerId;
@@ -220,6 +225,8 @@ export class AuthSessionManager {
     const nextSession = await adapter.login({
       hassUrl: input?.haBaseUrl ?? input?.hassUrl,
       accessToken: input?.accessToken,
+      username: input?.username,
+      password: input?.password,
       providerId: input?.providerId,
     });
     this.updateSessions(

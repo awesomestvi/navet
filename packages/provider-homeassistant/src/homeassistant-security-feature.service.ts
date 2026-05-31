@@ -22,16 +22,16 @@ function resolveCoverService(
 
 export const homeAssistantSecurityFeatureService: ProviderSecurityFeatureService = {
   lockEntity: async (entityId) =>
-    await callHomeAssistantService('lock', 'lock', {}, { entity_id: entityId }),
+    await callHomeAssistantService('lock', 'lock', {}, { entityId: entityId }),
   unlockEntity: async (entityId) =>
-    await callHomeAssistantService('lock', 'unlock', {}, { entity_id: entityId }),
+    await callHomeAssistantService('lock', 'unlock', {}, { entityId: entityId }),
   openCover: async (entityId, mode = 'position') =>
     await callHomeAssistantService(
       'cover',
       resolveCoverService('open', mode),
       {},
       {
-        entity_id: entityId,
+        entityId: entityId,
       }
     ),
   closeCover: async (entityId, mode = 'position') =>
@@ -40,7 +40,7 @@ export const homeAssistantSecurityFeatureService: ProviderSecurityFeatureService
       resolveCoverService('close', mode),
       {},
       {
-        entity_id: entityId,
+        entityId: entityId,
       }
     ),
   stopCover: async (entityId, mode = 'position') =>
@@ -49,7 +49,7 @@ export const homeAssistantSecurityFeatureService: ProviderSecurityFeatureService
       resolveCoverService('stop', mode),
       {},
       {
-        entity_id: entityId,
+        entityId: entityId,
       }
     ),
   setCoverPosition: async (entityId, position, mode = 'position') =>
@@ -57,6 +57,6 @@ export const homeAssistantSecurityFeatureService: ProviderSecurityFeatureService
       'cover',
       resolveCoverService('set_position', mode),
       mode === 'tilt' ? { tilt_position: position } : { position },
-      { entity_id: entityId }
+      { entityId: entityId }
     ),
 };

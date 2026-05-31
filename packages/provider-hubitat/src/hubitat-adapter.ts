@@ -1,7 +1,7 @@
 import {
   createPlannedProviderContract,
   createPlannedProviderContractAdapter,
-} from './internal-planned-provider';
+} from './planned-provider-support';
 
 export function createHubitatProviderContract() {
   return createPlannedProviderContract('hubitat');
