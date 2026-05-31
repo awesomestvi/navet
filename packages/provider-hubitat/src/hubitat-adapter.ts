@@ -8,7 +8,8 @@ export function createHubitatProviderContract() {
 }
 
 export function createHubitatContractAdapter(
-  contract = createHubitatProviderContract()
+  contract = createHubitatProviderContract(),
+  options: Parameters<typeof createPlannedProviderContractAdapter>[2] = {}
 ) {
-  return createPlannedProviderContractAdapter('hubitat', contract);
+  return createPlannedProviderContractAdapter('hubitat', contract, options);
 }

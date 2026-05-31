@@ -1,7 +1,11 @@
-import type { NavetProviderContract } from '@navet/app/internal/compat';
-import type { ProviderContractRegistration } from '@navet/app/provider-registration-types';
-import type { IntegrationProviderRuntimeRegistration } from '@navet/app/provider-runtime-types';
-import type { IntegrationProviderId } from '@navet/app/types/provider';
+import {
+  INTEGRATION_PROVIDERS,
+  type IntegrationProviderId,
+  type IntegrationProviderRuntimeRegistration,
+  type NavetProviderContract,
+  type NavetProviderSessionInput,
+  type ProviderContractRegistration,
+} from '@navet/core';
 import { UnsupportedProviderCommandError } from '@navet/core/errors';
 import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed-adapter';
 import type { NavetProviderState } from '@navet/core/types';
@@ -15,7 +19,9 @@ function createEmptyProviderState(providerId: IntegrationProviderId): NavetProvi
   };
 }
 
-export function createPlannedProviderContract(providerId: IntegrationProviderId): NavetProviderContract {
+export function createPlannedProviderContract(
+  providerId: IntegrationProviderId
+): NavetProviderContract {
   return {
     providerId,
     getState: () => createEmptyProviderState(providerId),
@@ -24,15 +30,20 @@ export function createPlannedProviderContract(providerId: IntegrationProviderId)
 
 export function createPlannedProviderContractAdapter(
   providerId: IntegrationProviderId,
-  contract: NavetProviderContract = createPlannedProviderContract(providerId)
+  contract: NavetProviderContract = createPlannedProviderContract(providerId),
+  options: {
+    getSession?: () => NavetProviderSessionInput | null | undefined;
+  } = {}
 ) {
   return createSnapshotBackedProviderAdapter({
     providerId,
+    providerLabel: INTEGRATION_PROVIDERS[providerId].label,
     contract,
     executeCommand: async (entity, command) => {
       void entity;
       throw new UnsupportedProviderCommandError((command as { type: string }).type);
     },
+    getSession: options.getSession,
   });
 }
 

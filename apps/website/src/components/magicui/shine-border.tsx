@@ -1,7 +1,7 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
-import { cn } from '@/app/components/ui/utils';
+import { cn } from '@navet/app/components/ui/utils';
 
-export interface ShineBorderProps extends HTMLAttributes<HTMLSpanElement> {
+export interface ShineBorderProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'color'> {
   color?: string | string[];
   duration?: number;
   borderWidth?: number;

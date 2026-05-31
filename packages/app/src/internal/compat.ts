@@ -1,1 +1,1 @@
-export * from '../../../../src/app/internal/compat';
+export * from '@navet/app/provider-contract';

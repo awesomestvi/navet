@@ -31,10 +31,23 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@navet/core': path.resolve(__dirname, './packages/core/src'),
+      '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
+      '@navet/app': path.resolve(__dirname, './packages/app/src'),
+      '@navet/provider-homeassistant': path.resolve(
+        __dirname,
+        './packages/provider-homeassistant/src'
+      ),
+      '@navet/provider-homey': path.resolve(__dirname, './packages/provider-homey/src'),
+      '@navet/provider-hubitat': path.resolve(__dirname, './packages/provider-hubitat/src'),
+      '@navet/provider-openhab': path.resolve(__dirname, './packages/provider-openhab/src'),
+      '@navet/provider-smartthings': path.resolve(
+        __dirname,
+        './packages/provider-smartthings/src'
+      ),
       'virtual:pwa-register': path.resolve(
         __dirname,
-        './src/test/mocks/virtual-pwa-register.ts'
+        './packages/app/src/test/mocks/virtual-pwa-register.ts'
       ),
     },
   },
@@ -44,7 +57,7 @@ export default defineConfig({
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
-      input: path.resolve(__dirname, 'src/panel/main.tsx'),
+      input: path.resolve(__dirname, 'packages/app/src/panel/main.tsx'),
       output: {
         entryFileNames: 'navet-panel.js',
         chunkFileNames: 'assets/[name]-[hash].js',

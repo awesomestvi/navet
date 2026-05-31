@@ -28,7 +28,7 @@ Hubitat and SmartThings have package entry points but are not real runtime provi
 
 - avoid pushing provider-specific payloads back into shared UI or core contracts
 - keep compatibility-only models contained inside `@navet/app`
-- prefer package imports over deep `src/...` imports when package entries exist
+- prefer package imports over deep implementation imports when package entries exist
 
 ### 3. Strengthen Release Validation
 
@@ -47,4 +47,4 @@ Hubitat and SmartThings have package entry points but are not real runtime provi
 1. Keep the shared contract small.
 2. Keep shared UI provider-agnostic.
 3. Improve existing providers before adding new ones.
-4. Do not let package boundaries drift just because the repo still has legacy `src/` paths.
+4. Do not let package boundaries drift back toward app-owned runtime internals.

@@ -13,7 +13,51 @@ export * from './homeassistant-media-feature.service';
 export * from './homeassistant-notification-feature.service';
 export * from './homeassistant-runtime-registration';
 export * from './homeassistant-security-feature.service';
-export * from './homeassistant-service-bridge';
+export {
+  addHomeAssistantCameraWebRtcCandidate,
+  addHomeAssistantListener,
+  browseHomeAssistantMediaPlayer,
+  browseHomeAssistantMediaSource,
+  callHomeAssistantService,
+  clearHomeAssistantMediaPlayerPlaylist,
+  configureHomeAssistantServiceBridge,
+  createHomeAssistantArea,
+  deleteHomeAssistantArea,
+  disableHomeAssistantCameraMotionDetection,
+  enableHomeAssistantCameraMotionDetection,
+  getHomeAssistantAutomationConfig,
+  getHomeAssistantCameraCapabilities,
+  getHomeAssistantCameraStreamUrl,
+  getHomeAssistantConfig,
+  getHomeAssistantConnection,
+  getHomeAssistantEntities,
+  getHomeAssistantEntityRegistry,
+  getHomeAssistantPanelHass,
+  getHomeAssistantStoreState,
+  getHomeAssistantWebRtcClientConfiguration,
+  type HomeAssistantAreaRegistryEntry,
+  type HomeAssistantDeviceRegistryEntry,
+  type HomeAssistantEntityRegistryEntry,
+  type HomeAssistantPanelHass,
+  type HomeAssistantStoreState,
+  isHomeAssistantConnected,
+  playHomeAssistantMedia,
+  resolveHomeAssistantArtwork,
+  resolveHomeAssistantMediaSource,
+  resolveHomeAssistantProxyUrl,
+  searchHomeAssistantMediaPlayer,
+  seekHomeAssistantMediaPlayer,
+  selectHomeAssistantMediaPlayerSoundMode,
+  selectHomeAssistantMediaPlayerSource,
+  sendHomeAssistantRemoteCommand,
+  signHomeAssistantPath,
+  subscribeHomeAssistantCameraWebRtcOffer,
+  subscribeHomeAssistantStore,
+  updateHomeAssistantEntityArea,
+  updateHomeAssistantEntityName,
+  updateHomeAssistantLight,
+  updateHomeAssistantMediaPlayerPower,
+} from './homeassistant-service-bridge';
 export * from './homeassistant-session-runtime';
 export * from './homeassistant-task-feature.service';
 export * from './homeassistant-weather-feature.service';

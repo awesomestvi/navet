@@ -1,4 +1,6 @@
 (function () {
+  const SETTINGS_KEY = 'navet-settings';
+  const LEGACY_SETTINGS_KEY = 'ha-dashboard-settings';
   const BOOT_COPY_BY_LANGUAGE = {
     de: 'Starte dein Smart-Home-Dashboard',
     en: 'Starting your smart home dashboard',
@@ -11,7 +13,17 @@
 
   function resolveLanguage() {
     try {
-      const raw = localStorage.getItem('ha-dashboard-settings');
+      let raw = localStorage.getItem(SETTINGS_KEY);
+      const legacyRaw = localStorage.getItem(LEGACY_SETTINGS_KEY);
+
+      if (!raw && legacyRaw) {
+        localStorage.setItem(SETTINGS_KEY, legacyRaw);
+        localStorage.removeItem(LEGACY_SETTINGS_KEY);
+        raw = legacyRaw;
+      } else if (raw && legacyRaw) {
+        localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      }
+
       if (raw) {
         const parsed = JSON.parse(raw);
         const language =

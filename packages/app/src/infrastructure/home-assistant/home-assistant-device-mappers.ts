@@ -1,0 +1,16 @@
+export {
+  mapCalendarSources,
+  mapCameraDevice,
+  mapClimateDevice,
+  mapCoverDevice,
+  mapFanDevice,
+  mapLightDevice,
+  mapLockDevice,
+  mapMediaDevice,
+  mapPersonDevice,
+  mapSceneDevice,
+  mapSensorDevice,
+  mapSwitchDevice,
+  mapVacuumDevice,
+  mapWeatherDevice,
+} from '@navet/app/hooks/device-mappers';

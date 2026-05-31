@@ -1,0 +1,48 @@
+import { renderWithProviders } from '@navet/app/test/render';
+import { fireEvent, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { AddCardDialogContainer } from './container';
+
+const demoLibraryCards = [
+  {
+    id: 'light.kitchen',
+    title: 'Kitchen Light',
+    subtitle: 'Kitchen',
+    meta: 'Light',
+    kind: 'device' as const,
+  },
+];
+
+describe('AddCardDialogContainer', () => {
+  it('shows the scene template and forwards its preset data when added', () => {
+    const onAddCard = vi.fn();
+
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={onAddCard}
+        onAddLibraryCard={() => {}}
+        currentRoom="Kitchen"
+        libraryCards={demoLibraryCards}
+        showCardsTab={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Scene').closest('button') as HTMLButtonElement);
+    fireEvent.click(screen.getByRole('button', { name: /add widget/i }));
+
+    expect(onAddCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'scene',
+        cardType: 'button',
+        initialData: {
+          label: 'Scene',
+          service: 'scene.turn_on',
+          icon: 'Sparkles',
+        },
+      }),
+      'small'
+    );
+  });
+});

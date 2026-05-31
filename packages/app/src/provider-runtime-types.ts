@@ -1,1 +1,1 @@
-export * from '../../../src/providers/provider-runtime-types';
+export * from '@navet/core/provider-runtime-types';

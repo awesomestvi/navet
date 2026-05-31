@@ -58,114 +58,114 @@ function getPackageName(id: string) {
 export function getAppChunkName(id: string) {
   const moduleId = normalizeModuleId(id)
 
-  if (!moduleId.includes('/src/app/')) {
+  if (!moduleId.includes('/packages/app/src/')) {
     return undefined
   }
 
   if (
-    moduleId.includes('/src/app/features/energy/') ||
-    moduleId.includes('/src/app/hooks/ha-battery-sensor-rows')
+    moduleId.includes('/packages/app/src/features/energy/') ||
+    moduleId.includes('/packages/app/src/hooks/ha-battery-sensor-rows')
   ) {
     return 'energy'
   }
 
-  if (moduleId.includes('/src/app/features/settings/')) {
+  if (moduleId.includes('/packages/app/src/features/settings/')) {
     return 'settings'
   }
 
-  if (moduleId.includes('/src/app/features/calendar/')) {
+  if (moduleId.includes('/packages/app/src/features/calendar/')) {
     return 'entity-card-calendar'
   }
 
-  if (moduleId.includes('/src/app/features/climate/')) {
+  if (moduleId.includes('/packages/app/src/features/climate/')) {
     return 'entity-card-climate'
   }
 
-  if (moduleId.includes('/src/app/features/lighting/')) {
+  if (moduleId.includes('/packages/app/src/features/lighting/')) {
     return 'entity-card-lighting'
   }
 
-  if (moduleId.includes('/src/app/features/media/')) {
+  if (moduleId.includes('/packages/app/src/features/media/')) {
     return 'entity-card-media'
   }
 
-  if (moduleId.includes('/src/app/features/person/')) {
+  if (moduleId.includes('/packages/app/src/features/person/')) {
     return 'entity-card-person'
   }
 
-  if (moduleId.includes('/src/app/features/scenes/')) {
+  if (moduleId.includes('/packages/app/src/features/scenes/')) {
     return 'entity-card-scenes'
   }
 
-  if (moduleId.includes('/src/app/features/security/')) {
+  if (moduleId.includes('/packages/app/src/features/security/')) {
     return 'entity-card-security'
   }
 
-  if (moduleId.includes('/src/app/features/sensors/')) {
+  if (moduleId.includes('/packages/app/src/features/sensors/')) {
     return 'entity-card-sensors'
   }
 
-  if (moduleId.includes('/src/app/features/vacuum/')) {
+  if (moduleId.includes('/packages/app/src/features/vacuum/')) {
     return 'entity-card-vacuum'
   }
 
-  if (moduleId.includes('/src/app/features/weather/')) {
+  if (moduleId.includes('/packages/app/src/features/weather/')) {
     return 'entity-card-weather'
   }
 
   if (
-    moduleId.includes('/src/app/features/dashboard/components/widgets/map-') ||
-    moduleId.includes('/src/app/features/dashboard/components/widgets/map-widget')
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/map-') ||
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/map-widget')
   ) {
     return 'dashboard-widget-map'
   }
 
-  if (moduleId.includes('/src/app/features/dashboard/components/widgets/photo-frame')) {
+  if (moduleId.includes('/packages/app/src/features/dashboard/components/widgets/photo-frame')) {
     return 'dashboard-widget-photo'
   }
 
-  if (moduleId.includes('/src/app/features/dashboard/components/widgets/battery-')) {
+  if (moduleId.includes('/packages/app/src/features/dashboard/components/widgets/battery-')) {
     return 'dashboard-widget-battery'
   }
 
   if (
-    moduleId.includes('/src/app/features/dashboard/components/widgets/energy-now') ||
-    moduleId.includes('/src/app/features/energy/')
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/energy-now') ||
+    moduleId.includes('/packages/app/src/features/energy/')
   ) {
     return 'dashboard-widget-energy'
   }
 
   if (
-    moduleId.includes('/src/app/features/dashboard/components/widgets/button-widget') ||
-    moduleId.includes('/src/app/features/dashboard/utils/button-widget-security')
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/button-widget') ||
+    moduleId.includes('/packages/app/src/features/dashboard/utils/button-widget-security')
   ) {
     return 'dashboard-widget-button'
   }
 
-  if (moduleId.includes('/src/app/features/dashboard/components/widgets/note-widget')) {
+  if (moduleId.includes('/packages/app/src/features/dashboard/components/widgets/note-widget')) {
     return 'dashboard-widget-note'
   }
 
   if (
-    moduleId.includes('/src/app/features/dashboard/components/widgets/') ||
-    moduleId.includes('/src/app/components/shared/theme/dashboard-widget-surface-tokens') ||
-    moduleId.includes('/src/app/features/rss/')
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/') ||
+    moduleId.includes('/packages/app/src/components/shared/theme/dashboard-widget-surface-tokens') ||
+    moduleId.includes('/packages/app/src/features/rss/')
   ) {
-    return moduleId.includes('/src/app/features/rss/')
+    return moduleId.includes('/packages/app/src/features/rss/')
       ? 'dashboard-widget-rss'
       : 'dashboard-widget-shared'
   }
 
-  if (moduleId.includes('/src/app/features/dashboard/components/home-dashboard-overview-edit')) {
+  if (moduleId.includes('/packages/app/src/features/dashboard/components/home-dashboard-overview-edit')) {
     return 'home-dashboard-overview-edit'
   }
 
   if (
-    moduleId.includes('/src/app/components/layout/') ||
-    moduleId.includes('/src/app/components/shared/entity-room-selector') ||
-    moduleId.includes('/src/app/components/primitives/room-eyebrow') ||
-    moduleId.includes('/src/app/components/primitives/select') ||
-    moduleId.includes('/src/app/hooks/use-registry-device-topology')
+    moduleId.includes('/packages/app/src/components/layout/') ||
+    moduleId.includes('/packages/app/src/components/shared/entity-room-selector') ||
+    moduleId.includes('/packages/app/src/components/primitives/room-eyebrow') ||
+    moduleId.includes('/packages/app/src/components/primitives/select') ||
+    moduleId.includes('/packages/app/src/hooks/use-registry-device-topology')
   ) {
     return 'sections'
   }

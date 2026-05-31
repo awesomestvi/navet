@@ -14,11 +14,11 @@ permissions:
   contents: write
 
 jobs:
-  provider-platform:
-    uses: ./.github/workflows/provider-platform-validation.yml
+  ci:
+    uses: ./.github/workflows/ci.yml
 
   release:
-    needs: provider-platform
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:

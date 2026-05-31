@@ -1,0 +1,106 @@
+import {
+  type CardSize,
+  getCardSizeOverlayStyle,
+} from '@navet/app/components/shared/card-size-selector';
+import { type CustomCard, WidgetCard } from '@navet/app/features/dashboard';
+import type { CSSProperties, ReactNode } from 'react';
+
+// ---------------------------------------------------------------------------
+// EntityCardStoryFrame
+// Shared story utility — sizes a card story to the standard dashboard grid
+// cell dimensions. Used across all entity card stories.
+// ---------------------------------------------------------------------------
+
+export function EntityCardStoryFrame({
+  children,
+  className,
+  style,
+  size = 'medium',
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  size?: CardSize;
+}) {
+  return (
+    <div className={className} style={{ ...getEntityCardStoryFrameStyle(size), ...style }}>
+      {children}
+    </div>
+  );
+}
+
+export function noopCardSizeChange() {
+  return;
+}
+
+export function getEntityCardStoryFrameStyle(size: CardSize) {
+  return getCardSizeOverlayStyle(size);
+}
+
+export function buildCustomCard(
+  type: CustomCard['type'],
+  size: CardSize,
+  data?: Record<string, unknown>
+): CustomCard {
+  return {
+    id: `story-${type}-${size}`,
+    type,
+    size,
+    room: 'Home',
+    createdAt: 1711929600000,
+    data,
+  };
+}
+
+export function CustomWidgetStoryFrame({
+  card,
+  isEditMode = false,
+}: {
+  card?: CustomCard;
+  isEditMode?: boolean;
+}) {
+  const safeCard = card ?? buildCustomCard('button', 'medium');
+
+  return (
+    <div style={getCardSizeOverlayStyle(safeCard.size)}>
+      <WidgetCard card={safeCard} isEditMode={isEditMode} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SettingsDialogStoryFrame
+// Shared story utility — provides a dark card backdrop for settings dialog
+// stories so dialogs render in a realistic context.
+// ---------------------------------------------------------------------------
+
+interface SettingsDialogStoryFrameProps {
+  children: ReactNode;
+  parentCardClassName?: string;
+  parentCardStyle?: CSSProperties;
+  showParentCard?: boolean;
+}
+
+export function SettingsDialogStoryFrame({
+  children,
+  parentCardClassName,
+  parentCardStyle,
+  showParentCard = false,
+}: SettingsDialogStoryFrameProps) {
+  return (
+    <div className="relative min-h-[34rem] overflow-hidden rounded-[28px] bg-[#07090f]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent_35%,rgba(2,6,23,0.72))]" />
+
+      {showParentCard ? (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-10">
+          <div
+            className={`h-[18rem] w-[22rem] rounded-[30px] border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl ${parentCardClassName ?? 'bg-white/10'}`}
+            style={parentCardStyle}
+          />
+        </div>
+      ) : null}
+
+      <div className="relative min-h-[34rem]">{children}</div>
+    </div>
+  );
+}

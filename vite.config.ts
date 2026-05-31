@@ -37,7 +37,7 @@ import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
   isPrivateIpAddress,
-} from './src/app/utils/rss-proxy-security'
+} from './packages/app/src/utils/rss-proxy-security'
 
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string
@@ -1080,7 +1080,7 @@ export default defineConfig(({ mode }) => {
 
   const resolveConfig = {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@docs': path.resolve(__dirname, './docs'),
       '@website': path.resolve(__dirname, './apps/website/src'),
       '@navet/core': path.resolve(__dirname, './packages/core/src'),
       '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
@@ -1096,7 +1096,7 @@ export default defineConfig(({ mode }) => {
         ? {
             'virtual:pwa-register': path.resolve(
               __dirname,
-              './src/test/mocks/virtual-pwa-register.ts'
+              './packages/app/src/test/mocks/virtual-pwa-register.ts'
             ),
           }
         : {}),

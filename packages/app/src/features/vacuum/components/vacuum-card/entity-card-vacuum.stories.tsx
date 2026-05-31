@@ -1,0 +1,144 @@
+import { VacuumCard } from '@navet/app/features/vacuum';
+import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
+import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
+import type { Meta, StoryObj } from '@storybook/react';
+import type { ComponentProps } from 'react';
+
+function VacuumCardStory(args: Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'>) {
+  return (
+    <EntityCardStoryFrame size={args.size ?? 'medium'}>
+      <VacuumCard {...args} onSizeChange={noopCardSizeChange} />
+    </EntityCardStoryFrame>
+  );
+}
+
+const baseVacuumArgs: Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'> = {
+  id: 'vacuum.robby',
+  name: 'Robby',
+  room: 'Ground Floor',
+  status: 'cleaning',
+  battery: 74,
+  cleanedArea: '42 m²',
+  cleaningTime: '38 min',
+  size: 'medium',
+  isEditMode: false,
+};
+
+const meta = {
+  title: 'Cards/Entity/Vacuum',
+  component: VacuumCardStory,
+  tags: ['autodocs'],
+  argTypes: {
+    size: {
+      control: 'inline-radio',
+      options: ['small', 'medium'],
+    },
+    status: {
+      control: 'select',
+      options: [
+        'cleaning',
+        'mopping',
+        'drying',
+        'returning',
+        'docked',
+        'charging',
+        'charging-complete',
+        'paused',
+        'idle',
+        'error',
+      ],
+    },
+  },
+  args: baseVacuumArgs,
+  parameters: { docs: { description: {} } },
+} satisfies Meta<typeof VacuumCardStory>;
+
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Cleaning: Story = {};
+
+export const Small: Story = {
+  args: {
+    size: 'small',
+  },
+};
+
+export const Charging: Story = {
+  args: {
+    status: 'charging',
+    battery: 82,
+    cleanedArea: '42 m²',
+    cleaningTime: '38 min',
+    size: 'medium',
+  },
+};
+
+export const ChargingComplete: Story = {
+  args: {
+    status: 'charging-complete',
+    battery: 100,
+    cleanedArea: '54 m²',
+    cleaningTime: '49 min',
+    size: 'medium',
+  },
+};
+
+export const Mopping: Story = {
+  args: {
+    status: 'mopping',
+    battery: 68,
+    cleanedArea: '36 m²',
+    cleaningTime: '31 min',
+    size: 'medium',
+  },
+};
+
+export const Drying: Story = {
+  args: {
+    status: 'drying',
+    battery: 94,
+    cleanedArea: '54 m²',
+    cleaningTime: '49 min',
+    size: 'medium',
+  },
+};
+
+export const LowBattery: Story = {
+  args: {
+    status: 'idle',
+    battery: 18,
+    cleanedArea: '0 m²',
+    cleaningTime: '0 min',
+    size: 'medium',
+  },
+};
+
+export const PausedAttention: Story = {
+  args: {
+    status: 'paused',
+    battery: 56,
+    cleanedArea: '51 m²',
+    cleaningTime: '46 min',
+    size: 'medium',
+  },
+};
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

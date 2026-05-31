@@ -21,10 +21,10 @@ These tests protect release-critical behavior and should stay blocking.
 - `src/app/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx`
 - `src/app/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx`
 - `src/app/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx`
-- `src/providers/homeassistant/homeassistant-contract.test.ts`
-- `src/providers/homey/homey-contract.test.ts`
-- `src/providers/openhab/openhab-contract.test.ts`
-- `src/providers/planned/planned-provider-contract.test.ts`
+- `packages/provider-homeassistant/src/homeassistant-contract.test.ts`
+- `packages/provider-homey/src/homey-contract.test.ts`
+- `packages/provider-openhab/src/openhab-contract.test.ts`
+- `packages/provider-hubitat/src/planned-provider-contract.test.ts`
 
 ## Tier 2: Keep
 

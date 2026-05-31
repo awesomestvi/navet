@@ -1,0 +1,62 @@
+import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
+import type { Meta, StoryObj } from '@storybook/react';
+import { Select } from './select';
+
+const meta = {
+  title: 'Components/Primitives/Select',
+  component: Select,
+  tags: ['autodocs'],
+  args: {
+    defaultValue: 'glass',
+    disabled: false,
+    invalid: false,
+    children: [
+      <option key="glass" value="glass">
+        Glass
+      </option>,
+      <option key="dark" value="dark">
+        Dark
+      </option>,
+      <option key="light" value="light">
+        Light
+      </option>,
+      <option key="black" value="black">
+        Black
+      </option>,
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Status: in-progress. Minimal single-select wrapper for ordinary form choices. Use a richer app-specific control when options need previews or domain-specific behavior.',
+      },
+    },
+  },
+} satisfies Meta<typeof Select>;
+
+const richComponentDocsDescription = getStoryDocsDescription(meta.title);
+
+meta.parameters = {
+  ...meta.parameters,
+  docs: {
+    ...meta.parameters?.docs,
+    description: {
+      ...meta.parameters?.docs?.description,
+      component: richComponentDocsDescription,
+    },
+  },
+};
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+export const ErrorState: Story = { args: { invalid: true } };
+export const Disabled: Story = { args: { disabled: true } };
+
+export const Docs: Story = {
+  parameters: {
+    docsOnly: true,
+  },
+};

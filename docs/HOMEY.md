@@ -1,12 +1,11 @@
 # Homey Setup
 
-This guide is for Navet users connecting to Homey.
+This guide is for Homey users connecting to Navet.
 
 ## Before You Start
 
 You need:
 
-- a running standalone Navet app
 - a Homey Cloud app/client from Athom
 - the client ID and client secret for that app
 

@@ -1,14 +1,14 @@
 import type { Preview } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { Toaster } from '../src/app/components/ui/sonner';
-import { I18nProvider } from '../src/app/i18n';
-import { defaultSettings, useSettingsStore } from '../src/app/stores/settings-store';
-import type { PrimaryColor, ThemeMode } from '../src/app/stores/theme-store';
-import { useThemeStore } from '../src/app/stores/theme-store';
+import { Toaster } from '@navet/app/components/ui/sonner';
+import { I18nProvider } from '@navet/app/i18n';
+import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
+import type { PrimaryColor, ThemeMode } from '@navet/app/stores/theme-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { navetStorybookTheme } from './navet-theme';
 // @ts-ignore - side-effect stylesheet import for Storybook runtime.
-import '../src/styles/index.css';
+import '../packages/app/src/styles/index.css';
 
 const PRIMARY_COLOR_VALUES: Record<Exclude<PrimaryColor, 'custom'>, string> = {
   orange: '#f97316',

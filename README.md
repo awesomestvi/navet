@@ -81,17 +81,6 @@ Choose your platform first, then open the matching setup guide:
 
 - [Standalone Docker](docs/OPENHAB.md)
 
-## Returning Users
-
-Navet no longer relies on manual Home Assistant long-lived token entry in the normal app flow.
-
-Legacy browser auth entries such as `ha_auth_config`, `ha-dashboard-config`, and
-`navet-auth-config` are cleared during startup so stale values do not keep steering runtime
-behavior.
-
-Dashboard config is separate from authentication. To restore an existing dashboard into a new
-browser or a fresh `/data` volume, use an exported dashboard config together with
-`dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
 
 ## Development
 

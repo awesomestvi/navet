@@ -3,17 +3,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
+const PACKAGE_SRC_REEXPORT_PATTERN = /^export\s+\*\s+from ['"](?:\.\.\/)+(?:src)\//m;
 
 const GUARDED_DIRS = [
   'packages/core/src',
   'packages/ui/src',
-  'src/app/components/primitives',
-  'src/app/components/patterns',
-  'src/app/components/shared',
-  'src/app/components/system',
-  'src/app/features/lighting/components/light-card',
-  'src/app/ui-kit',
-  'src/providers/core',
+  'packages/app/src/components/primitives',
+  'packages/app/src/components/patterns',
+  'packages/app/src/components/shared',
+  'packages/app/src/components/system',
+  'packages/app/src/features/lighting/components/light-card',
+  'packages/app/src/ui-kit',
+  'packages/core/src',
 ];
 
 const FORBIDDEN_PATTERNS = [
@@ -66,55 +67,55 @@ const TARGETED_GUARDS = [
       'packages/provider-smartthings/src/smartthings-adapter.ts',
       'packages/provider-smartthings/src/smartthings-runtime-registration.ts',
       'packages/provider-smartthings/src/internal-planned-provider.ts',
-      'src/app/core/provider-snapshot-builders.ts',
-      'src/app/features/climate/components/hvac-card/use-hvac-card-controller.ts',
-      'src/app/features/climate/components/hvac-settings-dialog/index.tsx',
-      'src/app/features/auth/login-page.tsx',
-      'src/app/features/tasks/components/automation-task-row.tsx',
-      'src/app/features/lighting/components/use-switch-card-controller.tsx',
-      'src/app/features/lighting/components/use-switch-toggle-action.ts',
-      'src/app/features/media/components/media-card/use-media-card-controller.ts',
-      'src/app/features/media/components/media-card/use-media-entity-sync.ts',
-      'src/app/features/media/components/media/media-spotify-playback.tsx',
-      'src/app/features/security/components/camera-card/use-provider-camera-live-data.ts',
-      'src/app/features/security/components/camera-card/container.tsx',
-      'src/app/features/security/components/cover-card/container.tsx',
-      'src/app/features/security/components/lock-card.tsx',
-      'src/app/features/person/components/person-card.tsx',
-      'src/app/features/sensors/components/sensor-card.tsx',
-      'src/app/features/scenes/components/scene-card.tsx',
-      'src/app/features/tasks/components/quick-action-grid.tsx',
-      'src/app/features/lighting/components/fan-card/index.tsx',
-      'src/app/features/climate/components/hvac-card/use-hvac-card-controller.ts',
-      'src/app/features/lighting/components/switch-settings-dialog.tsx',
-      'src/app/features/media/components/media-card/use-media-playback.ts',
-      'src/app/features/media/components/media-card/use-media-grouping.ts',
-      'src/app/features/media/components/media-card/use-media-volume.ts',
-      'src/app/features/media/components/media/media-spotify-playback.tsx',
-      'src/app/features/vacuum/components/vacuum-card/index.tsx',
-      'src/app/features/vacuum/components/vacuum/use-vacuum-control.ts',
-      'src/app/features/dashboard/components/widgets/button-widget.tsx',
-      'src/app/features/dashboard/components/widgets/use-provider-info-widget-data.ts',
-      'src/app/features/dashboard/components/widgets/use-provider-ups-widget-data.ts',
-      'src/app/features/dashboard/components/widgets/ups-widget-data.ts',
-      'src/app/features/dashboard/utils/card-renderer.tsx',
-      'src/app/components/layout/use-header-controller.ts',
-      'src/app/features/sensors/hooks/use-sensor-statistics-history.ts',
-      'src/app/features/energy/hooks/use-energy-load-history.ts',
-      'src/app/features/energy/hooks/use-energy-statistics-periods.ts',
-      'src/app/hooks/use-provider-calendar-devices.ts',
-      'src/app/hooks/use-provider-weather-devices.ts',
-      'src/app/hooks/use-aggregated-rooms.ts',
-      'src/app/hooks/index.ts',
-      'src/app/services/integration-action.service.ts',
-      'src/app/services/integration-registry.service.ts',
-      'src/app/services/integration-camera-runtime.service.ts',
-      'src/auth/integration-session-runtime.ts',
-      'src/auth/session-runtime-registry.ts',
-      'src/providers/provider-contract-registry.ts',
-      'src/providers/provider-runtime-registry.ts',
-      'src/providers/core/snapshot-backed-adapter.ts',
-      'src/app/utils/provider-entity-id.ts',
+      'packages/app/src/core/provider-snapshot-builders.ts',
+      'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
+      'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+      'packages/app/src/features/auth/login-page.tsx',
+      'packages/app/src/features/tasks/components/automation-task-row.tsx',
+      'packages/app/src/features/lighting/components/use-switch-card-controller.tsx',
+      'packages/app/src/features/lighting/components/use-switch-toggle-action.ts',
+      'packages/app/src/features/media/components/media-card/use-media-card-controller.ts',
+      'packages/app/src/features/media/components/media-card/use-media-entity-sync.ts',
+      'packages/app/src/features/media/components/media/media-spotify-playback.tsx',
+      'packages/app/src/features/security/components/camera-card/use-provider-camera-live-data.ts',
+      'packages/app/src/features/security/components/camera-card/container.tsx',
+      'packages/app/src/features/security/components/cover-card/container.tsx',
+      'packages/app/src/features/security/components/lock-card.tsx',
+      'packages/app/src/features/person/components/person-card.tsx',
+      'packages/app/src/features/sensors/components/sensor-card.tsx',
+      'packages/app/src/features/scenes/components/scene-card.tsx',
+      'packages/app/src/features/tasks/components/quick-action-grid.tsx',
+      'packages/app/src/features/lighting/components/fan-card/index.tsx',
+      'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
+      'packages/app/src/features/lighting/components/switch-settings-dialog.tsx',
+      'packages/app/src/features/media/components/media-card/use-media-playback.ts',
+      'packages/app/src/features/media/components/media-card/use-media-grouping.ts',
+      'packages/app/src/features/media/components/media-card/use-media-volume.ts',
+      'packages/app/src/features/media/components/media/media-spotify-playback.tsx',
+      'packages/app/src/features/vacuum/components/vacuum-card/index.tsx',
+      'packages/app/src/features/vacuum/components/vacuum/use-vacuum-control.ts',
+      'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
+      'packages/app/src/features/dashboard/components/widgets/use-provider-info-widget-data.ts',
+      'packages/app/src/features/dashboard/components/widgets/use-provider-ups-widget-data.ts',
+      'packages/app/src/features/dashboard/components/widgets/ups-widget-data.ts',
+      'packages/app/src/features/dashboard/utils/card-renderer.tsx',
+      'packages/app/src/components/layout/use-header-controller.ts',
+      'packages/app/src/features/sensors/hooks/use-sensor-statistics-history.ts',
+      'packages/app/src/features/energy/hooks/use-energy-load-history.ts',
+      'packages/app/src/features/energy/hooks/use-energy-statistics-periods.ts',
+      'packages/app/src/hooks/use-provider-calendar-devices.ts',
+      'packages/app/src/hooks/use-provider-weather-devices.ts',
+      'packages/app/src/hooks/use-aggregated-rooms.ts',
+      'packages/app/src/hooks/index.ts',
+      'packages/app/src/services/integration-action.service.ts',
+      'packages/app/src/services/integration-registry.service.ts',
+      'packages/app/src/services/integration-camera-runtime.service.ts',
+      'packages/app/src/auth/integration-session-runtime.ts',
+      'packages/app/src/auth/session-runtime-registry.ts',
+      'packages/app/src/provider-contract-registry.ts',
+      'packages/app/src/provider-runtime-registry.ts',
+      'packages/core/src/snapshot-backed-adapter.ts',
+      'packages/app/src/utils/provider-entity-id.ts',
     ],
     patterns: [
       {
@@ -170,7 +171,7 @@ const TARGETED_GUARDS = [
       {
         pattern: /from ['"]@\/app\/core\/navet['"]/,
         message:
-          'package-ready provider and app-owned files must not import compatibility models from src/app/core/navet',
+          'package-ready provider and app-owned files must not import compatibility models from packages/app/src/core/navet',
       },
       {
         pattern: /from ['"]@\/providers\/homeassistant\//,
@@ -239,7 +240,7 @@ const TARGETED_GUARDS = [
   },
   {
     paths: [
-      'src/app/stores/integration-store.ts',
+      'packages/app/src/stores/integration-store.ts',
     ],
     patterns: [
       {
@@ -263,21 +264,21 @@ const TARGETED_GUARDS = [
       {
         pattern: /from ['"]@\/app\/core\/navet['"]/,
         message:
-          'package-ready provider and app-owned files must not import compatibility models from src/app/core/navet',
+          'package-ready provider and app-owned files must not import compatibility models from packages/app/src/core/navet',
       },
     ],
   },
   {
     paths: [
-      'src/providers/homeassistant/homeassistant-mappers.ts',
-      'src/providers/homey/homey-mappers.ts',
-      'src/providers/openhab/openhab-mappers.ts',
+      'packages/provider-homeassistant/src/homeassistant-mappers.ts',
+      'packages/provider-homey/src/homey-mappers.ts',
+      'packages/provider-openhab/src/openhab-mappers.ts',
     ],
     patterns: [
       {
         pattern: /from ['"]@\/app\/core\/navet['"]/,
         message:
-          'provider mapper files must not import compatibility models from src/app/core/navet',
+          'provider mapper files must not import compatibility models from packages/app/src/core/navet',
       },
       {
         pattern: /from ['"]@\/providers\/core\//,
@@ -303,27 +304,27 @@ const TARGETED_GUARDS = [
 ];
 
 const REMOVED_LEGACY_FILES = [
-  'src/app/core/navet-mappers.ts',
-  'src/app/internal/legacy-actions.ts',
-  'src/providers/core/legacy-compat.ts',
-  'src/providers/core/navet-device-entity.ts',
-  'src/providers/homeassistant/homeassistant-feature-services.ts',
-  'src/app/services/home-assistant-admin-feature.service.ts',
-  'src/app/services/home-assistant-calendar-feature.service.ts',
-  'src/app/services/home-assistant-camera-feature.service.ts',
-  'src/app/services/home-assistant-climate-feature.service.ts',
-  'src/app/services/home-assistant-energy-feature.service.ts',
-  'src/app/services/home-assistant-entity-runtime.service.ts',
-  'src/app/services/home-assistant-history-feature.service.ts',
-  'src/app/services/home-assistant-light-feature.service.ts',
-  'src/app/services/home-assistant-media-feature.service.ts',
-  'src/app/services/home-assistant-notification-feature.service.ts',
-  'src/app/services/home-assistant-security-feature.service.ts',
-  'src/app/services/home-assistant-task-feature.service.ts',
-  'src/app/services/home-assistant-weather-feature.service.ts',
-  'src/providers/planned/planned-provider-adapter.ts',
-  'src/providers/planned/planned-provider-runtime-registration.ts',
-  'src/app/hooks/use-navet-devices.ts',
+  'packages/app/src/core/navet-mappers.ts',
+  'packages/app/src/internal/legacy-actions.ts',
+  'packages/core/src/legacy-compat.ts',
+  'packages/core/src/navet-device-entity.ts',
+  'packages/provider-homeassistant/src/homeassistant-feature-services.ts',
+  'packages/app/src/services/home-assistant-admin-feature.service.ts',
+  'packages/app/src/services/home-assistant-calendar-feature.service.ts',
+  'packages/app/src/services/home-assistant-camera-feature.service.ts',
+  'packages/app/src/services/home-assistant-climate-feature.service.ts',
+  'packages/app/src/services/home-assistant-energy-feature.service.ts',
+  'packages/app/src/services/home-assistant-entity-runtime.service.ts',
+  'packages/app/src/services/home-assistant-history-feature.service.ts',
+  'packages/app/src/services/home-assistant-light-feature.service.ts',
+  'packages/app/src/services/home-assistant-media-feature.service.ts',
+  'packages/app/src/services/home-assistant-notification-feature.service.ts',
+  'packages/app/src/services/home-assistant-security-feature.service.ts',
+  'packages/app/src/services/home-assistant-task-feature.service.ts',
+  'packages/app/src/services/home-assistant-weather-feature.service.ts',
+  'packages/provider-hubitat/src/internal-planned-provider.ts',
+  'packages/provider-smartthings/src/internal-planned-provider.ts',
+  'packages/app/src/hooks/use-navet-devices.ts',
 ];
 
 function walk(dir) {
@@ -356,6 +357,27 @@ function walk(dir) {
 }
 
 const violations = [];
+
+for (const dir of [
+  'packages/app/src',
+  'packages/core/src',
+  'packages/provider-homeassistant/src',
+  'packages/provider-homey/src',
+  'packages/provider-openhab/src',
+  'packages/provider-hubitat/src',
+  'packages/provider-smartthings/src',
+  'packages/ui/src',
+]) {
+  for (const relativePath of walk(dir)) {
+    const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+    if (PACKAGE_SRC_REEXPORT_PATTERN.test(source)) {
+      violations.push(
+        `${relativePath}: package-owned files must not re-export implementation from legacy src paths`
+      );
+    }
+  }
+}
 
 for (const dir of GUARDED_DIRS) {
   for (const relativePath of walk(dir)) {

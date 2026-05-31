@@ -1,0 +1,111 @@
+import { createProviderScopedId } from '@navet/core/ids';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHomeAssistantContractAdapter } from './homeassistant-adapter';
+import { configureHomeAssistantServiceBridge } from './homeassistant-service-bridge';
+
+function lightEntityFactory() {
+  return {
+    entity_id: 'light.kitchen',
+    state: 'on',
+    attributes: {
+      friendly_name: 'Kitchen Light',
+      brightness: 128,
+      supported_color_modes: ['brightness'],
+    },
+    last_changed: '2026-05-30T10:00:00.000Z',
+    last_updated: '2026-05-30T10:00:00.000Z',
+    context: { id: 'ctx-1', parent_id: null, user_id: null },
+  };
+}
+
+const { callHomeAssistantServiceMock } = vi.hoisted(() => ({
+  callHomeAssistantServiceMock: vi.fn(async () => undefined),
+}));
+
+describe('homeassistant-adapter', () => {
+  beforeEach(() => {
+    callHomeAssistantServiceMock.mockReset();
+    configureHomeAssistantServiceBridge({
+      callService: callHomeAssistantServiceMock,
+      signPath: vi.fn(async (path: string) => ({ path })),
+      getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),
+      addListener: vi.fn(() => () => {}),
+      isConnected: vi.fn(() => true),
+      getPanelHass: vi.fn(() => null),
+      getConnection: vi.fn(() => null),
+      getEntities: vi.fn(() => ({
+        'light.kitchen': lightEntityFactory(),
+      })),
+      getEntityRegistry: vi.fn(() => []),
+      getConfig: vi.fn(() => null),
+      updateLight: vi.fn(async () => undefined),
+      playMedia: vi.fn(async () => undefined),
+      browseMediaPlayer: vi.fn(async () => ({ title: 'Media' })),
+      searchMediaPlayer: vi.fn(async () => ({ title: 'Media' })),
+      selectMediaPlayerSource: vi.fn(async () => undefined),
+      selectMediaPlayerSoundMode: vi.fn(async () => undefined),
+      seekMediaPlayer: vi.fn(async () => undefined),
+      clearMediaPlayerPlaylist: vi.fn(async () => undefined),
+      updateMediaPlayerPower: vi.fn(async () => undefined),
+      sendRemoteCommand: vi.fn(async () => undefined),
+      browseMediaSource: vi.fn(async () => ({ title: 'Media' })),
+      resolveMediaSource: vi.fn(async () => ({ url: '/media', mime_type: 'image/jpeg' })),
+      getAutomationConfig: vi.fn(async () => ({ config: {} })),
+      getCameraCapabilities: vi.fn(async () => ({ frontend_stream_types: [] })),
+      enableCameraMotionDetection: vi.fn(async () => undefined),
+      disableCameraMotionDetection: vi.fn(async () => undefined),
+      getWebRtcClientConfiguration: vi.fn(async () => ({})),
+      subscribeCameraWebRtcOffer: vi.fn(async () => () => {}),
+      addCameraWebRtcCandidate: vi.fn(async () => undefined),
+      createArea: vi.fn(async () => ({ area_id: 'kitchen', name: 'Kitchen' })),
+      updateEntityArea: vi.fn(async () => undefined),
+      updateEntityName: vi.fn(async () => undefined),
+      deleteArea: vi.fn(async () => undefined),
+      resolveArtwork: vi.fn(async (entityId: string) => ({
+        id: entityId,
+        kind: 'image' as const,
+        cacheKey: entityId,
+        authStrategy: 'none' as const,
+      })),
+      resolveProxyUrl: vi.fn((resourceUrl: string) => resourceUrl),
+      getCameraPlaybackPlan: vi.fn(async () => ({ mode: 'snapshot' })),
+      resolveCameraStreamResource: vi.fn(async (entityId: string) => ({
+        id: entityId,
+        kind: 'unavailable' as const,
+        cacheKey: entityId,
+        authStrategy: 'none' as const,
+      })),
+      getStoreState: vi.fn(() => ({
+        connected: true,
+        entities: {
+          'light.kitchen': lightEntityFactory(),
+        },
+        config: null,
+        areas: [],
+        deviceRegistry: [],
+        entityRegistry: [],
+        syncPanelHass: vi.fn(),
+        connect: vi.fn(async () => undefined),
+        disconnect: vi.fn(async () => undefined),
+      })),
+      subscribeStore: vi.fn(() => () => {}),
+    });
+  });
+
+  it('maps provider-neutral color temperature commands to color_temp_kelvin', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'set_color_temperature',
+      entityId: createProviderScopedId('home_assistant', 'light.kitchen'),
+      kelvin: 3200,
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'light',
+      'turn_on',
+      { color_temp_kelvin: 3200 },
+      { entity_id: 'light.kitchen' }
+    );
+  });
+});
