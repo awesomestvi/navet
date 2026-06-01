@@ -37,6 +37,8 @@ What to expect:
 - Navet runs behind Home Assistant Ingress
 - the Home Assistant frontend session is reused
 - the direct host port is off by default
+- Homey login can be enabled by setting `homey_client_id` and `homey_client_secret` in the add-on options
+- openHAB connections are stored and proxied through the add-on runtime
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
 Use this when you want Home Assistant to own installation, lifecycle, and sidebar access.

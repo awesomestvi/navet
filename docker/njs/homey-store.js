@@ -5,6 +5,29 @@ const HOMEY_PATH = '/data/navet-homey-session.json';
 const ATHOM_API_BASE_URL = 'https://api.athom.com';
 const DEFAULT_HOMEY_CALLBACK_PATH = '/__navet_homey__/callback';
 
+function normalizeIngressPath(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '/') {
+    return '';
+  }
+
+  const normalized = trimmed.replace(/\/+$/, '');
+  return normalized.startsWith('/') ? normalized : '';
+}
+
+function joinPath(basePath, suffix) {
+  const normalizedBase = normalizeIngressPath(basePath);
+  const normalizedSuffix = String(suffix || '').startsWith('/')
+    ? String(suffix || '')
+    : '/' + String(suffix || '');
+
+  return normalizedBase ? normalizedBase + normalizedSuffix : normalizedSuffix;
+}
+
 function sendJson(r, statusCode, payload) {
   r.headersOut['Cache-Control'] = 'no-store';
   r.headersOut['Content-Type'] = 'application/json; charset=utf-8';
@@ -113,7 +136,12 @@ function getHomeyUserName(user) {
   const first = typeof user.firstname === 'string' ? user.firstname.trim() : '';
   const last = typeof user.lastname === 'string' ? user.lastname.trim() : '';
   const fullName = (first + ' ' + last).trim();
-  return fullName || (typeof user.name === 'string' && user.name.trim()) || user.email || 'Homey User';
+  return (
+    fullName ||
+    (typeof user.name === 'string' && user.name.trim()) ||
+    user.email ||
+    'Homey User'
+  );
 }
 
 function getHomeyUserAvatarUrl(user) {
@@ -130,25 +158,37 @@ function getHomeyUserAvatarUrl(user) {
 }
 
 function getOAuthConfig(r) {
-  const host = r.headersIn.Host || 'localhost';
+  const ingressPath = normalizeIngressPath(r.headersIn['X-Ingress-Path']);
   const clientId = process.env.NAVET_HOMEY_CLIENT_ID || '';
   const clientSecret = process.env.NAVET_HOMEY_CLIENT_SECRET || '';
+  const configuredRedirectUri = process.env.NAVET_HOMEY_REDIRECT_URI || '';
   const redirectUri =
-    process.env.NAVET_HOMEY_REDIRECT_URI || 'http://' + host + DEFAULT_HOMEY_CALLBACK_PATH;
-  const callbackPath = getCallbackPath(redirectUri);
+    configuredRedirectUri ||
+    getRequestOrigin(r) + joinPath(ingressPath, DEFAULT_HOMEY_CALLBACK_PATH);
+  const callbackPath = getCallbackPath(redirectUri, ingressPath);
 
   return {
     clientId,
     clientSecret,
     redirectUri,
     callbackPath,
+    ingressPath,
   };
 }
 
-function getCallbackPath(redirectUri) {
+function getCallbackPath(redirectUri, ingressPath) {
   try {
     const pathname = new URL(redirectUri).pathname.trim();
-    return pathname || DEFAULT_HOMEY_CALLBACK_PATH;
+    if (!pathname) {
+      return DEFAULT_HOMEY_CALLBACK_PATH;
+    }
+
+    if (ingressPath && pathname.indexOf(ingressPath) === 0) {
+      const localPath = pathname.slice(ingressPath.length);
+      return localPath || DEFAULT_HOMEY_CALLBACK_PATH;
+    }
+
+    return pathname;
   } catch (_error) {
     return DEFAULT_HOMEY_CALLBACK_PATH;
   }
@@ -156,7 +196,15 @@ function getCallbackPath(redirectUri) {
 
 function getRequestOrigin(r) {
   const host = r.headersIn.Host || 'localhost';
-  return 'http://' + host;
+  const forwardedProto = typeof r.headersIn['X-Forwarded-Proto'] === 'string'
+    ? r.headersIn['X-Forwarded-Proto'].split(',')[0].trim()
+    : '';
+  const protocol = forwardedProto || 'http';
+  return protocol + '://' + host;
+}
+
+function getNavetReturnPath(oauth) {
+  return joinPath(oauth.ingressPath, '/');
 }
 
 function encodeClientCredentials(clientId, clientSecret) {
@@ -298,7 +346,9 @@ async function handleAuthorize(r) {
     return;
   }
 
-  const state = Buffer.from(JSON.stringify({ returnTo: '/' })).toString('base64');
+  const state = Buffer.from(
+    JSON.stringify({ returnTo: getNavetReturnPath(oauth) })
+  ).toString('base64');
   const location =
     ATHOM_API_BASE_URL +
     '/oauth2/authorise?response_type=code&client_id=' +
@@ -386,7 +436,7 @@ async function handleCallback(r) {
     }
 
     writeStoredSession(session);
-    sendRedirect(r, getRequestOrigin(r) + '/?homey_oauth_callback=1');
+    sendRedirect(r, getRequestOrigin(r) + getNavetReturnPath(oauth) + '?homey_oauth_callback=1');
   } catch (_error) {
     sendJson(r, 502, { error: 'Unable to complete Homey OAuth callback' });
   }

@@ -141,8 +141,8 @@
       "_entity-card-lighting-RuL7I-Ud.js"
     ]
   },
-  "_entity-card-security-BdWjdAhH.js": {
-    "file": "assets/entity-card-security-BdWjdAhH.js",
+  "_entity-card-security-2jdtTPG9.js": {
+    "file": "assets/entity-card-security-2jdtTPG9.js",
     "name": "entity-card-security",
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
@@ -161,7 +161,7 @@
       "_entity-card-media-DmMJVp7K.js",
       "_entity-card-person-DIHbcyzh.js",
       "_entity-card-scenes-CwSa89PM.js",
-      "_entity-card-security-BdWjdAhH.js",
+      "_entity-card-security-2jdtTPG9.js",
       "_dashboard-widget-shared-BSGcig-T.js",
       "_dashboard-widget-battery-BVw8832v.js",
       "_entity-card-weather-3lUzuMzo.js",
@@ -172,9 +172,9 @@
       "_dashboard-widget-map-Dpy0CtZY.js",
       "_dashboard-widget-rss-zlWuXaNB.js",
       "packages/app/src/features/dashboard/components/dashboard-card-item-draggable.tsx",
-      "_sections-MK98dZTs.js",
+      "_sections-BL4CZv7M.js",
       "packages/app/src/features/dashboard/components/home-dashboard-overview.tsx",
-      "_settings-BcQO9LFB.js",
+      "_settings-BstNSyq5.js",
       "_vendor-DRjTyolM.js"
     ]
   },
@@ -187,13 +187,13 @@
       "_entity-card-climate-CCGmYL9B.js"
     ]
   },
-  "_home-dashboard-overview-edit-BZZolCPM.js": {
-    "file": "assets/home-dashboard-overview-edit-BZZolCPM.js",
+  "_home-dashboard-overview-edit-DapvV5Em.js": {
+    "file": "assets/home-dashboard-overview-edit-DapvV5Em.js",
     "name": "home-dashboard-overview-edit",
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
       "_dashboard-widget-battery-BVw8832v.js",
-      "_entity-card-security-BdWjdAhH.js"
+      "_entity-card-security-2jdtTPG9.js"
     ]
   },
   "_leaflet-vendor-DF_4Itnh.js": {
@@ -215,23 +215,23 @@
     "file": "assets/rolldown-runtime-DMWpINJ5.js",
     "name": "rolldown-runtime"
   },
-  "_sections-MK98dZTs.js": {
-    "file": "assets/sections-MK98dZTs.js",
+  "_sections-BL4CZv7M.js": {
+    "file": "assets/sections-BL4CZv7M.js",
     "name": "sections",
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
       "_dashboard-widget-battery-BVw8832v.js",
-      "_entity-card-security-BdWjdAhH.js",
+      "_entity-card-security-2jdtTPG9.js",
       "_entity-card-media-DmMJVp7K.js"
     ]
   },
-  "_settings-BcQO9LFB.js": {
-    "file": "assets/settings-BcQO9LFB.js",
+  "_settings-BstNSyq5.js": {
+    "file": "assets/settings-BstNSyq5.js",
     "name": "settings",
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
       "_dashboard-widget-battery-BVw8832v.js",
-      "_entity-card-security-BdWjdAhH.js",
+      "_entity-card-security-2jdtTPG9.js",
       "_dashboard-widget-map-Dpy0CtZY.js"
     ]
   },
@@ -252,20 +252,20 @@
     ]
   },
   "packages/app/src/features/dashboard/components/home-dashboard-overview.tsx": {
-    "file": "assets/home-dashboard-overview-B8A0LPQn.js",
+    "file": "assets/home-dashboard-overview-x1elcyyE.js",
     "name": "home-dashboard-overview",
     "src": "packages/app/src/features/dashboard/components/home-dashboard-overview.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
       "_dashboard-widget-battery-BVw8832v.js",
-      "_entity-card-security-BdWjdAhH.js",
+      "_entity-card-security-2jdtTPG9.js",
       "_dashboard-widget-energy-Cxtb6Txv.js",
       "_dashboard-widget-shared-BSGcig-T.js",
-      "_home-dashboard-overview-edit-BZZolCPM.js"
+      "_home-dashboard-overview-edit-DapvV5Em.js"
     ],
     "dynamicImports": [
-      "_home-dashboard-overview-edit-BZZolCPM.js"
+      "_home-dashboard-overview-edit-DapvV5Em.js"
     ]
   },
   "packages/app/src/panel/main.tsx": {
@@ -276,11 +276,11 @@
     "imports": [
       "_rolldown-runtime-DMWpINJ5.js",
       "_dashboard-widget-battery-BVw8832v.js",
-      "_entity-card-security-BdWjdAhH.js",
+      "_entity-card-security-2jdtTPG9.js",
       "_dashboard-widget-map-Dpy0CtZY.js",
       "_leaflet-vendor-DF_4Itnh.js",
       "_react-vendor-DShuYFYj.js",
-      "_settings-BcQO9LFB.js"
+      "_settings-BstNSyq5.js"
     ],
     "assets": [
       "assets/index-Bm9hSyU8.css"
