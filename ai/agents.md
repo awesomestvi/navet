@@ -35,6 +35,8 @@ on Home Assistant raw payloads.
 - Navet's current implementation is not the behavioral source of truth for Home Assistant-facing
   work.
 - Do not update tests only to make them pass.
+- Never use or suggest `git commit --no-verify`, `git push --no-verify`, or any equivalent
+  hook-bypass flag.
 - Prefer realistic payloads, realistic fixtures, and real regressions over invented happy-path
   mocks.
 

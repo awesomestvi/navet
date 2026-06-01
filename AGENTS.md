@@ -50,6 +50,7 @@ Read the relevant skill file for the area you are touching:
 - Prefer provider-neutral entities and commands before adding backend-specific conditionals.
 - Do not use Navet's current implementation as the source of truth for Home Assistant behavior.
 - Do not change tests just to match the current implementation.
+- Never use or suggest `git commit --no-verify`, `git push --no-verify`, or any equivalent hook-bypass flag.
 - Treat `IntegrationProviderId`, `NavetDevice`, `NavetRoom`, `NavetRoomDescriptor`,
   `NavetProviderSnapshot`, `SmartHomeProviderAdapter`, `NavetEntity`, `NavetCommand`,
   `CommandResult`, provider-scoped IDs, canonical IDs, runtime, snapshot, contract, and resource

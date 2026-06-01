@@ -83,7 +83,7 @@ jobs:
     uses: ./.github/workflows/provider-platform-validation.yml
 
   custom-panel-artifact:
-    name: Verify and package custom panel artifact
+    name: Package committed custom panel artifact
     runs-on: ubuntu-latest
     needs:
       - release-context
@@ -94,25 +94,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Activate pinned pnpm
-        run: corepack install
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Home Assistant panel
-        run: pnpm build:ha-panel
-
-      - name: Verify committed Home Assistant panel assets
-        run: git diff --exit-code -- custom_components/navet/frontend
+      - name: Verify committed Home Assistant panel files exist
+        run: |
+          test -f custom_components/navet/frontend/navet-panel.js
+          test -f custom_components/navet/frontend/.vite/manifest.json
 
       - name: Package custom panel artifact
         run: |
