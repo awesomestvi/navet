@@ -96,6 +96,8 @@ jobs:
 
       - name: Verify committed Home Assistant panel files exist
         run: |
+          git ls-files --error-unmatch custom_components/navet/frontend/navet-panel.js
+          git ls-files --error-unmatch custom_components/navet/frontend/.vite/manifest.json
           test -f custom_components/navet/frontend/navet-panel.js
           test -f custom_components/navet/frontend/.vite/manifest.json
 
