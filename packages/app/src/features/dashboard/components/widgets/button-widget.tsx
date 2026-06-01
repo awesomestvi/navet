@@ -51,6 +51,7 @@ interface ButtonWidgetProps {
   data?: ButtonWidgetData;
   onUpdate?: (data: ButtonWidgetData) => void;
   isEditMode?: boolean;
+  openSettingsRequestKey?: number;
 }
 
 function ButtonSettingsDialog({
@@ -260,7 +261,12 @@ function ButtonSettingsDialog({
   );
 }
 
-export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: ButtonWidgetProps) {
+export function ButtonWidget({
+  data = {},
+  onUpdate,
+  isEditMode = false,
+  openSettingsRequestKey = 0,
+}: ButtonWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, data.tintColor);
@@ -268,6 +274,12 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
   const [isPressed, setIsPressed] = useState(false);
   const accentHex = getThemeColorValue(primaryColor);
   const IconComponent = getNamedIconComponent(data.icon ?? 'Zap');
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0 && onUpdate) {
+      setIsSettingsOpen(true);
+    }
+  }, [onUpdate, openSettingsRequestKey]);
 
   const handleTap = async () => {
     if (isEditMode || !data.service) return;

@@ -1,7 +1,8 @@
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import type { RSSCardData } from '@navet/app/features/rss';
-import { Component, lazy, type ReactNode, Suspense } from 'react';
+import { Component, lazy, type ReactNode, Suspense, useState } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
@@ -110,6 +111,13 @@ function WidgetFallback({ size }: { size: CardSize }) {
 export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
   const updateCustomCard = useCustomCardsStore((state) => state.updateCard);
   const handleCardUpdate = onUpdate ?? updateCustomCard;
+  const [openSettingsRequestKey, setOpenSettingsRequestKey] = useState(0);
+
+  useEditModeSettingsRequest(
+    card.id,
+    () => setOpenSettingsRequestKey((value) => value + 1),
+    isEditMode
+  );
 
   const handleNoteChange = (note: string) => {
     handleCardUpdate(card.id, { data: { ...card.data, note } });
@@ -127,6 +135,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -144,6 +153,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onTintColorChange={(tintColor) =>
             handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -174,6 +184,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
             handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -198,6 +209,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as BatteryOverviewWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -210,6 +222,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as UpsWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -222,6 +235,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as EnergyNowWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;
@@ -241,6 +255,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           }
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
         />
       );
       break;

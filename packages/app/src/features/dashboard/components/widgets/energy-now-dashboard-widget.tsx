@@ -17,7 +17,7 @@ import {
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
 import { Settings2, Zap } from 'lucide-react';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { EnergyNowSettingsDialog, type EnergySourceOption } from './energy-now-settings-dialog';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 
@@ -28,6 +28,7 @@ interface EnergyNowDashboardWidgetProps {
   isEditMode?: boolean;
   room?: string;
   onRoomChange?: (room: string) => void;
+  openSettingsRequestKey?: number;
 }
 
 export interface EnergyNowWidgetData {
@@ -45,6 +46,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   onUpdate,
   room,
   onRoomChange,
+  openSettingsRequestKey = 0,
 }: EnergyNowDashboardWidgetProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -79,6 +81,12 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     selectedOption?.currentPowerW ?? energyNow.currentLoadW
   );
   const isCustomCard = Boolean(onUpdate);
+  useEffect(() => {
+    if (openSettingsRequestKey > 0 && isCustomCard) {
+      setIsSettingsOpen(true);
+    }
+  }, [isCustomCard, openSettingsRequestKey]);
+
   const settingsDialog = (
     <EnergyNowSettingsDialog
       isOpen={isSettingsOpen}

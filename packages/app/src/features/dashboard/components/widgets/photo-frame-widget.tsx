@@ -52,6 +52,7 @@ interface PhotoFrameWidgetProps {
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
   isEditMode?: boolean;
+  openSettingsRequestKey?: number;
 }
 
 export function PhotoFrameWidget({
@@ -69,6 +70,7 @@ export function PhotoFrameWidget({
   tintColor,
   onTintColorChange,
   isEditMode: _isEditMode = false,
+  openSettingsRequestKey = 0,
 }: PhotoFrameWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -145,6 +147,12 @@ export function PhotoFrameWidget({
       setCurrentIndex(0);
     }
   }, [currentIndex, photoCount]);
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0 && canConfigure) {
+      setIsSettingsOpen(true);
+    }
+  }, [canConfigure, openSettingsRequestKey]);
 
   return (
     <BaseCard

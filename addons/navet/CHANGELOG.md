@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.6
+
+- Updated Navet to `0.4.6`
+- Provider login for Homey and openHAB in the add-on remains beta and may not work reliably yet
+- Fixed widget and RSS cards so shared edit actions reopen their settings reliably
+- Improved user avatar rendering
+
+## 0.4.5
+
+- Updated Navet to `0.4.5`
+- Fixed switch cards so their settings reopen reliably in dashboard edit mode
+- Fixed adding openHAB to an existing setup so it no longer crashes during connection setup
+- Fixed Home Assistant alerts so they render correctly again in the dashboard
+
 ## 0.4.1
 
 - Updated Navet to `0.4.1`

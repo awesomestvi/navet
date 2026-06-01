@@ -14,9 +14,9 @@ This file defines release workflow constraints and publishing behavior for Navet
   release commands before the release commit or tag.
 - Use `pnpm release:linear` or the Linear app as the preferred release-note source before falling
   back to commit history.
-- Keep `package.json`, `CHANGELOG.md`, `custom_components/navet/manifest.json`,
-  `addons/navet/config.yaml`, and built panel assets aligned for versioned releases when those
-  surfaces are part of the release.
+- Keep `package.json`, `CHANGELOG.md`, `addons/navet/CHANGELOG.md`,
+  `custom_components/navet/manifest.json`, `addons/navet/config.yaml`, and built panel assets
+  aligned for versioned releases when those surfaces are part of the release.
 
 ## Release Flow
 
@@ -32,8 +32,8 @@ Recommended operator flow:
    update.
 6. For HACS custom panel releases, have the user run `pnpm build:ha-panel` and include the
    generated `custom_components/navet/frontend/` changes in the release commit.
-7. Update `addons/navet/CHANGELOG.md` only when add-on release notes need to differ materially
-   from the main app changelog.
+7. Add or update the matching `addons/navet/CHANGELOG.md` entry for every versioned add-on release.
+   Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
 8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
 9. Run `node scripts/check-release-surfaces.mjs`.
 10. Tag the commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or `v0.3.1`.

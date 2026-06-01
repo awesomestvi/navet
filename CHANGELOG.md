@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.6 - 2026-06-02
+
+## New
+
+- Dashboard headers can now switch between an automatic greeting, custom text, or a live date-and-time title for easier shared-display layouts.
+
+## Fixed
+
+- Home Assistant add-on ingress now restores provider-backed setup and session flows more reliably.
+- openHAB sign-in now fails earlier and more clearly instead of crashing during login.
+- Widget and RSS cards now reopen their settings reliably from shared dashboard edit actions.
+
+## Improved
+
+- Homey sign-in and callback handling are more reliable across hosted and local setup flows.
+- Provider settings use clearer labels and management actions.
+- User avatar and identity details render more consistently.
+
 ## 0.4.5 - 2026-06-01
 
 ## Fixed
