@@ -44,6 +44,10 @@ docs. If you are changing the codebase, use the contributor docs.
   Testing layers and fixture guidance.
 - [testing/test-tier-inventory.md](testing/test-tier-inventory.md)
   Current test tiers, grouped by subsystem.
+- [release-workflow.md](release-workflow.md)
+  Maintainer release lanes, artifact channels, and version alignment rules.
+- [rollback.md](rollback.md)
+  Operator rollback guidance for Docker, Home Assistant add-on, and custom panel surfaces.
 - [STORYBOOK_WORKFLOW.md](STORYBOOK_WORKFLOW.md)
   Story placement and visual review workflow.
 

@@ -9,6 +9,11 @@ import { getAppChunkName, getVendorChunkName } from './scripts/vite-chunking';
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string;
 };
+const buildMetadata = {
+  gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
+  buildDate: (process.env.NAVET_BUILD_DATE ?? new Date().toISOString()).trim(),
+  releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
+};
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/]/, /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/];
 const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/];
 
@@ -19,6 +24,9 @@ export default defineConfig({
   publicDir: false,
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+    __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
+    __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
+    __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
   },
   plugins: [
     react(),

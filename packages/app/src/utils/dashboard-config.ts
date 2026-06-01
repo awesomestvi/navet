@@ -1,4 +1,5 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
@@ -42,7 +43,7 @@ import { storage } from '@navet/app/utils/storage';
 import { sanitizeExternalUrl, sanitizeImageUrl } from '@navet/app/utils/url-security';
 
 export interface DashboardConfigPayload {
-  version: 3;
+  version: typeof DASHBOARD_CONFIG_VERSION;
   app: 'navet';
   exportedAt: string;
   theme: {
@@ -293,7 +294,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const lightPresetState = useLightPresetStore.getState();
 
   return {
-    version: 3,
+    version: DASHBOARD_CONFIG_VERSION,
     app: 'navet',
     exportedAt: new Date().toISOString(),
     theme: {
@@ -647,7 +648,10 @@ export const importDashboardConfig = (
   value: unknown,
   { applyNavigation = true }: ImportDashboardConfigOptions = {}
 ) => {
-  if (!isRecord(value) || (value.version !== 1 && value.version !== 2 && value.version !== 3)) {
+  if (
+    !isRecord(value) ||
+    (value.version !== 1 && value.version !== 2 && value.version !== DASHBOARD_CONFIG_VERSION)
+  ) {
     throw new Error('Unsupported dashboard config format.');
   }
 

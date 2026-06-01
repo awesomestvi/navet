@@ -50,6 +50,11 @@ import {
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string
 }
+const buildMetadata = {
+  gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
+  buildDate: (process.env.NAVET_BUILD_DATE ?? new Date().toISOString()).trim(),
+  releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
+}
 
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
@@ -1585,6 +1590,9 @@ export default defineConfig(({ mode }) => {
       envPrefix: ['VITE_'],
       define: {
         __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+        __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
+        __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
+        __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
         __NAVET_ENABLE_DEMO__: JSON.stringify(enableDemo),
       },
       resolve: resolveConfig,

@@ -1,4 +1,5 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
+import { APP_BUILD_METADATA } from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useI18n } from '@navet/app/hooks';
 import { ExternalLink, FileText, Info, Scale } from 'lucide-react';
@@ -77,6 +78,13 @@ function SimpleDisclosure({
 export function SettingsProjectSection({ controller }: SettingsProjectSectionProps) {
   const { t } = useI18n();
   const { setShowLicense, setShowTerms, showLicense, showTerms, styles } = controller;
+  const buildDate = APP_BUILD_METADATA.buildDate.slice(0, 10);
+  const buildMeta = [
+    APP_BUILD_METADATA.releaseChannel,
+    APP_BUILD_METADATA.gitShaShort,
+    buildDate,
+    `config v${APP_BUILD_METADATA.dashboardConfigVersion}`,
+  ].join(' · ');
 
   return (
     <SettingsSectionShell
@@ -104,7 +112,11 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
           />
           <CompactMetaRow
             label={t('settings.project.about.build')}
-            value="March 2026"
+            value={
+              <span className="font-mono text-[0.82rem]" title={APP_BUILD_METADATA.buildDate}>
+                {buildMeta}
+              </span>
+            }
             styles={styles}
           />
         </div>

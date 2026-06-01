@@ -24,23 +24,25 @@ Recommended operator flow:
 
 1. Decide whether the change is `patch`, `minor`, or `prerelease`.
 2. Bump `package.json`.
-3. Fetch Linear issues in the `Ready for Release` workflow state and use them as the release-note
+3. Run `node scripts/sync-release-versions.mjs`.
+4. Fetch Linear issues in the `Ready for Release` workflow state and use them as the release-note
    source. If the release has no matching issues, draft the changelog from commit history instead.
-4. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
+5. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
    publishes this section as the release notes that HACS/Home Assistant can show before users
    update.
-5. For HACS custom panel releases, bump `custom_components/navet/manifest.json` so its `version`
-   matches the package/tag version.
 6. For HACS custom panel releases, have the user run `pnpm build:ha-panel` and include the
    generated `custom_components/navet/frontend/` changes in the release commit.
-7. For add-on releases, bump `addons/navet/config.yaml` and update `addons/navet/CHANGELOG.md`.
+7. Update `addons/navet/CHANGELOG.md` only when add-on release notes need to differ materially
+   from the main app changelog.
 8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
-9. Tag the commit with a version tag such as `v0.3.1-beta.1` or `v0.3.1`.
-10. Push the tag to GitHub to trigger
-    [../../.github/workflows/github-release.yml](../../.github/workflows/github-release.yml).
-    Version tags also trigger app image publishing and add-on image publishing.
-11. For developer hardware testing before a public tag, manually run the publish workflows with the
-    `dev` tag.
+9. Run `node scripts/check-release-surfaces.mjs`.
+10. Tag the commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or `v0.3.1`.
+11. Push the tag to GitHub to trigger
+    [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
+12. The tagged release workflow rebuilds the custom panel, fails if committed panel assets drift,
+    and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
+13. For developer hardware testing from `main`, use
+    [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
 
 ## Release Note Style
 
@@ -126,22 +128,24 @@ internal, or release-only changes into the fewest useful user-facing bullets.
   - provider boundary enforcement
   - Docker validation
 - Publish and release workflows should require Tier 1 validation before shipping.
-- Home Assistant ingress and custom-panel behavior remain partly manual release checks unless a
-  real automation path is added later.
+- Tagged releases should additionally rebuild and verify the committed custom-panel artifact before
+  creating the GitHub release.
+- Home Assistant ingress and install behavior remain partly manual release checks unless a real
+  runtime automation path is added later.
 
 ## Publishing Rules
 
 - GitHub Pages deploys the demo at `/navet/demo/` and Storybook at `/navet/storybook/`.
-- Pushes to `main` publish only developer app images: `ghcr.io/awesomestvi/navet:dev` and `sha-*`.
-- Manual Publish workflow runs are for developer hardware testing and default to the `dev` app
-  image tag.
-- Standalone app images publish the exact tag, `beta`, `latest`, and `sha-*` for every `v*` tag.
-- Home Assistant add-on images publish `dev` and `sha-*` on `main` pushes or dev-channel manual
-  workflow runs.
-- Versioned add-on publishes emit the configured add-on version and `sha-*`.
-- Prerelease tags also update `beta` and `latest`.
-- There is no stable channel yet. Treat `latest` as the current public beta compatibility tag
-  because existing users already consume it.
+- Pushes to `main` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
+  and `sha-*`.
+- Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
+- Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
+- Home Assistant add-on images publish `edge`, temporary `dev`, and `sha-*` on `main` pushes.
+- Tagged releases rebuild the committed custom-panel output and attach a downloadable panel archive
+  to the GitHub release.
+- Versioned add-on publishes emit the configured add-on version, the channel tag (`beta` or
+  `latest`), and `sha-*`.
+- Prerelease tags do not update `latest`.
 
 ## Related Guidance
 

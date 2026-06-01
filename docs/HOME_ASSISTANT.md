@@ -86,5 +86,5 @@ Dashboard import is separate from authentication. If you want to restore an exis
 a fresh browser or a new `/data` volume, use an exported dashboard config together with
 `dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
 
-For release validation, see
-[agents/release-and-publishing.md](agents/release-and-publishing.md).
+For release validation and rollback guidance, see
+[release-workflow.md](release-workflow.md) and [rollback.md](rollback.md).

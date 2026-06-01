@@ -1,0 +1,281 @@
+name: Publish Release Artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/navet
+
+jobs:
+  release-context:
+    name: Validate release surfaces
+    runs-on: ubuntu-latest
+
+    outputs:
+      package_version: ${{ steps.version.outputs.package_version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      release_channel: ${{ steps.version.outputs.release_channel }}
+      release_environment: ${{ steps.version.outputs.release_environment }}
+      standalone_tags: ${{ steps.version.outputs.standalone_tags }}
+      standalone_version: ${{ steps.version.outputs.standalone_version }}
+      addon_channel_tag: ${{ steps.version.outputs.addon_channel_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate release-managed versions and changelog
+        run: node scripts/check-release-surfaces.mjs --tag "${GITHUB_REF_NAME}"
+
+      - name: Resolve release version and tags
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          if [[ "${GITHUB_REF_NAME}" == *-alpha.* || "${GITHUB_REF_NAME}" == *-beta.* || "${GITHUB_REF_NAME}" == *-rc.* ]]; then
+            PRERELEASE=true
+            RELEASE_CHANNEL=beta
+            RELEASE_ENVIRONMENT=beta
+            ADDON_CHANNEL_TAG=beta
+            STANDALONE_TAGS=$(printf "%s\n%s\n%s" "$IMAGE:${GITHUB_REF_NAME}" "$IMAGE:beta" "$IMAGE:sha-${GITHUB_SHA::7}")
+          else
+            PRERELEASE=false
+            RELEASE_CHANNEL=stable
+            RELEASE_ENVIRONMENT=production
+            ADDON_CHANNEL_TAG=latest
+            MINOR_TAG="${VERSION%.*}"
+            STANDALONE_TAGS=$(printf "%s\n%s\n%s\n%s" "$IMAGE:${GITHUB_REF_NAME}" "$IMAGE:${MINOR_TAG}" "$IMAGE:latest" "$IMAGE:sha-${GITHUB_SHA::7}")
+          fi
+
+          {
+            echo "package_version=$VERSION"
+            echo "tag_name=${GITHUB_REF_NAME}"
+            echo "prerelease=$PRERELEASE"
+            echo "release_channel=$RELEASE_CHANNEL"
+            echo "release_environment=$RELEASE_ENVIRONMENT"
+            echo "standalone_version=${GITHUB_REF_NAME}"
+            echo "addon_channel_tag=$ADDON_CHANNEL_TAG"
+            echo "standalone_tags<<EOF"
+            echo "$STANDALONE_TAGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  tier-1-release-critical:
+    needs: release-context
+    uses: ./.github/workflows/provider-platform-validation.yml
+
+  custom-panel-artifact:
+    name: Verify and package custom panel artifact
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - tier-1-release-critical
+    environment: ${{ needs.release-context.outputs.release_environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pinned pnpm
+        run: corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Home Assistant panel
+        run: pnpm build:ha-panel
+
+      - name: Verify committed Home Assistant panel assets
+        run: git diff --exit-code -- custom_components/navet/frontend
+
+      - name: Package custom panel artifact
+        run: |
+          mkdir -p release-assets
+          tar -czf "release-assets/navet-panel-${GITHUB_REF_NAME}.tar.gz" custom_components/navet/frontend
+
+      - name: Upload custom panel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: navet-panel-${{ needs.release-context.outputs.tag_name }}
+          path: release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz
+          if-no-files-found: error
+
+  publish-standalone:
+    name: Publish standalone release image
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - tier-1-release-critical
+    environment: ${{ needs.release-context.outputs.release_environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Capture build metadata
+        id: metadata
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push standalone release image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ needs.release-context.outputs.standalone_tags }}
+          build-args: |
+            NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
+            NAVET_GIT_SHA=${{ github.sha }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            NAVET_RELEASE_CHANNEL=${{ needs.release-context.outputs.release_channel }}
+
+  publish-addon:
+    name: Publish add-on release images
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - tier-1-release-critical
+    environment: ${{ needs.release-context.outputs.release_environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            build_from: ghcr.io/home-assistant/amd64-base:3.20
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: ghcr.io/home-assistant/aarch64-base:3.20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve add-on release tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon"
+          VERSION="${{ needs.release-context.outputs.package_version }}"
+          CHANNEL_TAG="${{ needs.release-context.outputs.addon_channel_tag }}"
+          {
+            echo "value<<EOF"
+            echo "$IMAGE:$VERSION"
+            echo "$IMAGE:$CHANNEL_TAG"
+            echo "$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "EOF"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push add-on release image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./addons/navet/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            BUILD_FROM=${{ matrix.build_from }}
+            BUILD_VERSION=${{ steps.tags.outputs.version }}
+            BUILD_ARCH=${{ matrix.arch }}
+          tags: ${{ steps.tags.outputs.value }}
+
+  github-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - publish-standalone
+      - publish-addon
+      - custom-panel-artifact
+    environment: ${{ needs.release-context.outputs.release_environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download custom panel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: navet-panel-${{ needs.release-context.outputs.tag_name }}
+          path: release-assets
+
+      - name: Build release notes
+        id: notes
+        run: |
+          NOTES_FILE="${RUNNER_TEMP}/navet-release-notes.md"
+          node scripts/extract-release-notes.mjs "${{ needs.release-context.outputs.tag_name }}" > "$NOTES_FILE"
+          {
+            echo "body<<EOF"
+            cat "$NOTES_FILE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-context.outputs.tag_name }}
+          name: ${{ needs.release-context.outputs.tag_name }}
+          body: ${{ steps.notes.outputs.body }}
+          prerelease: ${{ needs.release-context.outputs.prerelease == 'true' }}
+          generate_release_notes: false
+          files: release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz

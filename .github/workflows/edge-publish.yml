@@ -1,0 +1,146 @@
+name: Publish Edge Artifacts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: edge-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/navet
+
+jobs:
+  tier-1-release-critical:
+    uses: ./.github/workflows/provider-platform-validation.yml
+
+  publish-standalone:
+    name: Publish standalone edge image
+    runs-on: ubuntu-latest
+    needs: tier-1-release-critical
+    environment: edge
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read package version
+        id: version
+        run: echo "value=$(node -p 'JSON.parse(require(\"node:fs\").readFileSync(\"package.json\", \"utf8\")).version')" >> "$GITHUB_OUTPUT"
+
+      - name: Capture build metadata
+        id: metadata
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve standalone edge tags
+        id: tags
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          {
+            echo "value<<EOF"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
+            echo "$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push standalone edge image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.value }}
+          build-args: |
+            NAVET_VERSION=${{ steps.version.outputs.value }}
+            NAVET_GIT_SHA=${{ github.sha }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            NAVET_RELEASE_CHANNEL=edge
+
+  publish-addon:
+    name: Publish add-on edge images
+    runs-on: ubuntu-latest
+    needs: tier-1-release-critical
+    environment: edge
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            build_from: ghcr.io/home-assistant/amd64-base:3.20
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: ghcr.io/home-assistant/aarch64-base:3.20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Capture build metadata
+        id: metadata
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve add-on edge tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon"
+          {
+            echo "value<<EOF"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
+            echo "$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push add-on edge image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./addons/navet/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            BUILD_FROM=${{ matrix.build_from }}
+            BUILD_VERSION=edge
+            BUILD_ARCH=${{ matrix.arch }}
+          tags: ${{ steps.tags.outputs.value }}
