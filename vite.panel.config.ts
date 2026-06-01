@@ -1,6 +1,7 @@
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
@@ -9,9 +10,30 @@ import { getAppChunkName, getVendorChunkName } from './scripts/vite-chunking';
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string;
 };
+function resolveFallbackBuildDate() {
+  const sourceDateEpoch = process.env.SOURCE_DATE_EPOCH?.trim();
+
+  if (sourceDateEpoch) {
+    const epochMs = Number.parseInt(sourceDateEpoch, 10) * 1000;
+    if (Number.isFinite(epochMs)) {
+      return new Date(epochMs).toISOString();
+    }
+  }
+
+  try {
+    return execSync('git log -1 --format=%cI', {
+      cwd: __dirname,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return new Date(0).toISOString();
+  }
+}
+
 const buildMetadata = {
   gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
-  buildDate: (process.env.NAVET_BUILD_DATE ?? new Date().toISOString()).trim(),
+  buildDate: (process.env.NAVET_BUILD_DATE ?? resolveFallbackBuildDate()).trim(),
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
 };
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/]/, /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/];

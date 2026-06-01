@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 - 2026-06-01
+
+## Fixed
+
+- Switch cards now show their settings reliably again in dashboard edit mode.
+- Adding openHAB to an existing setup no longer crashes the app during connection setup.
+- Home Assistant alerts now render correctly again in the dashboard.
+
 ## 0.4.1 - 2026-05-30
 
 ## Fixed
