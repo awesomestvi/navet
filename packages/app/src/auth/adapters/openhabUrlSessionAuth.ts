@@ -93,7 +93,17 @@ async function saveStoredSession(session: StoredOpenHABSession): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error('Unable to save openHAB session');
+    let errorMessage = 'Unable to save openHAB session';
+    try {
+      const parsed = await response.json();
+      if (parsed && typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+        errorMessage = parsed.error;
+      }
+    } catch {
+      // Ignore non-JSON error responses and keep the generic fallback.
+    }
+
+    throw new Error(errorMessage);
   }
 }
 

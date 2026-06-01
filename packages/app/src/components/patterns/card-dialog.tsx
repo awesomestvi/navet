@@ -2,8 +2,10 @@ import { Button, Input, InteractivePill } from '@navet/app/components/primitives
 import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useI18n } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
+import { integrationSelectors } from '@navet/app/stores/selectors';
+import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, type LucideIcon, Pencil, X } from 'lucide-react';
 import {
@@ -89,6 +91,10 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   const [draftTitle, setDraftTitle] = useState(title);
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const canEditTitle = Boolean(editableTitle && (entityId || onTitleChange));
+  const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
+  const connectedProviderCount = Object.keys(providerSessions).length;
+  const resolvedDescription =
+    getProviderEntityTypeLabel(entityId, description, connectedProviderCount > 1) ?? description;
 
   useEffect(() => {
     setDisplayTitle(title);
@@ -236,11 +242,11 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             )
           ) : null}
         </div>
-        {description ? (
+        {resolvedDescription ? (
           <Dialog.Description
             className={cn('mt-1 truncate', navetTypographyTokens.compactHelper, 'text-white/82')}
           >
-            {description}
+            {resolvedDescription}
           </Dialog.Description>
         ) : null}
         {supportingContent ? <div className="mt-2 min-w-0">{supportingContent}</div> : null}

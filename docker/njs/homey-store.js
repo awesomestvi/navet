@@ -3,6 +3,7 @@ import fs from 'fs';
 const MAX_HOMEY_BYTES = 16 * 1024;
 const HOMEY_PATH = '/data/navet-homey-session.json';
 const ATHOM_API_BASE_URL = 'https://api.athom.com';
+const DEFAULT_HOMEY_CALLBACK_PATH = '/__navet_homey__/callback';
 
 function sendJson(r, statusCode, payload) {
   r.headersOut['Cache-Control'] = 'no-store';
@@ -133,13 +134,24 @@ function getOAuthConfig(r) {
   const clientId = process.env.NAVET_HOMEY_CLIENT_ID || '';
   const clientSecret = process.env.NAVET_HOMEY_CLIENT_SECRET || '';
   const redirectUri =
-    process.env.NAVET_HOMEY_REDIRECT_URI || 'http://' + host + '/__navet_homey__/callback';
+    process.env.NAVET_HOMEY_REDIRECT_URI || 'http://' + host + DEFAULT_HOMEY_CALLBACK_PATH;
+  const callbackPath = getCallbackPath(redirectUri);
 
   return {
     clientId,
     clientSecret,
     redirectUri,
+    callbackPath,
   };
+}
+
+function getCallbackPath(redirectUri) {
+  try {
+    const pathname = new URL(redirectUri).pathname.trim();
+    return pathname || DEFAULT_HOMEY_CALLBACK_PATH;
+  } catch (_error) {
+    return DEFAULT_HOMEY_CALLBACK_PATH;
+  }
 }
 
 function getRequestOrigin(r) {
@@ -151,8 +163,9 @@ function encodeClientCredentials(clientId, clientSecret) {
   return Buffer.from(clientId + ':' + clientSecret).toString('base64');
 }
 
-function getPreferredHomeyBaseUrl(homey) {
-  return homey.localUrl || homey.localUrlSecure || homey.remoteUrl || null;
+function getHomeyBaseUrlCandidates(homey) {
+  const candidates = [homey.localUrlSecure, homey.localUrl, homey.remoteUrl].filter(Boolean);
+  return Array.from(new Set(candidates));
 }
 
 function cloneWithOverrides(source, overrides) {
@@ -223,8 +236,8 @@ async function loadAuthenticatedUser(accessToken) {
 }
 
 async function createHomeySession(accessToken, homey) {
-  const homeyBaseUrl = getPreferredHomeyBaseUrl(homey);
-  if (!homeyBaseUrl) {
+  const homeyBaseUrls = getHomeyBaseUrlCandidates(homey);
+  if (homeyBaseUrls.length === 0) {
     throw new Error('The selected Homey has no usable URL');
   }
 
@@ -244,24 +257,38 @@ async function createHomeySession(accessToken, homey) {
 
   const delegationResponseText = await delegationResponse.text();
   const delegationToken = parseJson(delegationResponseText);
-  const sessionResponse = await ngx.fetch(homeyBaseUrl + '/api/manager/users/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token: delegationToken }),
-  });
+  let index;
+  let lastError = null;
 
-  if (!sessionResponse.ok) {
-    throw new Error('Unable to create Homey session');
+  for (index = 0; index < homeyBaseUrls.length; index += 1) {
+    const homeyBaseUrl = homeyBaseUrls[index];
+
+    try {
+      const sessionResponse = await ngx.fetch(homeyBaseUrl + '/api/manager/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: delegationToken }),
+      });
+
+      if (!sessionResponse.ok) {
+        lastError = new Error('Unable to create Homey session');
+        continue;
+      }
+
+      const sessionResponseText = await sessionResponse.text();
+      const homeySessionToken = parseJson(sessionResponseText);
+      return {
+        homeyBaseUrl: homeyBaseUrl,
+        homeySessionToken: homeySessionToken,
+      };
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  const sessionResponseText = await sessionResponse.text();
-  const homeySessionToken = parseJson(sessionResponseText);
-  return {
-    homeyBaseUrl: homeyBaseUrl,
-    homeySessionToken: homeySessionToken,
-  };
+  throw lastError || new Error('Unable to create Homey session');
 }
 
 async function handleAuthorize(r) {
@@ -444,12 +471,14 @@ async function handleSelection(r) {
 }
 
 async function handle(r) {
+  const oauth = getOAuthConfig(r);
+
   if (r.uri === '/__navet_homey__/authorize') {
     await handleAuthorize(r);
     return;
   }
 
-  if (r.uri === '/__navet_homey__/callback') {
+  if (r.uri === oauth.callbackPath) {
     await handleCallback(r);
     return;
   }

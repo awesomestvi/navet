@@ -24,13 +24,14 @@ Typical flow:
 1. Sign in to the Homey Developer Tools with the Athom account you want to use for Navet.
 2. Create a new Web API client.
 3. Set the client name to something recognizable such as `Navet`.
-4. Set the redirect URL to the public Navet URL that will receive the OAuth callback.
-   Example: `http://localhost:8080` for a local Docker test, or `https://navet.example.com` for a hosted deployment.
+4. Set the redirect URL to the exact Navet callback URL that will receive the OAuth callback.
+   Example: `http://localhost:8080/__navet_homey__/callback` for a local Docker test, or
+   `https://navet.example.com/__navet_homey__/callback` for a hosted deployment.
 5. Save the client.
 6. Copy the generated client ID and client secret into your Navet Docker compose file as
    `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`.
 
-Use the same public Navet URL for `NAVET_HOMEY_REDIRECT_URI` when you need to override Navet’s
+Use the same exact callback URL for `NAVET_HOMEY_REDIRECT_URI` when you need to override Navet’s
 automatic callback detection.
 
 `docker-compose.yaml`
@@ -49,14 +50,15 @@ services:
       NAVET_HOMEY_CLIENT_ID: your-athom-client-id
       NAVET_HOMEY_CLIENT_SECRET: your-athom-client-secret
       # Optional: set this only if Navet cannot infer the public callback URL correctly.
-      NAVET_HOMEY_REDIRECT_URI: https://your-navet-url.example.com
+      NAVET_HOMEY_REDIRECT_URI: https://your-navet-url.example.com/__navet_homey__/callback
 
 volumes:
   navet-data:
 ```
 Use `NAVET_HOMEY_REDIRECT_URI` only when Navet cannot infer the public callback URL correctly, for
-example when it sits behind a reverse proxy or the public URL differs from the browser origin users
-open.
+example when it sits behind a reverse proxy or the public callback URL differs from the browser
+origin users open. Navet also supports a custom callback path if you register a different exact URL
+with Athom, such as `https://navet.example.com/callback`.
 
 Then run:
 
@@ -82,7 +84,7 @@ docker compose up -d
 
 - If the `Homey` option does not appear on the login screen, check that
   `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET` are set in the running Navet container.
-- If sign-in returns to the wrong URL, set `NAVET_HOMEY_REDIRECT_URI` to the exact public Navet
-  URL users open in the browser.
+- If sign-in returns to the wrong URL, set `NAVET_HOMEY_REDIRECT_URI` to the exact callback URL
+  registered in your Athom Web API client.
 - If Navet keeps asking you to choose a Homey again, confirm the selected Homey is still available
   to the signed-in Athom account.

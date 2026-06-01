@@ -158,7 +158,7 @@ describe('SettingsSystemSection', () => {
     controller = createController();
   });
 
-  it('shows provider management with active and implemented providers', () => {
+  it('shows connected providers immediately and keeps disconnected ones in provider management', () => {
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
@@ -172,12 +172,14 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Homey')).toBeInTheDocument();
     expect(screen.getByText('openHAB')).toBeInTheDocument();
     expect(screen.getAllByText('Not connected on this device').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Active')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Connected')[0]).toBeInTheDocument();
+    expect(screen.queryByText('Active')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Lighting').length).toBeGreaterThan(0);
     expect(screen.getByText('Notifications')).toBeInTheDocument();
   });
 
-  it('lets users activate another connected provider or connect a disconnected one', () => {
+  it('shows all connected providers without hiding them behind provider management', () => {
     controller.providerCards = [
       {
         id: 'home_assistant',
@@ -239,12 +241,19 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage 1 other providers' }));
+    expect(screen.getByText('Home Assistant')).toBeInTheDocument();
+    expect(screen.getByText('Homey')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Manage .* other providers/ })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Make active' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Open' }).length).toBeGreaterThan(0);
+    expect(screen.getByText('Active')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Make active' }));
     expect(controller.setActiveProvider).toHaveBeenCalledWith('home_assistant');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Disconnect' })[0]);
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('home_assistant');
   });
 
@@ -310,19 +319,76 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Manage 1 other providers' }));
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
 
     fireEvent.change(screen.getByPlaceholderText('https://homeassistant.local:8123'), {
       target: { value: 'https://ha.example.com' },
     });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Connect' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
     expect(controller.handleConnectProvider).toHaveBeenCalledWith(
       'home_assistant',
-      'https://ha.example.com'
+      'https://ha.example.com',
+      undefined,
+      undefined
     );
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Disconnect' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     expect(controller.handleDisconnectProvider).toHaveBeenCalledWith('homey');
+  });
+
+  it('submits openHAB credentials from settings connect flow', () => {
+    controller.providerCards = [
+      {
+        id: 'openhab',
+        label: 'openHAB',
+        loginMode: 'url_session',
+        status: 'disconnected',
+        isActive: false,
+        isConnected: false,
+        canConnect: true,
+        canDisconnect: false,
+        baseUrl: null,
+        error: null,
+        implementationStatus: 'implemented',
+        featureMatrix: {
+          rooms: true,
+          lighting: true,
+          sensors: true,
+          climate: true,
+          mediaControls: false,
+          mediaBrowse: false,
+          mediaArtwork: false,
+          cameraSnapshot: false,
+          cameraStreams: false,
+          energyNow: false,
+          calendar: false,
+          weather: false,
+          notifications: false,
+        },
+      },
+    ] as typeof controller.providerCards;
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
+    fireEvent.change(screen.getByPlaceholderText('http://openhab.local:8080'), {
+      target: { value: 'http://openhab.local:8080' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('openHAB Username'), {
+      target: { value: 'navet' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('openHAB Password'), {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
+    expect(controller.handleConnectProvider).toHaveBeenCalledWith(
+      'openhab',
+      'http://openhab.local:8080',
+      'navet',
+      'secret'
+    );
   });
 });

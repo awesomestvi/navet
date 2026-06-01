@@ -71,6 +71,14 @@ function getDomain(entityId: string): string {
   return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
 }
 
+function formatDomainLabel(domain: string): string {
+  return domain
+    .split('_')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}
+
 function formatMetricLabel(entityId: string, friendlyName: unknown) {
   if (typeof friendlyName === 'string' && friendlyName.trim().length > 0) {
     return friendlyName.trim();
@@ -722,7 +730,7 @@ function createHomeAssistantState(
     unit: entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement,
     lastChanged: entity.last_changed,
     lastUpdated: entity.last_updated,
-    entityType: domain,
+    entityType: formatDomainLabel(domain),
     serviceDomain:
       domain === 'input_boolean' ||
       domain === 'script' ||

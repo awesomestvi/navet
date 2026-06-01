@@ -493,21 +493,21 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
 
     targetUrl.protocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'
 
-    const upstreamSocket =
-      targetUrl.protocol === 'wss:'
-        ? connectTls({
-            host: targetUrl.hostname,
-            port: targetUrl.port ? Number(targetUrl.port) : 443,
-            servername: targetUrl.hostname,
-          })
-        : connectNet({
-            host: targetUrl.hostname,
-            port: targetUrl.port ? Number(targetUrl.port) : 80,
-          })
+    const isSecureWebSocket = targetUrl.protocol === 'wss:'
+    const upstreamSocket = isSecureWebSocket
+      ? connectTls({
+          host: targetUrl.hostname,
+          port: targetUrl.port ? Number(targetUrl.port) : 443,
+          servername: targetUrl.hostname,
+        })
+      : connectNet({
+          host: targetUrl.hostname,
+          port: targetUrl.port ? Number(targetUrl.port) : 80,
+        })
 
     let responseStarted = false
 
-    upstreamSocket.on('connect', () => {
+    upstreamSocket.on(isSecureWebSocket ? 'secureConnect' : 'connect', () => {
       const headerEntries = Object.entries(req.headers)
       const forwardedHeaders = headerEntries
         .flatMap(([name, value]) => {
@@ -515,7 +515,13 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
             return []
           }
           const lowerName = name.toLowerCase()
-          if (lowerName === 'host' || lowerName === 'authorization' || lowerName === 'content-length') {
+          if (
+            lowerName === 'host' ||
+            lowerName === 'authorization' ||
+            lowerName === 'content-length' ||
+            lowerName === 'connection' ||
+            lowerName === 'upgrade'
+          ) {
             return []
           }
           if (Array.isArray(value)) {
@@ -523,7 +529,12 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
           }
           return [`${name}: ${value}`]
         })
-        .concat(`Host: ${targetUrl.host}`, `Authorization: ${toOpenHABBasicAuthHeader(session)}`)
+        .concat(
+          `Host: ${targetUrl.host}`,
+          `Authorization: ${toOpenHABBasicAuthHeader(session)}`,
+          'Upgrade: websocket',
+          'Connection: Upgrade'
+        )
 
       upstreamSocket.write(
         [`GET ${targetUrl.pathname}${targetUrl.search} HTTP/1.1`, ...forwardedHeaders, '', ''].join(
@@ -918,6 +929,7 @@ function dashboardProfileStorePlugin() {
 function homeySessionStorePlugin() {
   const homeySessionStore = createViteHomeySessionStore()
   const athomApiBaseUrl = 'https://api.athom.com'
+  const defaultHomeyCallbackPath = '/__navet_homey__/callback'
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -936,25 +948,41 @@ function homeySessionStorePlugin() {
     res.end()
   }
 
+  const getRequestOrigin = (req: IncomingMessage) =>
+    new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`).origin
+
+  const getHomeyCallbackPath = (redirectUri: string) => {
+    try {
+      const pathname = new URL(redirectUri).pathname.trim()
+      return pathname || defaultHomeyCallbackPath
+    } catch {
+      return defaultHomeyCallbackPath
+    }
+  }
+
   const getHomeyOAuthConfig = (req: IncomingMessage) => {
     const clientId = process.env.NAVET_HOMEY_CLIENT_ID?.trim()
     const clientSecret = process.env.NAVET_HOMEY_CLIENT_SECRET?.trim()
     const redirectUri =
       process.env.NAVET_HOMEY_REDIRECT_URI?.trim() ??
-      `${new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`).origin}/__navet_homey__/callback`
+      `${getRequestOrigin(req)}${defaultHomeyCallbackPath}`
+    const callbackPath = getHomeyCallbackPath(redirectUri)
 
     return {
       clientId,
       clientSecret,
       redirectUri,
+      callbackPath,
     }
   }
 
   const encodeClientCredentials = (clientId: string, clientSecret: string) =>
     Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
-  const getPreferredHomeyBaseUrl = (homey: HomeySessionData['homeys'][number]) =>
-    homey.localUrl ?? homey.localUrlSecure ?? homey.remoteUrl ?? null
+  const getHomeyBaseUrlCandidates = (homey: HomeySessionData['homeys'][number]) =>
+    Array.from(
+      new Set([homey.localUrlSecure, homey.localUrl, homey.remoteUrl].filter(Boolean))
+    ) as string[]
 
   const sanitizeHomeySession = (session: HomeySessionData) => ({
     userId: session.userId ?? null,
@@ -983,13 +1011,23 @@ function homeySessionStorePlugin() {
     image?: string | null
     imageUrl?: string | null
     gravatar?: string | null
-  }) =>
-    user.avatarUrl?.trim() ||
-    user.imageUrl?.trim() ||
-    user.avatar?.trim() ||
-    user.image?.trim() ||
-    user.gravatar?.trim() ||
-    null
+  }) => {
+    const candidates = [
+      user.avatarUrl,
+      user.imageUrl,
+      user.avatar,
+      user.image,
+      user.gravatar,
+    ]
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim()
+      }
+    }
+
+    return null
+  }
 
   const refreshHomeyAccessToken = async (
     session: HomeySessionData,
@@ -1074,8 +1112,8 @@ function homeySessionStorePlugin() {
     accessToken: string,
     homey: HomeySessionData['homeys'][number]
   ) => {
-    const homeyBaseUrl = getPreferredHomeyBaseUrl(homey)
-    if (!homeyBaseUrl) {
+    const homeyBaseUrls = getHomeyBaseUrlCandidates(homey)
+    if (homeyBaseUrls.length === 0) {
       throw new Error('The selected Homey has no usable URL')
     }
 
@@ -1092,25 +1130,41 @@ function homeySessionStorePlugin() {
 
     const delegationToken = JSON.parse(await delegationResponse.text()) as string
 
-    const sessionResponse = await fetch(`${homeyBaseUrl}/api/manager/users/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        token: delegationToken,
-      }),
-    })
+    let lastError: Error | null = null
+    const failedTargets: string[] = []
 
-    if (!sessionResponse.ok) {
-      throw new Error('Unable to create Homey session')
+    for (const homeyBaseUrl of homeyBaseUrls) {
+      try {
+        const sessionResponse = await fetch(`${homeyBaseUrl}/api/manager/users/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: delegationToken,
+          }),
+        })
+
+        if (!sessionResponse.ok) {
+          failedTargets.push(`${homeyBaseUrl} -> HTTP ${sessionResponse.status}`)
+          lastError = new Error('Unable to create Homey session')
+          continue
+        }
+
+        const homeySessionToken = JSON.parse(await sessionResponse.text()) as string
+        return {
+          homeyBaseUrl,
+          homeySessionToken,
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        failedTargets.push(`${homeyBaseUrl} -> ${message}`)
+        lastError = error instanceof Error ? error : new Error('Unable to create Homey session')
+      }
     }
 
-    const homeySessionToken = JSON.parse(await sessionResponse.text()) as string
-    return {
-      homeyBaseUrl,
-      homeySessionToken,
-    }
+    const detail = failedTargets.length > 0 ? ` (${failedTargets.join('; ')})` : ''
+    throw new Error((lastError?.message ?? 'Unable to create Homey session') + detail)
   }
 
   const readRequestBody = async (req: IncomingMessage) => {
@@ -1198,7 +1252,14 @@ function homeySessionStorePlugin() {
       res.end()
     })
 
-    server.middlewares.use('/__navet_homey__/callback', async (req, res) => {
+    server.middlewares.use(async (req, res, next) => {
+      const { callbackPath } = getHomeyOAuthConfig(req)
+      const requestPath = new URL(req.url ?? '/', getRequestOrigin(req)).pathname
+      if (requestPath !== callbackPath) {
+        next()
+        return
+      }
+
       const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
       const code = requestUrl.searchParams.get('code')?.trim()
       const { clientId, clientSecret, redirectUri } = getHomeyOAuthConfig(req)
@@ -1290,8 +1351,15 @@ function homeySessionStorePlugin() {
         res.statusCode = 302
         res.setHeader('Location', '/?homey_oauth_callback=1')
         res.end()
-      } catch {
-        sendJson(res, 502, { error: 'Unable to complete Homey OAuth callback' })
+      } catch (error) {
+        const detail =
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : 'Unknown error'
+        sendJson(res, 502, {
+          error: 'Unable to complete Homey OAuth callback',
+          details: detail,
+        })
       }
     })
 
@@ -1357,6 +1425,7 @@ function homeySessionStorePlugin() {
 
 function openhabSessionStorePlugin() {
   const openhabSessionStore = createViteOpenHABSessionStore()
+  const OPENHAB_VALIDATE_TIMEOUT_MS = 5_000
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -1391,6 +1460,42 @@ function openhabSessionStorePlugin() {
     return Buffer.concat(chunks).toString('utf8')
   }
 
+  const validateOpenHABSession = async (session: OpenHABSessionData) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), OPENHAB_VALIDATE_TIMEOUT_MS)
+
+    try {
+      const normalizedBaseUrl = session.hassUrl.replace(/\/+$/, '')
+      const targetUrl = new URL('/rest/items?recursive=false&limit=1', normalizedBaseUrl)
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: toOpenHABBasicAuthHeader(session),
+        },
+        signal: controller.signal,
+      })
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          'openHAB authentication failed. Check your username, password, and API Security settings.'
+        )
+      }
+
+      if (!response.ok) {
+        throw new Error(`openHAB connection check failed with status ${response.status}`)
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Timed out while verifying the openHAB connection')
+      }
+
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET') {
       const session = openhabSessionStore.getSerializedSession()
@@ -1415,10 +1520,16 @@ function openhabSessionStorePlugin() {
           return
         }
 
+        await validateOpenHABSession(parsed)
         openhabSessionStore.saveSession(parsed)
         sendJson(res, 200, { ok: true })
-      } catch {
-        sendJson(res, 400, { error: 'Unable to save openHAB session' })
+      } catch (error) {
+        sendJson(res, 400, {
+          error:
+            error instanceof Error && error.message.trim().length > 0
+              ? error.message
+              : 'Unable to save openHAB session',
+        })
       }
       return
     }
@@ -1453,6 +1564,15 @@ function openhabSessionStorePlugin() {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  if (env.NAVET_HOMEY_CLIENT_ID) {
+    process.env.NAVET_HOMEY_CLIENT_ID = env.NAVET_HOMEY_CLIENT_ID
+  }
+  if (env.NAVET_HOMEY_CLIENT_SECRET) {
+    process.env.NAVET_HOMEY_CLIENT_SECRET = env.NAVET_HOMEY_CLIENT_SECRET
+  }
+  if (env.NAVET_HOMEY_REDIRECT_URI) {
+    process.env.NAVET_HOMEY_REDIRECT_URI = env.NAVET_HOMEY_REDIRECT_URI
+  }
   const hassUrl = env.NAVET_HASS_URL?.trim().replace(/\/$/, '')
   const enableDemo = (env.NAVET_ENABLE_DEMO ?? process.env.NAVET_ENABLE_DEMO ?? 'true') !== 'false'
   const lifecycleEvent = process.env.npm_lifecycle_event ?? ''

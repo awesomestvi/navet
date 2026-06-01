@@ -474,6 +474,31 @@ describe('auth adapters', () => {
     ).rejects.toThrow('openHAB password is required');
   });
 
+  it('surfaces openHAB credential validation errors during login', async () => {
+    vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error:
+            'openHAB authentication failed. Check your username, password, and API Security settings.',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+
+    await expect(
+      openhabUrlSessionAuth.login?.({
+        hassUrl: 'http://openhab.local:8080',
+        username: 'navet',
+        password: 'wrong-password',
+      })
+    ).rejects.toThrow(
+      'openHAB authentication failed. Check your username, password, and API Security settings.'
+    );
+  });
+
   it('restores an openHAB session from the same-origin session endpoint', async () => {
     vi.spyOn(window, 'fetch').mockResolvedValueOnce(
       new Response(

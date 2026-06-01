@@ -9,6 +9,7 @@ You need:
 - an openHAB server reachable from the browser device that will run Navet
 - the base URL for that openHAB server, for example `http://openhab.local:8080`
 - an openHAB username and password that can access the REST API
+- openHAB Basic auth / API Security enabled in `Settings -> API Security` (`org.openhab.restauth`)
 
 ## Prepare Your openHAB URL
 
@@ -70,6 +71,7 @@ docker compose up -d
 
 - If your openHAB instance disables the implicit LAN user role, Navet needs valid credentials for both REST and WebSocket access.
 - openHAB REST Basic auth must be enabled under `Settings -> API Security` (`org.openhab.restauth`) for username/password login to work.
+- If you have not enabled that openHAB API Security / Basic auth setting yet, turn it on before trying to connect Navet.
 - Navet currently targets authenticated browser connections with username/password first. API token login is not exposed in the UI yet.
 
 ## Troubleshooting
@@ -82,4 +84,4 @@ docker compose up -d
   will call the REST and WebSocket endpoints itself.
 - If Navet says the URL is invalid, make sure you entered a full absolute URL including `http://`
   or `https://`.
-- If Navet reports an openHAB authentication failure, verify the username and password in openHAB and confirm Basic auth is enabled in `Settings -> API Security`.
+- If Navet reports an openHAB authentication failure, verify the username and password in openHAB and confirm Basic auth / API Security is enabled in `Settings -> API Security`.
