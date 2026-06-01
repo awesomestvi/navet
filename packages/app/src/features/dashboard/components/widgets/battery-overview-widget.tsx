@@ -49,6 +49,7 @@ interface BatteryOverviewWidgetProps {
   isEditMode?: boolean;
   room?: string;
   onRoomChange?: (room: string) => void;
+  openSettingsRequestKey?: number;
 }
 
 function getSelectedEntityIds(value: unknown): string[] | undefined {
@@ -271,6 +272,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   isEditMode = false,
   room,
   onRoomChange,
+  openSettingsRequestKey = 0,
 }: BatteryOverviewWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -304,6 +306,12 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
       setIsSettingsOpen(false);
     }
   }, [isEditMode]);
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0 && onUpdate) {
+      setIsSettingsOpen(true);
+    }
+  }, [onUpdate, openSettingsRequestKey]);
 
   const handleSelectionChange = (nextSelectedEntityIds: string[]) => {
     onUpdate?.({ selectedEntityIds: nextSelectedEntityIds });

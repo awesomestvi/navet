@@ -40,4 +40,5 @@ export interface RSSFeedCardProps {
   onDataChange?: (updates: Partial<RSSCardData>) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
+  openSettingsRequestKey?: number;
 }

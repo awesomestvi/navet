@@ -34,13 +34,14 @@ Release-managed files that must stay aligned:
 - `custom_components/navet/manifest.json`
 - `addons/navet/config.yaml`
 - `CHANGELOG.md`
+- `addons/navet/CHANGELOG.md`
 - `docs/VERSIONING.md`
 
 `packages/app/src/constants/app-version.ts` remains the app-facing version surface, but it is
 build-injected from `package.json` rather than manually edited.
 
-`addons/navet/CHANGELOG.md` is optional. Update it only when add-on-facing notes need to differ
-materially from the main app changelog.
+`addons/navet/CHANGELOG.md` is a required add-on release surface. Update it for every versioned
+add-on release, even when it mostly mirrors the main app changelog.
 
 ## Channels
 
@@ -143,18 +144,19 @@ promotion in phase 1.
 2. Run `node scripts/sync-release-versions.mjs`.
 3. Draft the changelog section for the target version.
 4. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
-5. Run `node scripts/check-release-surfaces.mjs`.
-6. Merge the release commit to `main`.
-7. Create and push the release tag.
-8. Let the tagged release workflow package the committed panel bundle and attach
+5. Update `addons/navet/CHANGELOG.md` for the release version.
+6. Run `node scripts/check-release-surfaces.mjs`.
+7. Merge the release commit to `main`.
+8. Create and push the release tag.
+9. Let the tagged release workflow package the committed panel bundle and attach
    `navet-panel-<tag>.tar.gz` to the GitHub release.
-9. Verify the published standalone/add-on artifacts and the GitHub release page.
+10. Verify the published standalone/add-on artifacts and the GitHub release page.
 
 ## What Stays Manual
 
 - choosing the SemVer bump
 - drafting release notes
 - regenerating committed panel assets
-- updating `addons/navet/CHANGELOG.md` when add-on-facing notes need to differ from the main changelog
+- updating `addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
 - rollback execution if a bad release escapes

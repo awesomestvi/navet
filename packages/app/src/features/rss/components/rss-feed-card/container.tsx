@@ -23,6 +23,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   onDataChange,
   tintColor,
   onTintColorChange,
+  openSettingsRequestKey = 0,
 }: RSSFeedCardProps) {
   const { theme, colors, accentColor } = useTheme();
   const { t } = useI18n();
@@ -78,6 +79,12 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 
     return () => window.clearInterval(intervalId);
   }, [providerSelectionKey]);
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0) {
+      setIsSettingsOpen(true);
+    }
+  }, [openSettingsRequestKey]);
 
   const filteredItems = useMemo(() => {
     if (activeProviderId === 'all') {

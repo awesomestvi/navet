@@ -56,6 +56,7 @@ interface UpsWidgetProps {
   isEditMode?: boolean;
   room?: string;
   onRoomChange?: (room: string) => void;
+  openSettingsRequestKey?: number;
 }
 
 const SMALL_METRIC_KINDS = new Set(['battery', 'load']);
@@ -404,6 +405,7 @@ export const UpsWidget = memo(function UpsWidget({
   isEditMode = false,
   room,
   onRoomChange,
+  openSettingsRequestKey = 0,
 }: UpsWidgetProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -463,6 +465,12 @@ export const UpsWidget = memo(function UpsWidget({
       setIsSettingsOpen(false);
     }
   }, [isEditMode]);
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0 && onUpdate) {
+      setIsSettingsOpen(true);
+    }
+  }, [onUpdate, openSettingsRequestKey]);
 
   const openSettings = () => setIsSettingsOpen(true);
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

@@ -13,7 +13,7 @@ import { useAreaRooms, useI18n } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { Gauge, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   type ProviderInfoWidgetDataResult,
   useProviderInfoWidgetData,
@@ -37,6 +37,7 @@ interface InfoWidgetProps {
   onRoomChange?: (room: string) => void;
   onUpdate?: (data: InfoWidgetData) => void;
   isEditMode?: boolean;
+  openSettingsRequestKey?: number;
 }
 
 function getSensorEntityIds(data: InfoWidgetData | undefined) {
@@ -52,7 +53,15 @@ function getSensorEntityIds(data: InfoWidgetData | undefined) {
   return typeof data?.entityId === 'string' ? [data.entityId] : EMPTY_SENSOR_ENTITY_IDS;
 }
 
-export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }: InfoWidgetProps) {
+export function InfoWidget({
+  cardId,
+  size,
+  room,
+  data,
+  onRoomChange,
+  onUpdate,
+  openSettingsRequestKey = 0,
+}: InfoWidgetProps) {
   const { t } = useI18n();
   const rooms = useAreaRooms();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
@@ -95,6 +104,12 @@ export function InfoWidget({ cardId, size, room, data, onRoomChange, onUpdate }:
       name,
     });
   };
+
+  useEffect(() => {
+    if (openSettingsRequestKey > 0) {
+      setIsSettingsOpen(true);
+    }
+  }, [openSettingsRequestKey]);
 
   if (currentSensors.length === 0) {
     return (
