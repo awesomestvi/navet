@@ -12,15 +12,15 @@ resource rewriting, or authenticated provider resources.
 
 ## Current Repo Areas
 
-- `src/app/infrastructure/home-assistant/resources/`
-- `src/app/infrastructure/home-assistant/media/`
-- `src/providers/homeassistant/`
-- `src/app/utils/home-assistant-url.ts`
-- `src/app/utils/home-assistant-connection-target.ts`
-- `src/app/utils/url-security.ts`
-- `src/app/features/security/components/camera-card/`
-- `src/app/features/media/`
-- `src/app/features/rss/`
+- `packages/app/src/infrastructure/home-assistant/resources/`
+- `packages/app/src/infrastructure/home-assistant/media/`
+- `packages/provider-homeassistant/`
+- `packages/app/src/utils/home-assistant-url.ts`
+- `packages/app/src/utils/home-assistant-connection-target.ts`
+- `packages/app/src/utils/url-security.ts`
+- `packages/app/src/features/security/components/camera-card/`
+- `packages/app/src/features/media/`
+- `packages/app/src/features/rss/`
 
 ## Required Coverage
 

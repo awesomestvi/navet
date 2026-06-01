@@ -1,4 +1,5 @@
 import { Button } from '@navet/app/components/primitives';
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +11,7 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { useI18n } from '@navet/app/hooks';
+import { HEADER_CUSTOM_TEXT_MAX_LENGTH } from '@navet/app/stores/settings-store';
 import { Download, LayoutGrid, Scale, Upload } from 'lucide-react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { OnOffPillToggle } from './settings-pill-toggle';
@@ -22,6 +24,8 @@ interface SettingsDashboardSectionProps {
 export function SettingsDashboardSection({ controller }: SettingsDashboardSectionProps) {
   const { t } = useI18n();
   const {
+    headerCustomText,
+    headerTitleMode,
     handleExportDashboardConfig,
     handleImportDashboardConfig,
     handleRestartOnboarding,
@@ -45,6 +49,63 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
       description={t('settings.dashboard.sectionDescription')}
       styles={styles}
     >
+      <SettingsItem
+        title={t('settings.dashboard.headerTitle.title')}
+        description={t('settings.dashboard.headerTitle.description')}
+        styles={styles}
+      >
+        <div className="space-y-3">
+          <fieldset className="w-fit">
+            <legend className="sr-only">{t('settings.dashboard.headerTitle.title')}</legend>
+            <div className="flex flex-wrap gap-2">
+              {[
+                {
+                  value: 'auto_greeting' as const,
+                  label: t('settings.dashboard.headerTitle.autoGreeting'),
+                },
+                {
+                  value: 'custom_text' as const,
+                  label: t('settings.dashboard.headerTitle.customText'),
+                },
+                { value: 'clock' as const, label: t('settings.dashboard.headerTitle.dateTime') },
+              ].map((option) => {
+                const isActive = headerTitleMode === option.value;
+                return (
+                  <InteractivePill
+                    key={option.value}
+                    active={isActive}
+                    size="small"
+                    onClick={() => controller.updateSettings({ headerTitleMode: option.value })}
+                    aria-pressed={isActive}
+                  >
+                    {option.label}
+                  </InteractivePill>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {headerTitleMode === 'custom_text' ? (
+            <div className="max-w-xl space-y-2">
+              <input
+                type="text"
+                maxLength={HEADER_CUSTOM_TEXT_MAX_LENGTH}
+                value={headerCustomText}
+                onChange={(event) =>
+                  controller.updateSettings({ headerCustomText: event.currentTarget.value })
+                }
+                placeholder={t('settings.dashboard.headerTitle.customPlaceholder')}
+                aria-label={t('settings.dashboard.headerTitle.customText')}
+                className={`h-11 w-full rounded-[16px] border px-4 text-sm outline-none transition-colors ${styles.borderColor} ${styles.softBg} ${styles.textColor}`}
+              />
+              <p className={`text-sm leading-relaxed ${styles.subtleColor}`}>
+                {t('settings.dashboard.headerTitle.customHint')}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </SettingsItem>
+
       <SettingsItem
         title={t('settings.dashboard.homeSummaryBar.title')}
         description={t('settings.dashboard.homeSummaryBar.description')}

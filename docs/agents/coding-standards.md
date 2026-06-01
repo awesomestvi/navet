@@ -9,9 +9,9 @@ These rules apply to all code written for Navet.
 - Extract repeated UI, logic, and utility patterns instead of duplicating them.
 - Keep code scalable and easy to extend without rewriting existing functionality.
 - Use clear separation of concerns: UI, state, business logic, and utilities belong in separate layers.
-- New shared cross-feature UI belongs in `src/app/components/primitives/` or `src/app/components/patterns/`. Feature-specific logic stays in the feature module.
-- `src/app/components/system/` is the curated public export surface, not the authoring location for new components.
-- `src/app/components/shared/` is for app-specific shared UI and compatibility shims; do not default new primitives there.
+- New shared cross-feature UI belongs in `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/`. Feature-specific logic stays in the feature module.
+- `packages/app/src/components/system/` is the curated public export surface, not the authoring location for new components.
+- `packages/app/src/components/shared/` is for app-specific shared UI and compatibility shims; do not default new primitives there.
 - Do not add new feature-specific hooks, stores, or utilities to global folders unless they are genuinely shared across multiple features.
 
 ## React Standards
@@ -43,7 +43,7 @@ These rules apply to all code written for Navet.
 ## Before Writing Code
 
 1. Check whether an existing component, hook, utility, or pattern should be reused.
-2. Before building any new UI element, scan `src/app/components/primitives/` first. If a primitive already covers the use case, use it instead of re-implementing it inline or in a feature folder.
+2. Before building any new UI element, scan `packages/app/src/components/primitives/` first. If a primitive already covers the use case, use it instead of re-implementing it inline or in a feature folder.
 3. Before adding a new Storybook story file, check whether a story for that component already exists. Add to the existing story file rather than creating a duplicate.
 4. Before writing new UI logic, check whether unit tests already exist. Extend existing tests before adding duplicate coverage.
 5. If creating something new, make it reusable when that is realistically beneficial.

@@ -7,7 +7,7 @@ Read this file before creating or changing Home Assistant fixtures, mocks, or st
 - Build fixture data that simulates real Home Assistant entities.
 - Do not create perfect mock entities just because Navet UI expects them.
 - Fixtures must expose broken assumptions in Navet.
-- Prefer extending the shared fixtures under `src/test/fixtures/home-assistant/` instead of inventing inline mocks inside tests.
+- Prefer extending the shared fixtures under `packages/app/src/test/fixtures/home-assistant/` instead of inventing inline mocks inside tests.
 - If a fixture does not look like something a real Home Assistant instance could emit, do not use it.
 
 ## Fixture Organization
@@ -29,10 +29,10 @@ Store fixtures by domain or integration where possible, including:
 
 Prefer these locations:
 
-- domain-level shapes: `src/test/fixtures/home-assistant/entities/`
-- vendor or integration variants: `src/test/fixtures/home-assistant/integrations/`
-- auth/runtime payloads: `src/test/fixtures/home-assistant/auth/`
-- URL cases: `src/test/fixtures/home-assistant/resources/`
+- domain-level shapes: `packages/app/src/test/fixtures/home-assistant/entities/`
+- vendor or integration variants: `packages/app/src/test/fixtures/home-assistant/integrations/`
+- auth/runtime payloads: `packages/app/src/test/fixtures/home-assistant/auth/`
+- URL cases: `packages/app/src/test/fixtures/home-assistant/resources/`
 
 ## Required Scenario Variants
 
@@ -91,8 +91,8 @@ If you discover an unrealistic existing fixture, fix the fixture and rewrite the
 
 ## Existing Repo Anchors
 
-- Entity fixtures: `src/test/fixtures/home-assistant/entities/`
-- Integration fixtures: `src/test/fixtures/home-assistant/integrations/`
-- API fixtures: `src/test/fixtures/home-assistant/api/`
-- Auth fixtures: `src/test/fixtures/home-assistant/auth/`
-- Resource URL fixtures: `src/test/fixtures/home-assistant/resources/`
+- Entity fixtures: `packages/app/src/test/fixtures/home-assistant/entities/`
+- Integration fixtures: `packages/app/src/test/fixtures/home-assistant/integrations/`
+- API fixtures: `packages/app/src/test/fixtures/home-assistant/api/`
+- Auth fixtures: `packages/app/src/test/fixtures/home-assistant/auth/`
+- Resource URL fixtures: `packages/app/src/test/fixtures/home-assistant/resources/`

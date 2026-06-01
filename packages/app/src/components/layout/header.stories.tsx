@@ -133,6 +133,10 @@ function createHeaderStoryController(args: {
     formattedDate: 'Sunday, May 3',
     formattedTime: '09:41',
     greetingKey: 'header.greeting.welcome',
+    headerSecondaryText: null,
+    headerSupportingText: null,
+    headerTitleMode: 'auto_greeting',
+    headerTitleText: 'Welcome back, Vishal!',
     handleClearSearch: () => setSearchQuery(''),
     handleSearchChange: (value: string) => setSearchQuery(value),
     handleToggleMobileSearch: () => setIsMobileSearchOpen((current) => !current),
@@ -159,6 +163,7 @@ function createHeaderStoryController(args: {
     textSecondary: surface.textSecondary,
     unreadCount,
     weekNumber: 18,
+    showTimeMetadata: true,
   };
 }
 

@@ -13,12 +13,12 @@ resources, or Home Assistant-specific tests.
 
 Home Assistant-specific behavior currently lives primarily in:
 
-- `src/providers/homeassistant/`
-- `src/app/infrastructure/home-assistant/`
-- `src/app/services/`
-- `src/app/stores/home-assistant-store.ts`
-- Home Assistant-aware feature code under `src/app/features/`
-- Home Assistant fixtures under `src/test/fixtures/home-assistant/`
+- `packages/provider-homeassistant/`
+- `packages/app/src/infrastructure/home-assistant/`
+- `packages/app/src/services/`
+- `packages/app/src/stores/home-assistant-store.ts`
+- Home Assistant-aware feature code under `packages/app/src/features/`
+- Home Assistant fixtures under `packages/app/src/test/fixtures/home-assistant/`
 
 ## Rules
 
@@ -29,12 +29,12 @@ Home Assistant-specific behavior currently lives primarily in:
   already exists
 - keep Home Assistant-specific behavior scoped to the Home Assistant adapter boundary
 - prefer moving new Home Assistant-facing mapping, command translation, auth-sensitive resource
-  logic, and event handling into `src/providers/homeassistant/`
+  logic, and event handling into `packages/provider-homeassistant/`
 
 ## Required Follow-Through
 
 If behavior changes:
 
-- update or add realistic fixtures under `src/test/fixtures/home-assistant/`
+- update or add realistic fixtures under `packages/app/src/test/fixtures/home-assistant/`
 - update boundary or feature tests
 - update relevant docs when provider behavior or runtime assumptions changed

@@ -28,21 +28,12 @@ describe('MapWidget', () => {
   it('renders the placeholder immediately before mounting the live map', () => {
     renderWithProviders(<MapWidget markers={MARKERS} />);
 
-    expect(screen.getByRole('button', { name: 'Load live map' })).toBeInTheDocument();
+    expect(screen.getByText('Trackers')).toBeInTheDocument();
+    expect(screen.getByText('1 tracked')).toBeInTheDocument();
     expect(screen.queryByTestId('live-map')).not.toBeInTheDocument();
   });
 
-  it('does not mount the live map after the defer timeout without interaction', () => {
-    renderWithProviders(<MapWidget markers={MARKERS} />);
-
-    act(() => {
-      vi.advanceTimersByTime(1_200);
-    });
-
-    expect(screen.queryByTestId('live-map')).not.toBeInTheDocument();
-  });
-
-  it('mounts the live map after interaction once the defer timeout has elapsed', async () => {
+  it('mounts the live map after the defer timeout without requiring interaction', async () => {
     renderWithProviders(<MapWidget markers={MARKERS} />);
 
     act(() => {
@@ -50,7 +41,6 @@ describe('MapWidget', () => {
     });
 
     await act(async () => {
-      window.dispatchEvent(new Event('pointerdown'));
       await Promise.resolve();
     });
 

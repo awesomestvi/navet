@@ -4,7 +4,7 @@ Navet uses one repo, one shared version, and many release artifacts.
 
 Versioned release surfaces:
 
-- standalone Docker image
+- standalone app image
 - Home Assistant add-on image
 - Home Assistant custom panel build output and downloadable release archive
 - GitHub release notes
@@ -49,7 +49,7 @@ materially from the main app changelog.
 - `latest`: published from stable tags only
 - `sha-*`: immutable publish trace for every artifact push
 
-Standalone image tags:
+Standalone app image tags:
 
 - edge: `edge`, `dev`, `sha-*`
 - prerelease: exact `vX.Y.Z-beta.N` or `vX.Y.Z-rc.N`, `beta`, `sha-*`
@@ -76,7 +76,7 @@ Merge safety gates:
 - committed custom panel asset verification
 - Tier 1 release-critical validation
 - Tier 2 blocking app contracts
-- standalone Docker smoke boot
+- standalone app smoke boot
 
 Visible but non-blocking:
 
@@ -93,7 +93,7 @@ Trigger:
 Behavior:
 
 - requires Tier 1 validation
-- publishes standalone Docker edge artifacts
+- publishes standalone app edge artifacts
 - publishes add-on edge artifacts
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - does not create a GitHub release
@@ -113,7 +113,7 @@ Behavior:
 - requires Tier 1 validation
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - packages the committed custom panel assets and attaches a panel archive
-- publishes standalone release images
+- publishes standalone app release images
 - publishes add-on release images
 - creates the GitHub release from `CHANGELOG.md`
 - marks prerelease tags as GitHub prereleases
@@ -148,7 +148,7 @@ promotion in phase 1.
 7. Create and push the release tag.
 8. Let the tagged release workflow package the committed panel bundle and attach
    `navet-panel-<tag>.tar.gz` to the GitHub release.
-9. Verify the published Docker/add-on artifacts and the GitHub release page.
+9. Verify the published standalone/add-on artifacts and the GitHub release page.
 
 ## What Stays Manual
 

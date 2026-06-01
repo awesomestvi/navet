@@ -11,6 +11,8 @@ describe('useSettingsStore', () => {
   it('updates partial settings', () => {
     useSettingsStore.getState().updateSettings({
       compactMode: true,
+      headerCustomText: 'Movie night',
+      headerTitleMode: 'custom_text',
       kioskMode: true,
       keepDeviceAwake: true,
       showHomeSummaryBar: false,
@@ -18,6 +20,8 @@ describe('useSettingsStore', () => {
     });
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
+    expect(useSettingsStore.getState().headerCustomText).toBe('Movie night');
+    expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().kioskMode).toBe(true);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
@@ -27,10 +31,14 @@ describe('useSettingsStore', () => {
   it('applies imported settings wholesale', () => {
     useSettingsStore.getState().applyImportedSettings({
       ...defaultSettings,
+      headerCustomText: 'Relax',
+      headerTitleMode: 'custom_text',
       username: 'Vishal',
       weatherForecastMode: 'hourly',
     });
 
+    expect(useSettingsStore.getState().headerCustomText).toBe('Relax');
+    expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().username).toBe('Vishal');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
   });
@@ -51,6 +59,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().kioskMode).toBe(defaultSettings.kioskMode);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(defaultSettings.keepDeviceAwake);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(defaultSettings.showHomeSummaryBar);
+    expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
+    expect(useSettingsStore.getState().headerTitleMode).toBe(defaultSettings.headerTitleMode);
     expect(useSettingsStore.getState().username).toBe(defaultSettings.username);
     expect(useSettingsStore.getState().cameraDashboardViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
@@ -123,6 +133,8 @@ describe('useSettingsStore', () => {
 
     await useSettingsStore.persist.rehydrate();
 
+    expect(useSettingsStore.getState().headerTitleMode).toBe(defaultSettings.headerTitleMode);
+    expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
     expect(useSettingsStore.getState().compactMode).toBe(true);
     expect(useSettingsStore.getState().kioskMode).toBe(false);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(false);
@@ -137,6 +149,48 @@ describe('useSettingsStore', () => {
       streamNamingMode: 'entity_id',
     });
     expect(useSettingsStore.getState().cameraGo2RtcConfigs).toEqual({});
+  });
+
+  it('rehydrates valid header title settings and trims imported custom text', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: { headerTitleMode: 'custom_text', headerCustomText: '  Focus  ' },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
+    expect(useSettingsStore.getState().headerCustomText).toBe('Focus');
+  });
+
+  it('falls back to default header title settings for invalid persisted values', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: { headerTitleMode: 'ticker', headerCustomText: 12 },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().headerTitleMode).toBe(defaultSettings.headerTitleMode);
+    expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
+  });
+
+  it('limits custom header text length', () => {
+    useSettingsStore
+      .getState()
+      .updateSettings({ headerCustomText: '1234567890123456789012345678901234567890-extra' });
+
+    expect(useSettingsStore.getState().headerCustomText).toBe(
+      '1234567890123456789012345678901234567890'
+    );
   });
 
   it('rehydrates kiosk mode from persisted settings', async () => {

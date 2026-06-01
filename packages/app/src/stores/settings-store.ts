@@ -12,6 +12,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
+export type HeaderTitleMode = 'auto_greeting' | 'custom_text' | 'clock';
+export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
 export type CameraFeedMode = 'auto' | 'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg';
@@ -50,6 +52,8 @@ export interface UserSettings {
   username: string;
   email: string;
   language: AppLanguage;
+  headerTitleMode: HeaderTitleMode;
+  headerCustomText: string;
   showNotifications: boolean;
   showWeatherInHeader: boolean;
   showHomeSummaryBar: boolean;
@@ -88,6 +92,8 @@ export const defaultSettings: UserSettings = {
   username: 'User',
   email: '',
   language: getNavigatorLanguage(),
+  headerTitleMode: 'auto_greeting',
+  headerCustomText: '',
   showNotifications: true,
   showWeatherInHeader: true,
   showHomeSummaryBar: true,
@@ -117,6 +123,18 @@ export const defaultSettings: UserSettings = {
 
 function isCameraViewMode(value: unknown): value is CameraViewMode {
   return value === 'live' || value === 'auto' || value === 'snapshot';
+}
+
+function isHeaderTitleMode(value: unknown): value is HeaderTitleMode {
+  return value === 'auto_greeting' || value === 'custom_text' || value === 'clock';
+}
+
+export function normalizeHeaderCustomText(value: unknown): string {
+  if (typeof value !== 'string') {
+    return defaultSettings.headerCustomText;
+  }
+
+  return value.trim().slice(0, HEADER_CUSTOM_TEXT_MAX_LENGTH);
 }
 
 function resolveCameraDashboardViewMode(
@@ -325,6 +343,15 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           ...state,
           ...newSettings,
+          headerTitleMode:
+            newSettings.headerTitleMode !== undefined &&
+            isHeaderTitleMode(newSettings.headerTitleMode)
+              ? newSettings.headerTitleMode
+              : state.headerTitleMode,
+          headerCustomText:
+            newSettings.headerCustomText !== undefined
+              ? normalizeHeaderCustomText(newSettings.headerCustomText)
+              : state.headerCustomText,
           cameraDashboardViewMode:
             newSettings.cameraDashboardViewMode !== undefined
               ? resolveCameraDashboardViewMode(newSettings.cameraDashboardViewMode)
@@ -369,6 +396,10 @@ export const useSettingsStore = create<SettingsState>()(
         set(() => ({
           ...defaultSettings,
           ...importedSettings,
+          headerTitleMode: isHeaderTitleMode(importedSettings.headerTitleMode)
+            ? importedSettings.headerTitleMode
+            : defaultSettings.headerTitleMode,
+          headerCustomText: normalizeHeaderCustomText(importedSettings.headerCustomText),
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             importedSettings.cameraDashboardViewMode,
             importedSettings.cameraViewMode
@@ -397,6 +428,10 @@ export const useSettingsStore = create<SettingsState>()(
         return {
           ...current,
           ...next,
+          headerTitleMode: isHeaderTitleMode(next.headerTitleMode)
+            ? next.headerTitleMode
+            : current.headerTitleMode,
+          headerCustomText: normalizeHeaderCustomText(next.headerCustomText),
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             next.cameraDashboardViewMode,
             next.cameraViewMode

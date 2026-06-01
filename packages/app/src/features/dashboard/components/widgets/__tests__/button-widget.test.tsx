@@ -131,7 +131,7 @@ describe('ButtonWidget', () => {
     expect(within(dialog).getByDisplayValue('Evening Scene')).toBeInTheDocument();
   });
 
-  it('opens the settings dialog from the configured card edit button', () => {
+  it('does not render an in-card settings button for configured action cards', () => {
     renderWithProviders(
       <ButtonWidget
         data={{
@@ -144,11 +144,6 @@ describe('ButtonWidget', () => {
       />
     );
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Configure' })[0]);
-
-    const dialog = screen.getByRole('dialog');
-
-    expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByDisplayValue('Movie Mode')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Configure' })).not.toBeInTheDocument();
   });
 });

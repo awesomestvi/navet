@@ -35,7 +35,7 @@ Navet currently uses pre-`1.0` semantic versioning.
 ## Source Of Truth
 
 - `package.json` is the canonical app version
-- `src/app/constants/app-version.ts` is the app-facing version surface
+- `packages/app/src/constants/app-version.ts` is the app-facing version surface
 - `CHANGELOG.md` tracks released history
 
 ## Release Notes Rule

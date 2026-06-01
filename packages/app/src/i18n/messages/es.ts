@@ -85,6 +85,14 @@ export const esMessages = {
   'settings.dashboard.sectionTitle': 'Panel',
   'settings.dashboard.sectionDescription':
     'Gestiona qué aparece en el panel y cómo se respalda esta configuración local.',
+  'settings.dashboard.headerTitle.title': 'Título del encabezado',
+  'settings.dashboard.headerTitle.description':
+    'Elige qué muestra el título grande del panel en la barra superior.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Saludo',
+  'settings.dashboard.headerTitle.customText': 'Texto personalizado',
+  'settings.dashboard.headerTitle.dateTime': 'Fecha y hora',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Bienvenido a casa',
+  'settings.dashboard.headerTitle.customHint': 'Déjalo vacío para volver al saludo automático.',
   'settings.dashboard.homeSummaryBar.title': 'Resumen de inicio',
   'settings.dashboard.homeSummaryBar.description':
     'Muestra resúmenes compactos de clima, luces, seguridad y medios encima del panel de inicio.',

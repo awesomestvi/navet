@@ -9,16 +9,16 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 | Group | Why it exists | Status |
 |---|---|---|
-| `src/providers/**/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
-| `src/auth/__tests__/adapters.test.ts`, `runtime.test.ts`, `homeAssistantDiscovery.test.ts`, `homey-oauth-auth.test.ts` | Auth/runtime bootstrap and provider login flows | Keep |
-| `src/app/infrastructure/home-assistant/resources/__tests__/resource-resolver.test.ts` | Signed URLs, proxy rewriting, unsafe URL rejection | Keep |
-| `src/app/utils/__tests__/home-assistant-url.test.ts`, `rss-proxy-security.test.ts` | URL safety, ingress/panel URL normalization, RSS proxy hardening | Keep |
-| `src/app/features/auth/__tests__/login-page.test.tsx` | User-facing OAuth login flow | Keep |
-| `src/app/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx` | Authenticated artwork resolution and runtime-specific fallbacks | Keep |
-| `src/app/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx` | Camera stream runtime behavior across supported modes | Keep |
-| `src/app/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx` | Ingress-aware RSS proxy behavior and feed ordering | Keep |
-| `src/app/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
-| `src/app/services/__tests__/integration-runtime.service.test.ts`, `integration-registry.service.test.ts`, `integration-action.service.test.ts` | Runtime wiring, provider registration, and shared command dispatch | Keep |
+| `packages/provider-*/src/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
+| `packages/app/src/auth/__tests__/adapters.test.ts`, `runtime.test.ts`, `homeAssistantDiscovery.test.ts`, `homey-oauth-auth.test.ts` | Auth/runtime bootstrap and provider login flows | Keep |
+| `packages/app/src/infrastructure/home-assistant/resources/__tests__/resource-resolver.test.ts` | Signed URLs, proxy rewriting, unsafe URL rejection | Keep |
+| `packages/app/src/utils/__tests__/home-assistant-url.test.ts`, `rss-proxy-security.test.ts` | URL safety, ingress/panel URL normalization, RSS proxy hardening | Keep |
+| `packages/app/src/features/auth/__tests__/login-page.test.tsx` | User-facing OAuth login flow | Keep |
+| `packages/app/src/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx` | Authenticated artwork resolution and runtime-specific fallbacks | Keep |
+| `packages/app/src/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx` | Camera stream runtime behavior across supported modes | Keep |
+| `packages/app/src/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx` | Ingress-aware RSS proxy behavior and feed ordering | Keep |
+| `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
+| `packages/app/src/services/__tests__/integration-runtime.service.test.ts`, `integration-registry.service.test.ts`, `integration-action.service.test.ts` | Runtime wiring, provider registration, and shared command dispatch | Keep |
 
 Tier 1 companion checks:
 
@@ -31,12 +31,12 @@ These suites block main CI because they protect stable app behavior, but they ar
 
 | Group | Why it exists | Status |
 |---|---|---|
-| `src/app/services/__tests__/dashboard-endpoints.test.ts` | Dashboard persistence and endpoint contract behavior | Keep |
-| `src/app/services/__tests__/ha-connection.service.test.ts`, `ha-entity-service.test.ts`, `ha-registry.service.test.ts`, `home-assistant-panel-adapter.test.ts` | Home Assistant app-layer service contracts | Keep |
-| `src/app/services/__tests__/home-assistant-energy-feature.service.test.ts`, `homey.service.test.ts` | Provider-specific app-owned feature/runtime seams | Keep |
-| `src/app/services/__tests__/integration-*.test.ts` except Tier 1 runtime/registry/action | Shared feature-service contracts for calendar, camera, history, light, media, notification, resource, security, task, weather, admin, and bootstrap flows | Keep |
-| `src/app/platform/__tests__/provider-room-management.test.ts` | Shared provider room normalization and room management contract | Keep |
-| `src/app/stores/__tests__/home-assistant-store.test.ts`, `settings-store.test.ts` | Stable store contracts with meaningful downstream impact | Keep |
+| `packages/app/src/services/__tests__/dashboard-endpoints.test.ts` | Dashboard persistence and endpoint contract behavior | Keep |
+| `packages/app/src/services/__tests__/ha-connection.service.test.ts`, `ha-entity-service.test.ts`, `ha-registry.service.test.ts`, `home-assistant-panel-adapter.test.ts` | Home Assistant app-layer service contracts | Keep |
+| `packages/app/src/services/__tests__/home-assistant-energy-feature.service.test.ts`, `homey.service.test.ts` | Provider-specific app-owned feature/runtime seams | Keep |
+| `packages/app/src/services/__tests__/integration-*.test.ts` except Tier 1 runtime/registry/action | Shared feature-service contracts for calendar, camera, history, light, media, notification, resource, security, task, weather, admin, and bootstrap flows | Keep |
+| `packages/app/src/platform/__tests__/provider-room-management.test.ts` | Shared provider room normalization and room management contract | Keep |
+| `packages/app/src/stores/__tests__/home-assistant-store.test.ts`, `settings-store.test.ts` | Stable store contracts with meaningful downstream impact | Keep |
 
 Default rule:
 
@@ -50,11 +50,11 @@ workflows by default.
 
 | Group | Why it exists | Status |
 |---|---|---|
-| `src/app/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
-| `src/app/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
-| `src/app/components/**` | Shared UI and interaction regressions | Keep |
-| most `src/app/hooks/**` | Hook-level regression coverage for app behavior and feature composition | Keep |
-| most `src/app/utils/**`, `src/app/runtime/**`, `src/app/navigation/**`, `src/api/**` | Utility and runtime drift detection that is useful but not release-critical | Keep |
+| `packages/app/src/features/dashboard/**` | Largest user-facing regression surface for layout, editing, widgets, and navigation | Keep |
+| `packages/app/src/features/media/**`, `lighting/**`, `security/**`, `energy/**`, `climate/**`, `rss/**`, `tasks/**`, `settings/**`, `sensors/**`, `vacuum/**`, `calendar/**`, `notifications/**` | User-visible feature regressions and UI behavior | Keep |
+| `packages/app/src/components/**` | Shared UI and interaction regressions | Keep |
+| most `packages/app/src/hooks/**` | Hook-level regression coverage for app behavior and feature composition | Keep |
+| most `packages/app/src/utils/**`, `packages/app/src/runtime/**`, `packages/app/src/navigation/**`, `packages/app/src/api/**` | Utility and runtime drift detection that is useful but not release-critical | Keep |
 | `pnpm test:storybook` | Separate visual/story regression surface | Keep |
 
 Default rule:
@@ -69,18 +69,18 @@ deliberately rather than silently decaying.
 
 | Group | Why it is Tier 4 | Status |
 |---|---|---|
-| `src/app/hooks/device-mappers/__tests__/map-sensor-device.test.ts` | Weak fixture assumptions for a high-risk domain | Rewrite |
-| `src/app/hooks/device-mappers/__tests__/map-weather-device.test.ts` | Needs real forecast/documented weather fixtures | Rewrite |
-| `src/app/hooks/device-mappers/__tests__/map-fan-device.test.ts` | Needs real percentage/preset/unavailable behavior | Rewrite |
-| `src/app/features/vacuum/components/vacuum/__tests__/use-vacuum-control.test.tsx` | Vendor-sensitive behavior without strong fixtures | Rewrite |
-| `src/app/features/security/components/__tests__/lock-card.test.tsx` | Missing contract-backed lock states | Rewrite |
-| `src/app/features/security/components/cover-card/__tests__/cover-card.test.tsx` | Needs documented cover/tilt/partial-position behavior | Rewrite |
-| `src/app/features/lighting/components/light-card/__tests__/light-card.test.tsx` | Needs stronger grouped-light and malformed-attribute fixtures | Rewrite |
-| `src/app/features/climate/components/hvac-card/__tests__/use-hvac-card-controller.test.tsx` | Needs documented HVAC mode/range coverage | Rewrite |
-| `src/app/features/tasks/components/__tests__/tasks-section.test.tsx` | Needs realistic automation/script/todo fixtures | Rewrite |
-| `src/app/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts` | Needs real all-day and timed event payloads | Rewrite |
-| `src/app/hooks/__tests__/use-ha-devices.test.tsx` | Uses synthetic mixed-domain collections instead of realistic fixtures | Rewrite |
-| `src/app/hooks/__tests__/ha-entity-utils.test.ts` | Needs malformed and unavailable fixture coverage | Rewrite |
+| `packages/app/src/hooks/device-mappers/__tests__/map-sensor-device.test.ts` | Weak fixture assumptions for a high-risk domain | Rewrite |
+| `packages/app/src/hooks/device-mappers/__tests__/map-weather-device.test.ts` | Needs real forecast/documented weather fixtures | Rewrite |
+| `packages/app/src/hooks/device-mappers/__tests__/map-fan-device.test.ts` | Needs real percentage/preset/unavailable behavior | Rewrite |
+| `packages/app/src/features/vacuum/components/vacuum/__tests__/use-vacuum-control.test.tsx` | Vendor-sensitive behavior without strong fixtures | Rewrite |
+| `packages/app/src/features/security/components/__tests__/lock-card.test.tsx` | Missing contract-backed lock states | Rewrite |
+| `packages/app/src/features/security/components/cover-card/__tests__/cover-card.test.tsx` | Needs documented cover/tilt/partial-position behavior | Rewrite |
+| `packages/app/src/features/lighting/components/light-card/__tests__/light-card.test.tsx` | Needs stronger grouped-light and malformed-attribute fixtures | Rewrite |
+| `packages/app/src/features/climate/components/hvac-card/__tests__/use-hvac-card-controller.test.tsx` | Needs documented HVAC mode/range coverage | Rewrite |
+| `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx` | Needs realistic automation/script/todo fixtures | Rewrite |
+| `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts` | Needs real all-day and timed event payloads | Rewrite |
+| `packages/app/src/hooks/__tests__/use-ha-devices.test.tsx` | Uses synthetic mixed-domain collections instead of realistic fixtures | Rewrite |
+| `packages/app/src/hooks/__tests__/ha-entity-utils.test.ts` | Needs malformed and unavailable fixture coverage | Rewrite |
 
 Default rule:
 

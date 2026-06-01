@@ -26,6 +26,7 @@ import {
   type CameraGo2RtcDefaults,
   type CameraViewMode,
   defaultSettings,
+  normalizeHeaderCustomText,
   useSettingsStore,
   type WeatherMetricId,
 } from '@navet/app/stores/settings-store';
@@ -229,6 +230,14 @@ const buildExportedSettings = (
     email: settingsState.email || undefined,
     language:
       settingsState.language !== defaultSettings.language ? settingsState.language : undefined,
+    headerTitleMode:
+      settingsState.headerTitleMode !== defaultSettings.headerTitleMode
+        ? settingsState.headerTitleMode
+        : undefined,
+    headerCustomText:
+      settingsState.headerCustomText !== defaultSettings.headerCustomText
+        ? normalizeHeaderCustomText(settingsState.headerCustomText) || undefined
+        : undefined,
     showNotifications:
       settingsState.showNotifications !== defaultSettings.showNotifications
         ? settingsState.showNotifications
@@ -706,6 +715,13 @@ export const importDashboardConfig = (
     language: resolveAppLanguage(
       typeof settings.language === 'string' ? settings.language : defaultSettings.language
     ),
+    headerTitleMode:
+      settings.headerTitleMode === 'auto_greeting' ||
+      settings.headerTitleMode === 'custom_text' ||
+      settings.headerTitleMode === 'clock'
+        ? settings.headerTitleMode
+        : defaultSettings.headerTitleMode,
+    headerCustomText: normalizeHeaderCustomText(settings.headerCustomText),
     showNotifications:
       typeof settings.showNotifications === 'boolean'
         ? settings.showNotifications

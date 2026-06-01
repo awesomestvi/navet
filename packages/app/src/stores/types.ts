@@ -9,6 +9,7 @@ import type {
   CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
+  HeaderTitleMode,
   WeatherForecastMode,
   WeatherMetricId,
 } from './settings-store';
@@ -62,6 +63,8 @@ interface UserSettings {
   username: string;
   email: string;
   language: AppLanguage;
+  headerTitleMode: HeaderTitleMode;
+  headerCustomText: string;
   showNotifications: boolean;
   showWeatherInHeader: boolean;
   showHomeSummaryBar: boolean;

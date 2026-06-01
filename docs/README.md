@@ -14,9 +14,9 @@ docs. If you are changing the codebase, use the contributor docs.
 ## User Docs
 
 - [../README.md](../README.md)
-  Overview, supported providers, install options, and development basics.
+  Project overview, provider status, setup entry points, package architecture, and development basics.
 - [HOME_ASSISTANT.md](HOME_ASSISTANT.md)
-  Deployment guide for Home Assistant panel, Home Assistant add-on, and standalone Docker.
+  Deployment guide for the Home Assistant custom panel, Home Assistant add-on, and standalone app mode.
 - [HOMEY.md](HOMEY.md)
   Standalone setup guide for Homey users.
 - [OPENHAB.md](OPENHAB.md)
@@ -61,6 +61,9 @@ are not the normal starting point:
 - [architecture/home-assistant-decoupling-audit.md](architecture/home-assistant-decoupling-audit.md)
 - [roadmap/provider-platform-roadmap.md](roadmap/provider-platform-roadmap.md)
 - [VERSIONING.md](VERSIONING.md)
+
+If you are trying to understand the product and current provider/runtime support first, start with
+`../README.md` and the provider-specific setup guides above before reading the maintainer docs.
 
 ## Design, Brand, Legal
 

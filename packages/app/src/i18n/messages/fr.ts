@@ -86,6 +86,15 @@ export const frMessages = {
   'settings.dashboard.sectionTitle': 'Tableau de bord',
   'settings.dashboard.sectionDescription':
     'Gérez ce qui apparaît sur le tableau et la manière dont cette configuration locale est sauvegardée.',
+  'settings.dashboard.headerTitle.title': 'Titre d’en-tête',
+  'settings.dashboard.headerTitle.description':
+    'Choisissez ce que le grand titre du tableau affiche dans la barre supérieure.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Salutation',
+  'settings.dashboard.headerTitle.customText': 'Texte personnalisé',
+  'settings.dashboard.headerTitle.dateTime': 'Date et heure',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Bon retour chez vous',
+  'settings.dashboard.headerTitle.customHint':
+    'Laissez vide pour revenir à la salutation automatique.',
   'settings.dashboard.homeSummaryBar.title': 'Résumé accueil',
   'settings.dashboard.homeSummaryBar.description':
     'Affiche des résumés compacts pour climat, éclairage, sécurité et médias au-dessus du tableau de bord d’accueil.',

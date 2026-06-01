@@ -3,10 +3,12 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { readNavetPersonState } from '@navet/app/core/navet-device-state';
 import { useNotificationBadgeCount } from '@navet/app/features/notifications/components/notifications/use-notification-badge-count';
 import { useI18n, useIntegrationStore, useProviderResource, useTheme } from '@navet/app/hooks';
+import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { PersonDevice } from '@navet/app/types/device.types';
 import { useMemo, useRef, useState } from 'react';
+import { resolveHeaderTitle } from './header-title';
 import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
@@ -78,6 +80,8 @@ export function useHeaderController() {
   const { t } = useI18n();
 
   const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();
+  const headerTitleMode = useSettingsStore(settingsSelectors.headerTitleMode);
+  const headerCustomText = useSettingsStore(settingsSelectors.headerCustomText);
   const {
     closeMobileSearch,
     handleClearSearch,
@@ -100,6 +104,22 @@ export function useHeaderController() {
 
     return fullName.split(/\s+/)[0];
   }, [t, user?.name]);
+  const greetingText = useMemo(
+    () => t(greetingKey, { name: firstName }),
+    [firstName, greetingKey, t]
+  );
+  const weekLabel = useMemo(() => t('header.weekLabel', { week: weekNumber }), [t, weekNumber]);
+  const headerTitle = useMemo(
+    () =>
+      resolveHeaderTitle({
+        mode: headerTitleMode,
+        customText: headerCustomText,
+        formattedDate,
+        formattedTime,
+        greetingText,
+      }),
+    [formattedDate, formattedTime, greetingText, headerCustomText, headerTitleMode]
+  );
 
   const matchedPersonCanonicalId = useMemo(() => {
     if (lowPowerMode || user?.avatarUrl) {
@@ -143,8 +163,12 @@ export function useHeaderController() {
       return avatarResource.url;
     }
 
-    return user?.avatarUrl ?? null;
-  }, [avatarResource, user?.avatarUrl]);
+    if (!user?.avatarUrl) {
+      return null;
+    }
+
+    return normalizeResourceUrl(user.avatarUrl, currentProviderId) ?? user.avatarUrl;
+  }, [avatarResource, currentProviderId, user?.avatarUrl]);
 
   return {
     activeColorValue: getThemeColorValue(primaryColor),
@@ -157,6 +181,11 @@ export function useHeaderController() {
     formattedDate,
     formattedTime,
     greetingKey,
+    headerSecondaryText:
+      headerTitle.mode === 'clock' ? `${greetingText} · ${weekLabel}` : headerTitle.secondaryText,
+    headerSupportingText: headerTitle.supportingText,
+    headerTitleMode: headerTitle.mode,
+    headerTitleText: headerTitle.text,
     closeMobileSearch,
     closeNotifications: () => setIsNotificationOpen(false),
     handleClearSearch,
@@ -185,5 +214,6 @@ export function useHeaderController() {
     textSecondary: surface.textSecondary,
     unreadCount,
     weekNumber,
+    showTimeMetadata: headerTitle.showTimeMetadata,
   };
 }

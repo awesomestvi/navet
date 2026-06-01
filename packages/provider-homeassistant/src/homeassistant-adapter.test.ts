@@ -1,6 +1,9 @@
 import { createProviderScopedId } from '@navet/core/ids';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createHomeAssistantContractAdapter } from './homeassistant-adapter';
+import {
+  createHomeAssistantContractAdapter,
+  createHomeAssistantProviderContract,
+} from './homeassistant-adapter';
 import { configureHomeAssistantServiceBridge } from './homeassistant-service-bridge';
 
 function lightEntityFactory() {
@@ -18,13 +21,20 @@ function lightEntityFactory() {
   };
 }
 
-const { callHomeAssistantServiceMock } = vi.hoisted(() => ({
+const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
   callHomeAssistantServiceMock: vi.fn(async () => undefined),
+  resolveArtworkMock: vi.fn(async (entityId: string) => ({
+    id: entityId,
+    kind: 'image' as const,
+    cacheKey: entityId,
+    authStrategy: 'none' as const,
+  })),
 }));
 
 describe('homeassistant-adapter', () => {
   beforeEach(() => {
     callHomeAssistantServiceMock.mockReset();
+    resolveArtworkMock.mockReset();
     configureHomeAssistantServiceBridge({
       callService: callHomeAssistantServiceMock,
       signPath: vi.fn(async (path: string) => ({ path })),
@@ -61,12 +71,7 @@ describe('homeassistant-adapter', () => {
       updateEntityArea: vi.fn(async () => undefined),
       updateEntityName: vi.fn(async () => undefined),
       deleteArea: vi.fn(async () => undefined),
-      resolveArtwork: vi.fn(async (entityId: string) => ({
-        id: entityId,
-        kind: 'image' as const,
-        cacheKey: entityId,
-        authStrategy: 'none' as const,
-      })),
+      resolveArtwork: resolveArtworkMock,
       resolveProxyUrl: vi.fn((resourceUrl: string) => resourceUrl),
       getCameraPlaybackPlan: vi.fn(async () => ({ mode: 'snapshot' })),
       resolveCameraStreamResource: vi.fn(async (entityId: string) => ({
@@ -107,5 +112,36 @@ describe('homeassistant-adapter', () => {
       { color_temp_kelvin: 3200 },
       { entityId: 'light.kitchen' }
     );
+  });
+
+  it('resolves primary_image resources through the Home Assistant artwork resolver', async () => {
+    const contract = createHomeAssistantProviderContract();
+    expect(contract.resolveResource).toBeDefined();
+    const resolveResource = contract.resolveResource;
+    if (!resolveResource) {
+      throw new Error('Expected resolveResource to be defined');
+    }
+
+    const result = await resolveResource({
+      deviceId: 'home_assistant:person.vishal',
+      providerId: 'home_assistant',
+      kind: 'primary_image',
+      attrs: {
+        entity_picture: '/api/image/serve/person-vishal/512x512',
+      },
+      fallbackPicture: '/api/image/serve/person-vishal/fallback',
+    });
+
+    expect(resolveArtworkMock).toHaveBeenCalledWith(
+      'person.vishal',
+      {
+        entity_picture: '/api/image/serve/person-vishal/512x512',
+      },
+      '/api/image/serve/person-vishal/fallback'
+    );
+    expect(result).toMatchObject({
+      id: 'person.vishal',
+      kind: 'image',
+    });
   });
 });

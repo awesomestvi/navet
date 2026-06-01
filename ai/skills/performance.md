@@ -16,10 +16,12 @@ Assume Navet may run on Raspberry Pi-class kiosk hardware.
 
 ## Current Hotspots
 
-- `src/providers/`
-- `src/app/features/dashboard/`
-- `src/app/features/media/`
-- `src/app/features/security/`
-- `src/app/hooks/`
-- `src/app/stores/`
-- `src/app/infrastructure/home-assistant/`
+- `packages/provider-homeassistant/`
+- `packages/provider-homey/`
+- `packages/provider-openhab/`
+- `packages/app/src/features/dashboard/`
+- `packages/app/src/features/media/`
+- `packages/app/src/features/security/`
+- `packages/app/src/hooks/`
+- `packages/app/src/stores/`
+- `packages/app/src/infrastructure/home-assistant/`

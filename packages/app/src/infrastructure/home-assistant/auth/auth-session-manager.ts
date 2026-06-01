@@ -229,13 +229,10 @@ export class AuthSessionManager {
       password: input?.password,
       providerId: input?.providerId,
     });
-    this.updateSessions(
-      (current) => ({
-        ...current,
-        [nextSession.providerId]: nextSession,
-      }),
-      nextSession.providerId
-    );
+    this.updateSessions((current) => ({
+      ...current,
+      [nextSession.providerId]: nextSession,
+    }));
     return this.getSnapshot();
   }
 

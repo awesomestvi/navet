@@ -62,10 +62,10 @@ they are app-internal support code. Do not treat them as the preferred shared su
 | Provider | Status | Notes |
 |---|---|---|
 | Home Assistant | implemented | reference provider |
-| Homey | implemented | standalone login flow |
-| openHAB | implemented | standalone URL-session flow |
-| Hubitat | not available yet | package scaffolding only |
-| SmartThings | not available yet | package scaffolding only |
+| Homey | implemented | standalone OAuth flow |
+| openHAB | implemented | standalone base-URL and username/password flow |
+| Hubitat | not available yet | package entry point only |
+| SmartThings | not available yet | package entry point only |
 
 ## Working Rule
 

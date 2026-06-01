@@ -6,104 +6,81 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 
 [Live demo](https://awesomestvi.github.io/navet/demo/) ·
 [Storybook](https://awesomestvi.github.io/navet/storybook/) ·
-[Security notes](SECURITY.md) ·
+[Docs](docs/README.md) ·
 [Security policy](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md)
 
-## Supported Platforms
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" height="48"><br>
-      <strong>Home Assistant</strong>
-    </td>
-    <td align="center" width="33%">
-      <img src="packages/app/src/assets/providers/homey.png" alt="Homey" height="48"><br>
-      <strong>Homey</strong>
-    </td>
-    <td align="center" width="33%">
-      <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" height="48"><br>
-      <strong>openHAB</strong>
-    </td>
-  </tr>
-</table>
-
-## At A Glance
-
-![Supported providers](https://img.shields.io/badge/Supported%20providers-3-f97316?style=for-the-badge)
-![Home Assistant modes](https://img.shields.io/badge/Home%20Assistant%20modes-3-0f766e?style=for-the-badge)
-![Device card types](https://img.shields.io/badge/Device%20card%20types-14-1d4ed8?style=for-the-badge)
-![Custom widgets](https://img.shields.io/badge/Custom%20widgets-9-7c3aed?style=for-the-badge)
-
 ## What Navet Is
 
-Navet turns supported smart-home platforms into a dedicated control surface.
+Navet turns supported smart-home platforms into a dedicated control surface with a room-first home
+dashboard plus focused `energy`, `climate`, `security`, `lights`, `media`, `tasks`, and
+`settings` sections.
 
-It currently supports:
+Home Assistant is the reference provider today, but Navet is not a Home Assistant-only frontend.
+The repo is organized around provider-neutral `@navet/core` and `@navet/ui` packages, provider
+packages, and an `@navet/app` composition layer.
 
-- Home Assistant across custom panel, add-on, and standalone modes
-- Homey through the standalone login flow
-- openHAB through the standalone URL-session flow
+## Provider Status
 
-Hubitat and SmartThings have package scaffolding in the repo, but they are not available runtime
-options yet.
+|  | Provider | Status | Runtime modes |
+|---|---|---|---|
+| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="72"> | Home Assistant | implemented | custom panel, add-on, standalone |
+| <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="72"> | Homey | implemented | standalone |
+| <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="72"> | openHAB | implemented | standalone |
+| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="72"> | Hubitat | scaffolding only | not available yet |
+| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="72"> | SmartThings | scaffolding only | not available yet |
 
 ## What You Get
 
-- a room-driven Home dashboard plus dedicated `energy`, `climate`, `security`, `lights`, `media`,
-  `tasks`, and `settings` sections
-- cards for lights, switches, fans, climate, covers, locks, cameras, media players, weather,
-  calendars, people, sensors, scenes, and vacuums
-- dashboard editing with ordering, resizing, locking, visibility, room assignment, and import or
-  export
-- custom widgets including info, RSS, photo, note, battery, UPS, energy-now, button, and map
-- themes, localization, PWA install support, and persistence for standalone and add-on deployments
+- room-driven dashboards with dedicated views for energy, climate, security, lights, media, tasks, and settings
+- cards for common smart-home entities including lights, switches, fans, climate, covers, locks, cameras, media, weather, people, scenes, and vacuums
+- dashboard editing with ordering, sizing, locking, visibility, room assignment, and import/export
+- custom widgets including RSS, photo, note, battery, UPS, energy-now, button, and map
+- PWA install support, themes, localization, and persisted app state for standalone and add-on deployments
 
-## How To Get Started
+## Getting Started
 
-Choose your platform first, then open the matching setup guide:
+Choose the setup guide that matches your provider and deployment mode:
 
 ### Home Assistant
 
-- [Home Assistant Custom Panel](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
-- [Home Assistant Add-on](docs/HOME_ASSISTANT.md#home-assistant-add-on)
+- [Custom panel](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
+- [Add-on](docs/HOME_ASSISTANT.md#home-assistant-add-on)
 - [Standalone Docker](docs/HOME_ASSISTANT.md#standalone-docker)
 
 ### Homey
 
-- [Standalone Docker](docs/HOMEY.md)
+- [Standalone setup](docs/HOMEY.md)
 
 ### openHAB
 
-- [Standalone Docker](docs/OPENHAB.md)
-
+- [Standalone setup](docs/OPENHAB.md)
 
 ## Development
 
 Prerequisites:
 
 - Node.js `^20.19.0` or `>=22.12.0`
-- pnpm 11 from the pinned `packageManager`
+- pnpm `11.5.0` from the pinned `packageManager`
 
-Install and start:
+Install dependencies and start the Vite app:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Open the local Vite URL, usually `http://localhost:5173`.
+Open the local URL shown by Vite, usually `http://localhost:5173`.
 
-For local testing:
+For local provider testing:
 
-- Home Assistant: enter the Home Assistant base URL in Navet and complete OAuth
-- Homey: use the Homey option from the login screen with the required OAuth environment variables
-- openHAB: use the openHAB option from the login screen and provide the base URL, username, and password
+- Home Assistant: enter the base URL in Navet and complete OAuth
+- Homey: configure the required OAuth environment variables, then use the Homey login option
+- openHAB: use the openHAB login option and provide the base URL plus username/password
 
-## Repo Shape
+## Package Architecture
 
-Navet now has real package surfaces:
+Navet’s active package layout is:
 
 ```text
 packages/
@@ -117,12 +94,19 @@ packages/
   app/
 ```
 
-The repo still contains `src/` implementation paths, but the package split is real and is the
-right mental model for contributors.
+Contributor mental model:
+
+- `@navet/core` owns shared contracts, IDs, and adapter semantics
+- `@navet/ui` owns provider-neutral React UI
+- provider packages own provider-specific runtime, auth, mapping, and command translation
+- `@navet/app` owns runtime selection, provider registration, settings, persistence, and product wiring
+
+The repo still contains migration seams and app-internal compatibility code, but package ownership
+is the right default model for new work.
 
 ## Commands
 
-Core commands:
+Common local commands:
 
 ```bash
 pnpm dev
@@ -130,23 +114,16 @@ pnpm test
 pnpm test:tier1
 pnpm test:tier2
 pnpm test:tier3
-pnpm test:coverage
 pnpm storybook
 pnpm storybook:build
-pnpm build:demo
-pnpm build:website
-pnpm docker:build
-pnpm docker:smoke
 pnpm check:stories
 pnpm check:ui-kit
 pnpm check:docker
 pnpm build:ha-panel
-pnpm release:check
-pnpm release:version-sync
 ```
 
-Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default
-agent-run commands.
+Contributor policy lives in [docs/agents/commands.md](docs/agents/commands.md). In particular,
+`pnpm typecheck` and `pnpm check` are user-run gates rather than default agent-run commands.
 
 ## Docs
 
@@ -154,15 +131,15 @@ Start with [docs/README.md](docs/README.md).
 
 Useful entry points:
 
-- [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md)
-- [docs/HOMEY.md](docs/HOMEY.md)
-- [docs/OPENHAB.md](docs/OPENHAB.md)
-- [docs/WIDGETS.md](docs/WIDGETS.md)
-- [SECURITY.md](SECURITY.md)
-- [docs/ROADMAP.md](docs/ROADMAP.md)
-- [docs/release-workflow.md](docs/release-workflow.md)
-- [docs/rollback.md](docs/rollback.md)
-- [docs/agents/architecture.md](docs/agents/architecture.md)
+- [Home Assistant deployment guide](docs/HOME_ASSISTANT.md)
+- [Homey setup guide](docs/HOMEY.md)
+- [openHAB setup guide](docs/OPENHAB.md)
+- [Widgets guide](docs/WIDGETS.md)
+- [Architecture overview for contributors](docs/agents/architecture.md)
+- [Package boundaries](docs/architecture/package-boundaries.md)
+- [Provider testing strategy](docs/testing/provider-testing-strategy.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Release workflow](docs/release-workflow.md)
 
 ## Screenshots
 

@@ -3,6 +3,7 @@ import { InteractivePill } from '@navet/app/components/primitives';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import type { TranslateFn } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { Trash2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { RSSFeedCardSurfaceTokens } from './surface-tokens';
@@ -16,6 +17,7 @@ interface RSSFeedsTabContentProps {
   onToggleProvider: (providerId: string) => void;
   onRemoveProvider?: (providerId: string) => void;
   accentColorValue: string;
+  theme: ThemeType;
   textPrimaryColor: string;
   textSecondaryColor: string;
   sectionStyle?: CSSProperties;
@@ -31,6 +33,7 @@ export function RSSFeedsTabContent({
   onToggleProvider,
   onRemoveProvider,
   accentColorValue,
+  theme,
   textPrimaryColor,
   textSecondaryColor,
   sectionStyle,
@@ -56,6 +59,7 @@ export function RSSFeedsTabContent({
           selectedProviderIds={selectedProviderIds}
           onToggleProvider={onToggleProvider}
           accentColorValue={accentColorValue}
+          theme={theme}
           textPrimaryColor={textPrimaryColor}
           textSecondaryColor={textSecondaryColor}
           sectionStyle={sectionStyle}
@@ -72,6 +76,7 @@ export function RSSFeedsTabContent({
           onToggleProvider={onToggleProvider}
           onRemoveProvider={onRemoveProvider}
           accentColorValue={accentColorValue}
+          theme={theme}
           textPrimaryColor={textPrimaryColor}
           textSecondaryColor={textSecondaryColor}
           sectionStyle={sectionStyle}
@@ -90,6 +95,7 @@ function RSSProviderGroup({
   onToggleProvider,
   onRemoveProvider,
   accentColorValue,
+  theme,
   textPrimaryColor,
   textSecondaryColor,
   sectionStyle,
@@ -102,12 +108,19 @@ function RSSProviderGroup({
   onToggleProvider: (providerId: string) => void;
   onRemoveProvider?: (providerId: string) => void;
   accentColorValue: string;
+  theme: ThemeType;
   textPrimaryColor: string;
   textSecondaryColor: string;
   sectionStyle?: CSSProperties;
   surface: RSSFeedCardSurfaceTokens;
   t: TranslateFn;
 }) {
+  const selectedBackgroundAlpha = theme === 'light' ? 0.14 : 0.18;
+  const idleBackgroundAlpha = theme === 'light' ? 0.08 : 0.12;
+  const selectedBorderAlpha = theme === 'light' ? 0.24 : 0.34;
+  const idleBorderAlpha = theme === 'light' ? 0.16 : 0.22;
+  const selectedShadowAlpha = theme === 'light' ? 0.14 : 0.2;
+
   return (
     <DialogSectionRow label={title} className="max-sm:mb-0">
       <div className="min-w-0 max-w-full space-y-2 max-sm:space-y-1.5">
@@ -118,8 +131,17 @@ function RSSProviderGroup({
           const isRemovable = provider.type === 'url' && onRemoveProvider;
           const rowStyle = {
             ...sectionStyle,
-            backgroundColor: withTintAlpha(accentColorValue, isSelected ? 0.18 : 0.1),
-            borderColor: withTintAlpha(accentColorValue, isSelected ? 0.38 : 0.24),
+            backgroundColor: withTintAlpha(
+              accentColorValue,
+              isSelected ? selectedBackgroundAlpha : idleBackgroundAlpha
+            ),
+            borderColor: withTintAlpha(
+              accentColorValue,
+              isSelected ? selectedBorderAlpha : idleBorderAlpha
+            ),
+            boxShadow: isSelected
+              ? `inset 0 0 0 1px ${withTintAlpha(accentColorValue, selectedShadowAlpha)}`
+              : undefined,
           } satisfies CSSProperties;
 
           return (
@@ -141,7 +163,7 @@ function RSSProviderGroup({
                 </span>
               }
               className="min-w-0 max-w-full overflow-hidden max-sm:gap-2"
-              rowClassName={`w-full min-w-0 max-w-full items-center overflow-hidden px-4 max-sm:px-3 max-sm:py-2.5 ${surface.surface.border}`}
+              rowClassName={`w-full min-w-0 max-w-full items-center overflow-hidden px-4 max-sm:px-3 max-sm:py-2.5 ${surface.surface.border} ${surface.surface.textPrimary} ${surface.surface.hoverBg}`}
               labelClassName="truncate"
               descriptionClassName="min-w-0 max-w-full overflow-hidden"
               checkboxPaletteColor={accentColorValue}
@@ -160,9 +182,9 @@ function RSSProviderGroup({
                       onRemoveProvider?.(provider.id);
                     }}
                     style={{
-                      backgroundColor: withTintAlpha(accentColorValue, 0.1),
-                      color: textSecondaryColor,
-                      borderColor: withTintAlpha(accentColorValue, 0.24),
+                      backgroundColor: withTintAlpha(accentColorValue, idleBackgroundAlpha),
+                      color: textPrimaryColor,
+                      borderColor: withTintAlpha(accentColorValue, idleBorderAlpha),
                     }}
                     aria-label={t('rss.settings.removeProvider', { name: provider.name })}
                   >

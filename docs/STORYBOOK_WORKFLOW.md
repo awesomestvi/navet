@@ -10,19 +10,19 @@ Use colocated stories by default.
 
 | Area | Location | Title root |
 |---|---|---|
-| UI kit overview stories | `src/app/ui-kit/*.stories.tsx` | `Concepts/` |
-| primitives | `src/app/components/primitives/*.stories.tsx` | `Components/Primitives/` |
-| patterns | `src/app/components/patterns/*.stories.tsx` | `Components/Patterns/` |
-| shared app UI | `src/app/components/shared/**/*.stories.tsx` | `Components/Shared/` or `Theme/` |
-| layout and app shell | `src/app/components/layout/*.stories.tsx` | `App Shell/` |
-| system tokens and reference views | `src/app/components/system/**/*.stories.tsx` | `System/` or `Theme/` |
-| feature cards, dialogs, and pages | `src/app/features/**/**/*.stories.tsx` | `Cards/`, `Pages/`, or feature-specific roots |
-| aggregate catalogs | `src/app/features/dashboard/stories/*.stories.tsx` | `Cards/Overview/` |
+| UI kit overview stories | `packages/app/src/ui-kit/*.stories.tsx` | `Concepts/` |
+| primitives | `packages/app/src/components/primitives/*.stories.tsx` | `Components/Primitives/` |
+| patterns | `packages/app/src/components/patterns/*.stories.tsx` | `Components/Patterns/` |
+| shared app UI | `packages/app/src/components/shared/**/*.stories.tsx` | `Components/Shared/` or `Theme/` |
+| layout and app shell | `packages/app/src/components/layout/*.stories.tsx` | `App Shell/` |
+| system tokens and reference views | `packages/app/src/components/system/**/*.stories.tsx` | `System/` or `Theme/` |
+| feature cards, dialogs, and pages | `packages/app/src/features/**/**/*.stories.tsx` | `Cards/`, `Pages/`, or feature-specific roots |
+| aggregate catalogs | `packages/app/src/features/dashboard/stories/*.stories.tsx` | `Cards/Overview/` |
 
 ## Story Rules
 
 - use deterministic local fixtures
-- reuse helpers from `src/app/storybook/`
+- reuse helpers from `packages/app/src/storybook/`
 - do not connect stories to live provider sessions
 - initialize only the minimum store state a story needs
 - keep aggregate stories useful, but do not hide normal component stories behind them

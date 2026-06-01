@@ -1,7 +1,7 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.png';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
-import { Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import {
   AlertDialog,
@@ -218,20 +218,17 @@ function ProviderCardView({
                 <p className={`text-sm font-semibold ${styles.textColor}`}>{provider.label}</p>
                 {provider.status === 'connected' ? (
                   <>
-                    <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                    <Badge tone="success" className="text-[10px]">
                       {t('settings.system.providers.status.connected')}
-                    </span>
+                    </Badge>
                     {showActiveControls && provider.isActive ? (
-                      <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/12 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
+                      <Badge tone="accent" className="text-[10px]">
                         Active
-                      </span>
+                      </Badge>
                     ) : null}
                   </>
                 ) : provider.status !== 'disconnected' ? (
-                  <ProviderStatusBadge
-                    label={getProviderStatusLabel(t, provider.status)}
-                    styles={styles}
-                  />
+                  <ProviderStatusBadge label={getProviderStatusLabel(t, provider.status)} />
                 ) : null}
               </div>
               <p className={`mt-2 text-sm leading-relaxed ${styles.subtleColor}`}>
@@ -246,12 +243,9 @@ function ProviderCardView({
           {featureLabels.length > 0 ? (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {featureLabels.map((label) => (
-                <span
-                  key={label}
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles.borderColor} ${styles.subtleColor}`}
-                >
+                <Badge key={label} tone="neutral" className={`text-[11px] ${styles.subtleColor}`}>
                   {label}
-                </span>
+                </Badge>
               ))}
             </div>
           ) : (
@@ -672,18 +666,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
   );
 }
 
-function ProviderStatusBadge({
-  label,
-  styles,
-}: {
-  label: string;
-  styles: SettingsSectionController['styles'];
-}) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${styles.borderColor} ${styles.subtleColor}`}
-    >
-      {label}
-    </span>
-  );
+function ProviderStatusBadge({ label }: { label: string }) {
+  return <Badge tone="neutral">{label}</Badge>;
 }
