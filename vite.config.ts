@@ -51,6 +51,18 @@ import {
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string
 }
+function resolveFallbackGitSha() {
+  try {
+    return execSync('git rev-parse HEAD', {
+      cwd: __dirname,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return 'local'
+  }
+}
+
 function resolveFallbackBuildDate() {
   const sourceDateEpoch = process.env.SOURCE_DATE_EPOCH?.trim()
 
@@ -73,7 +85,7 @@ function resolveFallbackBuildDate() {
 }
 
 const buildMetadata = {
-  gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
+  gitSha: (process.env.NAVET_GIT_SHA ?? resolveFallbackGitSha()).trim(),
   buildDate: (process.env.NAVET_BUILD_DATE ?? resolveFallbackBuildDate()).trim(),
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
 }
