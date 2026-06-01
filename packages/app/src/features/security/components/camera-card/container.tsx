@@ -1,4 +1,5 @@
 import { useAuthSession } from '@navet/app/auth/AuthProvider';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { usePlatformCameraPresentation } from '@navet/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useProviderCameraTopology } from '@navet/app/hooks';
@@ -249,6 +250,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     hasSnapshot,
     preferSnapshotPreview: runtime === 'standalone-oauth',
   });
+  useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
   const preferredTransport: PlatformCameraStreamType | 'auto' =
     cameraFeedMode === 'auto' || cameraFeedMode === 'hls' || cameraFeedMode === 'web_rtc'

@@ -1,5 +1,6 @@
 import { BaseCard } from '@navet/app/components/primitives';
 import { type CardSize, getCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
@@ -256,6 +257,7 @@ export const MediaCard = memo(function MediaCard({
     onVolumeInteractionEnd: endVolumeInteraction,
   };
   const handleCardActivate = isTv ? toggleTvPower : openDialog;
+  useEditModeSettingsRequest(id, openDialog, isEditMode);
   const interactiveShellProps = isEditMode
     ? {}
     : {

@@ -24,6 +24,7 @@ interface CardSizeSelectorProps {
   onSizeChange: (size: CardSize) => void;
   allowedSizes?: CardSize[];
   triggerSize?: CardSize;
+  triggerInline?: boolean;
   options?: {
     value: CardSize;
     label: string;
@@ -106,6 +107,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   onSizeChange,
   allowedSizes,
   triggerSize,
+  triggerInline = false,
   options,
 }: CardSizeSelectorProps) {
   const { theme, primaryColor } = useTheme();
@@ -151,13 +153,15 @@ export const CardSizeSelector = memo(function CardSizeSelector({
           cardSize={triggerSize ?? currentSize}
           Icon={Maximize2}
           placement="top-right"
+          variant="accent"
+          inline={triggerInline}
           className="z-500 group cursor-pointer"
           onClick={(e) => e.stopPropagation()}
         />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className={`z-510 rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+          className={`z-[920] rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
           sideOffset={8}
         >
           <div className="space-y-3">

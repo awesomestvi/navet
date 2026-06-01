@@ -2,6 +2,7 @@ import {
   isExtraSmallCardSize,
   isTinyCardSize,
 } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import {
   useI18n,
@@ -79,7 +80,6 @@ export function useSwitchCardController({
   const metricState = useSwitchMetricState({
     id,
     size,
-    isOn,
     power,
     voltage,
     energy,
@@ -128,8 +128,17 @@ export function useSwitchCardController({
     },
   });
 
-  const showSettingsButton =
-    hasControlsDialog && cardInteraction.interactionMode !== 'control-first';
+  const showSettingsButton = isEditMode && hasControlsDialog;
+
+  useEditModeSettingsRequest(
+    id,
+    () => {
+      if (hasControlsDialog) {
+        setIsDialogOpen(true);
+      }
+    },
+    isEditMode
+  );
 
   const { formatMetricValue, getMetricLabel, renderMetricIcon } = useSwitchMetricFormatters({
     deviceName: name,

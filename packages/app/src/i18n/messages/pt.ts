@@ -4,6 +4,7 @@ export const ptMessages = {
   'common.custom': 'Personalizado',
   'common.customize': 'Personalizar',
   'common.done': 'Concluído',
+  'common.metrics': 'Métricas',
   'common.off': 'Desligado',
   'common.on': 'Ligado',
   'common.open': 'Abrir',

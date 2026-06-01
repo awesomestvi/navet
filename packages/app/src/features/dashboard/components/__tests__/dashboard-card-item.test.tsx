@@ -54,6 +54,17 @@ function createSensorDevice(): DeviceWithType {
   };
 }
 
+function createSwitchDevice(): DeviceWithType {
+  return {
+    id: 'switch.espresso_machine',
+    name: 'Espresso Machine',
+    room: 'Kitchen',
+    size: 'small',
+    state: true,
+    type: 'switches',
+  };
+}
+
 describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -99,7 +110,9 @@ describe('DashboardCardItem card locking', () => {
     );
 
     expect(screen.queryByRole('img', { name: 'Card locked' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Unlock card' }));
+    expect(document.querySelector('[data-card-edit-dock="true"]')).toBeTruthy();
+    const lockButton = screen.getByRole('button', { name: 'Unlock card' });
+    fireEvent.click(lockButton);
 
     expect(useDashboardEntitiesStore.getState().lockedCardIds).toEqual([]);
   });
@@ -141,5 +154,55 @@ describe('DashboardCardItem card locking', () => {
     expect(renderCardMock).toHaveBeenCalledWith(
       expect.objectContaining({ headerSubtitleOverride: 'Kitchen' })
     );
+  });
+
+  it('adds a settings action to the edit dock for switch cards and forwards the request', () => {
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
+
+    renderWithProviders(
+      <DashboardCardItem
+        id="switch.espresso_machine"
+        size="small"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={createSwitchDevice()}
+      />
+    );
+
+    const settingsButton = screen.getByRole('button', {
+      name: 'Open settings for Espresso Machine',
+    });
+    fireEvent.click(settingsButton);
+
+    expect(dispatchEventSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'navet:edit-mode-open-settings',
+      })
+    );
+
+    dispatchEventSpy.mockRestore();
+  });
+
+  it('shows a single launcher on tiny cards and expands the edit dock on demand', () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="switch.espresso_machine"
+        size="tiny"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={{ ...createSwitchDevice(), size: 'tiny' }}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Open settings for Espresso Machine' })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+
+    expect(
+      screen.getByRole('button', { name: 'Open settings for Espresso Machine' })
+    ).toBeInTheDocument();
   });
 });

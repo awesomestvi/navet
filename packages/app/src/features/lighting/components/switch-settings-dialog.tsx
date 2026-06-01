@@ -123,7 +123,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                   icon={ToggleLeft}
                   onClick={() => setActiveTab('controls')}
                 >
-                  Controls
+                  {t('common.controls')}
                 </CardDialogTabTrigger>
               ) : null}
               {hasMetrics ? (
@@ -133,7 +133,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                   icon={Sliders}
                   onClick={() => setActiveTab('metrics')}
                 >
-                  Metrics
+                  {t('common.metrics')}
                 </CardDialogTabTrigger>
               ) : null}
               <CardDialogTabTrigger
@@ -142,7 +142,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                 icon={Palette}
                 onClick={() => setActiveTab('card')}
               >
-                Customize
+                {t('common.customize')}
               </CardDialogTabTrigger>
             </CardDialogTabList>
 

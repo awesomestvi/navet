@@ -3,6 +3,7 @@ import { BaseCard } from '@navet/app/components/primitives';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getAccentCardShellTokens } from '@navet/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
@@ -96,6 +97,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   };
   const isEmpty = visibleSensors.length === 0;
   const openSettings = () => setIsSettingsOpen(true);
+  useEditModeSettingsRequest(id, openSettings);
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();

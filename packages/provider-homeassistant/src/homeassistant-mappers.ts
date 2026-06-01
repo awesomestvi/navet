@@ -24,6 +24,14 @@ export interface HomeAssistantNavetMappingInput {
   entityRegistry: HomeAssistantEntityRegistryEntry[];
 }
 
+type SwitchMetricState = {
+  label: string;
+  value: number;
+  unit: string;
+  icon: 'zap' | 'gauge' | 'activity' | 'thermometer' | 'droplets' | 'motion';
+  category: 'measurement';
+};
+
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
 }
@@ -61,6 +69,82 @@ function buildProviderRoomMap(entities: NavetEntity[]): NavetProviderRoom[] {
 function getDomain(entityId: string): string {
   const separatorIndex = entityId.indexOf('.');
   return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
+}
+
+function formatMetricLabel(entityId: string, friendlyName: unknown) {
+  if (typeof friendlyName === 'string' && friendlyName.trim().length > 0) {
+    return friendlyName.trim();
+  }
+
+  return (
+    entityId
+      .split('.')
+      .slice(-1)[0]
+      ?.replace(/_/g, ' ')
+      .replace(/\b\w/g, (segment) => segment.toUpperCase()) ?? entityId
+  );
+}
+
+function inferMetricIcon(
+  deviceClass: string | undefined,
+  searchText: string,
+  unit: unknown
+): SwitchMetricState['icon'] {
+  const normalizedUnit = typeof unit === 'string' ? unit.toLowerCase() : '';
+  const normalizedSearch = searchText.toLowerCase();
+
+  if (
+    deviceClass === 'motion' ||
+    deviceClass === 'occupancy' ||
+    normalizedSearch.includes('motion') ||
+    normalizedSearch.includes('occupancy') ||
+    normalizedSearch.includes('presence') ||
+    normalizedSearch.includes('pir')
+  ) {
+    return 'motion';
+  }
+
+  if (
+    deviceClass === 'power' ||
+    normalizedSearch.includes('power') ||
+    normalizedSearch.includes('watt') ||
+    normalizedSearch.includes('consumption') ||
+    normalizedUnit === 'w' ||
+    normalizedUnit === 'kw' ||
+    normalizedUnit === 'mw'
+  ) {
+    return 'zap';
+  }
+
+  if (
+    deviceClass === 'voltage' ||
+    normalizedSearch.includes('voltage') ||
+    normalizedUnit === 'v' ||
+    normalizedUnit === 'mv' ||
+    normalizedUnit === 'kv'
+  ) {
+    return 'gauge';
+  }
+
+  if (
+    deviceClass === 'temperature' ||
+    normalizedSearch.includes('temperature') ||
+    normalizedSearch.includes('temp') ||
+    normalizedUnit.includes('c') ||
+    normalizedUnit.includes('f')
+  ) {
+    return 'thermometer';
+  }
+
+  if (
+    deviceClass === 'humidity' ||
+    normalizedSearch.includes('humidity') ||
+    normalizedUnit === '%'
+  ) {
+    return 'droplets';
+  }
+
+  return 'activity';
 }
 
 function inferVehicleLockPresentation(entityId: string, entity: HassEntity): boolean {
@@ -138,6 +222,135 @@ function readNumberish(value: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+function normalizeMetric(
+  entityId: string,
+  deviceClass: string | undefined,
+  label: string,
+  friendlyName: string,
+  rawValue: number,
+  unit: unknown
+): SwitchMetricState | null {
+  if (
+    deviceClass === 'power' ||
+    friendlyName.includes('power') ||
+    unit === 'W' ||
+    unit === 'kW' ||
+    unit === 'MW'
+  ) {
+    const watts =
+      unit === 'kW' ? rawValue * 1000 : unit === 'MW' ? rawValue * 1000 * 1000 : rawValue;
+    return { label: 'Power', value: watts, unit: 'W', icon: 'zap', category: 'measurement' };
+  }
+
+  if (
+    deviceClass === 'voltage' ||
+    friendlyName.includes('voltage') ||
+    unit === 'V' ||
+    unit === 'mV' ||
+    unit === 'kV'
+  ) {
+    const volts = unit === 'mV' ? rawValue / 1000 : unit === 'kV' ? rawValue * 1000 : rawValue;
+    return { label: 'Voltage', value: volts, unit: 'V', icon: 'gauge', category: 'measurement' };
+  }
+
+  if (
+    deviceClass === 'current' ||
+    friendlyName.includes('current') ||
+    unit === 'A' ||
+    unit === 'mA' ||
+    unit === 'kA'
+  ) {
+    const amps = unit === 'mA' ? rawValue / 1000 : unit === 'kA' ? rawValue * 1000 : rawValue;
+    return { label: 'Current', value: amps, unit: 'A', icon: 'activity', category: 'measurement' };
+  }
+
+  if (
+    deviceClass === 'energy' ||
+    friendlyName.includes('energy') ||
+    unit === 'Wh' ||
+    unit === 'kWh' ||
+    unit === 'MWh'
+  ) {
+    const kwh = unit === 'Wh' ? rawValue / 1000 : unit === 'MWh' ? rawValue * 1000 : rawValue;
+    return { label: 'Energy', value: kwh, unit: 'kWh', icon: 'activity', category: 'measurement' };
+  }
+
+  const normalizedUnit = typeof unit === 'string' ? unit : '';
+  return {
+    label,
+    value: rawValue,
+    unit: normalizedUnit,
+    icon: inferMetricIcon(deviceClass, `${entityId} ${friendlyName} ${label}`, normalizedUnit),
+    category: 'measurement',
+  };
+}
+
+function upsertSwitchMetric(metricState: SwitchMetricState[], nextMetric: SwitchMetricState) {
+  const existingIndex = metricState.findIndex((metric) => metric.label === nextMetric.label);
+  if (existingIndex === -1) {
+    metricState.push(nextMetric);
+    return;
+  }
+
+  metricState[existingIndex] = nextMetric;
+}
+
+function buildSwitchMetricsByDeviceId(
+  entities: HassEntities,
+  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
+) {
+  const metricsByDeviceId = new Map<string, SwitchMetricState[]>();
+
+  for (const [entityId, entity] of Object.entries(entities)) {
+    if (getDomain(entityId) !== 'sensor') {
+      continue;
+    }
+
+    const rawValue =
+      readNumberish(entity.state) ??
+      readNumberish(entity.attributes?.native_value) ??
+      readNumberish(entity.attributes?.value);
+    if (rawValue == null) {
+      continue;
+    }
+
+    const deviceClass =
+      typeof entity.attributes?.device_class === 'string'
+        ? entity.attributes.device_class.toLowerCase()
+        : undefined;
+    const friendlyName =
+      typeof entity.attributes?.friendly_name === 'string'
+        ? entity.attributes.friendly_name.toLowerCase()
+        : '';
+    const label = formatMetricLabel(entityId, entity.attributes?.friendly_name);
+    const unit =
+      entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement;
+    const metric = normalizeMetric(entityId, deviceClass, label, friendlyName, rawValue, unit);
+    if (!metric) {
+      continue;
+    }
+
+    const registryDeviceId = entityRegistryMap.get(entityId)?.device_id ?? undefined;
+    const sourceDeviceId =
+      typeof entity.attributes?.source_device_id === 'string'
+        ? entity.attributes.source_device_id
+        : typeof entity.attributes?.sourceDeviceId === 'string'
+          ? entity.attributes.sourceDeviceId
+          : undefined;
+
+    for (const targetDeviceId of [registryDeviceId, sourceDeviceId]) {
+      if (!targetDeviceId) {
+        continue;
+      }
+      const metricState = metricsByDeviceId.get(targetDeviceId) ?? [];
+      upsertSwitchMetric(metricState, metric);
+      metricsByDeviceId.set(targetDeviceId, metricState);
+    }
+  }
+
+  return metricsByDeviceId;
 }
 
 function readStringList(value: unknown): string[] | undefined {
@@ -250,7 +463,8 @@ function inferHomeAssistantCapabilities(
 function createHomeAssistantState(
   entityId: string,
   entity: HassEntity,
-  entityEntry?: HomeAssistantEntityRegistryEntry
+  entityEntry?: HomeAssistantEntityRegistryEntry,
+  switchMetricsByDeviceId?: Map<string, SwitchMetricState[]>
 ): Record<string, unknown> {
   const domain = getDomain(entityId);
   const deviceClass =
@@ -261,6 +475,10 @@ function createHomeAssistantState(
   const deviceId = entityEntry?.device_id ?? undefined;
   const commonState = {
     deviceId,
+    sourceDeviceId:
+      typeof entity.attributes?.source_device_id === 'string'
+        ? entity.attributes.source_device_id
+        : undefined,
     entityCategory: entityCategory ?? undefined,
   };
 
@@ -530,6 +748,20 @@ function createHomeAssistantState(
       domain === 'binary_sensor'
         ? 'small'
         : 'medium',
+    ...((domain === 'switch' || domain === 'input_boolean') && deviceId
+      ? (() => {
+          const metrics = switchMetricsByDeviceId?.get(deviceId);
+          const power = metrics?.find((metric) => metric.label === 'Power')?.value;
+          const voltage = metrics?.find((metric) => metric.label === 'Voltage')?.value;
+          const energy = metrics?.find((metric) => metric.label === 'Energy')?.value;
+          return {
+            power,
+            voltage,
+            energy,
+            metrics,
+          };
+        })()
+      : {}),
     ...(domain === 'binary_sensor'
       ? resolveBinarySensorPresentation(entity.state, deviceClass)
       : {}),
@@ -548,6 +780,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
     input.deviceRegistry,
     input.entityRegistry
   );
+  const switchMetricsByDeviceId = buildSwitchMetricsByDeviceId(input.entities, entityRegistryMap);
 
   const entities: NavetEntity[] = [];
 
@@ -647,7 +880,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         name,
         room || UNKNOWN_ROOM_LABEL,
         capabilities,
-        createHomeAssistantState(entityId, entity, entityEntry),
+        createHomeAssistantState(entityId, entity, entityEntry, switchMetricsByDeviceId),
         resources
       )
     );

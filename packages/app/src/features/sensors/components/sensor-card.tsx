@@ -5,6 +5,7 @@ import {
   isExtraSmallCardSize,
   isTinyCardSize,
 } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { readNavetSensorState } from '@navet/app/core/navet-device-state';
 import { useI18n, useProviderEntityModel, useTheme } from '@navet/app/hooks';
@@ -112,6 +113,7 @@ export const InfoCard = memo(function InfoCard({
       setIsSettingsOpen(true);
     }
   };
+  useEditModeSettingsRequest(id, openSettings);
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();

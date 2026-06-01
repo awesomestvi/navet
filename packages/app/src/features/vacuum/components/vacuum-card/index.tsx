@@ -2,6 +2,7 @@ import { BaseCard } from '@navet/app/components/primitives';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
@@ -227,6 +228,7 @@ export const VacuumCard = memo(function VacuumCard({
     handlePause,
     handleReturnHome,
   } = useVacuumControl({ entityId: id, providerId: resolvedProviderId, initialStatus: liveStatus });
+  useEditModeSettingsRequest(id, () => setIsDialogOpen(true), Boolean(_isEditMode));
   const liveName =
     typeof liveAttrs?.friendly_name === 'string' && liveAttrs.friendly_name.length > 0
       ? normalizeVacuumDisplayName(liveAttrs.friendly_name)

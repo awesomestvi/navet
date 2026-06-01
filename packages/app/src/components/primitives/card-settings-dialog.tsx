@@ -157,7 +157,7 @@ export function CardSettingsDialogWithState({
   const tabs: CardSettingsDialogTab[] = [
     {
       key: 'controls',
-      label: t('common.open'),
+      label: t('common.controls'),
       icon: Sliders,
       content: controlsTabContent,
     },
@@ -165,7 +165,7 @@ export function CardSettingsDialogWithState({
       ? [
           {
             key: 'card',
-            label: t('common.cardUnavailable'),
+            label: t('common.customize'),
             icon: Palette,
             content: (
               <>

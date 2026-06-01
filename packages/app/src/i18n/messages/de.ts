@@ -4,6 +4,7 @@ export const deMessages = {
   'common.custom': 'Benutzerdefiniert',
   'common.customize': 'Anpassen',
   'common.done': 'Fertig',
+  'common.metrics': 'Messwerte',
   'common.off': 'Aus',
   'common.on': 'An',
   'common.open': 'Öffnen',

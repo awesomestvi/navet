@@ -15,6 +15,14 @@ interface UseSwitchToggleActionParams {
   updateSwitchFailedMessage: string;
 }
 
+function isStorybookRuntime() {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  return document.documentElement.dataset.navetStorybook === 'true';
+}
+
 export function useSwitchToggleAction({
   id,
   providerId,
@@ -28,6 +36,23 @@ export function useSwitchToggleAction({
   const runAction = useServiceActionHandler();
 
   return useCallback(() => {
+    if (isStorybookRuntime()) {
+      if (resolvedServiceAction === 'turn_on') {
+        setIsOn(true);
+        resetTimerRef.current = window.setTimeout(() => setIsOn(false), 700);
+        return;
+      }
+
+      if (resolvedServiceAction === 'press') {
+        setIsOn(true);
+        resetTimerRef.current = window.setTimeout(() => setIsOn(false), 500);
+        return;
+      }
+
+      setIsOn(!isOn);
+      return;
+    }
+
     if (resolvedServiceAction === 'turn_on') {
       setIsOn(true);
       void runAction(

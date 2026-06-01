@@ -208,14 +208,14 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
-                Controls
+                {t('common.controls')}
               </CardDialogTabTrigger>
               <CardDialogTabTrigger
                 active={activeTab === 'card'}
                 icon={Palette}
                 onClick={() => setActiveTab('card')}
               >
-                Customize
+                {t('common.customize')}
               </CardDialogTabTrigger>
             </CardDialogTabList>
 

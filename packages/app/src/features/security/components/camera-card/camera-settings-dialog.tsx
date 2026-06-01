@@ -539,14 +539,14 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
-                Controls
+                {t('common.controls')}
               </CardDialogTabTrigger>
               <CardDialogTabTrigger
                 active={activeTab === 'go2rtc'}
                 icon={RadioTower}
                 onClick={() => setActiveTab('go2rtc')}
               >
-                go2rtc
+                {t('camera.settings.go2rtc')}
               </CardDialogTabTrigger>
             </CardDialogTabList>
 

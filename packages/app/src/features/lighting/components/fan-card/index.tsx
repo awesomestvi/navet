@@ -8,6 +8,7 @@ import { CardSettingsActionButton } from '@navet/app/components/shared/card-sett
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
 import { getBrightnessPresetSelectedStyle } from '@navet/app/components/shared/device-editor/brightness-preset-styles';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
@@ -208,6 +209,7 @@ export const FanCard = memo(function FanCard({
     onOpenControls: () => undefined,
     onOpenSettings: () => setIsSettingsOpen(true),
   });
+  useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
   const cardShell = getCardShellSurfaceTokens(theme);
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
   const fanAccentColor = tintColor || '#38bdf8';

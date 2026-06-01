@@ -4,6 +4,7 @@ export const svMessages = {
   'common.custom': 'Anpassad',
   'common.customize': 'Anpassa',
   'common.done': 'Klar',
+  'common.metrics': 'Mått',
   'common.off': 'Av',
   'common.on': 'På',
   'common.open': 'Öppna',

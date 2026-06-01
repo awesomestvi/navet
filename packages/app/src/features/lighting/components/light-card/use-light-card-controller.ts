@@ -1,3 +1,4 @@
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { readNavetLightState } from '@navet/app/core/navet-device-state';
 import { useBrightnessPresets } from '@navet/app/features/lighting/hooks/use-brightness-presets';
 import { useLightMemoryStore } from '@navet/app/features/lighting/stores/light-memory-store';
@@ -126,6 +127,7 @@ export function useLightCardController({
     toggleLightState,
     setIsOpen: isOpen ? onClose : onOpen,
   });
+  useEditModeSettingsRequest(id, onOpen, isEditMode);
   return buildLightCardControllerState({
     applyBrightnessPresetsToAll,
     brightness,

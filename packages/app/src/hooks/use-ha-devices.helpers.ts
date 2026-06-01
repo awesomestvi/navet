@@ -141,13 +141,6 @@ function addSensorMetric(
     return;
   }
 
-  if (
-    normalizedMetric.label === 'Energy' &&
-    isNonDisplaySwitchEnergyMetric(entityId, entity, friendlyName)
-  ) {
-    return;
-  }
-
   upsertDeviceMetric(metricState, {
     ...normalizedMetric,
     icon: inferMetricIcon(
@@ -158,21 +151,6 @@ function addSensorMetric(
     category: 'measurement',
   });
   indexes.switchMetricsByDeviceId.set(deviceId, metricState);
-}
-
-function isNonDisplaySwitchEnergyMetric(
-  entityId: string,
-  entity: HassEntity,
-  friendlyName: string
-) {
-  const stateClass =
-    typeof entity.attributes?.state_class === 'string'
-      ? entity.attributes.state_class.toLowerCase()
-      : '';
-  const searchText = `${entityId} ${friendlyName}`.toLowerCase();
-  const isDailyEnergy = /\b(today|daily|day)\b/.test(searchText);
-
-  return stateClass === 'total_increasing' && !isDailyEnergy;
 }
 
 function addConfigMetric(

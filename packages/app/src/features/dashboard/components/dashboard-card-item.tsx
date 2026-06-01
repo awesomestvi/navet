@@ -1,13 +1,16 @@
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import { dispatchEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
+import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
-import { useI18n } from '@navet/app/hooks';
+import { useAccentColor, useI18n } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { EyeOff, Lock, Unlock, X } from 'lucide-react';
+import { EyeOff, Lock, Settings2, SlidersHorizontal, Unlock, X } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
-import { lazy, memo, Suspense } from 'react';
+import { lazy, memo, Suspense, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 import { renderCard } from '../utils/card-renderer';
@@ -33,6 +36,13 @@ interface DashboardCardItemProps {
   headerSubtitleOverride?: string;
 }
 
+interface TinyEditDockAnchorRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 const DashboardCardItemDraggable = lazy(async () => {
   const module = await import('./dashboard-card-item-draggable');
   return { default: module.DashboardCardItemDraggable };
@@ -56,9 +66,13 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   headerSubtitleOverride,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
+  const accentColor = useAccentColor();
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
   const isLocked = useDashboardEntitiesStore((state) => state.lockedCardIds.includes(id));
   const toggleCardLock = useDashboardEntitiesStore((state) => state.toggleCardLock);
+  const [isTinyEditDockOpen, setIsTinyEditDockOpen] = useState(false);
+  const [tinyEditDockAnchorRect, setTinyEditDockAnchorRect] =
+    useState<TinyEditDockAnchorRect | null>(null);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
@@ -66,17 +80,34 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const spanClass = getCardSpanClass(resolvedSize);
   const editControlSize =
     device?.type === 'media' && resolvedSize === 'medium-vertical' ? 'medium' : resolvedSize;
+  const usesTinyEditDockLauncher = isEditMode && editControlSize === 'tiny';
 
   // Drag is only enabled in edit mode when the card is inside a zone band.
   const draggable = isEditMode && zone !== undefined;
   const isInteractionLocked = isLocked && !isEditMode;
-  const LockActionIcon = isLocked ? Lock : Unlock;
   const lockAriaLabel = isLocked ? t('dashboard.edit.unlockCard') : t('dashboard.edit.lockCard');
   const handleLockToggle = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
     toggleCardLock(id);
   };
+  const canOpenEditModeSettings = device ? supportsEditModeSettingsDock(device) : false;
+  const tinyEditOverlayTitle = device?.name ?? getCustomCardEditLabel(card, t);
+  const tinyEditOverlaySubtitle = device
+    ? getDeviceTypeEditLabel(device.type, t)
+    : t('widgets.common.widget');
+  const handleEditModeSettingsOpen = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dispatchEditModeSettingsRequest(id);
+    setIsTinyEditDockOpen(false);
+  };
+  useEffect(() => {
+    if (!usesTinyEditDockLauncher) {
+      setIsTinyEditDockOpen(false);
+      setTinyEditDockAnchorRect(null);
+    }
+  }, [usesTinyEditDockLauncher]);
   const renderedCard = device ? (
     renderCard({
       device: device as Parameters<typeof renderCard>[0]['device'],
@@ -104,66 +135,79 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const cardContent = (
     <>
       {isEditMode ? <EditModeCardBackdrop size={resolvedSize} /> : null}
-      {isEditMode && !onRemoveFromLayout && device && allowEntityRemoval && onRemoveEntity && (
-        <CardEditActionButton
-          cardSize={editControlSize}
-          Icon={RemoveActionIcon}
-          placement="top-left"
-          variant={usesHideAction ? 'neutral' : 'destructive'}
-          data-dashboard-edit-action="remove-entity"
-          data-card-id={id}
-          aria-label={removeAriaLabel}
-        />
-      )}
-      {isEditMode && onRemoveFromLayout ? (
-        <CardEditActionButton
-          cardSize={editControlSize}
-          Icon={X}
-          placement="top-left"
-          variant="neutral"
-          data-dashboard-edit-action="remove-layout"
-          data-card-id={id}
-          aria-label={t('dashboard.edit.removeFromHome')}
-        />
-      ) : null}
-      {isEditMode && !onRemoveFromLayout && !device && card && onDeleteCard && (
-        <CardEditActionButton
-          cardSize={editControlSize}
-          Icon={X}
-          placement="top-left"
-          variant="destructive"
-          data-dashboard-edit-action="delete-card"
-          data-card-id={id}
-          aria-label={t('widgets.delete')}
-        />
-      )}
       {isEditMode ? (
-        <CardEditActionButton
-          cardSize={editControlSize}
-          Icon={LockActionIcon}
-          placement="bottom-right"
-          variant="neutral"
-          className={
-            isLocked
-              ? 'border-white/18 bg-black/78 text-white ring-1 ring-black/35 hover:bg-black/82'
-              : ''
-          }
-          aria-pressed={isLocked}
-          aria-label={lockAriaLabel}
-          title={lockAriaLabel}
-          onClick={handleLockToggle}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-          }}
-        />
-      ) : null}
-      {isEditMode ? (
-        <DashboardResizeTrigger
-          cardSize={resolvedSize}
-          triggerSize={editControlSize}
-          allowedSizes={allowedSizes}
-          onSizeChange={(nextSize) => handleSizeChange(id, nextSize)}
-        />
+        usesTinyEditDockLauncher ? (
+          isTinyEditDockOpen ? (
+            <TinyEditModeDockOverlay
+              accentColor={accentColor}
+              anchorRect={tinyEditDockAnchorRect}
+              subtitle={tinyEditOverlaySubtitle}
+              title={tinyEditOverlayTitle}
+              onClose={() => {
+                setIsTinyEditDockOpen(false);
+                setTinyEditDockAnchorRect(null);
+              }}
+            >
+              {renderEditModeDockActions({
+                allowedSizes,
+                allowEntityRemoval,
+                canOpenEditModeSettings,
+                card,
+                cardId: id,
+                cardSize: editControlSize,
+                entityName: device?.name ?? card?.id ?? '',
+                handleEditModeSettingsOpen,
+                handleLockToggle,
+                handleSizeChange,
+                hasDevice: Boolean(device),
+                isLocked,
+                lockAriaLabel,
+                onDeleteCard,
+                onRemoveEntity,
+                onRemoveFromLayout,
+                removeAriaLabel,
+                RemoveActionIcon,
+                resolvedSize,
+                t,
+                usesHideAction,
+              })}
+            </TinyEditModeDockOverlay>
+          ) : (
+            <TinyEditModeDockLauncher
+              onOpen={(event) => {
+                setTinyEditDockAnchorRect(getTinyEditDockAnchorRect(event.currentTarget));
+                setIsTinyEditDockOpen(true);
+              }}
+              title={t('common.moreActions')}
+            />
+          )
+        ) : (
+          <EditModeActionDock cardSize={editControlSize} accentColor={accentColor}>
+            {renderEditModeDockActions({
+              allowedSizes,
+              allowEntityRemoval,
+              canOpenEditModeSettings,
+              card,
+              cardId: id,
+              cardSize: editControlSize,
+              entityName: device?.name ?? card?.id ?? '',
+              handleEditModeSettingsOpen,
+              handleLockToggle,
+              handleSizeChange,
+              hasDevice: Boolean(device),
+              isLocked,
+              lockAriaLabel,
+              onDeleteCard,
+              onRemoveEntity,
+              onRemoveFromLayout,
+              removeAriaLabel,
+              RemoveActionIcon,
+              resolvedSize,
+              t,
+              usesHideAction,
+            })}
+          </EditModeActionDock>
+        )
       ) : null}
       {isLocked && !isEditMode ? <LockedCardBadge label={t('dashboard.edit.lockedCard')} /> : null}
       {lockedCardContent}
@@ -207,9 +251,304 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 function EditModeCardBackdrop({ size }: { size: CardSize }) {
   return (
     <div
-      className={`pointer-events-none absolute inset-0 z-300 ${getBaseCardRadiusClassName(size)} bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.42),transparent_52%),radial-gradient(circle_at_top_right,rgba(0,0,0,0.46),transparent_48%),linear-gradient(to_bottom,rgba(0,0,0,0.22),transparent_34%,transparent_58%,rgba(0,0,0,0.34))]`}
+      className={`pointer-events-none absolute inset-0 z-300 ${getBaseCardRadiusClassName(size)} bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.52),transparent_54%),radial-gradient(circle_at_top_right,rgba(0,0,0,0.56),transparent_50%),linear-gradient(to_bottom,rgba(0,0,0,0.28),rgba(0,0,0,0.12)_30%,rgba(0,0,0,0.16)_56%,rgba(0,0,0,0.52))]`}
       aria-hidden="true"
     />
+  );
+}
+
+function EditModeActionDock({
+  cardSize,
+  accentColor,
+  children,
+}: {
+  cardSize: CardSize;
+  accentColor: string;
+  children: ReactNode;
+}) {
+  const compact = cardSize === 'tiny' || cardSize === 'extra-small';
+  const radiusClassName = getBaseCardRadiusClassName(cardSize);
+
+  return (
+    <div
+      className={`pointer-events-none absolute inset-x-0 bottom-0 z-500 h-24 overflow-hidden ${radiusClassName}`}
+      data-card-edit-dock="true"
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.78) 24%, rgba(0,0,0,0.42) 52%, transparent 78%)',
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className={`relative flex h-full items-end justify-center px-3 ${compact ? 'pb-2.5' : 'pb-3'}`}
+      >
+        <div
+          className={`pointer-events-auto inline-flex items-center justify-center ${compact ? 'gap-2.5 px-2.5 py-1.5' : 'gap-3 px-3 py-2'} rounded-full`}
+          style={{
+            border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
+            background: '#161619',
+            boxShadow: '0 12px 24px -18px rgba(0,0,0,0.72)',
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TinyEditModeDockLauncher({
+  onOpen,
+  title,
+}: {
+  onOpen: (event: MouseEvent<HTMLButtonElement>) => void;
+  title: string;
+}) {
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-500 flex justify-center px-2 pb-2">
+      <CardEditActionButton
+        cardSize="tiny"
+        Icon={SlidersHorizontal}
+        inline
+        variant="accent"
+        aria-label={title}
+        title={title}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOpen(event);
+        }}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+      />
+    </div>
+  );
+}
+
+function TinyEditModeDockOverlay({
+  accentColor,
+  anchorRect,
+  children,
+  onClose,
+  subtitle,
+  title,
+}: {
+  accentColor: string;
+  anchorRect: TinyEditDockAnchorRect | null;
+  children: ReactNode;
+  onClose: () => void;
+  subtitle: string;
+  title: string;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const overlayWidth = anchorRect ? Math.max(272, Math.min(anchorRect.width + 72, 360)) : 320;
+  const overlayLeft = anchorRect
+    ? Math.max(
+        16,
+        Math.min(
+          anchorRect.left + anchorRect.width / 2 - overlayWidth / 2,
+          window.innerWidth - overlayWidth - 16
+        )
+      )
+    : 16;
+  const overlayTop = anchorRect
+    ? Math.max(16, Math.min(anchorRect.top + anchorRect.height / 2 - 84, window.innerHeight - 196))
+    : 16;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/58"
+        aria-label="Close edit controls"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }}
+      />
+      <div
+        className="absolute z-1"
+        style={{
+          left: `${overlayLeft}px`,
+          top: `${overlayTop}px`,
+          width: `${overlayWidth}px`,
+        }}
+      >
+        <div
+          className="pointer-events-auto flex w-full flex-col items-center rounded-[28px]"
+          style={{
+            border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
+            background: '#161619',
+            boxShadow: '0 18px 38px -22px rgba(0,0,0,0.82)',
+            padding: '10px',
+          }}
+        >
+          <div className="px-3 pt-1 pb-2 text-center">
+            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/58">
+              {subtitle}
+            </div>
+            <div className="mt-1 text-sm font-semibold leading-tight text-white">{title}</div>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function getTinyEditDockAnchorRect(target: HTMLElement): TinyEditDockAnchorRect | null {
+  const cardRoot = target.closest<HTMLElement>(
+    '[data-draggable-card="true"], [data-card-nodrag="true"]'
+  );
+  if (!cardRoot) {
+    return null;
+  }
+
+  const { top, left, width, height } = cardRoot.getBoundingClientRect();
+  return { top, left, width, height };
+}
+
+function renderEditModeDockActions({
+  allowedSizes,
+  allowEntityRemoval,
+  canOpenEditModeSettings,
+  card,
+  cardId,
+  cardSize,
+  entityName,
+  handleEditModeSettingsOpen,
+  handleLockToggle,
+  handleSizeChange,
+  hasDevice,
+  isLocked,
+  lockAriaLabel,
+  onDeleteCard,
+  onRemoveEntity,
+  onRemoveFromLayout,
+  removeAriaLabel,
+  RemoveActionIcon,
+  resolvedSize,
+  t,
+  usesHideAction,
+}: {
+  allowedSizes: CardSize[];
+  allowEntityRemoval: boolean;
+  canOpenEditModeSettings: boolean;
+  card?: CustomCard;
+  cardId: string;
+  cardSize: CardSize;
+  entityName: string;
+  handleEditModeSettingsOpen: (event: MouseEvent<HTMLButtonElement>) => void;
+  handleLockToggle: (event: MouseEvent<HTMLButtonElement>) => void;
+  handleSizeChange: (id: string, size: CardSize) => void;
+  hasDevice: boolean;
+  isLocked: boolean;
+  lockAriaLabel: string;
+  onDeleteCard?: (cardId: string) => void;
+  onRemoveEntity?: (entityId: string) => void;
+  onRemoveFromLayout?: (cardId: string) => void;
+  removeAriaLabel: string;
+  RemoveActionIcon: typeof EyeOff;
+  resolvedSize: CardSize;
+  t: ReturnType<typeof useI18n>['t'];
+  usesHideAction: boolean;
+}) {
+  return (
+    <>
+      {!onRemoveFromLayout && hasDevice && allowEntityRemoval && onRemoveEntity ? (
+        <CardEditActionButton
+          cardSize={cardSize}
+          Icon={RemoveActionIcon}
+          inline
+          variant={usesHideAction ? 'warning' : 'destructive'}
+          data-dashboard-edit-action="remove-entity"
+          data-card-id={cardId}
+          aria-label={removeAriaLabel}
+        />
+      ) : null}
+      {onRemoveFromLayout ? (
+        <CardEditActionButton
+          cardSize={cardSize}
+          Icon={X}
+          inline
+          variant="warning"
+          data-dashboard-edit-action="remove-layout"
+          data-card-id={cardId}
+          aria-label={t('dashboard.edit.removeFromHome')}
+        />
+      ) : null}
+      {!onRemoveFromLayout && card && onDeleteCard ? (
+        <CardEditActionButton
+          cardSize={cardSize}
+          Icon={X}
+          inline
+          variant="destructive"
+          data-dashboard-edit-action="delete-card"
+          data-card-id={cardId}
+          aria-label={t('widgets.delete')}
+        />
+      ) : null}
+      <CardEditActionButton
+        cardSize={cardSize}
+        Icon={isLocked ? Lock : Unlock}
+        inline
+        variant={isLocked ? 'locked' : 'success'}
+        aria-pressed={isLocked}
+        aria-label={lockAriaLabel}
+        title={lockAriaLabel}
+        onClick={handleLockToggle}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+      />
+      <DashboardResizeTrigger
+        cardSize={resolvedSize}
+        triggerSize={cardSize}
+        allowedSizes={allowedSizes}
+        onSizeChange={(nextSize) => handleSizeChange(cardId, nextSize)}
+        inline
+      />
+      {canOpenEditModeSettings ? (
+        <CardEditActionButton
+          cardSize={cardSize}
+          Icon={Settings2}
+          inline
+          variant="accent"
+          aria-label={t('entityCardInteraction.openSettings', {
+            name: entityName,
+          })}
+          title={t('entityCardInteraction.openSettings', {
+            name: entityName,
+          })}
+          onClick={handleEditModeSettingsOpen}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -318,6 +657,70 @@ function getAllowedSizes(
     default:
       return ['extra-small', 'small', 'medium', 'large'];
   }
+}
+
+function supportsEditModeSettingsDock(device: DeviceWithType) {
+  return [
+    'lights',
+    'fans',
+    'switches',
+    'helpers',
+    'climate',
+    'hvac',
+    'weather',
+    'cameras',
+    'covers',
+    'media',
+    'vacuums',
+    'calendars',
+    'grouped-sensors',
+    'sensors',
+  ].includes(device.type);
+}
+
+function getDeviceTypeEditLabel(type: DeviceWithType['type'], t: ReturnType<typeof useI18n>['t']) {
+  switch (type) {
+    case 'lights':
+      return t('lighting.type.light');
+    case 'switches':
+    case 'helpers':
+      return t('lighting.type.switch');
+    case 'fans':
+      return 'Fan';
+    case 'climate':
+    case 'hvac':
+      return 'Climate';
+    case 'weather':
+      return t('deviceType.weather');
+    case 'cameras':
+      return t('deviceType.camera');
+    case 'covers':
+      return t('deviceType.cover');
+    case 'media':
+      return 'Media';
+    case 'vacuums':
+      return t('deviceType.vacuum');
+    case 'calendars':
+      return 'Calendar';
+    case 'grouped-sensors':
+      return t('deviceType.sensorGroup');
+    case 'sensors':
+      return t('deviceType.sensor');
+    case 'persons':
+      return t('deviceType.person');
+    case 'scenes':
+      return t('deviceType.scene');
+    default:
+      return t('widgets.common.widget');
+  }
+}
+
+function getCustomCardEditLabel(card: CustomCard | undefined, t: ReturnType<typeof useI18n>['t']) {
+  if (!card) {
+    return t('widgets.common.widget');
+  }
+
+  return typeof card.id === 'string' && card.id.length > 0 ? card.id : t('widgets.common.widget');
 }
 
 function resolveAllowedSize(size: CardSize, allowedSizes: CardSize[]) {

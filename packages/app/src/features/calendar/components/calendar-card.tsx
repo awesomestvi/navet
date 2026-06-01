@@ -5,6 +5,7 @@ import {
   getCompactCardSize,
   isCompactCardSize,
 } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getCustomCardTintSurface } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -66,6 +67,7 @@ export const CalendarCard = memo(function CalendarCard({
   const canOpenSettings = !inEditMode;
   const chromeSize = effectiveSize === 'small' ? 'small' : 'medium';
   const displayName = name ?? t('calendar.defaultTitle');
+  useEditModeSettingsRequest(id ?? displayName, () => setIsSettingsOpen(true), inEditMode);
 
   return (
     <>
