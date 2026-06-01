@@ -1,16 +1,13 @@
 import {
   CardDialogBody,
+  CardDialogFooter,
   CardDialogHeader,
   CardDialogTabList,
+  CardDialogTabTrigger,
 } from '@navet/app/components/patterns';
-import {
-  Button,
-  customCardDialogShellProps,
-  DialogShell,
-  InteractivePill,
-} from '@navet/app/components/primitives';
+import { Button, customCardDialogShellProps, DialogShell } from '@navet/app/components/primitives';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { CompactRoomSelector } from '@navet/app/components/shared/device-editor';
+import { CompactRoomSelector, CustomScrollbar } from '@navet/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
@@ -29,25 +26,6 @@ import { RSSFeedsTabContent } from './rss-feeds-tab-content';
 import { RSSSetupTabContent } from './rss-setup-tab-content';
 import { getRSSFeedCardSurfaceTokens } from './surface-tokens';
 import type { RSSProvider } from './types';
-
-function getRSSDialogPillStyle({
-  accentColor,
-  isActive,
-  textPrimaryColor,
-  textSecondaryColor,
-}: {
-  accentColor: string;
-  isActive: boolean;
-  textPrimaryColor: string;
-  textSecondaryColor: string;
-}): CSSProperties {
-  return {
-    color: isActive ? textPrimaryColor : textSecondaryColor,
-    borderColor: withTintAlpha(accentColor, isActive ? 0.34 : 0.22),
-    backgroundColor: withTintAlpha(accentColor, isActive ? 0.18 : 0.1),
-    boxShadow: isActive ? `inset 0 0 0 1px ${withTintAlpha(accentColor, 0.16)}` : 'none',
-  };
-}
 
 interface RSSFeedSettingsDialogProps {
   isOpen: boolean;
@@ -121,6 +99,7 @@ export function RSSFeedSettingsDialog({
     ...sectionStyle,
     '--rss-placeholder-color': withTintAlpha(activeAccentColor, theme === 'light' ? 0.58 : 0.68),
   } as CSSProperties;
+  const isOn = theme !== 'light';
 
   const handleToggleProvider = (providerId: string) => {
     const isSelected = selectedProviderIds.includes(providerId);
@@ -181,7 +160,10 @@ export function RSSFeedSettingsDialog({
       contentGlowStyle={dialogShell.contentGlowStyle}
       contentOverlayClassName={dialogShell.contentOverlayClassName}
     >
-      <div className="h-full overflow-x-hidden overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] max-sm:max-h-[calc(100dvh-3rem)] [&::-webkit-scrollbar]:hidden">
+      <CustomScrollbar
+        isOn={isOn}
+        className="max-sm:max-h-[calc(100dvh-3rem)] max-sm:min-h-0 max-sm:flex-1"
+      >
         <CardDialogBody>
           <CardDialogHeader
             title={title}
@@ -203,51 +185,27 @@ export function RSSFeedSettingsDialog({
             onValueChange={setActiveTab}
           >
             <CardDialogTabList className="max-sm:flex max-sm:flex-wrap max-sm:gap-1.5">
-              <InteractivePill
+              <CardDialogTabTrigger
                 active={activeTab === 'feeds'}
-                size="compact"
                 icon={Sliders}
-                className="text-xs"
-                style={getRSSDialogPillStyle({
-                  accentColor: activeAccentColor,
-                  isActive: activeTab === 'feeds',
-                  textPrimaryColor: rssSurface.textPrimaryColor,
-                  textSecondaryColor: rssSurface.sourceColor,
-                })}
                 onClick={() => setActiveTab('feeds')}
               >
                 Feeds
-              </InteractivePill>
-              <InteractivePill
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
                 active={activeTab === 'setup'}
-                size="compact"
                 icon={Plus}
-                className="text-xs"
-                style={getRSSDialogPillStyle({
-                  accentColor: activeAccentColor,
-                  isActive: activeTab === 'setup',
-                  textPrimaryColor: rssSurface.textPrimaryColor,
-                  textSecondaryColor: rssSurface.sourceColor,
-                })}
                 onClick={() => setActiveTab('setup')}
               >
                 Setup
-              </InteractivePill>
-              <InteractivePill
+              </CardDialogTabTrigger>
+              <CardDialogTabTrigger
                 active={activeTab === 'card'}
-                size="compact"
                 icon={Palette}
-                className="text-xs"
-                style={getRSSDialogPillStyle({
-                  accentColor: activeAccentColor,
-                  isActive: activeTab === 'card',
-                  textPrimaryColor: rssSurface.textPrimaryColor,
-                  textSecondaryColor: rssSurface.sourceColor,
-                })}
                 onClick={() => setActiveTab('card')}
               >
                 {t('common.customize')}
-              </InteractivePill>
+              </CardDialogTabTrigger>
             </CardDialogTabList>
 
             <TabPanel value="feeds" className="mt-5 space-y-4 max-sm:mt-3">
@@ -259,8 +217,9 @@ export function RSSFeedSettingsDialog({
                 onToggleProvider={handleToggleProvider}
                 onRemoveProvider={onRemoveProvider}
                 accentColorValue={activeAccentColor}
+                theme={theme}
                 textPrimaryColor={rssSurface.textPrimaryColor}
-                textSecondaryColor={rssSurface.sourceColor}
+                textSecondaryColor={rssSurface.textSecondaryColor}
                 sectionStyle={sectionStyle}
                 surface={rssSurface}
                 t={t}
@@ -279,9 +238,10 @@ export function RSSFeedSettingsDialog({
                 canAddProvider={canAddProvider}
                 inputStyle={inputStyle}
                 surface={rssSurface}
+                theme={theme}
                 accentColor={activeAccentColor}
                 textPrimaryColor={rssSurface.textPrimaryColor}
-                textSecondaryColor={rssSurface.sourceColor}
+                textSecondaryColor={rssSurface.textSecondaryColor}
                 t={t}
               />
             </TabPanel>
@@ -295,14 +255,13 @@ export function RSSFeedSettingsDialog({
               />
             </TabPanel>
           </Tabs>
-
-          <div className="mt-6 flex justify-end max-sm:mt-3">
-            <Button variant="soft" size="small" onClick={() => handleOpenChange(false)}>
-              {doneLabel}
-            </Button>
-          </div>
         </CardDialogBody>
-      </div>
+        <CardDialogFooter className="px-6 pb-6 max-sm:px-3.5 max-sm:pb-3">
+          <Button variant="soft" size="small" onClick={() => handleOpenChange(false)}>
+            {doneLabel}
+          </Button>
+        </CardDialogFooter>
+      </CustomScrollbar>
     </DialogShell>
   );
 }

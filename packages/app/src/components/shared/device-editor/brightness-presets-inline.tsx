@@ -1,10 +1,13 @@
+import {
+  getPortalActionDockAnchorRect,
+  PortalActionDock,
+  type PortalActionDockAnchorRect,
+} from '@navet/app/components/patterns/portal-action-dock';
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import * as Popover from '@radix-ui/react-popover';
 import type { LucideIcon } from 'lucide-react';
 import { MoreHorizontal } from 'lucide-react';
-import { type MouseEvent, memo, useCallback } from 'react';
+import { type MouseEvent, memo, useCallback, useState } from 'react';
 import { getCardActionControlSizes } from '../card-action-control-sizes';
 import type { CardSize } from '../card-size-selector';
 import { getRoundControlStyles } from '../theme/round-control-styles';
@@ -145,7 +148,6 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
 }: BrightnessOverflowMenuProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const surface = getThemeSurfaceTokens(theme);
   const activeColor = getBrightnessPresetAccentColor(primaryColor);
   const roundControl = getRoundControlStyles(theme);
   const selectedClasses = roundControl.selectedText;
@@ -153,6 +155,8 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
     buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
   const disabledTriggerClasses =
     buttonVariant === 'soft' ? roundControl.softDisabledButton : roundControl.disabledButton;
+  const [isOpen, setIsOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<PortalActionDockAnchorRect | null>(null);
 
   const handleOverflowButtonClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -163,32 +167,28 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
     [onBrightnessChange]
   );
 
+  const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setAnchorRect(getPortalActionDockAnchorRect(event.currentTarget));
+    setIsOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setAnchorRect(null);
+  };
+
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          disabled={!isOn}
-          aria-label={t('deviceEditor.moreBrightnessPresets')}
-          className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
-            !isOn
-              ? disabledTriggerClasses
-              : `cursor-pointer ${unselectedClasses} hover:scale-105 active:scale-95`
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MoreHorizontal className={iconSize} aria-hidden="true" />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          sideOffset={10}
-          align="start"
-          className={`z-50 rounded-2xl border p-3 backdrop-blur-xl shadow-2xl animate-in fade-in zoom-in duration-200 ${surface.panel} ${surface.border}`}
-          onClick={(e) => e.stopPropagation()}
+    <>
+      {isOpen ? (
+        <PortalActionDock
+          accentColor={activeColor}
+          anchorRect={anchorRect}
+          onClose={handleClose}
+          title={t('deviceEditor.moreBrightnessPresets')}
         >
           <fieldset
-            className="flex items-center gap-2"
+            className="flex flex-wrap items-center justify-center gap-2"
             aria-label={t('deviceEditor.moreBrightnessPresets')}
           >
             {presets.map((preset) => {
@@ -205,7 +205,10 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
                     brightness: preset.brightness,
                   })}
                   aria-pressed={isSelected}
-                  onClick={handleOverflowButtonClick}
+                  onClick={(event) => {
+                    handleOverflowButtonClick(event);
+                    handleClose();
+                  }}
                   style={
                     isSelected
                       ? getBrightnessPresetSelectedStyle(theme, activeColor, true)
@@ -220,9 +223,24 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
               );
             })}
           </fieldset>
-          <Popover.Arrow className={theme === 'light' ? 'fill-white' : 'fill-zinc-900'} />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </PortalActionDock>
+      ) : null}
+
+      <div>
+        <button
+          type="button"
+          disabled={!isOn}
+          aria-label={t('deviceEditor.moreBrightnessPresets')}
+          className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
+            !isOn
+              ? disabledTriggerClasses
+              : `cursor-pointer ${unselectedClasses} hover:scale-105 active:scale-95`
+          }`}
+          onClick={handleOpen}
+        >
+          <MoreHorizontal className={iconSize} aria-hidden="true" />
+        </button>
+      </div>
+    </>
   );
 });

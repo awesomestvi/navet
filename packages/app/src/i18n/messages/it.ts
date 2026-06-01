@@ -95,6 +95,14 @@ export const itMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gestisci cosa appare sulla bacheca e come viene salvata la configurazione locale.',
+  'settings.dashboard.headerTitle.title': 'Titolo intestazione',
+  'settings.dashboard.headerTitle.description':
+    'Scegli cosa mostra il grande titolo della dashboard nella barra superiore.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Saluto',
+  'settings.dashboard.headerTitle.customText': 'Testo personalizzato',
+  'settings.dashboard.headerTitle.dateTime': 'Data e ora',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Bentornato a casa',
+  'settings.dashboard.headerTitle.customHint': 'Lascia vuoto per tornare al saluto automatico.',
   'settings.dashboard.homeSummaryBar.title': 'Riepilogo Home',
   'settings.dashboard.homeSummaryBar.description':
     'Mostra riepiloghi compatti per clima, luci, sicurezza e media sopra la dashboard Home.',

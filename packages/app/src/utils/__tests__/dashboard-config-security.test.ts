@@ -274,6 +274,52 @@ describe('dashboard-config import hardening', () => {
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
   });
 
+  it('round-trips header title settings', () => {
+    useSettingsStore.getState().updateSettings({
+      headerTitleMode: 'custom_text',
+      headerCustomText: 'Movie night',
+    });
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.settings.headerTitleMode).toBe('custom_text');
+    expect(exported.settings.headerCustomText).toBe('Movie night');
+
+    useSettingsStore.getState().updateSettings({
+      headerTitleMode: 'auto_greeting',
+      headerCustomText: '',
+    });
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        headerTitleMode: 'custom_text',
+        headerCustomText: '  Wind down  ',
+      },
+    });
+
+    expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
+    expect(useSettingsStore.getState().headerCustomText).toBe('Wind down');
+  });
+
+  it('falls back to defaults for invalid imported header title settings', () => {
+    useSettingsStore.getState().updateSettings({
+      headerTitleMode: 'custom_text',
+      headerCustomText: 'Keep me',
+    });
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        headerTitleMode: 'ticker',
+        headerCustomText: 45,
+      },
+    });
+
+    expect(useSettingsStore.getState().headerTitleMode).toBe('auto_greeting');
+    expect(useSettingsStore.getState().headerCustomText).toBe('');
+  });
+
   it('round-trips the camera dashboard preview default', () => {
     useSettingsStore.getState().updateSettings({ cameraDashboardViewMode: 'auto' });
 

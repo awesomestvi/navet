@@ -83,6 +83,14 @@ export const ptMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gerencie o que aparece no painel e como esta configuração local é salva como backup.',
+  'settings.dashboard.headerTitle.title': 'Título do cabeçalho',
+  'settings.dashboard.headerTitle.description':
+    'Escolha o que o grande título do painel mostra na barra superior.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Saudação',
+  'settings.dashboard.headerTitle.customText': 'Texto personalizado',
+  'settings.dashboard.headerTitle.dateTime': 'Data e hora',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Bem-vindo para casa',
+  'settings.dashboard.headerTitle.customHint': 'Deixe em branco para voltar à saudação automática.',
   'settings.dashboard.homeSummaryBar.title': 'Resumo inicial',
   'settings.dashboard.homeSummaryBar.description':
     'Mostra resumos compactos de clima, luzes, segurança e mídia acima do dashboard inicial.',

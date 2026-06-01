@@ -21,8 +21,8 @@ import {
 } from '@navet/app/hooks';
 import { refreshPwaApp } from '@navet/app/pwa/pwa-update-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
-import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
-import { Activity, LogOut, RefreshCw } from 'lucide-react';
+import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
+import { LogOut, RefreshCw } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 
 interface UserDropdownProps {
@@ -42,10 +42,7 @@ export const UserDropdown = memo(function UserDropdown({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const user = useIntegrationStore(integrationSelectors.currentUser);
-  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const providerRuntime = useIntegrationStore(
-    integrationSelectors.providerRuntimeById(currentProviderId)
-  );
+  const providerRuntime = useIntegrationStore(integrationSelectors.providerRuntime);
   const performLogout = useLogout();
 
   const handleLogout = () => {
@@ -67,14 +64,20 @@ export const UserDropdown = memo(function UserDropdown({
   const dropdownPanelClassName = `rounded-2xl border shadow-2xl ${surface.panel} ${surface.border} ${
     theme === 'glass' ? 'backdrop-blur-xl' : ''
   }`;
-  const statusCardClassName = `flex items-center gap-3 rounded-xl border px-3 py-3 ${surface.border} ${itemBg}`;
+  const statusCardClassName = `rounded-xl border px-3 py-3 ${surface.border} ${itemBg}`;
   const refreshButtonClassName = `inline-flex w-full items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${surface.border} ${surface.hoverBg} ${textPrimary}`;
   const logoutButtonClassName =
     'inline-flex w-full items-center gap-2 rounded-full bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/15';
 
   const fullName = user?.name?.trim() || t('userDropdown.defaultUser');
-  const connected = providerRuntime.connected;
-  const providerLabel = INTEGRATION_PROVIDERS[currentProviderId].label;
+  const connectedProviderLabels = useMemo(
+    () =>
+      INTEGRATION_PROVIDER_IDS.filter((providerId) => providerRuntime[providerId]?.connected).map(
+        (providerId) => INTEGRATION_PROVIDERS[providerId].label
+      ),
+    [providerRuntime]
+  );
+  const connected = connectedProviderLabels.length > 0;
   const initials = useMemo(() => {
     const parts = fullName.split(/\s+/).filter(Boolean);
     return parts
@@ -114,25 +117,27 @@ export const UserDropdown = memo(function UserDropdown({
         </div>
 
         <div className={statusCardClassName}>
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
-            style={{
-              backgroundColor: connected ? `${accentColor}1f` : 'rgba(255,255,255,0.05)',
-            }}
-          >
-            <Activity className="h-4 w-4" style={{ color: connected ? accentColor : undefined }} />
-          </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className={`text-xs ${textMuted}`}>{t('settings.system.connection.connectedTo')}</p>
-            <div className="mt-0.5 flex items-center gap-2">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: connected ? '#22c55e' : '#6b7280' }}
-              />
-              <p className={`truncate text-sm font-medium ${textPrimary}`}>
-                {connected ? providerLabel : t('settings.system.connection.notConnected')}
-              </p>
-            </div>
+            {connected ? (
+              <div className="mt-1 space-y-1">
+                {connectedProviderLabels.map((providerLabel) => (
+                  <div key={providerLabel} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                    <p className={`text-xs font-medium leading-snug ${textPrimary}`}>
+                      {providerLabel}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gray-500" />
+                <p className={`text-xs font-medium leading-snug ${textPrimary}`}>
+                  {t('settings.system.connection.notConnected')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

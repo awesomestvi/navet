@@ -20,7 +20,7 @@ vi.mock('../use-header-datetime', () => ({
   useHeaderDateTime: () => ({
     formattedDate: 'May 30',
     formattedTime: '12:00',
-    greetingKey: 'header.greeting',
+    greetingKey: 'header.greeting.welcome',
     weekNumber: 22,
   }),
 }));
@@ -286,6 +286,49 @@ describe('useHeaderController', () => {
       expect.objectContaining({
         deviceId: 'home_assistant:person.jane_doe',
         providerId: 'home_assistant',
+      })
+    );
+  });
+
+  it('uses the greeting as secondary text in date-and-time mode', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentUser: {
+        id: 'user-1',
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        avatarUrl: null,
+      },
+    });
+    useSettingsStore.getState().updateSettings({ headerTitleMode: 'clock' });
+
+    const { result } = renderHookWithProviders(() => useHeaderController());
+
+    expect(result.current.headerTitleText).toBe('May 30 · 12:00');
+    expect(result.current.headerSecondaryText).toBe('Welcome back, Jane! · Week 22');
+    expect(result.current.headerSupportingText).toBeNull();
+    expect(result.current.showTimeMetadata).toBe(false);
+  });
+
+  it('normalizes direct Home Assistant avatar URLs for the current provider', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      currentUser: {
+        id: 'user-1',
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        avatarUrl: '/api/image/serve/jane/512x512',
+      },
+    });
+
+    const { result } = renderHookWithProviders(() => useHeaderController());
+
+    expect(result.current.avatarUrl).toBe('/__navet_ha_proxy__/api/image/serve/jane/512x512');
+    expect(useProviderResourceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: '',
+        kind: 'primary_image',
       })
     );
   });

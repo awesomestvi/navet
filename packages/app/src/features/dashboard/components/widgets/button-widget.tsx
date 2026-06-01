@@ -16,7 +16,6 @@ import {
   Textarea,
 } from '@navet/app/components/primitives';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { CardSettingsActionButton } from '@navet/app/components/shared/card-settings-action-button';
 import {
   CustomCardTintPicker,
   CustomScrollbar,
@@ -301,11 +300,6 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
     void handleTap();
   };
 
-  const handleSettingsClick = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    setIsSettingsOpen(true);
-  };
-
   const isConfigured = Boolean(data.service);
 
   return (
@@ -328,20 +322,6 @@ export function ButtonWidget({ data = {}, onUpdate, isEditMode = false }: Button
       contentClassName="h-full"
     >
       <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
-        {isConfigured && onUpdate && (
-          <div className="absolute right-3 bottom-3">
-            <CardSettingsActionButton
-              theme={theme}
-              size="small"
-              variant="soft"
-              onClick={handleSettingsClick}
-              onPointerDown={stopCardInteraction}
-              aria-label={t('widgets.button.configure')}
-              accentColor={data.tintColor ?? accentHex}
-            />
-          </div>
-        )}
-
         {isConfigured ? (
           <button
             type="button"

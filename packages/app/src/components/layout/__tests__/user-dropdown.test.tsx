@@ -10,7 +10,7 @@ describe('UserDropdown', () => {
     await resetAppStores();
   });
 
-  it('shows the active normalized provider label instead of hardcoding Home Assistant', () => {
+  it('shows each connected provider on its own status row', () => {
     integrationStore.getState().setIntegrationUser({
       name: 'Alex Johnson',
       is_admin: true,
@@ -20,8 +20,16 @@ describe('UserDropdown', () => {
       ...state,
       providerRuntime: {
         ...state.providerRuntime,
+        home_assistant: {
+          ...state.providerRuntime.home_assistant,
+          connected: true,
+        },
         homey: {
           ...state.providerRuntime.homey,
+          connected: true,
+        },
+        openhab: {
+          ...state.providerRuntime.openhab,
           connected: true,
         },
       },
@@ -32,7 +40,8 @@ describe('UserDropdown', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open user menu' }));
 
     expect(screen.getByText('Alex Johnson')).toBeInTheDocument();
+    expect(screen.getByText('Home Assistant')).toBeInTheDocument();
     expect(screen.getByText('Homey')).toBeInTheDocument();
-    expect(screen.queryByText('Home Assistant')).not.toBeInTheDocument();
+    expect(screen.getByText('openHAB')).toBeInTheDocument();
   });
 });

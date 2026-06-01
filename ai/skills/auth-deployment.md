@@ -16,12 +16,12 @@ Navet currently runs in:
 
 - Home Assistant is implemented across panel, add-on, and standalone flows
 - Homey is implemented through the standalone cloud OAuth flow
-- openHAB is implemented through the standalone URL-session flow
-- Hubitat and SmartThings have scaffolding, but they are not available runtime providers yet
+- openHAB is implemented through the standalone base-URL and username/password flow
+- Hubitat and SmartThings have package entry points, but they are not available runtime providers yet
 
 ## Rules
 
-- keep auth and runtime orchestration in `src/auth/` and provider runtime registrations
+- keep auth and runtime orchestration in `packages/app/src/auth/` and provider runtime registrations
 - keep deployment-specific URL rewriting out of feature components
 - preserve same-origin session and proxy constraints for standalone and add-on flows
 - keep Home Assistant-specific runtime assumptions inside Home Assistant-owned seams
@@ -29,12 +29,9 @@ Navet currently runs in:
 
 ## Current Repo Areas
 
-- `src/auth/`
-- `src/app/infrastructure/home-assistant/`
-- `src/app/runtime/`
-- `src/providers/homeassistant/`
-- `src/providers/homey/`
-- `src/providers/openhab/`
+- `packages/app/src/auth/`
+- `packages/app/src/infrastructure/home-assistant/`
+- `packages/app/src/runtime/`
 - `packages/provider-homeassistant/`
 - `packages/provider-homey/`
 - `packages/provider-openhab/`
@@ -46,5 +43,5 @@ Navet currently runs in:
 If auth or deployment behavior changes, update:
 
 - `README.md`
-- `docs/DOCKER_HOME_ASSISTANT_ADDON.md`
+- `docs/HOME_ASSISTANT.md`
 - relevant add-on or custom-component docs

@@ -47,8 +47,8 @@ Home Assistant is the reference provider, not the application architecture.
 - Home Assistant: implemented
 - Homey: implemented
 - openHAB: implemented
-- Hubitat: package scaffolding only
-- SmartThings: package scaffolding only
+- Hubitat: package entry point only, not a runtime provider yet
+- SmartThings: package entry point only, not a runtime provider yet
 
 ## Read Next
 

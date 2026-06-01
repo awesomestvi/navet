@@ -69,7 +69,7 @@ function getHomeAssistantState(): NavetProviderState {
 async function resolveHomeAssistantResource(
   request: NavetResourceResolveRequest
 ): Promise<ResolvedPlatformResource> {
-  if (request.kind !== 'media_artwork') {
+  if (request.kind !== 'media_artwork' && request.kind !== 'primary_image') {
     return {
       id: request.deviceId,
       kind: 'unavailable',

@@ -30,10 +30,10 @@ Homepage structure and copy should reinforce that message.
 
 ## Boundaries And Reuse
 
-- Shared primitives stay in `src/app/components/primitives/` or `patterns/`.
+- Shared primitives stay in `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/`.
 - Theme tokens and surface logic stay in the existing theme/token layers.
 - Dashboard cards stay in dashboard or feature layers.
-- Marketing sections live under `src/app/marketing/`.
+- Marketing sections live under `packages/app/src/marketing/`.
 - Website-specific package entry and Vite config live under `apps/website/`, not in the runtime
   app shell.
 
@@ -88,7 +88,7 @@ Data rules:
 Routing and links:
 
 - Public website routes are resolved by the marketing route helpers.
-- External links are centralized in `src/app/marketing/constants/marketingLinks.ts`.
+- External links are centralized in `packages/app/src/marketing/constants/marketingLinks.ts`.
 - This includes demo, docs/install links, GitHub, roadmap, and Storybook URLs.
 - The public website workspace root is `apps/website/`.
 

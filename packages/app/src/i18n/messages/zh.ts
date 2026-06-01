@@ -49,6 +49,13 @@ export const zhMessages = {
   'settings.appearance.wallpaper.upload': '上传壁纸',
   'settings.appearance.wallpaper.fileHint': 'PNG、JPG，最大 5MB',
   'settings.dashboard.sectionTitle': '仪表板',
+  'settings.dashboard.headerTitle.title': '页眉标题',
+  'settings.dashboard.headerTitle.description': '选择顶部栏中的大标题显示什么内容。',
+  'settings.dashboard.headerTitle.autoGreeting': '问候语',
+  'settings.dashboard.headerTitle.customText': '自定义文本',
+  'settings.dashboard.headerTitle.dateTime': '日期和时间',
+  'settings.dashboard.headerTitle.customPlaceholder': '欢迎回家',
+  'settings.dashboard.headerTitle.customHint': '留空时会回退到自动问候语。',
   'settings.dashboard.homeSummaryBar.title': '首页摘要栏',
   'settings.dashboard.homeSummaryBar.description':
     '在首页仪表板上方显示气候、灯光、安防和媒体的紧凑摘要。',

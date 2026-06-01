@@ -12,6 +12,22 @@ interface HomeAssistantUserLike {
   name?: string | null;
   is_owner?: boolean;
   is_admin?: boolean;
+  avatarUrl?: string | null;
+  avatar_url?: string | null;
+  picture?: string | null;
+  image?: string | null;
+}
+
+function resolveHomeAssistantAvatarUrl(user: HomeAssistantUserLike): string | null {
+  const candidates = [user.avatarUrl, user.avatar_url, user.picture, user.image];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 export function fromHassUser(
@@ -26,5 +42,6 @@ export function fromHassUser(
     name: user.name,
     is_owner: user.is_owner,
     is_admin: user.is_admin,
+    avatarUrl: resolveHomeAssistantAvatarUrl(user),
   };
 }

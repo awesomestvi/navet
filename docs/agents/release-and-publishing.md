@@ -39,8 +39,8 @@ Recommended operator flow:
 10. Tag the commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or `v0.3.1`.
 11. Push the tag to GitHub to trigger
     [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
-12. The tagged release workflow rebuilds the custom panel, fails if committed panel assets drift,
-    and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
+12. The tagged release workflow validates the committed release surfaces, packages the committed
+    custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
 13. For developer hardware testing from `main`, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
 

@@ -25,9 +25,11 @@ vi.mock('@navet/app/auth/adapters/standaloneOAuthAuth', () => ({
   },
 }));
 
-const { homeyInitMock, openhabInitMock } = vi.hoisted(() => ({
+const { homeyInitMock, homeyLoginMock, openhabInitMock, openhabLoginMock } = vi.hoisted(() => ({
   homeyInitMock: vi.fn().mockResolvedValue(null),
+  homeyLoginMock: vi.fn(),
   openhabInitMock: vi.fn().mockResolvedValue(null),
+  openhabLoginMock: vi.fn(),
 }));
 
 vi.mock('@navet/app/auth/adapters/homeyOAuthAuth', () => ({
@@ -35,6 +37,7 @@ vi.mock('@navet/app/auth/adapters/homeyOAuthAuth', () => ({
     providerId: 'homey',
     kind: 'standalone-oauth',
     init: homeyInitMock,
+    login: homeyLoginMock,
   },
 }));
 
@@ -43,6 +46,7 @@ vi.mock('@navet/app/auth/adapters/openhabUrlSessionAuth', () => ({
     providerId: 'openhab',
     kind: 'standalone-oauth',
     init: openhabInitMock,
+    login: openhabLoginMock,
   },
 }));
 
@@ -52,7 +56,9 @@ describe('authSessionManager snapshot', () => {
     sessionStorage.clear();
     authSessionManager.replaceSession(null);
     homeyInitMock.mockReset();
+    homeyLoginMock.mockReset();
     openhabInitMock.mockReset();
+    openhabLoginMock.mockReset();
     homeyInitMock.mockResolvedValue(null);
     openhabInitMock.mockResolvedValue(null);
   });
@@ -178,5 +184,39 @@ describe('authSessionManager snapshot', () => {
     });
 
     expect(localStorage.getItem('navet_auth_session')).toBeNull();
+  });
+
+  it('keeps the current active provider when another provider connects', async () => {
+    authSessionManager.replaceSession({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    homeyLoginMock.mockResolvedValueOnce({
+      providerId: 'homey',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://homey.example.com',
+      hassUrl: 'https://homey.example.com',
+      availableHomeys: [{ id: 'homey-1', name: 'Living Room Homey' }],
+      selectedHomeyId: 'homey-1',
+      needsHomeySelection: false,
+    });
+
+    await expect(authSessionManager.login({ providerId: 'homey' })).resolves.toMatchObject({
+      providerId: 'home_assistant',
+      authenticatedProviderIds: ['home_assistant', 'homey'],
+      sessions: {
+        home_assistant: expect.objectContaining({
+          hassUrl: 'https://ha.example.com',
+        }),
+        homey: expect.objectContaining({
+          hassUrl: 'https://homey.example.com',
+        }),
+      },
+    });
   });
 });

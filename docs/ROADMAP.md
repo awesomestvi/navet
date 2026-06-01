@@ -8,8 +8,8 @@ today, and what is likely next.
 Navet already ships:
 
 - Home Assistant support across custom panel, add-on, and standalone modes
-- Homey support through the standalone login flow
-- openHAB support through the standalone URL-session flow
+- Homey support through the standalone OAuth flow
+- openHAB support through the standalone base-URL and username/password flow
 - dedicated `home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings`
   sections
 - dashboard editing with card ordering, sizing, locking, visibility, and import/export
@@ -60,5 +60,5 @@ Navet already ships:
 - Home Assistant is still the most mature provider experience.
 - Homey and openHAB are real supported paths, but not at the same maturity level as Home
   Assistant.
-- Hubitat and SmartThings have package scaffolding in the repo, but they are not available runtime
-  options yet.
+- Hubitat and SmartThings have package entry points in the repo, but they are not available runtime
+  providers yet.

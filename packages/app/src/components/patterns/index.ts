@@ -19,6 +19,11 @@ export {
   type SettingsLivePreviewFrameProps,
 } from './interaction-preview-card';
 export {
+  getPortalActionDockAnchorRect,
+  PortalActionDock,
+  type PortalActionDockAnchorRect,
+} from './portal-action-dock';
+export {
   SectionCard,
   type SectionCardProps,
 } from './section-card';

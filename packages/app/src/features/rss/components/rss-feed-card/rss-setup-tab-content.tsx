@@ -1,6 +1,7 @@
 import { Input, InteractivePill } from '@navet/app/components/primitives';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import type { TranslateFn } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { Plus } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { RSSFeedCardSurfaceTokens } from './surface-tokens';
@@ -16,6 +17,7 @@ interface RSSSetupTabContentProps {
   canAddProvider: boolean;
   inputStyle: CSSProperties;
   surface: RSSFeedCardSurfaceTokens;
+  theme: ThemeType;
   accentColor: string;
   textPrimaryColor: string;
   textSecondaryColor: string;
@@ -33,6 +35,7 @@ export function RSSSetupTabContent({
   canAddProvider,
   inputStyle,
   surface,
+  theme,
   accentColor,
   textPrimaryColor,
   textSecondaryColor,
@@ -69,6 +72,7 @@ export function RSSSetupTabContent({
               disabled={!canAddProvider}
               className="min-h-9 px-4 text-sm"
               style={getRSSDialogPillStyle({
+                theme,
                 accentColor,
                 isActive: canAddProvider,
                 textPrimaryColor,
@@ -92,6 +96,7 @@ export function RSSSetupTabContent({
               size="compact"
               className="text-xs"
               style={getRSSDialogPillStyle({
+                theme,
                 accentColor,
                 isActive: articleCount === count,
                 textPrimaryColor,
@@ -108,21 +113,31 @@ export function RSSSetupTabContent({
 }
 
 function getRSSDialogPillStyle({
+  theme,
   accentColor,
   isActive,
   textPrimaryColor,
   textSecondaryColor,
 }: {
+  theme: ThemeType;
   accentColor: string;
   isActive: boolean;
   textPrimaryColor: string;
   textSecondaryColor: string;
 }): CSSProperties {
+  const activeBorderAlpha = theme === 'light' ? 0.24 : 0.34;
+  const idleBorderAlpha = theme === 'light' ? 0.16 : 0.22;
+  const activeBackgroundAlpha = theme === 'light' ? 0.14 : 0.18;
+  const idleBackgroundAlpha = theme === 'light' ? 0.08 : 0.12;
+  const activeShadowAlpha = theme === 'light' ? 0.14 : 0.2;
+
   return {
     color: isActive ? textPrimaryColor : textSecondaryColor,
-    borderColor: `rgba(${hexToRgb(accentColor)}, ${isActive ? 0.34 : 0.22})`,
-    backgroundColor: `rgba(${hexToRgb(accentColor)}, ${isActive ? 0.18 : 0.1})`,
-    boxShadow: isActive ? `inset 0 0 0 1px rgba(${hexToRgb(accentColor)}, 0.16)` : 'none',
+    borderColor: `rgba(${hexToRgb(accentColor)}, ${isActive ? activeBorderAlpha : idleBorderAlpha})`,
+    backgroundColor: `rgba(${hexToRgb(accentColor)}, ${isActive ? activeBackgroundAlpha : idleBackgroundAlpha})`,
+    boxShadow: isActive
+      ? `inset 0 0 0 1px rgba(${hexToRgb(accentColor)}, ${activeShadowAlpha})`
+      : 'none',
   };
 }
 

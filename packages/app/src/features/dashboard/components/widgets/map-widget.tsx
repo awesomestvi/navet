@@ -1,3 +1,4 @@
+import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
@@ -43,49 +44,31 @@ function requestDeferredMapReady(callback: () => void) {
   };
 }
 
-function subscribeToMapInteraction(callback: () => void) {
-  const controller = new AbortController();
-  const options = { once: true, passive: true, signal: controller.signal } as const;
-  const handleInteraction = () => callback();
-
-  window.addEventListener('pointerdown', handleInteraction, options);
-  window.addEventListener('keydown', handleInteraction, { once: true, signal: controller.signal });
-  window.addEventListener('scroll', handleInteraction, options);
-
-  return () => controller.abort();
-}
-
 function MapPlaceholder({
-  markerCount,
-  mapControlSurface,
   baseSurface,
   cardShell,
-  label,
-  onActivate,
+  description,
+  title,
+  size,
 }: {
-  markerCount: number;
-  mapControlSurface: ReturnType<typeof getMapControlSurfaceTokens>;
   baseSurface: ReturnType<typeof getThemeSurfaceTokens>;
   cardShell: ReturnType<typeof getCardShellSurfaceTokens>;
-  label: string;
-  onActivate?: () => void;
+  description: string;
+  title: string;
+  size: CardSize;
 }) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
+      className={`absolute inset-0 ${baseSurface.panel} ${cardShell.backdropClassName}`}
       data-map-placeholder="true"
     >
-      <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
-      <span className={`text-xs ${baseSurface.textMuted}`}>{markerCount > 0 ? label : ''}</span>
-      {markerCount > 0 && onActivate ? (
-        <button
-          type="button"
-          onClick={onActivate}
-          className={`pointer-events-auto rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${mapControlSurface.attributionClassName} ${baseSurface.textSecondary}`}
-        >
-          Load live map
-        </button>
-      ) : null}
+      <CardEmptyState
+        title={title}
+        description={description}
+        icon={MapPin}
+        size={size}
+        className="h-full px-4"
+      />
     </div>
   );
 }
@@ -133,8 +116,6 @@ export const MapWidget = memo(function MapWidget({
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [isMapDeferredReady, setIsMapDeferredReady] = useState(false);
-  const [isMapActivated, setIsMapActivated] = useState(false);
-  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const mapFrameStyle = useMemo(
     () => ({
       borderColor:
@@ -167,11 +148,7 @@ export const MapWidget = memo(function MapWidget({
     stableResolvedMarkersRef.current = nextMarkers;
     return nextMarkers;
   }, [markers]);
-  const shouldRenderLiveMap =
-    resolvedMarkers.length > 0 &&
-    isMapVisible &&
-    isMapDeferredReady &&
-    (isMapActivated || hasUserInteracted);
+  const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
 
@@ -211,14 +188,6 @@ export const MapWidget = memo(function MapWidget({
     return requestDeferredMapReady(() => setIsMapDeferredReady(true));
   }, [isMapVisible, resolvedMarkers.length]);
 
-  useEffect(() => {
-    if (resolvedMarkers.length === 0 || hasUserInteracted) {
-      return;
-    }
-
-    return subscribeToMapInteraction(() => setHasUserInteracted(true));
-  }, [hasUserInteracted, resolvedMarkers.length]);
-
   return (
     <RenderProfiler id={`MapWidget:${size}`}>
       <BaseCard
@@ -238,23 +207,22 @@ export const MapWidget = memo(function MapWidget({
             <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
           ) : null}
           {resolvedMarkers.length === 0 ? (
-            <div
-              className={`absolute inset-0 flex flex-col items-center justify-center gap-2 ${baseSurface.panel} ${cardShell.backdropClassName}`}
-            >
-              <MapPin className={`h-8 w-8 ${mapControlSurface.emptyStateIconClassName}`} />
-              <span className={`text-xs ${baseSurface.textMuted}`}>
-                {t('widgets.map.noTrackers')}
-              </span>
-            </div>
+            <MapPlaceholder
+              baseSurface={baseSurface}
+              cardShell={cardShell}
+              title={t('widgets.map.title')}
+              description={t('widgets.map.noTrackers')}
+              size={size}
+            />
           ) : shouldRenderLiveMap ? (
             <Suspense
               fallback={
                 <MapPlaceholder
-                  markerCount={resolvedMarkers.length}
-                  mapControlSurface={mapControlSurface}
                   baseSurface={baseSurface}
                   cardShell={cardShell}
-                  label={t('widgets.map.title')}
+                  title={t('widgets.map.title')}
+                  description={t('widgets.map.trackerCount', { count: resolvedMarkers.length })}
+                  size={size}
                 />
               }
             >
@@ -271,12 +239,11 @@ export const MapWidget = memo(function MapWidget({
             </Suspense>
           ) : (
             <MapPlaceholder
-              markerCount={resolvedMarkers.length}
-              mapControlSurface={mapControlSurface}
               baseSurface={baseSurface}
               cardShell={cardShell}
-              label={t('widgets.map.title')}
-              onActivate={() => setIsMapActivated(true)}
+              title={t('widgets.map.title')}
+              description={t('widgets.map.trackerCount', { count: resolvedMarkers.length })}
+              size={size}
             />
           )}
           {shouldRenderLiveMap && surface.overlayClassName ? (

@@ -82,6 +82,15 @@ export const enMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Manage what appears on the board and how this local setup is backed up.',
+  'settings.dashboard.headerTitle.title': 'Header title',
+  'settings.dashboard.headerTitle.description':
+    'Choose what the large dashboard heading shows in the top bar.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Greeting',
+  'settings.dashboard.headerTitle.customText': 'Custom text',
+  'settings.dashboard.headerTitle.dateTime': 'Date & Time',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Welcome home',
+  'settings.dashboard.headerTitle.customHint':
+    'Leave it blank to fall back to the automatic greeting.',
   'settings.dashboard.homeSummaryBar.title': 'Summary bar',
   'settings.dashboard.homeSummaryBar.description':
     'Show compact energy, climate, lights, security, media, and routine summaries above dashboards.',

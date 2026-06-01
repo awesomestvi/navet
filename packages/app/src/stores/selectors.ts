@@ -121,6 +121,8 @@ export const settingsSelectors = {
   username: (state: SettingsState) => state.username,
   email: (state: SettingsState) => state.email,
   language: (state: SettingsState) => state.language,
+  headerTitleMode: (state: SettingsState) => state.headerTitleMode,
+  headerCustomText: (state: SettingsState) => state.headerCustomText,
   showNotifications: (state: SettingsState) => state.showNotifications,
   showWeatherInHeader: (state: SettingsState) => state.showWeatherInHeader,
   showHomeSummaryBar: (state: SettingsState) => state.showHomeSummaryBar,
@@ -162,6 +164,8 @@ export const settingsSelectors = {
   // Combined selectors
   displaySettings: (state: SettingsState) => ({
     language: state.language,
+    headerTitleMode: state.headerTitleMode,
+    headerCustomText: state.headerCustomText,
     showHomeSummaryBar: state.showHomeSummaryBar,
     keepDeviceAwake: state.keepDeviceAwake,
     use24HourTime: state.use24HourTime,

@@ -183,6 +183,39 @@ describe('DashboardCardItem card locking', () => {
     dispatchEventSpy.mockRestore();
   });
 
+  it('adds a settings action to the edit dock for custom cards with settings dialogs', () => {
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
+
+    renderWithProviders(
+      <DashboardCardItem
+        id="custom-rss"
+        size="small"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        card={{
+          id: 'custom-rss',
+          type: 'rss',
+          size: 'small',
+          room: 'Kitchen',
+          createdAt: 1,
+        }}
+      />
+    );
+
+    const settingsButton = screen.getByRole('button', {
+      name: 'Open settings for custom-rss',
+    });
+    fireEvent.click(settingsButton);
+
+    expect(dispatchEventSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'navet:edit-mode-open-settings',
+      })
+    );
+
+    dispatchEventSpy.mockRestore();
+  });
+
   it('shows a single launcher on tiny cards and expands the edit dock on demand', () => {
     renderWithProviders(
       <DashboardCardItem

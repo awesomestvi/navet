@@ -1,3 +1,8 @@
+import {
+  getPortalActionDockAnchorRect,
+  PortalActionDock,
+  type PortalActionDockAnchorRect,
+} from '@navet/app/components/patterns/portal-action-dock';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
 import { dispatchEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
@@ -10,7 +15,6 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { EyeOff, Lock, Settings2, SlidersHorizontal, Unlock, X } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
 import { lazy, memo, Suspense, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 import { renderCard } from '../utils/card-renderer';
@@ -34,13 +38,6 @@ interface DashboardCardItemProps {
   allowExtraLargeSizes?: boolean;
   usesHideAction?: boolean;
   headerSubtitleOverride?: string;
-}
-
-interface TinyEditDockAnchorRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
 }
 
 const DashboardCardItemDraggable = lazy(async () => {
@@ -72,7 +69,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const toggleCardLock = useDashboardEntitiesStore((state) => state.toggleCardLock);
   const [isTinyEditDockOpen, setIsTinyEditDockOpen] = useState(false);
   const [tinyEditDockAnchorRect, setTinyEditDockAnchorRect] =
-    useState<TinyEditDockAnchorRect | null>(null);
+    useState<PortalActionDockAnchorRect | null>(null);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
@@ -91,7 +88,9 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     event.stopPropagation();
     toggleCardLock(id);
   };
-  const canOpenEditModeSettings = device ? supportsEditModeSettingsDock(device) : false;
+  const canOpenEditModeSettings = device
+    ? supportsEditModeSettingsDock(device)
+    : supportsCustomCardEditModeSettingsDock(card);
   const tinyEditOverlayTitle = device?.name ?? getCustomCardEditLabel(card, t);
   const tinyEditOverlaySubtitle = device
     ? getDeviceTypeEditLabel(device.type, t)
@@ -175,7 +174,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           ) : (
             <TinyEditModeDockLauncher
               onOpen={(event) => {
-                setTinyEditDockAnchorRect(getTinyEditDockAnchorRect(event.currentTarget));
+                setTinyEditDockAnchorRect(getPortalActionDockAnchorRect(event.currentTarget));
                 setIsTinyEditDockOpen(true);
               }}
               title={t('common.moreActions')}
@@ -267,6 +266,7 @@ function EditModeActionDock({
   children: ReactNode;
 }) {
   const compact = cardSize === 'tiny' || cardSize === 'extra-small';
+  const narrowDock = compact || cardSize === 'small';
   const radiusClassName = getBaseCardRadiusClassName(cardSize);
 
   return (
@@ -283,10 +283,10 @@ function EditModeActionDock({
         aria-hidden="true"
       />
       <div
-        className={`relative flex h-full items-end justify-center px-3 ${compact ? 'pb-2.5' : 'pb-3'}`}
+        className={`relative flex h-full items-end justify-center ${narrowDock ? 'px-2' : 'px-3'} ${compact ? 'pb-2.5' : 'pb-3'}`}
       >
         <div
-          className={`pointer-events-auto inline-flex items-center justify-center ${compact ? 'gap-2.5 px-2.5 py-1.5' : 'gap-3 px-3 py-2'} rounded-full`}
+          className={`pointer-events-auto inline-flex max-w-full items-center justify-center ${narrowDock ? 'gap-2 px-2 py-1.5' : 'gap-3 px-3 py-2'} rounded-full`}
           style={{
             border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
             background: '#161619',
@@ -338,96 +338,23 @@ function TinyEditModeDockOverlay({
   title,
 }: {
   accentColor: string;
-  anchorRect: TinyEditDockAnchorRect | null;
+  anchorRect: PortalActionDockAnchorRect | null;
   children: ReactNode;
   onClose: () => void;
   subtitle: string;
   title: string;
 }) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [onClose]);
-
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const overlayWidth = anchorRect ? Math.max(272, Math.min(anchorRect.width + 72, 360)) : 320;
-  const overlayLeft = anchorRect
-    ? Math.max(
-        16,
-        Math.min(
-          anchorRect.left + anchorRect.width / 2 - overlayWidth / 2,
-          window.innerWidth - overlayWidth - 16
-        )
-      )
-    : 16;
-  const overlayTop = anchorRect
-    ? Math.max(16, Math.min(anchorRect.top + anchorRect.height / 2 - 84, window.innerHeight - 196))
-    : 16;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/58"
-        aria-label="Close edit controls"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onClose();
-        }}
-      />
-      <div
-        className="absolute z-1"
-        style={{
-          left: `${overlayLeft}px`,
-          top: `${overlayTop}px`,
-          width: `${overlayWidth}px`,
-        }}
-      >
-        <div
-          className="pointer-events-auto flex w-full flex-col items-center rounded-[28px]"
-          style={{
-            border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
-            background: '#161619',
-            boxShadow: '0 18px 38px -22px rgba(0,0,0,0.82)',
-            padding: '10px',
-          }}
-        >
-          <div className="px-3 pt-1 pb-2 text-center">
-            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/58">
-              {subtitle}
-            </div>
-            <div className="mt-1 text-sm font-semibold leading-tight text-white">{title}</div>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
-        </div>
-      </div>
-    </div>,
-    document.body
+  return (
+    <PortalActionDock
+      accentColor={accentColor}
+      anchorRect={anchorRect}
+      onClose={onClose}
+      subtitle={subtitle}
+      title={title}
+    >
+      <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
+    </PortalActionDock>
   );
-}
-
-function getTinyEditDockAnchorRect(target: HTMLElement): TinyEditDockAnchorRect | null {
-  const cardRoot = target.closest<HTMLElement>(
-    '[data-draggable-card="true"], [data-card-nodrag="true"]'
-  );
-  if (!cardRoot) {
-    return null;
-  }
-
-  const { top, left, width, height } = cardRoot.getBoundingClientRect();
-  return { top, left, width, height };
 }
 
 function renderEditModeDockActions({
@@ -676,6 +603,14 @@ function supportsEditModeSettingsDock(device: DeviceWithType) {
     'grouped-sensors',
     'sensors',
   ].includes(device.type);
+}
+
+function supportsCustomCardEditModeSettingsDock(card?: CustomCard) {
+  if (!card) {
+    return false;
+  }
+
+  return ['info', 'rss', 'photo', 'battery', 'ups', 'energy-now', 'button'].includes(card.type);
 }
 
 function getDeviceTypeEditLabel(type: DeviceWithType['type'], t: ReturnType<typeof useI18n>['t']) {

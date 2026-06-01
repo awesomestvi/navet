@@ -86,6 +86,15 @@ export const deMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Lege fest, was auf der Fläche erscheint und wie dieses lokale Setup gesichert wird.',
+  'settings.dashboard.headerTitle.title': 'Kopfzeile',
+  'settings.dashboard.headerTitle.description':
+    'Wähle, was die große Dashboard-Überschrift in der oberen Leiste anzeigt.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Begrüßung',
+  'settings.dashboard.headerTitle.customText': 'Eigener Text',
+  'settings.dashboard.headerTitle.dateTime': 'Datum und Uhrzeit',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Willkommen zu Hause',
+  'settings.dashboard.headerTitle.customHint':
+    'Leer lassen, um zur automatischen Begrüßung zurückzufallen.',
   'settings.dashboard.homeSummaryBar.title': 'Home-Zusammenfassung',
   'settings.dashboard.homeSummaryBar.description':
     'Zeigt kompakte Zusammenfassungen für Klima, Licht, Sicherheit und Medien über dem Home-Dashboard.',

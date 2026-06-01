@@ -84,6 +84,15 @@ export const svMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Hantera vad som visas på ytan och hur den lokala konfigurationen säkerhetskopieras.',
+  'settings.dashboard.headerTitle.title': 'Rubrik i sidhuvud',
+  'settings.dashboard.headerTitle.description':
+    'Välj vad den stora dashboard-rubriken ska visa i toppfältet.',
+  'settings.dashboard.headerTitle.autoGreeting': 'Hälsning',
+  'settings.dashboard.headerTitle.customText': 'Egen text',
+  'settings.dashboard.headerTitle.dateTime': 'Datum och tid',
+  'settings.dashboard.headerTitle.customPlaceholder': 'Välkommen hem',
+  'settings.dashboard.headerTitle.customHint':
+    'Lämna tomt för att falla tillbaka till den automatiska hälsningen.',
   'settings.dashboard.homeSummaryBar.title': 'Hemöversikt',
   'settings.dashboard.homeSummaryBar.description':
     'Visa kompakta sammanfattningar för klimat, belysning, säkerhet och media ovanför hemdashboarden.',
