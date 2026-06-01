@@ -1,12 +1,16 @@
 # Changelog
 
-## 0.4.2 - 2026-06-01
+## 0.4.3 - 2026-06-01
 
 ## Fixed
 
 - Switch cards now show their settings reliably again in dashboard edit mode.
 - Adding openHAB to an existing setup no longer crashes the app during connection setup.
 - Home Assistant alerts now render correctly again in the dashboard.
+
+## Improved
+
+- Home Assistant custom panel release assets now build reproducibly, so tagged releases can publish the packaged panel bundle reliably.
 
 ## 0.4.1 - 2026-05-30
 
