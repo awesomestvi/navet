@@ -136,10 +136,16 @@ pnpm test:tier3
 pnpm test:coverage
 pnpm storybook
 pnpm storybook:build
+pnpm build:demo
+pnpm build:website
+pnpm docker:build
+pnpm docker:smoke
 pnpm check:stories
 pnpm check:ui-kit
 pnpm check:docker
 pnpm build:ha-panel
+pnpm release:check
+pnpm release:version-sync
 ```
 
 Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default
@@ -157,6 +163,8 @@ Useful entry points:
 - [docs/WIDGETS.md](docs/WIDGETS.md)
 - [SECURITY.md](SECURITY.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)
+- [docs/release-workflow.md](docs/release-workflow.md)
+- [docs/rollback.md](docs/rollback.md)
 - [docs/agents/architecture.md](docs/agents/architecture.md)
 
 ## Screenshots

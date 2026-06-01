@@ -1,5 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
+import { getAppReleaseBadgeLabel } from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useTheme } from '@navet/app/hooks';
 
@@ -10,9 +11,11 @@ interface AppReleaseBadgeProps {
 export function AppReleaseBadge({ className = '' }: AppReleaseBadgeProps) {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const isBeta = APP_VERSION.includes('-beta');
+  const badgeLabel =
+    getAppReleaseBadgeLabel() ??
+    (APP_VERSION.includes('-beta') || APP_VERSION.includes('-rc') ? 'Beta' : null);
 
-  if (!isBeta) {
+  if (!badgeLabel) {
     return null;
   }
 
@@ -28,7 +31,7 @@ export function AppReleaseBadge({ className = '' }: AppReleaseBadgeProps) {
         backgroundColor: `${primaryColor}1f`,
       }}
     >
-      Beta
+      {badgeLabel}
     </span>
   );
 }

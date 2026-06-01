@@ -1,11 +1,17 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_call:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
@@ -79,6 +85,26 @@ jobs:
 
       - name: Run Tier 2 blocking app-contract tests
         run: pnpm test:tier2
+
+  standalone-docker-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build standalone Docker image
+        run: docker build -t navet:ci .
+
+      - name: Boot standalone Docker image and verify HTTP response
+        env:
+          NAVET_DOCKER_IMAGE: navet:ci
+        run: node scripts/docker-smoke.mjs
 
   tier-3-broad-regression:
     runs-on: ubuntu-latest

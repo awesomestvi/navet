@@ -1,1 +1,46 @@
-pnpm check:lockfile && pnpm check && pnpm check:stories && pnpm check:ui-kit
+changed_files="$(git diff --cached --name-only)"
+should_verify_release_artifacts=false
+should_check_release_docker=false
+
+if printf '%s\n' "$changed_files" | grep -Eq '^(package\.json|CHANGELOG\.md|custom_components/navet/manifest\.json|addons/navet/config\.yaml|docs/VERSIONING\.md)$'; then
+  should_verify_release_artifacts=true
+fi
+
+if printf '%s\n' "$changed_files" | grep -Eq '^package\.json$'; then
+  staged_version="$(
+    git show :package.json |
+      node -e 'let data=""; process.stdin.on("data",(chunk)=>{data+=chunk}); process.stdin.on("end",()=>{process.stdout.write(JSON.parse(data).version ?? "")})'
+  )"
+  head_version=""
+
+  if git rev-parse --verify HEAD >/dev/null 2>&1 && git cat-file -e HEAD:package.json 2>/dev/null; then
+    head_version="$(
+      git show HEAD:package.json |
+        node -e 'let data=""; process.stdin.on("data",(chunk)=>{data+=chunk}); process.stdin.on("end",()=>{process.stdout.write(JSON.parse(data).version ?? "")})'
+    )"
+  fi
+
+  if [ "$staged_version" != "$head_version" ]; then
+    should_check_release_docker=true
+  fi
+fi
+
+pnpm check:lockfile &&
+  pnpm check &&
+  pnpm check:stories &&
+  pnpm check:ui-kit &&
+  if [ "$should_verify_release_artifacts" = true ]; then
+    pnpm release:check &&
+      if [ "$should_check_release_docker" = true ]; then
+        pnpm check:docker
+      else
+        true
+      fi &&
+      pnpm build:ha-panel &&
+      if ! git diff --exit-code -- custom_components/navet/frontend; then
+        echo "custom_components/navet/frontend changed after pnpm build:ha-panel. Stage the generated panel assets and commit again." >&2
+        exit 1
+      fi
+  else
+    true
+  fi

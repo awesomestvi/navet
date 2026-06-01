@@ -1,4 +1,4 @@
-name: Deploy demo and Storybook to Pages
+name: Deploy website, demo, and Storybook to Pages
 
 on:
   push:
@@ -29,7 +29,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-main
   cancel-in-progress: true
 
 jobs:
