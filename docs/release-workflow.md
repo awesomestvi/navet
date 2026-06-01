@@ -112,7 +112,7 @@ Behavior:
 - validates release-managed files and changelog alignment
 - requires Tier 1 validation
 - pins Node 22 anywhere the workflow runs repo JavaScript
-- rebuilds the custom panel, verifies committed panel assets, and attaches a panel archive
+- packages the committed custom panel assets and attaches a panel archive
 - publishes standalone release images
 - publishes add-on release images
 - creates the GitHub release from `CHANGELOG.md`
@@ -146,7 +146,7 @@ promotion in phase 1.
 5. Run `node scripts/check-release-surfaces.mjs`.
 6. Merge the release commit to `main`.
 7. Create and push the release tag.
-8. Let the tagged release workflow rebuild the panel, verify no panel drift, and attach
+8. Let the tagged release workflow package the committed panel bundle and attach
    `navet-panel-<tag>.tar.gz` to the GitHub release.
 9. Verify the published Docker/add-on artifacts and the GitHub release page.
 
