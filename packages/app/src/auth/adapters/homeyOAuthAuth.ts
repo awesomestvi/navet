@@ -152,8 +152,8 @@ function clearOAuthCallbackUrl(): void {
 function toSession(stored: StoredHomeySession): HomeyAuthSession {
   const homeyBaseUrl =
     stored.homeyBaseUrl ??
-    stored.homeys.find((homey) => homey.id === stored.selectedHomeyId)?.localUrl ??
     stored.homeys.find((homey) => homey.id === stored.selectedHomeyId)?.localUrlSecure ??
+    stored.homeys.find((homey) => homey.id === stored.selectedHomeyId)?.localUrl ??
     stored.homeys.find((homey) => homey.id === stored.selectedHomeyId)?.remoteUrl ??
     'https://api.athom.com';
 

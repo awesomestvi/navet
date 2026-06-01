@@ -1,7 +1,7 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.png';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
-import { Button, Input } from '@navet/app/components/primitives';
+import { Button, Input, ModalSurface } from '@navet/app/components/primitives';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import {
   AlertDialog,
@@ -23,8 +23,8 @@ import {
   ExternalLink,
   Home,
   Link2,
+  LocateFixed,
   LogOut,
-  Radio,
   Server,
   Settings2,
   Unplug,
@@ -162,137 +162,76 @@ function ProviderManagementToggle({
   );
 }
 
-function ProviderSummaryCard({
-  provider,
-  styles,
-  t,
-  configUrl,
-  handleDisconnectProvider,
-}: {
-  provider: ProviderCard | undefined;
-  styles: SettingsSectionController['styles'];
-  t: ReturnType<typeof useI18n>['t'];
-  configUrl: string | null;
-  handleDisconnectProvider: SettingsSectionController['handleDisconnectProvider'];
-}) {
-  if (!provider) {
+function getProviderOpenUrl(provider: ProviderCard, configUrl: string | null) {
+  if (!provider.isConnected) {
     return null;
   }
-  const featureLabels = getSupportedProviderFeatureLabels(provider.featureMatrix);
 
-  return (
-    <div
-      className={`rounded-[22px] border p-4 md:p-5 ${styles.borderColor} ${styles.softBg} shadow-[0_20px_50px_-40px_rgba(0,0,0,0.55)]`}
-    >
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-3">
-            <ProviderLogoMark provider={provider} />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className={`text-sm font-semibold ${styles.textColor}`}>{provider.label}</p>
-                {provider.isActive ? (
-                  <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-emerald-300">
-                    {t('settings.system.providers.active')}
-                  </span>
-                ) : null}
-              </div>
-              <p className={`mt-1 text-sm leading-relaxed ${styles.subtleColor}`}>
-                {provider.baseUrl ?? 'Current provider for this device'}
-              </p>
-            </div>
-          </div>
-          {featureLabels.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {featureLabels.map((label) => (
-                <span
-                  key={label}
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles.borderColor} ${styles.subtleColor}`}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <div className="flex flex-col items-stretch gap-2 md:min-w-[12rem] md:max-w-[12rem]">
-          {provider.id === 'home_assistant' && configUrl ? (
-            <>
-              <a
-                href={configUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-              >
-                <ExternalLink className="h-4 w-4" />
-                <span>{t('settings.system.connection.openHomeAssistant')}</span>
-              </a>
+  if (provider.id === 'home_assistant') {
+    return configUrl ?? provider.baseUrl ?? null;
+  }
 
-              <button
-                type="button"
-                onClick={() => void handleDisconnectProvider('home_assistant')}
-                className={`inline-flex h-9 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-              >
-                <Unplug className="h-4 w-4" />
-                <span>{t('settings.system.providers.disconnect')}</span>
-              </button>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
+  return provider.baseUrl ?? null;
+}
+
+function getProviderUrlPlaceholder(provider: ProviderCard, t: ReturnType<typeof useI18n>['t']) {
+  return provider.id === 'openhab'
+    ? 'http://openhab.local:8080'
+    : t('settings.system.providers.homeAssistantUrlPlaceholder');
 }
 
 function ProviderCardView({
   provider,
   styles,
-  providerUrl,
-  setProviderUrl,
-  showConnectForm,
-  setShowConnectForm,
+  openConnectDialog,
+  showActiveControls,
+  setActiveProvider,
   handleConnectProvider,
   handleDisconnectProvider,
-  setActiveProvider,
   t,
+  configUrl,
 }: {
   provider: ProviderCard;
   styles: SettingsSectionController['styles'];
-  providerUrl: string;
-  setProviderUrl: (value: string) => void;
-  showConnectForm: boolean;
-  setShowConnectForm: (value: boolean) => void;
+  openConnectDialog: (providerId: IntegrationProviderId) => void;
+  showActiveControls: boolean;
+  setActiveProvider: SettingsSectionController['setActiveProvider'];
   handleConnectProvider: SettingsSectionController['handleConnectProvider'];
   handleDisconnectProvider: SettingsSectionController['handleDisconnectProvider'];
-  setActiveProvider: SettingsSectionController['setActiveProvider'];
   t: ReturnType<typeof useI18n>['t'];
+  configUrl: string | null;
 }) {
   const featureLabels = getSupportedProviderFeatureLabels(provider.featureMatrix);
   const usesUrlConnect = provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session';
+  const openUrl = getProviderOpenUrl(provider, configUrl);
 
   return (
     <div
       className={`rounded-[22px] border p-4 md:p-5 ${styles.borderColor} ${styles.softBg} shadow-[0_18px_44px_-40px_rgba(0,0,0,0.55)]`}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
             <ProviderLogoMark provider={provider} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className={`text-sm font-semibold ${styles.textColor}`}>{provider.label}</p>
-                {provider.status !== 'disconnected' ? (
+                {provider.status === 'connected' ? (
+                  <>
+                    <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                      {t('settings.system.providers.status.connected')}
+                    </span>
+                    {showActiveControls && provider.isActive ? (
+                      <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/12 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
+                        Active
+                      </span>
+                    ) : null}
+                  </>
+                ) : provider.status !== 'disconnected' ? (
                   <ProviderStatusBadge
                     label={getProviderStatusLabel(t, provider.status)}
                     styles={styles}
                   />
-                ) : null}
-                {provider.isActive ? (
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${styles.borderColor} ${styles.textColor}`}
-                  >
-                    {t('settings.system.providers.active')}
-                  </span>
                 ) : null}
               </div>
               <p className={`mt-2 text-sm leading-relaxed ${styles.subtleColor}`}>
@@ -322,17 +261,29 @@ function ProviderCardView({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {provider.isConnected && !provider.isActive ? (
+        <div className="flex w-full flex-col items-stretch gap-2 md:w-auto md:min-w-[12rem]">
+          {openUrl ? (
+            <a
+              href={openUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex h-9 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>{t('common.open')}</span>
+            </a>
+          ) : null}
+
+          {showActiveControls && provider.isConnected && !provider.isActive ? (
             <Button
               type="button"
               variant="secondary"
               size="small"
-              leading={<Radio className="h-4 w-4" />}
-              className="rounded-full"
+              leading={<LocateFixed className="h-4 w-4" />}
+              className="w-full rounded-full"
               onClick={() => setActiveProvider(provider.id)}
             >
-              {t('settings.system.providers.makeActive')}
+              Make active
             </Button>
           ) : null}
 
@@ -342,7 +293,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="rounded-full"
+              className="w-full rounded-full"
               onClick={() => void handleConnectProvider('homey')}
             >
               {t('settings.system.providers.connect')}
@@ -355,8 +306,8 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="rounded-full"
-              onClick={() => setShowConnectForm(!showConnectForm)}
+              className="w-full rounded-full"
+              onClick={() => openConnectDialog(provider.id)}
             >
               {t('settings.system.providers.connect')}
             </Button>
@@ -368,7 +319,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Unplug className="h-4 w-4" />}
-              className="rounded-full"
+              className="w-full rounded-full"
               onClick={() => void handleDisconnectProvider(provider.id)}
             >
               {t('settings.system.providers.disconnect')}
@@ -376,33 +327,6 @@ function ProviderCardView({
           ) : null}
         </div>
       </div>
-
-      {usesUrlConnect && !provider.isConnected && showConnectForm ? (
-        <form
-          className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void handleConnectProvider(provider.id, providerUrl.trim());
-          }}
-        >
-          <Input
-            value={providerUrl}
-            onChange={(event) => setProviderUrl(event.target.value)}
-            placeholder={t('settings.system.providers.homeAssistantUrlPlaceholder')}
-            leading={<Home className={`h-4 w-4 ${styles.subtleColor}`} />}
-            inputClassName={styles.textColor}
-          />
-          <Button
-            type="submit"
-            variant="secondary"
-            size="small"
-            leading={<Link2 className="h-4 w-4" />}
-            className="rounded-full"
-          >
-            {t('settings.system.providers.connect')}
-          </Button>
-        </form>
-      ) : null}
     </div>
   );
 }
@@ -414,7 +338,14 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
     home_assistant: '',
     openhab: '',
   });
-  const [connectFormsOpen, setConnectFormsOpen] = useState<Record<string, boolean>>({});
+  const [providerUsernames, setProviderUsernames] = useState<Record<string, string>>({
+    openhab: '',
+  });
+  const [providerPasswords, setProviderPasswords] = useState<Record<string, string>>({
+    openhab: '',
+  });
+  const [connectDialogProviderId, setConnectDialogProviderId] =
+    useState<IntegrationProviderId | null>(null);
   const [showProviderManagement, setShowProviderManagement] = useState(() =>
     controller.providerCards.every((provider) => !provider.isConnected)
   );
@@ -435,13 +366,16 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
   const providerCards = allProviderCards.filter(
     (provider) => provider.implementationStatus === 'implemented'
   );
-  const spotlightProvider =
-    providerCards.find((provider) => provider.isActive) ??
-    providerCards.find((provider) => provider.isConnected) ??
-    providerCards[0];
-  const managedProviders = spotlightProvider?.isConnected
-    ? providerCards.filter((provider) => provider.id !== spotlightProvider.id)
-    : providerCards;
+  const connectedProviders = providerCards.filter((provider) => provider.isConnected);
+  const showActiveControls = connectedProviders.length > 1;
+  const managedProviders = providerCards.filter((provider) => !provider.isConnected);
+  const connectDialogProvider =
+    connectDialogProviderId === null
+      ? null
+      : (providerCards.find((provider) => provider.id === connectDialogProviderId) ?? null);
+  const closeConnectDialog = () => setConnectDialogProviderId(null);
+  const openConnectDialog = (providerId: IntegrationProviderId) =>
+    setConnectDialogProviderId(providerId);
 
   return (
     <SettingsSectionShell
@@ -457,20 +391,33 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         styles={styles}
       >
         <div className="space-y-3">
-          <ProviderSummaryCard
-            provider={spotlightProvider}
-            styles={styles}
-            t={t}
-            configUrl={config?.url ?? null}
-            handleDisconnectProvider={handleDisconnectProvider}
-          />
+          {connectedProviders.length > 0 ? (
+            <div className="grid gap-3">
+              {connectedProviders.map((provider) => (
+                <ProviderCardView
+                  key={provider.id}
+                  provider={provider}
+                  styles={styles}
+                  openConnectDialog={openConnectDialog}
+                  showActiveControls={showActiveControls}
+                  setActiveProvider={setActiveProvider}
+                  handleConnectProvider={handleConnectProvider}
+                  handleDisconnectProvider={handleDisconnectProvider}
+                  t={t}
+                  configUrl={config?.url ?? null}
+                />
+              ))}
+            </div>
+          ) : null}
 
-          <ProviderManagementToggle
-            expanded={showProviderManagement}
-            onToggle={() => setShowProviderManagement((current) => !current)}
-            styles={styles}
-            totalProviders={managedProviders.length}
-          />
+          {managedProviders.length > 0 ? (
+            <ProviderManagementToggle
+              expanded={showProviderManagement}
+              onToggle={() => setShowProviderManagement((current) => !current)}
+              styles={styles}
+              totalProviders={managedProviders.length}
+            />
+          ) : null}
 
           {showProviderManagement && managedProviders.length > 0 ? (
             <div className="grid gap-3">
@@ -479,30 +426,154 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   key={provider.id}
                   provider={provider}
                   styles={styles}
-                  providerUrl={providerUrls[provider.id] ?? ''}
-                  setProviderUrl={(value) =>
-                    setProviderUrls((current) => ({
-                      ...current,
-                      [provider.id]: value,
-                    }))
-                  }
-                  showConnectForm={Boolean(connectFormsOpen[provider.id])}
-                  setShowConnectForm={(value) =>
-                    setConnectFormsOpen((current) => ({
-                      ...current,
-                      [provider.id]: value,
-                    }))
-                  }
+                  openConnectDialog={openConnectDialog}
+                  showActiveControls={showActiveControls}
+                  setActiveProvider={setActiveProvider}
                   handleConnectProvider={handleConnectProvider}
                   handleDisconnectProvider={handleDisconnectProvider}
-                  setActiveProvider={setActiveProvider}
                   t={t}
+                  configUrl={config?.url ?? null}
                 />
               ))}
             </div>
           ) : null}
         </div>
       </SettingsItem>
+
+      {connectDialogProvider ? (
+        <ModalSurface
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) {
+              closeConnectDialog();
+            }
+          }}
+          title={`Connect ${connectDialogProvider.label}`}
+          description={`Enter the connection details for ${connectDialogProvider.label}.`}
+          contentClassName="max-w-lg"
+          bodyClassName="overflow-hidden rounded-[28px]"
+        >
+          <form
+            className="space-y-5 bg-[linear-gradient(180deg,rgba(10,16,26,0.96),rgba(6,10,18,0.98))] p-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleConnectProvider(
+                connectDialogProvider.id,
+                (providerUrls[connectDialogProvider.id] ?? '').trim(),
+                connectDialogProvider.id === 'openhab'
+                  ? (providerUsernames[connectDialogProvider.id] ?? '').trim()
+                  : undefined,
+                connectDialogProvider.id === 'openhab'
+                  ? (providerPasswords[connectDialogProvider.id] ?? '')
+                  : undefined
+              );
+              closeConnectDialog();
+            }}
+          >
+            <div>
+              <p className="text-base font-semibold text-white">
+                Connect {connectDialogProvider.label}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-white/65">
+                Enter the URL
+                {connectDialogProvider.id === 'openhab' ? ', username, and password' : ''} to sign
+                in from Settings.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="provider-connect-url"
+                  className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
+                >
+                  URL
+                </label>
+                <Input
+                  id="provider-connect-url"
+                  value={providerUrls[connectDialogProvider.id] ?? ''}
+                  onChange={(event) =>
+                    setProviderUrls((current) => ({
+                      ...current,
+                      [connectDialogProvider.id]: event.target.value,
+                    }))
+                  }
+                  placeholder={getProviderUrlPlaceholder(connectDialogProvider, t)}
+                  leading={<Home className="h-4 w-4 text-white/45" />}
+                  inputClassName="text-white"
+                />
+              </div>
+
+              {connectDialogProvider.id === 'openhab' ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="provider-connect-username"
+                      className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
+                    >
+                      Username
+                    </label>
+                    <Input
+                      id="provider-connect-username"
+                      value={providerUsernames[connectDialogProvider.id] ?? ''}
+                      onChange={(event) =>
+                        setProviderUsernames((current) => ({
+                          ...current,
+                          [connectDialogProvider.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="openHAB Username"
+                      inputClassName="text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="provider-connect-password"
+                      className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
+                    >
+                      Password
+                    </label>
+                    <Input
+                      id="provider-connect-password"
+                      type="password"
+                      value={providerPasswords[connectDialogProvider.id] ?? ''}
+                      onChange={(event) =>
+                        setProviderPasswords((current) => ({
+                          ...current,
+                          [connectDialogProvider.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="openHAB Password"
+                      inputClassName="text-white"
+                    />
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                className="rounded-full"
+                onClick={closeConnectDialog}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                variant="secondary"
+                size="small"
+                leading={<Link2 className="h-4 w-4" />}
+                className="rounded-full"
+              >
+                {t('settings.system.providers.connect')}
+              </Button>
+            </div>
+          </form>
+        </ModalSurface>
+      ) : null}
 
       <SettingsItem
         title={t('settings.interaction.cameraStreams.title')}

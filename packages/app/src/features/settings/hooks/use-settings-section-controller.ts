@@ -133,8 +133,8 @@ export function useSettingsSectionController() {
     setActiveSection,
     setCurrentRoom,
     reopenOnboarding,
-    connectProvider: async ({ providerId, hassUrl }) => {
-      await login?.({ providerId, hassUrl });
+    connectProvider: async ({ providerId, hassUrl, username, password }) => {
+      await login?.({ providerId, hassUrl, username, password });
     },
     disconnectProvider: async (providerId) => {
       await logout?.(providerId);

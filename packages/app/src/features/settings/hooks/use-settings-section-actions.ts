@@ -19,6 +19,8 @@ interface SettingsSectionActionDeps {
   connectProvider: (input: {
     providerId: IntegrationProviderId;
     hassUrl?: string;
+    username?: string;
+    password?: string;
   }) => Promise<void>;
   disconnectProvider: (providerId: IntegrationProviderId) => Promise<void>;
 }
@@ -123,9 +125,14 @@ export function useSettingsSectionActions({
     setShowRestartOnboardingConfirm(false);
   };
 
-  const handleConnectProvider = async (providerId: IntegrationProviderId, hassUrl?: string) => {
+  const handleConnectProvider = async (
+    providerId: IntegrationProviderId,
+    hassUrl?: string,
+    username?: string,
+    password?: string
+  ) => {
     try {
-      await connectProvider({ providerId, hassUrl });
+      await connectProvider({ providerId, hassUrl, username, password });
       if (providerId === 'homey') {
         return;
       }

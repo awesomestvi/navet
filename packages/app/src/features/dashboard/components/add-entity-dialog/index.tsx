@@ -5,9 +5,11 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
 import { getDeviceTypeLabel } from '@navet/app/constants/device-type-labels';
 import { isAllRooms } from '@navet/app/constants/rooms';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
 import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ENTITY_LIST_HEIGHT, ENTITY_LIST_OVERSCAN, ENTITY_ROW_HEIGHT } from './constants';
@@ -113,6 +115,8 @@ export function AddEntityDialog({
     [visibleEntityIds]
   );
   const addedEntityIdSet = useMemo(() => new Set(addedEntityIds), [addedEntityIds]);
+  const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
+  const connectedProviderCount = Object.keys(providerSessions).length;
 
   const preparedDevices = useMemo(() => {
     const devices: PreparedDevice[] = [];
@@ -135,14 +139,16 @@ export function AddEntityDialog({
       const typeLabel =
         ('entityType' in device && typeof device.entityType === 'string' && device.entityType) ||
         getDeviceTypeLabel(device.type, t);
+      const providerTypeLabel =
+        getProviderEntityTypeLabel(device.id, typeLabel, connectedProviderCount > 1) ?? typeLabel;
 
       devices.push({
         device,
         id: device.id,
         name,
         room,
-        typeLabel,
-        searchText: `${name} ${room} ${typeLabel} ${device.id}`.toLowerCase(),
+        typeLabel: providerTypeLabel,
+        searchText: `${name} ${room} ${providerTypeLabel} ${device.id}`.toLowerCase(),
       });
     }
 
@@ -156,7 +162,7 @@ export function AddEntityDialog({
     });
 
     return devices;
-  }, [addedEntityIdSet, currentRoom, deviceMap, t, visibleIdSet]);
+  }, [addedEntityIdSet, connectedProviderCount, currentRoom, deviceMap, t, visibleIdSet]);
 
   const availableDevices = useMemo(() => {
     const normalizedQuery = deferredQuery.trim().toLowerCase();

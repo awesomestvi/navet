@@ -13,6 +13,36 @@ function makeEntity(entity_id: string, state: string, attributes: Record<string,
 }
 
 describe('homeassistant-mappers', () => {
+  it('humanizes generic Home Assistant entity type labels', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'light.kitchen': makeEntity('light.kitchen', 'on', {
+          friendly_name: 'Kitchen Light',
+        }),
+        'media_player.living_room_tv': makeEntity('media_player.living_room_tv', 'idle', {
+          friendly_name: 'Living Room TV',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'light.kitchen')?.attributes).toEqual(
+      expect.objectContaining({
+        entityType: 'Light',
+      })
+    );
+
+    expect(
+      entities.find((entity) => entity.externalId === 'media_player.living_room_tv')?.attributes
+    ).toEqual(
+      expect.objectContaining({
+        entityType: 'Media Player',
+      })
+    );
+  });
+
   it('attaches related energy metrics to switch entities from the same device', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

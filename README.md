@@ -16,18 +16,15 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
   <tr>
     <td align="center" width="33%">
       <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" height="48"><br>
-      <strong>Home Assistant</strong><br>
-      custom panel, add-on, standalone
+      <strong>Home Assistant</strong>
     </td>
     <td align="center" width="33%">
       <img src="packages/app/src/assets/providers/homey.png" alt="Homey" height="48"><br>
-      <strong>Homey</strong><br>
-      standalone OAuth flow
+      <strong>Homey</strong>
     </td>
     <td align="center" width="33%">
       <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" height="48"><br>
-      <strong>openHAB</strong><br>
-      standalone URL-session flow
+      <strong>openHAB</strong>
     </td>
   </tr>
 </table>
