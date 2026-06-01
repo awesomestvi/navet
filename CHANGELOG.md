@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.3 - 2026-06-01
+## 0.4.4 - 2026-06-01
 
 ## Fixed
 
@@ -10,7 +10,7 @@
 
 ## Improved
 
-- Home Assistant custom panel release assets now build reproducibly, so tagged releases can publish the packaged panel bundle reliably.
+- Home Assistant custom panel release assets now build reproducibly and match the CI packaging environment, so tagged releases can publish the packaged panel bundle reliably.
 
 ## 0.4.1 - 2026-05-30
 
