@@ -7,6 +7,7 @@ export const itMessages = {
   'common.custom': 'Personalizzato',
   'common.customize': 'Personalizza',
   'common.done': 'Fine',
+  'common.metrics': 'Metriche',
   'common.off': 'Spento',
   'common.on': 'Acceso',
   'common.open': 'Apri',

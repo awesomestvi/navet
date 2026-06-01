@@ -1,5 +1,6 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { HA_PENDING_ECHO_WINDOW_MS } from '@navet/app/constants/interaction-timing';
@@ -399,6 +400,7 @@ export function useHVACCardController({
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
+  useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
 
   const lightOverlay =
     theme === 'light'

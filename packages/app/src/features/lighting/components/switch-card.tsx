@@ -85,7 +85,6 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         onTintColorChange={controller.setTintColor}
       />
     ) : null;
-
   if (isTiny) {
     return (
       <>
@@ -295,26 +294,24 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               </div>
             )}
             {controller.selectedMetrics.length > 0 && (
-              <div className={controller.isExtraSmall ? 'space-y-1.5' : 'space-y-2'}>
+              <div className={controller.isExtraSmall ? 'space-y-1' : 'space-y-1.5'}>
                 {controller.selectedMetrics.map((metric, i) => (
                   <div
                     key={metric.label}
-                    className={`flex min-w-0 flex-col ${i === controller.selectedMetrics.length - 1 && controller.showSettingsButton && !controller.isExtraSmall ? 'pr-10' : ''}`}
+                    className={`grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-xs ${i === controller.selectedMetrics.length - 1 && controller.showSettingsButton && !controller.isExtraSmall ? 'pr-10' : ''}`}
                   >
                     <span
-                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-start gap-1.5 text-[12px] leading-tight`}
+                      className={`${stateSurface.secondaryTextClassName} flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] leading-tight`}
                       style={{ color: metricTextTokens.subtitleColor }}
                     >
                       {controller.renderMetricIcon(
                         metric,
-                        `${controller.isExtraSmall ? 'h-2.5 w-2.5' : 'h-3 w-3'} mt-0.5 flex-shrink-0`
+                        `${controller.isExtraSmall ? 'h-2.5 w-2.5' : 'h-3 w-3'} shrink-0`
                       )}
-                      <span className="min-w-0 whitespace-normal break-words">
-                        {controller.getMetricLabel(metric)}
-                      </span>
+                      <span className="min-w-0 truncate">{controller.getMetricLabel(metric)}</span>
                     </span>
                     <span
-                      className={`${stateSurface.primaryTextClassName} mt-0.5 pl-[18px] text-[12px] font-medium`}
+                      className={`${stateSurface.primaryTextClassName} shrink-0 whitespace-nowrap text-right text-[12px] font-medium tabular-nums`}
                       style={{ color: metricTextTokens.titleColor }}
                     >
                       {controller.formatMetricValue(metric)}

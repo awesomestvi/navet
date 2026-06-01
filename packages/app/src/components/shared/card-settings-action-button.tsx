@@ -14,7 +14,7 @@ interface CardSettingsActionButtonProps extends ButtonHTMLAttributes<HTMLButtonE
   size?: CardSize | 'large';
   className?: string;
   tone?: 'default' | 'muted';
-  variant?: 'neutral' | 'soft';
+  variant?: 'neutral' | 'soft' | 'emphasis';
   accentColor?: string;
 }
 

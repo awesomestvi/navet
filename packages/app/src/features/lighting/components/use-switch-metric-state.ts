@@ -18,10 +18,16 @@ function areMetricLabelListsEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((label, index) => label === right[index]);
 }
 
+function orderMetricLabelsByAvailability(metricLabels: string[], availableMetrics: DeviceMetric[]) {
+  const selectedLabels = new Set(metricLabels);
+  return availableMetrics
+    .map((metric) => metric.label)
+    .filter((label) => selectedLabels.has(label));
+}
+
 interface UseSwitchMetricStateParams {
   id: string;
   size: CardSize;
-  isOn: boolean;
   power?: number;
   voltage?: number;
   energy?: number;
@@ -31,7 +37,6 @@ interface UseSwitchMetricStateParams {
 export function useSwitchMetricState({
   id,
   size,
-  isOn,
   power,
   voltage,
   energy,
@@ -44,15 +49,15 @@ export function useSwitchMetricState({
       case 'tiny':
         return 1;
       case 'extra-small':
-        return 1;
+        return 2;
       case 'small':
-        return 2;
-      case 'medium':
-        return 3;
-      case 'large':
         return 4;
+      case 'medium':
+        return 6;
+      case 'large':
+        return 8;
       default:
-        return 2;
+        return 4;
     }
   }, [size]);
 
@@ -100,10 +105,7 @@ export function useSwitchMetricState({
     [fallbackMetrics, metrics]
   );
 
-  const availableMetrics = useMemo(
-    () => allMetrics.filter((metric) => isOn || metric.category === 'configuration'),
-    [allMetrics, isOn]
-  );
+  const availableMetrics = useMemo(() => allMetrics, [allMetrics]);
 
   const [hasExplicitMetricPreference, setHasExplicitMetricPreference] = useState<boolean>(
     () => storage.get<unknown>(metricPreferenceKey, null) !== null
@@ -120,21 +122,13 @@ export function useSwitchMetricState({
   }, [metricPreferenceKey]);
 
   useEffect(() => {
-    const availableMetricLabels = new Set(availableMetrics.map((metric) => metric.label));
-    const nextLabels = selectedMetricLabels.filter((label) => availableMetricLabels.has(label));
+    const knownMetricLabels = new Set(allMetrics.map((metric) => metric.label));
+    const nextLabels = selectedMetricLabels.filter((label) => knownMetricLabels.has(label));
+    const fallbackLabels = availableMetrics.slice(0, metricLimit).map((metric) => metric.label);
 
-    if (nextLabels.length === 0 && !hasExplicitMetricPreference) {
-      const fallbackLabels = availableMetrics.slice(0, metricLimit).map((metric) => metric.label);
+    if (nextLabels.length === 0 && availableMetrics.length > 0) {
       if (!areMetricLabelListsEqual(selectedMetricLabels, fallbackLabels)) {
         setSelectedMetricLabels(fallbackLabels);
-      }
-      return;
-    }
-
-    if (nextLabels.length > metricLimit) {
-      const truncatedLabels = nextLabels.slice(0, metricLimit);
-      if (!areMetricLabelListsEqual(selectedMetricLabels, truncatedLabels)) {
-        setSelectedMetricLabels(truncatedLabels);
       }
       return;
     }
@@ -142,7 +136,13 @@ export function useSwitchMetricState({
     if (!areMetricLabelListsEqual(selectedMetricLabels, nextLabels)) {
       setSelectedMetricLabels(nextLabels);
     }
-  }, [availableMetrics, hasExplicitMetricPreference, metricLimit, selectedMetricLabels]);
+  }, [
+    allMetrics,
+    availableMetrics,
+    hasExplicitMetricPreference,
+    metricLimit,
+    selectedMetricLabels,
+  ]);
 
   useEffect(() => {
     storage.set(metricPreferenceKey, selectedMetricLabels);
@@ -152,14 +152,22 @@ export function useSwitchMetricState({
     setHasExplicitMetricPreference(true);
     setSelectedMetricLabels((current) => {
       if (current.includes(metricLabel)) return current.filter((label) => label !== metricLabel);
-      if (current.length >= metricLimit) return [...current.slice(1), metricLabel];
+      const orderedCurrent = orderMetricLabelsByAvailability(current, availableMetrics);
+      if (orderedCurrent.length >= metricLimit) {
+        const removableVisibleLabel = orderedCurrent[orderedCurrent.length - 1];
+        return [...current.filter((label) => label !== removableVisibleLabel), metricLabel];
+      }
       return [...current, metricLabel];
     });
   };
 
-  const selectedMetrics = availableMetrics
-    .filter((metric) => selectedMetricLabels.includes(metric.label))
-    .slice(0, metricLimit);
+  const visibleSelectedMetricLabels = orderMetricLabelsByAvailability(
+    selectedMetricLabels,
+    availableMetrics
+  ).slice(0, metricLimit);
+  const selectedMetrics = availableMetrics.filter((metric) =>
+    visibleSelectedMetricLabels.includes(metric.label)
+  );
 
   return {
     availableMetrics,

@@ -41,7 +41,7 @@ export function getSwitchMetricDisplayLabel(metricLabel: string, deviceName: str
 
 export function useSwitchMetricFormatters({ deviceName, labels }: UseSwitchMetricFormattersParams) {
   const formatPower = useCallback((watts?: number) => {
-    if (!watts) {
+    if (watts == null) {
       return null;
     }
     if (watts >= 1000) {
@@ -50,14 +50,20 @@ export function useSwitchMetricFormatters({ deviceName, labels }: UseSwitchMetri
     return `${watts} W`;
   }, []);
 
+  const formatGenericNumericMetric = useCallback((value: number, unit: string) => {
+    const precision = unit === 'kWh' || Math.abs(value) < 10 ? 2 : !Number.isInteger(value) ? 1 : 0;
+    const formatted = Number(value.toFixed(precision)).toString();
+    return `${formatted}${unit ? ` ${unit}` : ''}`;
+  }, []);
+
   const formatMetricValue = useCallback(
     (metric: DeviceMetric) =>
       typeof metric.value === 'number'
         ? metric.label === 'Power'
           ? formatPower(metric.value)
-          : `${metric.value.toFixed(metric.unit === 'kWh' ? 2 : 0)}${metric.unit ? ` ${metric.unit}` : ''}`
+          : formatGenericNumericMetric(metric.value, metric.unit)
         : metric.value,
-    [formatPower]
+    [formatGenericNumericMetric, formatPower]
   );
 
   const getMetricLabel = useCallback(

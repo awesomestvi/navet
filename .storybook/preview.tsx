@@ -93,6 +93,7 @@ function StorybookEnvironment({
     });
 
     document.documentElement.style.setProperty('--navet-accent', accentColor);
+    document.documentElement.dataset.navetStorybook = 'true';
     document.documentElement.dataset.noAnimation = 'false';
     document.documentElement.dataset.lowPower = 'false';
     document.documentElement.dataset.effectsQuality = 'high';
@@ -113,6 +114,8 @@ function StorybookEnvironment({
       } else {
         delete document.documentElement.dataset.noAnimation;
       }
+
+      delete document.documentElement.dataset.navetStorybook;
 
       if (previousLowPower) {
         document.documentElement.dataset.lowPower = previousLowPower;

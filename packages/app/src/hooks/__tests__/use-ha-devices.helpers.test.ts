@@ -105,7 +105,7 @@ describe('use-ha-devices helpers', () => {
     expect(indexes.switchMetricsByDeviceId.get('device-pax-calima')).toBeUndefined();
   });
 
-  it('skips cumulative total-increasing energy sensors for switch metrics', () => {
+  it('collects cumulative total energy sensors for switch metrics', () => {
     const entities: HassEntities = {
       'switch.garden_lights_switch': makeHassEntityFixture({
         entityId: 'switch.garden_lights_switch',
@@ -145,8 +145,43 @@ describe('use-ha-devices helpers', () => {
     const indexes = buildDeviceIndexes(entities, entityRegistryMap);
     const metrics = indexes.switchMetricsByDeviceId.get('device-garden-mains');
 
-    expect(metrics).toEqual([
-      expect.objectContaining({ label: 'Energy', value: 1.4, unit: 'kWh' }),
+    expect(metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Energy', value: 1.4, unit: 'kWh' }),
+      ])
+    );
+  });
+
+  it('collects total energy when it is the only switch energy metric', () => {
+    const entities: HassEntities = {
+      'switch.garden_lights_switch': makeHassEntityFixture({
+        entityId: 'switch.garden_lights_switch',
+        state: 'on',
+        attributes: {
+          friendly_name: 'Garden Mains',
+        },
+      }),
+      'sensor.garden_mains_total_energy': makeHassEntityFixture({
+        entityId: 'sensor.garden_mains_total_energy',
+        state: '0.092',
+        attributes: {
+          friendly_name: 'Garden Mains Total energy',
+          device_class: 'energy',
+          state_class: 'total_increasing',
+          unit_of_measurement: 'kWh',
+        },
+      }),
+    };
+
+    const entityRegistryMap = createRegistryMap([
+      { entity_id: 'switch.garden_lights_switch', device_id: 'device-garden-mains' },
+      { entity_id: 'sensor.garden_mains_total_energy', device_id: 'device-garden-mains' },
+    ]);
+
+    const indexes = buildDeviceIndexes(entities, entityRegistryMap);
+
+    expect(indexes.switchMetricsByDeviceId.get('device-garden-mains')).toEqual([
+      expect.objectContaining({ label: 'Energy', value: 0.092, unit: 'kWh' }),
     ]);
   });
 

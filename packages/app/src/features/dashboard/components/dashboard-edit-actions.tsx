@@ -84,6 +84,7 @@ interface DashboardResizeTriggerProps {
   triggerSize?: CardSize;
   allowedSizes: CardSize[];
   onSizeChange: (size: CardSize) => void;
+  inline?: boolean;
 }
 
 export function DashboardResizeTrigger({
@@ -91,6 +92,7 @@ export function DashboardResizeTrigger({
   triggerSize,
   allowedSizes,
   onSizeChange,
+  inline = false,
 }: DashboardResizeTriggerProps) {
   if (allowedSizes.length <= 1) {
     return null;
@@ -102,6 +104,7 @@ export function DashboardResizeTrigger({
       onSizeChange={onSizeChange}
       allowedSizes={allowedSizes}
       triggerSize={triggerSize ?? cardSize}
+      triggerInline={inline}
     />
   );
 }

@@ -4,6 +4,7 @@ export const frMessages = {
   'common.custom': 'Personnalisé',
   'common.customize': 'Personnaliser',
   'common.done': 'Terminé',
+  'common.metrics': 'Mesures',
   'common.off': 'Arrêt',
   'common.on': 'Marche',
   'common.open': 'Ouvrir',

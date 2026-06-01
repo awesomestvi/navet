@@ -128,6 +128,17 @@ export function normalizeMetric(
   }
 
   if (
+    deviceClass === 'current' ||
+    friendlyName.includes('current') ||
+    unit === 'A' ||
+    unit === 'mA' ||
+    unit === 'kA'
+  ) {
+    const amps = unit === 'mA' ? rawValue / 1000 : unit === 'kA' ? rawValue * 1000 : rawValue;
+    return { label: 'Current', value: amps, unit: 'A' };
+  }
+
+  if (
     deviceClass === 'energy' ||
     friendlyName.includes('energy') ||
     unit === 'Wh' ||
@@ -137,7 +148,15 @@ export function normalizeMetric(
     return { label: 'Energy', value: toKilowattHours(rawValue, unit), unit: 'kWh' };
   }
 
-  return null;
+  return {
+    label: friendlyName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' '),
+    value: rawValue,
+    unit: typeof unit === 'string' ? unit : '',
+  };
 }
 
 export function formatMetricNumber(value: number): string {

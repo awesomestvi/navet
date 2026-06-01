@@ -69,9 +69,23 @@ export const Tiny: Story = {
   },
 };
 
+export const TinyEditMode: Story = {
+  args: {
+    size: 'tiny',
+    isEditMode: true,
+  },
+};
+
 export const ExtraSmall: Story = {
   args: {
     size: 'extra-small',
+  },
+};
+
+export const ExtraSmallEditMode: Story = {
+  args: {
+    size: 'extra-small',
+    isEditMode: true,
   },
 };
 

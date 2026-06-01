@@ -140,7 +140,7 @@ export function WeatherSettingsDialog({
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
-                Controls
+                {t('common.controls')}
               </CardDialogTabTrigger>
               {onTintColorChange ? (
                 <CardDialogTabTrigger
@@ -148,7 +148,7 @@ export function WeatherSettingsDialog({
                   icon={Palette}
                   onClick={() => setActiveTab('card')}
                 >
-                  Customize
+                  {t('common.customize')}
                 </CardDialogTabTrigger>
               ) : null}
             </CardDialogTabList>

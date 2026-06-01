@@ -4,6 +4,7 @@ export const zhMessages = {
   'common.custom': '自定义',
   'common.customize': '自定义',
   'common.done': '完成',
+  'common.metrics': '指标',
   'common.off': '关闭',
   'common.on': '开启',
   'common.open': '打开',

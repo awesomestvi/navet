@@ -134,7 +134,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
-                Controls
+                {t('common.controls')}
               </CardDialogTabTrigger>
               {supportsBrightness && (
                 <CardDialogTabTrigger
@@ -142,7 +142,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                   icon={Star}
                   onClick={() => setActiveTab('presets')}
                 >
-                  Presets
+                  {t('climate.presets')}
                 </CardDialogTabTrigger>
               )}
               <CardDialogTabTrigger
@@ -150,7 +150,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
                 icon={Palette}
                 onClick={() => setActiveTab('card')}
               >
-                Customize
+                {t('common.customize')}
               </CardDialogTabTrigger>
             </CardDialogTabList>
 

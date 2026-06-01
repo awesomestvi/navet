@@ -1,3 +1,4 @@
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { readNavetCoverState } from '@navet/app/core/navet-device-state';
@@ -282,6 +283,7 @@ export const CoverCardContainer = memo(function CoverCardContainer({
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
+  useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
 
   return (
     <CoverCardView

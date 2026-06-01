@@ -4,6 +4,7 @@ export const enMessages = {
   'common.custom': 'Custom',
   'common.customize': 'Customize',
   'common.done': 'Done',
+  'common.metrics': 'Metrics',
   'common.off': 'Off',
   'common.on': 'On',
   'common.open': 'Open',

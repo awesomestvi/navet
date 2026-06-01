@@ -1,3 +1,4 @@
+import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getAccentCardShellTokens } from '@navet/app/components/shared/theme/accent-card-shell-tokens';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
@@ -69,6 +70,7 @@ export function useWeatherCardController({
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
+  useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
 
   const setTintColor = (nextTintColor?: string) => {
     setWeatherTintColors((current) => {

@@ -152,14 +152,14 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                   icon={Thermometer}
                   onClick={() => setActiveTab('hvac')}
                 >
-                  HVAC
+                  {t('climate.subtitle')}
                 </CardDialogTabTrigger>
                 <CardDialogTabTrigger
                   active={activeTab === 'controls'}
                   icon={Sliders}
                   onClick={() => setActiveTab('controls')}
                 >
-                  Controls
+                  {t('common.controls')}
                 </CardDialogTabTrigger>
               </CardDialogTabList>
             </div>

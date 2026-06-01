@@ -4,6 +4,7 @@ export const esMessages = {
   'common.custom': 'Personalizado',
   'common.customize': 'Personalizar',
   'common.done': 'Listo',
+  'common.metrics': 'Metricas',
   'common.off': 'Apagado',
   'common.on': 'Encendido',
   'common.open': 'Abrir',
