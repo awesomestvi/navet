@@ -2,6 +2,10 @@
 
 This guide is for Homey users connecting to Navet.
 
+If you are running Navet as the Home Assistant add-on, put your Athom client ID and secret in the
+add-on options as `homey_client_id` and `homey_client_secret`. You normally do not need to set
+`homey_redirect_uri` unless the add-on cannot infer your public ingress URL correctly.
+
 ## Before You Start
 
 You need:
@@ -25,8 +29,10 @@ Typical flow:
 2. Create a new Web API client.
 3. Set the client name to something recognizable such as `Navet`.
 4. Set the redirect URL to the exact Navet callback URL that will receive the OAuth callback.
-   Example: `http://localhost:8080/__navet_homey__/callback` for a local Docker test, or
-   `https://navet.example.com/__navet_homey__/callback` for a hosted deployment.
+   Example: `http://localhost:8080/__navet_homey__/callback` for a local Docker test,
+   `https://navet.example.com/__navet_homey__/callback` for a hosted deployment, or
+   `https://homeassistant.example.com/api/hassio_ingress/navet/__navet_homey__/callback` for the
+   Home Assistant add-on.
 5. Save the client.
 6. Copy the generated client ID and client secret into your Navet Docker compose file as
    `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`.

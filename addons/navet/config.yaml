@@ -22,7 +22,13 @@ map:
   - addon_config:rw
 options:
   dashboard_config_url: ""
+  homey_client_id: ""
+  homey_client_secret: ""
+  homey_redirect_uri: ""
 schema:
   dashboard_config_url: str?
+  homey_client_id: str?
+  homey_client_secret: password?
+  homey_redirect_uri: str?
   hass_url: str?
   token: password?

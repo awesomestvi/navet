@@ -24,11 +24,11 @@ packages, and an `@navet/app` composition layer.
 
 |  | Provider | Status | Runtime modes |
 |---|---|---|---|
-| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="72"> | Home Assistant | implemented | custom panel, add-on, standalone |
-| <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="72"> | Homey | implemented | standalone |
-| <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="72"> | openHAB | implemented | standalone |
-| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="72"> | Hubitat | scaffolding only | not available yet |
-| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="72"> | SmartThings | scaffolding only | not available yet |
+| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="50"> | Home Assistant | implemented | custom panel, add-on, standalone |
+| <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="50"> | Homey | implemented | standalone |
+| <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="50"> | openHAB | implemented | standalone |
+| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="50"> | Hubitat | scaffolding only | not available yet |
+| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="50"> | SmartThings | scaffolding only | not available yet |
 
 ## What You Get
 

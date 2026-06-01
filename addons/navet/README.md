@@ -18,3 +18,6 @@ and uses OAuth login instead of the Ingress session.
 ## Configuration
 
 - `dashboard_config_url`: optional Navet dashboard config import URL for first launch
+- `homey_client_id`: optional Athom Web API client ID for Homey login from the add-on
+- `homey_client_secret`: optional Athom Web API client secret for Homey login from the add-on
+- `homey_redirect_uri`: optional exact Homey OAuth callback URL override when the add-on cannot infer the public ingress URL correctly

@@ -8,8 +8,8 @@ docs. If you are changing the codebase, use the contributor docs.
 - [Home Assistant custom panel](HOME_ASSISTANT.md#home-assistant-custom-panel)
 - [Home Assistant add-on](HOME_ASSISTANT.md#home-assistant-add-on)
 - [Home Assistant standalone Docker](HOME_ASSISTANT.md#standalone-docker)
-- [Homey standalone setup](HOMEY.md)
-- [openHAB standalone setup](OPENHAB.md)
+- [Homey setup](HOMEY.md)
+- [openHAB setup](OPENHAB.md)
 
 ## User Docs
 
@@ -18,9 +18,9 @@ docs. If you are changing the codebase, use the contributor docs.
 - [HOME_ASSISTANT.md](HOME_ASSISTANT.md)
   Deployment guide for the Home Assistant custom panel, Home Assistant add-on, and standalone app mode.
 - [HOMEY.md](HOMEY.md)
-  Standalone setup guide for Homey users.
+  Homey setup guide for standalone and Home Assistant add-on users.
 - [OPENHAB.md](OPENHAB.md)
-  Standalone setup guide for openHAB users.
+  openHAB setup guide for standalone and Home Assistant add-on users.
 - [WIDGETS.md](WIDGETS.md)
   What Navet widgets exist today and how they behave.
 - [../SECURITY.md](../SECURITY.md)
