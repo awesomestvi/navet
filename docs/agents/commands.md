@@ -19,7 +19,8 @@ pnpm test:tier1      # release-critical provider/runtime gate
 pnpm test:tier2      # blocking app-contract suite
 pnpm test:tier3      # broad regression suite
 pnpm build:ha-panel  # build bundled Home Assistant custom panel assets
-pnpm storybook:build # static Storybook build for GitHub Pages
+pnpm storybook:build # static Storybook build for the website bundle
+pnpm website:build   # build website + demo + Storybook into one Cloudflare Pages output
 ```
 
 ## Execution Rules

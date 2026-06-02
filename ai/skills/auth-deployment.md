@@ -36,7 +36,7 @@ Navet currently runs in:
 - `packages/provider-homey/`
 - `packages/provider-openhab/`
 - `docker/`
-- `addons/`
+- `platform/home-assistant/addons/`
 
 ## Follow-Through
 

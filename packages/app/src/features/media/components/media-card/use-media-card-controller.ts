@@ -1,12 +1,15 @@
 import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
 import { readNavetMediaState } from '@navet/app/core/navet-device-state';
-import { isTvMediaDevice, normalizeMediaPlaybackState } from '@navet/app/features/media';
 import {
   useProviderMediaCompanionEntity,
   useProviderMediaEntity,
   useProviderMediaEntityRegistry,
   useProviderMediaPlayerEntities,
 } from '@navet/app/features/media/hooks/use-provider-media-playback-data';
+import {
+  isTvMediaDevice,
+  normalizeMediaPlaybackState,
+} from '@navet/app/features/media/media-state';
 import {
   getTvRemoteCommand,
   resolveTvRemoteProfile,

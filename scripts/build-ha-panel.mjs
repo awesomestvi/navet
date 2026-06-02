@@ -1,16 +1,13 @@
-import { cp, mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import { build } from 'vite';
+import { assetPaths, homeAssistantPaths, appPaths, repoRoot } from './repo-paths.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const frontendDir = resolve(root, 'custom_components/navet/frontend');
-const publicDir = resolve(root, 'public');
+await build({ configFile: `${repoRoot}/apps/ha-panel/vite.config.ts` });
 
-await build({ configFile: resolve(root, 'vite.panel.config.ts') });
-
-await mkdir(resolve(frontendDir, 'wallpapers'), { recursive: true });
-await cp(resolve(publicDir, 'logo.svg'), resolve(frontendDir, 'logo.svg'));
-await cp(resolve(publicDir, 'wallpapers'), resolve(frontendDir, 'wallpapers'), {
+await rm(homeAssistantPaths.navetFrontend, { recursive: true, force: true });
+await cp(appPaths.haPanelDist, homeAssistantPaths.navetFrontend, { recursive: true });
+await mkdir(`${homeAssistantPaths.navetFrontend}/wallpapers`, { recursive: true });
+await cp(`${assetPaths.public}/logo.svg`, `${homeAssistantPaths.navetFrontend}/logo.svg`);
+await cp(`${assetPaths.public}/wallpapers`, `${homeAssistantPaths.navetFrontend}/wallpapers`, {
   recursive: true,
 });

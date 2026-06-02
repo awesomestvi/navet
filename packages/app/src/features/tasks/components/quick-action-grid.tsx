@@ -2,7 +2,7 @@ import { dispatchEntityCommand } from '@navet/app/commands';
 import { Button, Panel, Tag } from '@navet/app/components/primitives';
 import { getDashboardCardFootprint } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { SwitchCard } from '@navet/app/features/lighting';
+import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
 import { useI18n, useServiceActionHandler, useTheme } from '@navet/app/hooks';
 import { Clapperboard, Play } from 'lucide-react';
 import { useState } from 'react';

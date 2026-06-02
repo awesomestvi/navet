@@ -1,6 +1,11 @@
-import heroDashboardOverlay from '@docs/marketing/assets/use-cases/navet-hero-dashboard-overlay.png';
-import heroCompositeImage from '@docs/marketing/assets/use-cases/navet-hero-device-composite.png';
+import heroDashboardOverlayAvif from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.avif';
+import heroDashboardOverlayPng from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.png';
+import heroDashboardOverlayWebp from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.webp';
+import heroCompositeImageAvif from '@assets/reference/marketing/use-cases/navet-hero-device-composite.avif';
+import heroCompositeImagePng from '@assets/reference/marketing/use-cases/navet-hero-device-composite.png';
+import heroCompositeImageWebp from '@assets/reference/marketing/use-cases/navet-hero-device-composite.webp';
 import { Button, Heading, Link, Text } from '@navet/app/components/primitives';
+import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { getMarketingWebsitePath } from '@navet/app/marketing/constants/marketingLinks';
 import { MARKETING_HERO_CONTENT } from '@navet/app/marketing/data/marketingContent';
 import { GithubMark } from '@navet/app/marketing/icons/GithubMark';
@@ -13,10 +18,16 @@ export function MarketingHeroSection() {
   return (
     <section className="relative left-1/2 right-1/2 -mx-[50vw] w-screen overflow-hidden">
       <div className="relative min-h-[620px] sm:min-h-[700px] lg:min-h-[780px]">
-        <img
-          src={heroCompositeImage}
+        <MarketingResponsiveImage
+          src={heroCompositeImagePng}
+          sources={[
+            { srcSet: heroCompositeImageAvif, type: 'image/avif' },
+            { srcSet: heroCompositeImageWebp, type: 'image/webp' },
+          ]}
           alt="Warm modern living space used as the background for the Navet marketing hero"
+          pictureClassName="absolute inset-0"
           className="absolute inset-0 h-full w-full object-cover object-center"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,8,13,0.88)_0%,rgba(6,8,13,0.58)_28%,rgba(6,8,13,0.18)_56%,rgba(6,8,13,0.06)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,8,13,0.26)_0%,rgba(6,8,13,0.12)_38%,rgba(6,8,13,0.82)_100%)]" />
@@ -87,10 +98,15 @@ export function MarketingHeroSection() {
             <div className="pointer-events-none absolute right-[8%] top-[12%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.42),transparent_72%)] blur-3xl" />
             <div className="pointer-events-none absolute bottom-[12%] right-[18%] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12),transparent_72%)] blur-3xl" />
             <div className="relative w-full max-w-[980px] translate-x-[12%] -translate-y-[2rem] drop-shadow-[0_48px_120px_rgba(0,0,0,0.68)] xl:max-w-[1080px] xl:translate-x-[14%] xl:-translate-y-[2.5rem]">
-              <img
-                src={heroDashboardOverlay}
+              <MarketingResponsiveImage
+                src={heroDashboardOverlayPng}
+                sources={[
+                  { srcSet: heroDashboardOverlayAvif, type: 'image/avif' },
+                  { srcSet: heroDashboardOverlayWebp, type: 'image/webp' },
+                ]}
                 alt="Navet dashboard product preview shown on a tablet-style device"
                 className="block h-auto w-full"
+                loading="lazy"
               />
             </div>
           </div>

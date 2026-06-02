@@ -1,4 +1,4 @@
-import cameraSampleImage from '@navet/app/assets/camera-sample.webp';
+import { RUNTIME_SAMPLE_MEDIA } from '@navet/app/assets/runtime-sample-images';
 import { CalendarCard } from '@navet/app/features/calendar';
 import { SwitchCard } from '@navet/app/features/lighting';
 import { PersonCard } from '@navet/app/features/person';
@@ -341,7 +341,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture={cameraSampleImage}
+          entityPicture={RUNTIME_SAMPLE_MEDIA.camera}
           size="medium"
           onSizeChange={() => {}}
           isEditMode={false}
@@ -350,7 +350,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture={cameraSampleImage}
+          entityPicture={RUNTIME_SAMPLE_MEDIA.camera}
           size="small"
           onSizeChange={() => {}}
           isEditMode={false}
@@ -359,7 +359,7 @@ function StateMatrixExtendedPage() {
           id="camera.front_door"
           name="Front Door Cam"
           room="Entrance"
-          entityPicture={cameraSampleImage}
+          entityPicture={RUNTIME_SAMPLE_MEDIA.camera}
           size="large"
           onSizeChange={() => {}}
           isEditMode

@@ -1,4 +1,4 @@
-import cameraSampleImage from '@navet/app/assets/camera-sample.webp';
+import { RUNTIME_SAMPLE_MEDIA } from '@navet/app/assets/runtime-sample-images';
 import { CameraCard } from '@navet/app/features/security';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -37,7 +37,7 @@ const meta = {
     id: 'camera.front_door',
     name: 'Front Door Cam',
     room: 'Entrance',
-    entityPicture: cameraSampleImage,
+    entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
     supportedFeatures: 2,
     isStreamCapable: true,
     cameraViewMode: 'snapshot',

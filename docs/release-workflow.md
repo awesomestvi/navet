@@ -11,9 +11,9 @@ Versioned release surfaces:
 
 Continuous `main` surfaces:
 
-- website on GitHub Pages
-- demo on GitHub Pages
-- Storybook on GitHub Pages
+- website on Cloudflare Pages
+- demo on Cloudflare Pages
+- Storybook on Cloudflare Pages
 
 ## Branches And Tags
 
@@ -31,16 +31,16 @@ Navet does not use GitFlow.
 Release-managed files that must stay aligned:
 
 - `package.json`
-- `custom_components/navet/manifest.json`
-- `addons/navet/config.yaml`
+- `platform/home-assistant/custom_components/navet/manifest.json`
+- `platform/home-assistant/addons/navet/config.yaml`
 - `CHANGELOG.md`
-- `addons/navet/CHANGELOG.md`
+- `platform/home-assistant/addons/navet/CHANGELOG.md`
 - `docs/VERSIONING.md`
 
 `packages/app/src/constants/app-version.ts` remains the app-facing version surface, but it is
 build-injected from `package.json` rather than manually edited.
 
-`addons/navet/CHANGELOG.md` is a required add-on release surface. Update it for every versioned
+`platform/home-assistant/addons/navet/CHANGELOG.md` is a required add-on release surface. Update it for every versioned
 add-on release, even when it mostly mirrors the main app changelog.
 
 ## Channels
@@ -120,22 +120,20 @@ Behavior:
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 
-### Pages deploy
-
-`/.github/workflows/pages-demo.yml`
+### Cloudflare Pages deploy
 
 Trigger:
 
-- push to `main` for website, demo, or Storybook changes
+- Cloudflare Pages builds directly from the connected repo on push
 
 Behavior:
 
-- builds website
-- builds demo
-- builds Storybook
-- deploys to GitHub Pages
+- runs the configured website build
+- stages the demo under `/demo/`
+- stages Storybook under `/storybook/`
+- deploys the single output bundle to Cloudflare Pages
 
-Pages remains a continuous documentation and marketing surface. It is not part of tagged release
+Cloudflare Pages remains a continuous documentation and marketing surface. It is not part of tagged release
 promotion in phase 1.
 
 ## Maintainer Flow
@@ -144,7 +142,7 @@ promotion in phase 1.
 2. Run `node scripts/sync-release-versions.mjs`.
 3. Draft the changelog section for the target version.
 4. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
-5. Update `addons/navet/CHANGELOG.md` for the release version.
+5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
 6. Run `node scripts/check-release-surfaces.mjs`.
 7. Merge the release commit to `main`.
 8. Create and push the release tag.
@@ -157,6 +155,6 @@ promotion in phase 1.
 - choosing the SemVer bump
 - drafting release notes
 - regenerating committed panel assets
-- updating `addons/navet/CHANGELOG.md` for every add-on release
+- updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
 - rollback execution if a bad release escapes

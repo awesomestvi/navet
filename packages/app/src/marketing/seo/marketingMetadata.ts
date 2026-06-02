@@ -1,6 +1,6 @@
+import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
 import { getMarketingPublicSiteUrl } from '@navet/app/marketing/constants/marketingLinks';
 import type { MarketingWebsiteRoute } from '@navet/app/marketing/routing/marketingWebsiteRoutes';
-import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 
 const DEFAULT_TITLE = 'Navet - A beautiful smart-home dashboard';
 const DEFAULT_DESCRIPTION =
@@ -41,7 +41,7 @@ export function getMarketingWebsiteMetadata(
 ): MarketingWebsiteMetadata {
   const siteUrl = getMarketingPublicSiteUrl();
   const socialImageUrl = new URL(
-    getPublicAssetUrl('logo-horizontal-light.svg'),
+    logoHorizontalLight,
     typeof window === 'undefined' ? siteUrl : window.location.origin
   ).toString();
 

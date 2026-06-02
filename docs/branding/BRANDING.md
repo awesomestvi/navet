@@ -47,7 +47,7 @@ The name perfectly captures what this application does: it serves as the **centr
 
 ### Logo Files
 
-Located in `/public/`:
+Located in `/assets/public/`:
 - **logo.svg** - Square logo (120x120) - Use for app icons, social media
 - **logo-horizontal.svg** - Horizontal with text - Use for headers, light backgrounds
 - **logo-horizontal-light.svg** - Horizontal white text - Use for dark backgrounds

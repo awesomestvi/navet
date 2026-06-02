@@ -1,10 +1,10 @@
+import { resolveBuiltInWallpaperToken } from '@navet/app/constants/built-in-wallpapers';
 import { STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
   readLocalStorageWithMigration,
   removeLocalStorageWithMigration,
   writeLocalStorageWithMigration,
 } from '@navet/app/utils/local-storage-migration';
-import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -20,30 +20,6 @@ export type PrimaryColor =
   | 'green'
   | 'teal'
   | 'custom';
-
-const LEGACY_ADAPTIVE_WALLPAPER_MAP: Record<string, string> = {
-  'preset:soft-dark-gradient': getPublicAssetUrl('wallpapers/soft-dark-gradient.svg'),
-  'preset:frosted-glass-abstract': getPublicAssetUrl('wallpapers/frosted-glass-abstract.svg'),
-  'preset:blurred-forest-mood': getPublicAssetUrl('wallpapers/blurred-forest-mood.svg'),
-  'preset:luxury-living-room-ambient': getPublicAssetUrl(
-    'wallpapers/luxury-living-room-ambient.svg'
-  ),
-  'preset:matte-concrete-texture': getPublicAssetUrl('wallpapers/matte-concrete-texture.svg'),
-  'preset:muted-nebula-space': getPublicAssetUrl('wallpapers/muted-nebula-space.svg'),
-  'preset:scandinavian-warm-neutral': getPublicAssetUrl('wallpapers/scandinavian-warm-neutral.svg'),
-  'preset:subtle-smart-grid': getPublicAssetUrl('wallpapers/subtle-smart-grid.svg'),
-  'preset:pure-oled-black-luxury': getPublicAssetUrl('wallpapers/pure-oled-black-luxury.svg'),
-  'preset:dynamic-sunrise-gradient': getPublicAssetUrl('wallpapers/dynamic-sunrise-gradient.svg'),
-};
-
-function normalizeBuiltInWallpaperPath(pathname: string) {
-  const wallpaperPathStart = pathname.indexOf('/wallpapers/');
-  if (wallpaperPathStart === -1) {
-    return null;
-  }
-
-  return getPublicAssetUrl(pathname.slice(wallpaperPathStart + 1));
-}
 
 interface ThemeState {
   theme: ThemeMode;
@@ -74,23 +50,25 @@ function normalizeWallpaperPath(wallpaper: string | null | undefined) {
     return null;
   }
 
-  const legacyAdaptiveWallpaper = LEGACY_ADAPTIVE_WALLPAPER_MAP[trimmed];
-  if (legacyAdaptiveWallpaper) {
-    return legacyAdaptiveWallpaper;
+  const builtInWallpaperToken = resolveBuiltInWallpaperToken(trimmed);
+  if (builtInWallpaperToken) {
+    return builtInWallpaperToken;
   }
 
   if (trimmed.startsWith('/wallpapers/')) {
-    return getPublicAssetUrl(trimmed.slice(1));
+    return trimmed;
   }
 
   if (typeof window !== 'undefined') {
     try {
       const resolved = new URL(trimmed, window.location.href);
       if (resolved.origin === window.location.origin) {
-        return (
-          normalizeBuiltInWallpaperPath(resolved.pathname) ??
-          `${resolved.pathname}${resolved.search}${resolved.hash}`
-        );
+        const sameOriginBuiltInWallpaper = resolveBuiltInWallpaperToken(resolved.pathname);
+        if (sameOriginBuiltInWallpaper) {
+          return sameOriginBuiltInWallpaper;
+        }
+
+        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
       }
     } catch (error) {
       console.error('[ThemeStore] Wallpaper URL resolution failed:', error);

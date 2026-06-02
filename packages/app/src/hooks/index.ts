@@ -38,6 +38,8 @@ export { useMediaQuery } from './use-media-query';
 export { useNavigation } from './use-navigation';
 // New reusable hooks
 export { usePersistedState } from './use-persisted-state';
+export type { ProviderBatterySensorRow } from './use-provider-battery-sensor-rows';
+export { useProviderBatterySensorRows } from './use-provider-battery-sensor-rows';
 export {
   useProviderCalendarDevices,
   useProviderCalendarDevicesCollection,

@@ -1,0 +1,8 @@
+{
+  "name": "@navet/ha-panel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  }
+}

@@ -1,4 +1,4 @@
-import type { SensorIconType } from '@navet/app/features/sensors';
+import type { SensorIconType } from '@navet/app/features/sensors/components/sensors';
 import type { SensorDevice } from '@navet/app/types/device.types';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { formatSensorValue } from '../entity-utils';

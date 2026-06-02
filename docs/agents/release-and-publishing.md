@@ -14,8 +14,9 @@ This file defines release workflow constraints and publishing behavior for Navet
   release commands before the release commit or tag.
 - Use `pnpm release:linear` or the Linear app as the preferred release-note source before falling
   back to commit history.
-- Keep `package.json`, `CHANGELOG.md`, `addons/navet/CHANGELOG.md`,
-  `custom_components/navet/manifest.json`, `addons/navet/config.yaml`, and built panel assets
+- Keep `package.json`, `CHANGELOG.md`, `platform/home-assistant/addons/navet/CHANGELOG.md`,
+  `platform/home-assistant/custom_components/navet/manifest.json`,
+  `platform/home-assistant/addons/navet/config.yaml`, and built panel assets
   aligned for versioned releases when those surfaces are part of the release.
 
 ## Release Flow
@@ -31,8 +32,10 @@ Recommended operator flow:
    publishes this section as the release notes that HACS/Home Assistant can show before users
    update.
 6. For HACS custom panel releases, have the user run `pnpm build:ha-panel` and include the
-   generated `custom_components/navet/frontend/` changes in the release commit.
-7. Add or update the matching `addons/navet/CHANGELOG.md` entry for every versioned add-on release.
+   generated `platform/home-assistant/custom_components/navet/frontend/` changes in the release
+   commit.
+7. Add or update the matching `platform/home-assistant/addons/navet/CHANGELOG.md` entry for every
+   versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
 8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
 9. Run `node scripts/check-release-surfaces.mjs`.
@@ -135,7 +138,8 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 
 ## Publishing Rules
 
-- GitHub Pages deploys the demo at `/navet/demo/` and Storybook at `/navet/storybook/`.
+- Cloudflare Pages deploys the demo at `/demo/` and Storybook at `/storybook/` from the website bundle.
+- Cloudflare Pages builds directly from the repo; there is no GitHub deploy workflow for the website bundle.
 - Pushes to `main` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
   and `sha-*`.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.

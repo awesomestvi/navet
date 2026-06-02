@@ -1,11 +1,24 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
+import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
 import homeyLogo from '@navet/app/assets/providers/homey.png';
+import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Panel, Text } from '@navet/app/components/primitives';
+import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MARKETING_CURRENT_SUPPORT } from '@navet/app/marketing/data/marketingContent';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 
-const SUPPORTED_PROVIDER_LOGOS = [
+type SupportedProviderLogo = {
+  name: string;
+  src: string;
+  alt: string;
+  sources?: ReadonlyArray<{
+    srcSet: string;
+    type: 'image/avif' | 'image/webp';
+  }>;
+};
+
+const SUPPORTED_PROVIDER_LOGOS: readonly SupportedProviderLogo[] = [
   {
     name: 'Home Assistant',
     src: homeAssistantLogo,
@@ -14,6 +27,10 @@ const SUPPORTED_PROVIDER_LOGOS = [
   {
     name: 'Homey',
     src: homeyLogo,
+    sources: [
+      { srcSet: homeyLogoAvif, type: 'image/avif' },
+      { srcSet: homeyLogoWebp, type: 'image/webp' },
+    ],
     alt: 'Homey logo',
   },
   {
@@ -21,7 +38,7 @@ const SUPPORTED_PROVIDER_LOGOS = [
     src: openhabLogo,
     alt: 'openHAB logo',
   },
-] as const;
+];
 
 function SupportGroup({ title, items }: { title: string; items: readonly string[] }) {
   return (
@@ -52,8 +69,9 @@ export function MarketingCurrentSupportSection() {
               className="flex items-center gap-3 rounded-[24px] border border-white/10 bg-white/4 px-4 py-4"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-                <img
+                <MarketingResponsiveImage
                   src={provider.src}
+                  sources={provider.sources}
                   alt={provider.alt}
                   className="h-full w-full object-contain"
                 />

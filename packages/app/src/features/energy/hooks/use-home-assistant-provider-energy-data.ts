@@ -1,5 +1,4 @@
-import { useProviderBatterySensorRows } from '@navet/app/features/dashboard/components/widgets/use-provider-battery-sensor-rows';
-import { useProviderHealth } from '@navet/app/hooks';
+import { useProviderBatterySensorRows, useProviderHealth } from '@navet/app/hooks';
 import { useMemo } from 'react';
 import type { EnergyRange, EnergySeriesPoint } from '../types/energy.types';
 import { useEnergyHaData } from './use-energy-ha-data';

@@ -1,9 +1,7 @@
-import demoEnergyImage from '@docs/marketing/assets/screenshots/navet-ipad-landscape-energy.jpg';
-import demoHomeImage from '@docs/marketing/assets/screenshots/navet-ipad-landscape-home.jpg';
-import demoSecurityImage from '@docs/marketing/assets/screenshots/navet-ipad-landscape-security.jpg';
-import demoMobileImage from '@docs/marketing/assets/screenshots/navet-mobile-pwa-home.jpg';
-import artworksOriginal from '@navet/app/assets/artworks-original.jpg';
-import cameraSampleImage from '@navet/app/assets/camera-sample.webp';
+import {
+  RUNTIME_SAMPLE_MEDIA,
+  RUNTIME_SAMPLE_SCREENSHOTS,
+} from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import {
@@ -21,24 +19,29 @@ import {
 } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
-import { CalendarCard } from '@navet/app/features/calendar';
-import { HVACCard } from '@navet/app/features/climate';
+import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
+import { HVACCard } from '@navet/app/features/climate/components/hvac-card';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
+import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
+import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import {
-  EnergyDashboardPage,
-  EnergyNowCardView,
   getEnergyDashboardScenario,
   getMockEnergySourceDiagnostics,
-} from '@navet/app/features/energy';
-import { FanCard, LightCard, SwitchCard } from '@navet/app/features/lighting';
-import { MediaCard } from '@navet/app/features/media';
-import { PersonCard } from '@navet/app/features/person';
-import { SceneCard } from '@navet/app/features/scenes';
-import { CameraCard, CoverCard, LockCard } from '@navet/app/features/security';
-import { GroupedSensorCard, SensorCard } from '@navet/app/features/sensors';
-import { SettingsSection } from '@navet/app/features/settings';
-import { VacuumCard } from '@navet/app/features/vacuum';
-import { WeatherCard } from '@navet/app/features/weather';
+} from '@navet/app/features/energy/data/mock-energy-dashboard';
+import { FanCard } from '@navet/app/features/lighting/components/fan-card';
+import { LightCard } from '@navet/app/features/lighting/components/light-card';
+import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
+import { MediaCard } from '@navet/app/features/media/components/media-card';
+import { PersonCard } from '@navet/app/features/person/components/person-card';
+import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
+import { CameraCard } from '@navet/app/features/security/components/camera-card';
+import { CoverCard } from '@navet/app/features/security/components/cover-card';
+import { LockCard } from '@navet/app/features/security/components/lock-card';
+import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
+import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
+import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
+import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
+import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
@@ -97,6 +100,13 @@ const energyTrend = [
 
 const demoEnergyScenario = getEnergyDashboardScenario('default');
 const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
+const { artwork: sampleArtworkImage, camera: sampleCameraImage } = RUNTIME_SAMPLE_MEDIA;
+const {
+  energyTablet: demoEnergyImage,
+  homePhone: demoMobileImage,
+  homeTablet: demoHomeImage,
+  securityTablet: demoSecurityImage,
+} = RUNTIME_SAMPLE_SCREENSHOTS;
 
 const demoHomeAssistantConfig = {
   latitude: 55.8708,
@@ -457,7 +467,7 @@ const demoHomeWidgets: CustomCard[] = [
     createdAt: 2,
     data: {
       sourceMode: 'urls',
-      photoUrls: [cameraSampleImage],
+      photoUrls: [sampleCameraImage],
       shuffleEnabled: false,
     },
   },
@@ -808,7 +818,7 @@ function ProductGrid() {
             title="Morning Mix"
             artist="Navet Radio"
             entityType="Speaker"
-            entityPicture={artworksOriginal}
+            entityPicture={sampleArtworkImage}
             state="playing"
             volume={42}
             isMuted={false}
@@ -1014,7 +1024,7 @@ function SecurityShot() {
           id="camera.front_door"
           name="Front Door"
           room="Entrance"
-          entityPicture={cameraSampleImage}
+          entityPicture={sampleCameraImage}
           supportedFeatures={2}
           isStreamCapable
           size="extra-large"
@@ -1027,7 +1037,7 @@ function SecurityShot() {
           id="camera.driveway"
           name="Driveway"
           room="Garage"
-          entityPicture={cameraSampleImage}
+          entityPicture={sampleCameraImage}
           supportedFeatures={2}
           isStreamCapable
           size="extra-large"
@@ -1447,7 +1457,7 @@ function RoomShot({ room }: { room: string }) {
             title="Aerial"
             artist="Navet Studio"
             entityType="TV"
-            entityPicture={artworksOriginal}
+            entityPicture={sampleArtworkImage}
             state="playing"
             volume={42}
             isMuted={false}
@@ -1560,7 +1570,7 @@ function RoomShot({ room }: { room: string }) {
             id="camera.front_door_room"
             name="Front Door Cam"
             room="Outside"
-            entityPicture={cameraSampleImage}
+            entityPicture={sampleCameraImage}
             supportedFeatures={2}
             isStreamCapable
             size="medium"

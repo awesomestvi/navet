@@ -23,6 +23,8 @@ storybook-static
 .DS_Store
 Thumbs.db
 
-addons
-!addons/navet
-!addons/navet/**
+platform
+!platform/home-assistant
+!platform/home-assistant/addons
+!platform/home-assistant/addons/navet
+!platform/home-assistant/addons/navet/**

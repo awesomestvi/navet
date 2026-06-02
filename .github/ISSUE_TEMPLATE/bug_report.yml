@@ -30,7 +30,7 @@ body:
         - Docker
         - PWA / hosted web app
         - Local development
-        - GitHub Pages demo
+        - Public Cloudflare demo
         - Other
     validations:
       required: true

@@ -1,4 +1,4 @@
-import type { ProviderBatterySensorRow } from '@navet/app/features/dashboard/components/widgets/use-provider-battery-sensor-rows';
+import type { ProviderBatterySensorRow } from '@navet/app/hooks';
 import { useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type {
