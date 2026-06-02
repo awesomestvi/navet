@@ -126,6 +126,10 @@ export function useSwitchMetricState({
     const nextLabels = selectedMetricLabels.filter((label) => knownMetricLabels.has(label));
     const fallbackLabels = availableMetrics.slice(0, metricLimit).map((metric) => metric.label);
 
+    if (hasExplicitMetricPreference) {
+      return;
+    }
+
     if (nextLabels.length === 0 && availableMetrics.length > 0) {
       if (!areMetricLabelListsEqual(selectedMetricLabels, fallbackLabels)) {
         setSelectedMetricLabels(fallbackLabels);

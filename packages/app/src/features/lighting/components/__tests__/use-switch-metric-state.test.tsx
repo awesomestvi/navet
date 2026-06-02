@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { renderHookWithProviders } from '@navet/app/test/render';
+import type { DeviceMetric } from '@navet/app/types/device.types';
 import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useSwitchMetricState } from '../use-switch-metric-state';
@@ -44,25 +45,124 @@ describe('useSwitchMetricState', () => {
     expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual(['Power']);
   });
 
-  it('recovers from stale stored metric labels when live switch metrics are available', async () => {
+  it('preserves an explicit metric selection when that metric temporarily disappears', async () => {
     localStorage.setItem(
       `${STORAGE_KEYS.switchCardMetricPreferences}:switch.espresso_machine`,
-      JSON.stringify(['Current draw', 'Daily usage'])
+      JSON.stringify(['Current'])
     );
 
-    const { result } = renderHookWithProviders(() =>
-      useSwitchMetricState({
-        id: 'switch.espresso_machine',
-        size: 'small',
-        power: 1140,
-        energy: 2.6,
-      })
+    const currentMetric = {
+      label: 'Current',
+      value: 0.43,
+      unit: 'A',
+      icon: 'activity' as const,
+      category: 'measurement' as const,
+    };
+    const powerMetric = {
+      label: 'Power',
+      value: 1140,
+      unit: 'W',
+      icon: 'zap' as const,
+      category: 'measurement' as const,
+    };
+    const energyMetric = {
+      label: 'Energy',
+      value: 2.6,
+      unit: 'kWh',
+      icon: 'activity' as const,
+      category: 'measurement' as const,
+    };
+
+    const { result, rerender } = renderHookWithProviders(
+      ({ metrics }: { metrics: DeviceMetric[] }) =>
+        useSwitchMetricState({
+          id: 'switch.espresso_machine',
+          size: 'small',
+          metrics,
+        }),
+      {
+        initialProps: {
+          metrics: [currentMetric, powerMetric, energyMetric],
+        },
+      }
     );
 
-    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Power', 'Energy']));
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Current']));
+    expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual(['Current']);
+
+    rerender({ metrics: [powerMetric, energyMetric] });
+
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Current']));
+    expect(result.current.selectedMetrics).toEqual([]);
+    expect(
+      localStorage.getItem(`${STORAGE_KEYS.switchCardMetricPreferences}:switch.espresso_machine`)
+    ).toBe(JSON.stringify(['Current']));
+
+    rerender({ metrics: [currentMetric, powerMetric, energyMetric] });
+
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Current']));
+    expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual(['Current']);
+  });
+
+  it('preserves mixed explicit metric selections when one metric temporarily disappears', async () => {
+    localStorage.setItem(
+      `${STORAGE_KEYS.switchCardMetricPreferences}:switch.espresso_machine`,
+      JSON.stringify(['Power', 'Current'])
+    );
+
+    const currentMetric = {
+      label: 'Current',
+      value: 0.43,
+      unit: 'A',
+      icon: 'activity' as const,
+      category: 'measurement' as const,
+    };
+    const powerMetric = {
+      label: 'Power',
+      value: 1140,
+      unit: 'W',
+      icon: 'zap' as const,
+      category: 'measurement' as const,
+    };
+    const energyMetric = {
+      label: 'Energy',
+      value: 2.6,
+      unit: 'kWh',
+      icon: 'activity' as const,
+      category: 'measurement' as const,
+    };
+
+    const { result, rerender } = renderHookWithProviders(
+      ({ metrics }: { metrics: DeviceMetric[] }) =>
+        useSwitchMetricState({
+          id: 'switch.espresso_machine',
+          size: 'small',
+          metrics,
+        }),
+      {
+        initialProps: {
+          metrics: [powerMetric, currentMetric, energyMetric],
+        },
+      }
+    );
+
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Power', 'Current']));
     expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual([
       'Power',
-      'Energy',
+      'Current',
+    ]);
+
+    rerender({ metrics: [powerMetric, energyMetric] });
+
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Power', 'Current']));
+    expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual(['Power']);
+
+    rerender({ metrics: [powerMetric, currentMetric, energyMetric] });
+
+    await waitFor(() => expect(result.current.selectedMetricLabels).toEqual(['Power', 'Current']));
+    expect(result.current.selectedMetrics.map((metric) => metric.label)).toEqual([
+      'Power',
+      'Current',
     ]);
   });
 

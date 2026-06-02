@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.7 - 2026-06-02
+
+## New
+
+- The website and marketing experience now ship with a broader visual refresh, richer product storytelling, and updated screenshots across device layouts.
+- New wallpapers were added.
+
+## Improved
+
+- Settings and section-level management flows are clearer across the refreshed app surfaces.
+- Wallpaper, media, and marketing assets are organized more cleanly for release packaging and future publishing work.
+
 ## 0.4.6 - 2026-06-02
 
 ## New
