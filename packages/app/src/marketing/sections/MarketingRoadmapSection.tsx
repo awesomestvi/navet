@@ -19,9 +19,9 @@ function RoadmapColumn({ title, items }: { title: string; items: readonly string
 export function MarketingRoadmapSection() {
   return (
     <MarketingSectionShell
-      eyebrow="Roadmap"
-      title="Clear about what ships now and what comes later"
-      description="Navet is built around a provider-neutral architecture, but provider maturity is not equal yet. The roadmap keeps future platform work separate from what is genuinely production-ready today."
+      title={MARKETING_ROADMAP.title}
+      description={MARKETING_ROADMAP.description}
+      variant="editorial"
     >
       <div className="grid gap-4 lg:grid-cols-3">
         <RoadmapColumn title="Now" items={MARKETING_ROADMAP.now} />

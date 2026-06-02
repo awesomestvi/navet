@@ -1,7 +1,6 @@
-import { Button, Text } from '@navet/app/components/primitives';
+import { Text } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { ThemeType } from '@navet/app/hooks';
-import { getMarketingWebsitePath } from '@navet/app/marketing/constants/marketingLinks';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 
 const THEME_PREVIEWS: Array<{ theme: ThemeType; label: string }> = [
@@ -53,12 +52,13 @@ function ThemePreviewCard({ theme, label }: { theme: ThemeType; label: string })
   );
 }
 
-export function MarketingThemeShowcaseSection() {
+export function MarketingThemeShowcaseSection({ className }: { className?: string }) {
   return (
     <MarketingSectionShell
-      eyebrow="Themes"
-      title="A serious visual system, not a single dashboard skin"
-      description="Navet ships with distinct theme modes for bright rooms, dark rooms, OLED walls, and premium glass-style panels. The previews below use the actual Navet theme surfaces."
+      title="From wall panel to phone, the same home stays familiar."
+      description="Navet ships with light, dark, black, and liquid-glass surfaces so the same dashboard still feels intentional in bright rooms, dark rooms, OLED walls, and handheld screens."
+      variant="editorial"
+      className={className}
     >
       <div className="grid gap-4 lg:grid-cols-4">
         {THEME_PREVIEWS.map((themePreview) => (
@@ -68,16 +68,6 @@ export function MarketingThemeShowcaseSection() {
             label={themePreview.label}
           />
         ))}
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            window.location.assign(getMarketingWebsitePath('/install/'));
-          }}
-        >
-          Choose a setup path
-        </Button>
       </div>
     </MarketingSectionShell>
   );

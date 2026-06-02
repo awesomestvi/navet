@@ -1,7 +1,16 @@
+import demoHomeImageAvif from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.avif';
 import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg';
+import demoHomeImageWebp from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.webp';
+import demoMobileImageAvif from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.avif';
 import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg';
+import demoMobileImageWebp from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.webp';
+import demoTabletImageAvif from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.avif';
 import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg';
+import demoTabletImageWebp from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
+import artworksOriginalAvif from '@assets/reference/media/artworks-original.avif';
 import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import artworksOriginalWebp from '@assets/reference/media/artworks-original.webp';
+import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
 import type { CalendarCard } from '@navet/app/features/calendar';
 import type { HVACCard } from '@navet/app/features/climate';
@@ -21,25 +30,48 @@ import type { CameraCard, CoverCard, LockCard } from '@navet/app/features/securi
 import type { GroupedSensorCard, InfoCard } from '@navet/app/features/sensors';
 import type { VacuumCard } from '@navet/app/features/vacuum';
 import type { WeatherCard } from '@navet/app/features/weather';
+import type { MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import type { ComponentProps } from 'react';
 
 export const MARKETING_SCREENSHOTS = [
   {
     src: demoHomeImage,
+    sources: [
+      { srcSet: demoHomeImageAvif, type: 'image/avif' },
+      { srcSet: demoHomeImageWebp, type: 'image/webp' },
+    ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a landscape iPad layout',
     label: 'Landscape dashboard',
   },
   {
     src: demoTabletImage,
+    sources: [
+      { srcSet: demoTabletImageAvif, type: 'image/avif' },
+      { srcSet: demoTabletImageWebp, type: 'image/webp' },
+    ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a portrait tablet layout',
     label: 'Portrait tablet',
   },
   {
     src: demoMobileImage,
+    sources: [
+      { srcSet: demoMobileImageAvif, type: 'image/avif' },
+      { srcSet: demoMobileImageWebp, type: 'image/webp' },
+    ] satisfies readonly MarketingResponsiveImageSource[],
     alt: 'Navet home dashboard shown on a phone layout',
     label: 'Phone layout',
   },
 ] as const;
+
+export const MARKETING_MEDIA_SOURCES = {
+  artworksOriginal: [
+    { srcSet: artworksOriginalAvif, type: 'image/avif' },
+    { srcSet: artworksOriginalWebp, type: 'image/webp' },
+  ] satisfies readonly MarketingResponsiveImageSource[],
+  cameraSample: [
+    { srcSet: cameraSampleImageAvif, type: 'image/avif' },
+  ] satisfies readonly MarketingResponsiveImageSource[],
+} as const;
 
 export const MARKETING_PREVIEW_CARDS = {
   weather: {

@@ -1,6 +1,6 @@
 import type { ImgHTMLAttributes } from 'react';
 
-type MarketingResponsiveImageSource = {
+export type MarketingResponsiveImageSource = {
   srcSet: string;
   type: 'image/avif' | 'image/webp';
 };

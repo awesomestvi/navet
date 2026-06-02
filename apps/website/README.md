@@ -22,5 +22,7 @@ deployment-facing app shell.
 - Cloudflare Pages project root: `apps/website`
 - Build command: `pnpm website:build`
 - Output directory: `dist`
+- The workspace build clones `index.html` into `/install/` and `/roadmap/` so direct page loads work
+  even when only the website bundle is deployed.
 - The website bundle stages the marketing site at `/`, the public demo at `/demo/`, and Storybook
   at `/storybook/` inside the same Cloudflare Pages output directory.

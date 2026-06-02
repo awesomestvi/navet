@@ -21,7 +21,7 @@ export function ShineBorder({
   return (
     <span
       aria-hidden="true"
-      className={cn('magicui-shine-border pointer-events-none absolute inset-0 rounded-[inherit]', className)}
+      className={cn('sitefx-shine-border pointer-events-none absolute inset-0 rounded-[inherit]', className)}
       style={
         {
           '--magic-shine-colors': gradientStops,

@@ -844,6 +844,64 @@
     animation: marketing-aurora-drift 22s ease-in-out infinite reverse;
   }
 
+  .marketing-glow {
+    position: absolute;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .marketing-glow--center {
+    top: 22rem;
+    left: 50%;
+    width: min(72rem, 94vw);
+    height: 42rem;
+    transform: translateX(-50%);
+    background:
+      radial-gradient(
+        ellipse at center,
+        rgb(249 115 22 / 0.15) 0%,
+        rgb(251 191 36 / 0.08) 22%,
+        rgb(255 255 255 / 0.035) 42%,
+        transparent 72%
+      );
+    filter: blur(34px);
+    opacity: 0.9;
+  }
+
+  .marketing-glow--lower {
+    bottom: 10rem;
+    left: max(-8rem, -10vw);
+    width: min(38rem, 64vw);
+    height: 28rem;
+    background:
+      radial-gradient(
+        circle at center,
+        rgb(56 189 248 / 0.12) 0%,
+        rgb(59 130 246 / 0.08) 34%,
+        transparent 74%
+      );
+    filter: blur(52px);
+    opacity: 0.72;
+  }
+
+  .marketing-beam {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 16%),
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        rgb(255 255 255 / 0.035) 22%,
+        rgb(249 115 22 / 0.045) 46%,
+        rgb(255 255 255 / 0.02) 62%,
+        transparent 78%
+      );
+    mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.88), rgb(0 0 0 / 0.52) 38%, transparent 100%);
+    opacity: 0.58;
+  }
+
   .marketing-grid-mask {
     position: absolute;
     inset: 0;
@@ -852,7 +910,7 @@
     pointer-events: none;
   }
 
-  .magicui-animated-grid-pattern {
+  .sitefx-animated-grid-pattern {
     background-image:
       linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
       linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
@@ -860,7 +918,7 @@
     animation: magic-grid-pan var(--magic-grid-duration, 20s) linear infinite;
   }
 
-  .magicui-animated-gradient-text {
+  .sitefx-animated-gradient-text {
     background-image: linear-gradient(
       120deg,
       var(--magic-gradient-from, #ffaa40),
@@ -875,7 +933,7 @@
     animation: magic-gradient-shift var(--magic-gradient-duration, 2.8s) ease infinite;
   }
 
-  .magicui-border-beam::before {
+  .sitefx-border-beam::before {
     content: "";
     position: absolute;
     inset: calc(-1 * var(--magic-beam-border-width, 1px));
@@ -895,11 +953,11 @@
     will-change: transform, opacity;
   }
 
-  .magicui-border-beam--reverse::before {
+  .sitefx-border-beam--reverse::before {
     animation-direction: reverse;
   }
 
-  .magicui-shine-border::before {
+  .sitefx-shine-border::before {
     content: "";
     position: absolute;
     inset: calc(-1 * var(--magic-shine-border-width, 1px));
@@ -956,10 +1014,11 @@
   @media (prefers-reduced-motion: reduce) {
     .marketing-bento-marquee-track,
     .marketing-aurora,
-    .magicui-animated-grid-pattern,
-    .magicui-animated-gradient-text,
-    .magicui-border-beam::before,
-    .magicui-shine-border::before {
+    .marketing-glow,
+    .sitefx-animated-grid-pattern,
+    .sitefx-animated-gradient-text,
+    .sitefx-border-beam::before,
+    .sitefx-shine-border::before {
       animation: none;
     }
   }

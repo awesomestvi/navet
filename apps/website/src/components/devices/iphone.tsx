@@ -1,12 +1,14 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from '@navet/app/components/ui/utils';
+import { MarketingResponsiveImage, type MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
 
 export interface IphoneProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;
+  sources?: readonly MarketingResponsiveImageSource[];
   videoSrc?: string;
 }
 
-export function Iphone({ className, style, src, videoSrc, ...props }: IphoneProps) {
+export function Iphone({ className, style, src, sources, videoSrc, ...props }: IphoneProps) {
   return (
     <div
       className={cn('relative aspect-[433/882] w-full', className)}
@@ -17,7 +19,13 @@ export function Iphone({ className, style, src, videoSrc, ...props }: IphoneProp
       <div className="absolute inset-[10px] rounded-[2.55rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01))] ring-1 ring-white/8" />
       <div className="absolute inset-[18px] overflow-hidden rounded-[2.2rem] bg-black">
         {src ? (
-          <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <MarketingResponsiveImage
+            src={src}
+            sources={sources}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
         ) : null}
         {videoSrc ? (
           <video
