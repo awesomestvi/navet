@@ -6,6 +6,7 @@ import {
   importDashboardConfigFromFile,
 } from '@navet/app/utils/dashboard-config';
 import { readFileAsDataUrl, validateImageFile } from '@navet/app/utils/image-upload';
+import { storage } from '@navet/app/utils/storage';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -56,6 +57,18 @@ export function useSettingsSectionActions({
         toast.info(t('settings.feedback.resetConnectionSuccess'));
       });
     }
+  };
+
+  const handleResetLocalSettings = () => {
+    if (!confirm(t('settings.feedback.resetLocalSettingsConfirm'))) {
+      return;
+    }
+
+    storage.clearByPrefixes(['navet-', 'ha-dashboard-']);
+    toast.success(t('settings.feedback.resetLocalSettingsSuccess'));
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 300);
   };
 
   const handleWallpaperUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +184,7 @@ export function useSettingsSectionActions({
     handleLogout,
     confirmLogout,
     handleResetConnection,
+    handleResetLocalSettings,
     handleWallpaperUpload,
     handleRemoveWallpaper,
     handleSelectWallpaper,

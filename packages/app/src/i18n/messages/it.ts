@@ -238,6 +238,10 @@ export const itMessages = {
     'Manutentore del progetto e link di attribuzione per asset, librerie e ringraziamenti.',
   'settings.project.credits.viewAttributions': 'Vedi attribuzioni',
   'settings.project.credits.community': 'Feedback della community Home Assistant',
+  'settings.project.localData.title': 'Dati locali',
+  'settings.project.localData.description':
+    'Cancella le impostazioni di Navet, lo stato locale del dashboard, le preferenze UI in cache e le vecchie chiavi locali memorizzate su questo dispositivo.',
+  'settings.project.localData.reset': 'Reimposta impostazioni',
   'settings.project.license.title': 'Licenza',
   'settings.project.license.description':
     'Il codice sorgente di Navet è concesso in licenza AGPL-3.0-only. Gli asset del brand restano coperti da una policy separata sui marchi.',
@@ -274,6 +278,10 @@ export const itMessages = {
   'settings.feedback.resetConnectionConfirm':
     'Sei sicuro di voler reimpostare la connessione smart home? Dovrai riconnetterti.',
   'settings.feedback.resetConnectionSuccess': 'Connessione reimpostata. Riconnettiti al sistema.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Reimpostare le impostazioni locali di Navet su questo dispositivo? Questo cancella le preferenze locali del dashboard e ricarica l app, ma mantiene la sessione attuale.',
+  'settings.feedback.resetLocalSettingsSuccess':
+    'Impostazioni locali di Navet cancellate. Ricaricamento...',
   'settings.feedback.wallpaperReadFailed': 'Impossibile leggere il file immagine',
   'settings.feedback.configExported': 'Configurazione dashboard esportata',
   'settings.feedback.configExportFailed': 'Impossibile esportare la configurazione dashboard',

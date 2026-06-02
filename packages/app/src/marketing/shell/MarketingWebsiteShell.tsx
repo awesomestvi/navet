@@ -95,10 +95,12 @@ function GithubNavLink({
   href,
   starCount,
   className,
+  hideStarCount = false,
 }: {
   href: string;
   starCount: string | null;
   className?: string;
+  hideStarCount?: boolean;
 }) {
   const { theme } = useTheme();
   const resolvedLink = useMemo(() => resolveNavigationHref(href), [href]);
@@ -121,7 +123,7 @@ function GithubNavLink({
       <span className={`inline-flex items-center ${navetSpacingTokens.inline.sm}`}>
         <GithubMark className="h-3.5 w-3.5 shrink-0" />
         <span>GitHub</span>
-        {starCount ? (
+        {starCount && !hideStarCount ? (
           <span
             className={cn(
               'inline-flex items-center gap-1 text-[11px] font-semibold tracking-[0.01em]',
@@ -309,8 +311,8 @@ export function MarketingWebsiteShell({
         <header
           ref={headerRef}
           className={cn(
-            'absolute inset-x-4 top-4 z-20 px-4 py-2.5 shadow-[0_20px_60px_-36px_rgba(0,0,0,0.72)] backdrop-blur-xl transition-[border-radius,background-color,border-color,box-shadow] sm:inset-x-6 sm:px-4 lg:inset-x-8 lg:top-6 lg:px-5',
-            isMobileNavOpen ? 'rounded-[28px]' : 'rounded-full',
+            'absolute inset-x-4 top-4 z-20 px-3.5 py-2 shadow-[0_20px_60px_-36px_rgba(0,0,0,0.72)] backdrop-blur-xl transition-[border-radius,background-color,border-color,box-shadow] sm:inset-x-6 sm:px-4 sm:py-2.5 lg:inset-x-8 lg:top-6 lg:px-5',
+            isMobileNavOpen ? 'rounded-[26px] sm:rounded-[28px]' : 'rounded-[24px] sm:rounded-full',
             isLightTheme
               ? 'border border-slate-200/90 bg-white/78'
               : 'border border-white/10 bg-black/24'
@@ -369,20 +371,25 @@ export function MarketingWebsiteShell({
           >
             <div
               className={cn(
-                'border-t pt-3',
+                'border-t pt-3.5 pb-1',
                 isLightTheme ? 'border-slate-200/90' : 'border-white/10'
               )}
             >
-              <nav aria-label="Mobile primary" className="flex flex-col gap-1">
+              <nav aria-label="Mobile primary" className="flex flex-col gap-1.5">
                 {WEBSITE_PRIMARY_NAV_ITEMS.map((item) => (
-                  <WebsiteNavLink key={item.label} href={item.href} className="justify-start px-3">
+                  <WebsiteNavLink
+                    key={item.label}
+                    href={item.href}
+                    className="justify-start rounded-[18px] px-3 py-2"
+                  >
                     {item.label}
                   </WebsiteNavLink>
                 ))}
                 <GithubNavLink
                   href={MARKETING_URLS.github}
                   starCount={githubStarCount}
-                  className="justify-start px-3"
+                  hideStarCount
+                  className="justify-start rounded-[18px] px-3 py-2"
                 />
               </nav>
             </div>
@@ -391,9 +398,9 @@ export function MarketingWebsiteShell({
 
         <main
           className={cn(
-            'pb-14 md:pb-16',
+            'pb-12 md:pb-16',
             isHomePage
-              ? 'space-y-24 pt-0 md:space-y-28 lg:space-y-32'
+              ? 'space-y-16 pt-0 sm:space-y-20 md:space-y-28 lg:space-y-32'
               : 'space-y-24 pt-28 md:space-y-28 lg:space-y-32 lg:pt-36'
           )}
         >

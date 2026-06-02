@@ -139,7 +139,7 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 ## Publishing Rules
 
 - Cloudflare Pages deploys the demo at `/demo/` and Storybook at `/storybook/` from the website bundle.
-- Cloudflare Pages builds directly from the repo; there is no GitHub deploy workflow for the website bundle.
+- Cloudflare Pages builds directly from the repo; GitHub Pages is retired and there is no GitHub Pages or GitHub deploy workflow for the website bundle.
 - Pushes to `main` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
   and `sha-*`.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.

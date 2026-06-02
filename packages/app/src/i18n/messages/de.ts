@@ -230,6 +230,10 @@ export const deMessages = {
     'Projekt-Maintainer und Attributions-Links zu Assets, Bibliotheken und Danksagungen.',
   'settings.project.credits.viewAttributions': 'Attributions anzeigen',
   'settings.project.credits.community': 'Feedback aus der Home-Assistant-Community',
+  'settings.project.localData.title': 'Lokale Daten',
+  'settings.project.localData.description':
+    'Entfernt Navet-Einstellungen, lokales Dashboard-Layout, zwischengespeicherte UI-Präferenzen und alte lokale Schlüssel auf diesem Gerät.',
+  'settings.project.localData.reset': 'Einstellungen zurücksetzen',
   'settings.project.license.title': 'Lizenz',
   'settings.project.license.description':
     'Der Navet-Quellcode ist unter AGPL-3.0-only lizenziert. Marken-Assets unterliegen einer separaten Markenrichtlinie.',
@@ -267,6 +271,10 @@ export const deMessages = {
     'Möchtest du die Smart-Home-Verbindung wirklich zurücksetzen? Du musst dich danach erneut verbinden.',
   'settings.feedback.resetConnectionSuccess':
     'Verbindung zurückgesetzt. Bitte verbinde dich erneut mit deinem System.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Lokale Navet-Einstellungen auf diesem Gerät zurücksetzen? Dadurch werden lokale Dashboard-Präferenzen gelöscht und die App neu geladen, aber deine aktuelle Anmeldung bleibt bestehen.',
+  'settings.feedback.resetLocalSettingsSuccess':
+    'Lokale Navet-Einstellungen gelöscht. Neu laden...',
   'settings.feedback.wallpaperReadFailed': 'Bilddatei konnte nicht gelesen werden',
   'settings.feedback.configExported': 'Dashboard-Konfiguration exportiert',
   'settings.feedback.configExportFailed': 'Dashboard-Konfiguration konnte nicht exportiert werden',

@@ -985,6 +985,28 @@
     will-change: auto;
   }
 
+  @media (min-width: 1024px) and (orientation: portrait) {
+    .marketing-hero-shell {
+      min-height: min(81rem, 86.5vh);
+    }
+
+    .marketing-hero-layout {
+      min-height: min(81rem, 86.5vh);
+      padding-top: 6.125rem;
+      padding-bottom: 5.125rem;
+    }
+  }
+
+  .marketing-bento-marquee {
+    margin-bottom: calc(var(--marketing-bento-marquee-height, 0px) * -0.18);
+  }
+
+  @media (min-width: 640px) {
+    .marketing-bento-marquee {
+      margin-bottom: 0;
+    }
+  }
+
   .marketing-bento-marquee .marketing-bento-marquee-track > * {
     pointer-events: none;
   }

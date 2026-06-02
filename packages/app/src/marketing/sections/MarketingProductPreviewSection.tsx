@@ -27,7 +27,7 @@ import {
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { BorderBeam } from '@website/components/effects/border-beam';
-import { useCallback, useEffect, useRef } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef } from 'react';
 import { type BentoCardKey, getMarketingBentoCardSize } from './bento-card-size';
 
 const noopCardSizeChange = () => undefined;
@@ -521,18 +521,22 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
       title="Shared UI, already moving like a real product."
       description="These are real Navet cards and widgets running on static demo data. The point is product proof: rooms, controls, utility surfaces, and theme behavior that already belong to the same dashboard."
       variant="editorial"
+      compactMobile
       className={className}
     >
       <MarketingLightEntitySeed />
       <div
         ref={marqueeViewportRef}
-        className="marketing-bento-marquee relative -mx-16 overflow-hidden px-16 py-2 cursor-grab select-none active:cursor-grabbing touch-none lg:-mx-28 lg:px-28 xl:-mx-36 xl:px-36"
-        style={{
-          WebkitMaskImage:
-            'linear-gradient(90deg, transparent 0, rgba(0,0,0,0.08) 48px, rgba(0,0,0,0.45) 112px, black 184px, black calc(100% - 184px), rgba(0,0,0,0.45) calc(100% - 112px), rgba(0,0,0,0.08) calc(100% - 48px), transparent 100%)',
-          maskImage:
-            'linear-gradient(90deg, transparent 0, rgba(0,0,0,0.08) 48px, rgba(0,0,0,0.45) 112px, black 184px, black calc(100% - 184px), rgba(0,0,0,0.45) calc(100% - 112px), rgba(0,0,0,0.08) calc(100% - 48px), transparent 100%)',
-        }}
+        className="marketing-bento-marquee relative left-1/2 right-1/2 mt-4 w-[calc(100vw/0.82)] -translate-x-1/2 scale-[0.82] overflow-hidden px-0 py-1.5 origin-top cursor-grab select-none active:cursor-grabbing touch-none sm:left-auto sm:right-auto sm:w-auto sm:translate-x-0 sm:-mx-8 sm:-mt-3 sm:scale-100 sm:px-8 lg:-mx-28 lg:px-28 xl:-mx-36 xl:px-36"
+        style={
+          {
+            '--marketing-bento-marquee-height': `${BENTO_SEQUENCE_HEIGHT_PX + 12}px`,
+            WebkitMaskImage:
+              'linear-gradient(90deg, transparent 0, rgba(0,0,0,0.14) 16px, rgba(0,0,0,0.55) 44px, black 88px, black calc(100% - 88px), rgba(0,0,0,0.55) calc(100% - 44px), rgba(0,0,0,0.14) calc(100% - 16px), transparent 100%)',
+            maskImage:
+              'linear-gradient(90deg, transparent 0, rgba(0,0,0,0.14) 16px, rgba(0,0,0,0.55) 44px, black 88px, black calc(100% - 88px), rgba(0,0,0,0.55) calc(100% - 44px), rgba(0,0,0,0.14) calc(100% - 16px), transparent 100%)',
+          } as CSSProperties
+        }
         onPointerDown={(event) => {
           const viewport = marqueeViewportRef.current;
           if (!viewport) {
@@ -594,8 +598,8 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
           event.stopPropagation();
         }}
       >
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-40 bg-[linear-gradient(90deg,rgba(6,8,13,0.95),rgba(6,8,13,0.55)_38%,rgba(6,8,13,0))] blur-[10px] lg:w-52 xl:w-64" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-[2] w-40 bg-[linear-gradient(270deg,rgba(6,8,13,0.95),rgba(6,8,13,0.55)_38%,rgba(6,8,13,0))] blur-[10px] lg:w-52 xl:w-64" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-14 bg-[linear-gradient(90deg,rgba(6,8,13,0.95),rgba(6,8,13,0.55)_38%,rgba(6,8,13,0))] blur-[8px] sm:w-24 lg:w-52 xl:w-64" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-[2] w-14 bg-[linear-gradient(270deg,rgba(6,8,13,0.95),rgba(6,8,13,0.55)_38%,rgba(6,8,13,0))] blur-[8px] sm:w-24 lg:w-52 xl:w-64" />
         <div
           ref={marqueeTrackRef}
           className="marketing-bento-marquee-track flex w-max"

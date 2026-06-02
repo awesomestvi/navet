@@ -159,6 +159,14 @@ export const MARKETING_INSTALL_OPTIONS = [
   },
 ] as const;
 
+export const MARKETING_PRIVACY = {
+  eyebrow: 'PRIVACY',
+  title: 'Local by default.',
+  description:
+    'Navet is built for self-hosted smart homes. Your provider data, dashboard state, and credentials stay on your own device or server, not on Navet servers.',
+  pills: ['Local storage', 'Self-hosted friendly', 'Provider tokens stay local'],
+} as const;
+
 export const MARKETING_SECONDARY_INSTALLS = [
   { title: 'Homey standalone setup', href: MARKETING_URLS.install.homey },
   { title: 'openHAB standalone setup', href: MARKETING_URLS.install.openhab },

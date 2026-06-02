@@ -62,7 +62,11 @@ describe('MarketingWebsiteShell', () => {
       'aria-expanded',
       'true'
     );
-    expect(screen.getByRole('navigation', { name: 'Mobile primary' })).toBeInTheDocument();
+    const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    expect(mobileNav).toBeInTheDocument();
+    expect(within(mobileNav).getByRole('link', { name: 'Demo' })).toBeInTheDocument();
+    expect(within(mobileNav).getByRole('link', { name: 'Storybook' })).toBeInTheDocument();
+    expect(within(mobileNav).getByRole('link', { name: /^GitHub$/i })).toBeInTheDocument();
   });
 
   it('shows the cached GitHub star count when available', () => {
@@ -82,6 +86,29 @@ describe('MarketingWebsiteShell', () => {
     );
 
     expect(screen.getAllByText('1.2K').length).toBeGreaterThan(0);
+  });
+
+  it('omits the GitHub star count inside the mobile menu', () => {
+    window.localStorage.setItem(
+      'marketing:github-stars',
+      JSON.stringify({
+        count: 1234,
+        expiresAt: Date.now() + 60_000,
+      })
+    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
+
+    renderWithProviders(
+      <MarketingWebsiteShell currentPathname="/">
+        <div>Marketing body</div>
+      </MarketingWebsiteShell>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+
+    const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    expect(within(mobileNav).getByRole('link', { name: /^GitHub$/i })).toBeInTheDocument();
+    expect(within(mobileNav).queryByText('1.2K')).not.toBeInTheDocument();
   });
 
   it('hides the GitHub star count when loading fails and keeps external link rels', async () => {

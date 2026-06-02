@@ -225,6 +225,10 @@ export const ptMessages = {
     'Mantenedor do projeto e links de atribuição para ativos, bibliotecas e agradecimentos.',
   'settings.project.credits.viewAttributions': 'Ver atribuições',
   'settings.project.credits.community': 'Feedback da comunidade do Home Assistant',
+  'settings.project.localData.title': 'Dados locais',
+  'settings.project.localData.description':
+    'Limpa as configurações do Navet, o estado local do dashboard, preferências de interface em cache e chaves locais antigas armazenadas neste dispositivo.',
+  'settings.project.localData.reset': 'Redefinir configurações',
   'settings.project.license.title': 'Licença',
   'settings.project.license.description':
     'O código-fonte do Navet é licenciado sob a AGPL-3.0-only. Os ativos da marca permanecem cobertos por uma política de marca registrada separada.',
@@ -261,6 +265,10 @@ export const ptMessages = {
   'settings.feedback.resetConnectionConfirm':
     'Tem certeza de que deseja redefinir a conexão com a casa inteligente? Será necessário reconectar.',
   'settings.feedback.resetConnectionSuccess': 'Conexão redefinida. Reconecte-se ao seu sistema.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Redefinir as configurações locais do Navet neste dispositivo? Isso limpa preferências locais do dashboard e recarrega o app, mas mantém sua sessão atual.',
+  'settings.feedback.resetLocalSettingsSuccess':
+    'Configurações locais do Navet limpas. Recarregando...',
   'settings.feedback.wallpaperReadFailed': 'Falha ao ler o arquivo de imagem',
   'settings.feedback.configExported': 'Configuração do dashboard exportada',
   'settings.feedback.configExportFailed': 'Falha ao exportar a configuração do dashboard',

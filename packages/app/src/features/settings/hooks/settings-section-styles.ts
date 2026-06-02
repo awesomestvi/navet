@@ -17,6 +17,7 @@ export type SettingsSectionStyles = {
   iconBg: string;
   isLightTheme: boolean;
   insetBg: string;
+  insetBorderColor: string;
   lineColor: string;
   mixBlendMode: 'multiply' | 'screen';
   mutedColor: string;
@@ -55,7 +56,22 @@ export function getSettingsSectionStyles(
     hoverBg: theme === 'light' ? 'hover:bg-gray-100/90' : surface.hoverBg,
     iconBg: surface.iconBg,
     isLightTheme: theme === 'light',
-    insetBg: surface.panelMuted,
+    insetBg:
+      theme === 'light'
+        ? 'bg-white/92'
+        : theme === 'black'
+          ? 'bg-black'
+          : theme === 'glass'
+            ? 'bg-white/[0.06]'
+            : 'bg-white/[0.045]',
+    insetBorderColor:
+      theme === 'light'
+        ? 'border-slate-300/80'
+        : theme === 'black'
+          ? 'border-white/16'
+          : theme === 'glass'
+            ? 'border-white/16'
+            : 'border-white/10',
     lineColor: surface.borderStrong,
     mixBlendMode: theme === 'light' ? 'multiply' : 'screen',
     mutedColor: theme === 'light' ? 'text-gray-700' : surface.textSecondary,

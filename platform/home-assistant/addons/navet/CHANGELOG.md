@@ -154,7 +154,7 @@
 - Fixed authenticated media artwork and album art loading
 - Improved HVAC mode controls, entity synchronization, and temperature/status labels
 - Fixed lock, cover, RSS, and slide-action dashboard card interactions
-- Fixed hosted demo and GitHub Pages asset paths
+- Fixed hosted demo and website bundle asset paths
 - Added dashboard profile/session sync so deployed dashboards can persist state across browser sessions
 - Expanded automated coverage for Home Assistant connections, dashboard endpoints, media artwork, cards, RSS feeds, and sessions
 

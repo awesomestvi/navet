@@ -52,6 +52,45 @@ function makeEntity(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function makePowerSensorEntity(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'home_assistant:sensor.energy_now',
+    canonicalId: 'home_assistant:sensor.energy_now',
+    providerId: 'home_assistant',
+    externalId: 'sensor.energy_now',
+    type: 'sensor',
+    name: 'Energy Now',
+    room: 'Kitchen',
+    primaryState: 400,
+    availability: 'available',
+    attributes: {
+      device_class: 'power',
+      unit_of_measurement: 'W',
+    },
+    capabilities: [],
+    lastUpdated: '2026-06-01T21:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makePersonEntity(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'home_assistant:person.vishal',
+    canonicalId: 'home_assistant:person.vishal',
+    providerId: 'home_assistant',
+    externalId: 'person.vishal',
+    type: 'person',
+    name: 'Vishal',
+    room: undefined,
+    primaryState: 'away',
+    availability: 'available',
+    attributes: {},
+    capabilities: [],
+    lastUpdated: '2026-06-01T21:00:00.000Z',
+    ...overrides,
+  };
+}
+
 function makeRule(overrides: Partial<HabitRule> = {}): HabitRule {
   return {
     id: 'rule-1',
@@ -119,6 +158,48 @@ describe('habit engine', () => {
     await flushAsyncWork();
 
     expect(useHabitStore.getState().events).toHaveLength(1);
+  });
+
+  it('does not collect presence-only changes', async () => {
+    initializeHabitEngine();
+
+    setEntities({
+      'home_assistant:person.vishal': makePersonEntity(),
+    });
+    setEntities({
+      'home_assistant:person.vishal': makePersonEntity({
+        primaryState: 'home',
+        lastUpdated: '2026-06-01T21:05:00.000Z',
+      }),
+    });
+    await flushAsyncWork();
+
+    expect(useHabitStore.getState().events).toHaveLength(0);
+  });
+
+  it('only collects high energy spikes for power sensors', async () => {
+    initializeHabitEngine();
+
+    setEntities({
+      'home_assistant:sensor.energy_now': makePowerSensorEntity(),
+    });
+    setEntities({
+      'home_assistant:sensor.energy_now': makePowerSensorEntity({
+        primaryState: 900,
+        lastUpdated: '2026-06-01T21:05:00.000Z',
+      }),
+    });
+    setEntities({
+      'home_assistant:sensor.energy_now': makePowerSensorEntity({
+        primaryState: 1800,
+        lastUpdated: '2026-06-01T21:06:00.000Z',
+      }),
+    });
+    await flushAsyncWork();
+
+    expect(useHabitStore.getState().events).toHaveLength(1);
+    expect(useHabitStore.getState().events[0]?.action).toBe('energy_sampled');
+    expect(useHabitStore.getState().events[0]?.currentState).toBe(1800);
   });
 
   it('marks matched recent commands as navet-sourced', async () => {

@@ -56,6 +56,141 @@ function makeRule(overrides: Partial<HabitRule> = {}): HabitRule {
   };
 }
 
+type StoredRecord = Record<string, unknown> & { id: string };
+
+class MockObjectStore {
+  constructor(
+    private readonly records: Map<string, StoredRecord>,
+    private readonly transaction: MockTransaction
+  ) {}
+
+  private makeRequest<T>(producer: () => T) {
+    const request = {
+      result: undefined as T | undefined,
+      error: null,
+      onsuccess: null as ((this: IDBRequest<T>, ev: Event) => unknown) | null,
+      onerror: null as ((this: IDBRequest<T>, ev: Event) => unknown) | null,
+    } as unknown as IDBRequest<T>;
+
+    queueMicrotask(() => {
+      try {
+        (request as { result: T }).result = producer();
+        request.onsuccess?.call(request, new Event('success'));
+        this.transaction.finish();
+      } catch (error) {
+        (request as { error: DOMException }).error = error as DOMException;
+        request.onerror?.call(request, new Event('error'));
+        this.transaction.fail(error as Error);
+      }
+    });
+
+    return request;
+  }
+
+  getAll() {
+    return this.makeRequest(() => [...this.records.values()]);
+  }
+
+  put(value: StoredRecord) {
+    return this.makeRequest(() => {
+      this.records.set(value.id, value);
+      return value.id;
+    });
+  }
+
+  delete(id: string) {
+    return this.makeRequest(() => {
+      this.records.delete(id);
+      return undefined;
+    });
+  }
+
+  clear() {
+    return this.makeRequest(() => {
+      this.records.clear();
+      return undefined;
+    });
+  }
+}
+
+class MockTransaction {
+  oncomplete: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  error: Error | null = null;
+
+  constructor(private readonly stores: Map<string, Map<string, StoredRecord>>) {}
+
+  objectStore(name: string) {
+    const store = this.stores.get(name);
+    if (!store) {
+      throw new Error(`Unknown store ${name}`);
+    }
+
+    return new MockObjectStore(store, this) as unknown as IDBObjectStore;
+  }
+
+  finish() {
+    queueMicrotask(() => {
+      this.oncomplete?.();
+    });
+  }
+
+  fail(error: Error) {
+    this.error = error;
+    queueMicrotask(() => {
+      this.onerror?.();
+    });
+  }
+}
+
+class MockDatabase {
+  readonly objectStoreNames = {
+    contains: (name: string) => this.stores.has(name),
+  } as DOMStringList;
+
+  constructor(private readonly stores: Map<string, Map<string, StoredRecord>>) {}
+
+  createObjectStore(name: string) {
+    if (!this.stores.has(name)) {
+      this.stores.set(name, new Map());
+    }
+
+    return {} as IDBObjectStore;
+  }
+
+  transaction(_name: string) {
+    return new MockTransaction(this.stores) as unknown as IDBTransaction;
+  }
+}
+
+function createIndexedDbMock() {
+  const stores = new Map<string, Map<string, StoredRecord>>();
+
+  return {
+    open: () => {
+      const request = {
+        result: undefined as IDBDatabase | undefined,
+        error: null,
+        onsuccess: null as ((this: IDBOpenDBRequest, ev: Event) => unknown) | null,
+        onerror: null as ((this: IDBOpenDBRequest, ev: Event) => unknown) | null,
+        onupgradeneeded: null as
+          | ((this: IDBOpenDBRequest, ev: IDBVersionChangeEvent) => unknown)
+          | null,
+      } as unknown as IDBOpenDBRequest;
+
+      queueMicrotask(() => {
+        const db = new MockDatabase(stores) as unknown as IDBDatabase;
+        (request as { result: IDBDatabase }).result = db;
+        request.onupgradeneeded?.call(request, {} as IDBVersionChangeEvent);
+        request.onsuccess?.call(request, new Event('success'));
+      });
+
+      return request;
+    },
+  };
+}
+
 describe('useHabitStore', () => {
   beforeEach(async () => {
     await resetAppStores();
@@ -64,7 +199,7 @@ describe('useHabitStore', () => {
     Object.defineProperty(globalThis, 'indexedDB', {
       configurable: true,
       writable: true,
-      value: undefined,
+      value: createIndexedDbMock(),
     });
     await habitStorage.clearEvents();
     await habitStorage.clearFeedback();

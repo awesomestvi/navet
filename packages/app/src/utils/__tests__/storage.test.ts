@@ -36,6 +36,18 @@ describe('storage', () => {
     expect(storage.keys('navet:')).toEqual(['navet:a', 'navet:b']);
   });
 
+  it('clears only matching prefixes', () => {
+    storage.set('navet-a', 1);
+    storage.set('ha-dashboard-b', 2);
+    storage.set('hassTokens', 3);
+
+    storage.clearByPrefixes(['navet-', 'ha-dashboard-']);
+
+    expect(storage.get('navet-a', null)).toBeNull();
+    expect(storage.get('ha-dashboard-b', null)).toBeNull();
+    expect(storage.get('hassTokens', null)).toBe(3);
+  });
+
   it('falls back when JSON parsing fails', () => {
     localStorage.setItem('broken', '{oops');
 
