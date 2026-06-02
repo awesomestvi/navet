@@ -229,6 +229,10 @@ export const frMessages = {
     'Mainteneur du projet et liens d attribution pour ressources, bibliotheques et remerciements.',
   'settings.project.credits.viewAttributions': 'Voir les attributions',
   'settings.project.credits.community': 'Retours de la communauté Home Assistant',
+  'settings.project.localData.title': 'Données locales',
+  'settings.project.localData.description':
+    'Efface les réglages Navet, l état local du tableau de bord, les préférences d interface en cache et les anciennes clés stockées sur cet appareil.',
+  'settings.project.localData.reset': 'Réinitialiser les réglages',
   'settings.project.license.title': 'Licence',
   'settings.project.license.description':
     'Le code source de Navet est sous AGPL-3.0-only. Les éléments de marque restent régis par une politique de marque distincte.',
@@ -266,6 +270,9 @@ export const frMessages = {
     'Voulez-vous vraiment réinitialiser la connexion de votre maison connectée ? Vous devrez vous reconnecter.',
   'settings.feedback.resetConnectionSuccess':
     'Connexion réinitialisée. Veuillez vous reconnecter à votre système.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Réinitialiser les réglages locaux de Navet sur cet appareil ? Cela efface les préférences locales du tableau de bord et recharge l application, sans déconnecter votre session actuelle.',
+  'settings.feedback.resetLocalSettingsSuccess': 'Réglages locaux Navet effacés. Rechargement...',
   'settings.feedback.wallpaperReadFailed': 'Impossible de lire le fichier image',
   'settings.feedback.configExported': 'Configuration du tableau exportée',
   'settings.feedback.configExportFailed': 'Échec de l’export de la configuration du tableau',

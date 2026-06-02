@@ -64,6 +64,23 @@ class LocalStorage {
   }
 
   /**
+   * Clear keys that match any of the provided prefixes.
+   */
+  clearByPrefixes(prefixes: readonly string[]): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      for (const key of Object.keys(window.localStorage)) {
+        if (prefixes.some((prefix) => key.startsWith(prefix))) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn('[storage] clearByPrefixes() failed:', error);
+    }
+  }
+
+  /**
    * Get all keys from localStorage with an optional prefix filter
    */
   keys(prefix?: string): string[] {

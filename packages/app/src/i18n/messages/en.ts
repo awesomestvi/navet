@@ -294,6 +294,10 @@ export const enMessages = {
     'Project maintainer and attribution links for assets, libraries, and acknowledgements.',
   'settings.project.credits.viewAttributions': 'View attributions',
   'settings.project.credits.community': 'Home Assistant community feedback',
+  'settings.project.localData.title': 'Local data',
+  'settings.project.localData.description':
+    'Clear Navet settings, dashboard layout state, cached UI preferences, and legacy local keys stored on this device.',
+  'settings.project.localData.reset': 'Reset settings',
   'settings.project.license.title': 'License',
   'settings.project.license.description':
     'Navet source code is licensed under AGPL-3.0-only. Brand assets remain covered by a separate trademark policy.',
@@ -330,6 +334,9 @@ export const enMessages = {
   'settings.feedback.resetConnectionConfirm':
     'Are you sure you want to reset your smart home connection? You will need to reconnect.',
   'settings.feedback.resetConnectionSuccess': 'Connection reset. Please reconnect to your system.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Reset Navet local settings on this device? This clears local dashboard preferences and reloads the app, but keeps your current auth session.',
+  'settings.feedback.resetLocalSettingsSuccess': 'Local Navet settings cleared. Reloading...',
   'settings.feedback.wallpaperReadFailed': 'Failed to read image file',
   'settings.feedback.configExported': 'Dashboard config exported',
   'settings.feedback.configExportFailed': 'Failed to export dashboard config',

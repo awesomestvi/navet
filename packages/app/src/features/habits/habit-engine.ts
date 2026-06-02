@@ -200,11 +200,15 @@ function buildHomeEvent(
 }
 
 function shouldCollectEvent(event: HomeEvent) {
-  return (
-    supportsHabitSuggestions(event.domain) ||
-    event.action === 'presence_changed' ||
-    event.action === 'energy_sampled'
-  );
+  if (event.action === 'turned_on' || event.action === 'turned_off') {
+    return supportsHabitSuggestions(event.domain);
+  }
+
+  if (event.action === 'energy_sampled') {
+    return typeof event.currentState === 'number' && event.currentState >= 1500;
+  }
+
+  return false;
 }
 
 function getCurrentEntities() {

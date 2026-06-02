@@ -21,6 +21,7 @@ function createController(): SettingsSectionController {
     handleExportDashboardConfig: vi.fn(),
     handleImportDashboardConfig: vi.fn(),
     handleLogout: vi.fn(),
+    handleResetLocalSettings: vi.fn(),
     handleRemoveWallpaper: vi.fn(),
     handleResetConnection: vi.fn(),
     handleRestartOnboarding: vi.fn(),

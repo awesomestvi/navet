@@ -126,6 +126,10 @@ export const zhMessages = {
   'settings.project.about.version': '版本',
   'settings.project.about.build': '构建',
   'settings.project.credits.title': '致谢',
+  'settings.project.localData.title': '本地数据',
+  'settings.project.localData.description':
+    '清除这个设备上 Navet 的设置、仪表板本地状态、缓存的界面偏好和旧的本地键。',
+  'settings.project.localData.reset': '重置设置',
   'settings.project.license.title': '许可证',
   'settings.project.terms.title': '使用条款',
   'settings.project.logout': '退出登录',
@@ -133,6 +137,9 @@ export const zhMessages = {
   'settings.feedback.logoutSuccess': '已成功退出登录',
   'settings.feedback.resetConnectionConfirm': '确定要重置智能家居连接吗？你需要重新连接。',
   'settings.feedback.resetConnectionSuccess': '连接已重置。请重新连接到你的系统。',
+  'settings.feedback.resetLocalSettingsConfirm':
+    '要重置这个设备上的 Navet 本地设置吗？这会清除本地仪表板偏好并重新加载应用，但会保留当前登录会话。',
+  'settings.feedback.resetLocalSettingsSuccess': 'Navet 本地设置已清除。正在重新加载...',
   'settings.feedback.wallpaperReadFailed': '读取图片文件失败',
   'settings.feedback.configExported': '仪表板配置已导出',
   'settings.feedback.configExportFailed': '导出仪表板配置失败',

@@ -13,6 +13,7 @@ interface MarketingSectionShellProps {
   className?: string;
   variant?: 'default' | 'editorial';
   headerClassName?: string;
+  compactMobile?: boolean;
 }
 
 export function MarketingSectionShell({
@@ -22,31 +23,60 @@ export function MarketingSectionShell({
   className,
   variant = 'default',
   headerClassName,
+  compactMobile = false,
 }: MarketingSectionShellProps) {
   const hasHeader = Boolean(title || description);
   const isEditorial = variant === 'editorial';
 
   return (
     <section
-      className={cn(isEditorial ? 'space-y-8 md:space-y-10' : 'space-y-6 md:space-y-8', className)}
+      className={cn(
+        compactMobile
+          ? isEditorial
+            ? 'space-y-8 md:space-y-10'
+            : 'space-y-5 sm:space-y-6 md:space-y-8'
+          : isEditorial
+            ? 'space-y-8 md:space-y-10'
+            : 'space-y-6 md:space-y-8',
+        className
+      )}
     >
       {hasHeader ? (
         <div
           className={cn(
-            isEditorial ? 'max-w-4xl space-y-4' : 'max-w-3xl space-y-3',
+            compactMobile
+              ? isEditorial
+                ? 'max-w-4xl space-y-3 sm:space-y-4'
+                : 'max-w-3xl space-y-2.5 sm:space-y-3'
+              : isEditorial
+                ? 'max-w-4xl space-y-4'
+                : 'max-w-3xl space-y-3',
             headerClassName
           )}
         >
           {title ? (
-            <MarketingHeadline className={isEditorial ? 'max-w-[13ch]' : 'md:text-4xl'}>
+            <MarketingHeadline
+              compactMobile={compactMobile}
+              className={isEditorial ? 'max-w-[13ch]' : 'md:text-4xl'}
+            >
               {title}
             </MarketingHeadline>
           ) : null}
           {description ? (
             isEditorial ? (
-              <MarketingSupportText>{description}</MarketingSupportText>
+              <MarketingSupportText compactMobile={compactMobile}>
+                {description}
+              </MarketingSupportText>
             ) : (
-              <Text className="max-w-2xl text-base leading-7 md:text-lg">{description}</Text>
+              <Text
+                className={cn(
+                  compactMobile
+                    ? 'max-w-2xl text-[15px] leading-6 sm:text-base sm:leading-7 md:text-lg'
+                    : 'max-w-2xl text-base leading-7 md:text-lg'
+                )}
+              >
+                {description}
+              </Text>
             )
           ) : null}
         </div>

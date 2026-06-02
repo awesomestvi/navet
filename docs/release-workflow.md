@@ -11,9 +11,9 @@ Versioned release surfaces:
 
 Continuous `main` surfaces:
 
-- website on Cloudflare Pages
-- demo on Cloudflare Pages
-- Storybook on Cloudflare Pages
+- website bundle on Cloudflare Pages
+- public demo inside the website bundle at `/demo/`
+- Storybook inside the website bundle at `/storybook/`
 
 ## Branches And Tags
 
@@ -120,7 +120,7 @@ Behavior:
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 
-### Cloudflare Pages deploy
+### Website bundle deploy
 
 Trigger:
 

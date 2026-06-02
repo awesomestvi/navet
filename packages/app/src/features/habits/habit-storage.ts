@@ -6,7 +6,6 @@ const DATABASE_VERSION = 1;
 const EVENT_STORE = 'events';
 const FEEDBACK_STORE = 'feedback';
 const RULE_STORE = 'rules';
-const LOCAL_STORAGE_PREFIX = 'navet-habits-fallback';
 
 type HabitStoreName = typeof EVENT_STORE | typeof FEEDBACK_STORE | typeof RULE_STORE;
 type HabitStoreValue = HomeEvent | HabitFeedback | HabitRule;
@@ -54,38 +53,9 @@ async function openHabitsDb() {
   return await requestToPromise(request);
 }
 
-function getFallbackKey(storeName: HabitStoreName) {
-  return `${LOCAL_STORAGE_PREFIX}:${storeName}`;
-}
-
-function readFallbackStore<T extends HabitStoreValue>(storeName: HabitStoreName): T[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(getFallbackKey(storeName));
-    return raw ? ((JSON.parse(raw) as T[]) ?? []) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeFallbackStore<T extends HabitStoreValue>(storeName: HabitStoreName, values: T[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(getFallbackKey(storeName), JSON.stringify(values));
-  } catch {
-    // Ignore storage quota and embedded-browser failures.
-  }
-}
-
 async function getAllFromStore<T extends HabitStoreValue>(storeName: HabitStoreName): Promise<T[]> {
   if (!isIndexedDbAvailable()) {
-    return readFallbackStore<T>(storeName);
+    return [];
   }
 
   const db = await openHabitsDb();
@@ -98,11 +68,6 @@ async function getAllFromStore<T extends HabitStoreValue>(storeName: HabitStoreN
 
 async function putIntoStore<T extends HabitStoreValue>(storeName: HabitStoreName, value: T) {
   if (!isIndexedDbAvailable()) {
-    const nextValues = [
-      ...readFallbackStore<T>(storeName).filter((item) => item.id !== value.id),
-      value,
-    ];
-    writeFallbackStore(storeName, nextValues);
     return;
   }
 
@@ -114,10 +79,6 @@ async function putIntoStore<T extends HabitStoreValue>(storeName: HabitStoreName
 
 async function deleteFromStore(storeName: HabitStoreName, id: string) {
   if (!isIndexedDbAvailable()) {
-    writeFallbackStore(
-      storeName,
-      readFallbackStore(storeName).filter((item) => item.id !== id)
-    );
     return;
   }
 
@@ -129,7 +90,6 @@ async function deleteFromStore(storeName: HabitStoreName, id: string) {
 
 async function clearStore(storeName: HabitStoreName) {
   if (!isIndexedDbAvailable()) {
-    writeFallbackStore(storeName, []);
     return;
   }
 

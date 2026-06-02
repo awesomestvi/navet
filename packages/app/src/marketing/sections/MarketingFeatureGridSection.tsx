@@ -60,28 +60,27 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
       title={MARKETING_PRODUCT_PROOF.title}
       description={MARKETING_PRODUCT_PROOF.description}
       variant="editorial"
+      compactMobile
       className={className}
     >
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <div
-          className={cn('grid gap-8 border-t pt-8 md:grid-cols-2 xl:grid-cols-1', surface.border)}
-        >
+      <div className="grid gap-6 sm:gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <div className="grid gap-5 pt-0 sm:gap-8 sm:pt-8 md:grid-cols-2 xl:grid-cols-1">
           {MARKETING_PRODUCT_PROOF.columns.map((column) => (
-            <div key={column.title} className="space-y-4">
-              <MarketingEyebrow>{column.kicker}</MarketingEyebrow>
+            <div key={column.title} className="space-y-3 sm:space-y-4">
+              <MarketingEyebrow compactMobile>{column.kicker}</MarketingEyebrow>
               <Text
                 className={cn(
-                  'max-w-[18ch] text-2xl font-semibold tracking-[-0.03em]',
+                  'max-w-[18ch] text-[1.35rem] font-semibold tracking-[-0.03em] sm:text-2xl',
                   surface.textPrimary
                 )}
               >
                 {column.title}
               </Text>
-              <MarketingPillGroup items={column.items} />
+              <MarketingPillGroup items={column.items} compactMobile mobileBehavior="wrap" />
             </div>
           ))}
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-2">
           {MARKETING_FEATURES.map((feature, index) => {
             const Icon = feature.icon;
             const style = FEATURE_CARD_STYLES[index % FEATURE_CARD_STYLES.length];
@@ -98,14 +97,14 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
               <div key={feature.title}>
                 <CardWrapper
                   className={cn(
-                    'min-h-[172px] p-5 md:p-6',
+                    'min-h-[148px] p-4 sm:min-h-[172px] sm:p-5 md:p-6',
                     theme === 'glass'
                       ? `${shell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`
                       : `${surface.panel} ${surface.border} ${theme === 'light' ? 'shadow-[0_18px_42px_-34px_rgba(15,23,42,0.16)]' : surface.cardShadow}`
                   )}
                   showShadow={theme === 'light'}
                 >
-                  <div className="relative z-10 flex h-full flex-col gap-5">
+                  <div className="relative z-10 flex h-full flex-col gap-4 sm:gap-5">
                     <div className="flex items-start justify-between gap-4">
                       <div
                         className={cn(iconPill.badgeClassName, style.iconSurface)}
@@ -129,7 +128,7 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
                     <div className="space-y-2.5">
                       <Text
                         className={cn(
-                          'text-lg font-semibold tracking-[-0.02em]',
+                          'text-base font-semibold tracking-[-0.02em] sm:text-lg',
                           surface.textPrimary
                         )}
                       >
@@ -137,7 +136,7 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
                       </Text>
                       <Text
                         className={cn(
-                          'max-w-[30ch] text-[15px] leading-7',
+                          'max-w-[30ch] text-sm leading-6 sm:text-[15px] sm:leading-7',
                           theme === 'light' ? 'text-slate-600' : surface.textSecondary
                         )}
                       >

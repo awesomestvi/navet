@@ -4,6 +4,7 @@ import { useI18n } from '@navet/app/hooks';
 import { Brain, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
+import { OnOffPillToggle } from './settings-pill-toggle';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
 
 function formatMinuteRange(startMinute: number, endMinute: number) {
@@ -59,18 +60,17 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
         description={t('habits.settings.enable.description')}
         styles={controller.styles}
       >
-        <div className="flex items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/6 px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">
-              {enabled ? t('habits.status.on') : t('habits.status.off')}
-            </p>
-            <p className="mt-1 text-sm text-white/65">
-              {t('habits.settings.enable.helper', {
-                tier: hardwareProfile.tier,
-              })}
-            </p>
-          </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
+        <div className="space-y-3">
+          <OnOffPillToggle
+            value={enabled}
+            onChange={setEnabled}
+            ariaLabel={t('habits.settings.enable.title')}
+          />
+          <p className="min-w-0 text-sm text-white/65">
+            {t('habits.settings.enable.helper', {
+              tier: hardwareProfile.tier,
+            })}
+          </p>
         </div>
       </SettingsItem>
 
@@ -109,6 +109,9 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
                 {t('habits.settings.rules.events')}
               </p>
               <p className="mt-2 text-2xl font-semibold">{events.length}</p>
+              <p className="mt-1 text-sm text-white/55">
+                Capped at {hardwareProfile.maxJournalEvents}
+              </p>
             </Panel>
             <Panel muted className="p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
@@ -173,13 +176,12 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
         styles={controller.styles}
       >
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/6 px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{t('habits.settings.debug.switchLabel')}</p>
-              <p className="mt-1 text-sm text-white/65">{t('habits.settings.debug.helper')}</p>
-            </div>
-            <Switch checked={debugEnabled} onCheckedChange={setDebugEnabled} />
-          </div>
+          <OnOffPillToggle
+            value={debugEnabled}
+            onChange={setDebugEnabled}
+            ariaLabel={t('habits.settings.debug.switchLabel')}
+          />
+          <p className="text-sm text-white/65">{t('habits.settings.debug.helper')}</p>
 
           {debugEnabled ? (
             <Panel muted className="space-y-2 p-4 text-sm">

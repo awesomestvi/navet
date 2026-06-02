@@ -215,7 +215,7 @@ describe('habitStorage', () => {
     await habitStorage.clearRules();
   });
 
-  it('uses localStorage fallback when IndexedDB is unavailable', async () => {
+  it('does not persist events when IndexedDB is unavailable', async () => {
     Object.defineProperty(globalThis, 'indexedDB', {
       configurable: true,
       writable: true,
@@ -227,11 +227,11 @@ describe('habitStorage', () => {
 
     const events = await habitStorage.listEvents();
 
-    expect(events.map((event) => event.id)).toEqual(['event-1', 'event-2']);
-    expect(localStorage.getItem('navet-habits-fallback:events')).toContain('event-1');
+    expect(events).toEqual([]);
+    expect(localStorage.length).toBe(0);
   });
 
-  it('stores feedback and rules through the localStorage fallback', async () => {
+  it('does not persist feedback or rules when IndexedDB is unavailable', async () => {
     Object.defineProperty(globalThis, 'indexedDB', {
       configurable: true,
       writable: true,
@@ -241,8 +241,8 @@ describe('habitStorage', () => {
     await habitStorage.saveFeedback(makeFeedback());
     await habitStorage.saveRule(makeRule());
 
-    await expect(habitStorage.listFeedback()).resolves.toEqual([makeFeedback()]);
-    await expect(habitStorage.listRules()).resolves.toEqual([makeRule()]);
+    await expect(habitStorage.listFeedback()).resolves.toEqual([]);
+    await expect(habitStorage.listRules()).resolves.toEqual([]);
   });
 
   it('stores and trims events through the IndexedDB path', async () => {
@@ -285,7 +285,7 @@ describe('habitStorage', () => {
     Object.defineProperty(globalThis, 'indexedDB', {
       configurable: true,
       writable: true,
-      value: undefined,
+      value: createIndexedDbMock(),
     });
 
     await habitStorage.appendEvent(makeEvent('event-1', '2026-06-01T21:00:00.000Z'));

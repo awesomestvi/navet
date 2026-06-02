@@ -229,6 +229,10 @@ export const esMessages = {
     'Mantenedor del proyecto y enlaces de atribucion para recursos, bibliotecas y reconocimientos.',
   'settings.project.credits.viewAttributions': 'Ver atribuciones',
   'settings.project.credits.community': 'Feedback de la comunidad de Home Assistant',
+  'settings.project.localData.title': 'Datos locales',
+  'settings.project.localData.description':
+    'Borra los ajustes de Navet, el estado local del panel, las preferencias de interfaz en caché y las claves locales antiguas guardadas en este dispositivo.',
+  'settings.project.localData.reset': 'Restablecer ajustes',
   'settings.project.license.title': 'Licencia',
   'settings.project.license.description':
     'El código fuente de Navet está bajo AGPL-3.0-only. Los activos de marca siguen bajo una política de marca separada.',
@@ -266,6 +270,9 @@ export const esMessages = {
     '¿Seguro que quieres restablecer la conexión de tu hogar inteligente? Tendrás que conectarte de nuevo.',
   'settings.feedback.resetConnectionSuccess':
     'Conexión restablecida. Vuelve a conectarte a tu sistema.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    '¿Restablecer los ajustes locales de Navet en este dispositivo? Esto borra las preferencias locales del panel y recarga la app, pero mantiene tu sesión actual.',
+  'settings.feedback.resetLocalSettingsSuccess': 'Ajustes locales de Navet borrados. Recargando...',
   'settings.feedback.wallpaperReadFailed': 'No se pudo leer el archivo de imagen',
   'settings.feedback.configExported': 'Configuración del panel exportada',
   'settings.feedback.configExportFailed': 'No se pudo exportar la configuración del panel',

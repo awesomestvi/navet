@@ -25,6 +25,7 @@ import {
   Link2,
   LocateFixed,
   LogOut,
+  RotateCcw,
   Server,
   Settings2,
   Unplug,
@@ -207,7 +208,7 @@ function ProviderCardView({
 
   return (
     <div
-      className={`rounded-[22px] border p-4 md:p-5 ${styles.borderColor} ${styles.softBg} shadow-[0_18px_44px_-40px_rgba(0,0,0,0.55)]`}
+      className={`rounded-[22px] border p-4 md:p-5 ${styles.insetBorderColor} ${styles.insetBg}`}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
         <div className="min-w-0">
@@ -350,6 +351,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
     handleConnectProvider,
     handleDisconnectProvider,
     handleLogout,
+    handleResetLocalSettings,
     providerCards: allProviderCards,
     setActiveProvider,
     showLogoutConfirm,
@@ -629,6 +631,21 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
             </div>
           </div>
         </div>
+      </SettingsItem>
+
+      <SettingsItem
+        title={t('settings.project.localData.title')}
+        description={t('settings.project.localData.description')}
+        styles={styles}
+      >
+        <button
+          type="button"
+          onClick={handleResetLocalSettings}
+          className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>{t('settings.project.localData.reset')}</span>
+        </button>
       </SettingsItem>
 
       <SettingsItem

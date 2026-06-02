@@ -28,4 +28,21 @@ describe('MarketingSectionShell', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Editorial section body')).toBeInTheDocument();
   });
+
+  it('supports compact mobile spacing without dropping header content', () => {
+    renderWithProviders(
+      <MarketingSectionShell
+        title="Local by default."
+        description="Provider data stays on your own hardware."
+        variant="editorial"
+        compactMobile
+      >
+        <div>Compact section body</div>
+      </MarketingSectionShell>
+    );
+
+    expect(screen.getByRole('heading', { name: 'Local by default.' })).toBeInTheDocument();
+    expect(screen.getByText('Provider data stays on your own hardware.')).toBeInTheDocument();
+    expect(screen.getByText('Compact section body')).toBeInTheDocument();
+  });
 });

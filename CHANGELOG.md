@@ -350,7 +350,7 @@ Changes since `v0.1.0-beta.3`.
 
 - Fixed authenticated media artwork loading, including album art and Home Assistant-protected artwork URLs.
 - Allowed demo album artwork and bundled demo security camera imagery to load correctly.
-- Fixed GitHub Pages and demo asset paths for sidebar imagery, theme assets, RSS images, and hosted base paths.
+- Fixed hosted website and demo asset paths for sidebar imagery, theme assets, RSS images, and hosted base paths.
 - Added media artwork and display-field tests for protected and demo artwork scenarios.
 
 ### Docker and Home Assistant Add-on
@@ -365,7 +365,7 @@ Changes since `v0.1.0-beta.3`.
 
 - Restored dev app image publishing from `main`.
 - Restored Home Assistant add-on dev image publishing from `main`.
-- Enabled GitHub Pages setup for the demo and Storybook publishing flow.
+- Enabled the Cloudflare Pages website bundle flow for the demo and Storybook publishing surfaces.
 - Clarified release publishing workflows for prerelease app images, add-on images, and manual developer image runs.
 - Expanded release-maintenance documentation and agent instructions for preparing future release work.
 
@@ -377,4 +377,4 @@ Before tagging the release, run:
 - `pnpm check`
 - `pnpm typecheck`
 
-Manual release checks should cover login, Home Assistant hosted/add-on ingress, HVAC controls, lock and cover cards, media artwork, demo/GitHub Pages asset loading, and Docker runtime config loading.
+Manual release checks should cover login, Home Assistant hosted/add-on ingress, HVAC controls, lock and cover cards, media artwork, hosted website/demo asset loading, and Docker runtime config loading.

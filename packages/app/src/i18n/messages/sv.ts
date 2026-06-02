@@ -227,6 +227,10 @@ export const svMessages = {
     'Projektets maintainer och attribueringslankar for tillgangar, bibliotek och erkannanden.',
   'settings.project.credits.viewAttributions': 'Visa attribueringar',
   'settings.project.credits.community': 'Feedback från Home Assistant-communityt',
+  'settings.project.localData.title': 'Lokal data',
+  'settings.project.localData.description':
+    'Rensar Navet-installningar, lokal dashboard-layout, cachade gränssnittspreferenser och gamla lokala nycklar som lagras på den här enheten.',
+  'settings.project.localData.reset': 'Återställ inställningar',
   'settings.project.license.title': 'Licens',
   'settings.project.license.description':
     'Navets källkod är licensierad under AGPL-3.0-only. Varumärkestillgångar omfattas av en separat varumärkespolicy.',
@@ -264,6 +268,9 @@ export const svMessages = {
     'Är du säker på att du vill nollställa din smarta hem-anslutning? Du kommer att behöva ansluta igen.',
   'settings.feedback.resetConnectionSuccess':
     'Anslutningen nollställdes. Anslut till systemet igen.',
+  'settings.feedback.resetLocalSettingsConfirm':
+    'Återställa lokala Navet-inställningar på den här enheten? Detta rensar lokala dashboard-preferenser och laddar om appen, men behåller din nuvarande session.',
+  'settings.feedback.resetLocalSettingsSuccess': 'Lokala Navet-inställningar rensade. Laddar om...',
   'settings.feedback.wallpaperReadFailed': 'Det gick inte att läsa bildfilen',
   'settings.feedback.configExported': 'Dashboard-konfiguration exporterad',
   'settings.feedback.configExportFailed': 'Det gick inte att exportera dashboard-konfigurationen',
