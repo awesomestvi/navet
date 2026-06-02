@@ -4,6 +4,9 @@ Storybook is Navet's visual review surface for UI primitives, patterns, cards, w
 states. It should help contributors review UI in isolation. It should not become a second live app
 runtime.
 
+The Storybook host workspace lives in `apps/storybook/`. Story files remain colocated with package
+code.
+
 ## Where Stories Go
 
 Use colocated stories by default.
@@ -32,6 +35,7 @@ Use colocated stories by default.
 ```bash
 pnpm storybook
 pnpm storybook:build
+pnpm website:build
 pnpm check:stories
 pnpm test:storybook
 ```

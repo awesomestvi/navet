@@ -43,8 +43,9 @@ earlier release commit and tag, not the current `main` branch tip.
 
 These are continuous `main` surfaces, not versioned production artifacts in phase 1.
 
-If a Pages deployment must be reverted, redeploy the earlier known-good commit rather than treating
-Pages as the user rollback channel for runtime installs.
+If a Cloudflare Pages deployment must be reverted, restore the earlier known-good commit in the
+connected branch or trigger a redeploy from that commit rather than treating the website bundle as
+the user rollback channel for runtime installs.
 
 ## Operator Guidance
 

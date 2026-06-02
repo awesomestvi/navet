@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { homeAssistantPaths, repoRoot } from './repo-paths.mjs';
 
-export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const root = repoRoot;
 export const packageJsonPath = resolve(root, 'package.json');
 export const changelogPath = resolve(root, 'CHANGELOG.md');
-export const manifestPath = resolve(root, 'custom_components/navet/manifest.json');
-export const addonConfigPath = resolve(root, 'addons/navet/config.yaml');
+export const manifestPath = homeAssistantPaths.navetManifest;
+export const addonConfigPath = homeAssistantPaths.addonConfig;
 export const versioningDocPath = resolve(root, 'docs/VERSIONING.md');
 export const appVersionPath = resolve(root, 'packages/app/src/constants/app-version.ts');
 

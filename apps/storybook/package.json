@@ -1,0 +1,9 @@
+{
+  "name": "@navet/storybook",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "storybook": "storybook dev --ci -c ./.storybook",
+    "build": "storybook build -c ./.storybook -o ./dist"
+  }
+}

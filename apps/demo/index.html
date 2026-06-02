@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Navet Demo</title>
+    <meta
+      name="description"
+      content="Explore the public Navet demo with sample Home Assistant data and responsive dashboard layouts."
+    />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href="%BASE_URL%favicon-32x32.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%apple-touch-icon.png" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #07090d;
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="%BASE_URL%boot-i18n.js"></script>
+    <script src="%BASE_URL%config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

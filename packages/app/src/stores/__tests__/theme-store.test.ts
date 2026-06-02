@@ -31,7 +31,7 @@ describe('useThemeStore', () => {
   it('maps legacy adaptive wallpaper presets to the flat pack', () => {
     useThemeStore.getState().setWallpaper('preset:soft-dark-gradient');
 
-    expect(useThemeStore.getState().wallpaper).toBe('/wallpapers/soft-dark-gradient.svg');
+    expect(useThemeStore.getState().wallpaper).toBe('builtin:aurora-haze-01');
   });
 
   it('normalizes built-in wallpapers under the Home Assistant add-on ingress base', () => {
@@ -41,9 +41,7 @@ describe('useThemeStore', () => {
 
     useThemeStore.getState().setWallpaper('/wallpapers/luxury-living-room-ambient.svg');
 
-    expect(useThemeStore.getState().wallpaper).toBe(
-      '/api/hassio_ingress/navet_dev/wallpapers/luxury-living-room-ambient.svg'
-    );
+    expect(useThemeStore.getState().wallpaper).toBe('builtin:aurora-haze-04');
   });
 
   it('migrates persisted built-in wallpaper paths to the current ingress base', async () => {
@@ -63,11 +61,25 @@ describe('useThemeStore', () => {
 
     await useThemeStore.persist.rehydrate();
 
-    expect(useThemeStore.getState().wallpaper).toBe(
-      '/api/hassio_ingress/current_slug/wallpapers/luxury-living-room-ambient.svg'
-    );
+    expect(useThemeStore.getState().wallpaper).toBe('builtin:aurora-haze-04');
     expect(localStorage.getItem(STORE_STORAGE_KEYS.theme)).toContain('old_slug');
     expect(localStorage.getItem('ha-dashboard-theme')).toBeNull();
+  });
+
+  it('normalizes current built-in wallpaper asset URLs to stable tokens', () => {
+    useThemeStore
+      .getState()
+      .setWallpaper(`${window.location.origin}/wallpapers/generated/cinematic-glow-02.webp`);
+
+    expect(useThemeStore.getState().wallpaper).toBe('builtin:cinematic-glow-02');
+  });
+
+  it('keeps non built-in wallpaper paths and uploaded data URLs unchanged', () => {
+    useThemeStore.getState().setWallpaper('/wallpapers/custom-room-shot.jpg');
+    expect(useThemeStore.getState().wallpaper).toBe('/wallpapers/custom-room-shot.jpg');
+
+    useThemeStore.getState().setWallpaper('data:image/png;base64,Zm9v');
+    expect(useThemeStore.getState().wallpaper).toBe('data:image/png;base64,Zm9v');
   });
 
   it('rehydrates normalized persisted values', async () => {

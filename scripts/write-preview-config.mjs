@@ -64,9 +64,9 @@ if (hassUrl) {
   runtimeConfig.hassUrl = hassUrl;
 }
 
-const distDir = path.resolve(process.cwd(), 'dist');
+const distDir = path.resolve(process.cwd(), 'apps/standalone/dist');
 if (!fs.existsSync(distDir)) {
-  throw new Error('dist/ does not exist. Run `pnpm build` before `pnpm preview`.');
+  throw new Error('apps/standalone/dist does not exist. Run `pnpm build` before `pnpm preview`.');
 }
 
 const outputPath = path.join(distDir, 'config.js');

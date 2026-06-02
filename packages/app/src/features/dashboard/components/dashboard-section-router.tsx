@@ -7,7 +7,8 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
-import { buildRoomStatusSummaryItems, InfoBadgeStrip } from '@navet/app/features/sensors';
+import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
+import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';

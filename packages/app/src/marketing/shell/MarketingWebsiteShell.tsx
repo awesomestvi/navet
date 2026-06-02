@@ -1,3 +1,4 @@
+import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
 import { Button, Link, Text } from '@navet/app/components/primitives';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
@@ -189,11 +190,7 @@ export function MarketingWebsiteShell({
         >
           <div className="flex items-center justify-between gap-4">
             <a href={getMarketingWebsitePath('/')} className="flex shrink-0 items-center gap-2.5">
-              <img
-                src={`${import.meta.env.BASE_URL}logo-horizontal-light.svg`}
-                alt="Navet"
-                className="h-9 w-auto"
-              />
+              <img src={logoHorizontalLight} alt="Navet" className="h-9 w-auto" />
             </a>
             <nav className="hidden items-center gap-4 lg:flex xl:gap-5">
               <WebsiteNavLink href={getMarketingWebsitePath('/')}>Home</WebsiteNavLink>

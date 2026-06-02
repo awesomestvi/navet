@@ -23,7 +23,7 @@ const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite
 
 export default defineConfig({
   root: __dirname,
-  publicDir: path.resolve(repoRoot, 'public'),
+  publicDir: path.resolve(repoRoot, 'assets/public'),
   cacheDir: path.resolve(repoRoot, '.cache/vite-website'),
   base: './',
   envPrefix: ['VITE_'],
@@ -36,6 +36,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@assets': path.resolve(repoRoot, 'assets'),
       '@': path.resolve(repoRoot, 'src'),
       '@website': path.resolve(repoRoot, 'apps/website/src'),
       '@navet/core': path.resolve(repoRoot, 'packages/core/src'),

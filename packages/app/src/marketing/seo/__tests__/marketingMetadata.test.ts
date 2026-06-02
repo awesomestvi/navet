@@ -16,7 +16,7 @@ describe('marketing website metadata', () => {
       document.head.querySelector('meta[name="description"]')?.getAttribute('content')
     ).toContain('provider-neutral smart-home dashboard');
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
-      'https://awesomestvi.github.io/navet/'
+      'https://navet.app/'
     );
   });
 
@@ -28,7 +28,7 @@ describe('marketing website metadata', () => {
       'Install Navet'
     );
     expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
-      'https://awesomestvi.github.io/navet/install/'
+      'https://navet.app/install/'
     );
   });
 });

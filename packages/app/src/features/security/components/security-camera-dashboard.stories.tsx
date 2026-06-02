@@ -1,4 +1,4 @@
-import cameraSampleImage from '@navet/app/assets/camera-sample.webp';
+import { RUNTIME_SAMPLE_MEDIA } from '@navet/app/assets/runtime-sample-images';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
@@ -53,7 +53,7 @@ const liveCamera: CameraDevice = {
   id: 'camera.front_door',
   name: 'Front Door',
   room: 'Entrance',
-  entityPicture: cameraSampleImage,
+  entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
   size: 'medium',
   state: 'streaming',
   supportedFeatures: 2,
@@ -67,7 +67,7 @@ const idleCamera: CameraDevice = {
   id: 'camera.driveway',
   name: 'Driveway',
   room: 'Garage',
-  entityPicture: cameraSampleImage,
+  entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
   size: 'medium',
   state: 'idle',
   supportedFeatures: 2,
@@ -81,7 +81,7 @@ const gardenCamera: CameraDevice = {
   id: 'camera.garden',
   name: 'Garden',
   room: 'Garden',
-  entityPicture: cameraSampleImage,
+  entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
   size: 'medium',
   state: 'recording',
   supportedFeatures: 2,
@@ -95,7 +95,7 @@ const utilityCamera: CameraDevice = {
   id: 'camera.l10s_ultra_gen_2_map',
   name: 'L10s Ultra Gen 2 Current Map',
   room: 'Utility',
-  entityPicture: cameraSampleImage,
+  entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
   size: 'medium',
   state: '2026-05-15 20:17:10',
   supportedFeatures: 0,

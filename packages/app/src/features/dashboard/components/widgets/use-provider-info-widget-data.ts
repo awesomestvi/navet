@@ -1,8 +1,6 @@
-import {
-  type AvailableSensor,
-  inferSensorIcon,
-  type SensorReading,
-} from '@navet/app/features/sensors';
+import { inferSensorIcon } from '@navet/app/features/sensors/components/sensor-group-settings/sensor-options';
+import type { AvailableSensor } from '@navet/app/features/sensors/components/sensor-group-settings/types';
+import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
 import { useIntegrationStore } from '@navet/app/hooks';
 import { useProviderSensorCollection } from '@navet/app/hooks/use-devices';
 import { integrationSelectors } from '@navet/app/stores/selectors';

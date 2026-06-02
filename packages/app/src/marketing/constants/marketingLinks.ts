@@ -1,6 +1,6 @@
 import { GITHUB_REPO_URL } from '@navet/app/constants/urls';
 
-const DEFAULT_PUBLIC_SITE_URL = 'https://awesomestvi.github.io/navet/';
+const DEFAULT_PUBLIC_SITE_URL = 'https://navet.app/';
 
 function normalizeBaseUrl(url: string) {
   return url.endsWith('/') ? url : `${url}/`;

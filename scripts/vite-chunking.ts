@@ -14,8 +14,11 @@ export const LAZY_HTML_PRELOAD_CHUNKS = [
   'dnd-vendor',
   'energy',
   'entity-card-calendar',
+  'entity-card-camera',
   'entity-card-climate',
+  'entity-card-cover',
   'entity-card-lighting',
+  'entity-card-lock',
   'entity-card-media',
   'entity-card-person',
   'entity-card-scenes',
@@ -98,6 +101,18 @@ export function getAppChunkName(id: string) {
   }
 
   if (moduleId.includes('/packages/app/src/features/security/')) {
+    if (moduleId.includes('/packages/app/src/features/security/components/camera-card/')) {
+      return 'entity-card-camera'
+    }
+
+    if (moduleId.includes('/packages/app/src/features/security/components/cover-card/')) {
+      return 'entity-card-cover'
+    }
+
+    if (moduleId.includes('/packages/app/src/features/security/components/lock-card')) {
+      return 'entity-card-lock'
+    }
+
     return 'entity-card-security'
   }
 
@@ -202,6 +217,10 @@ export function getVendorChunkName(id: string) {
 
   if (packageName === 'home-assistant-js-websocket') {
     return 'ha-vendor'
+  }
+
+  if (packageName === 'hls.js') {
+    return 'media-stream-vendor'
   }
 
   if (packageName === 'lucide-react') {

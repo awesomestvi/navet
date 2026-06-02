@@ -2,10 +2,10 @@
 
 A smart-home dashboard frontend for wall panels, tablets, phones, and desktop screens.
 
-![Navet dashboard demo on iPad frame](docs/marketing/assets/use-cases/navet-ipad-frame-dashboard.jpg)
+![Navet dashboard demo on iPad frame](assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
 
-[Live demo](https://awesomestvi.github.io/navet/demo/) ·
-[Storybook](https://awesomestvi.github.io/navet/storybook/) ·
+[Live demo](https://navet.app/demo/) ·
+[Storybook](https://navet.app/storybook/) ·
 [Docs](docs/README.md) ·
 [Security policy](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md)
@@ -18,7 +18,7 @@ dashboard plus focused `energy`, `climate`, `security`, `lights`, `media`, `task
 
 Home Assistant is the reference provider today, but Navet is not a Home Assistant-only frontend.
 The repo is organized around provider-neutral `@navet/core` and `@navet/ui` packages, provider
-packages, and an `@navet/app` composition layer.
+packages, an `@navet/app` composition layer, and thin app workspaces for each runtime surface.
 
 ## Provider Status
 
@@ -80,7 +80,7 @@ For local provider testing:
 
 ## Package Architecture
 
-Navet’s active package layout is:
+Navet’s reusable package layout is:
 
 ```text
 packages/
@@ -94,12 +94,41 @@ packages/
   app/
 ```
 
+Deployable and published surfaces live under `apps/`:
+
+```text
+apps/
+  standalone/
+  ha-panel/
+  storybook/
+  demo/
+  website/
+```
+
+Home Assistant release surfaces and shared static assets live outside `apps/`:
+
+```text
+platform/
+  home-assistant/
+    addons/
+    custom_components/
+
+assets/
+  public/
+  reference/
+    marketing/
+    media/
+    wallpapers/
+      source/
+```
+
 Contributor mental model:
 
 - `@navet/core` owns shared contracts, IDs, and adapter semantics
 - `@navet/ui` owns provider-neutral React UI
 - provider packages own provider-specific runtime, auth, mapping, and command translation
 - `@navet/app` owns runtime selection, provider registration, settings, persistence, and product wiring
+- `apps/*` own host-specific bootstrapping, build config, and publishing surfaces
 
 The repo still contains migration seams and app-internal compatibility code, but package ownership
 is the right default model for new work.
@@ -145,8 +174,8 @@ Useful entry points:
 
 | Home | Energy | Security |
 |---|---|---|
-| ![Navet home dashboard on iPad](docs/marketing/assets/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on iPad](docs/marketing/assets/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on iPad](docs/marketing/assets/screenshots/navet-ipad-landscape-security.jpg) |
+| ![Navet home dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
 
 | Tablet | Mobile home | Mobile controls |
 |---|---|---|
-| ![Navet tablet portrait dashboard](docs/marketing/assets/screenshots/navet-tablet-portrait-home.jpg) | ![Navet mobile PWA home dashboard](docs/marketing/assets/screenshots/navet-mobile-pwa-home.jpg) | ![Navet mobile PWA media or lights dashboard](docs/marketing/assets/screenshots/navet-mobile-pwa-media-or-lights.jpg) |
+| ![Navet tablet portrait dashboard](assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg) | ![Navet mobile PWA home dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg) | ![Navet mobile PWA media or lights dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-media-or-lights.jpg) |

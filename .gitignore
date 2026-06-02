@@ -42,9 +42,9 @@ pnpm-debug.log*
 .cache/
 .parcel-cache/
 .vite/
-!custom_components/navet/frontend/.vite/
-custom_components/navet/frontend/.vite/*
-!custom_components/navet/frontend/.vite/manifest.json
+!platform/home-assistant/custom_components/navet/frontend/.vite/
+platform/home-assistant/custom_components/navet/frontend/.vite/*
+!platform/home-assistant/custom_components/navet/frontend/.vite/manifest.json
 .eslintcache
 
 # ------------------------------

@@ -1,10 +1,10 @@
 import { Button } from '@navet/app/components/primitives/button';
+import type { ProviderBatterySensorRow } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { BatterySettingsDialog } from './battery-overview-widget';
-import type { ProviderBatterySensorRow } from './use-provider-battery-sensor-rows';
+import { BatterySettingsDialog } from './battery-settings-dialog';
 
 const sampleBatteries: ProviderBatterySensorRow[] = [
   { id: 'sensor.front_door_battery', name: 'Front Door Sensor', level: 18 },

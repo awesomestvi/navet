@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { appPaths } from './repo-paths.mjs'
 
-const assetsDir = join(process.cwd(), 'dist', 'assets')
+const assetsDir = join(appPaths.standaloneDist, 'assets')
 const maxRows = Number.parseInt(process.argv[2] ?? '25', 10)
 
 function formatBytes(bytes) {
@@ -30,7 +31,7 @@ try {
   const rows = getAssetRows()
   const total = rows.reduce((sum, row) => sum + row.size, 0)
 
-  console.log(`dist/assets total: ${formatBytes(total)}`)
+  console.log(`apps/standalone/dist/assets total: ${formatBytes(total)}`)
   console.log(`largest assets, top ${Number.isFinite(maxRows) ? maxRows : 25}:`)
 
   for (const row of rows.slice(0, Number.isFinite(maxRows) ? maxRows : 25)) {
@@ -39,8 +40,8 @@ try {
 } catch (error) {
   console.error(
     error instanceof Error
-      ? `Unable to inspect dist/assets: ${error.message}`
-      : 'Unable to inspect dist/assets'
+      ? `Unable to inspect apps/standalone/dist/assets: ${error.message}`
+      : 'Unable to inspect apps/standalone/dist/assets'
   )
   process.exitCode = 1
 }

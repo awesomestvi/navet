@@ -6,7 +6,7 @@ import { playwright } from '@vitest/browser-playwright';
 
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-const storybookConfigDir = path.join(dirname, '.storybook');
+const storybookConfigDir = path.join(dirname, 'apps/storybook/.storybook');
 
 export default defineConfig({
   test: {

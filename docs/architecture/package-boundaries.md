@@ -20,6 +20,9 @@ These package surfaces are the live runtime layout. Contributors should think in
 ownership first, with `@navet/app` acting as the assembly layer that wires provider bridges,
 runtime registration, settings, and persistence together.
 
+Deployable and published host surfaces live separately under `apps/`. Those workspaces should stay
+thin and consume package entry surfaces rather than owning shared feature logic.
+
 ## Ownership
 
 | Area | Owner |

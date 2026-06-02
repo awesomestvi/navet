@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- Primary Meta Tags -->
+    <title>Navet - Smart Home Dashboard</title>
+    <meta name="title" content="Navet - Smart Home Dashboard" />
+    <meta name="description" content="A beautiful, iOS-inspired smart home dashboard with frosted glass aesthetics" />
+    <meta name="keywords" content="smart home, dashboard, home automation, IoT, Home Assistant" />
+    <meta name="author" content="Navet" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://navet.example.com/" />
+    <meta property="og:title" content="Navet - Smart Home Dashboard" />
+    <meta property="og:description" content="A beautiful, iOS-inspired smart home dashboard with frosted glass aesthetics" />
+    <meta property="og:image" content="%BASE_URL%logo.svg" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://navet.example.com/" />
+    <meta property="twitter:title" content="Navet - Smart Home Dashboard" />
+    <meta property="twitter:description" content="A beautiful, iOS-inspired smart home dashboard with frosted glass aesthetics" />
+    <meta property="twitter:image" content="%BASE_URL%logo.svg" />
+    
+    <!-- Favicon and Manifest -->
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href="%BASE_URL%favicon-32x32.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%apple-touch-icon.png" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="application-name" content="Navet" />
+
+    <!-- Mobile Web App -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Navet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #07090d;
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 18% 16%, rgba(61, 92, 130, 0.22), transparent 26%),
+          radial-gradient(circle at 82% 18%, rgba(195, 107, 46, 0.16), transparent 24%),
+          linear-gradient(180deg, #0a0d12 0%, #06080c 100%);
+      }
+
+      #app-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, env(safe-area-inset-top))
+          max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(24px, env(safe-area-inset-left));
+        background:
+          radial-gradient(circle at 18% 16%, rgba(61, 92, 130, 0.22), transparent 26%),
+          radial-gradient(circle at 82% 18%, rgba(195, 107, 46, 0.16), transparent 24%),
+          linear-gradient(180deg, rgba(10, 13, 18, 0.98) 0%, rgba(6, 8, 12, 0.98) 100%);
+        transition: opacity 220ms ease, visibility 220ms ease;
+      }
+
+      #app-boot[data-state='hidden'] {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .app-boot-card {
+        width: min(100%, 280px);
+        padding: 28px 24px;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(18px);
+        text-align: center;
+      }
+
+      .app-boot-logo {
+        display: block;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 16px;
+      }
+
+      .app-boot-title {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.96);
+        font:
+          600 22px/1.2 ui-sans-serif,
+          system-ui,
+          sans-serif;
+        letter-spacing: -0.02em;
+      }
+
+      .app-boot-copy {
+        margin: 8px 0 0;
+        color: rgba(255, 255, 255, 0.62);
+        font:
+          400 13px/1.45 ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+
+      .app-boot-spinner {
+        width: 22px;
+        height: 22px;
+        margin: 18px auto 0;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.12);
+        border-top-color: rgba(255, 255, 255, 0.74);
+        animation: app-boot-spin 0.8s linear infinite;
+      }
+
+      @keyframes app-boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app-boot" aria-hidden="true">
+      <div class="app-boot-card">
+        <img class="app-boot-logo" src="%BASE_URL%logo.svg" alt="" />
+        <p class="app-boot-title">Navet</p>
+        <p class="app-boot-copy" id="app-boot-copy">Starting your smart home dashboard</p>
+        <div class="app-boot-spinner"></div>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script src="%BASE_URL%boot-i18n.js"></script>
+    <script src="%BASE_URL%config.js"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+  

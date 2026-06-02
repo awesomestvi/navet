@@ -1,8 +1,8 @@
-import demoHomeImage from '@docs/marketing/assets/screenshots/navet-ipad-landscape-home.jpg';
-import demoMobileImage from '@docs/marketing/assets/screenshots/navet-mobile-pwa-home.jpg';
-import demoTabletImage from '@docs/marketing/assets/screenshots/navet-tablet-portrait-home.jpg';
-import artworksOriginal from '@navet/app/assets/artworks-original.jpg';
-import cameraSampleImage from '@navet/app/assets/camera-sample.webp';
+import demoHomeImage from '@assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg';
+import demoMobileImage from '@assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg';
+import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg';
+import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
 import type { CalendarCard } from '@navet/app/features/calendar';
 import type { HVACCard } from '@navet/app/features/climate';
 import type {

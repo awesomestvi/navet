@@ -6,7 +6,7 @@ import {
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
-import { useLightPresetStore } from '@navet/app/features/lighting';
+import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
 import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import {

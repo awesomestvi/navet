@@ -136,11 +136,14 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./addons/navet/Dockerfile
+          file: ./platform/home-assistant/addons/navet/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           build-args: |
             BUILD_FROM=${{ matrix.build_from }}
             BUILD_VERSION=edge
             BUILD_ARCH=${{ matrix.arch }}
+            NAVET_GIT_SHA=${{ github.sha }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            NAVET_RELEASE_CHANNEL=edge
           tags: ${{ steps.tags.outputs.value }}

@@ -28,13 +28,13 @@ try {
 
   if (manifest.version !== packageVersion) {
     throw new Error(
-      `custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
+      `platform/home-assistant/custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
     );
   }
 
   if (addonVersion !== packageVersion) {
     throw new Error(
-      `addons/navet/config.yaml version ${addonVersion} does not match package.json ${packageVersion}.`
+      `platform/home-assistant/addons/navet/config.yaml version ${addonVersion} does not match package.json ${packageVersion}.`
     );
   }
 
