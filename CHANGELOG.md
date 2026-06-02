@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0 - 2026-06-03
+
+## New
+
+- Camera cards can now refresh Home Assistant snapshots directly while keeping live and fallback viewing available from the same card.
+
+## Fixed
+
+- Home Assistant camera playback now handles WebRTC session events more reliably and avoids breaking when a preferred live stream transport is unavailable.
+- Camera snapshot and MJPEG playback now keep using the current provider URLs, so refreshed images and fallback streams stay in sync.
+
+## Improved
+
+- Camera cards now show clearer stream status and refresh controls across live, snapshot, and fallback viewing modes.
+- Camera settings are simpler, with playback controls focused on supported viewing behavior instead of global go2rtc overrides.
+
 ## 0.4.7 - 2026-06-02
 
 ## New
