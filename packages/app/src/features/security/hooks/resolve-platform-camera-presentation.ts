@@ -40,6 +40,8 @@ export function usePlatformCameraPresentation(
     isRunning: options.isRunning,
     failedTransports: options.failedTransports,
   });
+  const currentSnapshotUrl = options.snapshotUrl;
+  const currentMjpegStreamUrl = options.mjpegStreamUrl;
 
   const resolved =
     playbackPlan?.primary.kind === 'webrtc_stream'
@@ -59,12 +61,12 @@ export function usePlatformCameraPresentation(
           }
         : playbackPlan?.primary.kind === 'mjpeg_stream'
           ? {
-              sourceUrl: playbackPlan.primary.url,
+              sourceUrl: currentMjpegStreamUrl ?? playbackPlan.primary.url,
               sourceKind: 'mjpeg' as const,
               isFallback: false,
             }
           : {
-              sourceUrl: playbackPlan?.primary.url ?? options.snapshotUrl,
+              sourceUrl: currentSnapshotUrl ?? playbackPlan?.primary.url,
               sourceKind: 'snapshot' as const,
               isFallback: options.preferredMode === 'live',
             };

@@ -283,6 +283,7 @@ describe('CameraStreamPlayer', () => {
   it('starts a WebRTC offer subscription and closes it on unmount', async () => {
     const unsubscribe = vi.fn();
     serviceMock.subscribeCameraWebRtcOffer.mockResolvedValue(unsubscribe);
+    const playSpy = vi.spyOn(HTMLMediaElement.prototype, 'play');
 
     const { unmount } = render(
       <CameraStreamPlayer
@@ -301,6 +302,12 @@ describe('CameraStreamPlayer', () => {
         expect.any(Function)
       )
     );
+
+    MockRTCPeerConnection.instances[0]?.ontrack?.({
+      track: { kind: 'video' } as MediaStreamTrack,
+    });
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalled());
 
     unmount();
 
@@ -332,6 +339,8 @@ describe('CameraStreamPlayer', () => {
   });
 
   it('connects directly to a configured go2rtc WebSocket feed before using the custom card', async () => {
+    const playSpy = vi.spyOn(HTMLMediaElement.prototype, 'play');
+
     render(
       <CameraStreamPlayer
         entityId={cameraEntityFixtures.normal.entity_id}
@@ -354,6 +363,12 @@ describe('CameraStreamPlayer', () => {
         JSON.stringify({ type: 'webrtc/offer', value: 'offer-sdp' })
       )
     );
+
+    MockRTCPeerConnection.instances[0]?.ontrack?.({
+      track: { kind: 'video' } as MediaStreamTrack,
+    });
+
+    await waitFor(() => expect(playSpy).toHaveBeenCalled());
     expect(go2RtcConfig).toBeNull();
   });
 

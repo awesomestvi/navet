@@ -34,7 +34,7 @@ describe('camera view mode helpers', () => {
     });
   });
 
-  it('prefers go2rtc for live cameras when the custom card is available', () => {
+  it('prefers Home Assistant advertised streams ahead of go2rtc in auto live mode', () => {
     window.__NAVET_PANEL__ = false;
 
     const source = selectCameraImageSource({
@@ -44,6 +44,28 @@ describe('camera view mode helpers', () => {
       snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
       mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
       frontendStreamTypes: ['hls', 'web_rtc'],
+      isUnavailable: false,
+      isRunning: true,
+      failedStreamTypes: new Set(),
+    });
+
+    expect(source).toEqual({
+      url: undefined,
+      kind: 'web_rtc',
+      isFallback: false,
+    });
+  });
+
+  it('falls back to go2rtc when Home Assistant does not advertise frontend streams', () => {
+    window.__NAVET_PANEL__ = false;
+
+    const source = selectCameraImageSource({
+      cameraViewMode: 'live',
+      cameraFeedMode: 'auto',
+      hasGo2RtcFeed: true,
+      snapshotUrl: '/api/camera_proxy/camera.front?_t=0',
+      mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=0',
+      frontendStreamTypes: [],
       isUnavailable: false,
       isRunning: true,
       failedStreamTypes: new Set(),
@@ -274,34 +296,18 @@ describe('camera view mode helpers', () => {
     expect(
       resolveDashboardCameraViewMode({
         cameraDashboardViewMode: 'live',
-        hasCameraViewModeOverride: false,
         lowPowerMode: true,
         hasSnapshot: true,
-        preferSnapshotPreview: false,
       })
     ).toBe('snapshot');
   });
 
-  it('defaults standalone dashboard previews to snapshots when the camera has no explicit override', () => {
+  it('keeps live dashboard previews outside low power mode', () => {
     expect(
       resolveDashboardCameraViewMode({
         cameraDashboardViewMode: 'live',
-        hasCameraViewModeOverride: false,
         lowPowerMode: false,
         hasSnapshot: true,
-        preferSnapshotPreview: true,
-      })
-    ).toBe('snapshot');
-  });
-
-  it('keeps an explicit dashboard preview override in standalone mode', () => {
-    expect(
-      resolveDashboardCameraViewMode({
-        cameraDashboardViewMode: 'live',
-        hasCameraViewModeOverride: true,
-        lowPowerMode: false,
-        hasSnapshot: true,
-        preferSnapshotPreview: true,
       })
     ).toBe('live');
   });
@@ -310,10 +316,8 @@ describe('camera view mode helpers', () => {
     expect(
       resolveDashboardCameraViewMode({
         cameraDashboardViewMode: 'live',
-        hasCameraViewModeOverride: false,
         lowPowerMode: true,
         hasSnapshot: false,
-        preferSnapshotPreview: true,
       })
     ).toBe('live');
   });

@@ -3,12 +3,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { usePlatformCameraPresentation } from '@navet/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useEntityProviderFeatureMatrix, useI18n, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
-import type { PlatformCameraStreamType } from '@navet/app/platform/provider-feature-models';
-import type {
-  CameraFeedMode,
-  CameraGo2RtcConfig,
-  CameraViewMode,
-} from '@navet/app/stores/settings-store';
+import type { CameraGo2RtcConfig, CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
@@ -24,7 +19,6 @@ interface CameraLiveViewerProps {
   snapshotUrl: string | undefined;
   mjpegStreamUrl: string | undefined;
   cameraViewMode: CameraViewMode;
-  cameraFeedMode: CameraFeedMode;
   go2RtcConfig: CameraGo2RtcConfig;
   isUnavailable: boolean;
   isRunning: boolean;
@@ -77,7 +71,6 @@ export function CameraLiveViewer({
   snapshotUrl,
   mjpegStreamUrl,
   cameraViewMode,
-  cameraFeedMode,
   go2RtcConfig,
   isUnavailable,
   isRunning,
@@ -93,18 +86,14 @@ export function CameraLiveViewer({
   const surface = getThemeSurfaceTokens(theme);
   const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const [failedStreamTypes, setFailedStreamTypes] = useState<CameraImageSourceKind[]>([]);
-  const streamFailureResetKey = `${isOpen}:${cameraViewMode}:${cameraFeedMode}:${go2RtcConfig.serverUrl}:${go2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
+  const streamFailureResetKey = `${isOpen}:${cameraViewMode}:${go2RtcConfig.serverUrl}:${go2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
   const supportsCameraStreams = featureMatrix.cameraStreams;
   const supportsCameraSnapshot = featureMatrix.cameraSnapshot;
-  const preferredTransport: PlatformCameraStreamType | 'auto' =
-    cameraFeedMode === 'auto' || cameraFeedMode === 'hls' || cameraFeedMode === 'web_rtc'
-      ? cameraFeedMode
-      : 'auto';
   const presentation = usePlatformCameraPresentation({
     entityId,
     preferredMode: supportsCameraStreams ? cameraViewMode : 'snapshot',
-    preferredTransport,
+    preferredTransport: 'auto',
     snapshotUrl: supportsCameraSnapshot ? snapshotUrl : undefined,
     mjpegStreamUrl: supportsCameraStreams ? mjpegStreamUrl : undefined,
     frontendStreamTypes: supportsCameraStreams ? frontendStreamTypes : [],

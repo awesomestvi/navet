@@ -75,6 +75,7 @@ export interface ProviderLightFeatureService {
 export interface ProviderCameraFeatureService {
   getCameraCapabilities: (entityId: string) => Promise<PlatformCameraCapabilities>;
   getCameraLiveState?: (entityId: string) => Promise<PlatformCameraLiveState>;
+  refreshCameraSnapshot?: (entityId: string) => Promise<void>;
   getCameraStreamUrl: (
     entityId: string,
     format?: PlatformCameraStreamType

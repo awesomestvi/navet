@@ -1,6 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
-import { resolveCameraGo2RtcConfig } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -72,36 +71,12 @@ const meta = {
     name: 'Front Door Camera',
     siblingEntities,
     cameraViewMode: 'live',
-    cameraFeedMode: 'auto',
-    go2RtcConfig: {
-      serverUrl: '',
-      streamName: '',
-    },
-    go2RtcDefaults: {
-      serverUrl: 'http://homeassistant.local:11984',
-      streamNamingMode: 'entity_id',
-    },
-    resolvedGo2RtcConfig: resolveCameraGo2RtcConfig({
-      entityId: 'camera.front_door',
-      defaults: {
-        serverUrl: 'http://homeassistant.local:11984',
-        streamNamingMode: 'entity_id',
-      },
-      override: {
-        serverUrl: '',
-        streamName: '',
-      },
-      canUseEmbeddedPanel: false,
-    }),
     frontendStreamTypes: ['web_rtc', 'hls'],
     hasGo2RtcFeed: true,
     hasMjpegStream: true,
     hasSnapshot: true,
     lowPowerMode: false,
     onCameraViewModeChange: () => undefined,
-    onCameraFeedModeChange: () => undefined,
-    onGo2RtcDefaultsChange: () => undefined,
-    onGo2RtcConfigChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

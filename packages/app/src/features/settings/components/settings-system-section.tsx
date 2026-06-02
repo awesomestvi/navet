@@ -2,7 +2,6 @@ import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.png';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
-import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +13,6 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { useI18n } from '@navet/app/hooks';
-import type { TranslationKey } from '@navet/app/i18n';
-import type { CameraGo2RtcStreamNamingMode } from '@navet/app/stores';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   ChevronDown,
@@ -328,7 +325,6 @@ function ProviderCardView({
 
 export function SettingsSystemSection({ controller }: SettingsSystemSectionProps) {
   const { t } = useI18n();
-  const streamNamingOptions: CameraGo2RtcStreamNamingMode[] = ['entity_id', 'short_entity_id'];
   const [providerUrls, setProviderUrls] = useState<Record<string, string>>({
     home_assistant: '',
     openhab: '',
@@ -346,7 +342,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
   );
   const {
     config,
-    cameraGo2RtcDefaults,
     confirmLogout,
     handleConnectProvider,
     handleDisconnectProvider,
@@ -357,7 +352,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
     showLogoutConfirm,
     setShowLogoutConfirm,
     styles,
-    updateSettings,
   } = controller;
   const providerCards = allProviderCards.filter(
     (provider) => provider.implementationStatus === 'implemented'
@@ -570,68 +564,6 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           </form>
         </ModalSurface>
       ) : null}
-
-      <SettingsItem
-        title={t('settings.interaction.cameraStreams.title')}
-        description={t('settings.interaction.cameraStreams.description')}
-        styles={styles}
-      >
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label
-              className={`block text-xs font-medium ${styles.subtleColor}`}
-              htmlFor="go2rtc-default-server-url"
-            >
-              {t('camera.settings.go2rtc.defaultServerUrl')}
-            </label>
-            <Input
-              id="go2rtc-default-server-url"
-              value={cameraGo2RtcDefaults.serverUrl}
-              onChange={(event) =>
-                updateSettings({
-                  cameraGo2RtcDefaults: {
-                    ...cameraGo2RtcDefaults,
-                    serverUrl: event.target.value,
-                  },
-                })
-              }
-              placeholder="http://homeassistant.local:11984"
-              size="small"
-              variant="soft"
-              spellCheck={false}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <p className={`text-xs font-medium ${styles.subtleColor}`}>
-              {t('camera.settings.go2rtc.streamNamingMode')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {streamNamingOptions.map((option) => {
-                const isActive = cameraGo2RtcDefaults.streamNamingMode === option;
-                return (
-                  <InteractivePill
-                    key={option}
-                    active={isActive}
-                    size="small"
-                    onClick={() =>
-                      updateSettings({
-                        cameraGo2RtcDefaults: {
-                          ...cameraGo2RtcDefaults,
-                          streamNamingMode: option,
-                        },
-                      })
-                    }
-                    aria-pressed={isActive}
-                  >
-                    {t(`camera.settings.go2rtc.streamNamingMode.${option}` as TranslationKey)}
-                  </InteractivePill>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </SettingsItem>
 
       <SettingsItem
         title={t('settings.project.localData.title')}

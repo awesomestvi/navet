@@ -288,6 +288,7 @@ function WebRtcCameraPlayer({
           }
           remoteStream.addTrack(event.track);
           videoRef.current.srcObject = remoteStream;
+          void videoRef.current.play().catch(() => undefined);
         };
         peerConnection.onicecandidate = (event) => {
           if (!event.candidate?.candidate) {
@@ -500,7 +501,7 @@ function Go2RtcDirectCameraPlayer({
             return;
           }
 
-          const streamTracks = event.streams[0]?.getTracks() ?? [];
+          const streamTracks = event.streams?.[0]?.getTracks() ?? [];
           const tracks = streamTracks.length > 0 ? streamTracks : [event.track];
           for (const track of tracks) {
             if (!remoteStream.getTracks().includes(track)) {
@@ -508,6 +509,7 @@ function Go2RtcDirectCameraPlayer({
             }
           }
           videoRef.current.srcObject = remoteStream;
+          void videoRef.current.play().catch(() => undefined);
         };
         peerConnection.onicecandidate = (event) => {
           if (!event.candidate || socket?.readyState !== WebSocket.OPEN) {
