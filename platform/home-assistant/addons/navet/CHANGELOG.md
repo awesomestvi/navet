@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.7
+
+- Updated Navet to `0.4.7`
+- Refreshed the website and marketing presentation with new screenshots and clearer product storytelling
+- Added new wallpapers
+- Improved settings actions and section management flows
+
 ## 0.4.6
 
 - Updated Navet to `0.4.6`
