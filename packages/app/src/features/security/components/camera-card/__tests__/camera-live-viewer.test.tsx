@@ -29,7 +29,6 @@ const defaultProps = {
   snapshotUrl: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
   mjpegStreamUrl: '/api/camera_proxy_stream/camera.front_door?_t=0',
   cameraViewMode: 'auto' as const,
-  cameraFeedMode: 'auto' as const,
   go2RtcConfig: { serverUrl: '', streamName: 'camera.front_door' },
   isUnavailable: false,
   isRunning: true,
@@ -158,6 +157,11 @@ describe('CameraLiveViewer', () => {
       `${reolinkFixtures.camera.entity_id}:hls`
     );
     expect(screen.getByText('HLS')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(getCameraPlaybackPlanMock).toHaveBeenCalledWith(
+        expect.objectContaining({ preferredTransport: 'auto' })
+      )
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Camera settings' }));

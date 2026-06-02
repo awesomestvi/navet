@@ -97,10 +97,14 @@ export function CameraCardView({
   const motionLabel = motionDetected ? t('camera.motion.detected') : t('camera.motion.clear');
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
+  const showRefreshButton =
+    isRunning && !isEditMode && (cameraViewMode !== 'live' || isStreamFallback || !isStreamCapable);
   let streamLabel = isStreamCapable
     ? t('camera.viewer.streamCapable')
     : t('camera.viewer.snapshotOnly');
-  if (frontendStreamTypes.length > 0) {
+  if (streamKind === 'snapshot') {
+    streamLabel = t('camera.settings.viewMode.snapshot');
+  } else if (frontendStreamTypes.length > 0) {
     streamLabel = frontendStreamTypes.join('/').toUpperCase();
   }
   if (streamKind === 'go2rtc') {
@@ -109,12 +113,18 @@ export function CameraCardView({
   if (streamKind === 'hls' || streamKind === 'web_rtc' || streamKind === 'mjpeg') {
     streamLabel = streamKind.toUpperCase();
   }
-  const resolvedStreamLabel = isStreamFallback ? t('camera.viewer.snapshotFallback') : streamLabel;
+  const resolvedStreamLabel =
+    cameraViewMode === 'snapshot'
+      ? null
+      : isStreamFallback
+        ? t('camera.viewer.snapshotFallback')
+        : streamLabel;
 
   return (
     <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
       <BaseCard
         size={size}
+        className="isolate"
         fullBleed
         interactive={!isEditMode}
         frameClassName="bg-zinc-900"
@@ -134,28 +144,30 @@ export function CameraCardView({
         }
         aria-label={!isEditMode ? t('camera.actions.openViewer') : undefined}
         overlay={
-          streamElement && !isUnavailable ? (
-            streamElement
-          ) : imageUrl && !isUnavailable ? (
-            <CameraSnapshotImage
-              src={imageUrl}
-              alt={name}
-              className="absolute inset-0 h-full w-full object-cover"
-              onError={onImageError}
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <Camera className="h-8 w-8 text-zinc-500" />
-              <span className="text-xs text-zinc-500">
-                {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-              </span>
-            </div>
-          )
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            {streamElement && !isUnavailable ? (
+              streamElement
+            ) : imageUrl && !isUnavailable ? (
+              <CameraSnapshotImage
+                src={imageUrl}
+                alt={name}
+                className="absolute inset-0 h-full w-full object-cover"
+                onError={onImageError}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                <Camera className="h-8 w-8 text-zinc-500" />
+                <span className="text-xs text-zinc-500">
+                  {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
+                </span>
+              </div>
+            )}
+          </div>
         }
-        contentClassName="h-full"
+        contentClassName="relative z-10 h-full"
       >
         {/* Refresh button (top-left, only when live and not in edit mode) */}
-        {isRunning && !isEditMode && (
+        {showRefreshButton && (
           <button
             type="button"
             onClick={(event) => {
@@ -163,35 +175,35 @@ export function CameraCardView({
               onRefresh();
             }}
             aria-label={t('camera.actions.refreshSnapshot')}
-            className="absolute top-3 left-3 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-black/38 text-white/82 backdrop-blur-sm transition-colors hover:bg-black/58 hover:text-white"
+            className="absolute top-3 left-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/38 text-white/82 backdrop-blur-sm transition-colors hover:bg-black/58 hover:text-white"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-4 w-4" />
           </button>
         )}
 
-        <div className="absolute top-3 right-3 left-12 z-10 flex min-w-0 items-center justify-end gap-1.5 text-xs font-medium text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+        <div className="absolute top-3 right-3 z-30 inline-flex max-w-[calc(100%-3.75rem)] items-center gap-1.5 text-xs font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.98)]">
           <div className="inline-flex items-center gap-1.5">
             <span
               className={`h-1.5 w-1.5 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.75)]' : 'bg-white/45'}`}
             />
             <span>{statusLabel}</span>
           </div>
-          {statusElapsed ? <span className="text-white/68">{statusElapsed}</span> : null}
-          <span className="text-white/38">/</span>
+          {statusElapsed ? <span className="text-white/78">{statusElapsed}</span> : null}
+          <span className="text-white/58">/</span>
           <span className={motionDetected ? 'text-emerald-100' : 'text-white/68'}>
             {motionLabel}
             {motionElapsed ? <span className="text-current/62"> {motionElapsed}</span> : null}
           </span>
-          {!isCompact ? (
+          {!isCompact && resolvedStreamLabel ? (
             <>
-              <span className="text-white/38">/</span>
-              <span className="min-w-0 truncate text-white/62">{resolvedStreamLabel}</span>
+              <span className="text-white/58">/</span>
+              <span className="min-w-0 truncate text-white/78">{resolvedStreamLabel}</span>
             </>
           ) : null}
         </div>
 
         {/* Bottom gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/52 to-transparent px-3 pb-3 pt-10">
+        <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/88 via-black/52 to-transparent px-3 pb-3 pt-10">
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
               <EntityCardHeader
@@ -199,8 +211,8 @@ export function CameraCardView({
                 subtitle={isCompact ? '' : room}
                 layout="eyebrow-first"
                 size={size}
-                titleClassName="leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
-                subtitleClassName="text-white/88 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+                titleClassName="leading-tight text-white drop-shadow-[0_4px_14px_rgba(0,0,0,0.92)]"
+                subtitleClassName="text-white/92 drop-shadow-[0_3px_10px_rgba(0,0,0,0.88)]"
                 className="!mb-0 min-w-0"
                 contentClassName="text-left"
               />

@@ -148,7 +148,6 @@ function createController(): SettingsSectionController {
     use24HourTime: true,
     wallpaper: null,
     ambientLightBleed: true,
-    cameraGo2RtcDefaults: { serverUrl: '', streamNameStrategy: 'entity-id' },
   } as unknown as SettingsSectionController;
 }
 
@@ -166,7 +165,7 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
-    expect(screen.getByText('Camera live streams')).toBeInTheDocument();
+    expect(screen.queryByText('Camera live streams')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
 

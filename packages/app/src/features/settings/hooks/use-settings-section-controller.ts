@@ -59,7 +59,6 @@ export function useSettingsSectionController() {
     lastError: string | null;
   }>;
   const {
-    cameraGo2RtcDefaults,
     disableAnimations,
     effectsQuality,
     headerCustomText,
@@ -79,7 +78,6 @@ export function useSettingsSectionController() {
       disableAnimations: state.disableAnimations,
       effectsQuality: state.effectsQuality,
       lowPowerMode: state.lowPowerMode,
-      cameraGo2RtcDefaults: state.cameraGo2RtcDefaults,
       headerCustomText: state.headerCustomText,
       headerTitleMode: state.headerTitleMode,
       language: state.language,
@@ -186,7 +184,6 @@ export function useSettingsSectionController() {
   return {
     activeProviderId,
     ambientLightBleed,
-    cameraGo2RtcDefaults,
     config: hassUrl ? { url: hassUrl } : null,
     customPrimaryColor,
     disableAnimations,

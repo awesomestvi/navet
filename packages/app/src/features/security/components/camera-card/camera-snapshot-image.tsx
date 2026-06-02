@@ -7,6 +7,14 @@ interface CameraSnapshotImageProps {
   onError: () => void;
 }
 
+function isStreamingImageSource(src: string) {
+  return src.includes('/api/camera_proxy_stream/');
+}
+
+function isVersionedCameraProxySnapshot(src: string) {
+  return src.includes('/api/camera_proxy/') && src.includes('_t=');
+}
+
 export function CameraSnapshotImage({ src, alt, className, onError }: CameraSnapshotImageProps) {
   const [displayedSrc, setDisplayedSrc] = useState(src);
   const [pendingSrc, setPendingSrc] = useState<string | null>(null);
@@ -19,6 +27,12 @@ export function CameraSnapshotImage({ src, alt, className, onError }: CameraSnap
     }
 
     if (!displayedSrc) {
+      setDisplayedSrc(src);
+      setPendingSrc(null);
+      return;
+    }
+
+    if (isStreamingImageSource(src) || isVersionedCameraProxySnapshot(src)) {
       setDisplayedSrc(src);
       setPendingSrc(null);
       return;

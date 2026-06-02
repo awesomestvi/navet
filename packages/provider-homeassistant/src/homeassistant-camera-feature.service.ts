@@ -17,6 +17,9 @@ export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
       streamTypes: (capabilities.frontend_stream_types ?? []) as Array<'hls' | 'web_rtc'>,
     };
   },
+  refreshCameraSnapshot: async (entityId) => {
+    await callHomeAssistantService('homeassistant', 'update_entity', {}, { entityId });
+  },
   getCameraStreamUrl: async (entityId, format) => {
     const stream = await getHomeAssistantCameraStreamUrl(entityId, format ?? 'hls');
     return { url: stream.url };
@@ -32,6 +35,15 @@ export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
         callback({ type: 'answer', answer: event.answer });
       } else if ('session_id' in event && typeof event.session_id === 'string') {
         callback({ type: 'session', session_id: event.session_id });
+      } else if ('candidate' in event && typeof event.candidate === 'object' && event.candidate) {
+        callback({ type: 'candidate', candidate: event.candidate });
+      } else if (
+        'code' in event &&
+        typeof event.code === 'string' &&
+        'message' in event &&
+        typeof event.message === 'string'
+      ) {
+        callback({ type: 'error', code: event.code, message: event.message });
       }
     }),
   addCameraWebRtcCandidate: (entityId, sessionId, candidate) =>

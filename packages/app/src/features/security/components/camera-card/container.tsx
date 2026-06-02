@@ -1,21 +1,14 @@
-import { useAuthSession } from '@navet/app/auth/AuthProvider';
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { usePlatformCameraPresentation } from '@navet/app/features/security/hooks/resolve-platform-camera-presentation';
 import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
-import type {
-  PlatformCameraStreamType,
-  PlatformEntitySnapshot,
-} from '@navet/app/platform/provider-feature-models';
+import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { getCurrentCameraPanelHass } from '@navet/app/services/integration-camera-runtime.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import {
-  type CameraFeedMode,
-  type CameraGo2RtcConfig,
-  type CameraGo2RtcDefaults,
   type CameraViewMode,
   resolveCameraGo2RtcConfig,
   useSettingsStore,
@@ -79,7 +72,9 @@ function readFrontendStreamTypes(value: unknown) {
     return [];
   }
 
-  const raw = (value as { frontend_stream_types?: unknown }).frontend_stream_types;
+  const raw =
+    (value as { streamTypes?: unknown }).streamTypes ??
+    (value as { frontend_stream_types?: unknown }).frontend_stream_types;
   return readCameraStreamTypes(raw);
 }
 
@@ -168,22 +163,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   size,
   isEditMode,
 }: CameraCardProps) {
-  const { runtime } = useAuthSession();
   const providerEntity = useProviderEntityModel(id);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
   );
-  const hasCameraViewModeOverride = useSettingsStore(
-    settingsSelectors.hasCameraViewModeOverrideForEntity(id)
-  );
-  const cameraFeedMode = useSettingsStore(settingsSelectors.cameraFeedModeForEntity(id));
   const cameraGo2RtcDefaults = useSettingsStore(settingsSelectors.cameraGo2RtcDefaults);
   const go2RtcConfig = useSettingsStore(settingsSelectors.cameraGo2RtcConfigForEntity(id));
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
-  const updateCameraFeedMode = useSettingsStore(settingsSelectors.updateCameraFeedMode);
-  const updateCameraGo2RtcDefaults = useSettingsStore(settingsSelectors.updateCameraGo2RtcDefaults);
-  const updateCameraGo2RtcConfig = useSettingsStore(settingsSelectors.updateCameraGo2RtcConfig);
   const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
   const { companionStates, connected, deviceEntities, liveEntity, liveState } =
     useProviderCameraLiveData(id, deviceEntityIds);
@@ -245,21 +232,15 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const hasSnapshot = Boolean(snapshotUrl);
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
     cameraDashboardViewMode,
-    hasCameraViewModeOverride,
     lowPowerMode,
     hasSnapshot,
-    preferSnapshotPreview: runtime === 'standalone-oauth',
   });
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
   const failedStreamTypeSet = useMemo(() => new Set(failedStreamTypes), [failedStreamTypes]);
-  const preferredTransport: PlatformCameraStreamType | 'auto' =
-    cameraFeedMode === 'auto' || cameraFeedMode === 'hls' || cameraFeedMode === 'web_rtc'
-      ? cameraFeedMode
-      : 'auto';
   const presentation = usePlatformCameraPresentation({
     entityId: id,
     preferredMode: effectiveDashboardCameraViewMode,
-    preferredTransport,
+    preferredTransport: 'auto',
     snapshotUrl,
     mjpegStreamUrl,
     frontendStreamTypes,
@@ -280,7 +261,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   });
   const liveStreamKind = presentation.videoStreamKind;
   const shouldRenderLiveStream = isVisible && liveStreamKind;
-  const streamFailureResetKey = `${effectiveDashboardCameraViewMode}:${cameraFeedMode}:${resolvedGo2RtcConfig.source}:${resolvedGo2RtcConfig.serverUrl}:${resolvedGo2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
+  const streamFailureResetKey = `${effectiveDashboardCameraViewMode}:${resolvedGo2RtcConfig.source}:${resolvedGo2RtcConfig.serverUrl}:${resolvedGo2RtcConfig.streamName}:${frontendStreamTypes.join(',')}`;
 
   useEffect(() => {
     void streamFailureResetKey;
@@ -408,7 +389,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const handleRefresh = useCallback(() => {
     setFailedStreamTypes([]);
     setRefreshKey((k) => k + 1);
-  }, []);
+
+    void integrationCameraFeatureService
+      .refreshCameraSnapshot?.(id)
+      .catch(() => undefined)
+      .finally(() => {
+        setRefreshKey((k) => k + 1);
+      });
+  }, [id]);
 
   const handleCameraViewModeChange = useCallback(
     (mode: CameraViewMode) => {
@@ -417,33 +405,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       setRefreshKey((k) => k + 1);
     },
     [id, updateCameraViewMode]
-  );
-
-  const handleCameraFeedModeChange = useCallback(
-    (mode: CameraFeedMode) => {
-      updateCameraFeedMode(id, mode);
-      setFailedStreamTypes([]);
-      setRefreshKey((k) => k + 1);
-    },
-    [id, updateCameraFeedMode]
-  );
-
-  const handleGo2RtcConfigChange = useCallback(
-    (config: CameraGo2RtcConfig) => {
-      updateCameraGo2RtcConfig(id, config);
-      setFailedStreamTypes([]);
-      setRefreshKey((k) => k + 1);
-    },
-    [id, updateCameraGo2RtcConfig]
-  );
-
-  const handleGo2RtcDefaultsChange = useCallback(
-    (defaults: CameraGo2RtcDefaults) => {
-      updateCameraGo2RtcDefaults(defaults);
-      setFailedStreamTypes([]);
-      setRefreshKey((k) => k + 1);
-    },
-    [updateCameraGo2RtcDefaults]
   );
 
   const handleStreamError = useCallback(
@@ -528,7 +489,6 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           snapshotUrl={snapshotUrl}
           mjpegStreamUrl={mjpegStreamUrl}
           cameraViewMode={viewerCameraViewMode}
-          cameraFeedMode={cameraFeedMode}
           go2RtcConfig={resolvedGo2RtcConfig}
           isUnavailable={isUnavailable}
           isRunning={isRunning}
@@ -549,19 +509,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}
           cameraViewMode={cameraDashboardViewMode}
-          cameraFeedMode={cameraFeedMode}
-          go2RtcConfig={go2RtcConfig}
-          go2RtcDefaults={cameraGo2RtcDefaults}
-          resolvedGo2RtcConfig={resolvedGo2RtcConfig}
           frontendStreamTypes={frontendStreamTypes}
           hasGo2RtcFeed={hasGo2RtcFeed}
           hasMjpegStream={Boolean(mjpegStreamUrl)}
           hasSnapshot={hasSnapshot}
           lowPowerMode={lowPowerMode}
           onCameraViewModeChange={handleCameraViewModeChange}
-          onCameraFeedModeChange={handleCameraFeedModeChange}
-          onGo2RtcDefaultsChange={handleGo2RtcDefaultsChange}
-          onGo2RtcConfigChange={handleGo2RtcConfigChange}
         />
       )}
     </>

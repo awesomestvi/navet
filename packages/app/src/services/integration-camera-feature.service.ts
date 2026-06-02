@@ -23,6 +23,10 @@ export const integrationCameraFeatureService: ProviderCameraFeatureService = {
     await getCameraFeatureService(entityId).getCameraCapabilities(
       getNativeIntegrationEntityId(entityId)
     ),
+  refreshCameraSnapshot: async (entityId) =>
+    await getCameraFeatureService(entityId).refreshCameraSnapshot?.(
+      getNativeIntegrationEntityId(entityId)
+    ),
   getCameraStreamUrl: async (entityId, format) =>
     await getCameraFeatureService(entityId).getCameraStreamUrl(
       getNativeIntegrationEntityId(entityId),

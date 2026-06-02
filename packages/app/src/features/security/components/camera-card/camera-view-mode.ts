@@ -16,27 +16,14 @@ export interface CameraImageSource {
 
 export function resolveDashboardCameraViewMode({
   cameraDashboardViewMode,
-  hasCameraViewModeOverride,
   lowPowerMode,
   hasSnapshot,
-  preferSnapshotPreview,
 }: {
   cameraDashboardViewMode: CameraViewMode;
-  hasCameraViewModeOverride: boolean;
   lowPowerMode: boolean;
   hasSnapshot: boolean;
-  preferSnapshotPreview: boolean;
 }): CameraViewMode {
   if (lowPowerMode && hasSnapshot) {
-    return 'snapshot';
-  }
-
-  if (
-    preferSnapshotPreview &&
-    hasSnapshot &&
-    !hasCameraViewModeOverride &&
-    cameraDashboardViewMode === 'live'
-  ) {
     return 'snapshot';
   }
 
@@ -114,10 +101,19 @@ function hasUsableStreamType(
   return streamTypes.includes(streamType) && !failedStreamTypes.has(streamType);
 }
 
-const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['go2rtc', 'web_rtc', 'hls', 'mjpeg'];
+const AUTO_LIVE_FEED_ORDER: CameraSelectableFeedKind[] = ['web_rtc', 'hls', 'go2rtc', 'mjpeg'];
 
-function getLiveFeedOrder(cameraFeedMode: CameraFeedMode): CameraSelectableFeedKind[] {
-  const autoLiveFeedOrder = AUTO_LIVE_FEED_ORDER;
+function getLiveFeedOrder({
+  cameraFeedMode,
+  hasFrontendStreamTypes,
+}: {
+  cameraFeedMode: CameraFeedMode;
+  hasFrontendStreamTypes: boolean;
+}): CameraSelectableFeedKind[] {
+  const autoLiveFeedOrder =
+    hasFrontendStreamTypes && cameraFeedMode === 'auto'
+      ? AUTO_LIVE_FEED_ORDER.filter((feedKind) => feedKind !== 'go2rtc')
+      : AUTO_LIVE_FEED_ORDER;
   if (cameraFeedMode === 'auto') {
     return autoLiveFeedOrder;
   }
@@ -151,7 +147,10 @@ export function selectCameraImageSource({
   }
 
   if (cameraViewMode === 'live') {
-    for (const feedKind of getLiveFeedOrder(cameraFeedMode)) {
+    for (const feedKind of getLiveFeedOrder({
+      cameraFeedMode,
+      hasFrontendStreamTypes: frontendStreamTypes.length > 0,
+    })) {
       if (feedKind === 'go2rtc' && hasGo2RtcFeed && !failedStreamTypes.has('go2rtc')) {
         return { url: undefined, kind: 'go2rtc', isFallback: false };
       }

@@ -21,21 +21,28 @@ interface CameraPlaybackPlanInput {
 }
 
 const AUTO_LIVE_FEED_ORDER: Array<'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg'> = [
-  'go2rtc',
   'web_rtc',
   'hls',
+  'go2rtc',
   'mjpeg',
 ];
 
-function getFeedOrder(preferredTransport: CameraPlaybackPlanInput['preferredTransport']) {
+function getFeedOrder({
+  preferredTransport,
+  hasFrontendStreamTypes,
+}: {
+  preferredTransport: CameraPlaybackPlanInput['preferredTransport'];
+  hasFrontendStreamTypes: boolean;
+}) {
+  const autoLiveFeedOrder =
+    hasFrontendStreamTypes && preferredTransport === 'auto'
+      ? AUTO_LIVE_FEED_ORDER.filter((kind) => kind !== 'go2rtc')
+      : AUTO_LIVE_FEED_ORDER;
   if (preferredTransport === 'auto') {
-    return AUTO_LIVE_FEED_ORDER;
+    return autoLiveFeedOrder;
   }
 
-  return [
-    preferredTransport,
-    ...AUTO_LIVE_FEED_ORDER.filter((kind) => kind !== preferredTransport),
-  ];
+  return [preferredTransport, ...autoLiveFeedOrder.filter((kind) => kind !== preferredTransport)];
 }
 
 export class CameraMediaService {
@@ -51,14 +58,11 @@ export class CameraMediaService {
     const failedTransports = input.failedTransports ?? new Set();
 
     const snapshotResource = input.snapshotUrl
-      ? await this.resolver.resolve(
-          {
-            kind: 'camera_snapshot',
-            entityId: input.entityId,
-            rawPath: input.snapshotUrl,
-          },
-          { cacheBustKey: input.snapshotUrl }
-        )
+      ? await this.resolver.resolve({
+          kind: 'camera_snapshot',
+          entityId: input.entityId,
+          rawPath: input.snapshotUrl,
+        })
       : ({
           id: `${input.entityId}:snapshot`,
           kind: 'unavailable',
@@ -79,7 +83,10 @@ export class CameraMediaService {
 
     const resources: ResolvedPlatformResource[] = [];
 
-    for (const feedKind of getFeedOrder(input.preferredTransport)) {
+    for (const feedKind of getFeedOrder({
+      preferredTransport: input.preferredTransport,
+      hasFrontendStreamTypes: input.frontendStreamTypes.length > 0,
+    })) {
       if (failedTransports.has(feedKind)) {
         continue;
       }
@@ -115,21 +122,27 @@ export class CameraMediaService {
       }
 
       if (feedKind === 'hls') {
-        if (!input.frontendStreamTypes.includes('hls')) {
+        const shouldProbeHls =
+          input.frontendStreamTypes.includes('hls') || input.frontendStreamTypes.length === 0;
+        if (!shouldProbeHls) {
           continue;
         }
 
-        const stream = await this.getCameraStream(input.entityId, 'hls');
-        const resolvedStream = await this.resolver.resolve({
-          kind: 'camera_stream',
-          entityId: input.entityId,
-          stream: 'hls',
-          rawPath: stream.url,
-        });
-        resources.push({
-          ...resolvedStream,
-          kind: 'hls_stream',
-        });
+        try {
+          const stream = await this.getCameraStream(input.entityId, 'hls');
+          const resolvedStream = await this.resolver.resolve({
+            kind: 'camera_stream',
+            entityId: input.entityId,
+            stream: 'hls',
+            rawPath: stream.url,
+          });
+          resources.push({
+            ...resolvedStream,
+            kind: 'hls_stream',
+          });
+        } catch {
+          continue;
+        }
         continue;
       }
 
