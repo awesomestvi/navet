@@ -17,7 +17,7 @@ export function AnimatedGradientText({
 }: AnimatedGradientTextProps) {
   return (
     <span
-      className={cn('magicui-animated-gradient-text', className)}
+      className={cn('sitefx-animated-gradient-text', className)}
       style={
         {
           '--magic-gradient-from': colorFrom,

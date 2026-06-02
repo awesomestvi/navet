@@ -9,14 +9,14 @@ import { ArrowUpRight } from 'lucide-react';
 export function MarketingInstallOptionsSection() {
   return (
     <MarketingSectionShell
-      eyebrow="Install"
-      title="Start with the most stable path"
-      description="Navet supports multiple deployment shapes. The Home Assistant custom panel is the most mature path today, while add-on and standalone setups stay available when they better match your deployment."
+      title="Start with the path that fits the home."
+      description="Navet already runs in several deployment shapes. Start with the most mature route today, or choose the app boundary that matches how your smart-home stack is managed."
+      variant="editorial"
     >
       <div className="grid gap-4 lg:grid-cols-3">
         {MARKETING_INSTALL_OPTIONS.map((option) => (
           <Panel key={option.title} className="space-y-4">
-            <Badge tone={option.label === 'Recommended' ? 'accent' : 'neutral'}>
+            <Badge tone={option.label === 'Most mature' ? 'accent' : 'neutral'}>
               {option.label}
             </Badge>
             <div className="space-y-2">

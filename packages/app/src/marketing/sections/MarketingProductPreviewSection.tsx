@@ -26,7 +26,7 @@ import {
 } from '@navet/app/marketing/data/marketingDemoData';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
-import { BorderBeam } from '@website/components/magicui/border-beam';
+import { BorderBeam } from '@website/components/effects/border-beam';
 import { useCallback, useEffect, useRef } from 'react';
 import { type BentoCardKey, getMarketingBentoCardSize } from './bento-card-size';
 
@@ -443,7 +443,7 @@ function MarketingBentoSequence({ sequenceIndex }: { sequenceIndex: number }) {
   );
 }
 
-export function MarketingProductPreviewSection() {
+export function MarketingProductPreviewSection({ className }: { className?: string }) {
   const marqueeViewportRef = useRef<HTMLDivElement | null>(null);
   const marqueeTrackRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{
@@ -518,9 +518,10 @@ export function MarketingProductPreviewSection() {
 
   return (
     <MarketingSectionShell
-      eyebrow="Product preview"
-      title="See Navet as the product"
-      description="The preview uses real Navet cards with static demo data so the marketing site feels like the actual dashboard, not a generic smart-home mockup."
+      title="Shared UI, already moving like a real product."
+      description="These are real Navet cards and widgets running on static demo data. The point is product proof: rooms, controls, utility surfaces, and theme behavior that already belong to the same dashboard."
+      variant="editorial"
+      className={className}
     >
       <MarketingLightEntitySeed />
       <div

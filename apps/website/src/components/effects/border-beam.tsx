@@ -29,8 +29,8 @@ export function BorderBeam({
     <span
       aria-hidden="true"
       className={cn(
-        'magicui-border-beam pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]',
-        reverse ? 'magicui-border-beam--reverse' : null,
+        'sitefx-border-beam pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]',
+        reverse ? 'sitefx-border-beam--reverse' : null,
         className
       )}
       style={

@@ -17,7 +17,7 @@ export function AnimatedGridPattern({
 }: AnimatedGridPatternProps) {
   return (
     <div
-      className={cn('magicui-animated-grid-pattern', className)}
+      className={cn('sitefx-animated-grid-pattern', className)}
       style={
         {
           '--magic-grid-width': `${width}px`,
