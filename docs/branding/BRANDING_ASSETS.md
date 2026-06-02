@@ -7,27 +7,27 @@ A quick visual reference for all Navet brand assets.
 ## 🔷 Logo Variations
 
 ### 1. Square Logo (Primary)
-**File:** `/public/logo.svg` | **Size:** 120×120px
+**File:** `/assets/public/logo.svg` | **Size:** 120×120px
 
-<img src="../../public/logo.svg" width="120" alt="Navet Square Logo" />
+<img src="../../assets/public/logo.svg" width="120" alt="Navet Square Logo" />
 
 **Best for:** App icons • Social media • Square placements
 
 ---
 
 ### 2. Horizontal Logo (Dark Text)
-**File:** `/public/logo-horizontal.svg` | **Size:** 200×60px
+**File:** `/assets/public/logo-horizontal.svg` | **Size:** 200×60px
 
-<img src="../../public/logo-horizontal.svg" width="200" alt="Navet Horizontal Logo" />
+<img src="../../assets/public/logo-horizontal.svg" width="200" alt="Navet Horizontal Logo" />
 
 **Best for:** Light backgrounds • Website headers • Documentation
 
 ---
 
 ### 3. Horizontal Logo (Light Text)
-**File:** `/public/logo-horizontal-light.svg` | **Size:** 200×60px
+**File:** `/assets/public/logo-horizontal-light.svg` | **Size:** 200×60px
 
-<img src="../../public/logo-horizontal-light.svg" width="200" alt="Navet Horizontal Logo Light" style="background: #1a1a1a; padding: 10px;" />
+<img src="../../assets/public/logo-horizontal-light.svg" width="200" alt="Navet Horizontal Logo Light" style="background: #1a1a1a; padding: 10px;" />
 
 **Best for:** Dark backgrounds • Dark mode • Night theme
 
@@ -36,23 +36,23 @@ A quick visual reference for all Navet brand assets.
 ## 🔸 Favicons & Icons
 
 ### 4. Browser Favicon
-**File:** `/public/favicon.svg` | **Size:** 32×32px
+**File:** `/assets/public/favicon.svg` | **Size:** 32×32px
 
-<img src="../../public/favicon.svg" width="32" alt="Navet Favicon" />
+<img src="../../assets/public/favicon.svg" width="32" alt="Navet Favicon" />
 
 **Best for:** Browser tabs • Bookmarks • PWA icons
 
 ---
 
 ### 5. Apple Touch Icon
-**File:** `/public/apple-touch-icon.svg` | **Size:** 180×180px
+**File:** `/assets/public/apple-touch-icon.svg` | **Size:** 180×180px
 
-<img src="../../public/apple-touch-icon.svg" width="120" alt="Navet Apple Touch Icon" />
+<img src="../../assets/public/apple-touch-icon.svg" width="120" alt="Navet Apple Touch Icon" />
 
 **Best for:** iOS home screen • Safari tabs • iOS shortcuts
 
 ### 6. Raster Install Icons
-**Files:** `/public/apple-touch-icon.png`, `/public/pwa-192.png`, `/public/pwa-512.png`
+**Files:** `/assets/public/apple-touch-icon.png`, `/assets/public/pwa-192.png`, `/assets/public/pwa-512.png`
 
 **Best for:** iOS home screen installs • Android PWA prompts • Desktop PWA installs
 
@@ -87,7 +87,7 @@ End:   #ea580c (Tailwind orange-600)
 ## 🔗 Related Documentation
 
 - **[BRANDING.md](BRANDING.md)** - Complete brand guidelines
-- **[public/README.md](../../public/README.md)** - Technical specifications
+- **[assets/public/README.md](../../assets/public/README.md)** - Technical specifications
 
 ---
 
@@ -109,11 +109,11 @@ import logo from '/logo.svg';
 
 ### Markdown
 ```markdown
-![Navet Logo](../../public/logo.svg)
+![Navet Logo](../../assets/public/logo.svg)
 ```
 
 ---
 
-**All assets are located in `/public/` directory**
+**All assets are located in `/assets/public/` directory**
 
 *Last Updated: May 25, 2026*

@@ -10,8 +10,8 @@ import {
   readNavetPersonState,
   readNavetSensorState,
 } from '@navet/app/core/navet-device-state';
-import type { SensorReading } from '@navet/app/features/sensors';
-import type { VacuumStatus } from '@navet/app/features/vacuum';
+import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
+import type { VacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';

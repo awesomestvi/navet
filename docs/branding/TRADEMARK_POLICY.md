@@ -53,12 +53,12 @@ Not acceptable example:
 
 ## Official Assets
 
-Official brand assets remain subject to this policy even when they are stored in `public/` or elsewhere in the repository.
+Official brand assets remain subject to this policy even when they are stored in `assets/public/` or elsewhere in the repository.
 
 See also:
 
 - [BRANDING.md](BRANDING.md)
-- [../../public/README.md](../../public/README.md)
+- [../../assets/public/README.md](../../assets/public/README.md)
 
 ## Questions
 

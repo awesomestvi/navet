@@ -1,4 +1,4 @@
-import type { Connection } from 'home-assistant-js-websocket';
+import { type Connection, callService as callHassService } from 'home-assistant-js-websocket';
 
 import type {
   HomeAssistantAutomationConfig,
@@ -71,7 +71,6 @@ class HAEntityService {
       return;
     }
 
-    const { callService: callHassService } = await import('home-assistant-js-websocket');
     await callHassService(conn, domain, service, normalizedServiceData, target);
   }
 

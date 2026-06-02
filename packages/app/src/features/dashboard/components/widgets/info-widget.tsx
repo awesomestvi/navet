@@ -1,13 +1,10 @@
 import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import {
-  type AccentColor,
-  GroupedSensorCard,
-  InfoCard,
-  SensorGroupSettingsDialog,
-  type SensorReading,
-} from '@navet/app/features/sensors';
+import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
+import { InfoCard } from '@navet/app/features/sensors/components/sensor-card';
+import { SensorGroupSettingsContainer as SensorGroupSettingsDialog } from '@navet/app/features/sensors/components/sensor-group-settings/container';
+import type { AccentColor, SensorReading } from '@navet/app/features/sensors/components/sensors';
 import { useSensorStatisticsHistory } from '@navet/app/features/sensors/hooks/use-sensor-statistics-history';
 import { useAreaRooms, useI18n } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';

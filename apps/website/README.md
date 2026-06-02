@@ -14,12 +14,13 @@ deployment-facing app shell.
 
 - `pnpm website:dev`
 - `pnpm website:build`
+- `pnpm website:bundle`
 - `pnpm website:preview`
 
 ## Deployment
 
-- Cloudflare Pages root directory: `apps/website`
-- Build command: `pnpm build`
-- Output directory: `dist`
-- Repo-root fallback: keep the Cloudflare project at `/`, use `pnpm website:build`, and let the
-  repo-root `wrangler.jsonc` point Pages at `apps/website/dist`.
+- Cloudflare Pages project root: repo root `/`
+- Build command: `pnpm website:bundle`
+- Output directory: `apps/website/dist`
+- The website bundle stages the marketing site at `/`, the public demo at `/demo/`, and Storybook
+  at `/storybook/` inside the same Cloudflare Pages output directory.

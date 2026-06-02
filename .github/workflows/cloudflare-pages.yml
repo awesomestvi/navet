@@ -1,0 +1,62 @@
+name: Deploy website bundle to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cloudflare-pages.yml'
+      - 'apps/demo/**'
+      - 'apps/storybook/**'
+      - 'apps/website/**'
+      - 'assets/public/**'
+      - 'assets/reference/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'packages/**/*.stories.*'
+      - 'packages/app/src/demo/**'
+      - 'packages/app/src/marketing/**'
+      - 'packages/app/src/storybook/**'
+      - 'packages/app/src/styles/**'
+      - 'scripts/stage-website-bundle.mjs'
+      - 'scripts/repo-paths.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pinned pnpm
+        run: corepack install
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Cloudflare Pages bundle
+        run: pnpm website:bundle
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/website/dist --project-name=navet

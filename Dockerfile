@@ -52,7 +52,7 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/nginx.conf /etc/navet-nginx/default.conf
 COPY docker/config.js.template /usr/share/nginx/html/config.js.template
 COPY docker/30-navet-config.sh /docker-entrypoint.d/30-navet-config.sh
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/apps/standalone/dist /usr/share/nginx/html
 
 RUN mkdir -p /data \
   && chown -R nginx:nginx /data \

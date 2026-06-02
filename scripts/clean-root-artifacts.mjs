@@ -10,8 +10,11 @@ const rootArtifacts = [
   '.vite',
   'build-storybook.log',
   'debug-storybook.log',
+  'build',
   'dist',
+  'demo',
   'storybook-static',
+  'website',
 ];
 const cacheArtifacts = ['.cache/vite', '.cache/storybook-static'];
 

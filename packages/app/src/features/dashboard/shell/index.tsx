@@ -3,6 +3,7 @@ import { Sidebar } from '@navet/app/components/layout/sidebar';
 import { useHeaderController } from '@navet/app/components/layout/use-header-controller';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
 import { usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -40,6 +41,7 @@ export const DashboardLayout = memo(function DashboardLayout({
   const isLowEffects = resolvedEffectsQuality === 'low';
   const showSharedGlassBlur = isGlass && resolvedEffectsQuality === 'high';
   const headerController = useHeaderController();
+  const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
 
   const bgColor =
     theme === 'light'
@@ -54,13 +56,13 @@ export const DashboardLayout = memo(function DashboardLayout({
   return (
     <div className={`relative min-h-screen overflow-x-clip ${bgColor} ${textColor}`}>
       {/* Background Wallpaper with Theme-Specific Overlay */}
-      {wallpaper && (
+      {wallpaperBackgroundImage && (
         <div className="fixed inset-0 z-0">
           {/* Wallpaper Image */}
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(${wallpaper})`,
+              backgroundImage: wallpaperBackgroundImage,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
@@ -116,7 +118,7 @@ export const DashboardLayout = memo(function DashboardLayout({
         </div>
       )}
 
-      {isGlass && !wallpaper && (
+      {isGlass && !wallpaperBackgroundImage && (
         <div className="fixed inset-0 z-0 overflow-hidden">
           <div
             className="absolute inset-0"

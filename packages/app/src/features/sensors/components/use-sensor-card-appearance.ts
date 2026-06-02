@@ -4,7 +4,7 @@ import {
   resolveLightIconComponent,
 } from '@navet/app/constants/icon-map';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
-import type { SensorIconType } from '@navet/app/features/sensors';
+import type { SensorIconType } from '@navet/app/features/sensors/components/sensors';
 import { storage } from '@navet/app/utils/storage';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';

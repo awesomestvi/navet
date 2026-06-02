@@ -24,6 +24,7 @@
 
     /* Paths */
     "paths": {
+      "@assets/*": ["./assets/*"],
       "@docs/*": ["./docs/*"],
       "@website/*": ["./apps/website/src/*"],
       "@navet/core": ["./packages/core/src/index.ts"],

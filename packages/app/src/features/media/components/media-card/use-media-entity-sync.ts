@@ -1,5 +1,5 @@
 import type { NavetMediaCapabilities, NavetMediaState } from '@navet/app/core/navet-device-state';
-import { normalizeMediaPlaybackState } from '@navet/app/features/media';
+import { normalizeMediaPlaybackState } from '@navet/app/features/media/media-state';
 import { type Dispatch, type SetStateAction, useEffect, useRef } from 'react';
 
 function areStringArraysEqual(a: string[], b: string[]) {

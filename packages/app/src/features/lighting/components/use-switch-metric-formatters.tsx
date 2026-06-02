@@ -1,4 +1,4 @@
-import { iconMap } from '@navet/app/features/sensors';
+import { iconMap } from '@navet/app/features/sensors/components/sensors';
 import type { DeviceMetric } from '@navet/app/types/device.types';
 import { Power } from 'lucide-react';
 import { useCallback } from 'react';

@@ -15,7 +15,7 @@ import {
   parseButtonServiceCall,
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
-import { useLightPresetStore } from '@navet/app/features/lighting';
+import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { resolveAppLanguage } from '@navet/app/i18n/config';
 import { isSection } from '@navet/app/navigation/sections';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';

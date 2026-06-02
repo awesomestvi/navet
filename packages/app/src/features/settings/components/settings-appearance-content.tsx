@@ -1,37 +1,45 @@
 import { Button } from '@navet/app/components/primitives/button';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { ThemeAppearancePicker } from '@navet/app/components/shared/theme/theme-appearance-picker';
+import {
+  BUILT_IN_WALLPAPERS,
+  resolveWallpaperPreviewSources,
+} from '@navet/app/constants/built-in-wallpapers';
 import { useI18n } from '@navet/app/hooks';
 import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { getLegacyReducedEffectsFlags } from '@navet/app/utils/effects-quality';
-import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 import { Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsItem } from './settings-section-shell';
 
-const BUILT_IN_WALLPAPERS = [
-  { id: 'soft-dark-gradient', src: getPublicAssetUrl('wallpapers/soft-dark-gradient.svg') },
-  { id: 'frosted-glass-abstract', src: getPublicAssetUrl('wallpapers/frosted-glass-abstract.svg') },
-  { id: 'blurred-forest-mood', src: getPublicAssetUrl('wallpapers/blurred-forest-mood.svg') },
-  {
-    id: 'luxury-living-room-ambient',
-    src: getPublicAssetUrl('wallpapers/luxury-living-room-ambient.svg'),
-  },
-  { id: 'matte-concrete-texture', src: getPublicAssetUrl('wallpapers/matte-concrete-texture.svg') },
-  { id: 'muted-nebula-space', src: getPublicAssetUrl('wallpapers/muted-nebula-space.svg') },
-  {
-    id: 'scandinavian-warm-neutral',
-    src: getPublicAssetUrl('wallpapers/scandinavian-warm-neutral.svg'),
-  },
-  { id: 'subtle-smart-grid', src: getPublicAssetUrl('wallpapers/subtle-smart-grid.svg') },
-  { id: 'pure-oled-black-luxury', src: getPublicAssetUrl('wallpapers/pure-oled-black-luxury.svg') },
-  {
-    id: 'dynamic-sunrise-gradient',
-    src: getPublicAssetUrl('wallpapers/dynamic-sunrise-gradient.svg'),
-  },
-] as const;
+function WallpaperPreviewImage({
+  value,
+  alt,
+  className,
+}: {
+  value: string;
+  alt: string;
+  className: string;
+}) {
+  const preview = resolveWallpaperPreviewSources(value);
+  if (!preview) {
+    return null;
+  }
+
+  if (preview.kind === 'custom') {
+    return <img src={preview.imgSrc} alt={alt} className={className} />;
+  }
+
+  return (
+    <picture>
+      <source srcSet={preview.avifSrc} type="image/avif" />
+      <source srcSet={preview.webpSrc} type="image/webp" />
+      <img src={preview.imgSrc} alt={alt} className={className} />
+    </picture>
+  );
+}
 
 export function AppearanceThemeAccentItem({
   controller,
@@ -178,6 +186,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
     controller;
   const wallpaperInputRef = useRef<HTMLInputElement | null>(null);
   const openWallpaperPicker = () => wallpaperInputRef.current?.click();
+  const wallpaperPreviewAlt = t('settings.appearance.wallpaper.previewAlt');
 
   return (
     <SettingsItem
@@ -192,9 +201,9 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
               className="relative h-28 overflow-hidden rounded-[20px] border md:h-36 md:rounded-3xl"
               style={{ borderColor: `${styles.accentColor}40` }}
             >
-              <img
-                src={wallpaper}
-                alt={t('settings.appearance.wallpaper.previewAlt')}
+              <WallpaperPreviewImage
+                value={wallpaper}
+                alt={wallpaperPreviewAlt}
                 className="h-full w-full object-cover"
               />
               <div
@@ -262,13 +271,13 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
         <div className="max-w-5xl">
           <div className="flex flex-wrap gap-3">
             {BUILT_IN_WALLPAPERS.map((option) => {
-              const isSelected = wallpaper === option.src;
+              const isSelected = wallpaper === option.token;
 
               return (
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => handleSelectWallpaper(option.src)}
+                  onClick={() => handleSelectWallpaper(option.token)}
                   aria-pressed={isSelected}
                   aria-label={t('settings.appearance.wallpaper.optionAria', { id: option.id })}
                   className="group relative h-14 w-14 overflow-hidden rounded-full border transition-all md:h-16 md:w-16"
@@ -277,8 +286,8 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
                     boxShadow: isSelected ? `0 0 0 1px ${styles.accentColor}55` : undefined,
                   }}
                 >
-                  <img
-                    src={option.src}
+                  <WallpaperPreviewImage
+                    value={option.token}
                     alt=""
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.06]"
                   />

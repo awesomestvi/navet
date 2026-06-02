@@ -1,4 +1,4 @@
-import { normalizeVacuumStatus } from '@navet/app/features/vacuum';
+import { normalizeVacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import type { VacuumDevice } from '@navet/app/types/device.types';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import { parseNumberish } from '../entity-utils';
