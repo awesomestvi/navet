@@ -140,19 +140,23 @@ promotion in phase 1.
 
 1. Decide the release bump and update `package.json`.
 2. Run `node scripts/sync-release-versions.mjs`.
-3. Draft the changelog section for the target version.
-4. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
-5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
-6. Run `node scripts/check-release-surfaces.mjs`.
-7. Merge the release commit to `main`.
-8. Create and push the release tag.
-9. Let the tagged release workflow package the committed panel bundle and attach
+3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
+   treat them as the primary release-note source.
+4. Draft the changelog section for the target version from those Linear issues. If no matching
+   issues exist, fall back to commit history since the previous release tag.
+5. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
+6. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
+7. Run `node scripts/check-release-surfaces.mjs`.
+8. Merge the release commit to `main`.
+9. Create and push the release tag.
+10. Let the tagged release workflow package the committed panel bundle and attach
    `navet-panel-<tag>.tar.gz` to the GitHub release.
-10. Verify the published standalone/add-on artifacts and the GitHub release page.
+11. Verify the published standalone/add-on artifacts and the GitHub release page.
 
 ## What Stays Manual
 
 - choosing the SemVer bump
+- checking Linear `Ready for Release` scope and deciding whether the commit-history fallback is needed
 - drafting release notes
 - regenerating committed panel assets
 - updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release

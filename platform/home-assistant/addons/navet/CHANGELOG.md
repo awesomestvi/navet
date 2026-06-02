@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Updated Navet to `0.5.0`
+- Camera cards can refresh Home Assistant snapshots directly and recover live playback more reliably
+- Camera settings now focus on supported viewing controls instead of global go2rtc overrides
+
 ## 0.4.7
 
 - Updated Navet to `0.4.7`
