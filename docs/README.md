@@ -18,9 +18,9 @@ docs. If you are changing the codebase, use the contributor docs.
 - [HOME_ASSISTANT.md](HOME_ASSISTANT.md)
   Deployment guide for the Home Assistant custom panel, Home Assistant add-on, and standalone app mode.
 - [HOMEY.md](HOMEY.md)
-  Homey setup guide for standalone and Home Assistant add-on users.
+  Homey setup guide for standalone mode.
 - [OPENHAB.md](OPENHAB.md)
-  openHAB setup guide for standalone and Home Assistant add-on users.
+  openHAB setup guide for standalone mode.
 - [WIDGETS.md](WIDGETS.md)
   What Navet widgets exist today and how they behave.
 - [../SECURITY.md](../SECURITY.md)
@@ -30,6 +30,8 @@ docs. If you are changing the codebase, use the contributor docs.
 
 ## Contributor Docs
 
+- [../CONTRIBUTING.md](../CONTRIBUTING.md)
+  Contributor onboarding, local setup, workflow expectations, and default fast checks.
 - [agents/architecture.md](agents/architecture.md)
   Short architecture overview for contributors.
 - [architecture/package-boundaries.md](architecture/package-boundaries.md)
@@ -69,8 +71,8 @@ If you are trying to understand the product and current provider/runtime support
 
 - [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
 - [../SECURITY.md](../SECURITY.md)
-- [../design-system/README.md](../design-system/README.md)
-- [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md)
+- [design-system/README.md](design-system/README.md)
+- [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)
 - [branding/BRANDING.md](branding/BRANDING.md)
 - [branding/BRANDING_ASSETS.md](branding/BRANDING_ASSETS.md)
 - [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md)

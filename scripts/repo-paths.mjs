@@ -46,5 +46,6 @@ export const homeAssistantPaths = {
   addonConfig: resolve(repoRoot, 'platform/home-assistant/addons/navet/config.yaml'),
   addonChangelog: resolve(repoRoot, 'platform/home-assistant/addons/navet/CHANGELOG.md'),
   addonDockerfile: resolve(repoRoot, 'platform/home-assistant/addons/navet/Dockerfile'),
+  hacsReadmeTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/README.md'),
   hacsMetadataTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/hacs.json'),
 };

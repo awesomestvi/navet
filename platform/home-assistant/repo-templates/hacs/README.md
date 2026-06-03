@@ -3,6 +3,8 @@
 This repository contains only the Home Assistant HACS integration packaging for Navet.
 It intentionally excludes `repository.yaml` and all Home Assistant add-on packaging files.
 
+![Navet dashboard demo on iPad frame](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+
 Install with HACS:
 
 1. Add `https://github.com/awesomestvi/navet-hacs` as a custom repository with category
@@ -19,4 +21,4 @@ Navet source, docs, issues, and release workflow live in the main monorepo:
 - issues: `https://github.com/awesomestvi/navet/issues`
 
 This repository is generated from `platform/home-assistant/custom_components/navet/` in the
-monorepo. Run `pnpm export:hacs` from the monorepo to refresh it.
+monorepo. Run `pnpm sync:hacs` from the monorepo to refresh it.

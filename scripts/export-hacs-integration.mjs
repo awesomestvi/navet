@@ -53,7 +53,7 @@ await cp(
   { recursive: true }
 );
 await cp(homeAssistantPaths.hacsMetadataTemplate, resolve(exportRoot, 'hacs.json'));
-await cp(resolve(homeAssistantPaths.root, '../../README.md'), resolve(exportRoot, 'README.md'));
+await cp(homeAssistantPaths.hacsReadmeTemplate, resolve(exportRoot, 'README.md'));
 await cp(changelogPath, resolve(exportRoot, 'CHANGELOG.md'));
 
 const targetManifestPath = resolve(exportRoot, 'custom_components/navet/manifest.json');
