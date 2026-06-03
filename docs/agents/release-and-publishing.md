@@ -21,7 +21,7 @@ This file defines release workflow constraints and publishing behavior for Navet
 - Keep root `repository.yaml` in the monorepo because `awesomestvi/navet` is the discoverable Home
   Assistant add-on repository root.
 - Treat `platform/home-assistant/custom_components/navet/` as the HACS source-of-truth and export
-  it into a clean repo/archive payload for `awesomestvi/navet-hacs` without `repository.yaml`.
+  it into the sibling `../navet-hacs` repo for `awesomestvi/navet-hacs` without `repository.yaml`.
 
 ## Release Flow
 
@@ -42,15 +42,16 @@ Recommended operator flow:
    versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
 8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
-9. Run `node scripts/export-hacs-integration.mjs`.
-10. Run `node scripts/check-release-surfaces.mjs`.
-11. Tag the commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or `v0.3.1`.
-12. Push the tag to GitHub to trigger
+9. Run `node scripts/check-release-surfaces.mjs`.
+10. Tag the monorepo commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or
+    `v0.3.1`.
+11. Push the tag to GitHub to trigger
     [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
-13. The tagged release workflow validates the committed release surfaces, packages the committed
-    custom panel assets, exports the HACS repo payload, and attaches `navet-panel-<tag>.tar.gz`
-    plus `navet-hacs-<tag>.tar.gz` to the GitHub release.
-14. Publish or sync `dist/home-assistant/hacs-repo/` to `awesomestvi/navet-hacs`.
+12. The tagged release workflow validates the committed release surfaces, packages the committed
+    custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
+13. Have the user run `pnpm export:hacs`.
+14. Review the changes in `../navet-hacs`, then commit, tag, and push the matching
+    `awesomestvi/navet-hacs` release.
 15. For developer hardware testing from `main`, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
 
@@ -140,8 +141,8 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Publish and release workflows should require Tier 1 validation before shipping.
 - Tagged releases should additionally rebuild and verify the committed custom-panel artifact before
   creating the GitHub release.
-- Tagged releases should also export and validate the clean HACS repo payload before attaching the
-  release artifacts.
+- HACS repo export remains a local maintainer step against `../navet-hacs`, not a monorepo release
+  artifact.
 - Home Assistant ingress and install behavior remain partly manual release checks unless a real
   runtime automation path is added later.
 
@@ -154,8 +155,8 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
 - Home Assistant add-on images publish `edge`, temporary `dev`, and `sha-*` on `main` pushes.
-- Tagged releases rebuild the committed custom-panel output, export the HACS repo payload, and
-  attach downloadable panel and HACS archives to the GitHub release.
+- Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
+  archive to the GitHub release.
 - Versioned add-on publishes emit the configured add-on version, the channel tag (`beta` or
   `latest`), and `sha-*`.
 - Prerelease tags do not update `latest`.

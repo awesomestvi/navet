@@ -47,15 +47,15 @@ Setup:
 
 1. Open `Settings -> Add-ons -> Add-on Store`.
 2. Open the repository menu and choose `Repositories`.
-3. Add `https://github.com/awesomestvi/navet`.
+3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
 4. Install `Navet` for stable releases or `Navet Dev` for the development surface.
 
 Migration note:
 
 - If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
   repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
-- If you use the Home Assistant add-on repository, keep using
-  `https://github.com/awesomestvi/navet`.
+- If you use the Home Assistant add-on repository, keep using `https://github.com/awesomestvi/navet`
+  in `Settings -> Add-ons -> Add-on Store -> Repositories`.
 
 ## Standalone Docker
 

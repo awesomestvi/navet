@@ -31,7 +31,8 @@ pnpm build:ha-panel
 Generate the publishable HACS repository payload from the repo root with:
 
 ```bash
-node scripts/export-hacs-integration.mjs
+pnpm export:hacs
 ```
 
-Install the generated export from `awesomestvi/navet-hacs`, not from this monorepo root.
+Review the exported changes in `../navet-hacs`, then publish from `awesomestvi/navet-hacs`, not
+from this monorepo root.

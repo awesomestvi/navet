@@ -19,4 +19,4 @@ Navet source, docs, issues, and release workflow live in the main monorepo:
 - issues: `https://github.com/awesomestvi/navet/issues`
 
 This repository is generated from `platform/home-assistant/custom_components/navet/` in the
-monorepo.
+monorepo. Run `pnpm export:hacs` from the monorepo to refresh it.

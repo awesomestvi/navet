@@ -113,41 +113,6 @@ jobs:
           path: release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz
           if-no-files-found: error
 
-  hacs-artifact:
-    name: Export HACS repo artifact
-    runs-on: ubuntu-latest
-    needs:
-      - release-context
-      - tier-1-release-critical
-    environment: ${{ needs.release-context.outputs.release_environment }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Export HACS repository payload
-        run: node scripts/export-hacs-integration.mjs
-
-      - name: Validate generated HACS export
-        run: node scripts/check-release-surfaces.mjs --tag "${GITHUB_REF_NAME}"
-
-      - name: Package HACS artifact
-        run: |
-          mkdir -p release-assets
-          tar -czf "release-assets/navet-hacs-${GITHUB_REF_NAME}.tar.gz" -C dist/home-assistant hacs-repo
-
-      - name: Upload HACS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: navet-hacs-${{ needs.release-context.outputs.tag_name }}
-          path: release-assets/navet-hacs-${{ needs.release-context.outputs.tag_name }}.tar.gz
-          if-no-files-found: error
-
   publish-standalone:
     name: Publish standalone release image
     runs-on: ubuntu-latest
@@ -273,7 +238,6 @@ jobs:
       - publish-standalone
       - publish-addon
       - custom-panel-artifact
-      - hacs-artifact
     environment: ${{ needs.release-context.outputs.release_environment }}
 
     steps:
@@ -291,12 +255,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: navet-panel-${{ needs.release-context.outputs.tag_name }}
-          path: release-assets
-
-      - name: Download HACS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: navet-hacs-${{ needs.release-context.outputs.tag_name }}
           path: release-assets
 
       - name: Build release notes
@@ -320,4 +278,3 @@ jobs:
           generate_release_notes: false
           files: |
             release-assets/navet-panel-${{ needs.release-context.outputs.tag_name }}.tar.gz
-            release-assets/navet-hacs-${{ needs.release-context.outputs.tag_name }}.tar.gz

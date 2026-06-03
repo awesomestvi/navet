@@ -23,7 +23,7 @@ runtime and uses OAuth login instead.
 
 1. Open `Settings -> Add-ons -> Add-on Store`.
 2. Open the repository menu and choose `Repositories`.
-3. Add `https://github.com/awesomestvi/navet`.
+3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
 4. Install `Navet Dev`.
 
 ## Configuration
