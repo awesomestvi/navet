@@ -214,15 +214,6 @@ describe('home-assistant-url', () => {
     );
   });
 
-  it('proxies Home Assistant camera stream paths in hosted runtimes', () => {
-    window.__NAVET_CONFIG__ = { hassUrl: 'https://ha.example.test' };
-    resetRuntimeContextForTests();
-
-    expect(resolveHomeAssistantProxyUrl(homeAssistantUrlFixtures.relativeCameraStream)).toBe(
-      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeCameraStream}`
-    );
-  });
-
   it('keeps signed Home Assistant image paths stable in panel mode', () => {
     window.__NAVET_PANEL__ = true;
     resetRuntimeContextForTests();

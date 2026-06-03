@@ -33,9 +33,7 @@ const defaultProps = {
   onOpenChange: vi.fn(),
   siblingEntities: [],
   cameraViewMode: 'live' as const,
-  frontendStreamTypes: ['web_rtc', 'hls'] as const,
-  hasGo2RtcFeed: false,
-  hasMjpegStream: true,
+  supportsStreaming: true,
   hasSnapshot: true,
   lowPowerMode: false,
   onCameraViewModeChange: vi.fn(),
@@ -51,14 +49,9 @@ describe('CameraSettingsDialog', () => {
     toggleCameraAccessoryMock.mockResolvedValue(undefined);
   });
 
-  it('shows only snapshot-backed camera view modes for snapshot-only cameras', () => {
+  it('shows snapshot-backed camera view modes for snapshot-only cameras', () => {
     renderWithProviders(
-      <CameraSettingsDialog
-        {...defaultProps}
-        cameraViewMode="snapshot"
-        frontendStreamTypes={[]}
-        hasMjpegStream={false}
-      />
+      <CameraSettingsDialog {...defaultProps} cameraViewMode="snapshot" supportsStreaming={false} />
     );
 
     const cameraViewSection = screen.getByText('Camera view').parentElement;
@@ -72,21 +65,11 @@ describe('CameraSettingsDialog', () => {
     expect(
       within(cameraViewSection as HTMLElement).getByRole('button', { name: 'Snapshot' })
     ).toBeInTheDocument();
-
-    expect(screen.queryByText('Live feed')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'WebRTC' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'HLS' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'MJPEG' })).not.toBeInTheDocument();
   });
 
-  it('shows only the supported camera view options for stream-only cameras', () => {
+  it('shows only live and auto for stream-only cameras', () => {
     renderWithProviders(
-      <CameraSettingsDialog
-        {...defaultProps}
-        frontendStreamTypes={['web_rtc']}
-        hasMjpegStream={false}
-        hasSnapshot={false}
-      />
+      <CameraSettingsDialog {...defaultProps} supportsStreaming hasSnapshot={false} />
     );
 
     const cameraViewSection = screen.getByText('Camera view').parentElement;
@@ -95,25 +78,8 @@ describe('CameraSettingsDialog', () => {
       within(cameraViewSection as HTMLElement).getByRole('button', { name: 'Live' })
     ).toBeInTheDocument();
     expect(
-      within(cameraViewSection as HTMLElement).queryByRole('button', { name: 'Auto' })
-    ).not.toBeInTheDocument();
-    expect(
       within(cameraViewSection as HTMLElement).queryByRole('button', { name: 'Snapshot' })
     ).not.toBeInTheDocument();
-  });
-
-  it('does not show live feed transport controls even when go2rtc is available', () => {
-    renderWithProviders(
-      <CameraSettingsDialog
-        {...defaultProps}
-        frontendStreamTypes={[]}
-        hasGo2RtcFeed
-        hasMjpegStream={false}
-      />
-    );
-
-    expect(screen.queryByText('Live feed')).not.toBeInTheDocument();
-    expect(screen.queryByText('go2rtc')).not.toBeInTheDocument();
   });
 
   it('routes sibling switch and select controls through the camera provider service', async () => {

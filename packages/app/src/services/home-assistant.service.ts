@@ -86,6 +86,11 @@ export interface HomeAssistantCameraStream {
   url: string;
 }
 
+export interface HomeAssistantCameraStreamPaths {
+  hls_path?: string | null;
+  mjpeg_path?: string | null;
+}
+
 export interface HomeAssistantSignedPath {
   path: string;
 }
@@ -522,6 +527,10 @@ class HomeAssistantService {
     format: HomeAssistantCameraStreamType = 'hls'
   ): Promise<HomeAssistantCameraStream> {
     return await this.entityService.getCameraStreamUrl(entityId, format);
+  }
+
+  async getCameraStreamPaths(entityId: string): Promise<HomeAssistantCameraStreamPaths> {
+    return await this.entityService.getCameraStreamPaths(entityId);
   }
 
   async signPath(path: string, expires = 30): Promise<HomeAssistantSignedPath> {

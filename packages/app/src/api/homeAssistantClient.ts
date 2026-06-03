@@ -1,25 +1,12 @@
 import type { HomeAssistantAuthSession } from '@navet/app/auth/types';
 import { getRuntimeContext } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { resolveHomeAssistantConnectionUrl } from '@navet/app/utils/home-assistant-connection-target';
-import type { AuthData, Connection } from 'home-assistant-js-websocket';
+import type { Connection } from 'home-assistant-js-websocket';
 import { Auth, createConnection, getAuth } from 'home-assistant-js-websocket';
 
 export interface HomeAssistantClient {
   auth: Auth;
   connection: Connection;
-}
-
-function createIngressProxyAuth(hassUrl: string): Auth {
-  const data: AuthData = {
-    hassUrl,
-    clientId: null,
-    expires: Date.now() + 3_600_000,
-    refresh_token: '',
-    access_token: 'ingress-proxy',
-    expires_in: 3600,
-  };
-
-  return new Auth(data);
 }
 
 function createHostedProxyAuth(sourceAuth: Auth, hassUrl: string): Auth {
@@ -48,22 +35,11 @@ async function resolveAuth(session: HomeAssistantAuthSession): Promise<Auth> {
 
   if (session.auth) {
     if (session.auth.expired) {
-      try {
-        await session.auth.refreshAccessToken();
-      } catch (error) {
-        if (session.runtime === 'ha-ingress') {
-          return createIngressProxyAuth(targetHassUrl);
-        }
-        throw error;
-      }
+      await session.auth.refreshAccessToken();
     }
     return targetHassUrl === session.auth.data.hassUrl
       ? session.auth
       : createHostedProxyAuth(session.auth, targetHassUrl);
-  }
-
-  if (session.runtime === 'ha-ingress') {
-    return createIngressProxyAuth(targetHassUrl);
   }
 
   return getAuth({ hassUrl: session.haBaseUrl });
@@ -72,6 +48,12 @@ async function resolveAuth(session: HomeAssistantAuthSession): Promise<Auth> {
 export async function createHomeAssistantClient(
   session: HomeAssistantAuthSession
 ): Promise<HomeAssistantClient> {
+  if (session.runtime === 'ha-ingress') {
+    throw new Error(
+      'Home Assistant ingress sessions must use the parent Home Assistant runtime bridge'
+    );
+  }
+
   const connectionUrl = resolveHomeAssistantConnectionUrl({
     runtime: session.runtime,
     hassUrl: session.haBaseUrl,

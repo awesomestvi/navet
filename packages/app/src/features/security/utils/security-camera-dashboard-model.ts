@@ -72,6 +72,63 @@ function getCameraSearchText(camera: CameraDevice): string {
   return normalizeText(`${camera.id} ${camera.name} ${camera.room}`);
 }
 
+function readCameraVariantBaseId(camera: CameraDevice): string {
+  const value = normalizeText(camera.nativeId ?? camera.id);
+  return value.replace(/(?:[_-]\d+)+$/, '');
+}
+
+function getCameraGroupingKey(camera: CameraDevice): string {
+  if (camera.providerId && camera.sourceDeviceId) {
+    return `${camera.providerId}:${camera.sourceDeviceId}`;
+  }
+
+  return `${camera.providerId ?? ''}:${readCameraVariantBaseId(camera)}:${normalizeText(camera.room)}:${normalizeText(camera.name)}`;
+}
+
+function getCameraVariantPreference(camera: CameraDevice): [number, number, number, string] {
+  const livePenalty = camera.isStreamCapable === true && camera.isStillImageOnly !== true ? 0 : 1;
+  const suffixPenalty = camera.nativeId && /(?:[_-]\d+)+$/.test(camera.nativeId) ? 1 : 0;
+  const statePenalty = isLiveCamera(camera) ? 0 : 1;
+  const freshness = camera.lastUpdated ?? camera.lastChanged ?? '';
+
+  return [livePenalty, suffixPenalty, statePenalty, freshness];
+}
+
+function compareCameraVariantPreference(left: CameraDevice, right: CameraDevice): number {
+  const leftPreference = getCameraVariantPreference(left);
+  const rightPreference = getCameraVariantPreference(right);
+
+  for (let index = 0 as 0 | 1 | 2; index < 3; index += 1) {
+    if (leftPreference[index] !== rightPreference[index]) {
+      return leftPreference[index] - rightPreference[index];
+    }
+  }
+
+  if (leftPreference[3] !== rightPreference[3]) {
+    return rightPreference[3].localeCompare(leftPreference[3]);
+  }
+
+  return compareByRoomAndName(left, right);
+}
+
+function collapseCameraVariants(cameras: CameraDevice[]): CameraDevice[] {
+  const grouped = new Map<string, CameraDevice[]>();
+
+  for (const camera of cameras) {
+    const key = getCameraGroupingKey(camera);
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.push(camera);
+    } else {
+      grouped.set(key, [camera]);
+    }
+  }
+
+  return [...grouped.values()].map(
+    (variants) => [...variants].sort(compareCameraVariantPreference)[0] ?? variants[0]
+  );
+}
+
 export function isStillImageUtilityCamera(camera: CameraDevice): boolean {
   const searchText = getCameraSearchText(camera);
   return (
@@ -136,7 +193,7 @@ function getActiveSirenCount(sensors: SensorDevice[]): number {
 export function buildSecurityCameraDashboardModel(
   devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'>
 ): CameraDashboardModel {
-  const cameras = [...devices.cameras].sort(compareByRoomAndName);
+  const cameras = collapseCameraVariants(devices.cameras).sort(compareByRoomAndName);
   const unavailableCameras = cameras.filter(isUnavailableCamera);
   const availableCameras = cameras.filter((camera) => !isUnavailableCamera(camera));
   const stillImageCameras = availableCameras.filter(isStillImageUtilityCamera);

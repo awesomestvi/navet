@@ -36,7 +36,8 @@ Migration note:
 What to expect:
 
 - Navet runs behind Home Assistant Ingress
-- the Home Assistant frontend session is reused
+- the Home Assistant frontend session is reused through the parent `hass` runtime bridge
+- Navet does not open its own Home Assistant websocket while running inside Ingress
 - the direct host port is off by default
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
@@ -56,6 +57,13 @@ What to expect:
 
 - Home Assistant login uses OAuth
 - dashboard/profile state is stored through same-origin runtime endpoints under `/data`
+- if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
+
+Troubleshooting:
+
+- if Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL
+- if you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session
+- if the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`
 
 Example `docker-compose.yml`:
 

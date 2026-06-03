@@ -3,11 +3,12 @@ import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-h
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { useI18n } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
+import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
 import type { CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
-import type { CameraImageSourceKind } from './camera-view-mode';
+import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
 
 interface CameraCardViewProps {
   id: string;
@@ -16,8 +17,7 @@ interface CameraCardViewProps {
   cardRef?: RefObject<HTMLDivElement | null>;
   imageUrl: string | undefined;
   streamElement?: ReactNode;
-  isUnavailable: boolean;
-  isRunning: boolean;
+  cameraState: PlatformCameraState;
   statusChangedAt: number | null;
   motionDetected: boolean;
   motionChangedAt: number | null;
@@ -27,7 +27,7 @@ interface CameraCardViewProps {
   isEditMode: boolean;
   cameraViewMode: CameraViewMode;
   isStreamCapable: boolean;
-  frontendStreamTypes: string[];
+  frontendStreamTypes: readonly CameraStreamType[];
   streamKind: CameraImageSourceKind;
   isStreamFallback: boolean;
   onRefresh: () => void;
@@ -60,6 +60,25 @@ function formatElapsedCompact(now: number, since: number | null) {
   return `${Math.floor(diffHours / 24)}d`;
 }
 
+function getCameraStatusLabel(
+  t: (key: TranslationKey) => string,
+  cameraState: PlatformCameraState
+) {
+  if (cameraState === 'unavailable') {
+    return t('camera.status.unavailable');
+  }
+
+  if (cameraState === 'streaming' || cameraState === 'recording') {
+    return t('camera.status.live');
+  }
+
+  if (cameraState === 'off') {
+    return t('common.off');
+  }
+
+  return t('common.on');
+}
+
 export function CameraCardView({
   id,
   name,
@@ -67,8 +86,7 @@ export function CameraCardView({
   cardRef,
   imageUrl,
   streamElement,
-  isUnavailable,
-  isRunning,
+  cameraState,
   statusChangedAt,
   motionDetected,
   motionChangedAt,
@@ -89,16 +107,17 @@ export function CameraCardView({
 }: CameraCardViewProps) {
   const { t } = useI18n();
   const isCompact = isCompactCardSize(size);
-  const statusLabel = isUnavailable
-    ? t('camera.status.unavailable')
-    : isRunning
-      ? t(`camera.settings.viewMode.${cameraViewMode}` as TranslationKey)
-      : t('common.off');
+  const isUnavailable = cameraState === 'unavailable';
+  const isRunning = cameraState !== 'off' && !isUnavailable;
+  const statusLabel = getCameraStatusLabel(t, cameraState);
   const motionLabel = motionDetected ? t('camera.motion.detected') : t('camera.motion.clear');
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   const showRefreshButton =
-    isRunning && !isEditMode && (cameraViewMode !== 'live' || isStreamFallback || !isStreamCapable);
+    isRunning &&
+    !isEditMode &&
+    (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
+  const hasLiveStream = Boolean(streamElement) && !isUnavailable;
   let streamLabel = isStreamCapable
     ? t('camera.viewer.streamCapable')
     : t('camera.viewer.snapshotOnly');
@@ -107,10 +126,7 @@ export function CameraCardView({
   } else if (frontendStreamTypes.length > 0) {
     streamLabel = frontendStreamTypes.join('/').toUpperCase();
   }
-  if (streamKind === 'go2rtc') {
-    streamLabel = 'go2rtc';
-  }
-  if (streamKind === 'hls' || streamKind === 'web_rtc' || streamKind === 'mjpeg') {
+  if (streamKind === 'hls' || streamKind === 'web_rtc') {
     streamLabel = streamKind.toUpperCase();
   }
   const resolvedStreamLabel =
@@ -145,28 +161,29 @@ export function CameraCardView({
         aria-label={!isEditMode ? t('camera.actions.openViewer') : undefined}
         overlay={
           <div className="absolute inset-0 z-0 overflow-hidden">
-            {streamElement && !isUnavailable ? (
-              streamElement
-            ) : imageUrl && !isUnavailable ? (
+            {imageUrl && !hasLiveStream ? (
               <CameraSnapshotImage
                 src={imageUrl}
                 alt={name}
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={onImageError}
               />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <Camera className="h-8 w-8 text-zinc-500" />
-                <span className="text-xs text-zinc-500">
-                  {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-                </span>
-              </div>
-            )}
+            ) : null}
+
+            {hasLiveStream
+              ? streamElement
+              : !imageUrl && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <Camera className="h-8 w-8 text-zinc-500" />
+                    <span className="text-xs text-zinc-500">
+                      {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
+                    </span>
+                  </div>
+                )}
           </div>
         }
         contentClassName="relative z-10 h-full"
       >
-        {/* Refresh button (top-left, only when live and not in edit mode) */}
         {showRefreshButton && (
           <button
             type="button"
@@ -184,7 +201,11 @@ export function CameraCardView({
         <div className="absolute top-3 right-3 z-30 inline-flex max-w-[calc(100%-3.75rem)] items-center gap-1.5 text-xs font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.98)]">
           <div className="inline-flex items-center gap-1.5">
             <span
-              className={`h-1.5 w-1.5 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.75)]' : 'bg-white/45'}`}
+              className={`h-1.5 w-1.5 rounded-full ${
+                cameraState === 'streaming' || cameraState === 'recording'
+                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.75)]'
+                  : 'bg-white/45'
+              }`}
             />
             <span>{statusLabel}</span>
           </div>
@@ -202,7 +223,6 @@ export function CameraCardView({
           ) : null}
         </div>
 
-        {/* Bottom gradient overlay */}
         <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/88 via-black/52 to-transparent px-3 pb-3 pt-10">
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -218,7 +238,6 @@ export function CameraCardView({
               />
             </div>
 
-            {/* Action buttons */}
             {!isEditMode && (
               <div className="flex shrink-0 items-center gap-2">
                 {motionDetectionEnabled !== null ? (
@@ -242,7 +261,6 @@ export function CameraCardView({
                     <Eye className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
-                {/* Settings */}
                 <button
                   type="button"
                   onClick={(event) => {

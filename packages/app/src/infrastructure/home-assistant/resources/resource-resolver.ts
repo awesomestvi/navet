@@ -458,7 +458,7 @@ export class HomeAssistantResourceResolver {
                 : 'mjpeg_stream',
           url: ref.rawPath ? resolvePath(ref.rawPath).url : undefined,
           cacheKey,
-          authStrategy: ref.stream === 'mjpeg' ? 'same_origin' : 'none',
+          authStrategy: ref.stream === 'web_rtc' ? 'none' : 'same_origin',
           metadata: { source: ref.stream },
         };
         break;

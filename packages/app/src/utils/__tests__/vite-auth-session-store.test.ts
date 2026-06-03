@@ -36,6 +36,16 @@ describe('vite auth session store', () => {
     expect(restored.getAuthSession()).toBeNull();
   });
 
+  it('ignores empty persisted session files', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'navet-auth-store-'));
+    const sessionFilePath = join(tempDir, 'navet-auth-session.json');
+
+    writeFileSync(sessionFilePath, '', 'utf8');
+
+    const restored = createViteAuthSessionStore(sessionFilePath);
+    expect(restored.getAuthSession()).toBeNull();
+  });
+
   it('clears the persisted auth session', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'navet-auth-store-'));
     const sessionFilePath = join(tempDir, 'navet-auth-session.json');

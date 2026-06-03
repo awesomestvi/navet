@@ -32,13 +32,21 @@ const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
 }));
 
 describe('homeassistant-adapter', () => {
+  const connectMock = vi.fn(async () => undefined);
+  const disconnectMock = vi.fn(async () => undefined);
+  const syncPanelHassMock = vi.fn();
+
   beforeEach(() => {
     callHomeAssistantServiceMock.mockReset();
     resolveArtworkMock.mockReset();
+    connectMock.mockReset();
+    disconnectMock.mockReset();
+    syncPanelHassMock.mockReset();
     configureHomeAssistantServiceBridge({
       callService: callHomeAssistantServiceMock,
       signPath: vi.fn(async (path: string) => ({ path })),
       getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),
+      getCameraStreamPaths: vi.fn(async () => ({})),
       addListener: vi.fn(() => () => {}),
       isConnected: vi.fn(() => true),
       getPanelHass: vi.fn(() => null),
@@ -89,9 +97,9 @@ describe('homeassistant-adapter', () => {
         areas: [],
         deviceRegistry: [],
         entityRegistry: [],
-        syncPanelHass: vi.fn(),
-        connect: vi.fn(async () => undefined),
-        disconnect: vi.fn(async () => undefined),
+        syncPanelHass: syncPanelHassMock,
+        connect: connectMock,
+        disconnect: disconnectMock,
       })),
       subscribeStore: vi.fn(() => () => {}),
     });
@@ -143,5 +151,24 @@ describe('homeassistant-adapter', () => {
       id: 'person.vishal',
       kind: 'image',
     });
+  });
+
+  it('attaches the parent Home Assistant runtime bridge without opening a second connection', () => {
+    const contract = createHomeAssistantProviderContract();
+    const parentHass = {
+      states: { 'light.kitchen': lightEntityFactory() },
+      config: { location_name: 'Parent Home' },
+      connection: {
+        sendMessagePromise: vi.fn(async () => ({ ok: true })),
+        subscribeMessage: vi.fn(async () => vi.fn()),
+      },
+      callService: vi.fn(async () => undefined),
+      callWS: vi.fn(async () => ({ ok: true })),
+    };
+
+    contract.attachRuntimeBridge?.(parentHass as never);
+
+    expect(syncPanelHassMock).toHaveBeenCalledWith(parentHass);
+    expect(connectMock).not.toHaveBeenCalled();
   });
 });

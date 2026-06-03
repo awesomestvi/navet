@@ -1,7 +1,6 @@
 export const homeAssistantUrlFixtures = {
   relativeMediaArtwork: '/api/media_player_proxy/media_player.living_room',
   relativeCameraSnapshot: '/api/camera_proxy/camera.front_door',
-  relativeCameraStream: '/api/camera_proxy_stream/camera.front_door',
   relativeImageServe: '/api/image/serve/image-id/512x512',
   relativeHlsStream: '/api/hls/camera.front_door/master.m3u8',
   staleProxyMediaArtwork: '/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room',

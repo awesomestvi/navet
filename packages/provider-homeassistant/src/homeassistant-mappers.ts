@@ -71,6 +71,15 @@ function getDomain(entityId: string): string {
   return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
 }
 
+function readPreferredEntityPicture(entity: HassEntity): string | undefined {
+  return (
+    (typeof entity.attributes?.entity_picture_local === 'string' &&
+      entity.attributes.entity_picture_local) ||
+    (typeof entity.attributes?.entity_picture === 'string' && entity.attributes.entity_picture) ||
+    undefined
+  );
+}
+
 function formatDomainLabel(domain: string): string {
   return domain
     .split('_')
@@ -651,10 +660,7 @@ function createHomeAssistantState(
   }
 
   if (domain === 'camera') {
-    const entityPicture =
-      typeof entity.attributes?.entity_picture === 'string'
-        ? entity.attributes.entity_picture
-        : undefined;
+    const entityPicture = readPreferredEntityPicture(entity);
     const supportedFeatures = readNumberish(entity.attributes?.supported_features) ?? 0;
 
     return {
@@ -845,10 +851,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
               kind: 'camera_snapshot' as const,
               providerId: 'home_assistant',
               entityId,
-              path:
-                typeof entity.attributes?.entity_picture === 'string'
-                  ? entity.attributes.entity_picture
-                  : undefined,
+              path: readPreferredEntityPicture(entity),
             },
           } satisfies NavetEntity['resources'])
         : domain === 'media_player'

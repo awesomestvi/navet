@@ -68,6 +68,13 @@ export function configureAppProviderBridges() {
     signPath: (path, expiresSeconds) => homeAssistantService.signPath(path, expiresSeconds),
     getCameraStreamUrl: (entityId, format) =>
       homeAssistantService.getCameraStreamUrl(entityId, format),
+    getCameraStreamPaths: async (entityId) => {
+      const paths = await homeAssistantService.getCameraStreamPaths(entityId);
+      return {
+        ...(paths.hls_path ? { hls: paths.hls_path } : {}),
+        ...(paths.mjpeg_path ? { mjpeg: paths.mjpeg_path } : {}),
+      };
+    },
     addListener: (event, listener) => homeAssistantService.addListener(event, listener),
     isConnected: () => homeAssistantService.isConnected(),
     getPanelHass: () => homeAssistantService.getPanelHass(),

@@ -74,15 +74,20 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   });
 }
 
-function saveTokens(data: AuthData | null): void {
+async function persistTokens(data: AuthData | null): Promise<void> {
   const method = data ? 'PUT' : 'DELETE';
-  void fetch(getAuthSessionEndpoint(), {
+
+  await fetch(getAuthSessionEndpoint(), {
     method,
     cache: 'no-store',
     credentials: 'same-origin',
     headers: data ? { 'Content-Type': 'application/json' } : undefined,
     body: data ? JSON.stringify(data) : undefined,
   }).catch(() => undefined);
+}
+
+function saveTokens(data: AuthData | null): void {
+  void persistTokens(data);
 }
 
 async function noStoredTokens(): Promise<AuthData | null> {
@@ -95,6 +100,11 @@ async function clearStoredTokens(): Promise<void> {
     cache: 'no-store',
     credentials: 'same-origin',
   }).catch(() => undefined);
+}
+
+// Standalone OAuth treats any invalid refresh/callback state as a full session invalidation.
+export async function invalidateStandaloneOAuthSession(): Promise<void> {
+  await clearStoredTokens();
 }
 
 function hasOAuthCallback() {
@@ -121,13 +131,14 @@ export const standaloneOAuthAuth: AuthAdapter = {
         loadTokens,
         saveTokens,
       }).catch(async (error: unknown) => {
-        await clearStoredTokens();
+        await invalidateStandaloneOAuthSession();
         throw error;
       });
 
       if (auth.expired) {
         await auth.refreshAccessToken();
       }
+      await persistTokens(auth.data);
 
       clearOAuthCallbackUrl();
 
@@ -161,6 +172,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
       if (auth.expired) {
         await withTimeout(auth.refreshAccessToken(), STORED_SESSION_RESTORE_TIMEOUT_MS);
       }
+      await persistTokens(auth.data);
 
       return {
         providerId: 'home_assistant',
@@ -172,7 +184,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
         expiresAt: auth.data.expires,
       };
     } catch {
-      await clearStoredTokens().catch(() => undefined);
+      await invalidateStandaloneOAuthSession().catch(() => undefined);
       return null;
     }
   },
@@ -193,6 +205,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
     if (auth.expired) {
       await auth.refreshAccessToken();
     }
+    await persistTokens(auth.data);
 
     return {
       providerId: 'home_assistant',
@@ -207,10 +220,14 @@ export const standaloneOAuthAuth: AuthAdapter = {
   async refresh(session) {
     if (!session.auth) throw new Error('Missing OAuth session');
     await session.auth.refreshAccessToken();
+    await persistTokens(session.auth.data);
     return {
       ...session,
       expiresAt: session.auth.data.expires,
     };
+  },
+  async invalidatePersistedSession() {
+    await invalidateStandaloneOAuthSession();
   },
   async logout() {
     const storedTokens = await loadTokens().catch(() => null);
@@ -223,6 +240,6 @@ export const standaloneOAuthAuth: AuthAdapter = {
       }).catch(() => null);
       await Promise.resolve(auth?.revoke()).catch(() => undefined);
     }
-    await clearStoredTokens();
+    await invalidateStandaloneOAuthSession();
   },
 };

@@ -80,6 +80,7 @@ beforeEach(() => {
     callService: callServiceMock,
     signPath: vi.fn(async (path: string) => ({ path })),
     getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),
+    getCameraStreamPaths: vi.fn(async () => ({})),
     addListener: (event, listener) => {
       const listeners = homeAssistantListeners[event];
       listeners.add(listener);

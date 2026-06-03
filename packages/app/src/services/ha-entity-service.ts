@@ -4,6 +4,7 @@ import type {
   HomeAssistantAutomationConfig,
   HomeAssistantCameraCapabilities,
   HomeAssistantCameraStream,
+  HomeAssistantCameraStreamPaths,
   HomeAssistantCameraStreamType,
   HomeAssistantMediaBrowseResult,
   HomeAssistantMediaSearchResult,
@@ -398,6 +399,20 @@ class HAEntityService {
       entity_id: entityId,
       format,
     }) as Promise<HomeAssistantCameraStream>;
+  }
+
+  async getCameraStreamPaths(entityId: string): Promise<HomeAssistantCameraStreamPaths> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    return conn.sendMessagePromise({
+      type: 'stream_camera',
+      data: {
+        camera_entity_id: entityId,
+      },
+    }) as Promise<HomeAssistantCameraStreamPaths>;
   }
 
   async getWebRtcClientConfiguration(

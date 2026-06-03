@@ -20,6 +20,7 @@ describe('homeAssistantEntityRuntimeService', () => {
       callService: vi.fn(async () => undefined),
       signPath: vi.fn(async (path: string) => ({ path })),
       getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),
+      getCameraStreamPaths: vi.fn(async () => ({})),
       addListener: vi.fn(() => () => {}),
       isConnected: vi.fn(() => true),
       getPanelHass: vi.fn(() => null),

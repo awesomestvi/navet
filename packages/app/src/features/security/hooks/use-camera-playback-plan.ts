@@ -1,50 +1,46 @@
 import type {
-  CameraPlaybackPlan,
-  PlatformCameraStreamType,
+  PlatformCameraPlaybackModel,
+  PlatformCameraState,
+  PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import { getCameraPlaybackPlan } from '@navet/app/services/integration-camera-runtime.service';
-import type { CameraFeedMode } from '@navet/app/stores/settings-store';
 import { useEffect, useMemo, useState } from 'react';
 
 interface UseCameraPlaybackPlanOptions {
   entityId: string;
+  cameraState: PlatformCameraState;
   preferredMode: 'auto' | 'live' | 'snapshot';
-  preferredTransport: CameraFeedMode;
   snapshotUrl?: string;
-  mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly PlatformCameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  isUnavailable: boolean;
-  isRunning: boolean;
-  failedTransports?: ReadonlySet<'hls' | 'web_rtc' | 'mjpeg' | 'go2rtc' | 'snapshot'>;
+  isStreamCapable: boolean;
+  motionDetectionEnabled: boolean | null;
+  failedTransports?: ReadonlySet<PlatformCameraTransport>;
 }
 
 export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
-  const [plan, setPlan] = useState<CameraPlaybackPlan | null>(null);
+  const [plan, setPlan] = useState<PlatformCameraPlaybackModel | null>(null);
+  const failedTransportKey = [...(options.failedTransports ?? [])].sort().join(',');
   const stableOptions = useMemo(
     () => ({
       entityId: options.entityId,
+      cameraState: options.cameraState,
       preferredMode: options.preferredMode,
-      preferredTransport: options.preferredTransport,
       snapshotUrl: options.snapshotUrl,
-      mjpegStreamUrl: options.mjpegStreamUrl,
-      hasGo2RtcFeed: options.hasGo2RtcFeed,
-      isUnavailable: options.isUnavailable,
-      isRunning: options.isRunning,
-      frontendStreamTypes: [...options.frontendStreamTypes],
-      failedTransports: new Set(options.failedTransports ?? []),
+      isStreamCapable: options.isStreamCapable,
+      motionDetectionEnabled: options.motionDetectionEnabled,
+      failedTransports: new Set(
+        failedTransportKey.length > 0
+          ? (failedTransportKey.split(',') as PlatformCameraTransport[])
+          : []
+      ),
     }),
     [
       options.entityId,
+      options.cameraState,
       options.preferredMode,
-      options.preferredTransport,
       options.snapshotUrl,
-      options.mjpegStreamUrl,
-      options.frontendStreamTypes,
-      options.hasGo2RtcFeed,
-      options.isUnavailable,
-      options.isRunning,
-      options.failedTransports,
+      options.isStreamCapable,
+      options.motionDetectionEnabled,
+      failedTransportKey,
     ]
   );
 

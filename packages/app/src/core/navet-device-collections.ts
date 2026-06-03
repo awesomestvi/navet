@@ -497,6 +497,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
       case 'camera':
         collection.cameras.push({
           ...base,
+          sourceDeviceId: deviceId,
           entityPicture: typeof state.entityPicture === 'string' ? state.entityPicture : undefined,
           state: readString(value, ''),
           supportedFeatures:

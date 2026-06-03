@@ -213,11 +213,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </>
   );
 
-  const containerClassName = `relative h-full ${
-    device?.type === 'lights' && ambientLightBleed
-      ? '[contain:layout_style]'
-      : '[contain:layout_style_paint]'
-  } ${spanClass} [&>*]:cursor-inherit`;
+  const containerClassName = `relative h-full ${resolveDashboardCardContainmentClass(device, ambientLightBleed)} ${spanClass} [&>*]:cursor-inherit`;
 
   if (draggable && zone) {
     return (
@@ -246,6 +242,22 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </div>
   );
 }, areDashboardCardItemPropsEqual);
+
+function resolveDashboardCardContainmentClass(
+  device: DeviceWithType | undefined,
+  ambientLightBleed: boolean
+) {
+  if (device?.type === 'lights' && ambientLightBleed) {
+    return '[contain:layout_style]';
+  }
+
+  // Paint containment can interfere with live video composition on camera cards.
+  if (device?.type === 'cameras') {
+    return '[contain:layout_style]';
+  }
+
+  return '[contain:layout_style_paint]';
+}
 
 function EditModeCardBackdrop({ size }: { size: CardSize }) {
   return (

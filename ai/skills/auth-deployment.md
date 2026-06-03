@@ -26,6 +26,7 @@ Navet currently runs in:
 - preserve same-origin session and proxy constraints for standalone and add-on flows
 - keep Home Assistant-specific runtime assumptions inside Home Assistant-owned seams
 - do not reintroduce manual token-entry login paths
+- Home Assistant Ingress must reuse the parent `hass` runtime bridge instead of opening a second Home Assistant websocket
 
 ## Current Repo Areas
 

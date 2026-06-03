@@ -108,7 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
           setError(null);
         })
-        .catch((err) => {
+        .catch(async (err) => {
+          if (session.providerId === 'home_assistant' && session.runtime === 'standalone-oauth') {
+            await Promise.resolve(
+              integrationSessionRuntime.invalidatePersistedSession?.('home_assistant')
+            ).catch(() => undefined);
+          }
           setSession(null);
           setError(err instanceof Error ? err.message : 'Authentication expired');
         });

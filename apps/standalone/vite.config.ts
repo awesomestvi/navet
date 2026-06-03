@@ -5,9 +5,12 @@ import { execSync } from 'node:child_process'
 import { lookup } from 'node:dns/promises'
 import { readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { request as httpRequest } from 'node:http'
+import { request as httpsRequest } from 'node:https'
 import { connect as connectNet } from 'node:net'
 import { isIP } from 'node:net'
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { connect as connectTls } from 'node:tls'
 import path from 'path'
 import {
@@ -51,6 +54,7 @@ import {
   isBlockedRSSHostname,
   isPrivateIpAddress,
 } from '../../packages/app/src/utils/rss-proxy-security'
+import { copyProxyRequestHeaders } from '../../scripts/vite-proxy-request-headers'
 
 const repoRoot = path.resolve(__dirname, '../..')
 const packageJson = JSON.parse(
@@ -110,11 +114,102 @@ const REACT_COMPILER_INCLUDE = [
 ]
 const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/]
 
-function pipeReadableStreamToResponse(
+function isRecoverableProxyStreamError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  const causeCode =
+    typeof error.cause === 'object' && error.cause && 'code' in error.cause
+      ? error.cause.code
+      : null
+
+  return (
+    error.name === 'AbortError' ||
+    error.message === 'terminated' ||
+    causeCode === 'UND_ERR_BODY_TIMEOUT' ||
+    causeCode === 'UND_ERR_ABORTED'
+  )
+}
+
+async function pipeReadableStreamToResponse(
   body: NonNullable<Response['body']>,
-  res: ServerResponse
+  res: ServerResponse,
+  options?: {
+    req?: IncomingMessage
+    abortController?: AbortController
+  }
 ) {
-  Readable.fromWeb(body as unknown as Parameters<typeof Readable.fromWeb>[0]).pipe(res)
+  const source = Readable.fromWeb(body as unknown as Parameters<typeof Readable.fromWeb>[0])
+  const abortUpstream = () => {
+    options?.abortController?.abort()
+  }
+
+  options?.req?.once('close', abortUpstream)
+  res.once('close', abortUpstream)
+
+  try {
+    await pipeline(source, res)
+  } catch (error) {
+    if (!isRecoverableProxyStreamError(error)) {
+      if (!res.destroyed) {
+        res.destroy(error instanceof Error ? error : undefined)
+      }
+      return
+    }
+
+    if (!res.destroyed) {
+      res.destroy()
+    }
+  } finally {
+    options?.req?.off('close', abortUpstream)
+    res.off('close', abortUpstream)
+  }
+}
+
+async function proxyRawUpstreamStream(options: {
+  req: IncomingMessage
+  res: ServerResponse
+  targetUrl: URL
+  headers: Headers
+}) {
+  const { req, res, targetUrl, headers } = options
+  const requestImpl = targetUrl.protocol === 'https:' ? httpsRequest : httpRequest
+
+  await new Promise<void>((resolve, reject) => {
+    const upstreamRequest = requestImpl(
+      targetUrl,
+      {
+        method: req.method,
+        headers: Object.fromEntries(headers.entries()),
+      },
+      (upstreamResponse) => {
+        res.statusCode = upstreamResponse.statusCode ?? 502
+        setSecurityHeaders(res)
+
+        for (const [headerName, headerValue] of Object.entries(upstreamResponse.headers)) {
+          if (headerValue == null) {
+            continue
+          }
+
+          if (Array.isArray(headerValue)) {
+            res.setHeader(headerName, headerValue)
+          } else {
+            res.setHeader(headerName, headerValue)
+          }
+        }
+
+        upstreamResponse.on('error', reject)
+        res.on('close', () => upstreamResponse.destroy())
+        upstreamResponse.pipe(res)
+        upstreamResponse.on('end', resolve)
+      }
+    )
+
+    upstreamRequest.on('error', reject)
+    req.on('close', () => upstreamRequest.destroy())
+    upstreamRequest.end()
+  })
 }
 
 async function assertPublicHostname(hostname: string) {
@@ -283,19 +378,30 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
         return
       }
 
-      const headers = new Headers()
-      const accept = typeof req.headers.accept === 'string' ? req.headers.accept : null
-      if (accept) {
-        headers.set('Accept', accept)
-      }
+      const headers = copyProxyRequestHeaders(req.headers)
 
       if (authSession?.access_token) {
         headers.set('Authorization', `Bearer ${authSession.access_token}`)
       }
 
+      const abortController = new AbortController()
+      const isRawCameraStream = targetPath.startsWith('/api/camera_proxy_stream/')
+
+      if (isRawCameraStream) {
+        await proxyRawUpstreamStream({
+          req,
+          res,
+          targetUrl,
+          headers,
+        })
+        return
+      }
+
       const upstreamResponse = await fetch(targetUrl, {
+        method: req.method,
         redirect: 'manual',
         headers,
+        signal: abortController.signal,
       })
 
       res.statusCode = upstreamResponse.status
@@ -321,7 +427,7 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
         return
       }
 
-      pipeReadableStreamToResponse(upstreamResponse.body, res)
+      await pipeReadableStreamToResponse(upstreamResponse.body, res, { req, abortController })
     } catch {
       res.statusCode = 502
       res.setHeader('Content-Type', 'application/json')
@@ -405,11 +511,14 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
           ? undefined
           : await new Response(req as never).text()
 
+      const abortController = new AbortController()
+
       const upstreamResponse = await fetch(targetUrl, {
         method: req.method,
         redirect: 'manual',
         headers,
         body,
+        signal: abortController.signal,
       })
 
       res.statusCode = upstreamResponse.status
@@ -424,7 +533,7 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
         return
       }
 
-      pipeReadableStreamToResponse(upstreamResponse.body, res)
+      await pipeReadableStreamToResponse(upstreamResponse.body, res, { req, abortController })
     } catch {
       res.statusCode = 502
       res.setHeader('Content-Type', 'application/json')
@@ -650,11 +759,14 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
           ? undefined
           : await new Response(req as never).text()
 
+      const abortController = new AbortController()
+
       const upstreamResponse = await fetch(targetUrl, {
         method: req.method,
         redirect: 'manual',
         headers,
         body,
+        signal: abortController.signal,
       })
 
       res.statusCode = upstreamResponse.status
@@ -669,7 +781,7 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
         return
       }
 
-      pipeReadableStreamToResponse(upstreamResponse.body, res)
+      await pipeReadableStreamToResponse(upstreamResponse.body, res, { req, abortController })
     } catch {
       res.statusCode = 502
       res.setHeader('Content-Type', 'application/json')

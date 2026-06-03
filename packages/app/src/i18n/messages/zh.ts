@@ -551,7 +551,7 @@ export const zhMessages = {
   'settings.interaction.sectionDescription': '设置交互说明',
   'settings.interaction.cardBehavior.description': '设置交互说明',
   'settings.interaction.cameraStreams.description':
-    'Set the default go2rtc server and stream naming strategy Navet should use for Home Assistant cameras.',
+    'Home Assistant camera previews use native WebRTC or HLS when available, with snapshot fallback when needed.',
   'settings.dashboard.backup.description': '设置仪表板备份说明',
   'settings.dashboard.backup.body': '设置仪表板备份正文',
   'settings.system.sectionDescription': '设置系统说明',
@@ -1239,50 +1239,9 @@ export const zhMessages = {
   'camera.settings.viewMode.auto': 'Auto',
   'camera.settings.viewMode.snapshot': 'Snapshot',
   'camera.settings.viewMode.description':
-    'Live prefers go2rtc when available, then Home Assistant WebRTC/HLS, with MJPEG and snapshot fallback. Auto refreshes snapshots. Snapshot refreshes only when requested.',
+    'This controls the dashboard preview. Live uses Home Assistant WebRTC or HLS when available, while Snapshot keeps dashboard cards cheap to render.',
   'camera.settings.viewMode.lowPowerNote':
     'Low power mode forces dashboard camera previews to snapshots until it is turned off.',
-  'camera.settings.feedMode': 'Live feed',
-  'camera.settings.feedMode.auto': 'Auto',
-  'camera.settings.feedMode.go2rtc': 'go2rtc',
-  'camera.settings.feedMode.web_rtc': 'WebRTC',
-  'camera.settings.feedMode.hls': 'HLS',
-  'camera.settings.feedMode.mjpeg': 'MJPEG',
-  'camera.settings.feedMode.description':
-    'Auto prefers go2rtc when available, then Home Assistant WebRTC, HLS, and MJPEG. Choose a feed to try it first while keeping fallback available.',
-  'camera.settings.go2rtc': 'go2rtc',
-  'camera.settings.go2rtc.defaults': 'Default go2rtc settings',
-  'camera.settings.go2rtc.defaultServerUrl': 'Default server URL',
-  'camera.settings.go2rtc.serverUrl': 'Server URL',
-  'camera.settings.go2rtc.streamName': 'Stream name',
-  'camera.settings.go2rtc.streamName.inferred': 'inferred',
-  'camera.settings.go2rtc.streamNamingMode': 'Default stream naming',
-  'camera.settings.go2rtc.streamNamingMode.entity_id': 'Use camera.front_door',
-  'camera.settings.go2rtc.streamNamingMode.short_entity_id': 'Use front_door',
-  'camera.settings.go2rtc.defaults.description':
-    'These defaults apply to cameras without a direct override. Per-camera stream names can still override the inherited default.',
-  'camera.settings.go2rtc.activeSource': 'Active source',
-  'camera.settings.go2rtc.source.unavailable': 'Home Assistant native fallback',
-  'camera.settings.go2rtc.source.embedded_panel': 'Embedded Home Assistant go2rtc',
-  'camera.settings.go2rtc.source.per_camera_override': 'Per-camera go2rtc override',
-  'camera.settings.go2rtc.source.global_default': 'Inherited global go2rtc server',
-  'camera.settings.go2rtc.sourceDescription.unavailable':
-    'No go2rtc server is configured right now, so Navet will use Home Assistant WebRTC, HLS, MJPEG, and snapshot fallbacks when available.',
-  'camera.settings.go2rtc.sourceDescription.embedded_panel':
-    'Navet is using the WebRTC custom card already loaded in Home Assistant for this camera.',
-  'camera.settings.go2rtc.sourceDescription.per_camera_override':
-    'This camera is using its own go2rtc server or stream name instead of the global defaults.',
-  'camera.settings.go2rtc.sourceDescription.global_default':
-    'This camera inherits the shared go2rtc server and naming strategy from settings.',
-  'camera.settings.go2rtc.override': 'Per-camera override',
-  'camera.settings.go2rtc.override.description':
-    'Leave these fields blank to inherit the default server and inferred stream name. Fill one or both to override this camera only.',
-  'camera.settings.go2rtc.description.addon':
-    'Home Assistant OS or add-on users: enable the go2rtc debug UI in Home Assistant, then use your Home Assistant host with port 11984, for example http://homeassistant.local:11984. The stream name is usually the camera entity id, such as camera.front_door.',
-  'camera.settings.go2rtc.description.customPanel':
-    'Custom panel users can leave these fields empty when the WebRTC custom card is already loaded in Home Assistant; Navet will use that embedded go2rtc path automatically.',
-  'camera.settings.go2rtc.description.standalone':
-    'Standalone go2rtc users can use http://<go2rtc-host>:1984 and the stream name configured in go2rtc, such as front_door or camera.front_door.',
   'camera.status.live': '实时',
   'camera.status.unavailable': '摄像头状态',
   'camera.status.noSignal': '无信号',

@@ -16,27 +16,6 @@ export type HeaderTitleMode = 'auto_greeting' | 'custom_text' | 'clock';
 export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
-export type CameraFeedMode = 'auto' | 'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg';
-export type CameraGo2RtcStreamNamingMode = 'entity_id' | 'short_entity_id';
-export interface CameraGo2RtcConfig {
-  serverUrl: string;
-  streamName: string;
-}
-export interface CameraGo2RtcDefaults {
-  serverUrl: string;
-  streamNamingMode: CameraGo2RtcStreamNamingMode;
-}
-export type CameraGo2RtcSource =
-  | 'unavailable'
-  | 'embedded_panel'
-  | 'per_camera_override'
-  | 'global_default';
-export interface ResolvedCameraGo2RtcConfig extends CameraGo2RtcConfig {
-  hasFeed: boolean;
-  source: CameraGo2RtcSource;
-  usesEmbeddedPanel: boolean;
-  streamNameWasInferred: boolean;
-}
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -70,9 +49,6 @@ export interface UserSettings {
   cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
-  cameraFeedModes: Record<string, CameraFeedMode>;
-  cameraGo2RtcDefaults: CameraGo2RtcDefaults;
-  cameraGo2RtcConfigs: Record<string, CameraGo2RtcConfig>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -81,9 +57,6 @@ export interface UserSettings {
 interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
-  updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
-  updateCameraGo2RtcDefaults: (defaults: CameraGo2RtcDefaults) => void;
-  updateCameraGo2RtcConfig: (entityId: string, config: CameraGo2RtcConfig) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
@@ -110,12 +83,6 @@ export const defaultSettings: UserSettings = {
   cameraDashboardViewMode: 'live',
   cameraViewMode: 'live',
   cameraViewModes: {},
-  cameraFeedModes: {},
-  cameraGo2RtcDefaults: {
-    serverUrl: '',
-    streamNamingMode: 'entity_id',
-  },
-  cameraGo2RtcConfigs: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -152,20 +119,6 @@ function resolveCameraDashboardViewMode(
   return defaultSettings.cameraDashboardViewMode;
 }
 
-function isCameraFeedMode(value: unknown): value is CameraFeedMode {
-  return (
-    value === 'auto' ||
-    value === 'go2rtc' ||
-    value === 'web_rtc' ||
-    value === 'hls' ||
-    value === 'mjpeg'
-  );
-}
-
-function isCameraGo2RtcStreamNamingMode(value: unknown): value is CameraGo2RtcStreamNamingMode {
-  return value === 'entity_id' || value === 'short_entity_id';
-}
-
 function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
@@ -178,147 +131,18 @@ function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode
   );
 }
 
-function normalizeCameraFeedModes(value: unknown): Record<string, CameraFeedMode> {
+const knownSettingsKeys = new Set<keyof UserSettings>(
+  Object.keys(defaultSettings) as Array<keyof UserSettings>
+);
+
+function pickKnownSettings(value: unknown): Partial<UserSettings> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
 
   return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraFeedMode] =>
-      isCameraFeedMode(entry[1])
-    )
-  );
-}
-
-function isCameraGo2RtcConfig(value: unknown): value is CameraGo2RtcConfig {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    typeof (value as Partial<CameraGo2RtcConfig>).serverUrl === 'string' &&
-    typeof (value as Partial<CameraGo2RtcConfig>).streamName === 'string'
-  );
-}
-
-function normalizeCameraGo2RtcConfig(config: CameraGo2RtcConfig): CameraGo2RtcConfig {
-  return {
-    serverUrl: config.serverUrl.trim(),
-    streamName: config.streamName.trim(),
-  };
-}
-
-function isCameraGo2RtcDefaults(value: unknown): value is CameraGo2RtcDefaults {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    typeof (value as Partial<CameraGo2RtcDefaults>).serverUrl === 'string' &&
-    isCameraGo2RtcStreamNamingMode((value as Partial<CameraGo2RtcDefaults>).streamNamingMode)
-  );
-}
-
-export function normalizeCameraGo2RtcDefaults(value: unknown): CameraGo2RtcDefaults {
-  if (!isCameraGo2RtcDefaults(value)) {
-    return defaultSettings.cameraGo2RtcDefaults;
-  }
-
-  return {
-    serverUrl: value.serverUrl.trim(),
-    streamNamingMode: value.streamNamingMode,
-  };
-}
-
-function normalizeCameraGo2RtcConfigs(value: unknown): Record<string, CameraGo2RtcConfig> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter((entry): entry is [string, CameraGo2RtcConfig] => isCameraGo2RtcConfig(entry[1]))
-      .map(([entityId, config]) => [entityId, normalizeCameraGo2RtcConfig(config)])
-  );
-}
-
-export function inferCameraGo2RtcStreamName(
-  entityId: string,
-  streamNamingMode: CameraGo2RtcStreamNamingMode
-) {
-  if (streamNamingMode === 'short_entity_id') {
-    return entityId.replace(/^[^.]+\./, '');
-  }
-
-  return entityId;
-}
-
-export function getEmptyCameraGo2RtcConfig(): CameraGo2RtcConfig {
-  return {
-    serverUrl: '',
-    streamName: '',
-  };
-}
-
-export function resolveCameraGo2RtcConfig({
-  entityId,
-  defaults,
-  override,
-  canUseEmbeddedPanel,
-}: {
-  entityId: string;
-  defaults: CameraGo2RtcDefaults;
-  override: CameraGo2RtcConfig;
-  canUseEmbeddedPanel: boolean;
-}): ResolvedCameraGo2RtcConfig {
-  const normalizedDefaults = normalizeCameraGo2RtcDefaults(defaults);
-  const normalizedOverride = normalizeCameraGo2RtcConfig(override);
-  const inferredStreamName = inferCameraGo2RtcStreamName(
-    entityId,
-    normalizedDefaults.streamNamingMode
-  );
-  const streamName = normalizedOverride.streamName || inferredStreamName;
-  const streamNameWasInferred = normalizedOverride.streamName.length === 0;
-
-  if (canUseEmbeddedPanel) {
-    return {
-      serverUrl: '',
-      streamName,
-      hasFeed: true,
-      source: 'embedded_panel',
-      usesEmbeddedPanel: true,
-      streamNameWasInferred,
-    };
-  }
-
-  if (normalizedOverride.serverUrl.length > 0) {
-    return {
-      serverUrl: normalizedOverride.serverUrl,
-      streamName,
-      hasFeed: true,
-      source: 'per_camera_override',
-      usesEmbeddedPanel: false,
-      streamNameWasInferred,
-    };
-  }
-
-  if (normalizedDefaults.serverUrl.length > 0) {
-    return {
-      serverUrl: normalizedDefaults.serverUrl,
-      streamName,
-      hasFeed: true,
-      source: 'global_default',
-      usesEmbeddedPanel: false,
-      streamNameWasInferred,
-    };
-  }
-
-  return {
-    serverUrl: '',
-    streamName,
-    hasFeed: false,
-    source: 'unavailable',
-    usesEmbeddedPanel: false,
-    streamNameWasInferred,
-  };
+    Object.entries(value).filter(([key]) => knownSettingsKeys.has(key as keyof UserSettings))
+  ) as Partial<UserSettings>;
 }
 
 /**
@@ -362,10 +186,6 @@ export const useSettingsStore = create<SettingsState>()(
               : newSettings.cameraViewMode !== undefined
                 ? resolveCameraDashboardViewMode(newSettings.cameraViewMode)
                 : state.cameraViewMode,
-          cameraGo2RtcDefaults:
-            newSettings.cameraGo2RtcDefaults !== undefined
-              ? normalizeCameraGo2RtcDefaults(newSettings.cameraGo2RtcDefaults)
-              : state.cameraGo2RtcDefaults,
         })),
       updateCameraViewMode: (entityId, mode) =>
         set((state) => ({
@@ -374,46 +194,25 @@ export const useSettingsStore = create<SettingsState>()(
             [entityId]: mode,
           },
         })),
-      updateCameraFeedMode: (entityId, mode) =>
-        set((state) => ({
-          cameraFeedModes: {
-            ...state.cameraFeedModes,
-            [entityId]: mode,
-          },
-        })),
-      updateCameraGo2RtcDefaults: (defaults) =>
-        set(() => ({
-          cameraGo2RtcDefaults: normalizeCameraGo2RtcDefaults(defaults),
-        })),
-      updateCameraGo2RtcConfig: (entityId, config) =>
-        set((state) => ({
-          cameraGo2RtcConfigs: {
-            ...state.cameraGo2RtcConfigs,
-            [entityId]: normalizeCameraGo2RtcConfig(config),
-          },
-        })),
-      applyImportedSettings: (importedSettings) =>
-        set(() => ({
+      applyImportedSettings: (importedSettings) => {
+        const supportedSettings = pickKnownSettings(importedSettings);
+        return set(() => ({
           ...defaultSettings,
-          ...importedSettings,
-          headerTitleMode: isHeaderTitleMode(importedSettings.headerTitleMode)
-            ? importedSettings.headerTitleMode
+          ...supportedSettings,
+          headerTitleMode: isHeaderTitleMode(supportedSettings.headerTitleMode)
+            ? supportedSettings.headerTitleMode
             : defaultSettings.headerTitleMode,
-          headerCustomText: normalizeHeaderCustomText(importedSettings.headerCustomText),
+          headerCustomText: normalizeHeaderCustomText(supportedSettings.headerCustomText),
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
-            importedSettings.cameraDashboardViewMode,
-            importedSettings.cameraViewMode
+            supportedSettings.cameraDashboardViewMode,
+            supportedSettings.cameraViewMode
           ),
-          cameraViewMode: isCameraViewMode(importedSettings.cameraViewMode)
-            ? importedSettings.cameraViewMode
-            : resolveCameraDashboardViewMode(importedSettings.cameraDashboardViewMode),
-          cameraViewModes: normalizeCameraViewModes(importedSettings.cameraViewModes),
-          cameraFeedModes: normalizeCameraFeedModes(importedSettings.cameraFeedModes),
-          cameraGo2RtcDefaults: normalizeCameraGo2RtcDefaults(
-            importedSettings.cameraGo2RtcDefaults
-          ),
-          cameraGo2RtcConfigs: normalizeCameraGo2RtcConfigs(importedSettings.cameraGo2RtcConfigs),
-        })),
+          cameraViewMode: isCameraViewMode(supportedSettings.cameraViewMode)
+            ? supportedSettings.cameraViewMode
+            : resolveCameraDashboardViewMode(supportedSettings.cameraDashboardViewMode),
+          cameraViewModes: normalizeCameraViewModes(supportedSettings.cameraViewModes),
+        }));
+      },
       resetSettings: () => set(defaultSettings),
     }),
     {
@@ -424,7 +223,7 @@ export const useSettingsStore = create<SettingsState>()(
         removeItem: (name) => removeLocalStorageWithMigration(name, localStorage),
       })),
       merge: (persisted, current) => {
-        const next = (persisted as Partial<SettingsState> | null) ?? {};
+        const next = pickKnownSettings(persisted);
         return {
           ...current,
           ...next,
@@ -440,9 +239,6 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.cameraViewMode
             : resolveCameraDashboardViewMode(next.cameraDashboardViewMode, current.cameraViewMode),
           cameraViewModes: normalizeCameraViewModes(next.cameraViewModes),
-          cameraFeedModes: normalizeCameraFeedModes(next.cameraFeedModes),
-          cameraGo2RtcDefaults: normalizeCameraGo2RtcDefaults(next.cameraGo2RtcDefaults),
-          cameraGo2RtcConfigs: normalizeCameraGo2RtcConfigs(next.cameraGo2RtcConfigs),
         };
       },
     }

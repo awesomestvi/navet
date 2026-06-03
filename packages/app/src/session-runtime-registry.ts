@@ -35,6 +35,9 @@ export function getIntegrationSessionRuntimeRegistration(): IntegrationSessionRu
       await authSessionManager.logout(providerId);
     },
     refresh: async (providerId) => await authSessionManager.refresh(providerId),
+    invalidatePersistedSession: async (providerId) => {
+      await authSessionManager.invalidatePersistedSession(providerId);
+    },
     replaceSession: (session) =>
       authSessionManager.replaceSession(fromProviderSessionInput(session)),
     setActiveProvider: (providerId) => authSessionManager.setActiveProvider(providerId),

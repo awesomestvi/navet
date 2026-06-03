@@ -87,4 +87,21 @@ describe('integrationCameraFeatureService', () => {
       }
     );
   });
+
+  it('normalizes provider-scoped camera IDs for snapshot refresh and stream requests', async () => {
+    getCameraStreamUrlMock.mockResolvedValue({ url: '/api/hls/camera.front/master.m3u8' });
+
+    await integrationCameraFeatureService.refreshCameraSnapshot?.('home_assistant:camera.front');
+    await integrationCameraFeatureService.getCameraStreamUrl('home_assistant:camera.front', 'hls');
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      'homeassistant',
+      'update_entity',
+      {},
+      {
+        entity_id: 'camera.front',
+      }
+    );
+    expect(getCameraStreamUrlMock).toHaveBeenCalledWith('camera.front', 'hls');
+  });
 });

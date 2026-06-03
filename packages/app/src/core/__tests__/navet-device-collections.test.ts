@@ -228,4 +228,28 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
     ]);
     expect(devices.helpers).toHaveLength(0);
   });
+
+  it('keeps the underlying device id on camera devices', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:camera.driveway',
+        externalId: 'camera.driveway',
+        type: 'camera',
+        name: 'Driveway',
+        attributes: {
+          value: 'streaming',
+          deviceId: 'device-driveway',
+          entityPicture: '/api/camera_proxy/camera.driveway',
+          isStreamCapable: true,
+        },
+      }),
+    ]);
+
+    expect(devices.cameras).toMatchObject([
+      {
+        id: 'home_assistant:camera.driveway',
+        sourceDeviceId: 'device-driveway',
+      },
+    ]);
+  });
 });

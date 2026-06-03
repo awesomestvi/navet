@@ -297,8 +297,11 @@ function AppContent() {
       const parentHass = resolveParentHomeAssistantBridge();
       if (parentHass) {
         attachIntegrationRuntimeBridge('home_assistant', parentHass);
-        return;
       }
+
+      // In ingress mode, Home Assistant owns the authenticated websocket session.
+      // Wait for the parent runtime bridge instead of opening a second connection.
+      return;
     }
 
     if (connected || connecting) {

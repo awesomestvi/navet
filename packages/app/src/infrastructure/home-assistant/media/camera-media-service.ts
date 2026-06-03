@@ -1,61 +1,51 @@
 import type {
-  CameraPlaybackPlan,
+  PlatformCameraCapabilities,
+  PlatformCameraPlaybackModel,
+  PlatformCameraState,
   PlatformCameraStream,
-  PlatformCameraStreamType,
+  PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import type { CameraFeedMode } from '@navet/app/stores/settings-store';
+import { getProviderNativeId } from '@navet/core/ids';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
 
 interface CameraPlaybackPlanInput {
   entityId: string;
+  cameraState: PlatformCameraState;
   preferredMode: 'auto' | 'live' | 'snapshot';
-  preferredTransport: CameraFeedMode | 'go2rtc';
   snapshotUrl?: string;
-  mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly PlatformCameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  isUnavailable: boolean;
-  isRunning: boolean;
-  failedTransports?: ReadonlySet<'hls' | 'web_rtc' | 'mjpeg' | 'go2rtc' | 'snapshot'>;
+  isStreamCapable: boolean;
+  motionDetectionEnabled: boolean | null;
+  failedTransports?: ReadonlySet<PlatformCameraTransport>;
 }
 
-const AUTO_LIVE_FEED_ORDER: Array<'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg'> = [
-  'web_rtc',
-  'hls',
-  'go2rtc',
-  'mjpeg',
-];
+const CAMERA_RETRY_DELAYS_MS = [1_000, 3_000, 7_000];
+const CAMERA_SNAPSHOT_REFRESH_MS = 10_000;
+const CAMERA_FALLBACK_REFRESH_MS = 30_000;
+const CAMERA_CAPABILITIES_TIMEOUT_MS = 750;
 
-function getFeedOrder({
-  preferredTransport,
-  hasFrontendStreamTypes,
-}: {
-  preferredTransport: CameraPlaybackPlanInput['preferredTransport'];
-  hasFrontendStreamTypes: boolean;
-}) {
-  const autoLiveFeedOrder =
-    hasFrontendStreamTypes && preferredTransport === 'auto'
-      ? AUTO_LIVE_FEED_ORDER.filter((kind) => kind !== 'go2rtc')
-      : AUTO_LIVE_FEED_ORDER;
-  if (preferredTransport === 'auto') {
-    return autoLiveFeedOrder;
-  }
-
-  return [preferredTransport, ...autoLiveFeedOrder.filter((kind) => kind !== preferredTransport)];
+function canAttemptLivePlayback(
+  cameraState: PlatformCameraState,
+  preferredMode: 'auto' | 'live' | 'snapshot'
+) {
+  return preferredMode !== 'snapshot' && cameraState !== 'unavailable' && cameraState !== 'off';
 }
 
 export class CameraMediaService {
+  private cachedStreamTypes = new Map<string, PlatformCameraTransport[]>();
+
   constructor(
     private resolver: HomeAssistantResourceResolver,
-    private getCameraStream: (
-      entityId: string,
-      format: PlatformCameraStreamType
-    ) => Promise<PlatformCameraStream>
+    private getCameraCapabilities: (entityId: string) => Promise<PlatformCameraCapabilities>,
+    private getCameraStream: (entityId: string, format: 'hls') => Promise<PlatformCameraStream>,
+    private getCameraStreamPaths: (
+      entityId: string
+    ) => Promise<Partial<Record<PlatformCameraTransport, string>>>
   ) {}
 
-  async getPlaybackPlan(input: CameraPlaybackPlanInput): Promise<CameraPlaybackPlan> {
-    const failedTransports = input.failedTransports ?? new Set();
+  async getPlaybackPlan(input: CameraPlaybackPlanInput): Promise<PlatformCameraPlaybackModel> {
+    const nativeEntityId = getProviderNativeId(input.entityId);
+    const failedTransports = input.failedTransports ?? new Set<PlatformCameraTransport>();
 
     const snapshotResource = input.snapshotUrl
       ? await this.resolver.resolve({
@@ -63,112 +53,162 @@ export class CameraMediaService {
           entityId: input.entityId,
           rawPath: input.snapshotUrl,
         })
-      : ({
-          id: `${input.entityId}:snapshot`,
-          kind: 'unavailable',
-          cacheKey: `${input.entityId}:snapshot`,
-          authStrategy: 'none',
-        } satisfies ResolvedPlatformResource);
+      : null;
 
-    if (input.isUnavailable || !input.isRunning || input.preferredMode === 'snapshot') {
-      return {
-        primary: snapshotResource,
-        fallbacks: [],
-        refreshPolicy: {
-          snapshotRefreshMs: input.preferredMode === 'snapshot' ? 10_000 : 30_000,
-          retryDelaysMs: [1_000, 3_000, 7_000],
-        },
-      };
-    }
+    const supportsSnapshot = Boolean(snapshotResource?.url);
+    const canPlayLive = canAttemptLivePlayback(input.cameraState, input.preferredMode);
+    const liveTransports: PlatformCameraTransport[] = [];
+    const fallbackTransports: PlatformCameraTransport[] = [];
+    let selectedTransport: PlatformCameraTransport | null = null;
+    let selectedStreamResource: ResolvedPlatformResource | null = null;
 
-    const resources: ResolvedPlatformResource[] = [];
-
-    for (const feedKind of getFeedOrder({
-      preferredTransport: input.preferredTransport,
-      hasFrontendStreamTypes: input.frontendStreamTypes.length > 0,
-    })) {
-      if (failedTransports.has(feedKind)) {
-        continue;
-      }
-
-      if (feedKind === 'go2rtc') {
-        if (!input.hasGo2RtcFeed) {
+    if (canPlayLive) {
+      const streamTypes = await this.readOrderedStreamTypes(nativeEntityId, input.isStreamCapable);
+      for (const transport of streamTypes) {
+        if (failedTransports.has(transport)) {
           continue;
         }
 
-        resources.push({
-          id: `${input.entityId}:go2rtc`,
-          kind: 'webrtc_stream',
-          cacheKey: `${input.entityId}:go2rtc`,
-          authStrategy: 'none',
-          metadata: { source: 'go2rtc' },
-        });
-        continue;
-      }
-
-      if (feedKind === 'web_rtc') {
-        if (!input.frontendStreamTypes.includes('web_rtc')) {
-          continue;
-        }
-
-        resources.push({
-          id: `${input.entityId}:webrtc`,
-          kind: 'webrtc_stream',
-          cacheKey: `${input.entityId}:webrtc`,
-          authStrategy: 'none',
-          metadata: { source: 'ha_webrtc' },
-        });
-        continue;
-      }
-
-      if (feedKind === 'hls') {
-        const shouldProbeHls =
-          input.frontendStreamTypes.includes('hls') || input.frontendStreamTypes.length === 0;
-        if (!shouldProbeHls) {
+        if (transport === 'web_rtc') {
+          liveTransports.push('web_rtc');
           continue;
         }
 
         try {
-          const stream = await this.getCameraStream(input.entityId, 'hls');
+          if (transport === 'mjpeg') {
+            const streamPaths = await this.getCameraStreamPaths(nativeEntityId);
+            const mjpegPath = streamPaths.mjpeg;
+            if (!mjpegPath) {
+              continue;
+            }
+
+            const resolvedStream = await this.resolver.resolve({
+              kind: 'camera_stream',
+              entityId: input.entityId,
+              stream: 'mjpeg',
+              rawPath: mjpegPath,
+            });
+            liveTransports.push('mjpeg');
+            if (!selectedStreamResource) {
+              selectedStreamResource = {
+                ...resolvedStream,
+                kind: 'mjpeg_stream',
+              };
+            }
+            continue;
+          }
+
+          const stream = await this.getCameraStream(nativeEntityId, 'hls');
           const resolvedStream = await this.resolver.resolve({
             kind: 'camera_stream',
             entityId: input.entityId,
             stream: 'hls',
             rawPath: stream.url,
           });
-          resources.push({
-            ...resolvedStream,
-            kind: 'hls_stream',
-          });
+          liveTransports.push('hls');
+          if (!selectedStreamResource) {
+            selectedStreamResource = {
+              ...resolvedStream,
+              kind: 'hls_stream',
+            };
+          }
         } catch {
-          continue;
+          if (selectedTransport === null) {
+            selectedStreamResource = null;
+          }
         }
-        continue;
       }
 
-      if (feedKind === 'mjpeg' && input.mjpegStreamUrl) {
-        const resolvedStream = await this.resolver.resolve({
-          kind: 'camera_stream',
-          entityId: input.entityId,
-          stream: 'mjpeg',
-          rawPath: input.mjpegStreamUrl,
-        });
-        resources.push({
-          ...resolvedStream,
-          kind: 'mjpeg_stream',
-        });
+      if (liveTransports.length > 0) {
+        selectedTransport = liveTransports[0] ?? null;
+        fallbackTransports.push(...liveTransports.slice(1));
       }
     }
 
-    const [primary, ...fallbacks] = resources;
+    if (selectedTransport !== 'hls' && selectedTransport !== 'mjpeg') {
+      selectedStreamResource = null;
+    }
+
+    const isSnapshotFallback =
+      input.preferredMode !== 'snapshot' &&
+      canPlayLive &&
+      selectedTransport === null &&
+      supportsSnapshot;
+    const shouldStartWithSnapshot =
+      input.preferredMode === 'snapshot' || (selectedTransport === null && supportsSnapshot);
 
     return {
-      primary: primary ?? snapshotResource,
-      fallbacks: primary ? [...fallbacks, snapshotResource] : [],
+      cameraState: input.cameraState,
+      snapshotResource,
+      supportsSnapshot,
+      liveTransports,
+      fallbackTransports,
+      selectedTransport,
+      selectedStreamResource,
+      supportsStreaming: liveTransports.length > 0,
+      isSnapshotFallback,
+      shouldStartWithSnapshot,
+      motionDetectionEnabled: input.motionDetectionEnabled,
       refreshPolicy: {
-        snapshotRefreshMs: primary?.kind === 'mjpeg_stream' || !primary ? 30_000 : undefined,
-        retryDelaysMs: [1_000, 3_000, 7_000],
+        snapshotRefreshMs:
+          selectedTransport === null && supportsSnapshot
+            ? input.preferredMode === 'snapshot'
+              ? CAMERA_SNAPSHOT_REFRESH_MS
+              : CAMERA_FALLBACK_REFRESH_MS
+            : undefined,
+        retryDelaysMs: CAMERA_RETRY_DELAYS_MS,
       },
     };
+  }
+
+  private async readOrderedStreamTypes(
+    entityId: string,
+    isStreamCapable: boolean
+  ): Promise<PlatformCameraTransport[]> {
+    try {
+      const capabilities = await Promise.race([
+        this.getCameraCapabilities(entityId),
+        new Promise<PlatformCameraCapabilities>((resolve) => {
+          window.setTimeout(() => resolve({ streamTypes: [] }), CAMERA_CAPABILITIES_TIMEOUT_MS);
+        }),
+      ]);
+      const orderedTypes = capabilities.streamTypes.filter(
+        (type): type is PlatformCameraTransport =>
+          type === 'web_rtc' || type === 'hls' || type === 'mjpeg'
+      );
+      if (orderedTypes.length > 0) {
+        const prioritizedTypes = this.prioritizeHomeAssistantCameraTransports(orderedTypes);
+        this.cachedStreamTypes.set(entityId, prioritizedTypes);
+        return prioritizedTypes;
+      }
+    } catch {
+      // Capability lookup is advisory; fall through to explicit adapter defaults.
+    }
+
+    const cachedTypes = this.cachedStreamTypes.get(entityId);
+    if (cachedTypes && cachedTypes.length > 0) {
+      return cachedTypes;
+    }
+
+    return isStreamCapable ? ['web_rtc', 'hls', 'mjpeg'] : [];
+  }
+
+  private prioritizeHomeAssistantCameraTransports(
+    streamTypes: readonly PlatformCameraTransport[]
+  ): PlatformCameraTransport[] {
+    const prioritized: PlatformCameraTransport[] = [];
+    if (streamTypes.includes('web_rtc')) {
+      prioritized.push('web_rtc');
+    }
+    if (streamTypes.includes('hls')) {
+      prioritized.push('hls');
+      if (!streamTypes.includes('mjpeg')) {
+        prioritized.push('mjpeg');
+      }
+    }
+    if (streamTypes.includes('mjpeg')) {
+      prioritized.push('mjpeg');
+    }
+    return prioritized;
   }
 }
