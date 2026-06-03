@@ -30,9 +30,9 @@ Rules:
 
 Current shared token foundations live in:
 
-- `src/app/components/system/tokens/foundations.ts`
-- `src/app/components/system/tokens/`
-- `src/app/components/shared/theme/`
+- `packages/app/src/components/system/tokens/foundations.ts`
+- `packages/app/src/components/system/tokens/`
+- `packages/app/src/components/shared/theme/`
 
 Prefer these surfaces for:
 
@@ -60,9 +60,9 @@ Prefer these surfaces for:
 
 ## Shared UI Placement
 
-- new generic reusable UI belongs in `src/app/components/primitives/` or `patterns/`
-- app-specific shared UI belongs in `src/app/components/shared/`
-- `src/app/components/system/` is the curated export layer, not the default authoring location
+- new generic reusable UI belongs in `packages/app/src/components/primitives/` or `patterns/`
+- app-specific shared UI belongs in `packages/app/src/components/shared/`
+- `packages/app/src/components/system/` is the curated export layer, not the default authoring location
 - docs and story examples should prefer `@/app/ui-kit/*` when a stable shared export exists
 
 ## Performance Rules
