@@ -11,7 +11,7 @@ export const appPaths = {
   websiteDist: resolve(repoRoot, 'apps/website/dist'),
   storybookDist: resolve(repoRoot, 'apps/storybook/dist'),
   haPanelDist: resolve(repoRoot, 'apps/ha-panel/dist'),
-  homeAssistantHacsRepoDist: resolve(repoRoot, 'dist/home-assistant/hacs-repo'),
+  siblingHacsRepoRoot: resolve(repoRoot, '../navet-hacs'),
 };
 
 export const assetPaths = {
@@ -46,6 +46,5 @@ export const homeAssistantPaths = {
   addonConfig: resolve(repoRoot, 'platform/home-assistant/addons/navet/config.yaml'),
   addonChangelog: resolve(repoRoot, 'platform/home-assistant/addons/navet/CHANGELOG.md'),
   addonDockerfile: resolve(repoRoot, 'platform/home-assistant/addons/navet/Dockerfile'),
-  hacsReadmeTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/README.md'),
   hacsMetadataTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/hacs.json'),
 };

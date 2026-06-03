@@ -1,11 +1,9 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import { resolve } from 'node:path';
 import {
   addonConfigPath,
   addonChangelogPath,
   appVersionPath,
-  assertHacsExport,
   assertMainRepositoryMetadata,
   assertValidVersion,
   fail,
@@ -17,7 +15,6 @@ import {
   readJson,
   readVersioningCurrentVersion,
 } from './release-surfaces.mjs';
-import { appPaths } from './repo-paths.mjs';
 
 const args = process.argv.slice(2);
 const tagArgIndex = args.findIndex((arg) => arg === '--tag');
@@ -63,22 +60,6 @@ try {
   const source = fs.readFileSync(appVersionPath, 'utf8');
   if (!source.includes('__APP_VERSION__')) {
     fail('packages/app/src/constants/app-version.ts must continue to source APP_VERSION from __APP_VERSION__.');
-  }
-
-  if (fs.existsSync(appPaths.homeAssistantHacsRepoDist)) {
-    assertHacsExport(appPaths.homeAssistantHacsRepoDist);
-
-    const frontendRoot = resolve(
-      appPaths.homeAssistantHacsRepoDist,
-      'custom_components/navet/frontend'
-    );
-    for (const asset of ['navet-panel.js', '.vite/manifest.json']) {
-      if (!fs.existsSync(resolve(frontendRoot, asset))) {
-        throw new Error(
-          `Generated HACS export is missing required frontend asset ${asset} under ${frontendRoot}.`
-        );
-      }
-    }
   }
 
   if (tagValue) {

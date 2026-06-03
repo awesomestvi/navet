@@ -7,7 +7,6 @@ Versioned release surfaces:
 - standalone app image
 - Home Assistant add-on image
 - Home Assistant custom panel build output and downloadable release archive
-- HACS repository export archive
 - GitHub release notes
 
 Continuous `main` surfaces:
@@ -56,9 +55,9 @@ The monorepo is the packaging source for both flows. Use these source-of-truth p
 - `platform/home-assistant/addons/navet/`
 - `platform/home-assistant/addons/navet-dev/`
 
-Generated HACS packaging is exported to `dist/home-assistant/hacs-repo/`. That export must include
-`custom_components/navet/`, `hacs.json`, `README.md`, and `CHANGELOG.md`, and must not include
-`repository.yaml`, `platform/`, or add-on packaging files.
+Generated HACS packaging is exported into the sibling `../navet-hacs` repository. That export must
+refresh `custom_components/navet/`, `hacs.json`, `README.md`, and `CHANGELOG.md`, and the target
+repo must not contain `repository.yaml`.
 
 ## Channels
 
@@ -131,7 +130,6 @@ Behavior:
 - requires Tier 1 validation
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - packages the committed custom panel assets and attaches a panel archive
-- exports the HACS repo payload and attaches a HACS archive
 - publishes standalone app release images
 - publishes add-on release images
 - creates the GitHub release from `CHANGELOG.md`
@@ -164,15 +162,16 @@ promotion in phase 1.
    issues exist, fall back to commit history since the previous release tag.
 5. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
 6. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
-7. Run `node scripts/export-hacs-integration.mjs`.
-8. Run `node scripts/check-release-surfaces.mjs`.
-9. Merge the release commit to `main`.
-10. Create and push the release tag.
-11. Let the tagged release workflow package the committed panel bundle, export the HACS repo, and
-    attach `navet-panel-<tag>.tar.gz` plus `navet-hacs-<tag>.tar.gz` to the GitHub release.
-12. Publish or sync `dist/home-assistant/hacs-repo/` to `awesomestvi/navet-hacs`.
-13. Verify the published standalone/add-on artifacts, HACS export artifact, and the GitHub release
-    page.
+7. Run `node scripts/check-release-surfaces.mjs`.
+8. Merge the release commit to `main`.
+9. Create and push the release tag for `awesomestvi/navet`.
+10. Let the tagged release workflow package the committed panel bundle and attach
+    `navet-panel-<tag>.tar.gz` to the GitHub release.
+11. Run `pnpm export:hacs`.
+12. Review the changes in `../navet-hacs`.
+13. Commit, tag, and push the matching `awesomestvi/navet-hacs` release.
+14. Verify the published standalone/add-on artifacts, the `navet-hacs` release, and the GitHub
+    release page.
 
 ## What Stays Manual
 
@@ -180,7 +179,7 @@ promotion in phase 1.
 - checking Linear `Ready for Release` scope and deciding whether the commit-history fallback is needed
 - drafting release notes
 - regenerating committed panel assets
-- exporting and publishing the generated HACS repo payload
+- exporting, reviewing, and publishing the generated `navet-hacs` repo payload
 - updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
 - rollback execution if a bad release escapes
