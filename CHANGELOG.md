@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 - 2026-06-03
+
+## Fixed
+
+- HACS can identify Navet as a Home Assistant integration again when adding the GitHub repository as a custom repository.
+- Home Assistant custom-panel packaging is restored at the repository root so HACS releases and installs resolve the expected integration files.
+
 ## 0.5.0 - 2026-06-03
 
 ## New

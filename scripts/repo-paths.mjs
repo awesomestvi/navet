@@ -28,6 +28,7 @@ export const assetPaths = {
 
 export const homeAssistantPaths = {
   root: resolve(repoRoot, 'platform/home-assistant'),
+  addonRepositoryMetadata: resolve(repoRoot, 'repository.yaml'),
   hacsRoot: resolve(repoRoot, 'custom_components'),
   hacsNavetCustomComponent: resolve(repoRoot, 'custom_components/navet'),
   hacsNavetFrontend: resolve(repoRoot, 'custom_components/navet/frontend'),

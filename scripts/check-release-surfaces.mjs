@@ -14,6 +14,7 @@ import {
   readJson,
   readVersioningCurrentVersion,
 } from './release-surfaces.mjs';
+import { homeAssistantPaths } from './repo-paths.mjs';
 
 const args = process.argv.slice(2);
 const tagArgIndex = args.findIndex((arg) => arg === '--tag');
@@ -22,6 +23,12 @@ const tagValue = tagArgIndex === -1 ? null : args[tagArgIndex + 1];
 try {
   const packageVersion = getPackageVersion();
   assertValidVersion(packageVersion, 'package version');
+
+  if (!fs.existsSync(homeAssistantPaths.addonRepositoryMetadata)) {
+    throw new Error(
+      'repository.yaml is missing. Home Assistant add-on repository discovery depends on the root repository metadata file.'
+    );
+  }
 
   const manifest = readJson(manifestPath);
   const platformManifest = readJson(platformManifestPath);
