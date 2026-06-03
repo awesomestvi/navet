@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Navet",
+        "description": "Add the Navet dashboard to the Home Assistant sidebar."
+      }
+    },
+    "abort": {
+      "already_configured": "Navet is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Navet",
+        "description": "Navet does not have configurable options yet."
+      }
+    }
+  }
+}
