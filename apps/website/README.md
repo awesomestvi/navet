@@ -7,7 +7,7 @@ deployment-facing app shell.
 
 - Keep website-only dependencies isolated from the runtime dashboard app.
 - Give the public site its own build, dev server, and deployment root.
-- Keep the marketing React composition in `src/app/marketing/` while the package boundary lives
+- Keep the marketing React composition in `packages/app/src/marketing/` while the package boundary lives
   here.
 
 ## Local Commands

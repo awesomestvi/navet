@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2
+
+- Updated Navet to `0.5.2`
+- Improved Home Assistant camera playback, session handling, and stream fallback reliability
+- Fixed camera settings dialogs so large switch lists and smaller screens remain usable
+- Kept tagged release and HACS export metadata aligned more reliably across Navet releases
+
 ## 0.5.1
 
 - Updated Navet to `0.5.1`

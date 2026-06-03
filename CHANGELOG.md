@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.2 - 2026-06-04
+
+## Fixed
+
+- Home Assistant camera playback now recovers live streams, transport fallback, and authenticated sessions more reliably across standalone, ingress, and panel use.
+- Camera settings dialogs stay usable with long accessory lists and on smaller screens instead of overflowing or hiding controls.
+- Tagged release metadata and HACS sync behavior stay aligned more reliably across the main Navet repository and the exported `navet-hacs` release surface.
+
+## Improved
+
+- Compact dashboard cards use clearer layouts, and light controls avoid brightness and toggle flicker during fast updates.
+
+## Documentation
+
+- Release and shared UI docs now point at the current package paths and repo split so maintainer workflows match the live project structure.
+
 ## 0.5.1 - 2026-06-03
 
 ## Fixed

@@ -143,4 +143,25 @@ describe('CameraSettingsDialog', () => {
       expect(setCameraAccessoryValueMock).toHaveBeenCalledWith('number.camera_brightness', 56)
     );
   });
+
+  it('virtualizes dense switch accessory lists', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        siblingEntities={Array.from({ length: 20 }, (_, index) => ({
+          id: `switch.camera_mode_${index}`,
+          entity: {
+            state: index % 2 === 0 ? 'on' : 'off',
+            attributes: { friendly_name: `Camera Mode ${index}` },
+          } as never,
+        }))}
+      />
+    );
+
+    const switchList = screen.getByTestId('camera-switch-list');
+    expect(screen.getByRole('switch', { name: 'Camera Mode 0' })).toBeInTheDocument();
+    expect(switchList).toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Camera Mode 19' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(9);
+  });
 });

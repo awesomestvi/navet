@@ -4,7 +4,7 @@ This document maps the current product and UI ownership at a high level.
 
 ## Active Feature Folders
 
-Current feature folders under `src/app/features/`:
+Current feature folders under `packages/app/src/features/`:
 
 - `auth`
 - `calendar`
@@ -13,6 +13,7 @@ Current feature folders under `src/app/features/`:
 - `energy`
 - `lighting`
 - `media`
+- `habits`
 - `notifications`
 - `person`
 - `rss`
@@ -28,9 +29,9 @@ Current feature folders under `src/app/features/`:
 
 Current app-shell composition is centered on:
 
-- `src/app/App.tsx`
-- `src/app/components/layout/`
-- `src/app/features/dashboard/page/index.tsx`
+- `packages/app/src/App.tsx`
+- `packages/app/src/components/layout/`
+- `packages/app/src/features/dashboard/page/index.tsx`
 
 The app shell owns:
 
@@ -53,7 +54,7 @@ Current primary top-level sections:
 - `settings`
 
 Section routing is coordinated by
-`src/app/features/dashboard/components/dashboard-section-router.tsx`.
+`packages/app/src/features/dashboard/components/dashboard-section-router.tsx`.
 
 ## Dashboard Ownership
 
@@ -69,10 +70,10 @@ The dashboard feature owns:
 
 Key current paths:
 
-- `src/app/features/dashboard/hooks/use-dashboard-controller.ts`
-- `src/app/features/dashboard/utils/card-renderer.tsx`
-- `src/app/features/dashboard/components/`
-- `src/app/features/dashboard/stores/`
+- `packages/app/src/features/dashboard/hooks/use-dashboard-controller.ts`
+- `packages/app/src/features/dashboard/utils/card-renderer.tsx`
+- `packages/app/src/features/dashboard/components/`
+- `packages/app/src/features/dashboard/stores/`
 
 ## Widget Ownership
 
@@ -93,25 +94,25 @@ when the widget is domain-specific.
 
 ## Shared UI Ownership
 
-- `src/app/components/primitives/`: low-level reusable building blocks
-- `src/app/components/patterns/`: composed shared structures
-- `src/app/components/shared/`: app-specific shared UI
-- `src/app/components/system/`: curated internal export surface
-- `src/app/ui-kit/`: stable docs/story import surface
+- `packages/app/src/components/primitives/`: low-level reusable building blocks
+- `packages/app/src/components/patterns/`: composed shared structures
+- `packages/app/src/components/shared/`: app-specific shared UI
+- `packages/app/src/components/system/`: curated internal export surface
+- `packages/app/src/ui-kit/`: stable docs/story import surface
 
 ## Provider-Aware Behavior
 
 Shared UI should prefer normalized provider/runtime state from:
 
-- `src/app/core/`
-- `src/app/platform/`
-- `src/app/stores/`
-- `src/app/hooks/`
+- `packages/app/src/core/`
+- `packages/app/src/platform/`
+- `packages/app/src/stores/`
+- `packages/app/src/hooks/`
 
 Provider-specific runtime, auth, media, and resource behavior should remain in:
 
-- `src/app/infrastructure/home-assistant/`
-- `src/app/services/`
+- `packages/app/src/infrastructure/home-assistant/`
+- `packages/app/src/services/`
 
 ## Testing And Stories
 

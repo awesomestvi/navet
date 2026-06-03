@@ -11,10 +11,10 @@ import {
   Slider,
   Switch,
 } from '@navet/app/components/primitives';
-import { CustomScrollbar, DialogSectionRow } from '@navet/app/components/shared/device-editor';
+import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import { getAccentCardShellTokens } from '@navet/app/components/shared/theme/accent-card-shell-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
@@ -56,7 +56,7 @@ function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string;
   }, [entityId, isOn]);
 
   return (
-    <div className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:bg-white/10">
+    <div className="flex h-full w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:bg-white/10">
       <div className="min-w-0">
         <span className="block truncate text-sm font-medium text-white">{label}</span>
         <span className="block text-xs text-white/58">{entityId}</span>
@@ -67,6 +67,57 @@ function SwitchRow({ entityId, label, isOn }: { entityId: string; label: string;
         aria-label={label}
         className="shrink-0"
       />
+    </div>
+  );
+}
+
+const SWITCH_ROW_HEIGHT = 76;
+const SWITCH_ROW_GAP = 8;
+const SWITCH_ROW_STRIDE = SWITCH_ROW_HEIGHT + SWITCH_ROW_GAP;
+const SWITCH_LIST_OVERSCAN = 3;
+const SWITCH_LIST_MAX_VISIBLE_ROWS = 6;
+const SWITCH_VIRTUALIZATION_THRESHOLD = 8;
+
+function VirtualizedSwitchList({ switches }: { switches: SiblingEntity[] }) {
+  const [scrollTop, setScrollTop] = useState(0);
+  const viewportHeight =
+    Math.min(switches.length, SWITCH_LIST_MAX_VISIBLE_ROWS) * SWITCH_ROW_STRIDE - SWITCH_ROW_GAP;
+  const totalHeight = switches.length * SWITCH_ROW_STRIDE - SWITCH_ROW_GAP;
+  const startIndex = Math.max(0, Math.floor(scrollTop / SWITCH_ROW_STRIDE) - SWITCH_LIST_OVERSCAN);
+  const endIndex = Math.min(
+    switches.length,
+    Math.ceil((scrollTop + viewportHeight) / SWITCH_ROW_STRIDE) + SWITCH_LIST_OVERSCAN
+  );
+  const visibleSwitches = switches.slice(startIndex, endIndex);
+
+  return (
+    <div
+      data-testid="camera-switch-list"
+      className="overflow-y-auto"
+      style={{ height: `${viewportHeight}px` }}
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+    >
+      <div className="relative" style={{ height: `${totalHeight}px` }}>
+        {visibleSwitches.map(({ id, entity }, offset) => {
+          const index = startIndex + offset;
+          return (
+            <div
+              key={id}
+              className="absolute left-0 right-0"
+              style={{
+                top: `${index * SWITCH_ROW_STRIDE}px`,
+                height: `${SWITCH_ROW_HEIGHT}px`,
+              }}
+            >
+              <SwitchRow
+                entityId={id}
+                label={getDisplayName(id, entity)}
+                isOn={entity.state === 'on'}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -231,6 +282,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const shell = getAccentCardShellTokens(theme, 'blue');
@@ -244,7 +296,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
         glowClassName: shell.glowClassName,
         overlayClassName: shell.overlayClassName,
       },
-      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${shell.containerClassName}`,
+      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 flex h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 max-sm:!h-[calc(100dvh-1rem)] ${shell.containerClassName}`,
     }
   );
 
@@ -264,9 +316,10 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       contentGlowClassName={dialogShell.contentGlowClassName}
       contentGlowStyle={dialogShell.contentGlowStyle}
       contentOverlayClassName={dialogShell.contentOverlayClassName}
+      bodyClassName="relative z-[2] flex min-h-0 flex-1 flex-col"
     >
-      <CustomScrollbar isOn={theme !== 'light'}>
-        <CardDialogBody>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <CardDialogBody className="flex min-h-full flex-col">
           <CardDialogHeader title={name} description={entityType} entityId={entityId} />
           <div className="mt-5 space-y-6">
             <CameraViewModeRow
@@ -281,16 +334,20 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               <>
                 {switches.length > 0 && (
                   <DialogSectionRow label={t('camera.settings.switches')}>
-                    <div className="space-y-2">
-                      {switches.map(({ id, entity }) => (
-                        <SwitchRow
-                          key={id}
-                          entityId={id}
-                          label={getDisplayName(id, entity)}
-                          isOn={entity.state === 'on'}
-                        />
-                      ))}
-                    </div>
+                    {!isMobileViewport && switches.length > SWITCH_VIRTUALIZATION_THRESHOLD ? (
+                      <VirtualizedSwitchList switches={switches} />
+                    ) : (
+                      <div className="space-y-2">
+                        {switches.map(({ id, entity }) => (
+                          <SwitchRow
+                            key={id}
+                            entityId={id}
+                            label={getDisplayName(id, entity)}
+                            isOn={entity.state === 'on'}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </DialogSectionRow>
                 )}
 
@@ -342,9 +399,11 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
             )}
           </div>
 
-          <DialogDoneFooter label={t('common.done')} />
+          <div className="mt-6">
+            <DialogDoneFooter label={t('common.done')} />
+          </div>
         </CardDialogBody>
-      </CustomScrollbar>
+      </div>
     </DialogShell>
   );
 });

@@ -7,26 +7,26 @@ authoring layers and curated export surfaces.
 
 ## Current Shared UI Layers
 
-### `src/app/components/primitives/`
+### `packages/app/src/components/primitives/`
 
 Low-level reusable UI building blocks with small APIs and narrow responsibilities.
 
-### `src/app/components/patterns/`
+### `packages/app/src/components/patterns/`
 
 Composed shared UI structures built from primitives.
 
-### `src/app/components/shared/`
+### `packages/app/src/components/shared/`
 
 App-specific shared UI and dashboard-specific helpers that are still too coupled or stateful to be
 honest primitives or generic patterns.
 
-### `src/app/components/system/`
+### `packages/app/src/components/system/`
 
 Curated internal export surface for stable primitives, patterns, and token helpers.
 
 This is not the default authoring location for new shared UI.
 
-### `src/app/ui-kit/`
+### `packages/app/src/ui-kit/`
 
 Stable docs and Storybook import surface for shared primitives, patterns, and tokens.
 
@@ -55,4 +55,4 @@ Storybook is the main review surface for:
 
 - [FEATURES.md](FEATURES.md)
 - [UI-GUIDELINES.md](UI-GUIDELINES.md)
-- [../docs/STORYBOOK_WORKFLOW.md](../docs/STORYBOOK_WORKFLOW.md)
+- [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md)

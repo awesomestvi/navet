@@ -18,8 +18,8 @@ export const CustomScrollbar = memo(function CustomScrollbar({
   const accentColor = getThemeColorValue(primaryColor);
 
   return (
-    <ScrollArea.Root className={`h-full overflow-hidden ${className}`}>
-      <ScrollArea.Viewport className="w-full h-full">{children}</ScrollArea.Viewport>
+    <ScrollArea.Root className={`min-h-0 overflow-hidden ${className}`}>
+      <ScrollArea.Viewport className="h-full w-full min-h-0">{children}</ScrollArea.Viewport>
       <ScrollArea.Scrollbar className="hidden" orientation="vertical">
         <ScrollArea.Thumb
           className="relative flex-1 rounded-full transition-colors duration-500"

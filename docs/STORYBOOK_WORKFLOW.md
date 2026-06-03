@@ -42,5 +42,5 @@ pnpm test:storybook
 
 ## Related Docs
 
-- [../design-system/README.md](../design-system/README.md)
-- [../design-system/UI-GUIDELINES.md](../design-system/UI-GUIDELINES.md)
+- [design-system/README.md](design-system/README.md)
+- [design-system/UI-GUIDELINES.md](design-system/UI-GUIDELINES.md)

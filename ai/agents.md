@@ -85,7 +85,7 @@ Use the focused `/ai/skills/` docs first, then the deeper repo docs when needed:
 - Implementation architecture: [`/docs/agents/architecture.md`](../docs/agents/architecture.md)
 - Test workflow: [`/docs/agents/testing.md`](../docs/agents/testing.md)
 - Provider testing strategy: [`/docs/testing/provider-testing-strategy.md`](../docs/testing/provider-testing-strategy.md)
-- UI and theming rules: [`/design-system/UI-GUIDELINES.md`](../design-system/UI-GUIDELINES.md)
+- UI and theming rules: [`/design-system/UI-GUIDELINES.md`](../docs/design-system/UI-GUIDELINES.md)
 
 ## Test Cleanup Policy
 
