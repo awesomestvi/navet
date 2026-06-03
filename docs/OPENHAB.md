@@ -1,6 +1,6 @@
 # openHAB Setup
 
-This guide is for openHAB users connecting to Navet.
+This guide is for openHAB users connecting to Navet in standalone mode.
 
 ## Before You Start
 

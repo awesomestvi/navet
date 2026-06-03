@@ -18,8 +18,9 @@ pnpm dev
 Open the Vite URL shown in the terminal, usually `http://localhost:5173`.
 
 For live Home Assistant testing, enter the Home Assistant base URL in Navet and complete the OAuth
-flow. For Homey testing, use the Homey login option and provide the required Homey OAuth runtime
-configuration.
+flow. For Homey testing, configure `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then
+use the Homey login option. For openHAB testing, use the openHAB login option with a
+browser-reachable base URL plus username/password.
 
 ## Workflow
 
@@ -38,18 +39,25 @@ Before changing code, read:
 
 Then read the relevant focused docs for the area you are touching.
 
+For user-facing setup and deployment docs, start with [`docs/README.md`](docs/README.md).
+
 ## Checks
 
 Common commands:
 
 ```bash
+pnpm dev
 pnpm test
+pnpm test:tier1
+pnpm test:tier2
+pnpm test:tier3
 pnpm storybook
 pnpm storybook:build
 pnpm check:stories
 pnpm check:ui-kit
 pnpm check:docker
 pnpm build:ha-panel
+pnpm sync:hacs
 ```
 
 Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default

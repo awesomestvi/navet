@@ -49,7 +49,7 @@ Recommended operator flow:
     [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
 12. The tagged release workflow validates the committed release surfaces, packages the committed
     custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
-13. Have the user run `pnpm export:hacs`.
+13. Have the user run `pnpm sync:hacs`.
 14. Review the changes in `../navet-hacs`, then commit, tag, and push the matching
     `awesomestvi/navet-hacs` release.
 15. For developer hardware testing from `main`, use

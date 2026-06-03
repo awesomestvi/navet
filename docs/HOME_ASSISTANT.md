@@ -14,12 +14,8 @@ Navet to run as its own app while still connecting to Home Assistant.
 
 ## Home Assistant Custom Panel
 
-This is the recommended setup for Home Assistant users.
-
-What to expect:
-
-- the Home Assistant frontend session is reused
-- there is no separate Navet login screen
+This is the recommended setup for Home Assistant users who want Navet in the Home Assistant
+sidebar through HACS.
 
 Setup:
 
@@ -30,6 +26,11 @@ Setup:
 4. Add the `Navet` integration from `Settings -> Devices & services`.
 5. Open Navet from the Home Assistant sidebar.
 
+Migration note:
+
+- If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
+  repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
+
 ## Home Assistant Add-on
 
 What to expect:
@@ -37,11 +38,8 @@ What to expect:
 - Navet runs behind Home Assistant Ingress
 - the Home Assistant frontend session is reused
 - the direct host port is off by default
-- Homey login can be enabled by setting `homey_client_id` and `homey_client_secret` in the add-on options
-- openHAB connections are stored and proxied through the add-on runtime
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
-Use this when you want Home Assistant to own installation, lifecycle, and sidebar access.
 
 Setup:
 
@@ -49,17 +47,10 @@ Setup:
 2. Open the repository menu and choose `Repositories`.
 3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
 4. Install `Navet` for stable releases or `Navet Dev` for the development surface.
-
-Migration note:
-
-- If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
-  repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
-- If you use the Home Assistant add-on repository, keep using `https://github.com/awesomestvi/navet`
-  in `Settings -> Add-ons -> Add-on Store -> Repositories`.
+5. Start the add-on and open Navet from the Home Assistant sidebar.
 
 ## Standalone Docker
 
-Standalone Docker runs Navet as its own nginx-hosted app and persists state in `/data`.
 
 What to expect:
 
@@ -90,17 +81,3 @@ docker compose up -d
 ```
 
 Then open `http://localhost:8080`.
-
-## Returning Users
-
-Navet no longer uses manual Home Assistant long-lived token entry in normal use.
-
-During startup, it clears old browser auth keys such as `ha_auth_config`, `ha-dashboard-config`,
-and `navet-auth-config` so stale values do not keep steering the app.
-
-Dashboard import is separate from authentication. If you want to restore an existing dashboard into
-a fresh browser or a new `/data` volume, use an exported dashboard config together with
-`dashboard_config_url` or `NAVET_DASHBOARD_CONFIG_URL`.
-
-For release validation and rollback guidance, see
-[release-workflow.md](release-workflow.md) and [rollback.md](rollback.md).

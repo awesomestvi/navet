@@ -44,8 +44,8 @@ Choose the setup guide that matches your provider and deployment mode:
 
 ### Home Assistant
 
-- [Custom panel via HACS (`awesomestvi/navet-hacs`, type `Integration`)](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
-- [Add-on repository via Home Assistant Add-on Store (`awesomestvi/navet`)](docs/HOME_ASSISTANT.md#home-assistant-add-on)
+- [Custom panel via HACS](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
+- [Home Assistant Add-on Store](docs/HOME_ASSISTANT.md#home-assistant-add-on)
 - [Standalone Docker](docs/HOME_ASSISTANT.md#standalone-docker)
 
 ### Homey
@@ -75,8 +75,8 @@ Open the local URL shown by Vite, usually `http://localhost:5173`.
 For local provider testing:
 
 - Home Assistant: enter the base URL in Navet and complete OAuth
-- Homey: configure the required OAuth environment variables, then use the Homey login option
-- openHAB: use the openHAB login option and provide the base URL plus username/password
+- Homey: configure `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then use the Homey login option
+- openHAB: use the openHAB login option and provide the browser-reachable base URL plus username/password
 
 ## Package Architecture
 
@@ -149,6 +149,7 @@ pnpm check:stories
 pnpm check:ui-kit
 pnpm check:docker
 pnpm build:ha-panel
+pnpm sync:hacs
 ```
 
 Contributor policy lives in [docs/agents/commands.md](docs/agents/commands.md). In particular,
@@ -163,6 +164,7 @@ Useful entry points:
 - [Home Assistant deployment guide](docs/HOME_ASSISTANT.md)
 - [Homey setup guide](docs/HOMEY.md)
 - [openHAB setup guide](docs/OPENHAB.md)
+- [Contributor onboarding](CONTRIBUTING.md)
 - [Widgets guide](docs/WIDGETS.md)
 - [Architecture overview for contributors](docs/agents/architecture.md)
 - [Package boundaries](docs/architecture/package-boundaries.md)

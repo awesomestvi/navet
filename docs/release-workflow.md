@@ -167,7 +167,7 @@ promotion in phase 1.
 9. Create and push the release tag for `awesomestvi/navet`.
 10. Let the tagged release workflow package the committed panel bundle and attach
     `navet-panel-<tag>.tar.gz` to the GitHub release.
-11. Run `pnpm export:hacs`.
+11. Run `pnpm sync:hacs`.
 12. Review the changes in `../navet-hacs`.
 13. Commit, tag, and push the matching `awesomestvi/navet-hacs` release.
 14. Verify the published standalone/add-on artifacts, the `navet-hacs` release, and the GitHub

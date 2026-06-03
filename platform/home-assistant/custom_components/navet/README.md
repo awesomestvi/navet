@@ -31,7 +31,7 @@ pnpm build:ha-panel
 Generate the publishable HACS repository payload from the repo root with:
 
 ```bash
-pnpm export:hacs
+pnpm sync:hacs
 ```
 
 Review the exported changes in `../navet-hacs`, then publish from `awesomestvi/navet-hacs`, not
