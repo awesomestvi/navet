@@ -1,16 +1,18 @@
 import fs from 'node:fs';
 import process from 'node:process';
 import { resolve } from 'node:path';
+import YAML from 'yaml';
 import { homeAssistantPaths, repoRoot } from './repo-paths.mjs';
 
 export const root = repoRoot;
 export const packageJsonPath = resolve(root, 'package.json');
 export const changelogPath = resolve(root, 'CHANGELOG.md');
-export const manifestPath = homeAssistantPaths.hacsNavetManifest;
-export const platformManifestPath = homeAssistantPaths.platformNavetManifest;
+export const manifestPath = homeAssistantPaths.platformNavetManifest;
 export const addonConfigPath = homeAssistantPaths.addonConfig;
+export const addonChangelogPath = homeAssistantPaths.addonChangelog;
 export const versioningDocPath = resolve(root, 'docs/VERSIONING.md');
 export const appVersionPath = resolve(root, 'packages/app/src/constants/app-version.ts');
+export const repositoryMetadataPath = homeAssistantPaths.rootRepositoryMetadata;
 
 const versionPattern = /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/;
 
@@ -24,6 +26,10 @@ export function writeText(filePath, value) {
 
 export function readJson(filePath) {
   return JSON.parse(readText(filePath));
+}
+
+export function readYaml(filePath) {
+  return YAML.parse(readText(filePath));
 }
 
 export function writeJson(filePath, value) {
@@ -66,8 +72,8 @@ export function updateAddonVersion(version, filePath = addonConfigPath) {
   writeText(filePath, nextContent);
 }
 
-export function hasChangelogVersion(version) {
-  const changelog = readText(changelogPath).replace(/\r\n/g, '\n');
+export function hasChangelogVersion(version, filePath = changelogPath) {
+  const changelog = readText(filePath).replace(/\r\n/g, '\n');
   const headingPattern = /^##\s+(\d+\.\d+\.\d+(?:[-+][^\s]+)?)(?:\s+.*)?$/gm;
   return [...changelog.matchAll(headingPattern)].some((heading) => heading[1]?.trim() === version);
 }
@@ -101,4 +107,53 @@ export function normalizeTagVersion(tag) {
 export function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+export function assertMainRepositoryMetadata() {
+  if (!fs.existsSync(repositoryMetadataPath)) {
+    throw new Error(`Required root repository.yaml is missing: ${repositoryMetadataPath}.`);
+  }
+
+  const metadata = readYaml(repositoryMetadataPath);
+  if (metadata?.url !== 'https://github.com/awesomestvi/navet') {
+    throw new Error(
+      `repository.yaml url must point to https://github.com/awesomestvi/navet, received ${metadata?.url ?? 'undefined'}.`
+    );
+  }
+}
+
+export function assertHacsExport(exportRoot) {
+  const manifestFile = resolve(exportRoot, 'custom_components/navet/manifest.json');
+  if (!fs.existsSync(manifestFile)) {
+    throw new Error(`HACS export is missing manifest.json: ${manifestFile}`);
+  }
+
+  const manifest = readJson(manifestFile);
+  const packageVersion = getPackageVersion();
+
+  if (manifest.domain !== 'navet') {
+    throw new Error(`HACS export manifest domain must be "navet", received "${manifest.domain}".`);
+  }
+
+  if (manifest.version !== packageVersion) {
+    throw new Error(
+      `HACS export manifest version ${manifest.version} does not match package.json ${packageVersion}.`
+    );
+  }
+
+  if (manifest.config_flow !== true) {
+    throw new Error('HACS export manifest must set config_flow to true.');
+  }
+
+  const hacsFile = resolve(exportRoot, 'hacs.json');
+  if (!fs.existsSync(hacsFile)) {
+    throw new Error(`HACS export is missing hacs.json: ${hacsFile}`);
+  }
+
+  const forbiddenPaths = ['repository.yaml', 'platform'];
+  for (const entry of forbiddenPaths) {
+    if (fs.existsSync(resolve(exportRoot, entry))) {
+      throw new Error(`HACS export must not contain ${entry}: ${resolve(exportRoot, entry)}`);
+    }
+  }
 }

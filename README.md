@@ -44,8 +44,8 @@ Choose the setup guide that matches your provider and deployment mode:
 
 ### Home Assistant
 
-- [Custom panel](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
-- [Add-on](docs/HOME_ASSISTANT.md#home-assistant-add-on)
+- [Custom panel via HACS (`awesomestvi/navet-hacs`)](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
+- [Add-on repo (`awesomestvi/navet`)](docs/HOME_ASSISTANT.md#home-assistant-add-on)
 - [Standalone Docker](docs/HOME_ASSISTANT.md#standalone-docker)
 
 ### Homey

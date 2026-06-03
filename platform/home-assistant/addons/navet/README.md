@@ -1,6 +1,7 @@
 # Navet Home Assistant Add-on
 
 This add-on serves Navet through Home Assistant Ingress.
+This directory is the monorepo source for the add-on published from `awesomestvi/navet`.
 
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fawesomestvi%2Fnavet)
 
@@ -14,6 +15,13 @@ This add-on serves Navet through Home Assistant Ingress.
 
 If the optional direct port is opened outside Ingress, Navet behaves like the standalone runtime
 and uses OAuth login instead of the Ingress session.
+
+## Install
+
+1. Open `Settings -> Add-ons -> Add-on Store`.
+2. Open the repository menu and choose `Repositories`.
+3. Add `https://github.com/awesomestvi/navet`.
+4. Install `Navet`.
 
 ## Configuration
 
