@@ -12,28 +12,39 @@ import {
   customCardDialogShellProps,
   DialogFooter,
   DialogShell,
+  EntityCardHeader,
+  EntityCardHeaderIcon,
+  EntityCardTitleBlock,
   Input,
   Textarea,
 } from '@navet/app/components/primitives';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import {
+  isExtraSmallCardSize,
+  isTinyCardSize,
+} from '@navet/app/components/shared/card-size-selector';
 import {
   CustomCardTintPicker,
   CustomScrollbar,
   getNamedIconComponent,
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
+import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getCustomCardTintSurface,
   getInheritedDialogSectionStyle,
 } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import { TinyCardWatermark } from '@navet/app/components/shared/tiny-card-watermark';
 import {
   parseButtonServiceCall,
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
-import { Palette, Settings2, Sliders } from 'lucide-react';
+import { Loader2, Palette, Settings2, Sliders } from 'lucide-react';
 import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -48,6 +59,7 @@ export interface ButtonWidgetData {
 }
 
 interface ButtonWidgetProps {
+  size: CardSize;
   data?: ButtonWidgetData;
   onUpdate?: (data: ButtonWidgetData) => void;
   isEditMode?: boolean;
@@ -262,6 +274,7 @@ function ButtonSettingsDialog({
 }
 
 export function ButtonWidget({
+  size,
   data = {},
   onUpdate,
   isEditMode = false,
@@ -270,10 +283,22 @@ export function ButtonWidget({
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme, data.tintColor);
+  const cardShell = getCardShellSurfaceTokens(theme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const accentHex = getThemeColorValue(primaryColor);
+  const actionAccent = data.tintColor ?? accentHex;
   const IconComponent = getNamedIconComponent(data.icon ?? 'Zap');
+  const label = data.label || data.service || t('widgets.button.title');
+  const cardTypeLabel = t('widgets.button.title');
+  const isTiny = isTinyCardSize(size);
+  const isExtraSmall = isExtraSmallCardSize(size);
+  const isSmall = size === 'small';
+  const tinyTextTokens = getCardReadableTextTokens({
+    theme,
+    tone: 'primary',
+    accentColor: actionAccent,
+  });
 
   useEffect(() => {
     if (openSettingsRequestKey > 0 && onUpdate) {
@@ -313,69 +338,190 @@ export function ButtonWidget({
   };
 
   const isConfigured = Boolean(data.service);
+  const overlay = (
+    <>
+      {surface.glowStyle ? (
+        <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+      ) : null}
+      {surface.overlayClassName ? (
+        <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
+      ) : null}
+      {cardShell.sheenOverlayClassName ? <div className={cardShell.sheenOverlayClassName} /> : null}
+    </>
+  );
+
+  let cardContent: React.ReactNode;
+
+  if (!isConfigured) {
+    cardContent = (
+      <CardEmptyState
+        title={t('widgets.button.title')}
+        description={t('widgets.button.unconfigured')}
+        icon={IconComponent}
+        actionLabel={onUpdate ? t('widgets.button.configure') : undefined}
+        onAction={onUpdate ? () => setIsSettingsOpen(true) : undefined}
+        actionIcon={onUpdate ? Settings2 : undefined}
+        size={size}
+        accentColor={actionAccent}
+      />
+    );
+  } else if (isTiny) {
+    cardContent = (
+      <>
+        <TinyCardWatermark
+          IconComponent={isPressed ? Loader2 : IconComponent}
+          color={tinyTextTokens.titleColor}
+          className={isPressed ? 'opacity-22' : 'opacity-18'}
+          spin={isPressed}
+        />
+
+        <div className="relative flex h-full w-full flex-col justify-between text-left">
+          <div className="min-w-0 w-full">
+            <EntityCardTitleBlock
+              title={label}
+              subtitle={cardTypeLabel}
+              layout="eyebrow-first"
+              titleClassName={`mt-0.5 line-clamp-2 text-xs font-semibold leading-tight ${surface.textPrimary}`}
+              subtitleClassName={`truncate text-xs tracking-normal ${surface.textMuted}`}
+              titleStyle={{ color: tinyTextTokens.titleColor }}
+              subtitleStyle={{ color: tinyTextTokens.subtitleColor }}
+            />
+          </div>
+          <span />
+        </div>
+
+        <button
+          type="button"
+          className="absolute inset-0 z-[3]"
+          onClick={handleActionClick}
+          onPointerDown={stopCardInteraction}
+          disabled={isEditMode}
+          aria-label={label}
+        />
+      </>
+    );
+  } else if (isExtraSmall) {
+    cardContent = (
+      <>
+        <EntityCardHeader
+          title={label}
+          subtitle={cardTypeLabel}
+          size="extra-small"
+          align="center"
+          layout="eyebrow-first"
+          tone="primary"
+          titleClassName={surface.textPrimary}
+          subtitleClassName={surface.textMuted}
+          className="w-full"
+          contentClassName="justify-center"
+          marginBottomClassName="mb-0"
+          leading={
+            <EntityCardHeaderIcon
+              IconComponent={IconComponent}
+              isActive
+              size="extra-small"
+              tone="primary"
+              baseColor={actionAccent}
+            />
+          }
+        />
+        <button
+          type="button"
+          className="absolute inset-0 z-[3]"
+          onClick={handleActionClick}
+          onPointerDown={stopCardInteraction}
+          disabled={isEditMode}
+          aria-label={label}
+        />
+      </>
+    );
+  } else if (isSmall) {
+    cardContent = (
+      <>
+        <EntityCardHeader
+          title={label}
+          subtitle={cardTypeLabel}
+          layout="eyebrow-first"
+          size="small"
+          tone="primary"
+          titleClassName={surface.textPrimary}
+          subtitleClassName={surface.textSecondary}
+          leading={
+            <EntityCardHeaderIcon
+              IconComponent={IconComponent}
+              isActive
+              size="small"
+              tone="primary"
+              baseColor={actionAccent}
+            />
+          }
+        />
+
+        <div className="flex-1" />
+        <button
+          type="button"
+          className="absolute inset-0 z-[3]"
+          onClick={handleActionClick}
+          onPointerDown={stopCardInteraction}
+          disabled={isEditMode}
+          aria-label={label}
+        />
+      </>
+    );
+  } else {
+    cardContent = (
+      <button
+        type="button"
+        onClick={handleActionClick}
+        onPointerDown={stopCardInteraction}
+        disabled={isEditMode}
+        aria-label={label}
+        className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
+        style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
+      >
+        <div
+          className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+          style={{
+            backgroundColor: `${actionAccent}22`,
+            color: actionAccent,
+          }}
+        >
+          <IconComponent className="h-7 w-7" />
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className={`text-sm font-medium ${surface.textPrimary}`}>{label}</span>
+          {data.entityId ? (
+            <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
+              {data.entityId}
+            </span>
+          ) : null}
+        </div>
+      </button>
+    );
+  }
 
   return (
     <BaseCard
-      size="medium"
+      size={size}
       fullBleed
       style={surface.panelStyle}
       frameClassName="overflow-hidden"
       disableDefaultSheen
-      overlay={
-        <>
-          {surface.glowStyle ? (
-            <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
-          ) : null}
-          {surface.overlayClassName ? (
-            <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
-          ) : null}
-        </>
-      }
+      overlay={overlay}
       contentClassName="h-full"
     >
-      <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center p-4">
-        {isConfigured ? (
-          <button
-            type="button"
-            onClick={handleActionClick}
-            onPointerDown={stopCardInteraction}
-            disabled={isEditMode}
-            aria-label={data.label || data.service}
-            className="flex flex-col items-center gap-3 transition-transform disabled:cursor-default"
-            style={{ transform: isPressed ? 'scale(0.93)' : 'scale(1)' }}
-          >
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
-              style={{
-                backgroundColor: `${accentHex}22`,
-                color: accentHex,
-              }}
-            >
-              <IconComponent className="h-7 w-7" />
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`text-sm font-medium ${surface.textPrimary}`}>
-                {data.label || data.service}
-              </span>
-              {data.entityId ? (
-                <span className={`max-w-48 truncate text-xs ${surface.textMuted}`}>
-                  {data.entityId}
-                </span>
-              ) : null}
-            </div>
-          </button>
-        ) : (
-          <CardEmptyState
-            title={t('widgets.button.title')}
-            description={t('widgets.button.unconfigured')}
-            icon={IconComponent}
-            actionLabel={onUpdate ? t('widgets.button.configure') : undefined}
-            onAction={onUpdate ? () => setIsSettingsOpen(true) : undefined}
-            actionIcon={onUpdate ? Settings2 : undefined}
-            size="medium"
-            accentColor={data.tintColor ?? accentHex}
-          />
-        )}
+      <div
+        className={`relative z-[2] flex h-full w-full ${
+          isConfigured && isTiny
+            ? 'p-3'
+            : isConfigured && isExtraSmall
+              ? 'items-center p-3'
+              : isConfigured && isSmall
+                ? 'p-4'
+                : 'flex-col items-center justify-center p-4'
+        }`}
+      >
+        {cardContent}
 
         {onUpdate && (
           <ButtonSettingsDialog

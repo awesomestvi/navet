@@ -101,7 +101,7 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       descriptionKey: 'dashboard.addCard.templates.info.description',
       icon: <Gauge className="w-5 h-5" />,
       defaultSize: 'medium',
-      supportedSizes: ['small', 'medium', 'large'],
+      supportedSizes: ['extra-small', 'small', 'medium', 'large'],
     },
     {
       id: 'rss',

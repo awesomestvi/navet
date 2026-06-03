@@ -11,8 +11,17 @@ import {
 } from './release-surfaces.mjs';
 import { appPaths, homeAssistantPaths } from './repo-paths.mjs';
 
-const exportRoot = appPaths.siblingHacsRepoRoot;
+const exportRoot = process.env.NAVET_HACS_EXPORT_ROOT
+  ? resolve(process.env.NAVET_HACS_EXPORT_ROOT)
+  : appPaths.siblingHacsRepoRoot;
 const sourceManifestPath = manifestPath;
+
+if (process.env.NAVET_SKIP_HA_PANEL_BUILD !== '1') {
+  execFileSync(process.execPath, ['scripts/build-ha-panel.mjs'], {
+    cwd: new URL('..', import.meta.url),
+    stdio: 'inherit',
+  });
+}
 
 if (!fs.existsSync(sourceManifestPath)) {
   throw new Error(`HACS source manifest is missing: ${sourceManifestPath}`);

@@ -21,7 +21,7 @@ describe('useDashboardCardActions', () => {
     descriptionKey: 'dashboard.addCard.templates.info.description',
     icon: null,
     defaultSize: 'medium',
-    supportedSizes: ['small', 'medium', 'large'],
+    supportedSizes: ['extra-small', 'small', 'medium', 'large'],
   };
 
   const sceneTemplate: CardTemplate = {

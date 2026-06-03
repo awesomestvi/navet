@@ -22,17 +22,11 @@ This directory is the canonical monorepo source exported to `awesomestvi/navet-h
 
 ## Development
 
-Build the panel bundle from the repo root before packaging or testing:
-
-```bash
-pnpm build:ha-panel
-```
-
 Generate the publishable HACS repository payload from the repo root with:
 
 ```bash
 pnpm sync:hacs
 ```
 
-Review the exported changes in `../navet-hacs`, then publish from `awesomestvi/navet-hacs`, not
-from this monorepo root.
+That command builds the current panel bundle first, then exports the publishable HACS payload into
+`../navet-hacs` for local review.

@@ -19,6 +19,8 @@ interface UseLightRuntimeStateParams {
   supportsColorTemperature: boolean;
   rememberLightState: (id: string, state: { brightness?: number; colorTemp?: number }) => void;
   syncLight: (options: LightUpdateOptions) => Promise<void>;
+  pendingOnStateRef: React.MutableRefObject<boolean | null>;
+  pendingOnStateTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
 
 export function useLightRuntimeState({
@@ -34,6 +36,8 @@ export function useLightRuntimeState({
   supportsColorTemperature,
   rememberLightState,
   syncLight,
+  pendingOnStateRef,
+  pendingOnStateTimeoutRef,
 }: UseLightRuntimeStateParams) {
   const rememberedState = useLightMemoryStore.getState().getRememberedState(id);
 
@@ -53,6 +57,7 @@ export function useLightRuntimeState({
     providerState,
     syncLight,
     rememberLightState,
+    pendingOnStateRef,
   });
 
   const {
@@ -94,6 +99,8 @@ export function useLightRuntimeState({
     lastColorTempRef,
     pendingBrightnessRef,
     pendingTempRef,
+    pendingOnStateRef,
+    pendingOnStateTimeoutRef,
     brightnessSyncTimeoutRef,
     tempSyncTimeoutRef,
     setIsOn,

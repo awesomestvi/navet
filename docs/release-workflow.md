@@ -90,7 +90,6 @@ Merge safety gates:
 - `pnpm typecheck`
 - app build
 - `pnpm build:ha-panel`
-- committed custom panel asset verification
 - Tier 1 release-critical validation
 - Tier 2 blocking app contracts
 - standalone app smoke boot
@@ -112,6 +111,8 @@ Behavior:
 - requires Tier 1 validation
 - publishes standalone app edge artifacts
 - publishes add-on edge artifacts
+- exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
+- uses a GitHub App token for `awesomestvi/navet-hacs` checkout and push
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - does not create a GitHub release
 - does not update `latest`
@@ -128,8 +129,10 @@ Behavior:
 
 - validates release-managed files and changelog alignment
 - requires Tier 1 validation
+- syncs the release HACS payload into `awesomestvi/navet-hacs/main`
+- creates or refreshes the matching `awesomestvi/navet-hacs` Git tag for the release
 - pins Node 22 anywhere the workflow runs repo JavaScript
-- packages the committed custom panel assets and attaches a panel archive
+- builds the custom panel assets in workflow and attaches a panel archive
 - publishes standalone app release images
 - publishes add-on release images
 - creates the GitHub release from `CHANGELOG.md`
@@ -160,26 +163,22 @@ promotion in phase 1.
    treat them as the primary release-note source.
 4. Draft the changelog section for the target version from those Linear issues. If no matching
    issues exist, fall back to commit history since the previous release tag.
-5. For custom panel releases, run `pnpm build:ha-panel` and commit the generated assets.
-6. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
-7. Run `node scripts/check-release-surfaces.mjs`.
-8. Merge the release commit to `main`.
-9. Create and push the release tag for `awesomestvi/navet`.
-10. Let the tagged release workflow package the committed panel bundle and attach
+5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
+6. Run `node scripts/check-release-surfaces.mjs`.
+7. Merge the release commit to `main`.
+8. Create and push the release tag for `awesomestvi/navet`.
+9. Let the tagged release workflow build the panel bundle, package it, and attach
     `navet-panel-<tag>.tar.gz` to the GitHub release.
-11. Run `pnpm sync:hacs`.
-12. Review the changes in `../navet-hacs`.
-13. Commit, tag, and push the matching `awesomestvi/navet-hacs` release.
-14. Verify the published standalone/add-on artifacts, the `navet-hacs` release, and the GitHub
-    release page.
+10. Verify the published standalone/add-on artifacts, the matching `navet-hacs` branch/tag sync, and
+    the GitHub release page.
 
 ## What Stays Manual
 
 - choosing the SemVer bump
 - checking Linear `Ready for Release` scope and deciding whether the commit-history fallback is needed
 - drafting release notes
-- regenerating committed panel assets
-- exporting, reviewing, and publishing the generated `navet-hacs` repo payload
+- keeping the HA panel source buildable when the automated export/release workflows rebuild it
+- monitoring the automatic `navet-hacs` sync from `main` and tagged releases, and stepping in if that repo rejects a push
 - updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
 - rollback execution if a bad release escapes

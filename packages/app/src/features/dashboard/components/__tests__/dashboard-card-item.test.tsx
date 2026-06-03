@@ -5,9 +5,10 @@ import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardCardItem } from '../dashboard-card-item';
 
-const { childAction, renderCardMock } = vi.hoisted(() => ({
+const { childAction, renderCardMock, widgetCardMock } = vi.hoisted(() => ({
   childAction: vi.fn(),
   renderCardMock: vi.fn(),
+  widgetCardMock: vi.fn(),
 }));
 
 vi.mock('../../utils/card-renderer', () => ({
@@ -22,11 +23,14 @@ vi.mock('../../utils/card-renderer', () => ({
 }));
 
 vi.mock('../widget-card', () => ({
-  WidgetCard: () => (
-    <button type="button" onClick={childAction}>
-      widget action
-    </button>
-  ),
+  WidgetCard: (props: unknown) => {
+    widgetCardMock(props);
+    return (
+      <button type="button" onClick={childAction}>
+        widget action
+      </button>
+    );
+  },
 }));
 
 function createLightDevice(): DeviceWithType {
@@ -70,6 +74,7 @@ describe('DashboardCardItem card locking', () => {
     localStorage.clear();
     childAction.mockClear();
     renderCardMock.mockClear();
+    widgetCardMock.mockClear();
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
   });
 
@@ -216,6 +221,124 @@ describe('DashboardCardItem card locking', () => {
     dispatchEventSpy.mockRestore();
   });
 
+  it('clamps action cards to compact sizes and only exposes compact resize options', () => {
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="custom-button"
+        size="medium"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        card={{
+          id: 'custom-button',
+          type: 'button',
+          size: 'medium',
+          room: 'Kitchen',
+          createdAt: 1,
+        }}
+      />
+    );
+
+    expect(widgetCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        card: expect.objectContaining({
+          id: 'custom-button',
+          size: 'small',
+          type: 'button',
+        }),
+      })
+    );
+
+    const resizeTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-card-edit-dock="true"] button.z-500.group'
+    );
+    expect(resizeTrigger).toBeTruthy();
+
+    fireEvent.click(resizeTrigger as HTMLButtonElement);
+
+    expect(screen.getByRole('button', { name: /^tiny\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^extra-small\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^medium\b/i })).not.toBeInTheDocument();
+  });
+
+  it('only exposes extra-small and small resize options for single sensor entity cards', () => {
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="sensor.kitchen_temperature"
+        size="medium"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={{ ...createSensorDevice(), size: 'medium' }}
+      />
+    );
+
+    expect(renderCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        device: expect.objectContaining({
+          id: 'sensor.kitchen_temperature',
+          type: 'sensors',
+        }),
+        size: 'small',
+      })
+    );
+
+    const resizeTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-card-edit-dock="true"] button.z-500.group'
+    );
+    expect(resizeTrigger).toBeTruthy();
+
+    fireEvent.click(resizeTrigger as HTMLButtonElement);
+
+    expect(screen.getByRole('button', { name: /^extra-small\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^tiny\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^medium\b/i })).not.toBeInTheDocument();
+  });
+
+  it('lets single-sensor info cards use extra-small through large', () => {
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="custom-info"
+        size="medium"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        card={{
+          id: 'custom-info',
+          type: 'info',
+          size: 'medium',
+          room: 'Kitchen',
+          createdAt: 1,
+          data: {
+            sensorEntityIds: ['sensor.kitchen_temperature'],
+          },
+        }}
+      />
+    );
+
+    expect(widgetCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        card: expect.objectContaining({
+          id: 'custom-info',
+          size: 'medium',
+          type: 'info',
+        }),
+      })
+    );
+
+    const resizeTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-card-edit-dock="true"] button.z-500.group'
+    );
+    expect(resizeTrigger).toBeTruthy();
+
+    fireEvent.click(resizeTrigger as HTMLButtonElement);
+
+    expect(screen.getByRole('button', { name: /^extra-small\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^medium\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^large\b/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^tiny\b/i })).not.toBeInTheDocument();
+  });
+
   it('shows a single launcher on tiny cards and expands the edit dock on demand', () => {
     renderWithProviders(
       <DashboardCardItem
@@ -237,5 +360,32 @@ describe('DashboardCardItem card locking', () => {
     expect(
       screen.getByRole('button', { name: 'Open settings for Espresso Machine' })
     ).toBeInTheDocument();
+  });
+
+  it('uses the custom action label in the tiny edit dock overlay title', () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="custom-button"
+        size="tiny"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        card={{
+          id: 'custom-1780100261963-vdq80sr8k',
+          type: 'button',
+          size: 'tiny',
+          room: 'Kitchen',
+          createdAt: 1,
+          data: {
+            label: 'Vishal',
+            service: 'script.turn_on',
+          },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /more actions/i }));
+
+    expect(screen.getByText('Vishal')).toBeInTheDocument();
+    expect(screen.queryByText(/custom-1780100261963/i)).not.toBeInTheDocument();
   });
 });

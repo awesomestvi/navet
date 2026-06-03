@@ -33,11 +33,10 @@ to identify the earlier exact add-on image tag and redeploy that version explici
 
 ## Home Assistant Custom Panel
 
-Rollback by reinstalling the previous GitHub release or previously committed custom panel asset
-bundle.
+Rollback by reinstalling the previous GitHub release custom panel asset bundle.
 
-Because the panel assets are committed into the repo, the authoritative rollback point is the
-earlier release commit and tag, not the current `main` branch tip.
+Because release workflows build the panel assets per tag, the authoritative rollback point is the
+earlier release tag and its attached artifact, not the current `main` branch tip.
 
 ## Demo, Storybook, Website
 

@@ -205,7 +205,7 @@ export const LightCard = memo(function LightCard({
           }
           contentClassName="h-full"
         >
-          <div className="relative h-full flex flex-col">
+          <div className="relative flex h-full flex-col">
             {isSmall ? (
               <LightCardSmall
                 name={name}

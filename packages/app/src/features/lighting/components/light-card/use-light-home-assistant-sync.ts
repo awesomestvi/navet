@@ -47,6 +47,8 @@ interface UseLightHomeAssistantSyncParams {
   lastColorTempRef: React.MutableRefObject<number>;
   pendingBrightnessRef: React.MutableRefObject<number | null>;
   pendingTempRef: React.MutableRefObject<number | null>;
+  pendingOnStateRef: React.MutableRefObject<boolean | null>;
+  pendingOnStateTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   brightnessSyncTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   tempSyncTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   setIsOn: React.Dispatch<React.SetStateAction<boolean>>;
@@ -64,6 +66,8 @@ export function useLightHomeAssistantSync({
   lastColorTempRef,
   pendingBrightnessRef,
   pendingTempRef,
+  pendingOnStateRef,
+  pendingOnStateTimeoutRef,
   brightnessSyncTimeoutRef,
   tempSyncTimeoutRef,
   setIsOn,
@@ -84,6 +88,12 @@ export function useLightHomeAssistantSync({
           : colorTempToRestore;
 
       setIsOn(nextIsOn);
+      pendingOnStateRef.current = nextIsOn;
+      if (pendingOnStateTimeoutRef.current) clearTimeout(pendingOnStateTimeoutRef.current);
+      pendingOnStateTimeoutRef.current = setTimeout(() => {
+        pendingOnStateRef.current = null;
+        pendingOnStateTimeoutRef.current = null;
+      }, 2500);
       if (nextIsOn) {
         pendingBrightnessRef.current = brightnessToRestore;
         pendingTempRef.current = rememberedColorTemp;
@@ -114,6 +124,8 @@ export function useLightHomeAssistantSync({
       maxColorTemp,
       minColorTemp,
       pendingBrightnessRef,
+      pendingOnStateRef,
+      pendingOnStateTimeoutRef,
       pendingTempRef,
       selectedColor,
       setIsOn,

@@ -78,6 +78,15 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
       : { ...card, type: normalizedType, data: normalizedData };
 
   if (
+    normalizedCard.type === 'button' &&
+    normalizedCard.size !== 'tiny' &&
+    normalizedCard.size !== 'extra-small' &&
+    normalizedCard.size !== 'small'
+  ) {
+    return { ...normalizedCard, size: 'small' };
+  }
+
+  if (
     normalizedCard.type === 'photo' &&
     normalizedCard.size !== 'small' &&
     normalizedCard.size !== 'medium' &&
@@ -99,6 +108,7 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
 
   if (
     normalizedCard.type === 'info' &&
+    normalizedCard.size !== 'extra-small' &&
     normalizedCard.size !== 'small' &&
     normalizedCard.size !== 'medium' &&
     normalizedCard.size !== 'large'
@@ -166,6 +176,17 @@ export const useCustomCardsStore = create<CustomCardsState>()(
         setItem: (name, value) => writeLocalStorageWithMigration(name, value, localStorage),
         removeItem: (name) => removeLocalStorageWithMigration(name, localStorage),
       })),
+      merge: (persistedState, currentState) => {
+        const state = persistedState as Partial<CustomCardsState> | undefined;
+
+        return {
+          ...currentState,
+          ...state,
+          cards: Array.isArray(state?.cards)
+            ? (state.cards as NormalizableCustomCard[]).map(normalizeCustomCard)
+            : currentState.cards,
+        };
+      },
       migrate: (persistedState) => {
         const state = persistedState as CustomCardsState | undefined;
         if (!state) {

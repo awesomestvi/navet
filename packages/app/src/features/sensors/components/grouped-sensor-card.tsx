@@ -1,5 +1,5 @@
 import { CardEmptyState } from '@navet/app/components/patterns';
-import { BaseCard } from '@navet/app/components/primitives';
+import { BaseCard, OverlayScrollArea } from '@navet/app/components/primitives';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
@@ -13,15 +13,7 @@ import { Gauge, Plus } from 'lucide-react';
 import { type KeyboardEvent, memo } from 'react';
 import { SensorGroupSettingsDialog } from './sensor-group-settings';
 import type { AvailableSensor } from './sensor-group-settings/types';
-import {
-  darkColorMap,
-  GridSensorDisplay,
-  iconMap,
-  lightColorMap,
-  type SensorReading,
-  SmallSensorDisplay,
-  useSensorGroup,
-} from './sensors';
+import { iconMap, type SensorReading, SmallSensorDisplay, useSensorGroup } from './sensors';
 
 const GROUPED_SENSOR_MAX_SENSORS = 6;
 
@@ -73,7 +65,6 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   // Size-specific styling with intelligent layout adaptation
   const isSmall = isCompactCardSize(size);
   const isMedium = size === 'medium';
-  const colors = theme !== 'light' ? darkColorMap[accentColor] : lightColorMap[accentColor];
   const shell = getAccentCardShellTokens(theme, accentColor);
   const emptyAccentColor = {
     amber: '#f59e0b',
@@ -168,14 +159,19 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
                 size={isMedium ? 'medium' : 'small'}
               />
             ) : (
-              <GridSensorDisplay
-                sensors={visibleSensors}
-                textPrimaryColor={readableText.titleColor}
-                textSecondaryColor={readableText.subtitleColor}
-                accentColor={emptyAccentColor}
-                colors={colors}
-                isMedium={isMedium}
-              />
+              <OverlayScrollArea
+                className="flex flex-1 flex-col"
+                contentClassName="flex min-h-full flex-col pr-3"
+              >
+                <div className="mt-auto">
+                  <SmallSensorDisplay
+                    sensors={visibleSensors}
+                    textPrimaryColor={readableText.titleColor}
+                    textSecondaryColor={readableText.subtitleColor}
+                    size="medium"
+                  />
+                </div>
+              </OverlayScrollArea>
             )}
           </div>
         </div>

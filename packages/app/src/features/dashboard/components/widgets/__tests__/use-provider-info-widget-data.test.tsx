@@ -43,6 +43,18 @@ describe('useProviderInfoWidgetData', () => {
               unit: 'C',
               deviceClass: 'temperature',
             },
+            {
+              id: 'home_assistant:sensor.kitchen_pressure',
+              canonicalId: 'home_assistant:sensor.kitchen_pressure',
+              nativeId: 'sensor.kitchen_pressure',
+              providerId: 'home_assistant',
+              name: 'Kitchen Pressure',
+              room: 'Kitchen',
+              size: 'small',
+              value: '14.65606402082003',
+              unit: 'psi',
+              deviceClass: 'pressure',
+            },
           ],
         },
       },
@@ -95,6 +107,31 @@ describe('useProviderInfoWidgetData', () => {
         label: 'Kitchen Temperature',
         value: '22.1',
         unit: 'C',
+      }),
+    ]);
+  });
+
+  it('formats provider sensor readings with the same display precision as single sensor cards', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      providerDeviceCollectionsByProviderId:
+        integrationStore.getState().providerDeviceCollectionsByProviderId,
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useProviderInfoWidgetData(['sensor.kitchen_pressure'], {
+        includeBinarySensors: true,
+        use24HourTime: true,
+      })
+    );
+
+    expect(result.current.currentSensors).toEqual([
+      expect.objectContaining({
+        id: 'home_assistant:sensor.kitchen_pressure',
+        label: 'Kitchen Pressure',
+        value: '14.7',
+        unit: 'psi',
       }),
     ]);
   });

@@ -7,7 +7,7 @@ import { useCardSettingsDialog } from '@navet/app/hooks/use-card-settings-dialog
 import { useIntegrationStore } from '@navet/app/hooks/use-integration-store';
 import { hasIntegrationLightFeatureService } from '@navet/app/services/integration-light-feature.service';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
 import { useLightCardDisplay } from './use-light-card-display';
@@ -42,6 +42,8 @@ export function useLightCardController({
       ? providerState.colorTemperatureKelvin
       : initialTemp;
   const [isOn, setIsOn] = useState(resolvedInitialState);
+  const pendingOnStateRef = useRef<boolean | null>(null);
+  const pendingOnStateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isOpen, onOpen, onClose } = useCardSettingsDialog();
   const [selectedIcon, setSelectedIcon] = useState('');
   const [tintColor, setTintColor] = useState('');
@@ -82,7 +84,14 @@ export function useLightCardController({
     supportsAdvancedLightControls,
   });
 
-  useLightOnStateSync({ initialState: resolvedInitialState, liveEntity, providerState, setIsOn });
+  useLightOnStateSync({
+    initialState: resolvedInitialState,
+    liveEntity,
+    providerState,
+    setIsOn,
+    pendingOnStateRef,
+    pendingOnStateTimeoutRef,
+  });
   const syncLight = useLightServiceSync({ id });
 
   const {
@@ -110,6 +119,8 @@ export function useLightCardController({
     supportsColorTemperature,
     rememberLightState,
     syncLight,
+    pendingOnStateRef,
+    pendingOnStateTimeoutRef,
   });
   const { currentEffect, effectOptions, onEffectSelect, supportsEffects } = useLightEffectSync({
     supportsAdvancedLightControls,
