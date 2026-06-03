@@ -11,6 +11,7 @@ export const appPaths = {
   websiteDist: resolve(repoRoot, 'apps/website/dist'),
   storybookDist: resolve(repoRoot, 'apps/storybook/dist'),
   haPanelDist: resolve(repoRoot, 'apps/ha-panel/dist'),
+  homeAssistantHacsRepoDist: resolve(repoRoot, 'dist/home-assistant/hacs-repo'),
 };
 
 export const assetPaths = {
@@ -28,13 +29,9 @@ export const assetPaths = {
 
 export const homeAssistantPaths = {
   root: resolve(repoRoot, 'platform/home-assistant'),
-  addonRepositoryMetadata: resolve(repoRoot, 'repository.yaml'),
-  hacsRoot: resolve(repoRoot, 'custom_components'),
-  hacsNavetCustomComponent: resolve(repoRoot, 'custom_components/navet'),
-  hacsNavetFrontend: resolve(repoRoot, 'custom_components/navet/frontend'),
-  hacsNavetManifest: resolve(repoRoot, 'custom_components/navet/manifest.json'),
   addonsRoot: resolve(repoRoot, 'platform/home-assistant/addons'),
   addonNavet: resolve(repoRoot, 'platform/home-assistant/addons/navet'),
+  addonNavetDev: resolve(repoRoot, 'platform/home-assistant/addons/navet-dev'),
   platformCustomComponentsRoot: resolve(repoRoot, 'platform/home-assistant/custom_components'),
   platformNavetCustomComponent: resolve(repoRoot, 'platform/home-assistant/custom_components/navet'),
   platformNavetFrontend: resolve(
@@ -45,7 +42,10 @@ export const homeAssistantPaths = {
     repoRoot,
     'platform/home-assistant/custom_components/navet/manifest.json'
   ),
+  rootRepositoryMetadata: resolve(repoRoot, 'repository.yaml'),
   addonConfig: resolve(repoRoot, 'platform/home-assistant/addons/navet/config.yaml'),
   addonChangelog: resolve(repoRoot, 'platform/home-assistant/addons/navet/CHANGELOG.md'),
   addonDockerfile: resolve(repoRoot, 'platform/home-assistant/addons/navet/Dockerfile'),
+  hacsReadmeTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/README.md'),
+  hacsMetadataTemplate: resolve(repoRoot, 'platform/home-assistant/repo-templates/hacs/hacs.json'),
 };

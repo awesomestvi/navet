@@ -23,7 +23,7 @@ What to expect:
 
 Setup:
 
-1. Add `https://github.com/awesomestvi/navet` as a custom HACS repository with category
+1. Add `https://github.com/awesomestvi/navet-hacs` as a custom HACS repository with category
    `Integration`.
 2. Install `Navet`.
 3. Restart Home Assistant.
@@ -42,6 +42,20 @@ What to expect:
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
 Use this when you want Home Assistant to own installation, lifecycle, and sidebar access.
+
+Setup:
+
+1. Open `Settings -> Add-ons -> Add-on Store`.
+2. Open the repository menu and choose `Repositories`.
+3. Add `https://github.com/awesomestvi/navet`.
+4. Install `Navet` for stable releases or `Navet Dev` for the development surface.
+
+Migration note:
+
+- If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
+  repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
+- If you use the Home Assistant add-on repository, keep using
+  `https://github.com/awesomestvi/navet`.
 
 ## Standalone Docker
 

@@ -1,20 +1,23 @@
 import fs from 'node:fs';
 import process from 'node:process';
+import { resolve } from 'node:path';
 import {
   addonConfigPath,
+  addonChangelogPath,
   appVersionPath,
+  assertHacsExport,
+  assertMainRepositoryMetadata,
   assertValidVersion,
   fail,
   getPackageVersion,
   hasChangelogVersion,
   manifestPath,
-  platformManifestPath,
   normalizeTagVersion,
   readAddonVersion,
   readJson,
   readVersioningCurrentVersion,
 } from './release-surfaces.mjs';
-import { homeAssistantPaths } from './repo-paths.mjs';
+import { appPaths } from './repo-paths.mjs';
 
 const args = process.argv.slice(2);
 const tagArgIndex = args.findIndex((arg) => arg === '--tag');
@@ -23,27 +26,15 @@ const tagValue = tagArgIndex === -1 ? null : args[tagArgIndex + 1];
 try {
   const packageVersion = getPackageVersion();
   assertValidVersion(packageVersion, 'package version');
-
-  if (!fs.existsSync(homeAssistantPaths.addonRepositoryMetadata)) {
-    throw new Error(
-      'repository.yaml is missing. Home Assistant add-on repository discovery depends on the root repository metadata file.'
-    );
-  }
+  assertMainRepositoryMetadata();
 
   const manifest = readJson(manifestPath);
-  const platformManifest = readJson(platformManifestPath);
   const addonVersion = readAddonVersion(addonConfigPath);
   const versioningVersion = readVersioningCurrentVersion();
 
   if (manifest.version !== packageVersion) {
     throw new Error(
-      `custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
-    );
-  }
-
-  if (platformManifest.version !== packageVersion) {
-    throw new Error(
-      `platform/home-assistant/custom_components/navet/manifest.json version ${platformManifest.version} does not match package.json ${packageVersion}.`
+      `platform/home-assistant/custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
     );
   }
 
@@ -63,9 +54,31 @@ try {
     throw new Error(`CHANGELOG.md does not contain a section for ${packageVersion}.`);
   }
 
+  if (!hasChangelogVersion(packageVersion, addonChangelogPath)) {
+    throw new Error(
+      `platform/home-assistant/addons/navet/CHANGELOG.md does not contain a section for ${packageVersion}.`
+    );
+  }
+
   const source = fs.readFileSync(appVersionPath, 'utf8');
   if (!source.includes('__APP_VERSION__')) {
     fail('packages/app/src/constants/app-version.ts must continue to source APP_VERSION from __APP_VERSION__.');
+  }
+
+  if (fs.existsSync(appPaths.homeAssistantHacsRepoDist)) {
+    assertHacsExport(appPaths.homeAssistantHacsRepoDist);
+
+    const frontendRoot = resolve(
+      appPaths.homeAssistantHacsRepoDist,
+      'custom_components/navet/frontend'
+    );
+    for (const asset of ['navet-panel.js', '.vite/manifest.json']) {
+      if (!fs.existsSync(resolve(frontendRoot, asset))) {
+        throw new Error(
+          `Generated HACS export is missing required frontend asset ${asset} under ${frontendRoot}.`
+        );
+      }
+    }
   }
 
   if (tagValue) {
