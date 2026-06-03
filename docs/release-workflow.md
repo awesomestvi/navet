@@ -43,6 +43,11 @@ build-injected from `package.json` rather than manually edited.
 `platform/home-assistant/addons/navet/CHANGELOG.md` is a required add-on release surface. Update it for every versioned
 add-on release, even when it mostly mirrors the main app changelog.
 
+Home Assistant discovery also depends on these non-versioned repo-root compatibility surfaces:
+
+- `custom_components/navet/` for HACS integration detection
+- `repository.yaml` for Home Assistant add-on repository detection
+
 ## Channels
 
 - `edge`: published from `main`

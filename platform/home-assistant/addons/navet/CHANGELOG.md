@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- Updated Navet to `0.5.1`
+- Restored the Home Assistant custom-panel packaging needed for HACS to detect the repository correctly
+
 ## 0.5.0
 
 - Updated Navet to `0.5.0`

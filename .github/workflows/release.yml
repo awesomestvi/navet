@@ -149,6 +149,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=navet-standalone
+          cache-to: type=gha,mode=max,scope=navet-standalone
           tags: ${{ needs.release-context.outputs.standalone_tags }}
           build-args: |
             NAVET_VERSION=${{ needs.release-context.outputs.package_version }}
@@ -217,6 +219,8 @@ jobs:
           file: ./platform/home-assistant/addons/navet/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
+          cache-from: type=gha,scope=navet-addon-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }}
           build-args: |
             BUILD_FROM=${{ matrix.build_from }}
             BUILD_VERSION=${{ steps.tags.outputs.version }}
