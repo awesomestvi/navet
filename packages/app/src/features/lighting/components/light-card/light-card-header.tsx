@@ -55,12 +55,13 @@ export const LightCardHeader = memo(function LightCardHeader({
       <EntityCardHeader
         title={name}
         subtitle={t('lighting.type.light')}
+        compact
         layout="eyebrow-first"
         size={size}
         tone={isOn ? 'primary' : 'neutral'}
         accentColor={activeColor}
-        titleClassName={`text-[11px] leading-[14px] ${stateSurface.primaryTextClassName}`}
-        subtitleClassName={`text-[10px] leading-[12px] ${stateSurface.mutedTextClassName}`}
+        titleClassName={stateSurface.primaryTextClassName}
+        subtitleClassName={stateSurface.mutedTextClassName}
         leading={headerIcon}
       />
     );

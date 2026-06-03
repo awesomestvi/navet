@@ -70,6 +70,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   subtitle?: string;
   headerLeading?: ReactNode;
   headerTrailing?: ReactNode;
+  headerCompact?: boolean;
   headerLayout?: 'title-first' | 'eyebrow-first';
   headerAlign?: 'start' | 'center';
   headerTone?: CardTextTone;
@@ -174,6 +175,7 @@ export function BaseCard({
   subtitle,
   headerLeading,
   headerTrailing,
+  headerCompact = false,
   headerLayout = 'eyebrow-first',
   headerAlign = 'start',
   headerTone,
@@ -234,6 +236,7 @@ export function BaseCard({
         title={title ?? ''}
         subtitle={subtitle ?? ''}
         size={size}
+        compact={headerCompact}
         layout={headerLayout}
         align={headerAlign}
         tone={resolvedHeaderTone}
@@ -287,11 +290,14 @@ export function BaseCard({
   const paddingClassName = fullBleed ? '' : getStandardCardPadding(size);
   const gapClassName = fullBleed ? '' : getBaseCardGapClassName(size);
   const centerStandaloneExtraSmallContent = isExtraSmall && !headerNode && !footerNode;
+  const useStackedCompactExtraSmallLayout = isExtraSmall && headerCompact && Boolean(headerNode);
   const contentContainerClassName = fullBleed
     ? 'h-full'
-    : centerStandaloneExtraSmallContent
-      ? `min-h-0 h-full ${contentClassName}`
-      : `min-h-0 flex-1 ${contentClassName}`;
+    : useStackedCompactExtraSmallLayout
+      ? `mt-auto min-h-0 ${contentClassName}`
+      : centerStandaloneExtraSmallContent
+        ? `min-h-0 h-full ${contentClassName}`
+        : `min-h-0 flex-1 ${contentClassName}`;
   const hasCustomFrameBackground =
     frameClassName.includes('bg-') ||
     backgroundClassName.includes('bg-') ||
@@ -356,12 +362,23 @@ export function BaseCard({
               <span />
             )}
           </div>
+        ) : useStackedCompactExtraSmallLayout ? (
+          <div className="flex h-full w-full min-h-0 flex-col justify-between text-left">
+            <div className="min-w-0 w-full">{headerNode}</div>
+            {hasContent ? (
+              <div className={contentContainerClassName} style={contentTextStyle}>
+                {children}
+              </div>
+            ) : (
+              <span />
+            )}
+          </div>
         ) : isExtraSmall ? (
           <div className="flex flex-1 items-center">{headerNode}</div>
         ) : (
           headerNode
         )}
-        {!isTiny && hasContent ? (
+        {!isTiny && !useStackedCompactExtraSmallLayout && hasContent ? (
           <div className={contentContainerClassName} style={contentTextStyle}>
             {children}
           </div>

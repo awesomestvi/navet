@@ -52,12 +52,8 @@ jobs:
       - name: Build app
         run: pnpm build
 
-      - name: Verify committed Home Assistant panel files exist
-        run: |
-          git ls-files --error-unmatch platform/home-assistant/custom_components/navet/frontend/navet-panel.js
-          git ls-files --error-unmatch platform/home-assistant/custom_components/navet/frontend/.vite/manifest.json
-          test -f platform/home-assistant/custom_components/navet/frontend/navet-panel.js
-          test -f platform/home-assistant/custom_components/navet/frontend/.vite/manifest.json
+      - name: Build Home Assistant panel assets
+        run: pnpm build:ha-panel
 
   tier-1-release-critical:
     uses: ./.github/workflows/provider-platform-validation.yml

@@ -10,8 +10,6 @@ This file defines release workflow constraints and publishing behavior for Navet
 - For release work, do not run any `pnpm` command yourself.
 - List the required `pnpm` commands for the user, wait for the reported results, and continue from
   there.
-- For HACS or Home Assistant custom panel releases, include `pnpm build:ha-panel` in the user-run
-  release commands before the release commit or tag.
 - Use `pnpm release:linear` or the Linear app as the preferred release-note source before falling
   back to commit history.
 - Keep `package.json`, `CHANGELOG.md`, `platform/home-assistant/addons/navet/CHANGELOG.md`,
@@ -35,9 +33,8 @@ Recommended operator flow:
 5. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
    publishes this section as the release notes that HACS/Home Assistant can show before users
    update.
-6. For HACS custom panel releases, have the user run `pnpm build:ha-panel` and include the
-   generated `platform/home-assistant/custom_components/navet/frontend/` changes in the release
-   commit.
+6. Do not require maintainers to prebuild Home Assistant panel assets for HACS or release
+   publishing. The export and release workflows build them automatically.
 7. Add or update the matching `platform/home-assistant/addons/navet/CHANGELOG.md` entry for every
    versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
@@ -49,10 +46,9 @@ Recommended operator flow:
     [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
 12. The tagged release workflow validates the committed release surfaces, packages the committed
     custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
-13. Have the user run `pnpm sync:hacs`.
-14. Review the changes in `../navet-hacs`, then commit, tag, and push the matching
-    `awesomestvi/navet-hacs` release.
-15. For developer hardware testing from `main`, use
+13. The tagged release workflow also syncs `awesomestvi/navet-hacs/main` and refreshes the matching
+    `awesomestvi/navet-hacs` tag.
+14. For developer hardware testing from `main`, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
 
 ## Release Note Style
@@ -139,10 +135,17 @@ internal, or release-only changes into the fewest useful user-facing bullets.
   - provider boundary enforcement
   - Docker validation
 - Publish and release workflows should require Tier 1 validation before shipping.
-- Tagged releases should additionally rebuild and verify the committed custom-panel artifact before
-  creating the GitHub release.
-- HACS repo export remains a local maintainer step against `../navet-hacs`, not a monorepo release
-  artifact.
+- Tagged releases should build the custom-panel artifact in workflow before creating the GitHub
+  release.
+- Pushes to `main` and tagged releases should also sync the exported HACS payload into
+  `awesomestvi/navet-hacs/main`.
+- Tagged releases should also create or refresh the matching Git tag in `awesomestvi/navet-hacs`
+  so both repositories expose the same release tag name.
+- That sync should authenticate with a GitHub App installed on `awesomestvi/navet-hacs`, using
+  `NAVET_HACS_APP_ID` and `NAVET_HACS_APP_PRIVATE_KEY` secrets in the `edge`, `beta`, and
+  `production` environments as needed by the workflow environment.
+- Local `pnpm sync:hacs` remains useful for previewing the export against `../navet-hacs` before a
+  release or when debugging CI sync issues.
 - Home Assistant ingress and install behavior remain partly manual release checks unless a real
   runtime automation path is added later.
 
@@ -155,6 +158,7 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
 - Home Assistant add-on images publish `edge`, temporary `dev`, and `sha-*` on `main` pushes.
+- Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
   archive to the GitHub release.
 - Versioned add-on publishes emit the configured add-on version, the channel tag (`beta` or

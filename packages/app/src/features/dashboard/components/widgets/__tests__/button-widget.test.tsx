@@ -19,20 +19,17 @@ describe('ButtonWidget', () => {
     callIntegrationServiceMock.mockResolvedValue(undefined);
   });
 
-  it('runs the configured Home Assistant action without bubbling to the card container', async () => {
-    const onCardClick = vi.fn();
-
+  it('runs the configured Home Assistant action', async () => {
     renderWithProviders(
-      <button aria-label="Card container" type="button" onClick={onCardClick}>
-        <ButtonWidget
-          data={{
-            label: 'Movie Mode',
-            service: 'scene.turn_on',
-            entityId: sceneEntityFixtures.normal.entity_id,
-            icon: 'Film',
-          }}
-        />
-      </button>
+      <ButtonWidget
+        size="small"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+          icon: 'Film',
+        }}
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
@@ -45,12 +42,12 @@ describe('ButtonWidget', () => {
         serviceData: {},
       });
     });
-    expect(onCardClick).not.toHaveBeenCalled();
   });
 
   it('passes through additional Home Assistant service data for button-style actions', async () => {
     renderWithProviders(
       <ButtonWidget
+        size="small"
         data={{
           label: 'Doorbell Chime',
           service: 'button.press',
@@ -76,6 +73,7 @@ describe('ButtonWidget', () => {
   it('ignores malformed service definitions instead of issuing invalid Home Assistant calls', async () => {
     renderWithProviders(
       <ButtonWidget
+        size="small"
         data={{
           label: 'Unsafe',
           service: 'javascript:alert(1)',
@@ -92,19 +90,23 @@ describe('ButtonWidget', () => {
   });
 
   it('does not open the settings dialog just because an unconfigured card mounts', () => {
-    const { rerender } = renderWithProviders(<ButtonWidget data={{ label: 'Movie Mode' }} />);
+    const { rerender } = renderWithProviders(
+      <ButtonWidget size="small" data={{ label: 'Movie Mode' }} />
+    );
 
-    expect(screen.getByText('Action Button')).toBeInTheDocument();
+    expect(screen.getByText('Action')).toBeInTheDocument();
     expect(screen.getByText('Tap to set up')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    rerender(<ButtonWidget data={{ label: 'Movie Mode' }} />);
+    rerender(<ButtonWidget size="small" data={{ label: 'Movie Mode' }} />);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('opens the settings dialog from the unconfigured empty state action', () => {
-    renderWithProviders(<ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={vi.fn()} />);
+    renderWithProviders(
+      <ButtonWidget size="small" data={{ label: 'Movie Mode' }} onUpdate={vi.fn()} />
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
 
@@ -117,7 +119,7 @@ describe('ButtonWidget', () => {
   it('preserves draft field edits while the dialog is open across parent rerenders', () => {
     const onUpdate = vi.fn();
     const view = renderWithProviders(
-      <ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />
+      <ButtonWidget size="small" data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
@@ -126,7 +128,7 @@ describe('ButtonWidget', () => {
     const labelInput = within(dialog).getByPlaceholderText('Button label');
 
     fireEvent.change(labelInput, { target: { value: 'Evening Scene' } });
-    view.rerender(<ButtonWidget data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />);
+    view.rerender(<ButtonWidget size="small" data={{ label: 'Movie Mode' }} onUpdate={onUpdate} />);
 
     expect(within(dialog).getByDisplayValue('Evening Scene')).toBeInTheDocument();
   });
@@ -134,6 +136,7 @@ describe('ButtonWidget', () => {
   it('does not render an in-card settings button for configured action cards', () => {
     renderWithProviders(
       <ButtonWidget
+        size="small"
         data={{
           label: 'Movie Mode',
           service: 'scene.turn_on',
@@ -145,5 +148,65 @@ describe('ButtonWidget', () => {
     );
 
     expect(screen.queryByRole('button', { name: 'Configure' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Movie Mode' })).toBeInTheDocument();
+  });
+
+  it('uses a full-card tap target for tiny action cards', async () => {
+    renderWithProviders(
+      <ButtonWidget
+        size="tiny"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+          icon: 'Film',
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
+
+    await waitFor(() => {
+      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+        entityId: sceneEntityFixtures.normal.entity_id,
+        domain: 'scene',
+        service: 'turn_on',
+        serviceData: {},
+      });
+    });
+  });
+
+  it('uses a full-card tap target for extra-small action cards', () => {
+    renderWithProviders(
+      <ButtonWidget
+        size="extra-small"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+          icon: 'Film',
+        }}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Movie Mode' })).toBeInTheDocument();
+  });
+
+  it('prevents compact action execution while in edit mode', () => {
+    renderWithProviders(
+      <ButtonWidget
+        size="tiny"
+        isEditMode
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
+
+    expect(callIntegrationServiceMock).not.toHaveBeenCalled();
   });
 });

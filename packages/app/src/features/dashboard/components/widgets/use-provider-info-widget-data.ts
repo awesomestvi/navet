@@ -1,3 +1,4 @@
+import { buildInfoDisplayModel } from '@navet/app/features/sensors/components/info-display-model';
 import { inferSensorIcon } from '@navet/app/features/sensors/components/sensor-group-settings/sensor-options';
 import type { AvailableSensor } from '@navet/app/features/sensors/components/sensor-group-settings/types';
 import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
@@ -68,17 +69,33 @@ function toAvailableSensor(device: SensorDevice): AvailableSensor {
   };
 }
 
-function toSensorReading(device: SensorDevice): SensorReading {
+function toSensorReading(
+  device: SensorDevice,
+  options: ProviderInfoWidgetDataOptions
+): SensorReading {
   const id = getSelectableSensorId(device);
   const iconEntityId = device.nativeId ?? id ?? '';
+  const resolvedEntityType = formatEntityType(device);
+  const displayModel = buildInfoDisplayModel(
+    {
+      ...device,
+      id,
+      icon: inferSensorIcon(device.deviceClass, device.unit ?? '', iconEntityId),
+      ...(resolvedEntityType ? { entityType: resolvedEntityType } : {}),
+      status: device.status ?? 'measurement',
+    },
+    {
+      use24HourTime: options.use24HourTime,
+    }
+  );
 
   return {
     id,
     label: device.name,
-    value: device.value,
-    unit: device.unit,
-    icon: inferSensorIcon(device.deviceClass, device.unit ?? '', iconEntityId),
-    ...(formatEntityType(device) ? { entityType: formatEntityType(device) } : {}),
+    value: displayModel.value,
+    unit: displayModel.unit,
+    icon: displayModel.icon,
+    ...(resolvedEntityType ? { entityType: resolvedEntityType } : {}),
   };
 }
 
@@ -120,7 +137,7 @@ function buildSensorLookup(
 
 export function useProviderInfoWidgetData(
   sensorEntityIds: string[],
-  _options: ProviderInfoWidgetDataOptions
+  options: ProviderInfoWidgetDataOptions
 ): ProviderInfoWidgetDataResult {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerId = useMemo(
@@ -147,9 +164,9 @@ export function useProviderInfoWidgetData(
         return [];
       }
 
-      return [toSensorReading(device)];
+      return [toSensorReading(device, options)];
     });
 
     return { availableSensors, currentSensors };
-  }, [providerId, sensorEntityIds, sensors]);
+  }, [options, providerId, sensorEntityIds, sensors]);
 }

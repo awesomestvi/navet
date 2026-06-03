@@ -242,6 +242,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
     case 'button':
       widgetContent = (
         <ButtonWidget
+          size={card.size}
           data={
             card.data as
               | {

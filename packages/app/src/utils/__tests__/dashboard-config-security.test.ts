@@ -89,6 +89,7 @@ describe('dashboard-config import hardening', () => {
     ]);
     expect(cards[1]?.data?.service).toBeUndefined();
     expect(cards[1]?.data?.entityId).toBeUndefined();
+    expect(cards[1]?.size).toBe('small');
   });
 
   it('sanitizes imported storage records before persistence', () => {

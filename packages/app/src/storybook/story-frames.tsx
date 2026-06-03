@@ -59,7 +59,7 @@ export function CustomWidgetStoryFrame({
   card?: CustomCard;
   isEditMode?: boolean;
 }) {
-  const safeCard = card ?? buildCustomCard('button', 'medium');
+  const safeCard = card ?? buildCustomCard('button', 'small');
 
   return (
     <div style={getCardSizeOverlayStyle(safeCard.size)}>

@@ -63,6 +63,115 @@ describe('normalizeCustomCard', () => {
     });
   });
 
+  it('clamps oversized button cards to small', () => {
+    expect(
+      normalizeCustomCard(
+        buildCard({
+          id: 'custom-button',
+          type: 'button',
+          size: 'medium',
+        })
+      ).size
+    ).toBe('small');
+  });
+
+  it('allows single-sensor info cards to keep medium', () => {
+    expect(
+      normalizeCustomCard(
+        buildCard({
+          size: 'medium',
+          data: {
+            sensorEntityIds: ['sensor.kitchen_temperature'],
+          },
+        })
+      ).size
+    ).toBe('medium');
+  });
+
+  it('keeps grouped info cards eligible for medium and large', () => {
+    expect(
+      normalizeCustomCard(
+        buildCard({
+          size: 'medium',
+          data: {
+            sensorEntityIds: ['sensor.kitchen_temperature', 'sensor.kitchen_humidity'],
+          },
+        })
+      ).size
+    ).toBe('medium');
+  });
+
+  it('clamps oversized button cards when added and updated through the store', () => {
+    const addedCard = useCustomCardsStore.getState().addCard('button', 'large', 'Kitchen');
+
+    expect(addedCard.size).toBe('small');
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: addedCard.id,
+        type: 'button',
+        size: 'small',
+      }),
+    ]);
+
+    useCustomCardsStore.getState().updateCard(addedCard.id, { size: 'extra-large' });
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: addedCard.id,
+        type: 'button',
+        size: 'small',
+      }),
+    ]);
+  });
+
+  it('preserves single-sensor info card sizes when added, updated, and rehydrated through the store', async () => {
+    const addedCard = useCustomCardsStore.getState().addCard('info', 'medium', 'Kitchen', {
+      sensorEntityIds: ['sensor.kitchen_temperature'],
+    });
+
+    expect(addedCard.size).toBe('medium');
+
+    useCustomCardsStore.getState().updateCard(addedCard.id, {
+      size: 'medium',
+    });
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: addedCard.id,
+        type: 'info',
+        size: 'medium',
+      }),
+    ]);
+
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.customCards,
+      JSON.stringify({
+        state: {
+          cards: [
+            buildCard({
+              id: 'persisted-single-info',
+              size: 'large',
+              data: {
+                sensorEntityIds: ['sensor.kitchen_temperature'],
+              },
+            }),
+          ],
+        },
+        version: 0,
+      })
+    );
+
+    await useCustomCardsStore.persist.rehydrate();
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: 'persisted-single-info',
+        type: 'info',
+        size: 'large',
+      }),
+    ]);
+  });
+
   it('migrates the legacy custom cards key to the navet namespace', async () => {
     localStorage.removeItem(STORE_STORAGE_KEYS.customCards);
     localStorage.setItem(
@@ -88,10 +197,38 @@ describe('normalizeCustomCard', () => {
     expect(useCustomCardsStore.getState().cards).toEqual([
       expect.objectContaining({
         id: 'legacy-info',
-        type: 'sensor-group',
+        type: 'info',
       }),
     ]);
     expect(localStorage.getItem(STORE_STORAGE_KEYS.customCards)).toContain('"legacy-info"');
     expect(localStorage.getItem(LEGACY_STORE_STORAGE_KEYS.customCards)).toBeNull();
+  });
+
+  it('normalizes persisted button cards to small during rehydration', async () => {
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.customCards,
+      JSON.stringify({
+        state: {
+          cards: [
+            buildCard({
+              id: 'persisted-button',
+              type: 'button',
+              size: 'medium',
+            }),
+          ],
+        },
+        version: 0,
+      })
+    );
+
+    await useCustomCardsStore.persist.rehydrate();
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: 'persisted-button',
+        type: 'button',
+        size: 'small',
+      }),
+    ]);
   });
 });

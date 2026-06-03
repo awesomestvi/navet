@@ -300,6 +300,14 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(60_000);
     expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({
+        classNames: expect.objectContaining({
+          toast: expect.stringContaining('sm:min-w-[29rem]'),
+          title: expect.stringContaining('whitespace-nowrap'),
+        }),
+      })
+    );
 
     await advanceTime(60_000);
     expect(toast).toHaveBeenCalledTimes(1);

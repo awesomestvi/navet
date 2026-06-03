@@ -536,6 +536,12 @@ function getAllowedSizes(
   extraLargeAllowed = true
 ): CardSize[] {
   if (card) {
+    if (card.type === 'info' && isSingleSensorInfoCard(card)) {
+      return ['extra-small', 'small', 'medium', 'large'];
+    }
+    if (card.type === 'button') {
+      return ['tiny', 'extra-small', 'small'];
+    }
     if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
       return ['small', 'medium', 'large', 'extra-large'];
     }
@@ -558,6 +564,8 @@ function getAllowedSizes(
       return ['small', 'medium', 'medium-vertical', 'large'];
     case 'grouped-sensors':
       return ['small', 'medium'];
+    case 'sensors':
+      return ['extra-small', 'small'];
     case 'hvac':
     case 'climate':
       return ['small', 'medium'];
@@ -584,6 +592,22 @@ function getAllowedSizes(
     default:
       return ['extra-small', 'small', 'medium', 'large'];
   }
+}
+
+function isSingleSensorInfoCard(card: CustomCard) {
+  if (card.type !== 'info') {
+    return false;
+  }
+
+  const sensorEntityIds = Array.isArray(card.data?.sensorEntityIds)
+    ? card.data.sensorEntityIds.filter((value): value is string => typeof value === 'string')
+    : [];
+
+  if (sensorEntityIds.length > 0) {
+    return sensorEntityIds.length === 1;
+  }
+
+  return typeof card.data?.entityId === 'string';
 }
 
 function supportsEditModeSettingsDock(device: DeviceWithType) {
@@ -655,12 +679,40 @@ function getCustomCardEditLabel(card: CustomCard | undefined, t: ReturnType<type
     return t('widgets.common.widget');
   }
 
+  const dataLabel =
+    typeof card.data?.label === 'string' && card.data.label.trim().length > 0
+      ? card.data.label.trim()
+      : typeof card.data?.name === 'string' && card.data.name.trim().length > 0
+        ? card.data.name.trim()
+        : undefined;
+
+  if (dataLabel) {
+    return dataLabel;
+  }
+
   return typeof card.id === 'string' && card.id.length > 0 ? card.id : t('widgets.common.widget');
 }
 
 function resolveAllowedSize(size: CardSize, allowedSizes: CardSize[]) {
   if (allowedSizes.includes(size)) {
     return size;
+  }
+
+  if (
+    allowedSizes.length === 3 &&
+    allowedSizes.includes('tiny') &&
+    allowedSizes.includes('extra-small') &&
+    allowedSizes.includes('small')
+  ) {
+    return 'small';
+  }
+
+  if (
+    allowedSizes.length === 2 &&
+    allowedSizes.includes('extra-small') &&
+    allowedSizes.includes('small')
+  ) {
+    return 'small';
   }
 
   if (

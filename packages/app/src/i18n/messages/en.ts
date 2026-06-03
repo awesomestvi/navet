@@ -1318,7 +1318,7 @@ export const enMessages = {
   'widgets.energyNow.settings.group.sources': 'Sources',
   'widgets.energyNow.settings.group.devices': 'Devices',
   'widgets.energyNow.empty.sparkline': 'Not enough data to show sparkline yet.',
-  'widgets.button.title': 'Action Button',
+  'widgets.button.title': 'Action',
   'widgets.button.labelPlaceholder': 'Button label',
   'widgets.button.servicePlaceholder': 'e.g. scene.turn_on',
   'widgets.button.entityPlaceholder': 'e.g. scene.movie_time',
@@ -1341,7 +1341,7 @@ export const enMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energy Now',
   'dashboard.addCard.templates.energyNow.description':
     'Full-bleed live usage chart with current power front and center.',
-  'dashboard.addCard.templates.button.name': 'Action Button',
+  'dashboard.addCard.templates.button.name': 'Action',
   'dashboard.addCard.templates.button.description':
     'Tap to trigger any Home Assistant service, scene, or script.',
   'dashboard.addCard.templates.scene.name': 'Scene',

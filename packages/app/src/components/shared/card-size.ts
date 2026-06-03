@@ -101,5 +101,9 @@ export function getCardGridAutoRowsStyle(logicalColumns: number): CSSProperties 
  * Cards with intentionally custom layouts can still opt out.
  */
 export function getStandardCardPadding(_size: CardSize) {
+  if (_size === 'extra-small') {
+    return 'px-2.5 pt-2 pb-2';
+  }
+
   return 'p-3';
 }

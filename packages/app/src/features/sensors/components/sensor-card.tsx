@@ -97,7 +97,8 @@ export const InfoCard = memo(function InfoCard({
   const valueColor =
     theme === 'light' ? toneClasses.value.replace('300', '700') : toneClasses.value;
   const unitText = displayModel.unit ? ` ${displayModel.unit}` : '';
-  const chromeSize = isVeryCompact ? size : isSmall ? 'small' : 'medium';
+  const isExtraSmall = isExtraSmallCardSize(size);
+  const chromeSize = isVeryCompact ? (isExtraSmall ? 'tiny' : size) : isSmall ? 'small' : 'medium';
   const shouldShowSparkline =
     !isVeryCompact &&
     !isSmall &&
@@ -120,6 +121,21 @@ export const InfoCard = memo(function InfoCard({
       openSettings();
     }
   };
+  const headerIconNode = (
+    <EntityCardHeaderIcon
+      IconComponent={HeaderIconComponent}
+      iconText={headerIconText}
+      isActive={displayModel.status !== 'unavailable'}
+      size={chromeSize}
+      tone={displayModel.tone === 'neutral' ? 'neutral' : 'primary'}
+      baseColor={displayModel.baseColor}
+      ariaLabel={t('entityCardInteraction.openSettings', { name })}
+      onClick={(event) => {
+        event.stopPropagation();
+        openSettings();
+      }}
+    />
+  );
 
   return (
     <>
@@ -133,23 +149,10 @@ export const InfoCard = memo(function InfoCard({
         interactive
         title={displayModel.title}
         subtitle={subtitleText}
+        headerCompact={isExtraSmall}
         headerLayout="eyebrow-first"
         headerTone="neutral"
-        headerLeading={
-          <EntityCardHeaderIcon
-            IconComponent={HeaderIconComponent}
-            iconText={headerIconText}
-            isActive={displayModel.status !== 'unavailable'}
-            size={chromeSize}
-            tone={displayModel.tone === 'neutral' ? 'neutral' : 'primary'}
-            baseColor={displayModel.baseColor}
-            ariaLabel={t('entityCardInteraction.openSettings', { name })}
-            onClick={(event) => {
-              event.stopPropagation();
-              openSettings();
-            }}
-          />
-        }
+        headerLeading={headerIconNode}
         frameClassName={cardShell.rootFrameClassName}
         disableDefaultSheen={theme !== 'light'}
         contentClassName="flex items-end"
