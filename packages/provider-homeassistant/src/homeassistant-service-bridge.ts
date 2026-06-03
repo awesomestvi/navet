@@ -2,6 +2,7 @@ import type { IntegrationServiceTarget } from '@navet/core/integration-service-t
 import type { ResolvedPlatformResource } from '@navet/core/provider-contract';
 import type {
   PlatformCameraStream,
+  PlatformCameraStreamType,
   PlatformMediaBrowseResult,
   PlatformMediaPlayRequest,
   PlatformMessageClient,
@@ -60,6 +61,9 @@ interface HomeAssistantServiceBridge {
   ): Promise<void>;
   signPath(path: string, expiresSeconds?: number): Promise<{ path: string }>;
   getCameraStreamUrl(entityId: string, format: 'hls' | 'web_rtc'): Promise<PlatformCameraStream>;
+  getCameraStreamPaths(
+    entityId: string
+  ): Promise<Partial<Record<PlatformCameraStreamType, string>>>;
   addListener(
     event: 'entities' | 'registries' | 'connection' | 'config',
     listener: () => void
@@ -121,7 +125,7 @@ interface HomeAssistantServiceBridge {
   getCameraPlaybackPlan(request: unknown): Promise<unknown>;
   resolveCameraStreamResource: (
     entityId: string,
-    stream: 'hls' | 'web_rtc' | 'mjpeg',
+    stream: 'hls' | 'web_rtc',
     rawPath?: string
   ) => Promise<ResolvedPlatformResource>;
   getStoreState(): HomeAssistantStoreState;
@@ -157,6 +161,10 @@ export function signHomeAssistantPath(path: string, expiresSeconds?: number) {
 
 export function getHomeAssistantCameraStreamUrl(entityId: string, format: 'hls' | 'web_rtc') {
   return getBridge().getCameraStreamUrl(entityId, format);
+}
+
+export function getHomeAssistantCameraStreamPaths(entityId: string) {
+  return getBridge().getCameraStreamPaths(entityId);
 }
 
 export function addHomeAssistantListener(
@@ -327,7 +335,7 @@ export function getHomeAssistantCameraPlaybackPlan(request: unknown) {
 
 export function resolveHomeAssistantCameraStreamResource(
   entityId: string,
-  stream: 'hls' | 'web_rtc' | 'mjpeg',
+  stream: 'hls' | 'web_rtc',
   rawPath?: string
 ) {
   return getBridge().resolveCameraStreamResource(entityId, stream, rawPath);

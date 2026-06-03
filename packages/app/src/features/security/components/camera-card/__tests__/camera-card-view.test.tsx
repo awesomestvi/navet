@@ -8,8 +8,7 @@ const defaultProps = {
   name: 'Front Door',
   room: 'Entrance',
   imageUrl: '/api/camera_proxy/camera.front_door?_t=0',
-  isUnavailable: false,
-  isRunning: true,
+  cameraState: 'streaming' as const,
   statusChangedAt: null,
   motionDetected: false,
   motionChangedAt: null,
@@ -45,7 +44,12 @@ describe('CameraCardView', () => {
     const onRefresh = vi.fn();
 
     renderWithProviders(
-      <CameraCardView {...defaultProps} onOpenViewer={onOpenViewer} onRefresh={onRefresh} />
+      <CameraCardView
+        {...defaultProps}
+        cameraViewMode="snapshot"
+        onOpenViewer={onOpenViewer}
+        onRefresh={onRefresh}
+      />
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
@@ -54,10 +58,22 @@ describe('CameraCardView', () => {
     expect(onOpenViewer).not.toHaveBeenCalled();
   });
 
-  it('shows the selected camera view mode when the camera is running', () => {
+  it('shows live status from the normalized camera state instead of the view-mode label', () => {
     renderWithProviders(<CameraCardView {...defaultProps} cameraViewMode="auto" />);
 
-    expect(screen.getByText('Auto')).toBeInTheDocument();
-    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.queryByText('Auto')).not.toBeInTheDocument();
+  });
+
+  it('does not render the snapshot image layer when a live stream element is present', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        streamElement={<div data-testid="camera-stream-player">live stream</div>}
+      />
+    );
+
+    expect(screen.getByTestId('camera-stream-player')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument();
   });
 });

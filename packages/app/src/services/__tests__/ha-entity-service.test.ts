@@ -227,6 +227,24 @@ describe('HAEntityService', () => {
     });
   });
 
+  it('requests Home Assistant camera stream paths over websocket', async () => {
+    const sendMessagePromise = vi.fn(
+      async () => homeAssistantWebSocketFixtures.cameraStreamPathsResult.result
+    );
+    const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
+
+    await expect(service.getCameraStreamPaths('camera.front')).resolves.toEqual(
+      homeAssistantWebSocketFixtures.cameraStreamPathsResult.result
+    );
+
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'stream_camera',
+      data: {
+        camera_entity_id: 'camera.front',
+      },
+    });
+  });
+
   it('requests Home Assistant WebRTC client configuration over websocket', async () => {
     const sendMessagePromise = vi.fn(
       async () => homeAssistantWebSocketFixtures.webRtcClientConfigResult.result

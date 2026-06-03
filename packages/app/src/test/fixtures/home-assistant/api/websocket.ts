@@ -29,6 +29,15 @@ export const homeAssistantWebSocketFixtures = {
       url: '/api/hls/camera.front/master.m3u8',
     },
   },
+  cameraStreamPathsResult: {
+    id: 15,
+    type: 'result',
+    success: true,
+    result: {
+      hls_path: '/api/hls/camera.front/master.m3u8',
+      mjpeg_path: '/api/camera_proxy_stream/camera.front',
+    },
+  },
   webRtcClientConfigResult: {
     id: 14,
     type: 'result',

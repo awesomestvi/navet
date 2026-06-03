@@ -55,8 +55,13 @@ export function createHomeAssistantRuntimeRegistration(
       const signed = await signHomeAssistantPath(path, expiresSeconds);
       return signed.path;
     },
-    getCameraStream: async (entityId, format) =>
-      await getHomeAssistantCameraStreamUrl(entityId, format),
+    getCameraStream: async (entityId, format) => {
+      if (format === 'mjpeg') {
+        throw new Error('Home Assistant MJPEG streams are resolved via camera stream paths');
+      }
+
+      return await getHomeAssistantCameraStreamUrl(entityId, format);
+    },
     adminFeatureService: homeAssistantAdminFeatureService,
     calendarFeatureService: homeAssistantCalendarFeatureService,
     cameraFeatureService: homeAssistantCameraFeatureService,

@@ -69,6 +69,19 @@ function createSwitchDevice(): DeviceWithType {
   };
 }
 
+function createCameraDevice(): DeviceWithType {
+  return {
+    id: 'camera.front_door',
+    name: 'Front Door',
+    room: 'Entrance',
+    size: 'large',
+    state: 'streaming',
+    entityPicture: '/api/camera_proxy/camera.front_door',
+    isStreamCapable: true,
+    type: 'cameras',
+  };
+}
+
 describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -159,6 +172,21 @@ describe('DashboardCardItem card locking', () => {
     expect(renderCardMock).toHaveBeenCalledWith(
       expect.objectContaining({ headerSubtitleOverride: 'Kitchen' })
     );
+  });
+
+  it('avoids paint containment for camera cards so live video can compose normally', () => {
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="camera.front_door"
+        size="large"
+        isEditMode={false}
+        handleSizeChange={vi.fn()}
+        device={createCameraDevice()}
+      />
+    );
+
+    expect(container.firstElementChild?.className).toContain('[contain:layout_style]');
+    expect(container.firstElementChild?.className).not.toContain('[contain:layout_style_paint]');
   });
 
   it('adds a settings action to the edit dock for switch cards and forwards the request', () => {

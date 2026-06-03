@@ -3,9 +3,6 @@ import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
   CameraDashboardViewMode,
-  CameraFeedMode,
-  CameraGo2RtcConfig,
-  CameraGo2RtcDefaults,
   CameraViewMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -81,9 +78,6 @@ interface UserSettings {
   cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
-  cameraFeedModes: Record<string, CameraFeedMode>;
-  cameraGo2RtcDefaults: CameraGo2RtcDefaults;
-  cameraGo2RtcConfigs: Record<string, CameraGo2RtcConfig>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -92,9 +86,6 @@ interface UserSettings {
 export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
-  updateCameraFeedMode: (entityId: string, mode: CameraFeedMode) => void;
-  updateCameraGo2RtcDefaults: (defaults: CameraGo2RtcDefaults) => void;
-  updateCameraGo2RtcConfig: (entityId: string, config: CameraGo2RtcConfig) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }

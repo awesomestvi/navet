@@ -175,4 +175,33 @@ describe('homeassistant-mappers', () => {
       })
     );
   });
+
+  it('prefers entity_picture_local for camera resources and mapped camera state', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'camera.driveway': makeEntity('camera.driveway', 'streaming', {
+          friendly_name: 'Driveway',
+          entity_picture: '/api/camera_proxy/camera.driveway',
+          entity_picture_local: '/api/camera_proxy/camera.driveway_local',
+          supported_features: 2,
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'camera.driveway')).toEqual(
+      expect.objectContaining({
+        attributes: expect.objectContaining({
+          entityPicture: '/api/camera_proxy/camera.driveway_local',
+        }),
+        resources: expect.objectContaining({
+          camera_snapshot: expect.objectContaining({
+            path: '/api/camera_proxy/camera.driveway_local',
+          }),
+        }),
+      })
+    );
+  });
 });

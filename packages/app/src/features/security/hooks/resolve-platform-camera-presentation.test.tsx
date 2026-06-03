@@ -11,67 +11,110 @@ vi.mock('./use-camera-playback-plan', () => ({
 }));
 
 describe('usePlatformCameraPresentation', () => {
-  it('prefers the latest snapshot URL over a stale playback-plan snapshot resource', () => {
-    useCameraPlaybackPlanMock.mockReturnValue({
-      primary: {
-        id: 'camera.front:snapshot',
-        kind: 'image',
-        cacheKey: 'camera.front:snapshot',
-        authStrategy: 'same_origin',
-        url: '/api/camera_proxy/camera.front?_t=0',
-      },
-      fallbacks: [],
-      refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
-    });
+  it('returns an empty snapshot presentation while playback is loading', () => {
+    useCameraPlaybackPlanMock.mockReturnValue(null);
 
     const { result } = renderHook(() =>
       usePlatformCameraPresentation({
-        entityId: 'camera.front',
+        entityId: 'home_assistant:camera.front',
+        cameraState: 'idle',
         preferredMode: 'auto',
-        preferredTransport: 'auto',
-        snapshotUrl: '/api/camera_proxy/camera.front?_t=1',
-        mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=1',
-        frontendStreamTypes: [],
-        hasGo2RtcFeed: false,
-        isUnavailable: false,
-        isRunning: true,
+        snapshotUrl: '/api/camera_proxy/camera.front',
+        isStreamCapable: true,
+        motionDetectionEnabled: true,
         failedTransports: new Set(),
       })
     );
 
-    expect(result.current.sourceKind).toBe('snapshot');
-    expect(result.current.sourceUrl).toBe('/api/camera_proxy/camera.front?_t=1');
+    expect(result.current).toEqual({
+      sourceUrl: undefined,
+      sourceKind: 'snapshot',
+      isFallback: false,
+      videoStreamKind: null,
+      supportsStreaming: false,
+      availableStreamTypes: [],
+    });
   });
 
-  it('prefers the latest MJPEG URL over a stale playback-plan stream resource', () => {
+  it('maps native WebRTC playback models to a viewer presentation', () => {
     useCameraPlaybackPlanMock.mockReturnValue({
-      primary: {
-        id: 'camera.front:mjpeg',
-        kind: 'mjpeg_stream',
-        cacheKey: 'camera.front:mjpeg',
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    const { result } = renderHook(() =>
+      usePlatformCameraPresentation({
+        entityId: 'home_assistant:camera.front',
+        cameraState: 'streaming',
+        preferredMode: 'live',
+        snapshotUrl: '/api/camera_proxy/camera.front',
+        isStreamCapable: true,
+        motionDetectionEnabled: true,
+        failedTransports: new Set(),
+      })
+    );
+
+    expect(result.current).toEqual({
+      sourceUrl: undefined,
+      sourceKind: 'web_rtc',
+      isFallback: false,
+      videoStreamKind: 'web_rtc',
+      supportsStreaming: true,
+      availableStreamTypes: ['web_rtc'],
+    });
+  });
+
+  it('maps snapshot fallback playback models to a snapshot presentation', () => {
+    useCameraPlaybackPlanMock.mockReturnValue({
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front:snapshot',
         authStrategy: 'same_origin',
-        url: '/api/camera_proxy_stream/camera.front?_t=0',
+        url: '/api/camera_proxy/camera.front',
       },
-      fallbacks: [],
+      supportsSnapshot: true,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: true,
+      shouldStartWithSnapshot: true,
+      motionDetectionEnabled: true,
       refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
     const { result } = renderHook(() =>
       usePlatformCameraPresentation({
-        entityId: 'camera.front',
+        entityId: 'home_assistant:camera.front',
+        cameraState: 'streaming',
         preferredMode: 'live',
-        preferredTransport: 'auto',
-        snapshotUrl: '/api/camera_proxy/camera.front?_t=1',
-        mjpegStreamUrl: '/api/camera_proxy_stream/camera.front?_t=1',
-        frontendStreamTypes: [],
-        hasGo2RtcFeed: false,
-        isUnavailable: false,
-        isRunning: true,
-        failedTransports: new Set(['web_rtc', 'hls']),
+        snapshotUrl: '/api/camera_proxy/camera.front',
+        isStreamCapable: false,
+        motionDetectionEnabled: true,
+        failedTransports: new Set(),
       })
     );
 
-    expect(result.current.sourceKind).toBe('mjpeg');
-    expect(result.current.sourceUrl).toBe('/api/camera_proxy_stream/camera.front?_t=1');
+    expect(result.current).toEqual({
+      sourceUrl: '/api/camera_proxy/camera.front',
+      sourceKind: 'snapshot',
+      isFallback: true,
+      videoStreamKind: null,
+      supportsStreaming: false,
+      availableStreamTypes: [],
+    });
   });
 });

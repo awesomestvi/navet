@@ -8,6 +8,7 @@ import { useProviderHealth } from '@navet/app/hooks/use-provider-health';
 import type {
   PlatformCameraCompanionState,
   PlatformCameraLiveState,
+  PlatformCameraState,
   PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@navet/app/platform/provider-feature-models';
@@ -21,11 +22,38 @@ function selectEmptyDeviceRecord() {
 }
 
 export interface ProviderCameraLiveData {
+  cameraState: PlatformCameraState;
   companionStates: PlatformCameraCompanionState[];
   connected: boolean;
   deviceEntities: Record<string, PlatformEntitySnapshot | undefined>;
   liveEntity: PlatformEntitySnapshot | undefined;
   liveState: PlatformCameraLiveState;
+}
+
+function normalizeCameraState(
+  liveEntity: PlatformEntitySnapshot | undefined,
+  providerState: ReturnType<typeof readNavetCameraState>
+): PlatformCameraState {
+  const rawState = `${liveEntity?.state ?? providerState?.value ?? ''}`.toLowerCase();
+  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
+
+  if (rawState === 'unavailable' || rawState === 'unknown') {
+    return 'unavailable';
+  }
+
+  if (liveAttrs?.is_recording === true || rawState === 'recording') {
+    return 'recording';
+  }
+
+  if (liveAttrs?.is_streaming === true || rawState === 'streaming') {
+    return 'streaming';
+  }
+
+  if (rawState === 'off') {
+    return 'off';
+  }
+
+  return 'idle';
 }
 
 function isMotionCompanionEntity(
@@ -106,7 +134,13 @@ export function useProviderCameraLiveData(
     });
   }, [deviceEntities]);
 
+  const cameraState = useMemo(
+    () => normalizeCameraState(liveEntity, providerState),
+    [liveEntity, providerState]
+  );
+
   return {
+    cameraState,
     companionStates,
     connected: providerHealth.connected,
     deviceEntities,

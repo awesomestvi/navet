@@ -27,7 +27,7 @@ export interface PlatformMediaPlayRequest {
 
 export type PlatformRemoteCommand = string;
 
-export type PlatformCameraStreamType = 'hls' | 'web_rtc';
+export type PlatformCameraStreamType = 'hls' | 'web_rtc' | 'mjpeg';
 
 export interface PlatformCameraCapabilities {
   streamTypes: PlatformCameraStreamType[];
@@ -217,13 +217,15 @@ export interface PlatformNotification {
   detailsUrl?: string | null;
 }
 
-export type PlatformCameraSourceKind = 'snapshot' | 'mjpeg' | 'hls' | 'web_rtc' | 'go2rtc';
+export type PlatformCameraSourceKind = 'snapshot' | 'hls' | 'web_rtc' | 'mjpeg';
+export type PlatformCameraTransport = 'hls' | 'web_rtc' | 'mjpeg';
+export type PlatformCameraState = 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
 
 export interface PlatformCameraPresentation {
   sourceUrl?: string;
   sourceKind: PlatformCameraSourceKind;
   isFallback: boolean;
-  videoStreamKind: Extract<PlatformCameraSourceKind, 'hls' | 'web_rtc' | 'go2rtc'> | null;
+  videoStreamKind: Extract<PlatformCameraSourceKind, 'hls' | 'web_rtc' | 'mjpeg'> | null;
   supportsStreaming: boolean;
   availableStreamTypes: string[];
 }
@@ -231,6 +233,24 @@ export interface PlatformCameraPresentation {
 export interface CameraPlaybackPlan {
   primary: ResolvedPlatformResource;
   fallbacks: ResolvedPlatformResource[];
+  refreshPolicy: {
+    snapshotRefreshMs?: number;
+    retryDelaysMs: number[];
+  };
+}
+
+export interface PlatformCameraPlaybackModel {
+  cameraState: PlatformCameraState;
+  snapshotResource: ResolvedPlatformResource | null;
+  supportsSnapshot: boolean;
+  liveTransports: PlatformCameraTransport[];
+  fallbackTransports: PlatformCameraTransport[];
+  selectedTransport: PlatformCameraTransport | null;
+  selectedStreamResource: ResolvedPlatformResource | null;
+  supportsStreaming: boolean;
+  isSnapshotFallback: boolean;
+  shouldStartWithSnapshot: boolean;
+  motionDetectionEnabled: boolean | null;
   refreshPolicy: {
     snapshotRefreshMs?: number;
     retryDelaysMs: number[];

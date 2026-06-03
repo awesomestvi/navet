@@ -7,7 +7,6 @@ import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import type { ErrorStoreState } from './error-store';
 import type { HomeAssistantStore } from './home-assistant-store';
 import type { IntegrationStore } from './integration-store';
-import { type CameraGo2RtcConfig, getEmptyCameraGo2RtcConfig } from './settings-store';
 import type {
   CustomCardsState,
   EditModeState,
@@ -17,21 +16,8 @@ import type {
   ThemeState,
 } from './types';
 
-const EMPTY_CAMERA_GO2RTC_CONFIG = getEmptyCameraGo2RtcConfig();
-const emptyCameraGo2RtcConfigByEntityId = new Map<string, CameraGo2RtcConfig>();
 function hasOwnKey(record: object, key: PropertyKey) {
   return typeof key === 'string' && Object.keys(record).includes(key);
-}
-
-function getCachedEmptyCameraGo2RtcConfig(entityId: string) {
-  const cached = emptyCameraGo2RtcConfigByEntityId.get(entityId);
-  if (cached) {
-    return cached;
-  }
-
-  const config = { ...EMPTY_CAMERA_GO2RTC_CONFIG };
-  emptyCameraGo2RtcConfigByEntityId.set(entityId, config);
-  return config;
 }
 
 /**
@@ -144,11 +130,6 @@ export const settingsSelectors = {
     hasOwnKey(state.cameraViewModes, entityId),
   cameraViewModeForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
-  cameraFeedModeForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraFeedModes[entityId] ?? 'auto',
-  cameraGo2RtcDefaults: (state: SettingsState) => state.cameraGo2RtcDefaults,
-  cameraGo2RtcConfigForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraGo2RtcConfigs[entityId] ?? getCachedEmptyCameraGo2RtcConfig(entityId),
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
@@ -156,9 +137,6 @@ export const settingsSelectors = {
   // Actions
   updateSettings: (state: SettingsState) => state.updateSettings,
   updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
-  updateCameraFeedMode: (state: SettingsState) => state.updateCameraFeedMode,
-  updateCameraGo2RtcDefaults: (state: SettingsState) => state.updateCameraGo2RtcDefaults,
-  updateCameraGo2RtcConfig: (state: SettingsState) => state.updateCameraGo2RtcConfig,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
   // Combined selectors
@@ -177,7 +155,6 @@ export const settingsSelectors = {
     entityInteractionMode: state.entityInteractionMode,
     cameraDashboardViewMode: state.cameraDashboardViewMode,
     cameraViewMode: state.cameraDashboardViewMode,
-    cameraGo2RtcDefaults: state.cameraGo2RtcDefaults,
     ambientLightBleed: state.ambientLightBleed,
     weatherForecastMode: state.weatherForecastMode,
     weatherMetricIds: state.weatherMetricIds,

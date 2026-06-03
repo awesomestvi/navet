@@ -42,13 +42,8 @@ export function resolveHomeAssistantProxyUrl(
 
   const resource = homeAssistantResourceResolver.resolveSync(
     {
-      kind:
-        resourceUrl.includes('/api/camera_proxy/') ||
-        resourceUrl.includes('/api/camera_proxy_stream/')
-          ? 'camera_snapshot'
-          : 'absolute_url',
-      ...(resourceUrl.includes('/api/camera_proxy/') ||
-      resourceUrl.includes('/api/camera_proxy_stream/')
+      kind: resourceUrl.includes('/api/camera_proxy/') ? 'camera_snapshot' : 'absolute_url',
+      ...(resourceUrl.includes('/api/camera_proxy/')
         ? { entityId: resourceUrl, rawPath: resourceUrl }
         : { url: resourceUrl }),
     } as

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRuntimeContextForTests } from '../runtime/runtime-detector';
 import { authSessionManager } from './auth-session-manager';
+
+const { standaloneInvalidatePersistedSessionMock } = vi.hoisted(() => ({
+  standaloneInvalidatePersistedSessionMock: vi.fn(),
+}));
 
 vi.mock('@navet/app/auth/adapters/haPanelAuth', () => ({
   haPanelAuth: {
@@ -22,6 +27,7 @@ vi.mock('@navet/app/auth/adapters/standaloneOAuthAuth', () => ({
     providerId: 'home_assistant',
     kind: 'standalone-oauth',
     init: vi.fn().mockResolvedValue(null),
+    invalidatePersistedSession: standaloneInvalidatePersistedSessionMock,
   },
 }));
 
@@ -54,6 +60,8 @@ describe('authSessionManager snapshot', () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
+    window.__NAVET_PANEL__ = undefined;
+    resetRuntimeContextForTests();
     authSessionManager.replaceSession(null);
     homeyInitMock.mockReset();
     homeyLoginMock.mockReset();
@@ -61,6 +69,7 @@ describe('authSessionManager snapshot', () => {
     openhabLoginMock.mockReset();
     homeyInitMock.mockResolvedValue(null);
     openhabInitMock.mockResolvedValue(null);
+    standaloneInvalidatePersistedSessionMock.mockReset();
   });
 
   it('restores both Home Assistant and Homey sessions together', async () => {
@@ -218,5 +227,50 @@ describe('authSessionManager snapshot', () => {
         }),
       },
     });
+  });
+
+  it('uses the optional persisted-session invalidation hook when available', async () => {
+    authSessionManager.replaceSession({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    await authSessionManager.invalidatePersistedSession();
+
+    expect(standaloneInvalidatePersistedSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: 'home_assistant',
+        runtime: 'standalone-oauth',
+      })
+    );
+    expect(authSessionManager.getSnapshot()).toMatchObject({
+      providerId: 'home_assistant',
+      isAuthenticated: true,
+    });
+  });
+
+  it('treats persisted-session invalidation as optional for runtimes without the hook', async () => {
+    window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
+    authSessionManager.replaceSession({
+      providerId: 'home_assistant',
+      runtime: 'ha-panel',
+      authMode: 'ha_frontend_session',
+      haBaseUrl: window.location.origin,
+      hassUrl: window.location.origin,
+    });
+
+    await expect(authSessionManager.invalidatePersistedSession()).resolves.toBeUndefined();
+    expect(authSessionManager.getSnapshot()).toMatchObject({
+      providerId: 'home_assistant',
+      isAuthenticated: true,
+      runtime: 'ha_panel',
+      authMode: 'ha_frontend_session',
+    });
+    window.__NAVET_PANEL__ = undefined;
+    resetRuntimeContextForTests();
   });
 });

@@ -27,6 +27,10 @@ export const integrationCameraFeatureService: ProviderCameraFeatureService = {
     await getCameraFeatureService(entityId).refreshCameraSnapshot?.(
       getNativeIntegrationEntityId(entityId)
     ),
+  getCameraStreamPaths: async (entityId) =>
+    (await getCameraFeatureService(entityId).getCameraStreamPaths?.(
+      getNativeIntegrationEntityId(entityId)
+    )) ?? {},
   getCameraStreamUrl: async (entityId, format) =>
     await getCameraFeatureService(entityId).getCameraStreamUrl(
       getNativeIntegrationEntityId(entityId),
@@ -47,6 +51,11 @@ export const integrationCameraFeatureService: ProviderCameraFeatureService = {
       getNativeIntegrationEntityId(entityId),
       sessionId,
       candidate
+    ),
+  closeCameraWebRtcSession: async (entityId, sessionId) =>
+    await getCameraFeatureService(entityId).closeCameraWebRtcSession?.(
+      getNativeIntegrationEntityId(entityId),
+      sessionId
     ),
   toggleCameraAccessory: async (entityId, state) =>
     await getCameraFeatureService(entityId).toggleCameraAccessory(

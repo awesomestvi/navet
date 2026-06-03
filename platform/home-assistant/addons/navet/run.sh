@@ -52,22 +52,6 @@ server {
   include /etc/nginx/snippets/navet-openhab-store.conf;
   include /etc/nginx/snippets/navet-profile-store.conf;
 
-  location = /__navet_ha_proxy__/api/websocket {
-    proxy_pass ${RESOLVED_HASS_PROXY_BASE}/websocket;
-    proxy_http_version 1.1;
-    proxy_set_header Host \$proxy_host;
-    proxy_set_header Forwarded "";
-    proxy_set_header X-Forwarded-For "";
-    proxy_set_header X-Forwarded-Host "";
-    proxy_set_header X-Forwarded-Proto "";
-    proxy_set_header X-Real-IP "";
-    proxy_set_header Upgrade \$http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_read_timeout 3600s;
-    proxy_send_timeout 3600s;
-${PROXY_AUTH_DIRECTIVE}
-  }
-
   location /__navet_ha_proxy__/ {
     if (\$uri ~ "\.\.") {
       return 400;

@@ -21,7 +21,6 @@ import { integrationCameraFeatureService } from '@navet/app/services/integration
 import type { CameraViewMode } from '@navet/app/stores/settings-store';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { memo, useCallback, useEffect, useState } from 'react';
-import type { CameraStreamType } from './camera-view-mode';
 
 export interface SiblingEntity {
   id: string;
@@ -35,9 +34,7 @@ interface CameraSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
-  frontendStreamTypes: readonly CameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  hasMjpegStream: boolean;
+  supportsStreaming: boolean;
   hasSnapshot: boolean;
   lowPowerMode: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
@@ -169,26 +166,21 @@ const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['auto', 'live', 'snapshot'];
 
 function CameraViewModeRow({
   value,
-  frontendStreamTypes,
-  hasGo2RtcFeed,
-  hasMjpegStream,
+  supportsStreaming,
   hasSnapshot,
   lowPowerMode,
   onChange,
 }: {
   value: CameraViewMode;
-  frontendStreamTypes: readonly CameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  hasMjpegStream: boolean;
+  supportsStreaming: boolean;
   hasSnapshot: boolean;
   lowPowerMode: boolean;
   onChange: (mode: CameraViewMode) => void;
 }) {
   const { t } = useI18n();
-  const hasLiveFeed = hasGo2RtcFeed || frontendStreamTypes.length > 0 || hasMjpegStream;
   const supportedOptions = CAMERA_VIEW_OPTIONS.filter((mode) => {
     if (mode === 'live') {
-      return hasLiveFeed;
+      return supportsStreaming;
     }
 
     return hasSnapshot;
@@ -232,9 +224,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   onOpenChange,
   siblingEntities,
   cameraViewMode,
-  frontendStreamTypes,
-  hasGo2RtcFeed,
-  hasMjpegStream,
+  supportsStreaming,
   hasSnapshot,
   lowPowerMode,
   onCameraViewModeChange,
@@ -281,9 +271,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
           <div className="mt-5 space-y-6">
             <CameraViewModeRow
               value={cameraViewMode}
-              frontendStreamTypes={frontendStreamTypes}
-              hasGo2RtcFeed={hasGo2RtcFeed}
-              hasMjpegStream={hasMjpegStream}
+              supportsStreaming={supportsStreaming}
               hasSnapshot={hasSnapshot}
               lowPowerMode={lowPowerMode}
               onChange={onCameraViewModeChange}

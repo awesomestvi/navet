@@ -1,7 +1,7 @@
 import type { ResolvedPlatformResource } from '@navet/core/provider-contract';
 import type {
-  CameraPlaybackPlan,
-  PlatformCameraStreamType,
+  PlatformCameraPlaybackModel,
+  PlatformCameraTransport,
 } from '@navet/core/provider-feature-models';
 import {
   getHomeAssistantCameraPlaybackPlan as getConfiguredHomeAssistantCameraPlaybackPlan,
@@ -9,30 +9,27 @@ import {
   resolveHomeAssistantCameraStreamResource as resolveConfiguredHomeAssistantCameraStreamResource,
 } from './homeassistant-service-bridge';
 
-type CameraFeedMode = 'auto' | 'go2rtc' | 'web_rtc' | 'hls' | 'mjpeg';
-
 interface CameraPlaybackPlanRequest {
   entityId: string;
+  cameraState: 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
   preferredMode: 'auto' | 'live' | 'snapshot';
-  preferredTransport: CameraFeedMode | 'go2rtc';
   snapshotUrl?: string;
-  mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly PlatformCameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  isUnavailable: boolean;
-  isRunning: boolean;
-  failedTransports?: ReadonlySet<'hls' | 'web_rtc' | 'mjpeg' | 'go2rtc' | 'snapshot'>;
+  isStreamCapable: boolean;
+  motionDetectionEnabled: boolean | null;
+  failedTransports?: ReadonlySet<PlatformCameraTransport>;
 }
 
 export async function getHomeAssistantCameraPlaybackPlan(
   request: CameraPlaybackPlanRequest
-): Promise<CameraPlaybackPlan> {
-  return (await getConfiguredHomeAssistantCameraPlaybackPlan(request)) as CameraPlaybackPlan;
+): Promise<PlatformCameraPlaybackModel> {
+  return (await getConfiguredHomeAssistantCameraPlaybackPlan(
+    request
+  )) as PlatformCameraPlaybackModel;
 }
 
 export async function resolveHomeAssistantCameraStreamResource(
   entityId: string,
-  stream: 'hls' | 'web_rtc' | 'mjpeg',
+  stream: 'hls' | 'web_rtc',
   rawPath?: string
 ): Promise<ResolvedPlatformResource> {
   return await resolveConfiguredHomeAssistantCameraStreamResource(entityId, stream, rawPath);

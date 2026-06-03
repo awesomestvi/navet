@@ -1,24 +1,19 @@
 import type {
   PlatformCameraPresentation,
   PlatformCameraSourceKind,
+  PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
-import type {
-  CameraImageSourceKind,
-  CameraStreamType,
-} from '../components/camera-card/camera-view-mode';
+import type { CameraImageSourceKind } from '../components/camera-card/camera-view-mode';
 import { useCameraPlaybackPlan } from './use-camera-playback-plan';
 
 interface ResolvePlatformCameraPresentationOptions {
   entityId: string;
+  cameraState: 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
   preferredMode: 'live' | 'auto' | 'snapshot';
-  preferredTransport: 'auto' | 'hls' | 'web_rtc';
   snapshotUrl?: string;
-  mjpegStreamUrl?: string;
-  frontendStreamTypes: readonly CameraStreamType[];
-  hasGo2RtcFeed: boolean;
-  isUnavailable: boolean;
-  isRunning: boolean;
-  failedTransports: Set<CameraImageSourceKind>;
+  isStreamCapable: boolean;
+  motionDetectionEnabled: boolean | null;
+  failedTransports: Set<PlatformCameraTransport>;
 }
 
 function mapSourceKind(kind: CameraImageSourceKind): PlatformCameraSourceKind {
@@ -30,45 +25,48 @@ export function usePlatformCameraPresentation(
 ): PlatformCameraPresentation {
   const playbackPlan = useCameraPlaybackPlan({
     entityId: options.entityId,
+    cameraState: options.cameraState,
     preferredMode: options.preferredMode,
-    preferredTransport: options.preferredTransport,
     snapshotUrl: options.snapshotUrl,
-    mjpegStreamUrl: options.mjpegStreamUrl,
-    frontendStreamTypes: options.frontendStreamTypes,
-    hasGo2RtcFeed: options.hasGo2RtcFeed,
-    isUnavailable: options.isUnavailable,
-    isRunning: options.isRunning,
+    isStreamCapable: options.isStreamCapable,
+    motionDetectionEnabled: options.motionDetectionEnabled,
     failedTransports: options.failedTransports,
   });
-  const currentSnapshotUrl = options.snapshotUrl;
-  const currentMjpegStreamUrl = options.mjpegStreamUrl;
+
+  if (!playbackPlan) {
+    return {
+      sourceUrl: undefined,
+      sourceKind: 'snapshot',
+      isFallback: false,
+      videoStreamKind: null,
+      supportsStreaming: false,
+      availableStreamTypes: [],
+    };
+  }
 
   const resolved =
-    playbackPlan?.primary.kind === 'webrtc_stream'
+    playbackPlan.selectedTransport === 'web_rtc'
       ? {
           sourceUrl: undefined,
-          sourceKind:
-            playbackPlan.primary.metadata?.source === 'go2rtc'
-              ? ('go2rtc' as const)
-              : ('web_rtc' as const),
+          sourceKind: 'web_rtc' as const,
           isFallback: false,
         }
-      : playbackPlan?.primary.kind === 'hls_stream'
+      : playbackPlan.selectedTransport === 'hls'
         ? {
             sourceUrl: undefined,
             sourceKind: 'hls' as const,
             isFallback: false,
           }
-        : playbackPlan?.primary.kind === 'mjpeg_stream'
+        : playbackPlan.selectedTransport === 'mjpeg'
           ? {
-              sourceUrl: currentMjpegStreamUrl ?? playbackPlan.primary.url,
+              sourceUrl: undefined,
               sourceKind: 'mjpeg' as const,
               isFallback: false,
             }
           : {
-              sourceUrl: currentSnapshotUrl ?? playbackPlan?.primary.url,
+              sourceUrl: playbackPlan.snapshotResource?.url,
               sourceKind: 'snapshot' as const,
-              isFallback: options.preferredMode === 'live',
+              isFallback: playbackPlan.isSnapshotFallback,
             };
 
   return {
@@ -76,17 +74,12 @@ export function usePlatformCameraPresentation(
     sourceKind: mapSourceKind(resolved.sourceKind),
     isFallback: resolved.isFallback,
     videoStreamKind:
-      resolved.sourceKind === 'go2rtc' ||
       resolved.sourceKind === 'hls' ||
-      resolved.sourceKind === 'web_rtc'
+      resolved.sourceKind === 'web_rtc' ||
+      resolved.sourceKind === 'mjpeg'
         ? resolved.sourceKind
         : null,
-    supportsStreaming:
-      options.hasGo2RtcFeed ||
-      options.frontendStreamTypes.length > 0 ||
-      Boolean(options.mjpegStreamUrl),
-    availableStreamTypes: options.hasGo2RtcFeed
-      ? ['go2rtc', ...options.frontendStreamTypes]
-      : [...options.frontendStreamTypes],
+    supportsStreaming: playbackPlan.supportsStreaming,
+    availableStreamTypes: [...playbackPlan.liveTransports],
   };
 }

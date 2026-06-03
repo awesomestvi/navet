@@ -6,10 +6,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { haIngressAuth } from '../adapters/haIngressAuth';
 import { haPanelAuth } from '../adapters/haPanelAuth';
 import { openhabUrlSessionAuth } from '../adapters/openhabUrlSessionAuth';
-import { standaloneOAuthAuth } from '../adapters/standaloneOAuthAuth';
+import {
+  invalidateStandaloneOAuthSession,
+  standaloneOAuthAuth,
+} from '../adapters/standaloneOAuthAuth';
 
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
-const INGRESS_AUTH_RESTORE_TIMEOUT_MS = 3_000;
 const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
 
 const { getAuthMock, refreshAccessTokenMock, revokeMock } = vi.hoisted(() => ({
@@ -86,69 +88,10 @@ describe('auth adapters', () => {
     expect(session?.auth).toBeUndefined();
   });
 
-  it('creates ingress session from Home Assistant frontend auth when available', async () => {
-    const auth = createAuth(ingressSessionFixture.haBaseUrl);
-    localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
-    getAuthMock.mockResolvedValueOnce(auth);
+  it('creates ingress session without reading frontend tokens', async () => {
+    localStorage.setItem('hassTokens', JSON.stringify({ data: createAuth().data }));
+    sessionStorage.setItem('hassTokens', JSON.stringify({ data: createAuth().data }));
 
-    const session = await haIngressAuth.init();
-
-    expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
-    expect(session).toMatchObject({
-      runtime: 'ha-ingress',
-      authMode: 'ingress_session',
-      haBaseUrl: window.location.origin,
-      hassUrl: window.location.origin,
-      auth,
-    });
-  });
-
-  it('restores ingress session from session storage when local storage is empty', async () => {
-    const auth = createAuth(ingressSessionFixture.haBaseUrl);
-    sessionStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
-    getAuthMock.mockResolvedValueOnce(auth);
-
-    const session = await haIngressAuth.init();
-
-    expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
-    expect(session).toMatchObject({
-      runtime: 'ha-ingress',
-      authMode: 'ingress_session',
-      haBaseUrl: window.location.origin,
-      hassUrl: window.location.origin,
-      auth,
-    });
-  });
-
-  it('restores ingress session from parent window storage when embedded storage is empty', async () => {
-    const auth = createAuth(ingressSessionFixture.haBaseUrl);
-    const parentLocalStorage = {
-      getItem: vi.fn((key: string) =>
-        key === 'hassTokens' ? JSON.stringify({ data: auth.data }) : null
-      ),
-    };
-    Object.defineProperty(window, 'parent', {
-      configurable: true,
-      value: {
-        localStorage: parentLocalStorage,
-        sessionStorage: { getItem: vi.fn(() => null) },
-      },
-    });
-    getAuthMock.mockResolvedValueOnce(auth);
-
-    const session = await haIngressAuth.init();
-
-    expect(parentLocalStorage.getItem).toHaveBeenCalledWith('hassTokens');
-    expect(session).toMatchObject({
-      runtime: 'ha-ingress',
-      authMode: 'ingress_session',
-      haBaseUrl: window.location.origin,
-      hassUrl: window.location.origin,
-      auth,
-    });
-  });
-
-  it('creates ingress session without redirecting to OAuth when frontend tokens are unavailable', async () => {
     const session = await haIngressAuth.init();
 
     expect(getAuthMock).not.toHaveBeenCalled();
@@ -161,70 +104,30 @@ describe('auth adapters', () => {
     expect(session?.auth).toBeUndefined();
   });
 
-  it('keeps ingress auth on the proxy path when frontend tokens cannot be restored', async () => {
-    const auth = createAuth(ingressSessionFixture.haBaseUrl);
-    localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
-    getAuthMock.mockRejectedValueOnce(new Error('stale frontend token'));
+  it('refreshes ingress session without reading frontend tokens', async () => {
+    const session = await haIngressAuth.refresh?.({
+      providerId: 'home_assistant',
+      runtime: 'ha-ingress',
+      authMode: 'ingress_session',
+      haBaseUrl: ingressSessionFixture.haBaseUrl,
+      hassUrl: ingressSessionFixture.hassUrl,
+    });
 
-    const session = await haIngressAuth.init();
-
-    expect(getAuthMock).toHaveBeenCalledWith({ loadTokens: expect.any(Function) });
+    expect(getAuthMock).not.toHaveBeenCalled();
     expect(session).toMatchObject({
       runtime: 'ha-ingress',
       authMode: 'ingress_session',
       haBaseUrl: window.location.origin,
       hassUrl: window.location.origin,
     });
-    expect(session?.auth).toBeUndefined();
-  });
-
-  it('keeps ingress auth on the proxy path when frontend token refresh fails', async () => {
-    const auth = createAuth(ingressSessionFixture.haBaseUrl);
-    Object.defineProperty(auth, 'expired', {
-      configurable: true,
-      get: () => true,
-    });
-    localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
-    refreshAccessTokenMock.mockRejectedValueOnce(new Error('stale frontend token'));
-    getAuthMock.mockResolvedValueOnce(auth);
-
-    const session = await haIngressAuth.init();
-
-    expect(refreshAccessTokenMock).toHaveBeenCalled();
-    expect(session).toMatchObject({
-      runtime: 'ha-ingress',
-      authMode: 'ingress_session',
-      haBaseUrl: window.location.origin,
-      hassUrl: window.location.origin,
-    });
-    expect(session?.auth).toBeUndefined();
-  });
-
-  it('keeps ingress auth on the proxy path when frontend token restore stalls', async () => {
-    vi.useFakeTimers();
-    try {
-      const auth = createAuth(ingressSessionFixture.haBaseUrl);
-      localStorage.setItem('hassTokens', JSON.stringify({ data: auth.data }));
-      getAuthMock.mockReturnValueOnce(new Promise(() => {}));
-
-      const sessionPromise = haIngressAuth.init();
-
-      await vi.advanceTimersByTimeAsync(INGRESS_AUTH_RESTORE_TIMEOUT_MS);
-
-      await expect(sessionPromise).resolves.toMatchObject({
-        runtime: 'ha-ingress',
-        authMode: 'ingress_session',
-        haBaseUrl: window.location.origin,
-        hassUrl: window.location.origin,
-      });
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   it('restores persisted standalone OAuth session from the same-origin auth endpoint', async () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
-    vi.spyOn(window, 'fetch').mockResolvedValue(createStoredTokenResponse());
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValueOnce(createStoredTokenResponse())
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await standaloneOAuthAuth.init();
@@ -236,6 +139,13 @@ describe('auth adapters', () => {
       hassUrl: oauthSessionFixture.hassUrl,
       auth,
     });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(auth.data),
+      })
+    );
   });
 
   it('fails open to unauthenticated startup when the same-origin auth endpoint stalls', async () => {
@@ -307,7 +217,9 @@ describe('auth adapters', () => {
   it('exchanges a standalone OAuth callback without requiring the URL form again', async () => {
     const auth = createAuth();
     const { hassUrl } = setOAuthCallbackUrl();
-    vi.spyOn(window, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await standaloneOAuthAuth.init();
@@ -323,6 +235,13 @@ describe('auth adapters', () => {
       hassUrl,
       auth,
     });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(auth.data),
+      })
+    );
     expect(window.location.search).toBe('');
   });
 
@@ -358,6 +277,9 @@ describe('auth adapters', () => {
 
   it('starts standalone OAuth login without reading the optional token store first', async () => {
     const auth = createAuth('http://homeassistant.local:8123');
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await standaloneOAuthAuth.login?.({
@@ -380,6 +302,13 @@ describe('auth adapters', () => {
       hassUrl: 'http://homeassistant.local:8123',
       auth,
     });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(auth.data),
+      })
+    );
   });
 
   it('rejects malformed standalone OAuth callbacks and clears server-side session data', async () => {
@@ -406,6 +335,9 @@ describe('auth adapters', () => {
   it('refreshes standalone OAuth access tokens through the auth handle', async () => {
     const auth = createAuth();
     auth.data.expires = Date.now() - 1;
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
     const refreshed = await standaloneOAuthAuth.refresh?.({
       providerId: 'home_assistant',
@@ -419,6 +351,27 @@ describe('auth adapters', () => {
 
     expect(refreshAccessTokenMock).toHaveBeenCalled();
     expect(refreshed?.expiresAt).toBe(auth.data.expires);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(auth.data),
+      })
+    );
+  });
+
+  it('invalidates the persisted standalone OAuth session with the same-origin auth store', async () => {
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await invalidateStandaloneOAuthSession();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({ method: 'DELETE' })
+    );
+    expect(revokeMock).not.toHaveBeenCalled();
   });
 
   it('clears server-side OAuth tokens on logout', async () => {

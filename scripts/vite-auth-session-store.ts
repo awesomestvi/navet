@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 export interface HomeAssistantAuthData {
@@ -52,8 +52,12 @@ export function createViteAuthSessionStore(
     },
     saveAuthSession(data: HomeAssistantAuthData) {
       const serialized = JSON.stringify(data)
-      mkdirSync(path.dirname(sessionFilePath), { recursive: true })
-      writeFileSync(sessionFilePath, serialized, 'utf8')
+      const sessionDir = path.dirname(sessionFilePath)
+      const tempFilePath = `${sessionFilePath}.tmp`
+
+      mkdirSync(sessionDir, { recursive: true })
+      writeFileSync(tempFilePath, serialized, 'utf8')
+      renameSync(tempFilePath, sessionFilePath)
       authSession = serialized
     },
     clearAuthSession() {

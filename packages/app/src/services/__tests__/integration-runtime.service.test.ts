@@ -144,6 +144,18 @@ describe('integration-runtime.service', () => {
     expect(getCameraStreamUrlMock).toHaveBeenCalledWith('camera.front', 'hls');
   });
 
+  it('normalizes provider-scoped camera IDs before runtime stream lookup', async () => {
+    getCameraStreamUrlMock.mockResolvedValue({ url: '/api/hls/stream.m3u8' });
+
+    await expect(
+      getCurrentIntegrationCameraStream('home_assistant:camera.front', 'hls')
+    ).resolves.toEqual({
+      url: '/api/hls/stream.m3u8',
+    });
+
+    expect(getCameraStreamUrlMock).toHaveBeenCalledWith('camera.front', 'hls');
+  });
+
   it('fails with a provider-specific message when a runtime capability is missing', async () => {
     authSessionManager.replaceSession({
       providerId: 'homey',

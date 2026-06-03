@@ -13,6 +13,9 @@ function camera(
     name: overrides.name,
     room: overrides.room ?? 'Entrance',
     size: overrides.size ?? 'medium',
+    providerId: overrides.providerId ?? 'home_assistant',
+    nativeId: overrides.nativeId,
+    sourceDeviceId: overrides.sourceDeviceId,
     state: overrides.state ?? 'idle',
     supportedFeatures: overrides.supportedFeatures ?? 0,
     isStreamCapable: overrides.isStreamCapable ?? false,
@@ -165,6 +168,54 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.primaryCameras.map((item) => item.id)).toEqual(['camera.a', 'camera.z']);
+  });
+
+  it('collapses duplicate camera stream variants for the same source device', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'home_assistant:camera.reolink_driveway',
+          nativeId: 'camera.reolink_driveway',
+          sourceDeviceId: 'device-reolink-driveway',
+          name: 'Driveway',
+          room: 'Outside',
+          state: 'streaming',
+          isStreamCapable: true,
+          isStillImageOnly: false,
+          lastUpdated: '2026-06-03T13:10:00.000Z',
+        }),
+        camera({
+          id: 'home_assistant:camera.reolink_driveway_2',
+          nativeId: 'camera.reolink_driveway_2',
+          sourceDeviceId: 'device-reolink-driveway',
+          name: 'Driveway',
+          room: 'Outside',
+          state: 'streaming',
+          isStreamCapable: true,
+          isStillImageOnly: false,
+          lastUpdated: '2026-06-03T13:11:00.000Z',
+        }),
+        camera({
+          id: 'home_assistant:camera.reolink_driveway_4',
+          nativeId: 'camera.reolink_driveway_4',
+          sourceDeviceId: 'device-reolink-driveway',
+          name: 'Driveway',
+          room: 'Outside',
+          state: 'streaming',
+          isStreamCapable: false,
+          isStillImageOnly: true,
+          lastUpdated: '2026-06-03T13:12:00.000Z',
+        }),
+      ],
+      locks: [],
+      sensors: [],
+    });
+
+    expect(model.primaryCameras.map((item) => item.id)).toEqual([
+      'home_assistant:camera.reolink_driveway',
+    ]);
+    expect(model.summary.totalCameras).toBe(1);
+    expect(model.summary.liveCount).toBe(1);
   });
 
   it('does not classify named security cameras as utility still images', () => {

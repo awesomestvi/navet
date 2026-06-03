@@ -13,6 +13,7 @@ export function createHomeAssistantSessionRuntimeRegistration(): IntegrationSess
     login: bridge.login,
     logout: bridge.logout,
     refresh: bridge.refresh,
+    invalidatePersistedSession: bridge.invalidatePersistedSession,
     replaceSession: bridge.replaceSession,
     setActiveProvider: bridge.setActiveProvider,
   };

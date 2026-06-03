@@ -15,7 +15,10 @@ import {
   type IntegrationProviderDefinition,
   type IntegrationProviderId,
 } from '../types/provider';
-import { getCurrentIntegrationProviderIdFromStore } from './integration-provider-context.service';
+import {
+  getCurrentIntegrationProviderIdFromStore,
+  getNativeIntegrationEntityId,
+} from './integration-provider-context.service';
 
 export function getCurrentIntegrationSession() {
   return integrationSessionRuntime.getSession();
@@ -95,5 +98,5 @@ export async function getCurrentIntegrationCameraStreamUrl(
     throw new Error(`${INTEGRATION_PROVIDERS[providerId].label} does not support camera streams`);
   }
 
-  return await adapter.getCameraStream(entityId, format);
+  return await adapter.getCameraStream(getNativeIntegrationEntityId(entityId), format);
 }

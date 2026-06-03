@@ -257,6 +257,17 @@ export class AuthSessionManager {
     return this.getSnapshot();
   }
 
+  async invalidatePersistedSession(providerId?: IntegrationProviderId): Promise<void> {
+    const targetProviderId = providerId ?? this.activeProviderId;
+    const currentSession = targetProviderId ? this.sessions[targetProviderId] : null;
+    if (!currentSession) {
+      return;
+    }
+
+    const adapter = this.getAdapterForProvider(currentSession.providerId);
+    await adapter.invalidatePersistedSession?.(currentSession);
+  }
+
   replaceSession(session: AuthSession | null): AuthSessionSnapshot {
     if (!session) {
       this.updateSessions({}, null);

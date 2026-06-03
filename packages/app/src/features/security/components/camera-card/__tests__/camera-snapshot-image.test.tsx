@@ -44,33 +44,6 @@ describe('CameraSnapshotImage', () => {
     );
   });
 
-  it('swaps to MJPEG proxy streams immediately instead of waiting for a preload image', () => {
-    const onError = vi.fn();
-    const { rerender, container } = renderWithProviders(
-      <CameraSnapshotImage
-        src="/api/camera_proxy/camera.front_door?_t=0"
-        alt="Front Door"
-        className="object-cover"
-        onError={onError}
-      />
-    );
-
-    rerender(
-      <CameraSnapshotImage
-        src="/api/camera_proxy_stream/camera.front_door?_t=1"
-        alt="Front Door"
-        className="object-cover"
-        onError={onError}
-      />
-    );
-
-    expect(screen.getByRole('img', { name: 'Front Door' })).toHaveAttribute(
-      'src',
-      '/api/camera_proxy_stream/camera.front_door?_t=1'
-    );
-    expect(container.querySelector('img[aria-hidden="true"]')).toBeNull();
-  });
-
   it('swaps to cache-busted camera proxy snapshots immediately on refresh', () => {
     const onError = vi.fn();
     const { rerender, container } = renderWithProviders(

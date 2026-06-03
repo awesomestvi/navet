@@ -76,6 +76,9 @@ export interface ProviderCameraFeatureService {
   getCameraCapabilities: (entityId: string) => Promise<PlatformCameraCapabilities>;
   getCameraLiveState?: (entityId: string) => Promise<PlatformCameraLiveState>;
   refreshCameraSnapshot?: (entityId: string) => Promise<void>;
+  getCameraStreamPaths?: (
+    entityId: string
+  ) => Promise<Partial<Record<PlatformCameraStreamType, string>>>;
   getCameraStreamUrl: (
     entityId: string,
     format?: PlatformCameraStreamType
@@ -91,6 +94,7 @@ export interface ProviderCameraFeatureService {
     sessionId: string,
     candidate: RTCIceCandidateInit
   ) => Promise<void>;
+  closeCameraWebRtcSession?: (entityId: string, sessionId: string) => Promise<void>;
   toggleCameraAccessory: (entityId: string, state: 'on' | 'off') => Promise<void>;
   selectCameraAccessoryOption: (entityId: string, option: string) => Promise<void>;
   setCameraAccessoryValue: (entityId: string, value: number) => Promise<void>;

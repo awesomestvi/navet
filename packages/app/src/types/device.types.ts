@@ -259,6 +259,7 @@ export interface CalendarDevice extends BaseDevice {
 // Camera device
 export interface CameraDevice extends BaseDevice {
   room: string;
+  sourceDeviceId?: string;
   entityPicture?: string;
   state: string;
   supportedFeatures?: number;

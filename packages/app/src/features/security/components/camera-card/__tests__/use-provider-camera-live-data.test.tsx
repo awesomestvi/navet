@@ -78,6 +78,7 @@ describe('useProviderCameraLiveData', () => {
     );
 
     expect(result.current.connected).toBe(true);
+    expect(result.current.cameraState).toBe('streaming');
     expect(result.current.liveEntity).toMatchObject({
       entityId: 'camera.front_door',
       state: 'streaming',
@@ -135,6 +136,7 @@ describe('useProviderCameraLiveData', () => {
     );
 
     expect(result.current.connected).toBe(false);
+    expect(result.current.cameraState).toBe('idle');
     expect(result.current.liveEntity).toBeUndefined();
     expect(result.current.liveState).toEqual({
       isStreamCapable: false,

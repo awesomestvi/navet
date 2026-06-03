@@ -1,6 +1,4 @@
 import { cameraEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/camera';
-import { frigateFixtures } from '@navet/app/test/fixtures/home-assistant/integrations/frigate';
-import { reolinkFixtures } from '@navet/app/test/fixtures/home-assistant/integrations/reolink';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -23,18 +21,15 @@ vi.mock('@navet/app/services/integration-camera-runtime.service', () => ({
 const defaultProps = {
   isOpen: true,
   onOpenChange: vi.fn(),
-  entityId: cameraEntityFixtures.normal.entity_id,
+  entityId: 'home_assistant:camera.front_door',
   name: 'Front Door',
   room: 'Entrance',
+  cameraState: 'streaming' as const,
   snapshotUrl: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
-  mjpegStreamUrl: '/api/camera_proxy_stream/camera.front_door?_t=0',
   cameraViewMode: 'auto' as const,
-  go2RtcConfig: { serverUrl: '', streamName: 'camera.front_door' },
-  isUnavailable: false,
-  isRunning: true,
   isStreamCapable: true,
-  frontendStreamTypes: [],
-  hasGo2RtcFeed: false,
+  motionDetectionEnabled: true,
+  initialStreamResource: null,
   onRefresh: vi.fn(),
   onOpenSettings: vi.fn(),
   onCameraViewModeChange: vi.fn(),
@@ -44,22 +39,29 @@ describe('CameraLiveViewer', () => {
   it('lets the viewer switch camera view modes', async () => {
     const onCameraViewModeChange = vi.fn();
     getCameraPlaybackPlanMock.mockResolvedValue({
-      primary: {
+      cameraState: 'streaming',
+      snapshotResource: {
         id: 'camera.front_door:snapshot',
         kind: 'image',
         cacheKey: 'camera.front_door:snapshot',
         authStrategy: 'none',
         url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
       },
-      fallbacks: [],
-      refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
     renderWithProviders(
       <CameraLiveViewer {...defaultProps} onCameraViewModeChange={onCameraViewModeChange} />
     );
-
-    expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Snapshot' }));
 
@@ -67,86 +69,132 @@ describe('CameraLiveViewer', () => {
     await waitFor(() => expect(getCameraPlaybackPlanMock).toHaveBeenCalled());
   });
 
-  it('renders an unavailable fallback when Home Assistant marks the camera unavailable', async () => {
+  it('keeps the live mode pill visible while snapshot mode is selected on stream-capable cameras', async () => {
     getCameraPlaybackPlanMock.mockResolvedValue({
-      primary: {
-        id: 'camera.front_door:unavailable',
-        kind: 'unavailable',
-        cacheKey: 'camera.front_door:unavailable',
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
         authStrategy: 'none',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
       },
-      fallbacks: [],
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: true,
+      motionDetectionEnabled: true,
       refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
+    renderWithProviders(<CameraLiveViewer {...defaultProps} cameraViewMode="snapshot" />);
+
+    expect(await screen.findByRole('button', { name: 'Live' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Snapshot' })).toBeInTheDocument();
+  });
+
+  it('renders an unavailable fallback when the camera is unavailable', async () => {
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'unavailable',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: null,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
     renderWithProviders(
-      <CameraLiveViewer
-        {...defaultProps}
-        entityId={cameraEntityFixtures.unavailable.entity_id}
-        snapshotUrl={undefined}
-        mjpegStreamUrl={undefined}
-        isUnavailable
-        isRunning={false}
-      />
+      <CameraLiveViewer {...defaultProps} cameraState="unavailable" snapshotUrl={undefined} />
     );
 
-    expect(await screen.findByText('Unavailable')).toBeInTheDocument();
+    expect(await screen.findAllByText('Unavailable')).toHaveLength(2);
     expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
   });
 
-  it('shows snapshot fallback messaging when streaming falls back to a Home Assistant image URL', async () => {
+  it('shows snapshot fallback messaging when streaming falls back to a still image', async () => {
     getCameraPlaybackPlanMock.mockResolvedValue({
-      primary: {
-        id: 'camera.frigate_front_porch:snapshot',
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
         kind: 'image',
-        cacheKey: 'camera.frigate_front_porch:snapshot',
+        cacheKey: 'camera.front_door:snapshot',
         authStrategy: 'same_origin',
-        url: String(frigateFixtures.camera.attributes.entity_picture),
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
       },
-      fallbacks: [],
+      supportsSnapshot: true,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: true,
+      shouldStartWithSnapshot: true,
+      motionDetectionEnabled: true,
       refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
-    renderWithProviders(
-      <CameraLiveViewer
-        {...defaultProps}
-        entityId={frigateFixtures.camera.entity_id}
-        snapshotUrl={String(frigateFixtures.camera.attributes.entity_picture)}
-        cameraViewMode="live"
-      />
-    );
+    renderWithProviders(<CameraLiveViewer {...defaultProps} cameraViewMode="live" />);
 
     expect(await screen.findAllByText('Snapshot fallback')).toHaveLength(2);
     expect(screen.getByRole('img', { name: 'Front Door' })).toHaveAttribute(
       'src',
-      String(frigateFixtures.camera.attributes.entity_picture)
+      String(cameraEntityFixtures.relativeUrl.attributes.entity_picture)
     );
   });
 
-  it('renders the live stream player for documented HLS playback plans and wires viewer actions', async () => {
+  it('renders the live stream player for Home Assistant native playback and wires viewer actions', async () => {
     const onRefresh = vi.fn();
     const onOpenSettings = vi.fn();
     const onOpenChange = vi.fn();
 
     getCameraPlaybackPlanMock.mockResolvedValue({
-      primary: {
-        id: 'camera.reolink_driveway:hls',
-        kind: 'hls_stream',
-        cacheKey: 'camera.reolink_driveway:hls',
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
         authStrategy: 'bearer',
-        url: reolinkFixtures.hlsStreamUrl,
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
       },
-      fallbacks: [],
+      supportsSnapshot: true,
+      liveTransports: ['hls'],
+      fallbackTransports: [],
+      selectedTransport: 'hls',
+      selectedStreamResource: {
+        id: 'camera.front_door:hls',
+        kind: 'hls_stream',
+        cacheKey: 'camera.front_door:hls',
+        authStrategy: 'bearer',
+        url: '/api/hls/camera.front_door/master.m3u8',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
       refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
     renderWithProviders(
       <CameraLiveViewer
         {...defaultProps}
-        entityId={reolinkFixtures.camera.entity_id}
-        name="Reolink Driveway"
-        snapshotUrl={String(reolinkFixtures.camera.attributes.entity_picture)}
-        frontendStreamTypes={['hls']}
+        initialStreamResource={{
+          id: 'camera.front_door:hls',
+          kind: 'hls_stream',
+          cacheKey: 'camera.front_door:hls',
+          authStrategy: 'bearer',
+          url: '/api/hls/camera.front_door/master.m3u8',
+        }}
         onRefresh={onRefresh}
         onOpenSettings={onOpenSettings}
         onOpenChange={onOpenChange}
@@ -154,14 +202,9 @@ describe('CameraLiveViewer', () => {
     );
 
     expect(await screen.findByTestId('camera-stream-player')).toHaveTextContent(
-      `${reolinkFixtures.camera.entity_id}:hls`
+      'home_assistant:camera.front_door:hls'
     );
     expect(screen.getByText('HLS')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(getCameraPlaybackPlanMock).toHaveBeenCalledWith(
-        expect.objectContaining({ preferredTransport: 'auto' })
-      )
-    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Camera settings' }));
@@ -170,20 +213,5 @@ describe('CameraLiveViewer', () => {
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it('falls back to a passive no-signal state when the entity provider does not support camera playback', async () => {
-    renderWithProviders(
-      <CameraLiveViewer
-        {...defaultProps}
-        entityId="homey:camera.front_door"
-        snapshotUrl={String(cameraEntityFixtures.relativeUrl.attributes.entity_picture)}
-        frontendStreamTypes={['hls']}
-      />
-    );
-
-    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
-    expect(await screen.findByText('No signal')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Live' })).not.toBeInTheDocument();
   });
 });

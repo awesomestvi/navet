@@ -36,6 +36,7 @@ export interface IntegrationSessionRuntimeRegistration {
   }): Promise<AuthSessionSnapshot>;
   logout(providerId?: IntegrationProviderId): Promise<void>;
   refresh(providerId?: IntegrationProviderId): Promise<AuthSessionSnapshot>;
+  invalidatePersistedSession?(providerId?: IntegrationProviderId): Promise<void>;
   replaceSession(session: NavetProviderSessionInput | null): AuthSessionSnapshot;
   setActiveProvider(providerId: IntegrationProviderId): AuthSessionSnapshot;
 }

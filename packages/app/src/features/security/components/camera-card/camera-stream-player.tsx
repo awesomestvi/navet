@@ -1,23 +1,23 @@
+import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
-import {
-  getCurrentCameraPanelHass,
-  resolveCameraStreamResource,
-} from '@navet/app/services/integration-camera-runtime.service';
-import type { CameraGo2RtcConfig } from '@navet/app/stores/settings-store';
-import { useEffect, useRef } from 'react';
+import { resolveCameraStreamResource } from '@navet/app/services/integration-camera-runtime.service';
+import { memo, type RefObject, useEffect, useRef, useState } from 'react';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
 interface CameraStreamPlayerProps {
   entityId: string;
-  kind: Extract<CameraImageSourceKind, 'go2rtc' | 'hls' | 'web_rtc'>;
+  kind: Exclude<CameraImageSourceKind, 'snapshot'>;
   posterUrl: string | undefined;
-  go2RtcConfig?: CameraGo2RtcConfig;
+  streamResource?: ResolvedPlatformResource | null;
   fitMode: 'cover' | 'contain';
   onLoad?: () => void;
   onError: (kind: CameraImageSourceKind, options?: CameraStreamErrorOptions) => void;
 }
 
 const CAMERA_STREAM_LOAD_TIMEOUT_MS = 10_000;
+const CAMERA_STREAM_STALL_CHECK_INTERVAL_MS = 2_000;
+const CAMERA_STREAM_STALL_THRESHOLD_MS = 6_000;
+const MJPEG_STREAM_RECONNECT_INTERVAL_MS = 30_000;
 
 const videoFitClassNames = {
   contain: 'object-contain',
@@ -26,6 +26,20 @@ const videoFitClassNames = {
 
 interface CameraStreamErrorOptions {
   retryable?: boolean;
+}
+
+function CameraStreamLoadingIndicator() {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/24">
+      <div
+        role="status"
+        aria-label="Loading camera feed"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/55 backdrop-blur-md"
+      >
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/28 border-t-white" />
+      </div>
+    </div>
+  );
 }
 
 function isHomeAssistantCameraStreamUnsupportedError(error: unknown) {
@@ -52,6 +66,18 @@ function applyVideoBaseAttributes(video: HTMLVideoElement, posterUrl: string | u
   }
 }
 
+function shouldUseNativeHlsPlayback(video: HTMLVideoElement) {
+  const vendor = navigator.vendor?.toLowerCase() ?? '';
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isAppleWebKit =
+    vendor.includes('apple') &&
+    !userAgent.includes('crios') &&
+    !userAgent.includes('fxios') &&
+    !userAgent.includes('edgios');
+
+  return isAppleWebKit && Boolean(video.canPlayType('application/vnd.apple.mpegurl'));
+}
+
 function clearStreamLoadTimeout(timeoutRef: React.MutableRefObject<number | null>) {
   if (timeoutRef.current !== null) {
     window.clearTimeout(timeoutRef.current);
@@ -71,20 +97,172 @@ function scheduleStreamLoadTimeout(
   }, CAMERA_STREAM_LOAD_TIMEOUT_MS);
 }
 
+function clearStreamStallWatchdog(
+  intervalRef: React.MutableRefObject<number | null>,
+  stagnantDurationRef: React.MutableRefObject<number>,
+  lastObservedTimeRef: React.MutableRefObject<number | null>
+) {
+  if (intervalRef.current !== null) {
+    window.clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+  stagnantDurationRef.current = 0;
+  lastObservedTimeRef.current = null;
+}
+
+function scheduleStreamStallWatchdog(
+  intervalRef: React.MutableRefObject<number | null>,
+  videoRef: RefObject<HTMLVideoElement | null>,
+  kind: CameraImageSourceKind,
+  hasLoadedFrameRef: React.MutableRefObject<boolean>,
+  stagnantDurationRef: React.MutableRefObject<number>,
+  lastObservedTimeRef: React.MutableRefObject<number | null>,
+  onError: CameraStreamPlayerProps['onError']
+) {
+  clearStreamStallWatchdog(intervalRef, stagnantDurationRef, lastObservedTimeRef);
+  intervalRef.current = window.setInterval(() => {
+    const video = videoRef.current;
+    if (!video || !hasLoadedFrameRef.current || document.hidden) {
+      return;
+    }
+
+    if (video.paused || video.ended || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      stagnantDurationRef.current = 0;
+      lastObservedTimeRef.current = null;
+      return;
+    }
+
+    const currentTime = video.currentTime;
+    if (!Number.isFinite(currentTime)) {
+      return;
+    }
+
+    const lastObservedTime = lastObservedTimeRef.current;
+    if (lastObservedTime === null || currentTime > lastObservedTime + 0.01) {
+      lastObservedTimeRef.current = currentTime;
+      stagnantDurationRef.current = 0;
+      return;
+    }
+
+    stagnantDurationRef.current += CAMERA_STREAM_STALL_CHECK_INTERVAL_MS;
+    if (stagnantDurationRef.current >= CAMERA_STREAM_STALL_THRESHOLD_MS) {
+      clearStreamStallWatchdog(intervalRef, stagnantDurationRef, lastObservedTimeRef);
+      onError(kind);
+    }
+  }, CAMERA_STREAM_STALL_CHECK_INTERVAL_MS);
+}
+
+function getStreamResourceKey(resource: ResolvedPlatformResource | null | undefined) {
+  if (!resource) {
+    return '';
+  }
+
+  return `${resource.kind}:${resource.url ?? ''}:${resource.cacheKey}`;
+}
+
+function appendReloadToken(url: string, reloadKey: number) {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_mjpeg_t=${reloadKey}`;
+}
+
+function MjpegCameraPlayer({
+  posterUrl: _posterUrl,
+  streamResource,
+  fitMode,
+  onLoad,
+}: Omit<CameraStreamPlayerProps, 'entityId' | 'kind'>) {
+  const streamResourceUrl =
+    streamResource?.kind === 'mjpeg_stream' ? streamResource.url : undefined;
+  const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!streamResourceUrl) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setReloadKey((current) => current + 1);
+    }, MJPEG_STREAM_RECONNECT_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [streamResourceUrl]);
+
+  useEffect(() => {
+    setHasLoadedFrame(false);
+  }, [reloadKey, streamResourceUrl]);
+
+  const reloadingStreamUrl =
+    streamResourceUrl && reloadKey > 0
+      ? appendReloadToken(streamResourceUrl, reloadKey)
+      : streamResourceUrl;
+
+  return (
+    <div className="relative h-full w-full">
+      {reloadingStreamUrl && !hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      {reloadingStreamUrl ? (
+        <img
+          key={reloadKey}
+          src={reloadingStreamUrl}
+          alt=""
+          aria-hidden="true"
+          className={`h-full w-full ${videoFitClassNames[fitMode]}`}
+          onLoad={() => {
+            setHasLoadedFrame(true);
+            onLoad?.();
+          }}
+          onError={() => {
+            setReloadKey((current) => current + 1);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function HlsCameraPlayer({
   entityId,
   posterUrl,
+  streamResource,
   fitMode,
   onLoad,
   onError,
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
+  const stallIntervalRef = useRef<number | null>(null);
+  const stagnantDurationRef = useRef(0);
+  const lastObservedTimeRef = useRef<number | null>(null);
+  const hasLoadedFrameRef = useRef(false);
+  const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
+  const streamResourceUrl = streamResource?.kind === 'hls_stream' ? streamResource.url : undefined;
 
   const handleLoadedData = () => {
+    hasLoadedFrameRef.current = true;
+    stagnantDurationRef.current = 0;
+    lastObservedTimeRef.current = videoRef.current?.currentTime ?? null;
+    setHasLoadedFrame(true);
     clearStreamLoadTimeout(loadTimeoutRef);
+    scheduleStreamStallWatchdog(
+      stallIntervalRef,
+      videoRef,
+      'hls',
+      hasLoadedFrameRef,
+      stagnantDurationRef,
+      lastObservedTimeRef,
+      onError
+    );
     onLoad?.();
   };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    applyVideoBaseAttributes(video, posterUrl);
+  }, [posterUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +277,8 @@ function HlsCameraPlayer({
         video.load();
       }
       clearStreamLoadTimeout(loadTimeoutRef);
+      clearStreamStallWatchdog(stallIntervalRef, stagnantDurationRef, lastObservedTimeRef);
+      hasLoadedFrameRef.current = false;
     };
 
     const start = async () => {
@@ -112,19 +292,32 @@ function HlsCameraPlayer({
         return;
       }
 
-      applyVideoBaseAttributes(video, posterUrl);
+      setHasLoadedFrame(false);
+      hasLoadedFrameRef.current = false;
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
       scheduleStreamLoadTimeout(loadTimeoutRef, 'hls', onError);
 
       try {
-        const stream = await integrationCameraFeatureService.getCameraStreamUrl(entityId, 'hls');
-        if (cancelled) {
+        let playableStreamUrl = streamResourceUrl;
+
+        if (!playableStreamUrl) {
+          const stream = await integrationCameraFeatureService.getCameraStreamUrl(entityId, 'hls');
+          if (cancelled) {
+            return;
+          }
+
+          playableStreamUrl =
+            (await resolveCameraStreamResource(entityId, 'hls', stream.url)).url ?? stream.url;
+        }
+
+        if (!playableStreamUrl || cancelled) {
           return;
         }
 
-        const streamUrl =
-          (await resolveCameraStreamResource(entityId, 'hls', stream.url)).url ?? stream.url;
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = streamUrl;
+        if (shouldUseNativeHlsPlayback(video)) {
+          video.src = playableStreamUrl;
           await video.play().catch(() => undefined);
           return;
         }
@@ -149,7 +342,10 @@ function HlsCameraPlayer({
         });
         cleanupHls = () => hls.destroy();
         hls.attachMedia(video);
-        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(streamUrl));
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(playableStreamUrl));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          void video.play().catch(() => undefined);
+        });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             onError('hls');
@@ -165,51 +361,65 @@ function HlsCameraPlayer({
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cleanUp();
-      } else {
-        void start();
-      }
-    };
-
     void start();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanUp();
     };
-  }, [entityId, onError, posterUrl]);
+  }, [entityId, onError, streamResourceUrl]);
 
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      className={`h-full w-full ${videoFitClassNames[fitMode]}`}
-      muted
-      onLoadedData={handleLoadedData}
-      onError={() => onError('hls')}
-      playsInline
-    />
+    <div className="relative h-full w-full">
+      {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      <video
+        ref={videoRef}
+        autoPlay
+        className={`h-full w-full transition-opacity ${videoFitClassNames[fitMode]} ${
+          hasLoadedFrame ? 'opacity-100' : 'opacity-0'
+        }`}
+        muted
+        onLoadedData={handleLoadedData}
+        onError={() => onError('hls')}
+        playsInline
+      />
+    </div>
   );
 }
 
 function WebRtcCameraPlayer({
   entityId,
   posterUrl,
+  streamResource: _streamResource,
   fitMode,
   onLoad,
   onError,
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
+  const stallIntervalRef = useRef<number | null>(null);
+  const stagnantDurationRef = useRef(0);
+  const lastObservedTimeRef = useRef<number | null>(null);
+  const hasLoadedFrameRef = useRef(false);
+  const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
 
   const handleLoadedData = () => {
+    hasLoadedFrameRef.current = true;
+    stagnantDurationRef.current = 0;
+    lastObservedTimeRef.current = videoRef.current?.currentTime ?? null;
+    setHasLoadedFrame(true);
     clearStreamLoadTimeout(loadTimeoutRef);
     onLoad?.();
   };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    applyVideoBaseAttributes(video, posterUrl);
+  }, [posterUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,6 +438,10 @@ function WebRtcCameraPlayer({
       peerConnection = undefined;
       void unsubscribePromise?.then((unsubscribe) => unsubscribe());
       unsubscribePromise = undefined;
+      const closeSession = integrationCameraFeatureService.closeCameraWebRtcSession;
+      if (closeSession && sessionId) {
+        void closeSession(entityId, sessionId).catch(() => undefined);
+      }
       sessionId = undefined;
       pendingCandidates.length = 0;
 
@@ -238,6 +452,8 @@ function WebRtcCameraPlayer({
         video.load();
       }
       clearStreamLoadTimeout(loadTimeoutRef);
+      clearStreamStallWatchdog(stallIntervalRef, stagnantDurationRef, lastObservedTimeRef);
+      hasLoadedFrameRef.current = false;
     };
 
     const sendPendingCandidates = () => {
@@ -266,7 +482,11 @@ function WebRtcCameraPlayer({
         return;
       }
 
-      applyVideoBaseAttributes(video, posterUrl);
+      setHasLoadedFrame(false);
+      hasLoadedFrameRef.current = false;
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
       scheduleStreamLoadTimeout(loadTimeoutRef, 'web_rtc', onError);
 
       try {
@@ -355,329 +575,55 @@ function WebRtcCameraPlayer({
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cleanUp();
-      } else {
-        void start();
-      }
-    };
-
     void start();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanUp();
     };
-  }, [entityId, onError, posterUrl]);
+  }, [entityId, onError]);
 
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      className={`h-full w-full ${videoFitClassNames[fitMode]}`}
-      muted
-      onLoadedData={handleLoadedData}
-      onError={() => onError('web_rtc')}
-      playsInline
-    />
+    <div className="relative h-full w-full">
+      {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      <video
+        ref={videoRef}
+        autoPlay
+        className={`h-full w-full transition-opacity ${videoFitClassNames[fitMode]} ${
+          hasLoadedFrame ? 'opacity-100' : 'opacity-0'
+        }`}
+        muted
+        onLoadedData={handleLoadedData}
+        onError={() => onError('web_rtc')}
+        playsInline
+      />
+    </div>
   );
 }
 
-interface Go2RtcCameraElement extends HTMLElement {
-  hass?: unknown;
-  setConfig?: (config: Record<string, unknown>) => void;
-}
-
-export function resolveGo2RtcWebSocketUrl(config: CameraGo2RtcConfig | undefined) {
-  const serverUrl = config?.serverUrl.trim();
-  const streamName = config?.streamName.trim();
-  if (!serverUrl || !streamName) {
-    return null;
-  }
-
-  try {
-    const normalizedServerUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(serverUrl)
-      ? serverUrl
-      : `${window.location.protocol === 'https:' ? 'https' : 'http'}://${serverUrl}`;
-    const url = new URL(normalizedServerUrl, window.location.origin);
-    if (url.protocol === 'http:') {
-      url.protocol = 'ws:';
-    } else if (url.protocol === 'https:') {
-      url.protocol = 'wss:';
-    } else if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
-      return null;
-    }
-
-    if (url.pathname === '/' || url.pathname === '') {
-      url.pathname = '/api/ws';
-    }
-    url.searchParams.set('src', streamName);
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-function Go2RtcDirectCameraPlayer({
-  go2RtcConfig,
-  posterUrl,
-  fitMode,
-  onLoad,
-  onError,
-}: Omit<CameraStreamPlayerProps, 'kind' | 'entityId'>) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const loadTimeoutRef = useRef<number | null>(null);
-
-  const handleLoadedData = () => {
-    clearStreamLoadTimeout(loadTimeoutRef);
-    onLoad?.();
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    let hasRemoteTrack = false;
-    let socket: WebSocket | undefined;
-    let peerConnection: RTCPeerConnection | undefined;
-    let remoteStream: MediaStream | undefined;
-
-    const cleanUp = () => {
-      remoteStream?.getTracks().forEach((track) => {
-        track.stop();
-      });
-      remoteStream = undefined;
-      peerConnection?.close();
-      peerConnection = undefined;
-      if (socket) {
-        socket.onopen = null;
-        socket.onmessage = null;
-        socket.onerror = null;
-        socket.onclose = null;
-        socket.close();
-      }
-      socket = undefined;
-
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = null;
-        video.removeAttribute('src');
-        video.load();
-      }
-      clearStreamLoadTimeout(loadTimeoutRef);
-    };
-
-    const fail = () => {
-      if (!cancelled) {
-        onError('go2rtc');
-      }
-    };
-
-    const start = () => {
-      cleanUp();
-      if (document.hidden) {
-        return;
-      }
-
-      const video = videoRef.current;
-      const webSocketUrl = resolveGo2RtcWebSocketUrl(go2RtcConfig);
-      if (!video || !webSocketUrl || typeof RTCPeerConnection === 'undefined') {
-        fail();
-        return;
-      }
-
-      applyVideoBaseAttributes(video, posterUrl);
-      scheduleStreamLoadTimeout(loadTimeoutRef, 'go2rtc', onError);
-
-      try {
-        remoteStream = new MediaStream();
-        peerConnection = new RTCPeerConnection();
-        socket = new WebSocket(webSocketUrl);
-
-        peerConnection.ontrack = (event) => {
-          hasRemoteTrack = true;
-          if (!remoteStream || !videoRef.current) {
-            return;
-          }
-
-          const streamTracks = event.streams?.[0]?.getTracks() ?? [];
-          const tracks = streamTracks.length > 0 ? streamTracks : [event.track];
-          for (const track of tracks) {
-            if (!remoteStream.getTracks().includes(track)) {
-              remoteStream.addTrack(track);
-            }
-          }
-          videoRef.current.srcObject = remoteStream;
-          void videoRef.current.play().catch(() => undefined);
-        };
-        peerConnection.onicecandidate = (event) => {
-          if (!event.candidate || socket?.readyState !== WebSocket.OPEN) {
-            return;
-          }
-
-          socket.send(
-            JSON.stringify({
-              type: 'webrtc/candidate',
-              value: event.candidate.candidate,
-            })
-          );
-        };
-        peerConnection.oniceconnectionstatechange = () => {
-          if (
-            peerConnection?.iceConnectionState === 'failed' ||
-            peerConnection?.iceConnectionState === 'disconnected'
-          ) {
-            fail();
-          }
-        };
-
-        socket.onopen = () => {
-          void (async () => {
-            if (!peerConnection || !socket || cancelled) {
-              return;
-            }
-
-            peerConnection.addTransceiver('audio', { direction: 'recvonly' });
-            peerConnection.addTransceiver('video', { direction: 'recvonly' });
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            if (!offer.sdp || socket.readyState !== WebSocket.OPEN || cancelled) {
-              return;
-            }
-
-            socket.send(JSON.stringify({ type: 'webrtc/offer', value: offer.sdp }));
-          })().catch(fail);
-        };
-        socket.onmessage = (event) => {
-          void (async () => {
-            if (!peerConnection || cancelled) {
-              return;
-            }
-
-            const message = JSON.parse(String(event.data)) as {
-              type?: string;
-              value?: unknown;
-            };
-            if (message.type === 'webrtc/answer' && typeof message.value === 'string') {
-              await peerConnection.setRemoteDescription(
-                new RTCSessionDescription({ type: 'answer', sdp: message.value })
-              );
-              return;
-            }
-
-            if (message.type === 'webrtc/candidate' && typeof message.value === 'string') {
-              await peerConnection.addIceCandidate(
-                new RTCIceCandidate({ candidate: message.value })
-              );
-              return;
-            }
-
-            if (message.type === 'error') {
-              fail();
-            }
-          })().catch(fail);
-        };
-        socket.onerror = fail;
-        socket.onclose = () => {
-          if (!hasRemoteTrack) {
-            fail();
-          }
-        };
-      } catch {
-        fail();
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cleanUp();
-      } else {
-        start();
-      }
-    };
-
-    start();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      cancelled = true;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      cleanUp();
-    };
-  }, [go2RtcConfig, onError, posterUrl]);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      className={`h-full w-full ${videoFitClassNames[fitMode]}`}
-      muted
-      onLoadedData={handleLoadedData}
-      onError={() => onError('go2rtc')}
-      playsInline
-    />
-  );
-}
-
-function Go2RtcCustomCardPlayer({
-  entityId,
-  fitMode,
-  onError,
-}: Omit<CameraStreamPlayerProps, 'kind' | 'posterUrl' | 'onLoad'>) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const hass = getCurrentCameraPanelHass();
-    const customElementConstructor = customElements.get('webrtc-camera');
-
-    if (!container || !hass || !customElementConstructor) {
-      onError('go2rtc');
-      return;
-    }
-
-    const cameraElement = document.createElement('webrtc-camera') as Go2RtcCameraElement;
-    cameraElement.className = 'block h-full w-full overflow-hidden';
-    cameraElement.style.display = 'block';
-    cameraElement.style.width = '100%';
-    cameraElement.style.height = '100%';
-    cameraElement.hass = hass;
-    cameraElement.setConfig?.({
-      type: 'custom:webrtc-camera',
-      entity: entityId,
-      mode: 'webrtc',
-      muted: true,
-      background: true,
-      style: `ha-card { height: 100%; overflow: hidden; border-radius: 0; box-shadow: none; background: transparent; } video { width: 100%; height: 100%; object-fit: ${fitMode}; }`,
-    });
-
-    container.replaceChildren(cameraElement);
-
-    return () => {
-      container.replaceChildren();
-    };
-  }, [entityId, fitMode, onError]);
-
-  return <div ref={containerRef} className="h-full w-full" />;
-}
-
-function Go2RtcCameraPlayer(props: Omit<CameraStreamPlayerProps, 'kind'>) {
-  if (resolveGo2RtcWebSocketUrl(props.go2RtcConfig)) {
-    return <Go2RtcDirectCameraPlayer {...props} />;
-  }
-
-  return <Go2RtcCustomCardPlayer {...props} />;
-}
-
-export function CameraStreamPlayer(props: CameraStreamPlayerProps) {
-  if (props.kind === 'go2rtc') {
-    return <Go2RtcCameraPlayer {...props} />;
-  }
-
+export const CameraStreamPlayer = memo(function CameraStreamPlayer(props: CameraStreamPlayerProps) {
   if (props.kind === 'hls') {
     return <HlsCameraPlayer {...props} />;
   }
 
+  if (props.kind === 'mjpeg') {
+    return <MjpegCameraPlayer {...props} />;
+  }
+
   return <WebRtcCameraPlayer {...props} />;
+}, areCameraStreamPlayerPropsEqual);
+
+function areCameraStreamPlayerPropsEqual(
+  previous: CameraStreamPlayerProps,
+  next: CameraStreamPlayerProps
+) {
+  return (
+    previous.entityId === next.entityId &&
+    previous.kind === next.kind &&
+    previous.fitMode === next.fitMode &&
+    previous.onLoad === next.onLoad &&
+    previous.onError === next.onError &&
+    getStreamResourceKey(previous.streamResource) === getStreamResourceKey(next.streamResource) &&
+    (previous.kind === 'web_rtc' || previous.posterUrl === next.posterUrl)
+  );
 }

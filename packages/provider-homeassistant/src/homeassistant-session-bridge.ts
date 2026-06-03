@@ -10,6 +10,7 @@ type HomeAssistantSessionRuntimeBridge = Pick<
   | 'login'
   | 'logout'
   | 'refresh'
+  | 'invalidatePersistedSession'
   | 'replaceSession'
   | 'setActiveProvider'
 >;

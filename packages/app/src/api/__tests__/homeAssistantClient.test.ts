@@ -56,31 +56,27 @@ describe('createHomeAssistantClient', () => {
     resetRuntimeContextForTests();
   });
 
-  it('does not start OAuth for an auth-less add-on ingress session', async () => {
+  it('rejects add-on ingress sessions because they must use the parent Home Assistant bridge', async () => {
     window.history.replaceState({}, '', ingressSessionFixture.ingressPath);
     resetRuntimeContextForTests();
 
-    await createHomeAssistantClient({
-      providerId: 'home_assistant',
-      runtime: ingressSessionFixture.runtime,
-      authMode: ingressSessionFixture.authMode,
-      haBaseUrl: ingressSessionFixture.haBaseUrl,
-      hassUrl: ingressSessionFixture.hassUrl,
-    });
+    await expect(
+      createHomeAssistantClient({
+        providerId: 'home_assistant',
+        runtime: ingressSessionFixture.runtime,
+        authMode: ingressSessionFixture.authMode,
+        haBaseUrl: ingressSessionFixture.haBaseUrl,
+        hassUrl: ingressSessionFixture.hassUrl,
+      })
+    ).rejects.toThrow(
+      'Home Assistant ingress sessions must use the parent Home Assistant runtime bridge'
+    );
 
     expect(getAuthMock).not.toHaveBeenCalled();
-    expect(createConnectionMock).toHaveBeenCalledWith({
-      auth: expect.objectContaining({
-        data: expect.objectContaining({
-          hassUrl: `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`,
-          clientId: null,
-        }),
-      }),
-      setupRetry: 3,
-    });
+    expect(createConnectionMock).not.toHaveBeenCalled();
   });
 
-  it('falls back to ingress proxy auth when a reused frontend token has expired', async () => {
+  it('rejects ingress sessions even if a reused frontend token is present', async () => {
     window.history.replaceState({}, '', ingressSessionFixture.ingressPath);
     resetRuntimeContextForTests();
 
@@ -109,26 +105,22 @@ describe('createHomeAssistantClient', () => {
       },
     } as Auth;
 
-    await createHomeAssistantClient({
-      providerId: 'home_assistant',
-      runtime: ingressSessionFixture.runtime,
-      authMode: ingressSessionFixture.authMode,
-      haBaseUrl: ingressSessionFixture.haBaseUrl,
-      hassUrl: ingressSessionFixture.hassUrl,
-      auth,
-      expiresAt: auth.data.expires,
-    });
+    await expect(
+      createHomeAssistantClient({
+        providerId: 'home_assistant',
+        runtime: ingressSessionFixture.runtime,
+        authMode: ingressSessionFixture.authMode,
+        haBaseUrl: ingressSessionFixture.haBaseUrl,
+        hassUrl: ingressSessionFixture.hassUrl,
+        auth,
+        expiresAt: auth.data.expires,
+      })
+    ).rejects.toThrow(
+      'Home Assistant ingress sessions must use the parent Home Assistant runtime bridge'
+    );
 
-    expect(refreshAccessToken).toHaveBeenCalled();
-    expect(createConnectionMock).toHaveBeenCalledWith({
-      auth: expect.objectContaining({
-        data: expect.objectContaining({
-          hassUrl: `${window.location.origin}/api/hassio_ingress/navet_dev/__navet_ha_proxy__`,
-          clientId: null,
-        }),
-      }),
-      setupRetry: 3,
-    });
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(createConnectionMock).not.toHaveBeenCalled();
   });
 
   it('keeps standalone OAuth persistence pointed at Home Assistant while proxying the connection', async () => {

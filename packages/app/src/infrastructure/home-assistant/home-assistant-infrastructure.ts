@@ -1,6 +1,6 @@
 import { fromProviderSessionInput } from '@navet/app/auth/types';
+import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import {
-  getCurrentIntegrationCameraStreamUrl,
   getCurrentIntegrationSession,
   getCurrentIntegrationSignedPath,
 } from '@navet/app/services/integration-runtime.service';
@@ -25,5 +25,8 @@ export const mediaArtworkService = new MediaArtworkService(
 
 export const cameraMediaService = new CameraMediaService(
   homeAssistantResourceResolver,
-  getCurrentIntegrationCameraStreamUrl
+  (entityId) => integrationCameraFeatureService.getCameraCapabilities(entityId),
+  (entityId, format) => integrationCameraFeatureService.getCameraStreamUrl(entityId, format),
+  (entityId) =>
+    integrationCameraFeatureService.getCameraStreamPaths?.(entityId) ?? Promise.resolve({})
 );
