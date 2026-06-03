@@ -8,6 +8,7 @@ import {
   getPackageVersion,
   hasChangelogVersion,
   manifestPath,
+  platformManifestPath,
   normalizeTagVersion,
   readAddonVersion,
   readJson,
@@ -23,12 +24,19 @@ try {
   assertValidVersion(packageVersion, 'package version');
 
   const manifest = readJson(manifestPath);
+  const platformManifest = readJson(platformManifestPath);
   const addonVersion = readAddonVersion(addonConfigPath);
   const versioningVersion = readVersioningCurrentVersion();
 
   if (manifest.version !== packageVersion) {
     throw new Error(
-      `platform/home-assistant/custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
+      `custom_components/navet/manifest.json version ${manifest.version} does not match package.json ${packageVersion}.`
+    );
+  }
+
+  if (platformManifest.version !== packageVersion) {
+    throw new Error(
+      `platform/home-assistant/custom_components/navet/manifest.json version ${platformManifest.version} does not match package.json ${packageVersion}.`
     );
   }
 

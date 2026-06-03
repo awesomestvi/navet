@@ -28,15 +28,19 @@ export const assetPaths = {
 
 export const homeAssistantPaths = {
   root: resolve(repoRoot, 'platform/home-assistant'),
+  hacsRoot: resolve(repoRoot, 'custom_components'),
+  hacsNavetCustomComponent: resolve(repoRoot, 'custom_components/navet'),
+  hacsNavetFrontend: resolve(repoRoot, 'custom_components/navet/frontend'),
+  hacsNavetManifest: resolve(repoRoot, 'custom_components/navet/manifest.json'),
   addonsRoot: resolve(repoRoot, 'platform/home-assistant/addons'),
   addonNavet: resolve(repoRoot, 'platform/home-assistant/addons/navet'),
-  customComponentsRoot: resolve(repoRoot, 'platform/home-assistant/custom_components'),
-  navetCustomComponent: resolve(repoRoot, 'platform/home-assistant/custom_components/navet'),
-  navetFrontend: resolve(
+  platformCustomComponentsRoot: resolve(repoRoot, 'platform/home-assistant/custom_components'),
+  platformNavetCustomComponent: resolve(repoRoot, 'platform/home-assistant/custom_components/navet'),
+  platformNavetFrontend: resolve(
     repoRoot,
     'platform/home-assistant/custom_components/navet/frontend'
   ),
-  navetManifest: resolve(
+  platformNavetManifest: resolve(
     repoRoot,
     'platform/home-assistant/custom_components/navet/manifest.json'
   ),
