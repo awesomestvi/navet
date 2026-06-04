@@ -152,6 +152,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
           ref={triggerRef}
           cardSize={triggerSize ?? currentSize}
           Icon={Maximize2}
+          theme={theme}
           placement="top-right"
           variant="accent"
           inline={triggerInline}

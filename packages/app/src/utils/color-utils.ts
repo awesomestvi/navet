@@ -73,6 +73,15 @@ export const getGradientColors = (
         customGradient: `linear-gradient(135deg, ${selectedColor}66 0%, ${selectedColor}8c 100%)`,
       };
     }
+    if (theme === 'glass') {
+      return {
+        from: '',
+        to: '',
+        border: 'border-white/10',
+        glow: selectedColor,
+        customGradient: `linear-gradient(135deg, ${selectedColor} 0%, ${darkenColor(selectedColor, 92)} 100%)`,
+      };
+    }
     const darkColor = darkenColor(selectedColor, 100);
     const darkerColor = darkenColor(selectedColor, 130);
     return {

@@ -81,6 +81,7 @@ export const LightCard = memo(function LightCard({
   const showAmbientLightBleed = ambientLightBleed && resolvedEffectsQuality === 'high';
   const surfaceTokens = getLightCardSurfaceTokens({
     isOn: controller.isOn,
+    isColorMode,
     selectedColor: controller.selectedColor,
     customColor: controller.customColor,
     currentColor: controller.currentColor,
@@ -178,8 +179,6 @@ export const LightCard = memo(function LightCard({
           size={resolvedSize}
           {...controller.cardInteraction.cardProps}
           interactive={!isEditMode}
-          isActive={controller.isOn && theme !== 'black'}
-          activeColor={surfaceTokens.glowColor}
           className={`relative z-10 transition-all duration-500 ${!isEditMode ? 'cursor-pointer' : ''}`}
           frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
           style={surfaceTokens.cardStyle}

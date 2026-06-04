@@ -56,6 +56,11 @@ const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
     orderedIds: [],
   },
   {
+    key: 'fans',
+    titleKey: 'sections.climate.fans.title',
+    orderedIds: [],
+  },
+  {
     key: 'temperature',
     titleKey: 'sections.climate.temperature.title',
     orderedIds: [],
@@ -295,9 +300,13 @@ export function useDashboardController(): DashboardController {
   };
 }
 
-function getClimateDashboardGroup(
+export function getClimateDashboardGroup(
   device: DeviceWithType
 ): DashboardClimateSectionGroup['key'] | null {
+  if (device.type === 'fans') {
+    return 'fans';
+  }
+
   if (device.type === 'climate' || device.type === 'hvac') {
     return 'hvac';
   }
@@ -392,6 +401,7 @@ function useDashboardSectionData({
 
     const groupedIds: Record<DashboardClimateSectionGroup['key'], string[]> = {
       hvac: [],
+      fans: [],
       temperature: [],
       humidity: [],
       airQuality: [],

@@ -122,6 +122,7 @@ function CardActionOverflowMenu({
           accentColor={accentColor}
           anchorRect={anchorRect}
           onClose={handleClose}
+          theme={theme}
           title={t('common.moreActions')}
         >
           <div className="flex w-full flex-col gap-2">

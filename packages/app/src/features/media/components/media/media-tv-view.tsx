@@ -198,6 +198,7 @@ export function MediaTvView({
       source={source}
       sourceList={sourceList}
       isSmallTvCard={isSmallTvCard}
+      theme={theme}
       panelStyle={panelStyle}
       tvTextTokens={tvTextTokens}
       onSelectSource={onSelectSource}

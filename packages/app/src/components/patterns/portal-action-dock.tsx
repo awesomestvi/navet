@@ -1,4 +1,5 @@
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { type ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -14,6 +15,7 @@ interface PortalActionDockProps {
   anchorRect: PortalActionDockAnchorRect | null;
   children: ReactNode;
   onClose: () => void;
+  theme?: ThemeType;
   title: string;
   subtitle?: string;
 }
@@ -23,6 +25,7 @@ export function PortalActionDock({
   anchorRect,
   children,
   onClose,
+  theme,
   title,
   subtitle,
 }: PortalActionDockProps) {
@@ -56,6 +59,24 @@ export function PortalActionDock({
   const overlayTop = anchorRect
     ? Math.max(16, Math.min(anchorRect.top + anchorRect.height / 2 - 84, window.innerHeight - 196))
     : 16;
+  const shellStyle =
+    theme === 'glass'
+      ? {
+          border: '1px solid rgba(255,255,255,0.16)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.03) 54%, rgba(8,14,24,0.1) 100%)',
+          boxShadow:
+            '0 26px 56px -34px rgba(4,10,22,0.9), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -14px 28px rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(28px) saturate(1.08)',
+          WebkitBackdropFilter: 'blur(28px) saturate(1.08)',
+          padding: '10px',
+        }
+      : {
+          border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
+          background: '#161619',
+          boxShadow: '0 18px 38px -22px rgba(0,0,0,0.82)',
+          padding: '10px',
+        };
 
   return createPortal(
     <div className="fixed inset-0 z-[900]" data-card-edit-dock="true">
@@ -79,12 +100,7 @@ export function PortalActionDock({
       >
         <div
           className="pointer-events-auto flex w-full flex-col items-center rounded-[28px]"
-          style={{
-            border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
-            background: '#161619',
-            boxShadow: '0 18px 38px -22px rgba(0,0,0,0.82)',
-            padding: '10px',
-          }}
+          style={shellStyle}
         >
           <div className="px-3 pt-1 pb-2 text-center">
             {subtitle ? (

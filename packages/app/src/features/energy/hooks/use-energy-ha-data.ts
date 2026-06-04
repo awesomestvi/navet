@@ -44,6 +44,12 @@ function parseNumberState(state: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function getEntityUnit(entity: EnergyEntityMap[string] | undefined): string | undefined {
+  const unit =
+    entity?.attributes?.unit_of_measurement ?? entity?.attributes?.native_unit_of_measurement;
+  return typeof unit === 'string' && unit.trim().length > 0 ? unit : undefined;
+}
+
 function getEntityFriendlyName(entities: EnergyEntityMap | null | undefined, entityId?: string) {
   const friendlyName = entities?.[entityId ?? '']?.attributes?.friendly_name;
   return typeof friendlyName === 'string' && friendlyName.trim().length > 0
@@ -387,6 +393,7 @@ export function useEnergyHaData(
   enabled = true
 ): {
   energySourceDiagnostics: EnergySourceDiagnostic[];
+  energyStatisticUnits: Record<string, string | undefined>;
   hasEnergyStatisticsLoaded: boolean;
   overview: EnergyOverview;
   isConfigured: boolean;
@@ -523,7 +530,15 @@ export function useEnergyHaData(
     ].filter((id): id is string => Boolean(id));
   }, [haSourceConfig]);
 
-  const todayStatistics = useEnergyStatisticsToday(energyStatisticIds, enabled);
+  const energyStatisticUnits = useMemo(
+    () =>
+      Object.fromEntries(
+        energyStatisticIds.map((entityId) => [entityId, getEntityUnit(configEntities?.[entityId])])
+      ),
+    [configEntities, energyStatisticIds]
+  );
+
+  const todayStatistics = useEnergyStatisticsToday(energyStatisticUnits, enabled);
   const todayKWh = todayStatistics.values;
   const energySourceDiagnostics = useMemo<EnergySourceDiagnostic[]>(() => {
     if (!haSourceConfig) {
@@ -690,6 +705,7 @@ export function useEnergyHaData(
 
   return {
     energySourceDiagnostics,
+    energyStatisticUnits,
     hasEnergyStatisticsLoaded: todayStatistics.hasLoaded,
     overview,
     isConfigured,

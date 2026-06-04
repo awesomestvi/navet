@@ -18,12 +18,8 @@ export const EnergySection = memo(function EnergySection() {
     dashboard,
     energySourceDiagnostics,
     hasEnergyStatisticsLoaded,
-    range,
-    setRange,
     isConnected,
     isConfigured,
-    selectedNode,
-    setSelectedNodeId,
   } = useEnergyDashboard();
 
   if (!isConnected) {
@@ -92,14 +88,5 @@ export const EnergySection = memo(function EnergySection() {
     );
   }
 
-  return (
-    <EnergyDashboardPage
-      dashboard={dashboard}
-      range={range}
-      onRangeChange={setRange}
-      selectedNodeId={selectedNode?.id ?? null}
-      onNodeSelect={setSelectedNodeId}
-      sourceDiagnostics={energySourceDiagnostics}
-    />
-  );
+  return <EnergyDashboardPage dashboard={dashboard} sourceDiagnostics={energySourceDiagnostics} />;
 });

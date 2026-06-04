@@ -30,6 +30,7 @@ describe('MapWidget', () => {
 
     expect(screen.getByText('Trackers')).toBeInTheDocument();
     expect(screen.getByText('1 tracked')).toBeInTheDocument();
+    expect(screen.getByTestId('map-widget-viewport').className).toContain('rounded-[inherit]');
     expect(screen.queryByTestId('live-map')).not.toBeInTheDocument();
   });
 

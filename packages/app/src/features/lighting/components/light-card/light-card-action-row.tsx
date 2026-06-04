@@ -18,6 +18,7 @@ interface LightCardActionRowProps {
   currentColor: string;
   colorSwatchColor: string;
   currentTempColor: string;
+  activeColor?: string | null;
   isKelvinMode: boolean;
   isColorMode: boolean;
   supportsBrightness: boolean;
@@ -45,6 +46,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   currentColor,
   colorSwatchColor,
   currentTempColor,
+  activeColor,
   isKelvinMode,
   isColorMode,
   supportsBrightness,
@@ -66,13 +68,25 @@ export const LightCardActionRow = memo(function LightCardActionRow({
   presetOverflow,
 }: LightCardActionRowProps) {
   const { theme } = useTheme();
+  const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const gapClass = size === 'small' ? 'gap-1.5' : 'gap-2.5';
+  const hasLeftControls =
+    supportsColorTemperature ||
+    supportsColorControl ||
+    (supportsEffects && effectOptions.length > 0) ||
+    supportsBrightness;
+  const shouldShowSettingsButton = showSettingsButton && hasLeftControls;
   const isColorTriggerActive =
     isColorMode ||
     (isOn &&
       supportsColorControl &&
       typeof currentColor === 'string' &&
       /^#[0-9a-fA-F]{6}$/.test(currentColor));
+
+  if (!hasLeftControls && !shouldShowSettingsButton) {
+    return null;
+  }
+
   const leftControls = (
     <div className={`flex min-w-0 items-center ${gapClass}`}>
       {supportsColorTemperature && (
@@ -112,6 +126,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
             currentBrightness={brightness}
             isOn={isOn}
             onBrightnessChange={onBrightnessCommit}
+            activeColor={activeColor}
             size={size}
             maxVisible={presetMaxVisible}
             overflow={presetOverflow}
@@ -124,14 +139,14 @@ export const LightCardActionRow = memo(function LightCardActionRow({
 
   return (
     <CardActionRow
-      theme={theme}
+      theme={effectiveTheme}
       size={size}
       leftContent={leftControls}
       rightContent={
-        showSettingsButton ? (
+        shouldShowSettingsButton ? (
           <CardSettingsActionButton
             {...settingsButtonProps}
-            theme={theme}
+            theme={effectiveTheme}
             size={size}
             tone={isOn ? 'default' : 'muted'}
             variant="soft"

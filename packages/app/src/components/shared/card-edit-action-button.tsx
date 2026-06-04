@@ -5,6 +5,7 @@ import {
   getEditControlButtonClass,
   getEditControlLayout,
 } from '@navet/app/components/shared/edit-card-controls';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 
@@ -13,13 +14,23 @@ interface CardEditActionButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   Icon: LucideIcon;
   placement?: EditControlPlacement;
   variant?: EditControlVariant;
+  theme?: ThemeType;
   className?: string;
   inline?: boolean;
 }
 
 export const CardEditActionButton = forwardRef<HTMLButtonElement, CardEditActionButtonProps>(
   function CardEditActionButton(
-    { cardSize, Icon, placement, variant = 'neutral', className = '', inline = false, ...props },
+    {
+      cardSize,
+      Icon,
+      placement,
+      variant = 'neutral',
+      theme,
+      className = '',
+      inline = false,
+      ...props
+    },
     ref
   ) {
     const layout = getEditControlLayout(cardSize);
@@ -34,7 +45,7 @@ export const CardEditActionButton = forwardRef<HTMLButtonElement, CardEditAction
       <button
         ref={ref}
         type="button"
-        className={`${inline ? '' : `absolute ${positionClass} z-500`} ${layout.buttonSize} ${getEditControlButtonClass(variant)} ${className}`}
+        className={`${inline ? '' : `absolute ${positionClass} z-500`} ${layout.buttonSize} ${getEditControlButtonClass(variant, theme)} ${className}`}
         {...props}
       >
         <Icon className={`${layout.iconSize} text-white`} />

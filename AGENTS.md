@@ -31,6 +31,30 @@ Read the relevant skill file for the area you are touching:
 - UI/UX and dashboard behavior: [`/ai/skills/navet-ux.md`](ai/skills/navet-ux.md)
 - Performance and kiosk constraints: [`/ai/skills/performance.md`](ai/skills/performance.md)
 
+## Repo Layout
+
+Do not assume a repo-root `src/` directory. Navet is organized as apps and packages:
+
+- App composition and most dashboard/runtime code: `/packages/app/src`
+- Provider-neutral core contracts and runtime types: `/packages/core/src`
+- Provider-neutral shared UI: `/packages/ui/src`
+- Home Assistant adapter: `/packages/provider-homeassistant/src`
+- Homey adapter: `/packages/provider-homey/src`
+- openHAB adapter: `/packages/provider-openhab/src`
+- Hubitat adapter: `/packages/provider-hubitat/src`
+- SmartThings adapter: `/packages/provider-smartthings/src`
+- Standalone app entrypoint: `/apps/standalone/src`
+- Demo app entrypoint: `/apps/demo/src`
+- Website app entrypoint: `/apps/website/src`
+- Home Assistant panel wrapper: `/apps/ha-panel`
+- Storybook app: `/apps/storybook`
+
+Path resolution rule:
+
+- Start file discovery in `packages/` and `apps/`, not repo-root `src/`.
+- Use package names and the layout above to choose the search root before running broad searches.
+- Treat `packages/app/src` as the default location for shared dashboard app behavior unless the task is clearly core, shared UI, or provider-specific.
+
 ## Non-Negotiable Rules
 
 - Home Assistant official documentation is the source of truth for Home Assistant adapter behavior.

@@ -72,6 +72,12 @@ describe('DashboardSectionRouter kiosk mode', () => {
       room: 'Living Room',
       type: 'climate',
     });
+    const hallwayFan = createDevice({
+      id: 'fan.hallway',
+      name: 'Hallway Fan',
+      room: 'Hallway',
+      type: 'fans',
+    });
     const kitchenHumidity = createDevice({
       id: 'sensor.kitchen_humidity',
       name: 'Kitchen Humidity',
@@ -85,6 +91,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
     controller.activeSection = 'climate';
     controller.deviceMap = new Map([
       [livingRoomClimate.id, livingRoomClimate],
+      [hallwayFan.id, hallwayFan],
       [kitchenHumidity.id, kitchenHumidity],
     ]);
     controller.availableDeviceMap = controller.deviceMap;
@@ -99,6 +106,11 @@ describe('DashboardSectionRouter kiosk mode', () => {
           orderedIds: [livingRoomClimate.id],
         },
         {
+          key: 'fans',
+          titleKey: 'sections.climate.fans.title',
+          orderedIds: [hallwayFan.id],
+        },
+        {
           key: 'humidity',
           titleKey: 'sections.climate.humidity.title',
           orderedIds: [kitchenHumidity.id],
@@ -107,13 +119,15 @@ describe('DashboardSectionRouter kiosk mode', () => {
     };
     controller.cardOrders = {
       'Living Room': [livingRoomClimate.id],
+      Hallway: [hallwayFan.id],
       Kitchen: [kitchenHumidity.id],
     };
-    controller.rooms = [ALL_ROOMS_ID, 'Living Room', 'Kitchen'];
+    controller.rooms = [ALL_ROOMS_ID, 'Living Room', 'Hallway', 'Kitchen'];
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
     expect(screen.getByRole('heading', { name: 'Thermostats & HVAC' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Fans' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();
   });

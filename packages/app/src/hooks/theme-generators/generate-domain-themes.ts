@@ -21,6 +21,10 @@ interface DomainTheme {
 }
 
 export function generateLightTheme(themeType: ThemeType, color: PresetPrimaryColor): DomainTheme {
+  if (themeType === 'glass') {
+    return getAccentThemeTone(themeType, color, 'solid');
+  }
+
   return getAccentThemeTone(themeType, color, 'soft');
 }
 

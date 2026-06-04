@@ -28,6 +28,7 @@ interface BrightnessPresetsInlineProps {
   currentBrightness: number;
   isOn: boolean;
   onBrightnessChange: (brightness: number) => void;
+  activeColor?: string | null;
   size?: CardSize;
   maxVisible?: number;
   overflow?: 'hide' | 'menu';
@@ -39,6 +40,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   currentBrightness,
   isOn,
   onBrightnessChange,
+  activeColor: activeColorOverride,
   size = 'medium',
   maxVisible,
   overflow = 'hide',
@@ -46,17 +48,18 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
 }: BrightnessPresetsInlineProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColorOverride);
   const isCompact = isCompactCardSize(size);
   const controlSizes = getCardActionControlSizes(
     isCompact ? 'small' : size === 'large' ? 'large' : 'medium'
   );
   const buttonSize = controlSizes.button;
   const iconSize = controlSizes.icon;
-  const roundControl = getRoundControlStyles(theme);
+  const roundControl = getRoundControlStyles(useInverseActiveLightSurface ? 'dark' : theme);
   const gap = size === 'large' ? 'gap-2' : 'gap-1.5';
   const visiblePresets = maxVisible !== undefined ? presets.slice(0, maxVisible) : presets;
   const overflowPresets = maxVisible !== undefined ? presets.slice(maxVisible) : [];
-  const activeColor = getBrightnessPresetAccentColor(primaryColor);
+  const activeColor = activeColorOverride ?? getBrightnessPresetAccentColor(primaryColor);
   const selectedClasses = roundControl.selectedText;
   const disabledSelectedClasses = 'cursor-not-allowed text-white opacity-70';
   const unselectedClasses =
@@ -96,7 +99,15 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
             aria-pressed={isSelected}
             onClick={handlePresetButtonClick}
             style={
-              isSelected ? getBrightnessPresetSelectedStyle(theme, activeColor, isOn) : undefined
+              isSelected
+                ? useInverseActiveLightSurface
+                  ? {
+                      backgroundColor: 'rgba(255,255,255,0.24)',
+                      borderColor: 'rgba(255,255,255,0.44)',
+                      color: '#ffffff',
+                    }
+                  : getBrightnessPresetSelectedStyle(theme, activeColor, isOn)
+                : undefined
             }
             className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
               !isOn
@@ -118,6 +129,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
           currentBrightness={currentBrightness}
           isOn={isOn}
           onBrightnessChange={onBrightnessChange}
+          activeColor={activeColorOverride}
           buttonSize={buttonSize}
           iconSize={iconSize}
           buttonVariant={buttonVariant}
@@ -132,6 +144,7 @@ interface BrightnessOverflowMenuProps {
   currentBrightness: number;
   isOn: boolean;
   onBrightnessChange: (brightness: number) => void;
+  activeColor?: string | null;
   buttonSize: string;
   iconSize: string;
   buttonVariant: 'neutral' | 'soft';
@@ -142,14 +155,16 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
   currentBrightness,
   isOn,
   onBrightnessChange,
+  activeColor: activeColorOverride,
   buttonSize,
   iconSize,
   buttonVariant,
 }: BrightnessOverflowMenuProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const activeColor = getBrightnessPresetAccentColor(primaryColor);
-  const roundControl = getRoundControlStyles(theme);
+  const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColorOverride);
+  const activeColor = activeColorOverride ?? getBrightnessPresetAccentColor(primaryColor);
+  const roundControl = getRoundControlStyles(useInverseActiveLightSurface ? 'dark' : theme);
   const selectedClasses = roundControl.selectedText;
   const unselectedClasses =
     buttonVariant === 'soft' ? roundControl.softButton : roundControl.defaultButton;
@@ -211,7 +226,13 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
                   }}
                   style={
                     isSelected
-                      ? getBrightnessPresetSelectedStyle(theme, activeColor, true)
+                      ? useInverseActiveLightSurface
+                        ? {
+                            backgroundColor: 'rgba(255,255,255,0.24)',
+                            borderColor: 'rgba(255,255,255,0.44)',
+                            color: '#ffffff',
+                          }
+                        : getBrightnessPresetSelectedStyle(theme, activeColor, true)
                       : undefined
                   }
                   className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${

@@ -92,6 +92,6 @@ describe('useMediaArtworkColors', () => {
     await waitFor(() => {
       expect(resolveArtworkPaletteMock).toHaveBeenCalled();
     });
-    expect(result.current.dominant).toBe('rgb(62, 62, 66)');
+    expect(result.current.dominant).toBe('rgb(142, 136, 126)');
   });
 });

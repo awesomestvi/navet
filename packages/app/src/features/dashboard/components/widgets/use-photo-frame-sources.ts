@@ -2,6 +2,7 @@ import { integrationMediaFeatureService } from '@navet/app/services/integration-
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import { useEffect, useState } from 'react';
+import type { PhotoFrameImage } from './photo-frame-image';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
 
 const MAX_MEDIA_SOURCE_DEPTH = 2;
@@ -10,7 +11,34 @@ const MAX_MEDIA_SOURCE_IMAGES = 48;
 interface UsePhotoFrameSourcesOptions {
   sourceMode?: PhotoFrameSourceMode;
   photoUrls?: string[];
+  photoImages?: readonly PhotoFrameImage[];
   mediaSourceId?: string;
+}
+
+function getImageSanitizerBaseUrl() {
+  return typeof window !== 'undefined' ? window.location.href : undefined;
+}
+
+function sanitizePhotoImage(photo: PhotoFrameImage): PhotoFrameImage | null {
+  const baseUrl = getImageSanitizerBaseUrl();
+  const safeSrc = sanitizeImageUrl(photo.src, baseUrl, { allowDataImage: true });
+  if (!safeSrc) {
+    return null;
+  }
+
+  const safeSources =
+    photo.sources
+      ?.flatMap((source) => {
+        const safeSrcSet = sanitizeImageUrl(source.srcSet, baseUrl, { allowDataImage: true });
+        if (!safeSrcSet || (source.type !== 'image/avif' && source.type !== 'image/webp')) {
+          return [];
+        }
+
+        return [{ srcSet: safeSrcSet, type: source.type }] as const;
+      })
+      .slice(0, 2) ?? [];
+
+  return safeSources.length > 0 ? { src: safeSrc, sources: safeSources } : { src: safeSrc };
 }
 
 function isImageMediaClass(mediaClass: string | undefined) {
@@ -83,12 +111,17 @@ async function collectMediaSourceImageUrls(mediaSourceId: string) {
 export function usePhotoFrameSources({
   sourceMode,
   photoUrls,
+  photoImages,
   mediaSourceId,
 }: UsePhotoFrameSourcesOptions) {
+  const baseUrl = getImageSanitizerBaseUrl();
   const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
   const manualPhotoUrls = (photoUrls ?? [])
-    .map((url) => sanitizeImageUrl(url, undefined, { allowDataImage: true }))
+    .map((url) => sanitizeImageUrl(url, baseUrl, { allowDataImage: true }))
     .filter((url): url is string => url !== null);
+  const manualPhotoImages = (photoImages ?? [])
+    .map((photo) => sanitizePhotoImage(photo))
+    .filter((photo): photo is PhotoFrameImage => photo !== null);
   const [homeAssistantPhotoUrls, setHomeAssistantPhotoUrls] = useState<string[]>([]);
 
   useEffect(() => {
@@ -122,12 +155,16 @@ export function usePhotoFrameSources({
     };
   }, [mediaSourceId, resolvedSourceMode]);
 
-  const activePhotoUrls =
-    resolvedSourceMode === 'home-assistant' ? homeAssistantPhotoUrls : manualPhotoUrls;
+  const activePhotoImages: PhotoFrameImage[] =
+    resolvedSourceMode === 'home-assistant'
+      ? homeAssistantPhotoUrls.map((src) => ({ src }))
+      : manualPhotoUrls.length > 0
+        ? manualPhotoUrls.map((src) => ({ src }))
+        : manualPhotoImages;
 
   return {
-    activePhotoUrls,
-    hasCustomPhotos: activePhotoUrls.length > 0,
+    activePhotoImages,
+    hasCustomPhotos: activePhotoImages.length > 0,
     sourceMode: resolvedSourceMode,
   };
 }

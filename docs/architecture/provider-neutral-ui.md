@@ -54,8 +54,9 @@ Some features still need provider-aware services, for example:
 - energy
 - notifications
 
-That is fine. The provider-aware work should stay in provider packages or app-owned services. The
-shared card should still consume a stable view model.
+That is fine. The provider-aware work should stay in provider packages, or temporarily in
+legacy app-owned compatibility seams while extraction is in flight. The shared card should still
+consume a stable view model.
 
 ## Compatibility Note
 

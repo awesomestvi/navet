@@ -10,21 +10,31 @@ requests.
 
 ## Shared Shape
 
-At a high level, a provider needs to do six things:
+At a high level, a provider package provides two related layers:
+
+- A contract surface used by app/runtime wiring.
+- A command adapter (`SmartHomeProviderAdapter`) used by UI interactions to execute commands.
+
+The contract API is currently:
 
 ```ts
 type NavetProviderContract = {
-  connect(session: ProviderSession): Promise<void>;
-  disconnect(): Promise<void>;
+  providerId: IntegrationProviderId;
+  bootstrapSession?: (sessions: NavetProviderSessionMap) => NavetProviderSession | null;
+  initializeSession?: (session: NavetProviderSessionInput) => Promise<void>;
+  attachRuntimeBridge?: (bridge: unknown) => void;
+  teardownSession?: () => void;
   getState(): NavetProviderState;
-  subscribeState(listener: () => void): () => void;
-  getEntity(id: string): Promise<NavetEntity | null>;
-  execute(command: NavetCommand): Promise<CommandResult>;
+  subscribeState?: (listener: () => void) => () => void;
+  resolveResource?: (
+    request: NavetResourceResolveRequest
+  ) => Promise<ResolvedPlatformResource> | ResolvedPlatformResource;
+  normalizeResourceUrl?: (resourceUrl: string) => string | null;
 };
 ```
 
-The exact helper names in the repo vary a little, but this is the model contributors should have
-in mind.
+`createSnapshotBackedProviderAdapter` in `@navet/core` currently turns contract state into a
+`SmartHomeProviderAdapter` with `connect/disconnect/listEntities/getEntity/execute/subscribeToEvents`.
 
 ## What The Shared Contract Carries
 
@@ -77,22 +87,26 @@ Owns:
 
 ## Current Providers
 
-- Home Assistant: implemented reference provider
+- Home Assistant: implemented (first stable provider)
 - Homey: implemented
 - openHAB: implemented
-- Hubitat: not available yet
-- SmartThings: not available yet
+- Hubitat: planned (contract + registration entry only)
+- SmartThings: planned (contract + registration entry only)
 
 ## Testing Expectations
 
 Every implemented provider should cover:
 
-- connect and disconnect
 - state retrieval
-- entity lookup
+- bootstrap/initialize session and disconnect lifecycle
+- entity lookup and entity diffing through state subscriptions
+- add, update, remove, and unsubscribe behavior in state updates
+- resource resolution and fallback behavior where supported
+- provider unavailable and malformed payload behavior
+
+Every adapter-layer command surface should cover:
+
 - supported command execution
 - unsupported command rejection
-- add, update, remove, and unsubscribe behavior
-- provider unavailable and malformed payload behavior
 
 The contract should stay small. Do not widen it just to mirror one backend.

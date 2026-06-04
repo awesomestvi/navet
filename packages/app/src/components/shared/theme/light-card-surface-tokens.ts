@@ -1,7 +1,5 @@
-import {
-  getCardStateSurfaceStyleTokens,
-  getCardStateSurfaceTokens,
-} from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { darkenColor, getGradientColors } from '@navet/app/utils/color-utils';
 import type { CSSProperties } from 'react';
@@ -16,6 +14,7 @@ interface LightColors {
 
 interface LightCardSurfaceTokensParams {
   isOn: boolean;
+  isColorMode?: boolean;
   selectedColor: string | null;
   customColor?: string | null;
   currentColor?: string | null;
@@ -39,7 +38,9 @@ export interface LightCardSurfaceTokens {
 
 export function getLightCardSurfaceTokens({
   isOn,
+  isColorMode = false,
   selectedColor,
+  customColor,
   currentColor,
   theme,
   lightColors,
@@ -48,7 +49,10 @@ export function getLightCardSurfaceTokens({
   const isHexColor = (value: string | null | undefined): value is string =>
     typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
   const effectiveSelectedColor = isOn
-    ? (selectedColor ?? (isHexColor(currentColor) ? currentColor : null) ?? null)
+    ? (selectedColor ??
+      (isColorMode && isHexColor(customColor) ? customColor : null) ??
+      (isHexColor(currentColor) ? currentColor : null) ??
+      null)
     : null;
   const gradientColors = getGradientColors(isOn, effectiveSelectedColor, theme);
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
@@ -57,7 +61,9 @@ export function getLightCardSurfaceTokens({
       ? `${effectiveSelectedColor}33`
       : theme === 'dark'
         ? `${effectiveSelectedColor}4d`
-        : `${effectiveSelectedColor}66`;
+        : theme === 'glass'
+          ? `${effectiveSelectedColor}33`
+          : `${effectiveSelectedColor}66`;
   const activeBaseColor = effectiveSelectedColor ?? accentColor ?? '#f97316';
   const contentAccentColor = isOn ? activeBaseColor : null;
   const useAccentGradient = isOn && !effectiveSelectedColor && lightColors;
@@ -71,39 +77,40 @@ export function getLightCardSurfaceTokens({
       }`.trim();
 
   if (theme === 'light') {
-    const lightOverlayColor = effectiveSelectedColor
-      ? `${effectiveSelectedColor}24`
-      : `${activeBaseColor}1f`;
+    const lightActiveCardStyle = isOn
+      ? {
+          background: activeBaseColor,
+          borderColor: effectiveSelectedColor ? selectedColorBorder : activeBaseColor,
+        }
+      : undefined;
 
     return {
       cardClassName: baseCardClassName,
-      cardStyle:
-        !useAccentGradient && gradientColors.customGradient
-          ? {
-              background: gradientColors.customGradient,
-              borderColor: effectiveSelectedColor ? selectedColorBorder : undefined,
-            }
-          : undefined,
+      cardStyle: lightActiveCardStyle,
       contentAccentColor,
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
       activeGlowClassName: null,
       activeGlowStyle: undefined,
-      innerOverlayClassName: 'absolute inset-0',
-      innerOverlayStyle: isOn
-        ? {
-            background: `linear-gradient(135deg, ${lightOverlayColor} 0%, rgba(255, 255, 255, 0.16) 100%)`,
-          }
-        : { background: 'rgba(255, 255, 255, 0.6)' },
+      innerOverlayClassName: isOn ? null : 'absolute inset-0',
+      innerOverlayStyle: isOn ? undefined : { background: 'rgba(255, 255, 255, 0.6)' },
       shineOverlayClassName: null,
       stateSurface,
     };
   }
 
   if (theme === 'glass') {
+    const glassSelectedColorStyle = effectiveSelectedColor
+      ? {
+          background: `linear-gradient(135deg, ${effectiveSelectedColor} 0%, ${darkenColor(effectiveSelectedColor, 92)} 100%)`,
+          borderColor: selectedColorBorder,
+        }
+      : undefined;
+
     return {
       cardClassName: baseCardClassName,
-      cardStyle:
-        !useAccentGradient && gradientColors.customGradient
+      cardStyle: glassSelectedColorStyle
+        ? glassSelectedColorStyle
+        : !useAccentGradient && gradientColors.customGradient
           ? {
               background: gradientColors.customGradient,
               borderColor: effectiveSelectedColor ? selectedColorBorder : undefined,
@@ -113,43 +120,46 @@ export function getLightCardSurfaceTokens({
       glowColor: useAccentGradient ? (accentColor ?? gradientColors.glow) : gradientColors.glow,
       activeGlowClassName: null,
       activeGlowStyle: undefined,
-      innerOverlayClassName: stateSurface.overlayClassName
-        ? `absolute inset-0 ${stateSurface.overlayClassName}`
-        : null,
-      shineOverlayClassName:
-        'absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.015)_38%,transparent_68%)]',
+      innerOverlayClassName:
+        effectiveSelectedColor || !stateSurface.overlayClassName
+          ? null
+          : `absolute inset-0 ${stateSurface.overlayClassName}`,
+      shineOverlayClassName: null,
       stateSurface,
     };
   }
 
   if (theme === 'black' && isOn) {
-    const blackSurface = getCardStateSurfaceStyleTokens({
-      theme,
-      isActive: true,
-      baseColor: activeBaseColor,
-      borderAlphaHex: effectiveSelectedColor ? '33' : '47',
-    });
     const blackCardStyle = effectiveSelectedColor
       ? {
-          background: gradientColors.customGradient,
-          borderColor: selectedColorBorder,
+          background: `linear-gradient(155deg, ${withTintAlpha(
+            activeBaseColor,
+            0.18
+          )} 0%, ${withTintAlpha(
+            activeBaseColor,
+            0.3
+          )} 100%), linear-gradient(180deg, ${darkenColor(activeBaseColor, 150)}, ${darkenColor(
+            activeBaseColor,
+            175
+          )})`,
+          backgroundColor: darkenColor(activeBaseColor, 175),
+          borderColor: withTintAlpha(activeBaseColor, 0.28),
         }
-      : blackSurface.cardStyle;
+      : undefined;
 
     return {
       cardClassName: baseCardClassName,
       cardStyle: blackCardStyle,
       contentAccentColor,
       glowColor: useAccentGradient ? activeBaseColor : gradientColors.glow || activeBaseColor,
-      activeGlowClassName: 'absolute inset-0 transition-all duration-500',
-      activeGlowStyle: effectiveSelectedColor
-        ? {
-            background: `linear-gradient(135deg, ${effectiveSelectedColor}24 0%, transparent 72%)`,
-          }
-        : undefined,
-      innerOverlayClassName: blackSurface.innerOverlayClassName,
-      innerOverlayStyle: blackSurface.innerOverlayStyle,
-      shineOverlayClassName: blackSurface.shineOverlayClassName,
+      activeGlowClassName: null,
+      activeGlowStyle: undefined,
+      innerOverlayClassName: 'absolute inset-0',
+      innerOverlayStyle: {
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.012) 0%, rgba(255,255,255,0.004) 16%, rgba(0,0,0,0.1) 100%)',
+      },
+      shineOverlayClassName: null,
       stateSurface,
     };
   }

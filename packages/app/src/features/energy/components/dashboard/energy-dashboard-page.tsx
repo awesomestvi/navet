@@ -1,11 +1,12 @@
-import { TabList, Tabs, TabTrigger, Text } from '@navet/app/components/primitives';
+import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
+import { BaseCard } from '@navet/app/components/primitives';
+import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
 import type {
   EnergyConsumer,
   EnergyDashboardModel,
-  EnergyRange,
   EnergySeriesPoint,
   EnergySourceDiagnostic,
 } from '@navet/app/features/energy/types/energy.types';
@@ -14,55 +15,77 @@ import {
   formatEnergyValue,
 } from '@navet/app/features/energy/utils/energy-formatters';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { AlertTriangle, CheckCircle2, Flame, Leaf, PlugZap, Sun, Zap } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Flame, Leaf, PlugZap, Sun, Zap } from 'lucide-react';
 import { memo } from 'react';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
 
 interface EnergyDashboardPageProps {
   dashboard: EnergyDashboardModel;
-  range: EnergyRange;
-  onRangeChange: (range: EnergyRange) => void;
-  selectedNodeId: EnergyDashboardModel['nodes'][number]['id'] | null;
-  onNodeSelect: (nodeId: EnergyDashboardModel['nodes'][number]['id']) => void;
   sourceDiagnostics: EnergySourceDiagnostic[];
 }
-
-const rangeOptions: EnergyRange[] = ['now', 'today', 'week', 'month'];
 const heroLegendColors = {
   generated: themeColorValues.green,
   liveLoad: themeColorValues.teal,
   gridImport: themeColorValues.orange,
   trackedDevices: themeColorValues.blue,
 };
+const LOAD_ORB_DRIFT_BASE_DURATION_S = 8.5;
+const LOAD_ORB_RIPPLE_KEYFRAMES = `
+  @keyframes navet-load-orb-water-drift {
+    0%, 100% {
+      opacity: var(--load-orb-dot-opacity);
+      transform:
+        translate(-50%, -50%)
+        translate(
+          calc(var(--load-orb-dot-x) - var(--load-orb-drift-x)),
+          calc(var(--load-orb-dot-y) - var(--load-orb-drift-y))
+        )
+        scale(0.97);
+    }
+
+    50% {
+      opacity: calc(var(--load-orb-dot-opacity) * 0.9);
+      transform:
+        translate(-50%, -50%)
+        translate(
+          calc(var(--load-orb-dot-x) + var(--load-orb-drift-x)),
+          calc(var(--load-orb-dot-y) + var(--load-orb-drift-y))
+        )
+        scale(1.03);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navet-load-orb-dot {
+      animation: none !important;
+      opacity: var(--load-orb-dot-opacity) !important;
+      transform: translate(-50%, -50%) translate(var(--load-orb-dot-x), var(--load-orb-dot-y)) scale(1) !important;
+    }
+  }
+`;
 
 export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   dashboard,
-  range,
-  onRangeChange,
   sourceDiagnostics,
 }: EnergyDashboardPageProps) {
   const { t } = useI18n();
+  const haBaseUrl = useAuthBaseUrl();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const selectedRange = dashboard.ranges[range];
+  const homeAssistantEnergyUrl = resolveHomeAssistantEnergyUrl(haBaseUrl);
   const liveWatts = Math.round(dashboard.totals.currentLoadW);
-  const gridWatts = Math.round(Math.max(dashboard.totals.importW, dashboard.totals.exportW));
   const trackedKWh = dashboard.topConsumers.reduce((sum, consumer) => sum + consumer.energyKWh, 0);
   const unavailableDeviceCount = getUnavailableDeviceDiagnostics(
     dashboard.topConsumers,
     sourceDiagnostics
   ).length;
   const trackedDeviceCount = dashboard.topConsumers.length + unavailableDeviceCount;
-  const sourceUnavailableCount = getSourceDiagnostics(sourceDiagnostics).filter(
-    (source) => source.status === 'configured_unavailable'
-  ).length;
-
   return (
     <div className="space-y-5">
       <section
         className={`overflow-hidden rounded-[28px] border ${surface.border} ${surface.panel} ${surface.cardShadow}`}
       >
-        <div className="grid min-h-[28rem] gap-8 p-5 md:p-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+        <div className="grid min-h-[28rem] gap-8 p-5 md:p-8 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]">
           <div className="flex min-w-0 flex-col">
             <p
               className={`text-[11px] font-semibold uppercase tracking-[0.2em] md:text-xs md:tracking-[0.24em] ${surface.textMuted}`}
@@ -116,10 +139,18 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
                 sourceDiagnostics={sourceDiagnostics}
                 surface={surface}
               />
+              <div
+                className={`mt-4 flex items-start gap-2 text-xs leading-relaxed ${surface.textMuted}`}
+              >
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <p>
+                  Wrong sensors or missing sources should be corrected in Home Assistant Energy.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid min-w-0 gap-6 content-start">
+          <div className="grid min-w-0 gap-6 content-start pt-6 md:pt-10">
             <LoadOrb
               generatedColor={heroLegendColors.generated}
               generatedTodayKWh={dashboard.totals.solarTodayKWh}
@@ -129,12 +160,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
               surface={surface}
               trackedColor={heroLegendColors.trackedDevices}
               trackedTodayKWh={trackedKWh}
-            />
-            <SourceDiagnostics
-              accentColor={accentColor}
-              sources={sourceDiagnostics}
-              unavailableCount={sourceUnavailableCount}
-              surface={surface}
             />
           </div>
 
@@ -150,64 +175,34 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <CompactLoadSparklines
-          accentColor={accentColor}
-          consumers={dashboard.topConsumers}
-          surface={surface}
-          wholeHomeCurrentW={dashboard.totals.currentLoadW}
-          wholeHomePoints={selectedRange.liveConsumption}
-          wholeHomeTodayKWh={selectedRange.totalUsageKWh}
-        />
-        <section
-          className={`rounded-[28px] border p-5 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div
-                className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-              >
-                Recorder
-              </div>
-              <h2 className={`mt-2 text-lg font-semibold ${surface.textPrimary}`}>
-                {rangeLabel(range)} view
-              </h2>
-            </div>
-            <Tabs
-              value={range}
-              defaultValue={range}
-              onValueChange={(value) => onRangeChange(value as EnergyRange)}
-            >
-              <TabList variant="segmented" size="compact">
-                {rangeOptions.map((option) => (
-                  <TabTrigger key={option} value={option} size="compact">
-                    {rangeLabel(option)}
-                  </TabTrigger>
-                ))}
-              </TabList>
-            </Tabs>
+      <section className="grid gap-5 xl:grid-cols-4">
+        <div className="xl:col-span-3">
+          <CompactLoadSparklines
+            accentColor={accentColor}
+            consumers={dashboard.topConsumers}
+            surface={surface}
+            wholeHomeCurrentW={dashboard.totals.currentLoadW}
+            wholeHomePoints={dashboard.ranges[dashboard.selectedRange].liveConsumption}
+            wholeHomeTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
+          />
+        </div>
+        <div className="xl:col-span-1">
+          <div className="mb-3 flex items-center gap-3">
+            <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+              All Energy
+            </h2>
+            <div className={`h-px flex-1 ${surface.borderStrong}`} />
           </div>
-
-          <div className="mt-6 grid gap-3">
-            <RangeRow
-              label="Grid import"
-              value={`${formatEnergyValue(selectedRange.gridImportKWh)} kWh`}
+          <div className="h-52 min-w-0">
+            <SourceDiagnostics
+              accentColor={accentColor}
+              homeAssistantEnergyUrl={homeAssistantEnergyUrl}
+              openLabel={t('common.open')}
+              sources={sourceDiagnostics}
               surface={surface}
             />
-            <RangeRow
-              label="Tracked devices"
-              value={`${formatEnergyValue(trackedKWh)} kWh`}
-              surface={surface}
-            />
-            <RangeRow label="Live grid" value={`${gridWatts} W`} surface={surface} />
           </div>
-
-          {selectedRange.energyBreakdown.length === 0 ? (
-            <Text tone="muted" className="mt-5 text-sm">
-              Not enough recorder history for this range yet.
-            </Text>
-          ) : null}
-        </section>
+        </div>
       </section>
     </div>
   );
@@ -229,18 +224,10 @@ function CompactLoadSparklines({
   wholeHomeTodayKWh: number;
 }) {
   return (
-    <section
-      className={`rounded-[28px] border p-5 ${surface.border} ${surface.panel} ${surface.cardShadow}`}
-    >
-      <div className="mb-4">
-        <div>
-          <div
-            className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-          >
-            Live use
-          </div>
-          <h2 className={`mt-2 text-lg font-semibold ${surface.textPrimary}`}>Sparklines</h2>
-        </div>
+    <div>
+      <div className="mb-3 flex items-center gap-3">
+        <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>Sparklines</h2>
+        <div className={`h-px flex-1 ${surface.borderStrong}`} />
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -258,7 +245,7 @@ function CompactLoadSparklines({
           <DeviceSparklineRow key={consumer.id} accentColor={accentColor} consumer={consumer} />
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -326,7 +313,8 @@ function LoadOrb({
   trackedColor: string;
   trackedTodayKWh: number;
 }) {
-  const dots = buildOrbDots();
+  const motionIntensity = getLoadOrbMotionIntensity(loadW);
+  const dots = buildOrbDots(motionIntensity);
   const orbShares = getLoadOrbShares({
     generatedKWh: generatedTodayKWh,
     importedKWh: todayKWh,
@@ -334,13 +322,26 @@ function LoadOrb({
   });
 
   return (
-    <div className="relative flex min-h-[19rem] min-w-0 items-center justify-center overflow-hidden">
+    <div className="relative flex min-h-[22rem] min-w-0 items-center justify-center overflow-hidden">
+      <style>{LOAD_ORB_RIPPLE_KEYFRAMES}</style>
       <div className="absolute inset-0" aria-hidden="true">
         {dots.map((dot) => (
           <span
             key={dot.id}
-            className="absolute rounded-full"
+            className="navet-load-orb-dot absolute rounded-full"
+            data-ring={dot.ring}
+            data-testid="load-orb-dot"
             style={{
+              ['--load-orb-dot-opacity' as string]: String(dot.opacity),
+              ['--load-orb-dot-x' as string]: `${dot.x}px`,
+              ['--load-orb-dot-y' as string]: `${dot.y}px`,
+              ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
+              ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
+              animationDelay: `${dot.delayS}s`,
+              animationDuration: `${dot.durationS}s`,
+              animationIterationCount: 'infinite',
+              animationName: 'navet-load-orb-water-drift',
+              animationTimingFunction: 'ease-in-out',
               backgroundColor: getLoadOrbDotColor({
                 angle: dot.angle,
                 generatedColor,
@@ -349,9 +350,8 @@ function LoadOrb({
                 trackedColor,
               }),
               height: dot.size,
-              left: `calc(50% + ${dot.x}px)`,
-              opacity: dot.opacity,
-              top: `calc(50% + ${dot.y}px)`,
+              left: '50%',
+              top: '50%',
               transform: 'translate(-50%, -50%)',
               width: dot.size,
             }}
@@ -359,9 +359,9 @@ function LoadOrb({
         ))}
       </div>
       <div
-        className={`relative flex h-36 w-36 flex-col items-center justify-center rounded-full border ${surface.border} ${surface.panel}`}
+        className={`relative flex h-44 w-44 flex-col items-center justify-center rounded-full border ${surface.border} ${surface.panel}`}
       >
-        <div className={`text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
+        <div className={`text-5xl font-semibold tracking-tight ${surface.textPrimary}`}>
           {loadW}
         </div>
         <div className={`text-sm font-medium ${surface.textSecondary}`}>Watts now</div>
@@ -389,7 +389,9 @@ function DeviceTable({
   const unavailableDevices = getUnavailableDeviceDiagnostics(consumers, sourceDiagnostics);
 
   return (
-    <section className="min-w-0">
+    <section
+      className={`min-w-0 rounded-[24px] border p-5 ${surface.border} ${surface.panelMuted}`}
+    >
       <div className="mb-3">
         <div className={`text-xs font-medium ${surface.textMuted}`}>Devices</div>
         <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Tracked by HA Energy</h2>
@@ -434,7 +436,7 @@ function DeviceTable({
                   <div className="min-w-0">
                     <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>Now</div>
                     <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
-                      {formatEnergyValue(consumer.powerW / 1000)} kW
+                      {formatPowerValue(consumer.powerW)}
                     </div>
                   </div>
                   <div className="min-w-0">
@@ -442,7 +444,7 @@ function DeviceTable({
                       Today
                     </div>
                     <div className={`sm:text-right ${surface.textSecondary}`}>
-                      {formatEnergyValue(consumer.energyKWh)} kWh
+                      {formatTrackedEnergyValue(consumer.energyKWh)}
                     </div>
                   </div>
                 </div>
@@ -493,10 +495,22 @@ function getDeviceUsageSubtitle(consumer: EnergyConsumer, gridImportTodayKWh: nu
         : null;
     return gridShare
       ? `Idle · ${gridShare}% of grid consumed today`
-      : `Idle · ${formatEnergyValue(consumer.energyKWh)} kWh today`;
+      : `Idle · ${formatTrackedEnergyValue(consumer.energyKWh)} today`;
   }
 
   return 'Idle · no live draw';
+}
+
+function formatPowerValue(powerW: number) {
+  return `${Math.round(powerW)} W`;
+}
+
+function formatTrackedEnergyValue(energyKWh: number) {
+  if (energyKWh > 0 && energyKWh < 1) {
+    return `${Math.round(energyKWh * 1000)} Wh`;
+  }
+
+  return `${formatEnergyValue(energyKWh)} kWh`;
 }
 
 function getUnavailableDeviceDiagnostics(
@@ -536,43 +550,46 @@ function DeviceStatusSwitch({
 
 function SourceDiagnostics({
   accentColor,
+  homeAssistantEnergyUrl,
+  openLabel,
   sources,
-  unavailableCount,
   surface,
 }: {
   accentColor: string;
+  homeAssistantEnergyUrl: string | null;
+  openLabel: string;
   sources: EnergySourceDiagnostic[];
-  unavailableCount: number;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const sourceRows = getSourceDiagnostics(sources);
 
   return (
-    <section
-      className={`min-w-0 overflow-hidden rounded-[24px] border p-4 ${surface.border} ${surface.panelMuted}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className={`text-xs font-medium ${surface.textMuted}`}>Home Assistant Energy</div>
-          <h2 className={`text-base font-semibold ${surface.textPrimary}`}>Sources</h2>
-        </div>
-        {unavailableCount > 0 ? (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-medium text-amber-300">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {unavailableCount} unavailable
-          </div>
-        ) : (
-          <div
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-            style={{ backgroundColor: `${accentColor}24`, color: accentColor }}
+    <BaseCard
+      size="medium"
+      title="Sources"
+      subtitle="Manage source selection in Home Assistant Energy"
+      headerLeading={
+        <EntityCardHeaderIcon IconComponent={Zap} isActive size="medium" baseColor={accentColor} />
+      }
+      headerTrailing={
+        homeAssistantEnergyUrl ? (
+          <a
+            href={homeAssistantEnergyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${surface.border} ${surface.subtleBg} ${surface.hoverBg} ${surface.textSecondary}`}
           >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Ready
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 grid gap-2">
+            <ExternalLink className="h-3.5 w-3.5" />
+            <span>{openLabel}</span>
+          </a>
+        ) : null
+      }
+      surfaceVariant="muted"
+      className="h-full w-full"
+      contentClassName="flex h-full flex-col"
+      headerClassName="pb-1"
+    >
+      <div className="mt-auto grid gap-2 overflow-hidden">
         {sourceRows.map((source) => (
           <div key={source.id} className="flex min-w-0 items-center justify-between gap-3 text-sm">
             <div className="flex min-w-0 items-center gap-2">
@@ -590,7 +607,7 @@ function SourceDiagnostics({
           </div>
         ))}
       </div>
-    </section>
+    </BaseCard>
   );
 }
 
@@ -626,23 +643,6 @@ function getSourceDiagnostics(sourceDiagnostics: EnergySourceDiagnostic[]) {
   return sourceDiagnostics.filter((source) => !source.id.startsWith('device:'));
 }
 
-function RangeRow({
-  label,
-  value,
-  surface,
-}: {
-  label: string;
-  value: string;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className={`text-sm ${surface.textSecondary}`}>{label}</div>
-      <div className={`text-sm font-semibold ${surface.textPrimary}`}>{value}</div>
-    </div>
-  );
-}
-
 function formatDiagnosticStatus(source: EnergySourceDiagnostic) {
   if (source.status === 'configured_unavailable') {
     return 'Unavailable';
@@ -667,33 +667,61 @@ function formatDiagnosticStatus(source: EnergySourceDiagnostic) {
   return 'Available';
 }
 
-function rangeLabel(range: EnergyRange) {
-  if (range === 'now') return 'Now';
-  if (range === 'today') return 'Today';
-  if (range === 'week') return 'Week';
-  return 'Month';
+function resolveHomeAssistantEnergyUrl(haBaseUrl: string | null): string | null {
+  const energyPath = '/config/energy/dashboard';
+
+  if (haBaseUrl) {
+    try {
+      return new URL(energyPath, haBaseUrl).toString();
+    } catch {
+      return energyPath;
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.location.pathname.includes('/api/hassio_ingress/')) {
+    return energyPath;
+  }
+
+  return null;
 }
 
-function buildOrbDots() {
+function getLoadOrbMotionIntensity(loadW: number) {
+  return Math.max(0.7, Math.min(1.9, 0.82 + loadW / 2200));
+}
+
+function buildOrbDots(motionIntensity = 1) {
   const dots: Array<{
     angle: number;
+    delayS: number;
+    driftX: number;
+    driftY: number;
+    durationS: number;
     id: string;
     opacity: number;
+    ring: number;
     size: number;
     x: number;
     y: number;
   }> = [];
 
   for (let ring = 0; ring < 5; ring += 1) {
-    const radius = 76 + ring * 18;
+    const radius = 104 + ring * 18;
     const count = 18 + ring * 8;
+    const driftAmplitude = Math.max(1.9, 3.4 - ring * 0.32) * motionIntensity;
+    const durationScale = Math.max(0.62, 1.18 - (motionIntensity - 0.7) * 0.28);
     for (let index = 0; index < count; index += 1) {
       const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+      const durationBase = LOAD_ORB_DRIFT_BASE_DURATION_S + ring * 0.55 + (index % 5) * 0.22;
       dots.push({
         angle,
+        delayS: -((index / count) * durationBase * durationScale),
+        driftX: Math.cos(angle + ring * 0.7) * driftAmplitude,
+        driftY: Math.sin(angle - ring * 0.55) * driftAmplitude * 0.92,
+        durationS: durationBase * durationScale,
         id: `${ring}:${index}`,
         opacity: 0.9 - ring * 0.12,
-        size: 4 + (4 - ring) * 1.2,
+        ring,
+        size: 5 + (4 - ring) * 1.4,
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
       });

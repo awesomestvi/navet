@@ -19,12 +19,19 @@ export const KelvinColorTrigger = memo(function KelvinColorTrigger({
   const { t } = useI18n();
   const controlSizes = getCardActionControlSizes('small');
   const isLight = theme === 'light';
-  const borderColor = isLight ? 'rgba(148,163,184,0.36)' : 'rgba(255,255,255,0.18)';
+  const useInverseActiveLightSurface = isLight && isOn;
+  const borderColor = useInverseActiveLightSurface
+    ? 'rgba(255,255,255,0.32)'
+    : isLight
+      ? 'rgba(148,163,184,0.36)'
+      : 'rgba(255,255,255,0.18)';
   const kelvinBg =
     'linear-gradient(135deg, #ffb347 0%, #ffd15c 30%, #ffe58a 46%, #bddfff 68%, #74b9ff 100%)';
-  const mutedBg = isLight
-    ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
-    : 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.14) 100%)';
+  const mutedBg = useInverseActiveLightSurface
+    ? 'rgba(255,255,255,0.12)'
+    : isLight
+      ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+      : 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.14) 100%)';
   const activeShadow = `0 0 0 1px ${currentTempColor}66, 0 10px 24px -18px ${currentTempColor}cc`;
 
   return (
@@ -50,17 +57,26 @@ export const KelvinColorTrigger = memo(function KelvinColorTrigger({
     >
       <div
         className="pointer-events-none flex h-5 w-5 items-center justify-center rounded-full"
-        style={{ backgroundColor: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)' }}
+        style={{
+          backgroundColor: useInverseActiveLightSurface
+            ? 'rgba(255,255,255,0.18)'
+            : 'rgba(255,255,255,0.22)',
+          backdropFilter: 'blur(8px)',
+        }}
       >
         <div
           className="h-2.5 w-2.5 rounded-full border"
           style={{
             background: isActive
               ? `linear-gradient(135deg, ${currentTempColor} 0%, #ffe58a 48%, #9ed4ff 100%)`
-              : isLight
-                ? '#9ca3af'
-                : 'rgba(255,255,255,0.4)',
-            borderColor: 'rgba(255,255,255,0.8)',
+              : useInverseActiveLightSurface
+                ? '#ffffff'
+                : isLight
+                  ? '#9ca3af'
+                  : 'rgba(255,255,255,0.4)',
+            borderColor: useInverseActiveLightSurface
+              ? 'rgba(255,255,255,0.9)'
+              : 'rgba(255,255,255,0.8)',
           }}
         />
       </div>

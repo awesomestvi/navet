@@ -1,4 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
+import { PHOTO_FRAME_DEMO_URLS } from '@navet/app/demo/photo-frame-demo-images';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -10,10 +11,7 @@ function PhotoFrameSettingsDialogStory() {
   const [isOpen, setIsOpen] = useState(false);
   const [roomValue, setRoomValue] = useState('__home__');
   const [sourceMode, setSourceMode] = useState<PhotoFrameSourceMode>('urls');
-  const [photoUrls, setPhotoUrls] = useState([
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1280&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1494526585095-c41746248156?w=1280&q=80&auto=format&fit=crop',
-  ]);
+  const [photoUrls, setPhotoUrls] = useState([...PHOTO_FRAME_DEMO_URLS.slice(0, 2)]);
   const [mediaSourceId, setMediaSourceId] = useState('media-source://media_source/local/photos');
   const [shuffleEnabled, setShuffleEnabled] = useState(true);
   const [tintColor, setTintColor] = useState<string | undefined>('#f97316');

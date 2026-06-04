@@ -7,17 +7,17 @@ resources, or Home Assistant-specific tests.
 
 - official Home Assistant documentation is the source of truth for Home Assistant adapter behavior
 - Home Assistant documentation does not define Navet's overall architecture
-- if Home Assistant docs and Navet implementation disagree, assume Navet is wrong first
+- if Home Assistant docs and Navet implementation disagree, follow Home Assistant docs and reconcile Navet behavior
 
 ## Current Repo Areas
 
-Home Assistant-specific behavior currently lives primarily in:
+Home Assistant-specific behavior should primarily live in:
 
 - `packages/provider-homeassistant/`
-- `packages/app/src/infrastructure/home-assistant/`
-- `packages/app/src/services/`
-- `packages/app/src/stores/home-assistant-store.ts`
-- Home Assistant-aware feature code under `packages/app/src/features/`
+- app-owned compatibility seams in `packages/app/src/infrastructure/home-assistant/`,
+  `packages/app/src/services/`, and legacy adapters under
+  `packages/app/src/stores/home-assistant-store.ts`
+- Home Assistant-aware feature code under `packages/app/src/features/` that consumes normalized data
 - Home Assistant fixtures under `packages/app/src/test/fixtures/home-assistant/`
 
 ## Rules

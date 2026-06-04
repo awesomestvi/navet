@@ -2,6 +2,7 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { CardTextTone } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
 import { useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes } from 'react';
 import { memo } from 'react';
@@ -13,6 +14,8 @@ interface EntityCardHeaderIconProps {
   size: CardSize;
   tone?: CardTextTone;
   baseColor?: string | null;
+  themeOverride?: ThemeType;
+  inverseSurface?: boolean;
   ariaLabel?: string;
   onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
@@ -25,11 +28,14 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   size,
   tone,
   baseColor,
+  themeOverride,
+  inverseSurface = false,
   ariaLabel,
   onClick,
   onPointerDown,
 }: EntityCardHeaderIconProps) {
   const { theme, primaryColor, accentColor } = useTheme();
+  const resolvedTheme = themeOverride ?? theme;
   const isInteractive = Boolean(onClick);
   const { badgeClassName, badgeStyle, iconClassName, iconStyle } = getEntityIconPillStyles({
     isActive,
@@ -38,8 +44,9 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     accentColor,
     baseColor,
     size,
-    theme,
+    theme: resolvedTheme,
     tone,
+    inverseSurface,
   });
   const iconTextClassName =
     size === 'large' || size === 'extra-large'

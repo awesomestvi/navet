@@ -111,8 +111,8 @@ Shared UI should prefer normalized provider/runtime state from:
 
 Provider-specific runtime, auth, media, and resource behavior should remain in:
 
-- `packages/app/src/infrastructure/home-assistant/`
-- `packages/app/src/services/`
+- provider packages (`packages/provider-*/`) for runtime-capable providers
+- app-owned compatibility seams (`packages/app/src/services/`, `packages/app/src/infrastructure/home-assistant/`) only where extraction to provider packages is still in progress
 
 ## Testing And Stories
 

@@ -1,4 +1,5 @@
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen } from '@testing-library/react';
@@ -179,5 +180,23 @@ describe('DashboardLayout', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Kitchen' }));
 
     expect(onRoomChange).toHaveBeenCalledWith('Kitchen');
+  });
+
+  it('uses a light wallpaper readability treatment in light theme', () => {
+    useThemeStore.getState().setTheme('light');
+    useThemeStore.getState().setWallpaper('/wallpapers/custom-room-shot.jpg');
+
+    renderWithProviders(
+      <DashboardLayout>
+        <main>Dashboard content</main>
+      </DashboardLayout>
+    );
+
+    expect(screen.getByTestId('dashboard-wallpaper-accent-overlay')).not.toHaveStyle({
+      mixBlendMode: 'multiply',
+    });
+    expect(screen.getByTestId('dashboard-wallpaper-readability-layer')).toHaveStyle({
+      backgroundColor: 'rgba(249, 250, 251, 0.68)',
+    });
   });
 });

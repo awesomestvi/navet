@@ -1,4 +1,3 @@
-import { Select } from '@navet/app/components/primitives/select';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { ChevronDown } from 'lucide-react';
@@ -24,20 +23,18 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
   return (
     <div className="relative inline-flex items-center">
       {onChange ? (
-        <Select
+        <select
           aria-label={t('common.room')}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          containerClassName="absolute inset-0 z-10"
-          selectClassName="h-full cursor-pointer opacity-0"
-          indicatorClassName="hidden"
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-slate-900 opacity-0 disabled:cursor-not-allowed"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </Select>
+        </select>
       ) : null}
       <div className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary}`}>
         <span className="max-w-[12rem] truncate font-medium">{label}</span>

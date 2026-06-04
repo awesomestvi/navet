@@ -55,6 +55,7 @@ export function useHomeAssistantProviderEnergyData(
   const batteryDevices = useProviderBatterySensorRows();
   const {
     energySourceDiagnostics,
+    energyStatisticUnits,
     hasEnergyStatisticsLoaded,
     overview,
     isConfigured,
@@ -68,6 +69,9 @@ export function useHomeAssistantProviderEnergyData(
   );
   const periodTotals = useEnergyStatisticsPeriods(
     haSourceConfig?.gridImportEnergyEntityId,
+    haSourceConfig?.gridImportEnergyEntityId
+      ? energyStatisticUnits[haSourceConfig.gridImportEnergyEntityId]
+      : undefined,
     enabled
   );
   const todayTotalUsageKWh = useMemo(

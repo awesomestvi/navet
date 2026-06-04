@@ -132,15 +132,11 @@ export function getThemeSurfaceTokens(
         : 'bg-white/8',
       placeholder: 'placeholder-white/58',
       cardShadow: isHigh
-        ? 'shadow-[0_32px_84px_-44px_rgba(2,8,20,0.9),0_10px_20px_-16px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.24),inset_0_-18px_34px_rgba(255,255,255,0.04)]'
+        ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.24),inset_0_-18px_34px_rgba(255,255,255,0.04)] drop-shadow-[0_32px_44px_rgba(2,8,20,0.22)] drop-shadow-[0_18px_30px_rgba(2,8,20,0.14)]'
         : isMedium
-          ? 'shadow-[0_24px_58px_-38px_rgba(2,8,20,0.82),inset_0_1px_0_rgba(255,255,255,0.16)]'
+          ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] drop-shadow-[0_22px_30px_rgba(2,8,20,0.18)]'
           : '',
-      lightOverlay: isHigh
-        ? 'bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.08)_14%,rgba(255,255,255,0.02)_40%,transparent_72%)]'
-        : isMedium
-          ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.05)_18%,transparent_62%)]'
-          : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent_52%)]',
+      lightOverlay: null,
       dialogBackdrop: isHigh
         ? 'bg-[rgba(2,6,16,0.42)]'
         : isMedium

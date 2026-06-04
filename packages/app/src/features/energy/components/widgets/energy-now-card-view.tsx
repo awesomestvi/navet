@@ -42,6 +42,12 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
   const isMedium = size === 'medium';
   const hasSparklineData = trend.length >= 2;
   const headerSize: CardSize = isSmall ? 'small' : size;
+  const emptyStateStyle = {
+    paddingTop: isSmall ? '3.5rem' : isMedium ? '4.75rem' : '5.5rem',
+  } as const;
+  const sparklineLayerClassName = hasSparklineData
+    ? `absolute inset-x-0 ${isSmall ? 'top-16 bottom-0' : 'top-20 bottom-0'}`
+    : 'absolute inset-0 flex items-center justify-center px-4';
   const tickIndexes = isSmall
     ? [0, trend.length - 1]
     : isMedium
@@ -58,7 +64,7 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
     <BaseCard
       size={size}
       fullBleed
-      className="transition-all duration-500"
+      className="!shadow-none !drop-shadow-none transition-all duration-500"
       style={tintSurface.panelStyle}
       frameClassName="overflow-hidden"
       overlay={
@@ -79,7 +85,11 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
         <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
       ) : null}
 
-      <div className={`absolute inset-x-0 ${isSmall ? 'top-16 bottom-0' : 'top-20 bottom-0'}`}>
+      <div
+        data-testid="energy-now-chart-layer"
+        className={sparklineLayerClassName}
+        style={hasSparklineData ? undefined : emptyStateStyle}
+      >
         {hasSparklineData ? (
           <EnergySparkline
             data={trend.map((point) => ({
@@ -95,12 +105,11 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
             padX={0}
           />
         ) : (
-          <div className="flex h-full items-center justify-center px-4">
-            <div
-              className={`rounded-2xl border border-dashed px-4 py-3 text-center text-sm ${surface.border} ${surface.textMuted}`}
-            >
-              {t('widgets.energyNow.empty.sparkline')}
-            </div>
+          <div
+            data-testid="energy-now-empty-state"
+            className={`rounded-2xl border border-dashed px-4 py-3 text-center text-sm ${surface.border} ${surface.textMuted}`}
+          >
+            {t('widgets.energyNow.empty.sparkline')}
           </div>
         )}
       </div>

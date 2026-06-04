@@ -8,7 +8,7 @@ import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/ca
 import { dispatchEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
-import { useAccentColor, useI18n } from '@navet/app/hooks';
+import { useAccentColor, useI18n, useTheme } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -63,6 +63,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   headerSubtitleOverride,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
   const accentColor = useAccentColor();
   const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
   const isLocked = useDashboardEntitiesStore((state) => state.lockedCardIds.includes(id));
@@ -141,6 +142,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
               accentColor={accentColor}
               anchorRect={tinyEditDockAnchorRect}
               subtitle={tinyEditOverlaySubtitle}
+              theme={theme}
               title={tinyEditOverlayTitle}
               onClose={() => {
                 setIsTinyEditDockOpen(false);
@@ -167,12 +169,14 @@ export const DashboardCardItem = memo(function DashboardCardItem({
                 removeAriaLabel,
                 RemoveActionIcon,
                 resolvedSize,
+                theme,
                 t,
                 usesHideAction,
               })}
             </TinyEditModeDockOverlay>
           ) : (
             <TinyEditModeDockLauncher
+              theme={theme}
               onOpen={(event) => {
                 setTinyEditDockAnchorRect(getPortalActionDockAnchorRect(event.currentTarget));
                 setIsTinyEditDockOpen(true);
@@ -181,7 +185,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
             />
           )
         ) : (
-          <EditModeActionDock cardSize={editControlSize} accentColor={accentColor}>
+          <EditModeActionDock cardSize={editControlSize} accentColor={accentColor} theme={theme}>
             {renderEditModeDockActions({
               allowedSizes,
               allowEntityRemoval,
@@ -202,6 +206,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
               removeAriaLabel,
               RemoveActionIcon,
               resolvedSize,
+              theme,
               t,
               usesHideAction,
             })}
@@ -271,15 +276,37 @@ function EditModeCardBackdrop({ size }: { size: CardSize }) {
 function EditModeActionDock({
   cardSize,
   accentColor,
+  theme,
   children,
 }: {
   cardSize: CardSize;
   accentColor: string;
+  theme: ReturnType<typeof useTheme>['theme'];
   children: ReactNode;
 }) {
   const compact = cardSize === 'tiny' || cardSize === 'extra-small';
   const narrowDock = compact || cardSize === 'small';
   const radiusClassName = getBaseCardRadiusClassName(cardSize);
+  const overlayBackground =
+    theme === 'glass'
+      ? 'linear-gradient(to top, rgba(4,8,18,0.56), rgba(8,12,20,0.3) 24%, rgba(10,14,24,0.1) 52%, transparent 78%)'
+      : 'linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.78) 24%, rgba(0,0,0,0.42) 52%, transparent 78%)';
+  const dockStyle =
+    theme === 'glass'
+      ? {
+          border: '1px solid rgba(255,255,255,0.16)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.03) 100%)',
+          boxShadow:
+            '0 18px 38px -24px rgba(4,10,22,0.82), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -10px 18px rgba(255,255,255,0.03)',
+          backdropFilter: 'blur(24px) saturate(1.05)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.05)',
+        }
+      : {
+          border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
+          background: '#161619',
+          boxShadow: '0 12px 24px -18px rgba(0,0,0,0.72)',
+        };
 
   return (
     <div
@@ -289,8 +316,7 @@ function EditModeActionDock({
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            'linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.78) 24%, rgba(0,0,0,0.42) 52%, transparent 78%)',
+          background: overlayBackground,
         }}
         aria-hidden="true"
       />
@@ -299,11 +325,7 @@ function EditModeActionDock({
       >
         <div
           className={`pointer-events-auto inline-flex max-w-full items-center justify-center ${narrowDock ? 'gap-2 px-2 py-1.5' : 'gap-3 px-3 py-2'} rounded-full`}
-          style={{
-            border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
-            background: '#161619',
-            boxShadow: '0 12px 24px -18px rgba(0,0,0,0.72)',
-          }}
+          style={dockStyle}
         >
           {children}
         </div>
@@ -313,9 +335,11 @@ function EditModeActionDock({
 }
 
 function TinyEditModeDockLauncher({
+  theme,
   onOpen,
   title,
 }: {
+  theme: ReturnType<typeof useTheme>['theme'];
   onOpen: (event: MouseEvent<HTMLButtonElement>) => void;
   title: string;
 }) {
@@ -325,6 +349,7 @@ function TinyEditModeDockLauncher({
         cardSize="tiny"
         Icon={SlidersHorizontal}
         inline
+        theme={theme}
         variant="accent"
         aria-label={title}
         title={title}
@@ -347,6 +372,7 @@ function TinyEditModeDockOverlay({
   children,
   onClose,
   subtitle,
+  theme,
   title,
 }: {
   accentColor: string;
@@ -354,6 +380,7 @@ function TinyEditModeDockOverlay({
   children: ReactNode;
   onClose: () => void;
   subtitle: string;
+  theme: ReturnType<typeof useTheme>['theme'];
   title: string;
 }) {
   return (
@@ -362,6 +389,7 @@ function TinyEditModeDockOverlay({
       anchorRect={anchorRect}
       onClose={onClose}
       subtitle={subtitle}
+      theme={theme}
       title={title}
     >
       <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
@@ -389,6 +417,7 @@ function renderEditModeDockActions({
   removeAriaLabel,
   RemoveActionIcon,
   resolvedSize,
+  theme,
   t,
   usesHideAction,
 }: {
@@ -411,6 +440,7 @@ function renderEditModeDockActions({
   removeAriaLabel: string;
   RemoveActionIcon: typeof EyeOff;
   resolvedSize: CardSize;
+  theme: ReturnType<typeof useTheme>['theme'];
   t: ReturnType<typeof useI18n>['t'];
   usesHideAction: boolean;
 }) {
@@ -421,6 +451,7 @@ function renderEditModeDockActions({
           cardSize={cardSize}
           Icon={RemoveActionIcon}
           inline
+          theme={theme}
           variant={usesHideAction ? 'warning' : 'destructive'}
           data-dashboard-edit-action="remove-entity"
           data-card-id={cardId}
@@ -432,6 +463,7 @@ function renderEditModeDockActions({
           cardSize={cardSize}
           Icon={X}
           inline
+          theme={theme}
           variant="warning"
           data-dashboard-edit-action="remove-layout"
           data-card-id={cardId}
@@ -443,6 +475,7 @@ function renderEditModeDockActions({
           cardSize={cardSize}
           Icon={X}
           inline
+          theme={theme}
           variant="destructive"
           data-dashboard-edit-action="delete-card"
           data-card-id={cardId}
@@ -453,6 +486,7 @@ function renderEditModeDockActions({
         cardSize={cardSize}
         Icon={isLocked ? Lock : Unlock}
         inline
+        theme={theme}
         variant={isLocked ? 'locked' : 'success'}
         aria-pressed={isLocked}
         aria-label={lockAriaLabel}
@@ -474,6 +508,7 @@ function renderEditModeDockActions({
           cardSize={cardSize}
           Icon={Settings2}
           inline
+          theme={theme}
           variant="accent"
           aria-label={t('entityCardInteraction.openSettings', {
             name: entityName,

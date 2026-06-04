@@ -45,15 +45,15 @@ export function EnergyNowGradientOverlays({ theme, isSmall }: GradientOverlaysPr
   return (
     <>
       <div
-        className={`pointer-events-none absolute bottom-0 left-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
+        className={`pointer-events-none absolute left-0 inset-y-0 ${isSmall ? 'w-8' : 'w-10'}`}
         style={{ background: leftGradient }}
       />
       <div
-        className={`pointer-events-none absolute right-0 bottom-0 ${isSmall ? 'top-16 w-8' : 'top-20 w-10'}`}
+        className={`pointer-events-none absolute right-0 inset-y-0 ${isSmall ? 'w-8' : 'w-10'}`}
         style={{ background: rightGradient }}
       />
       <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 ${isSmall ? 'top-16' : 'top-20'}`}
+        className="pointer-events-none absolute inset-0"
         style={{ background: bottomGradient }}
       />
     </>

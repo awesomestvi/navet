@@ -6,7 +6,7 @@ DOMAIN = "navet"
 
 PANEL_COMPONENT_NAME = "navet-panel"
 PANEL_FRONTEND_PATH = "navet"
-PANEL_ICON = "mdi:view-dashboard"
+PANEL_ICON = "mdi:hub"
 PANEL_TITLE = "Navet"
 
 STATIC_PATH = "/api/navet/static"

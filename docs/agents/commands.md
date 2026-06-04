@@ -13,7 +13,9 @@ pnpm check           # Biome lint + format check
 pnpm format          # Biome format (auto-fix)
 pnpm check:stories   # validate Storybook title, coverage, and ownership rules
 pnpm check:ui-kit    # validate UI-kit import and boundary rules
+pnpm check:provider-boundaries  # enforce provider boundary import rules
 pnpm check:docker    # build the standalone image and validate nginx/njs config
+pnpm check:lockfile  # verify lockfile/package manifest consistency
 pnpm test            # broad local regression suite (Tier 3)
 pnpm test:tier1      # release-critical provider/runtime gate
 pnpm test:tier2      # blocking app-contract suite

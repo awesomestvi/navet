@@ -1,4 +1,5 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -12,9 +13,7 @@ function PhotoStoryPreview({ size, shuffleEnabled }: PhotoStoryArgs) {
   return (
     <CustomWidgetStoryFrame
       card={buildCustomCard('photo', size, {
-        photoUrls: [
-          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1280&q=80&auto=format&fit=crop',
-        ],
+        photoImages: PHOTO_FRAME_DEMO_IMAGES,
         shuffleEnabled,
         tintColor: '#22d3ee',
       })}

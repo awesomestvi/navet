@@ -211,10 +211,13 @@ export function getCardReadableTextTokens({
       : resolvedBackgroundColor;
   const backgroundIsDark = getLuminance(contrastBackgroundColor) < 0.32;
   const targetEndpoint = theme === 'glass' || backgroundIsDark ? '#ffffff' : '#111827';
-  const titleMinBlend = theme === 'glass' ? 0.78 : backgroundIsDark ? 0.36 : 0.52;
-  const subtitleMinBlend = theme === 'glass' ? 0.86 : backgroundIsDark ? 0.28 : 0.6;
+  const isGlassPrimaryTone = theme === 'glass' && tone === 'primary';
+  const titleMinBlend =
+    theme === 'glass' ? (isGlassPrimaryTone ? 0.64 : 0.78) : backgroundIsDark ? 0.36 : 0.52;
+  const subtitleMinBlend =
+    theme === 'glass' ? (isGlassPrimaryTone ? 0.72 : 0.86) : backgroundIsDark ? 0.28 : 0.6;
   const titleContrastTarget = theme === 'glass' ? 6 : 4.5;
-  const subtitleContrastTarget = theme === 'glass' ? 5.2 : 4.5;
+  const subtitleContrastTarget = theme === 'glass' ? (isGlassPrimaryTone ? 4.7 : 5.2) : 4.5;
 
   return {
     titleColor: findAccessibleColor(

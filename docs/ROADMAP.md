@@ -60,5 +60,5 @@ Navet already ships:
 - Home Assistant is still the most mature provider experience.
 - Homey and openHAB are real supported paths, but not at the same maturity level as Home
   Assistant.
-- Hubitat and SmartThings have package entry points in the repo, but they are not available runtime
-  providers yet.
+- Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
+  providers are not implemented yet.

@@ -24,7 +24,7 @@ packages/
   The product shell: provider registration, runtime selection, settings, persistence, and boot
   wiring.
 
-Home Assistant is the reference provider, not the application architecture.
+Home Assistant is the first implemented provider, not the application architecture.
 
 ## What That Means In Practice
 
@@ -47,8 +47,8 @@ Home Assistant is the reference provider, not the application architecture.
 - Home Assistant: implemented
 - Homey: implemented
 - openHAB: implemented
-- Hubitat: package entry point only, not a runtime provider yet
-- SmartThings: package entry point only, not a runtime provider yet
+- Hubitat: planned (contract + registration entry only)
+- SmartThings: planned (contract + registration entry only)
 
 ## Read Next
 

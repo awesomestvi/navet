@@ -94,7 +94,7 @@ Typical tier split inside `@navet/app`:
 Validation should keep failing if:
 
 - shared code imports provider-specific code
-- provider packages import app-internal compatibility seams as primary inputs
+- provider packages use app-internal compatibility seams as a primary input model
 - shared UI starts depending on raw backend payload models again
 
 ## Release Validation

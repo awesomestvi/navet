@@ -12,12 +12,12 @@ resource rewriting, or authenticated provider resources.
 
 ## Current Repo Areas
 
-- `packages/app/src/infrastructure/home-assistant/resources/`
-- `packages/app/src/infrastructure/home-assistant/media/`
 - `packages/provider-homeassistant/`
-- `packages/app/src/utils/home-assistant-url.ts`
-- `packages/app/src/utils/home-assistant-connection-target.ts`
-- `packages/app/src/utils/url-security.ts`
+- `packages/app/src/infrastructure/home-assistant/resources/` (legacy compatibility seam only)
+- `packages/app/src/infrastructure/home-assistant/media/` (legacy compatibility seam only)
+- `packages/app/src/utils/home-assistant-url.ts` (legacy compatibility seam only)
+- `packages/app/src/utils/home-assistant-connection-target.ts` (legacy compatibility seam only)
+- `packages/app/src/utils/url-security.ts` (legacy compatibility seam only)
 - `packages/app/src/features/security/components/camera-card/`
 - `packages/app/src/features/media/`
 - `packages/app/src/features/rss/`

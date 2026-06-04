@@ -1,5 +1,7 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
+import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
 import homeyLogo from '@navet/app/assets/providers/homey.png';
+import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { useAuthSession } from '@navet/app/auth/AuthProvider';
 import {
@@ -29,6 +31,10 @@ const PROVIDER_OPTION_CONTENT: Record<
   {
     detailKey: TranslationKey;
     logoSrc: string;
+    logoSources?: ReadonlyArray<{
+      srcSet: string;
+      type: 'image/avif' | 'image/webp';
+    }>;
   }
 > = {
   home_assistant: {
@@ -38,6 +44,10 @@ const PROVIDER_OPTION_CONTENT: Record<
   homey: {
     detailKey: 'login.providers.homey.detail',
     logoSrc: homeyLogo,
+    logoSources: [
+      { srcSet: homeyLogoAvif, type: 'image/avif' },
+      { srcSet: homeyLogoWebp, type: 'image/webp' },
+    ],
   },
   openhab: {
     detailKey: 'login.providers.openhab.detail',
@@ -287,11 +297,28 @@ export function LoginPage() {
                           )}
                         >
                           {candidateContent.logoSrc ? (
-                            <img
-                              src={candidateContent.logoSrc}
-                              alt=""
-                              className="h-7 w-7 object-contain"
-                            />
+                            candidateContent.logoSources ? (
+                              <picture>
+                                {candidateContent.logoSources.map((source) => (
+                                  <source
+                                    key={`${source.type}-${source.srcSet}`}
+                                    srcSet={source.srcSet}
+                                    type={source.type}
+                                  />
+                                ))}
+                                <img
+                                  src={candidateContent.logoSrc}
+                                  alt=""
+                                  className="h-7 w-7 object-contain"
+                                />
+                              </picture>
+                            ) : (
+                              <img
+                                src={candidateContent.logoSrc}
+                                alt=""
+                                className="h-7 w-7 object-contain"
+                              />
+                            )
                           ) : (
                             <span className="text-[0.7rem] font-semibold uppercase tracking-[0.14em]">
                               {candidate.label.slice(0, 2)}

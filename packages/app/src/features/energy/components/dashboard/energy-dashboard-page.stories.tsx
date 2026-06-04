@@ -184,10 +184,6 @@ const meta = {
   },
   args: {
     dashboard: defaultScenario.dashboard,
-    range: defaultScenario.dashboard.selectedRange,
-    onRangeChange: () => {},
-    selectedNodeId: 'home',
-    onNodeSelect: () => {},
     sourceDiagnostics: [],
   },
 } satisfies Meta<typeof EnergyDashboardPage>;
@@ -201,7 +197,6 @@ function buildScenarioStory(id: string): Story {
   return {
     args: {
       dashboard: scenario.dashboard,
-      range: scenario.dashboard.selectedRange,
       sourceDiagnostics: getMockEnergySourceDiagnostics(scenario.dashboard),
     },
   };
@@ -218,7 +213,6 @@ export const NoSolarInactive: Story = buildScenarioStory('inactive');
 export const GridOnlyCurrentHaData: Story = {
   args: {
     dashboard: gridOnlyDashboard,
-    range: 'today',
     sourceDiagnostics: gridOnlyDiagnostics,
   },
 };

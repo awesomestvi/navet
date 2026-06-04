@@ -43,6 +43,32 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('uses Home Assistant registry user names when friendly_name is missing', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'media_player.furdoszoba': makeEntity('media_player.furdoszoba', 'idle', {}),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        {
+          entity_id: 'media_player.furdoszoba',
+          name: null,
+          original_name: 'Bathroom speaker',
+        },
+      ],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'media_player.furdoszoba')).toEqual(
+      expect.objectContaining({
+        name: 'Bathroom speaker',
+        attributes: expect.objectContaining({
+          title: 'Bathroom speaker',
+        }),
+      })
+    );
+  });
+
   it('attaches related energy metrics to switch entities from the same device', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

@@ -16,7 +16,11 @@ interface EnergyPeriodTotals {
   month: number;
 }
 
-export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): EnergyPeriodTotals {
+export function useEnergyStatisticsPeriods(
+  entityId?: string,
+  unit?: string,
+  enabled = true
+): EnergyPeriodTotals {
   const [totals, setTotals] = useState<EnergyPeriodTotals>({ today: 0, week: 0, month: 0 });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
@@ -35,7 +39,7 @@ export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): E
         const result = await getCachedEnergyStatistics(
           `periods-5minute-today:${statisticId}`,
           CACHE_TTL_MS,
-          () => getEnergyStatisticsPeriods(activeMessageClient, statisticId)
+          () => getEnergyStatisticsPeriods(activeMessageClient, statisticId, unit)
         );
         setTotals(result);
       } catch (error) {
@@ -50,7 +54,7 @@ export function useEnergyStatisticsPeriods(entityId?: string, enabled = true): E
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [enabled, entityId, supportsStatistics]);
+  }, [enabled, entityId, supportsStatistics, unit]);
 
   return totals;
 }

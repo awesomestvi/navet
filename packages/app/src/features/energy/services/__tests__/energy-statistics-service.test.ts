@@ -17,7 +17,9 @@ describe('getEnergyStatisticsToday', () => {
       ],
     });
 
-    await expect(getEnergyStatisticsToday(connection, ['sensor.grid_import'])).resolves.toEqual({
+    await expect(
+      getEnergyStatisticsToday(connection, { 'sensor.grid_import': 'kWh' })
+    ).resolves.toEqual({
       'sensor.grid_import': 14.89,
     });
     expect(connection.sendMessagePromise).toHaveBeenCalledWith(
@@ -37,8 +39,25 @@ describe('getEnergyStatisticsToday', () => {
       ],
     });
 
-    await expect(getEnergyStatisticsToday(connection, ['sensor.grid_import'])).resolves.toEqual({
+    await expect(
+      getEnergyStatisticsToday(connection, { 'sensor.grid_import': 'kWh' })
+    ).resolves.toEqual({
       'sensor.grid_import': 3,
+    });
+  });
+
+  it('converts Wh statistics totals to kWh before returning them', async () => {
+    const connection = createConnection({
+      'sensor.grid_import': [
+        { start: '2026-05-24T00:00:00Z', change: 14000 },
+        { start: '2026-05-24T01:00:00Z', change: 890 },
+      ],
+    });
+
+    await expect(
+      getEnergyStatisticsToday(connection, { 'sensor.grid_import': 'Wh' })
+    ).resolves.toEqual({
+      'sensor.grid_import': 14.89,
     });
   });
 });
@@ -62,11 +81,9 @@ describe('getEnergyStatisticsPeriods', () => {
         }),
     } as unknown as Connection;
 
-    await expect(getEnergyStatisticsPeriods(connection, 'sensor.grid_import')).resolves.toEqual({
-      today: 14.89,
-      week: 52,
-      month: 201,
-    });
+    await expect(
+      getEnergyStatisticsPeriods(connection, 'sensor.grid_import', 'kWh')
+    ).resolves.toEqual({ today: 14.89, week: 52, month: 201 });
     expect(connection.sendMessagePromise).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -82,5 +99,32 @@ describe('getEnergyStatisticsPeriods', () => {
       3,
       expect.objectContaining({ period: 'day' })
     );
+  });
+
+  it('converts Wh period totals to kWh', async () => {
+    const connection = {
+      sendMessagePromise: vi
+        .fn()
+        .mockResolvedValueOnce({
+          'sensor.grid_import': [
+            { start: '2026-05-24T00:00:00Z', change: 14000 },
+            { start: '2026-05-24T01:00:00Z', change: 890 },
+          ],
+        })
+        .mockResolvedValueOnce({
+          'sensor.grid_import': [{ start: '2026-05-19T00:00:00Z', change: 52000 }],
+        })
+        .mockResolvedValueOnce({
+          'sensor.grid_import': [{ start: '2026-05-01T00:00:00Z', change: 201000 }],
+        }),
+    } as unknown as Connection;
+
+    await expect(
+      getEnergyStatisticsPeriods(connection, 'sensor.grid_import', 'Wh')
+    ).resolves.toEqual({
+      today: 14.89,
+      week: 52,
+      month: 201,
+    });
   });
 });

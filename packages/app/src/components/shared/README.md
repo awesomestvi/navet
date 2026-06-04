@@ -49,7 +49,7 @@ behavior.
   App-level entity-card interaction policy for toggle-first, controls-first, and settings flows.
 
 - `entity-room-selector.tsx`
-  Shared UI, but directly coupled to Home Assistant area/entity registries and update flows.
+  Shared UI, but directly coupled to app-level room/layout state and compatibility seams.
 
 - `error-display.tsx`
   Bound to the global error store and app-level recovery behavior.
@@ -81,6 +81,6 @@ behavior.
 
 - If a temporary compatibility shim is introduced, prefer updating imports instead of extending the shim.
 - If a file depends on app stores, service calls, release metadata, dashboard edit semantics, or
-  Home Assistant-specific workflows, it can stay in `shared/`.
+  app-owned compatibility seams, it can stay in `shared/`.
 - If a file becomes a stable source of reusable structure with a clear single responsibility, move
   it to `primitives/` or `patterns/` and leave a compatibility shim behind only when there is a real migration need.

@@ -16,7 +16,7 @@ Navet turns supported smart-home platforms into a dedicated control surface with
 dashboard plus focused `energy`, `climate`, `security`, `lights`, `media`, `tasks`, and
 `settings` sections.
 
-Home Assistant is the reference provider today, but Navet is not a Home Assistant-only frontend.
+Home Assistant is the first implemented provider, but Navet is not a Home Assistant-only frontend.
 The repo is organized around provider-neutral `@navet/core` and `@navet/ui` packages, provider
 packages, an `@navet/app` composition layer, and thin app workspaces for each runtime surface.
 
@@ -27,8 +27,8 @@ packages, an `@navet/app` composition layer, and thin app workspaces for each ru
 | <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="50"> | Home Assistant | implemented | custom panel, add-on, standalone |
 | <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="50"> | Homey | implemented | standalone |
 | <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="50"> | openHAB | implemented | standalone |
-| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="50"> | Hubitat | scaffolding only | not available yet |
-| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="50"> | SmartThings | scaffolding only | not available yet |
+| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="50"> | Hubitat | planned | contract + registration entry only |
+| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="50"> | SmartThings | planned | contract + registration entry only |
 
 ## What You Get
 

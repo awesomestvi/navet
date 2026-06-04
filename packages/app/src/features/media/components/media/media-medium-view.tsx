@@ -12,6 +12,7 @@ import { MediaArtworkSurface } from './media-artwork-surface';
 import { getMediaDisplayVolume, getMediaProgressPercent } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
+import { getMediaReadableForeground } from './media-readable-foreground';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import {
@@ -98,36 +99,54 @@ export function MediaMediumView({
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
-  const controlIconStyle = { color: fallbackTitleColor };
+  const readableForeground = getMediaReadableForeground({
+    theme,
+    palette,
+    titleColor: fallbackTitleColor,
+    subtitleColor: fallbackSubtitleColor,
+    hasArtwork: Boolean(stableArtwork),
+  });
+  const resolvedTitleColor = readableForeground.titleColor;
+  const resolvedSubtitleColor = readableForeground.subtitleColor;
+  const controlIconStyle = { color: resolvedTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
+  const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
+    background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(resolvedTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: fallbackTitleColor,
-    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
-      fallbackTitleColor,
+    backgroundColor: resolvedTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(resolvedTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      resolvedTitleColor,
       0.32
     )}`,
   };
+  const glassDepthOverlay =
+    theme === 'glass' ? (
+      <>
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+      </>
+    ) : null;
 
   return (
-    <div className="relative -m-3 flex flex-1 overflow-hidden">
+    <div className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]">
+      {glassDepthOverlay}
       <MediaArtworkSurface
         artwork={stableArtwork}
         onArtworkError={onArtworkError}
         palette={palette}
+        theme={theme}
         layout="split"
         artRegionClassName="w-[42%]"
         imagePaddingClassName=""
@@ -135,7 +154,7 @@ export function MediaMediumView({
         subduedFallback={!stableArtwork && !isActive}
       />
 
-      <div className="relative z-[1] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
+      <div className="relative z-[2] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
         <div />
 
         <div className="flex min-w-0 flex-col pl-3 pr-3 py-3">
@@ -146,8 +165,8 @@ export function MediaMediumView({
               size="medium"
               isActive={isActive}
               accentColor={palette.highlight}
-              titleStyle={{ color: fallbackTitleColor }}
-              subtitleStyle={{ color: fallbackSubtitleColor }}
+              titleStyle={readableForeground.titleStyle}
+              subtitleStyle={readableForeground.subtitleStyle}
             />
             <div className="flex shrink-0 items-center gap-2.5 self-start">
               <MediaVisualizerButton
@@ -157,7 +176,7 @@ export function MediaMediumView({
                   onOpenDialog();
                 }}
                 className={iconTone}
-                style={{ color: textTokens.titleColor }}
+                style={readableForeground.titleStyle}
               />
             </div>
           </div>
@@ -168,13 +187,13 @@ export function MediaMediumView({
                 <MediaMarqueeText
                   text={title}
                   className={`text-sm font-semibold ${iconTone}`}
-                  style={{ color: fallbackTitleColor }}
+                  style={readableForeground.titleStyle}
                 />
                 <MediaMarqueeText
                   text={artist}
                   className={`mt-0.5 text-xs ${subtitleTone}`}
                   threshold={24}
-                  style={{ color: fallbackSubtitleColor }}
+                  style={readableForeground.subtitleStyle}
                 />
               </div>
 
@@ -220,7 +239,7 @@ export function MediaMediumView({
               </div>
               <div
                 className={`mt-1 flex items-center justify-between text-xs ${subtitleTone}`}
-                style={{ color: fallbackSubtitleColor }}
+                style={readableForeground.subtitleStyle}
               >
                 <span>{elapsedLabel}</span>
                 <span>{durationLabel}</span>

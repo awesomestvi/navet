@@ -1,39 +1,16 @@
+import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard, RoundControlButton } from '@navet/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
-import { ChevronLeft, ChevronRight, Settings2, Shuffle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImageIcon, Settings2, Shuffle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { PhotoFrameImage } from './photo-frame-image';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-frame-types';
 import { usePhotoFrameSources } from './use-photo-frame-sources';
 import { useDashboardWidgetRoomOptions } from './use-widget-room-options';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
-
-const mockPhotos = [
-  {
-    backgroundClassName:
-      'bg-[radial-gradient(circle_at_top_left,_rgba(251,146,60,0.95),_transparent_42%),radial-gradient(circle_at_70%_30%,_rgba(245,158,11,0.75),_transparent_34%),linear-gradient(135deg,_#5b2a12_0%,_#1f2937_100%)]',
-  },
-  {
-    backgroundClassName:
-      'bg-[radial-gradient(circle_at_20%_20%,_rgba(34,211,238,0.92),_transparent_38%),radial-gradient(circle_at_75%_25%,_rgba(59,130,246,0.8),_transparent_32%),linear-gradient(135deg,_#0f172a_0%,_#1e3a8a_100%)]',
-  },
-  {
-    backgroundClassName:
-      'bg-[radial-gradient(circle_at_18%_78%,_rgba(236,72,153,0.72),_transparent_36%),radial-gradient(circle_at_82%_20%,_rgba(168,85,247,0.74),_transparent_30%),linear-gradient(135deg,_#111827_0%,_#312e81_100%)]',
-  },
-  {
-    backgroundClassName:
-      'bg-[radial-gradient(circle_at_25%_28%,_rgba(74,222,128,0.84),_transparent_36%),radial-gradient(circle_at_80%_22%,_rgba(250,204,21,0.56),_transparent_26%),linear-gradient(135deg,_#052e16_0%,_#365314_100%)]',
-  },
-  {
-    backgroundClassName:
-      'bg-[radial-gradient(circle_at_18%_18%,_rgba(45,212,191,0.86),_transparent_34%),radial-gradient(circle_at_78%_26%,_rgba(253,224,71,0.62),_transparent_28%),linear-gradient(135deg,_#164e63_0%,_#155e75_52%,_#78350f_100%)]',
-  },
-] as const satisfies ReadonlyArray<{
-  backgroundClassName: string;
-}>;
 
 const PHOTO_SHUFFLE_INTERVAL_MS = 8000;
 
@@ -43,6 +20,7 @@ interface PhotoFrameWidgetProps {
   onRoomChange?: (room: string) => void;
   sourceMode?: PhotoFrameSourceMode;
   photoUrls?: string[];
+  photoImages?: readonly PhotoFrameImage[];
   mediaSourceId?: string;
   shuffleEnabled?: boolean;
   onUpdateUrls?: (urls: string[]) => void;
@@ -61,6 +39,7 @@ export function PhotoFrameWidget({
   onRoomChange,
   sourceMode,
   photoUrls,
+  photoImages,
   mediaSourceId,
   shuffleEnabled = true,
   onUpdateUrls,
@@ -81,16 +60,16 @@ export function PhotoFrameWidget({
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
   const isCompact = isCompactCardSize(size);
   const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
-  const { activePhotoUrls, hasCustomPhotos } = usePhotoFrameSources({
+  const { activePhotoImages, hasCustomPhotos } = usePhotoFrameSources({
     sourceMode: resolvedSourceMode,
     photoUrls,
+    photoImages,
     mediaSourceId,
   });
 
-  const photoCount = hasCustomPhotos ? activePhotoUrls.length : mockPhotos.length;
+  const photoCount = activePhotoImages.length;
   const safeIndex = Math.min(currentIndex, Math.max(0, photoCount - 1));
-  const currentPhoto = hasCustomPhotos ? null : mockPhotos[safeIndex];
-  const currentPhotoUrl = activePhotoUrls[safeIndex];
+  const currentPhotoImage = activePhotoImages[safeIndex];
   const showShuffleControl = photoCount > 1 && !isCompact;
   const photoFrameConfig = useMemo(
     () =>
@@ -104,7 +83,7 @@ export function PhotoFrameWidget({
     [onMediaSourceIdChange, onSourceModeChange, onUpdateUrls]
   );
   const canConfigure = photoFrameConfig !== null;
-  const hasQuickActions = showShuffleControl || canConfigure;
+  const hasQuickActions = currentPhotoImage ? showShuffleControl || canConfigure : false;
   const chromeSize = size === 'large' ? 'medium' : size;
   const imageMotionClassName = useMemo(
     () => (hasCustomPhotos ? 'scale-[1.02] transition-transform duration-[1800ms] ease-out' : ''),
@@ -160,8 +139,12 @@ export function PhotoFrameWidget({
       fullBleed
       style={{
         ...surface.panelStyle,
-        background: 'transparent',
-        boxShadow: 'none',
+        ...(hasCustomPhotos
+          ? {
+              background: 'transparent',
+              boxShadow: 'none',
+            }
+          : {}),
       }}
       frameClassName="overflow-hidden"
       disableDefaultSheen
@@ -205,23 +188,47 @@ export function PhotoFrameWidget({
           </div>
         ) : null}
         <div className="group relative flex-1 overflow-hidden rounded-[inherit]">
-          {hasCustomPhotos ? (
-            <img
-              src={currentPhotoUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              fetchPriority="low"
-              className={`absolute inset-0 h-full w-full object-cover ${imageMotionClassName}`}
-            />
+          {currentPhotoImage ? (
+            <picture>
+              {currentPhotoImage?.sources?.map((source) => (
+                <source
+                  key={`${source.type}-${source.srcSet}`}
+                  srcSet={source.srcSet}
+                  type={source.type}
+                />
+              ))}
+              <img
+                src={currentPhotoImage?.src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                className={`absolute inset-0 h-full w-full object-cover ${imageMotionClassName}`}
+              />
+            </picture>
           ) : (
-            <div className={`absolute inset-0 ${currentPhoto?.backgroundClassName ?? ''}`} />
+            <div className="flex h-full items-center justify-center p-4">
+              <CardEmptyState
+                title={t('widgets.photoFrame.title')}
+                description={t('widgets.photoFrame.settings.noPhotos')}
+                icon={ImageIcon}
+                actionLabel={canConfigure ? t('widgets.photoFrame.settings.title') : undefined}
+                onAction={canConfigure ? () => setIsSettingsOpen(true) : undefined}
+                actionIcon={canConfigure ? Settings2 : undefined}
+                size={size}
+                accentColor={tintColor}
+              />
+            </div>
           )}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_22%,rgba(0,0,0,0.12)_66%,rgba(2,6,23,0.44)_100%)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+          {currentPhotoImage ? (
+            <>
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_22%,rgba(0,0,0,0.12)_66%,rgba(2,6,23,0.44)_100%)]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+            </>
+          ) : null}
 
           {/* Navigation Buttons */}
-          {!isCompact && (
+          {!isCompact && currentPhotoImage ? (
             <>
               <button
                 type="button"
@@ -240,11 +247,11 @@ export function PhotoFrameWidget({
                 <ChevronRight className="w-5 h-5 text-white" />
               </button>
             </>
-          )}
+          ) : null}
         </div>
 
         {/* Thumbnail Dots */}
-        {!isCompact && photoCount > 1 && (
+        {!isCompact && currentPhotoImage && photoCount > 1 && (
           <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center gap-3">
             {Array.from({ length: photoCount }).map((_, index) => (
               <button

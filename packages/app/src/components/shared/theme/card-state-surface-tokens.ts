@@ -29,9 +29,9 @@ export function getCardStateSurfaceTokens(
     return {
       containerClassName: isActive ? '' : 'brightness-[0.985]',
       overlayClassName: null,
-      primaryTextClassName: isActive ? surface.textPrimary : 'text-slate-800',
-      secondaryTextClassName: isActive ? surface.textSecondary : 'text-slate-600',
-      mutedTextClassName: isActive ? surface.textMuted : 'text-slate-500',
+      primaryTextClassName: isActive ? 'text-white' : 'text-slate-800',
+      secondaryTextClassName: isActive ? 'text-white/88' : 'text-slate-600',
+      mutedTextClassName: isActive ? 'text-white/76' : 'text-slate-500',
       artworkClassName: isActive ? '' : 'brightness-[0.94] saturate-[0.82]',
     };
   }

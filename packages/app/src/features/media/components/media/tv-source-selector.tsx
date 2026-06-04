@@ -1,3 +1,4 @@
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { useI18n } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { ChevronDown } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
@@ -12,6 +14,7 @@ interface TvSourceSelectorProps {
   source?: string;
   sourceList: string[];
   isSmallTvCard: boolean;
+  theme: ThemeType;
   panelStyle: CSSProperties;
   tvTextTokens: {
     titleColor: string;
@@ -24,11 +27,13 @@ export function TvSourceSelector({
   source,
   sourceList,
   isSmallTvCard,
+  theme,
   panelStyle,
   tvTextTokens,
   onSelectSource,
 }: TvSourceSelectorProps) {
   const { t } = useI18n();
+  const surface = getThemeSurfaceTokens(theme);
   const sourceLabel =
     source &&
     source.trim().length > 0 &&
@@ -59,7 +64,7 @@ export function TvSourceSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-44 rounded-xl border border-white/12 bg-zinc-950/96 text-white backdrop-blur-xl"
+        className={`min-w-44 rounded-xl border backdrop-blur-xl ${surface.border} ${surface.panel} ${surface.textPrimary}`}
         onClick={(event) => event.stopPropagation()}
       >
         {sourceList.length > 0 ? (

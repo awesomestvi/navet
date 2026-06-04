@@ -42,6 +42,7 @@ export const DashboardLayout = memo(function DashboardLayout({
   const showSharedGlassBlur = isGlass && resolvedEffectsQuality === 'high';
   const headerController = useHeaderController();
   const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
+  const accentColorValue = getThemeColorValue(primaryColor);
 
   const bgColor =
     theme === 'light'
@@ -60,6 +61,7 @@ export const DashboardLayout = memo(function DashboardLayout({
         <div className="fixed inset-0 z-0">
           {/* Wallpaper Image */}
           <div
+            data-testid="dashboard-wallpaper-image"
             className="absolute inset-0"
             style={{
               backgroundImage: wallpaperBackgroundImage,
@@ -74,32 +76,34 @@ export const DashboardLayout = memo(function DashboardLayout({
               so rendering this div in LOW mode is wasted paint work. */}
           {!isLowEffects && (
             <div
+              data-testid="dashboard-wallpaper-accent-overlay"
               className="absolute inset-0"
               style={{
                 background:
                   theme === 'light'
-                    ? `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}46, ${getThemeColorValue(primaryColor)}2a, transparent 70%)`
+                    ? `radial-gradient(circle at 14% 14%, rgba(255,255,255,0.34) 0%, transparent 24%), linear-gradient(135deg, ${accentColorValue}2e 0%, ${accentColorValue}16 40%, rgba(255,255,255,0.10) 76%, transparent 100%)`
                     : isBlack
                       ? 'linear-gradient(180deg, rgba(0,0,0,0.68), rgba(0,0,0,0.46) 42%, rgba(0,0,0,0.74))'
                       : isGlass
                         ? resolvedEffectsQuality === 'high'
-                          ? `radial-gradient(circle at 14% 14%, rgba(255,255,255,0.24) 0%, transparent 18%), radial-gradient(circle at 16% 18%, ${getThemeColorValue(primaryColor)}52 0%, transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.22) 0%, transparent 24%), linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04) 24%, transparent 58%)`
-                          : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}28, rgba(255,255,255,0.08), rgba(15,23,42,0.18) 72%)`
-                        : `linear-gradient(135deg, ${getThemeColorValue(primaryColor)}40, ${getThemeColorValue(primaryColor)}20, transparent 60%)`,
-                mixBlendMode: theme === 'light' ? 'multiply' : isGlass ? 'screen' : undefined,
+                          ? `radial-gradient(circle at 14% 14%, rgba(255,255,255,0.24) 0%, transparent 18%), radial-gradient(circle at 16% 18%, ${accentColorValue}52 0%, transparent 34%), radial-gradient(circle at 84% 12%, rgba(255,255,255,0.22) 0%, transparent 24%), linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04) 24%, transparent 58%)`
+                          : `linear-gradient(135deg, ${accentColorValue}28, rgba(255,255,255,0.08), rgba(15,23,42,0.18) 72%)`
+                        : `linear-gradient(135deg, ${accentColorValue}40, ${accentColorValue}20, transparent 60%)`,
+                mixBlendMode: isGlass ? 'screen' : undefined,
               }}
             />
           )}
 
           {/* Shared readability/glass layer */}
           <div
+            data-testid="dashboard-wallpaper-readability-layer"
             className={`absolute inset-0 ${showSharedGlassBlur ? 'backdrop-blur-sm' : ''}`}
             style={{
               backgroundColor:
                 theme === 'light'
                   ? isLowEffects
-                    ? 'rgba(249, 250, 251, 0.82)'
-                    : 'rgba(249, 250, 251, 0.50)'
+                    ? 'rgba(249, 250, 251, 0.86)'
+                    : 'rgba(249, 250, 251, 0.68)'
                   : isBlack
                     ? isLowEffects
                       ? 'rgba(0, 0, 0, 0.74)'

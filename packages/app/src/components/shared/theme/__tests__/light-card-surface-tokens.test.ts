@@ -69,4 +69,64 @@ describe('getLightCardSurfaceTokens', () => {
 
     expect(tokens.contentAccentColor).toBeNull();
   });
+
+  it('keeps black-theme active light cards flatter without glow sheen overlays', () => {
+    const tokens = getLightCardSurfaceTokens({
+      isOn: true,
+      selectedColor: null,
+      currentColor: '',
+      theme: 'black',
+      accentColor: '#f97316',
+    });
+
+    expect(tokens.cardStyle).toBeUndefined();
+    expect(tokens.cardClassName).toContain('from-orange-900/40');
+    expect(tokens.cardClassName).toContain('to-orange-950/40');
+    expect(tokens.cardClassName).toContain('border-orange-500/20');
+    expect(tokens.activeGlowClassName).toBeNull();
+    expect(tokens.shineOverlayClassName).toBeNull();
+    expect(tokens.innerOverlayClassName).toBe('absolute inset-0');
+    expect(tokens.innerOverlayStyle).toEqual({
+      background:
+        'linear-gradient(180deg, rgba(255,255,255,0.012) 0%, rgba(255,255,255,0.004) 16%, rgba(0,0,0,0.1) 100%)',
+    });
+  });
+
+  it('uses the selected light color for black-theme borders without restoring the glass sheen', () => {
+    const tokens = getLightCardSurfaceTokens({
+      isOn: true,
+      selectedColor: '#dc2626',
+      currentColor: '#dc2626',
+      theme: 'black',
+      accentColor: '#f97316',
+    });
+
+    expect(tokens.cardStyle).toMatchObject({
+      backgroundColor: 'rgb(45, 0, 0)',
+      borderColor: 'rgba(220, 38, 38, 0.28)',
+    });
+    expect(tokens.cardStyle?.background).toContain('rgba(220, 38, 38, 0.18)');
+    expect(tokens.cardStyle?.background).toContain('rgba(220, 38, 38, 0.3)');
+    expect(tokens.activeGlowClassName).toBeNull();
+    expect(tokens.shineOverlayClassName).toBeNull();
+  });
+
+  it('gives light-theme active cards a stronger tinted surface without the old white wash', () => {
+    const tokens = getLightCardSurfaceTokens({
+      isOn: true,
+      selectedColor: null,
+      currentColor: '',
+      theme: 'light',
+      accentColor: '#f97316',
+    });
+
+    expect(tokens.cardStyle).toMatchObject({
+      background: '#f97316',
+      borderColor: '#f97316',
+    });
+    expect(tokens.cardStyle?.backgroundColor).toBeUndefined();
+    expect(tokens.cardStyle?.boxShadow).toBeUndefined();
+    expect(tokens.innerOverlayClassName).toBeNull();
+    expect(tokens.innerOverlayStyle).toBeUndefined();
+  });
 });

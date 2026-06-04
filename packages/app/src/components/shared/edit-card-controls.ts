@@ -1,3 +1,4 @@
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { CardSize } from './card-size';
 
 export type EditControlVariant =
@@ -45,9 +46,36 @@ export function getEditControlLayout(size: CardSize) {
   };
 }
 
-export function getEditControlButtonClass(variant: EditControlVariant = 'neutral') {
+export function getEditControlButtonClass(
+  variant: EditControlVariant = 'neutral',
+  theme?: ThemeType
+) {
   const baseClass =
     'rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]';
+
+  if (theme === 'glass') {
+    if (variant === 'destructive') {
+      return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(255,148,163,0.26),rgba(126,18,27,0.18)_100%)] text-rose-50 shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(255,148,163,0.3),rgba(126,18,27,0.22)_100%)]`;
+    }
+
+    if (variant === 'warning') {
+      return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(251,191,36,0.24),rgba(146,64,14,0.18)_100%)] text-amber-50 shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(251,191,36,0.28),rgba(146,64,14,0.22)_100%)]`;
+    }
+
+    if (variant === 'accent') {
+      return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(56,189,248,0.24),rgba(12,74,110,0.18)_100%)] text-sky-50 shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(56,189,248,0.28),rgba(12,74,110,0.22)_100%)]`;
+    }
+
+    if (variant === 'success') {
+      return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(52,211,153,0.24),rgba(6,78,59,0.18)_100%)] text-emerald-50 shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.28),rgba(6,78,59,0.22)_100%)]`;
+    }
+
+    if (variant === 'locked') {
+      return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(167,139,250,0.24),rgba(76,29,149,0.18)_100%)] text-violet-50 shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.2)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(167,139,250,0.28),rgba(76,29,149,0.22)_100%)]`;
+    }
+
+    return `${baseClass} border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08)_58%,rgba(255,255,255,0.04)_100%)] text-white shadow-[0_18px_38px_-24px_rgba(10,14,26,0.82),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-2xl hover:border-white/24 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.1)_58%,rgba(255,255,255,0.05)_100%)]`;
+  }
 
   if (variant === 'destructive') {
     return `${baseClass} border-rose-500/26 bg-[#221417] text-rose-100 hover:border-rose-400/34 hover:bg-[#2a171c]`;

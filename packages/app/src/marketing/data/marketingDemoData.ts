@@ -12,6 +12,7 @@ import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
 import artworksOriginalWebp from '@assets/reference/media/artworks-original.webp';
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
+import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
 import type { CalendarCard } from '@navet/app/features/calendar';
 import type { HVACCard } from '@navet/app/features/climate';
 import type {
@@ -437,7 +438,7 @@ export const MARKETING_BENTO_WIDGETS = {
   photo: {
     size: 'medium',
     sourceMode: 'urls',
-    photoUrls: [demoHomeImage, demoTabletImage, demoMobileImage],
+    photoImages: PHOTO_FRAME_DEMO_IMAGES,
   } satisfies ComponentProps<typeof PhotoFrameWidget>,
 } as const;
 

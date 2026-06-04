@@ -62,6 +62,23 @@ describe('resolveTodayEnergyKWh', () => {
     ).toBe(14);
   });
 
+  it('keeps normalized recorder totals for cumulative Wh energy meters in the today path', () => {
+    expect(
+      resolveTodayEnergyKWh(
+        {
+          'sensor.grid_import_total': energyEntity(
+            'sensor.grid_import_total',
+            '12450890',
+            'Wh',
+            'Grid import total'
+          ),
+        },
+        'sensor.grid_import_total',
+        14.89
+      )
+    ).toBe(14.89);
+  });
+
   it('converts Wh daily states before comparing with statistics', () => {
     expect(
       resolveTodayEnergyKWh(

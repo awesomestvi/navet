@@ -443,18 +443,54 @@ function sanitizeCustomCardData(
   }
 
   if (type === 'photo') {
+    const baseUrl = typeof window !== 'undefined' ? window.location.href : undefined;
     const photoUrls = Array.isArray(data.photoUrls)
       ? data.photoUrls.slice(0, 48).flatMap((url) => {
-          const safeUrl = sanitizeImageUrl(stringValue(url, 2000), undefined, {
+          const safeUrl = sanitizeImageUrl(stringValue(url, 2000), baseUrl, {
             allowDataImage: true,
           });
           return safeUrl ? [safeUrl] : [];
+        })
+      : undefined;
+    const photoImages = Array.isArray(data.photoImages)
+      ? data.photoImages.slice(0, 48).flatMap((photo) => {
+          if (!isRecord(photo)) {
+            return [];
+          }
+
+          const src = sanitizeImageUrl(stringValue(photo.src, 2000), baseUrl, {
+            allowDataImage: true,
+          });
+          if (!src) {
+            return [];
+          }
+
+          const sources = Array.isArray(photo.sources)
+            ? photo.sources.slice(0, 2).flatMap((source) => {
+                if (!isRecord(source)) {
+                  return [];
+                }
+
+                const srcSet = sanitizeImageUrl(stringValue(source.srcSet, 2000), baseUrl, {
+                  allowDataImage: true,
+                });
+                const type = stringValue(source.type, 40);
+                if (!srcSet || (type !== 'image/avif' && type !== 'image/webp')) {
+                  return [];
+                }
+
+                return [{ srcSet, type }] as const;
+              })
+            : undefined;
+
+          return [{ src, sources }];
         })
       : undefined;
 
     return omitUndefinedEntries({
       sourceMode: data.sourceMode === 'home-assistant' ? 'home-assistant' : 'urls',
       photoUrls,
+      photoImages,
       mediaSourceId: stringValue(data.mediaSourceId, 240),
       shuffleEnabled: typeof data.shuffleEnabled === 'boolean' ? data.shuffleEnabled : undefined,
       tintColor: stringValue(data.tintColor, 40),

@@ -7,6 +7,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state';
 import { useTheme } from '@navet/app/hooks';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
+import type { CSSProperties } from 'react';
 import { lazy, memo, Suspense } from 'react';
 import { MediaLargeView } from '../media/media-large-view';
 import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
@@ -27,7 +28,7 @@ function getActiveTvShellBg(theme: ThemeMode) {
   }
 
   if (theme === 'glass') {
-    return 'bg-gradient-to-br from-fuchsia-500/12 via-violet-500/10 to-white/6';
+    return '';
   }
 
   if (theme === 'black') {
@@ -57,6 +58,18 @@ function getActiveTvGlowClassName(theme: ThemeMode) {
   return theme === 'light'
     ? 'bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.1),transparent_48%)]'
     : 'bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.18),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(139,92,246,0.14),transparent_44%)]';
+}
+
+function getActiveTvShellStyle(theme: ThemeMode): CSSProperties | undefined {
+  if (theme !== 'glass') {
+    return undefined;
+  }
+
+  return {
+    background:
+      'linear-gradient(135deg, rgba(217,70,239,0.34) 0%, rgba(126,34,206,0.2) 52%, rgba(255,255,255,0.08) 100%)',
+    borderColor: 'rgba(244,114,182,0.38)',
+  };
 }
 
 interface MediaCardProps {
@@ -120,7 +133,7 @@ export const MediaCard = memo(function MediaCard({
   isEditMode,
   simulateTvRemote = false,
 }: MediaCardProps) {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const mediaEntityTypeKey = getMediaEntityTypeKey(entityType, deviceClass);
   const cardShell = getCardShellSurfaceTokens(theme);
   const surface = getThemeSurfaceTokens(theme);
@@ -205,8 +218,13 @@ export const MediaCard = memo(function MediaCard({
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
   const isActiveTv = isTv && !isOff;
-  const inactiveShellBorder = colors.media.off.border;
-  const cardBorder = hasArtwork ? 'border-transparent' : surface.border;
+  const inactiveShellBorder = surface.border;
+  const cardBorder =
+    theme === 'glass' && !isOff && !isActiveTv
+      ? surface.border
+      : hasArtwork
+        ? 'border-transparent'
+        : surface.border;
   const cardShadow = '';
   const activeTvShellBg = getActiveTvShellBg(theme);
   const activeTvShellBorder = getActiveTvShellBorder(theme);
@@ -214,21 +232,21 @@ export const MediaCard = memo(function MediaCard({
     ? ''
     : isActiveTv
       ? activeTvShellBg
-      : hasArtwork
-        ? isGlass
-          ? 'bg-transparent'
-          : theme === 'light'
+      : isGlass
+        ? surface.panel
+        : hasArtwork
+          ? theme === 'light'
             ? 'bg-white'
             : 'bg-zinc-950'
-        : theme === 'light'
-          ? ''
-          : isGlass
+          : theme === 'light'
             ? ''
             : '';
+  const backgroundClassName = theme === 'glass' ? shellBg || surface.panel : shellBg;
   const shellBorder = isOff ? inactiveShellBorder : isActiveTv ? activeTvShellBorder : cardBorder;
   const shellBlur = hasArtwork && !isOff ? '' : cardShell.backdropClassName;
   const shellOverlayClassName = isOff ? null : stateSurface.overlayClassName;
   const tvOnGlowClassName = isActiveTv ? getActiveTvGlowClassName(theme) : null;
+  const activeTvShellStyle = isActiveTv ? getActiveTvShellStyle(theme) : undefined;
   const mediaIdentityProps = {
     entityId: id,
     artwork: resolvedAlbumArt,
@@ -279,7 +297,9 @@ export const MediaCard = memo(function MediaCard({
         {...interactiveShellProps}
         interactive={!isEditMode}
         className={`${isEditMode ? '' : 'cursor-pointer'}`}
-        frameClassName={`${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBg} ${shellBlur} ${stateSurface.containerClassName}`}
+        backgroundClassName={backgroundClassName}
+        frameClassName={`${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBlur} ${stateSurface.containerClassName}`}
+        style={activeTvShellStyle}
         disableDefaultSheen
         overlay={
           <>

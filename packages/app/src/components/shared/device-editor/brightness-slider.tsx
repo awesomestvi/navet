@@ -48,24 +48,32 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   const isDialogPresentation = presentation === 'dialog';
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
   const activeColor = activeColorOverride ?? accentColor;
+  const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColorOverride);
   const textTokens = getCardReadableTextTokens({
-    theme,
+    theme: useInverseActiveLightSurface ? 'dark' : theme,
     tone: isOn ? 'primary' : 'neutral',
     accentColor,
     baseColor: isOn ? activeColor : undefined,
+    backgroundColor: useInverseActiveLightSurface ? activeColor : undefined,
   });
 
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
   const useDialogControlSize = isDialogPresentation && !isExtraSmall && !isCompact;
   const trackHeightClass = useDialogControlSize ? 'h-2' : 'h-[3px]';
   const thumbSizeClass = useDialogControlSize ? 'h-5 w-5' : 'h-4 w-4';
-  const trackBg = theme === 'light' ? 'bg-gray-200' : 'bg-white/10';
+  const trackBg = useInverseActiveLightSurface
+    ? 'bg-white/18'
+    : theme === 'light'
+      ? 'bg-gray-200'
+      : 'bg-white/10';
   const rangeBg = isOn
-    ? theme === 'glass'
-      ? `linear-gradient(to right, rgba(255,255,255,0.42), ${activeColor}cc)`
-      : theme === 'light'
-        ? `linear-gradient(to right, ${activeColor}99, ${activeColor})`
-        : `linear-gradient(to right, ${activeColor}cc, ${activeColor})`
+    ? useInverseActiveLightSurface
+      ? 'linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,0.96))'
+      : theme === 'glass'
+        ? `linear-gradient(to right, rgba(255,255,255,0.42), ${activeColor}cc)`
+        : theme === 'light'
+          ? `linear-gradient(to right, ${activeColor}99, ${activeColor})`
+          : `linear-gradient(to right, ${activeColor}cc, ${activeColor})`
     : theme === 'light'
       ? 'linear-gradient(to right, #d1d5db, #9ca3af)'
       : 'linear-gradient(to right, rgba(255,255,255,0.24), rgba(255,255,255,0.14))';
@@ -74,18 +82,34 @@ export const BrightnessSlider = memo(function BrightnessSlider({
       ? theme === 'glass'
         ? 'rgba(255,255,255,0.92)'
         : '#ffffff'
-      : theme === 'glass'
-        ? `${activeColor}f2`
-        : activeColor
+      : useInverseActiveLightSurface
+        ? '#ffffff'
+        : theme === 'glass'
+          ? 'rgba(255,255,255,0.96)'
+          : activeColor
     : theme === 'light'
       ? '#d1d5db'
-      : '#3a3a42';
+      : theme === 'glass'
+        ? 'rgba(255,255,255,0.7)'
+        : '#3a3a42';
   const thumbRing = isOn
-    ? `${activeColor}66`
+    ? useInverseActiveLightSurface
+      ? 'rgba(255,255,255,0.42)'
+      : theme === 'glass'
+        ? `${activeColor}aa`
+        : `${activeColor}66`
     : theme === 'light'
       ? 'rgba(107,114,128,0.22)'
-      : 'rgba(255,255,255,0.1)';
-  const thumbShadowClass = isOn ? 'shadow-lg' : theme === 'light' ? 'shadow-sm' : 'shadow-none';
+      : theme === 'glass'
+        ? 'rgba(255,255,255,0.18)'
+        : 'rgba(255,255,255,0.1)';
+  const thumbShadowClass = isOn
+    ? theme === 'glass'
+      ? 'shadow-xl'
+      : 'shadow-lg'
+    : theme === 'light' || theme === 'glass'
+      ? 'shadow-sm'
+      : 'shadow-none';
   const label = t(labelKey);
 
   return (
@@ -104,7 +128,15 @@ export const BrightnessSlider = memo(function BrightnessSlider({
                 ? `text-sm font-medium ${editorSurface.sectionLabelClassName}`
                 : `text-xs ${editorSurface.sectionLabelClassName}`
             }
-            style={isDialogPresentation ? undefined : { color: textTokens.subtitleColor }}
+            style={
+              isDialogPresentation
+                ? undefined
+                : {
+                    color: useInverseActiveLightSurface
+                      ? 'rgba(255,255,255,0.78)'
+                      : textTokens.subtitleColor,
+                  }
+            }
           >
             {label}
           </span>
@@ -114,7 +146,11 @@ export const BrightnessSlider = memo(function BrightnessSlider({
                 ? `text-sm font-semibold ${editorSurface.sectionValueClassName}`
                 : `text-sm font-bold ${editorSurface.sectionValueClassName}`
             }
-            style={isDialogPresentation ? undefined : { color: textTokens.titleColor }}
+            style={
+              isDialogPresentation
+                ? undefined
+                : { color: useInverseActiveLightSurface ? '#ffffff' : textTokens.titleColor }
+            }
           >
             {value}%
           </span>

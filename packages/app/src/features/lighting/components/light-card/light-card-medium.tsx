@@ -126,6 +126,7 @@ export const LightCardMedium = memo(function LightCardMedium({
           currentColor={currentColor}
           colorSwatchColor={colorSwatchColor}
           currentTempColor={currentTempColor}
+          activeColor={activeColor}
           isKelvinMode={isKelvinMode}
           isColorMode={isColorMode}
           supportsBrightness={supportsBrightness}

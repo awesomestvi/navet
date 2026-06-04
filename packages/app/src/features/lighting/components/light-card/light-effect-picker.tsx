@@ -35,6 +35,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
 }: LightEffectPickerProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const selectedValue = getSelectedLightEffectOptionValue(currentEffect);
   const currentLabel =
     options.find((option) => option.value === selectedValue)?.label ?? t('lighting.noEffect');
@@ -66,7 +67,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
             align="start"
             sideOffset={10}
             className={cn(
-              getThemeDropdownSurfaceClasses(theme),
+              getThemeDropdownSurfaceClasses(effectiveTheme),
               'w-[var(--radix-dropdown-menu-trigger-width)] p-2'
             )}
             onClick={(event) => event.stopPropagation()}
@@ -93,7 +94,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <RoundControlButton
-          theme={theme}
+          theme={effectiveTheme}
           size={size}
           variant="soft"
           disabled={!isOn}
@@ -109,7 +110,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
       <DropdownMenuContent
         align="start"
         sideOffset={10}
-        className={cn(getThemeDropdownSurfaceClasses(theme), 'w-64 overflow-visible p-2')}
+        className={cn(getThemeDropdownSurfaceClasses(effectiveTheme), 'w-64 overflow-visible p-2')}
         onClick={(event) => event.stopPropagation()}
       >
         <DropdownMenuLabel>{t('lighting.effects')}</DropdownMenuLabel>

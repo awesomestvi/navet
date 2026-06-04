@@ -18,6 +18,14 @@ describe('ha-entity-utils entity naming', () => {
     expect(getName(entity, { name: 'Kitchen island' })).toBe('Kitchen island');
   });
 
+  it('falls back to Home Assistant original registry names when the primary registry name is empty', () => {
+    const entity = sensorEntityFactory({ friendly_name: undefined });
+
+    expect(getName(entity, { name: null, original_name: 'Bathroom speaker' })).toBe(
+      'Bathroom speaker'
+    );
+  });
+
   it('falls back to the entity id when Home Assistant does not provide a friendly name', () => {
     const entity = sensorEntityFactory({ friendly_name: undefined });
 

@@ -24,6 +24,27 @@ export function getInactiveThemeTone(themeType: ThemeType): InactiveThemeTone {
     };
   }
 
+  if (themeType === 'glass') {
+    return {
+      gradient:
+        'from-[rgba(255,255,255,0.18)] via-[rgba(255,255,255,0.08)] to-[rgba(8,14,24,0.08)]',
+      border: 'border-white/22',
+      iconBg: 'bg-white/14',
+      accent: 'text-white/74',
+      glow: 'transparent',
+    };
+  }
+
+  if (themeType === 'black') {
+    return {
+      gradient: 'from-black via-black to-zinc-950',
+      border: 'border-white/6',
+      iconBg: 'bg-zinc-900',
+      accent: 'text-zinc-300',
+      glow: 'transparent',
+    };
+  }
+
   return {
     gradient: 'from-zinc-800 to-zinc-900',
     border: 'border-zinc-700',

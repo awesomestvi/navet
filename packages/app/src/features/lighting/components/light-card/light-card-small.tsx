@@ -88,6 +88,7 @@ export const LightCardSmall = memo(function LightCardSmall({
   showSettingsButton,
 }: LightCardSmallProps) {
   const { theme } = useTheme();
+  const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const isExtraSmall = isExtraSmallCardSize(size);
   const inlineControlCount = (supportsColorTemperature ? 1 : 0) + (supportsColorControl ? 1 : 0);
   const hasInlineControls = inlineControlCount > 0;
@@ -136,10 +137,11 @@ export const LightCardSmall = memo(function LightCardSmall({
               {showSettingsButton && (
                 <CardSettingsActionButton
                   {...settingsButtonProps}
-                  theme={theme}
+                  theme={effectiveTheme}
                   size="extra-small"
                   tone={isOn ? 'default' : 'muted'}
                   variant="soft"
+                  accentColor={activeColor ?? undefined}
                 />
               )}
             </div>
@@ -176,6 +178,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             currentColor={currentColor}
             colorSwatchColor={colorSwatchColor}
             currentTempColor={currentTempColor}
+            activeColor={activeColor}
             isKelvinMode={isKelvinMode}
             isColorMode={isColorMode}
             supportsBrightness={supportsBrightness}

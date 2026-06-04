@@ -1,6 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
+import { darkenColor } from '@navet/app/utils/color-utils';
 import { memo } from 'react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
@@ -30,6 +31,7 @@ export const InfoBadgeStrip = memo(function InfoBadgeStrip({
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 md:pb-0">
         {items.map((item) => {
           const IconComponent = item.icon;
+          const iconColor = theme === 'light' ? darkenColor(item.iconColor, 68) : item.iconColor;
           const chipClassName =
             theme === 'light'
               ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
@@ -46,8 +48,9 @@ export const InfoBadgeStrip = memo(function InfoBadgeStrip({
               aria-label={t('dashboard.summary.openSection', { name: item.title })}
             >
               <span
+                data-testid={`info-badge-strip-icon-${item.id}`}
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08] transition-transform group-hover:scale-[1.03] md:h-6 md:w-6"
-                style={{ color: item.iconColor }}
+                style={{ color: iconColor }}
                 aria-hidden="true"
               >
                 <IconComponent className="h-3 w-3 md:h-3.5 md:w-3.5" />

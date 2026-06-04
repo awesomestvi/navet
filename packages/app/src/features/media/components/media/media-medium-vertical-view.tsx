@@ -12,6 +12,7 @@ import { MediaArtworkSurface } from './media-artwork-surface';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
+import { getMediaReadableForeground } from './media-readable-foreground';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import {
   getMediaArtworkPaletteSource,
@@ -94,11 +95,20 @@ export function MediaMediumVerticalView({
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
-  const controlIconStyle = { color: fallbackTitleColor };
+  const readableForeground = getMediaReadableForeground({
+    theme,
+    palette,
+    titleColor: fallbackTitleColor,
+    subtitleColor: fallbackSubtitleColor,
+    hasArtwork: Boolean(stableArtwork),
+  });
+  const resolvedTitleColor = readableForeground.titleColor;
+  const resolvedSubtitleColor = readableForeground.subtitleColor;
+  const controlIconStyle = { color: resolvedTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
@@ -106,9 +116,9 @@ export function MediaMediumVerticalView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          fallbackTitleColor,
+          resolvedTitleColor,
           0.18
         )}`,
       }
@@ -119,30 +129,37 @@ export function MediaMediumVerticalView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          fallbackTitleColor,
+          resolvedTitleColor,
           0.18
         )}`,
       }
     : neutralButtonStyle;
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
+  const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
+    background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(resolvedTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: fallbackTitleColor,
-    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
-      fallbackTitleColor,
+    backgroundColor: resolvedTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(resolvedTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      resolvedTitleColor,
       0.32
     )}`,
   };
+  const glassDepthOverlay =
+    theme === 'glass' ? (
+      <>
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+      </>
+    ) : null;
   return (
     <div
       ref={containerRef}
@@ -152,14 +169,16 @@ export function MediaMediumVerticalView({
         artwork={stableArtwork}
         onArtworkError={onArtworkError}
         palette={palette}
+        theme={theme}
         layout="stacked"
         artRegionClassName="h-[52%]"
         imagePaddingClassName=""
         imageClassName="object-cover object-top"
         subduedFallback={!stableArtwork && !isActive}
       />
+      {glassDepthOverlay}
 
-      <div className="relative z-[1] flex h-full flex-col">
+      <div className="relative z-[2] flex h-full flex-col">
         <div className="h-[52%]" />
 
         <div className="flex min-h-0 flex-1 flex-col p-3">
@@ -170,8 +189,8 @@ export function MediaMediumVerticalView({
               size="medium-vertical"
               isActive={isActive}
               accentColor={palette.highlight}
-              titleStyle={{ color: fallbackTitleColor }}
-              subtitleStyle={{ color: fallbackSubtitleColor }}
+              titleStyle={readableForeground.titleStyle}
+              subtitleStyle={readableForeground.subtitleStyle}
             />
             <div className="flex shrink-0 items-center gap-3 self-start">
               <MediaVisualizerButton
@@ -181,7 +200,7 @@ export function MediaMediumVerticalView({
                   onOpenDialog?.();
                 }}
                 className={iconTone}
-                style={{ color: textTokens.titleColor }}
+                style={readableForeground.titleStyle}
               />
             </div>
           </div>
@@ -191,13 +210,13 @@ export function MediaMediumVerticalView({
               <MediaMarqueeText
                 text={title}
                 className={`text-xs font-semibold ${iconTone}`}
-                style={{ color: fallbackTitleColor }}
+                style={readableForeground.titleStyle}
               />
               <MediaMarqueeText
                 text={artist}
                 className={`mt-0.5 text-xs ${subtitleTone}`}
                 threshold={24}
-                style={{ color: fallbackSubtitleColor }}
+                style={readableForeground.subtitleStyle}
               />
             </div>
 

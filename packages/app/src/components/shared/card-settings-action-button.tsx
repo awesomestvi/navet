@@ -43,11 +43,14 @@ function getSettingsActionAccentStyle(theme: ThemeType, accentColor?: string) {
     style: {
       background:
         theme === 'black'
-          ? withTintAlpha(normalizedAccent, 0.12)
+          ? withTintAlpha(normalizedAccent, 0.08)
           : withTintAlpha(normalizedAccent, 0.1),
-      borderColor: withTintAlpha(normalizedAccent, theme === 'black' ? 0.24 : 0.2),
+      borderColor: withTintAlpha(normalizedAccent, theme === 'black' ? 0.18 : 0.2),
       color: withTintAlpha(normalizedAccent, theme === 'black' ? 0.92 : 0.86),
-      boxShadow: `0 14px 30px -28px ${withTintAlpha(normalizedAccent, 0.38)}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+      boxShadow:
+        theme === 'black'
+          ? 'none'
+          : `0 14px 30px -28px ${withTintAlpha(normalizedAccent, 0.38)}, inset 0 1px 0 rgba(255,255,255,0.08)`,
     } as CSSProperties,
   };
 }

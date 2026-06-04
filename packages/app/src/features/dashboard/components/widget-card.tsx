@@ -9,6 +9,7 @@ import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widge
 import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
 import type { InfoWidgetData } from './widgets/info-widget';
 import type { MapMarker } from './widgets/map-types';
+import type { PhotoFrameImage } from './widgets/photo-frame-image';
 import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
 import type { UpsWidgetData } from './widgets/ups-widget';
 
@@ -165,6 +166,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           sourceMode={card.data?.sourceMode as PhotoFrameSourceMode | undefined}
           photoUrls={card.data?.photoUrls as string[] | undefined}
+          photoImages={card.data?.photoImages as PhotoFrameImage[] | undefined}
           mediaSourceId={card.data?.mediaSourceId as string | undefined}
           shuffleEnabled={(card.data?.shuffleEnabled as boolean | undefined) ?? true}
           onUpdateUrls={(urls) =>

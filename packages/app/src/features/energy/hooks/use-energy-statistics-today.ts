@@ -18,16 +18,17 @@ interface EnergyStatisticsTodayState {
 }
 
 export function useEnergyStatisticsToday(
-  entityIds: string[],
+  entityUnits: Record<string, string | undefined>,
   enabled = true
 ): EnergyStatisticsTodayState {
   const [todayKWh, setTodayKWh] = useState<Record<string, number>>({});
   const [hasLoaded, setHasLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const entityIdsKey = useMemo(() => JSON.stringify([...entityIds].sort()), [entityIds]);
+  const entityUnitsKey = useMemo(() => JSON.stringify(entityUnits), [entityUnits]);
 
   useEffect(() => {
-    const resolvedEntityIds = JSON.parse(entityIdsKey) as string[];
+    const resolvedEntityUnits = JSON.parse(entityUnitsKey) as Record<string, string | undefined>;
+    const resolvedEntityIds = Object.keys(resolvedEntityUnits);
     if (!enabled || resolvedEntityIds.length === 0) {
       setTodayKWh({});
       setHasLoaded(false);
@@ -40,9 +41,9 @@ export function useEnergyStatisticsToday(
       if (!activeMessageClient) return;
       try {
         const result = await getCachedEnergyStatistics(
-          `today-5minute:${entityIdsKey}`,
+          `today-5minute:${entityUnitsKey}`,
           CACHE_TTL_MS,
-          () => getEnergyStatisticsToday(activeMessageClient, resolvedEntityIds)
+          () => getEnergyStatisticsToday(activeMessageClient, resolvedEntityUnits)
         );
         setTodayKWh(result);
         setHasLoaded(true);
@@ -59,7 +60,7 @@ export function useEnergyStatisticsToday(
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [enabled, entityIdsKey]);
+  }, [enabled, entityUnitsKey]);
 
   return { hasLoaded, values: todayKWh };
 }

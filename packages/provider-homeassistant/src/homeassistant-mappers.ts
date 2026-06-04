@@ -557,14 +557,14 @@ function createHomeAssistantState(
         (typeof entity.attributes?.media_title === 'string' && entity.attributes.media_title) ||
         (typeof entity.attributes?.app_name === 'string' && entity.attributes.app_name) ||
         (typeof entity.attributes?.media_channel === 'string' && entity.attributes.media_channel) ||
-        getName(entity),
+        getName(entity, entityEntry),
       artist:
         (typeof entity.attributes?.media_artist === 'string' && entity.attributes.media_artist) ||
         (typeof entity.attributes?.media_album_name === 'string' &&
           entity.attributes.media_album_name) ||
         (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
         '',
-      entityType: 'Media player',
+      entityType: 'Media Player',
       deviceClass,
       source: typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined,
       sourceList: readStringList(entity.attributes?.source_list),

@@ -62,6 +62,7 @@ export function getEntityIconPillStyles({
   size,
   theme,
   tone,
+  inverseSurface = false,
 }: {
   isActive: boolean;
   isInteractive: boolean;
@@ -71,6 +72,7 @@ export function getEntityIconPillStyles({
   size: CardSize;
   theme: ThemeType;
   tone?: CardTextTone;
+  inverseSurface?: boolean;
 }): EntityIconPillStyles {
   const surface = getThemeSurfaceTokens(theme);
   const resolvedTone =
@@ -121,11 +123,26 @@ export function getEntityIconPillStyles({
     return 'bg-white/10 border border-white/14';
   })();
 
+  if (isActive && inverseSurface) {
+    return {
+      badgeClassName: `${badgeSizeClass} rounded-full flex shrink-0 items-center justify-center transition-all duration-500 ${interactiveClass} ${focusRingClass} border`,
+      badgeStyle: {
+        backgroundColor: '#ffffff',
+        borderColor: '#ffffff',
+        boxShadow: '0 10px 24px -18px rgba(0,0,0,0.28)',
+      },
+      iconClassName: iconSizeClass,
+      iconStyle: {
+        color: resolvedBaseColor,
+      },
+    };
+  }
+
   const badgeStyle = isActive
     ? {
         backgroundColor:
           theme === 'light'
-            ? `${resolvedBaseColor}1f`
+            ? 'rgba(255,255,255,0.24)'
             : theme === 'glass'
               ? `${resolvedBaseColor}24`
               : theme === 'black'
@@ -133,7 +150,7 @@ export function getEntityIconPillStyles({
                 : `${resolvedBaseColor}2e`,
         borderColor:
           theme === 'light'
-            ? `${resolvedBaseColor}4f`
+            ? 'rgba(255,255,255,0.54)'
             : theme === 'glass'
               ? `${resolvedBaseColor}54`
               : theme === 'black'
@@ -141,18 +158,18 @@ export function getEntityIconPillStyles({
                 : `${resolvedBaseColor}66`,
         boxShadow:
           theme === 'light'
-            ? `0 0 0 2px ${resolvedBaseColor}18, 0 10px 28px ${resolvedBaseColor}2e`
+            ? '0 10px 24px -18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18)'
             : theme === 'glass'
               ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${resolvedBaseColor}52`
               : theme === 'black'
-                ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
+                ? 'none'
                 : `0 0 0 1px ${resolvedBaseColor}18, 0 12px 30px ${resolvedBaseColor}22`,
       }
     : undefined;
 
   const iconStyle = isActive
     ? {
-        color: textTokens.titleColor,
+        color: theme === 'light' ? '#ffffff' : textTokens.titleColor,
         filter: theme === 'light' ? undefined : 'drop-shadow(0 1px 4px rgba(0, 0, 0, 0.18))',
       }
     : undefined;

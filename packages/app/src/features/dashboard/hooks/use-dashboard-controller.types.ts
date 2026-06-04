@@ -13,9 +13,10 @@ import type { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import type { OnboardingController } from './use-onboarding-controller';
 
 export interface DashboardClimateSectionGroup {
-  key: 'hvac' | 'temperature' | 'humidity' | 'airQuality' | 'pressure';
+  key: 'hvac' | 'fans' | 'temperature' | 'humidity' | 'airQuality' | 'pressure';
   titleKey:
     | 'sections.climate.hvac.title'
+    | 'sections.climate.fans.title'
     | 'sections.climate.temperature.title'
     | 'sections.climate.humidity.title'
     | 'sections.climate.airQuality.title'

@@ -8,6 +8,43 @@ interface StatisticEntry {
 
 type StatisticsResponse = Record<string, StatisticEntry[]>;
 
+export type EnergyStatisticUnit = 'Wh' | 'kWh' | 'MWh';
+
+function normalizeEnergyUnit(unit: string | undefined): EnergyStatisticUnit | undefined {
+  switch (unit?.trim().toLowerCase()) {
+    case 'wh':
+      return 'Wh';
+    case 'kwh':
+      return 'kWh';
+    case 'mwh':
+      return 'MWh';
+    default:
+      return undefined;
+  }
+}
+
+function toKilowattHours(value: number, unit: EnergyStatisticUnit | undefined): number {
+  switch (unit) {
+    case 'Wh':
+      return value / 1000;
+    case 'MWh':
+      return value * 1000;
+    default:
+      return value;
+  }
+}
+
+function sumStatisticChanges(entries: StatisticEntry[] | undefined): number {
+  return (entries ?? []).reduce((sum, entry) => {
+    const change = entry.change;
+    return sum + (typeof change === 'number' && change >= 0 ? change : 0);
+  }, 0);
+}
+
+function normalizeStatisticTotal(total: number, unit: string | undefined): number {
+  return toKilowattHours(total, normalizeEnergyUnit(unit));
+}
+
 /**
  * Fetches today's energy delta (kWh) for each entity using
  * recorder/statistics_during_period with 5-minute type "change" buckets.
@@ -15,8 +52,9 @@ type StatisticsResponse = Record<string, StatisticEntry[]>;
  */
 export async function getEnergyStatisticsToday(
   messageClient: PlatformMessageClient,
-  entityIds: string[]
+  entityUnits: Record<string, string | undefined>
 ): Promise<Record<string, number>> {
+  const entityIds = Object.keys(entityUnits);
   if (entityIds.length === 0) return {};
 
   const now = new Date();
@@ -33,10 +71,7 @@ export async function getEnergyStatisticsToday(
 
   const result: Record<string, number> = {};
   for (const id of entityIds) {
-    result[id] = (response[id] ?? []).reduce((sum, entry) => {
-      const change = entry.change;
-      return sum + (typeof change === 'number' && change >= 0 ? change : 0);
-    }, 0);
+    result[id] = normalizeStatisticTotal(sumStatisticChanges(response[id]), entityUnits[id]);
   }
   return result;
 }
@@ -60,7 +95,8 @@ function getStartOfMonth(now: Date): Date {
 
 export async function getEnergyStatisticsPeriods(
   messageClient: PlatformMessageClient,
-  entityId: string
+  entityId: string,
+  unit?: string
 ): Promise<{ today: number; week: number; month: number }> {
   const now = new Date();
   const periods = {
@@ -91,16 +127,11 @@ export async function getEnergyStatisticsPeriods(
   ]);
 
   const [todayResponse, weekResponse, monthResponse] = responses;
-  const sumChanges = (response: StatisticsResponse) =>
-    (response[entityId] ?? []).reduce((sum, entry) => {
-      const change = entry.change;
-      return sum + (typeof change === 'number' && change >= 0 ? change : 0);
-    }, 0);
 
   return {
-    today: sumChanges(todayResponse),
-    week: sumChanges(weekResponse),
-    month: sumChanges(monthResponse),
+    today: normalizeStatisticTotal(sumStatisticChanges(todayResponse[entityId]), unit),
+    week: normalizeStatisticTotal(sumStatisticChanges(weekResponse[entityId]), unit),
+    month: normalizeStatisticTotal(sumStatisticChanges(monthResponse[entityId]), unit),
   };
 }
 

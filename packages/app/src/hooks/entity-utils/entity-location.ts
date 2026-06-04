@@ -10,9 +10,36 @@ interface NamedEntityLike {
   attributes?: Record<string, unknown>;
 }
 
-export function getName(entity: NamedEntityLike, registryEntry?: { name?: string | null }): string {
-  if (typeof registryEntry?.name === 'string' && registryEntry.name.trim().length > 0) {
-    return registryEntry.name.trim();
+function readRegistryName(registryEntry?: {
+  name?: string | null;
+  name_by_user?: string | null;
+  original_name?: string | null;
+  originalName?: string | null;
+}) {
+  for (const candidate of [
+    registryEntry?.name_by_user,
+    registryEntry?.name,
+    registryEntry?.original_name,
+    registryEntry?.originalName,
+  ]) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+}
+
+export function getName(
+  entity: NamedEntityLike,
+  registryEntry?: {
+    name?: string | null;
+    name_by_user?: string | null;
+    original_name?: string | null;
+    originalName?: string | null;
+  }
+): string {
+  const registryName = readRegistryName(registryEntry);
+  if (registryName) {
+    return registryName;
   }
 
   return (

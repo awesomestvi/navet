@@ -24,4 +24,4 @@ Assume Navet may run on Raspberry Pi-class kiosk hardware.
 - `packages/app/src/features/security/`
 - `packages/app/src/hooks/`
 - `packages/app/src/stores/`
-- `packages/app/src/infrastructure/home-assistant/`
+- `packages/app/src/infrastructure/home-assistant/` (legacy compatibility seam)

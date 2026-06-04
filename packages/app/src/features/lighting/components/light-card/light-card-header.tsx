@@ -34,7 +34,9 @@ export const LightCardHeader = memo(function LightCardHeader({
 }: LightCardHeaderProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
+  const useInverseForeground = theme === 'light' && isOn;
   const isExtraSmall = isExtraSmallCardSize(size);
   const headerIcon = (
     <EntityCardHeaderIcon
@@ -44,6 +46,8 @@ export const LightCardHeader = memo(function LightCardHeader({
       size={size}
       tone={isOn ? 'primary' : 'neutral'}
       baseColor={activeColor}
+      themeOverride={effectiveTheme}
+      inverseSurface={useInverseForeground}
       ariaLabel={iconAriaLabel}
       onClick={onIconClick}
       onPointerDown={onIconPointerDown}
@@ -62,6 +66,8 @@ export const LightCardHeader = memo(function LightCardHeader({
         accentColor={activeColor}
         titleClassName={stateSurface.primaryTextClassName}
         subtitleClassName={stateSurface.mutedTextClassName}
+        titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
+        subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
         leading={headerIcon}
       />
     );
@@ -77,6 +83,8 @@ export const LightCardHeader = memo(function LightCardHeader({
       accentColor={activeColor}
       titleClassName={stateSurface.primaryTextClassName}
       subtitleClassName={stateSurface.mutedTextClassName}
+      titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
+      subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
       leading={headerIcon}
     />
   );

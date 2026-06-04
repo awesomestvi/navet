@@ -17,7 +17,7 @@ Navet currently runs in:
 - Home Assistant is implemented across panel, add-on, and standalone flows
 - Homey is implemented through the standalone cloud OAuth flow
 - openHAB is implemented through the standalone base-URL and username/password flow
-- Hubitat and SmartThings have package entry points, but they are not available runtime providers yet
+- Hubitat and SmartThings are planned provider packages with contract + registration entries, but full runtime support is not implemented yet
 
 ## Rules
 

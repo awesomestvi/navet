@@ -122,11 +122,20 @@ export const MapWidget = memo(function MapWidget({
         typeof surface.panelStyle?.borderColor === 'string'
           ? surface.panelStyle.borderColor
           : undefined,
-      boxShadow: surface.panelStyle?.boxShadow,
+      boxShadow: 'none',
     }),
     [surface.panelStyle]
   );
-  const mapInnerStyle = useMemo(() => surface.panelStyle, [surface.panelStyle]);
+  const mapInnerStyle = useMemo(
+    () =>
+      surface.panelStyle
+        ? {
+            ...surface.panelStyle,
+            boxShadow: 'none',
+          }
+        : undefined,
+    [surface.panelStyle]
+  );
   const homeAssistantMarkers = useProviderMapMarkers();
   const markers = staticMarkers ?? homeAssistantMarkers;
   const stableResolvedMarkersRef = useRef<MapMarker[]>([]);
@@ -193,6 +202,7 @@ export const MapWidget = memo(function MapWidget({
       <BaseCard
         size={size}
         fullBleed
+        className="!shadow-none !drop-shadow-none"
         frameClassName={surface.outerFrameClassName}
         style={mapFrameStyle}
         disableDefaultSheen
@@ -200,7 +210,8 @@ export const MapWidget = memo(function MapWidget({
       >
         <div
           ref={mapViewportRef}
-          className={`${surface.innerFrameClassName} z-2 overflow-hidden ${baseSurface.panel} ${cardShell.backdropClassName}`}
+          className={`${surface.innerFrameClassName} z-2 overflow-hidden rounded-[inherit] ${baseSurface.panel} ${cardShell.backdropClassName}`}
+          data-testid="map-widget-viewport"
           style={mapInnerStyle}
         >
           {surface.glowStyle ? (

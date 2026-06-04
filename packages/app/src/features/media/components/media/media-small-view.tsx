@@ -14,6 +14,7 @@ import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { MediaMarqueeText } from './media-marquee-text';
+import { getMediaReadableForeground } from './media-readable-foreground';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import {
   getMediaArtworkPaletteSource,
@@ -114,11 +115,20 @@ export function MediaSmallView({
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
-  const controlIconStyle = { color: fallbackTitleColor };
+  const readableForeground = getMediaReadableForeground({
+    theme,
+    palette,
+    titleColor: fallbackTitleColor,
+    subtitleColor: fallbackSubtitleColor,
+    hasArtwork: Boolean(stableArtwork),
+  });
+  const resolvedTitleColor = readableForeground.titleColor;
+  const resolvedSubtitleColor = readableForeground.subtitleColor;
+  const controlIconStyle = { color: resolvedTitleColor };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
@@ -126,9 +136,9 @@ export function MediaSmallView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          fallbackTitleColor,
+          resolvedTitleColor,
           0.18
         )}`,
       }
@@ -139,27 +149,27 @@ export function MediaSmallView({
           palette.vibrant,
           0.44
         )} 100%)`,
-        borderColor: withAlpha(fallbackSubtitleColor, 0.22),
+        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
         boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          fallbackTitleColor,
+          resolvedTitleColor,
           0.18
         )}`,
       }
     : neutralButtonStyle;
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
+  const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
+    background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(resolvedTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: fallbackTitleColor,
-    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
-      fallbackTitleColor,
+    backgroundColor: resolvedTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(resolvedTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      resolvedTitleColor,
       0.32
     )}`,
   };
@@ -196,12 +206,21 @@ export function MediaSmallView({
         )} 48%, ${withAlpha(palette.darkMuted, 0.08)} 100%)`,
   };
   const readabilityGradientStyle = {
-    background: subduedFallback
-      ? `linear-gradient(180deg, rgba(0,0,0,0.24) 0%, rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.16) 68%, rgba(0,0,0,0.28) 100%)`
-      : `radial-gradient(circle at 50% 46%, ${withAlpha(
-          palette.highlight,
-          0.03
-        )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%)`,
+    background:
+      subduedFallback && theme === 'glass'
+        ? `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.045)} 0%, ${withAlpha(
+            palette.dominant,
+            0.03
+          )} 42%, ${withAlpha(palette.gradientEnd, 0.045)} 68%, ${withAlpha(
+            palette.gradientEnd,
+            0.065
+          )} 100%)`
+        : subduedFallback
+          ? `linear-gradient(180deg, rgba(0,0,0,0.24) 0%, rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.16) 68%, rgba(0,0,0,0.28) 100%)`
+          : `radial-gradient(circle at 50% 46%, ${withAlpha(
+              palette.highlight,
+              0.03
+            )} 0%, transparent 34%), linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%)`,
   };
   const artworkAtmosphereStyle = {
     background: `radial-gradient(circle at 50% 50%, ${withAlpha(
@@ -209,6 +228,13 @@ export function MediaSmallView({
       subduedFallback ? 0.05 : 0.12
     )} 0%, transparent 72%)`,
   };
+  const glassDepthOverlay =
+    theme === 'glass' ? (
+      <>
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+      </>
+    ) : null;
 
   return (
     <div
@@ -248,8 +274,9 @@ export function MediaSmallView({
       <div className="pointer-events-none absolute inset-0" style={artworkAtmosphereStyle} />
       <div className="pointer-events-none absolute inset-0" style={colorTintStyle} />
       <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
+      {glassDepthOverlay}
 
-      <div className="relative flex h-full flex-col p-3">
+      <div className="relative z-[2] flex h-full flex-col p-3">
         <div className="flex items-start justify-between gap-3">
           <MediaEntityHeader
             entityName={entityName}
@@ -257,8 +284,8 @@ export function MediaSmallView({
             size="small"
             isActive={isActive}
             accentColor={palette.highlight}
-            titleStyle={{ color: fallbackTitleColor }}
-            subtitleStyle={{ color: fallbackSubtitleColor }}
+            titleStyle={readableForeground.titleStyle}
+            subtitleStyle={readableForeground.subtitleStyle}
           />
           <div className="flex shrink-0 items-center gap-2.5 self-start">
             <MediaVisualizerButton
@@ -268,7 +295,7 @@ export function MediaSmallView({
                 onOpenDialog();
               }}
               className={iconTone}
-              style={{ color: textTokens.titleColor }}
+              style={readableForeground.titleStyle}
             />
           </div>
         </div>
@@ -278,13 +305,13 @@ export function MediaSmallView({
             <MediaMarqueeText
               text={title}
               className={`text-xs font-semibold ${iconTone}`}
-              style={{ color: fallbackTitleColor }}
+              style={readableForeground.titleStyle}
             />
             <MediaMarqueeText
               text={artist}
               className={`mt-0.5 text-xs ${subtitleTone}`}
               threshold={24}
-              style={{ color: fallbackSubtitleColor }}
+              style={readableForeground.subtitleStyle}
             />
           </div>
 

@@ -51,14 +51,17 @@ export function getRoundControlStyles(theme: ThemeType): RoundControlStyles {
 
   if (theme === 'black') {
     return {
-      defaultButton: 'bg-black text-white hover:bg-zinc-900 border border-zinc-700',
+      defaultButton:
+        'border border-white/10 bg-white/[0.03] text-white hover:border-white/14 hover:bg-white/[0.06]',
       defaultIcon: 'text-white',
-      disabledButton: 'bg-black text-white/78 opacity-70 border border-zinc-700',
-      softButton: 'border border-zinc-700 bg-zinc-950/90 text-white hover:bg-zinc-900',
+      disabledButton: 'border border-white/8 bg-white/[0.02] text-white/78 opacity-70',
+      softButton:
+        'border border-white/10 bg-white/[0.035] text-white hover:border-white/14 hover:bg-white/[0.07]',
       softIcon: 'text-white',
-      softDisabledButton: 'border border-zinc-700 bg-zinc-950/90 text-white/78 opacity-70',
+      softDisabledButton: 'border border-white/8 bg-white/[0.02] text-white/78 opacity-70',
       selectedText: 'text-white',
-      emphasisButton: 'border border-zinc-700 bg-black text-white',
+      emphasisButton:
+        'border border-white/12 bg-white/[0.04] text-white hover:border-white/16 hover:bg-white/[0.08]',
       emphasisIcon: 'text-white',
     };
   }

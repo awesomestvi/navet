@@ -64,6 +64,7 @@ import {
 } from 'lucide-react';
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
 
@@ -467,7 +468,7 @@ const demoHomeWidgets: CustomCard[] = [
     createdAt: 2,
     data: {
       sourceMode: 'urls',
-      photoUrls: [sampleCameraImage],
+      photoImages: PHOTO_FRAME_DEMO_IMAGES,
       shuffleEnabled: false,
     },
   },
@@ -1002,15 +1003,9 @@ function DemoWidgetCard({ card }: { card: CustomCard }) {
 }
 
 function EnergyShot() {
-  const [range, setRange] = useState(demoEnergyScenario.dashboard.selectedRange);
-
   return (
     <EnergyDashboardPage
       dashboard={demoEnergyScenario.dashboard}
-      range={range}
-      onRangeChange={setRange}
-      selectedNodeId="home"
-      onNodeSelect={() => undefined}
       sourceDiagnostics={demoEnergySourceDiagnostics}
     />
   );

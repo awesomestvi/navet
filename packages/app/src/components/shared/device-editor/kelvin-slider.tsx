@@ -40,11 +40,13 @@ export const KelvinSlider = memo(function KelvinSlider({
   const isExtraSmall = isExtraSmallCardSize(size);
   const isCompact = isCompactCardSize(size);
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
+  const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColor);
   const textTokens = getCardReadableTextTokens({
-    theme,
+    theme: useInverseActiveLightSurface ? 'dark' : theme,
     tone: isOn ? 'primary' : 'neutral',
     accentColor,
     baseColor: isOn ? (activeColor ?? currentTempColor) : undefined,
+    backgroundColor: useInverseActiveLightSurface ? (activeColor ?? currentTempColor) : undefined,
   });
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
   const trackHeightClass = 'h-[3px]';
@@ -58,15 +60,19 @@ export const KelvinSlider = memo(function KelvinSlider({
       : 'rgba(255,255,255,0.1)';
 
   const thumbBg = isOn
-    ? theme === 'glass'
-      ? 'rgba(255,255,255,0.92)'
-      : '#ffffff'
+    ? useInverseActiveLightSurface
+      ? '#ffffff'
+      : theme === 'glass'
+        ? 'rgba(255,255,255,0.92)'
+        : '#ffffff'
     : theme === 'light'
       ? '#f3f4f6'
       : '#d1d5db';
 
   const thumbRing = isOn
-    ? currentTempColor
+    ? useInverseActiveLightSurface
+      ? 'rgba(255,255,255,0.42)'
+      : currentTempColor
     : theme === 'light'
       ? '#9ca3af'
       : 'rgba(255,255,255,0.24)';
@@ -77,13 +83,17 @@ export const KelvinSlider = memo(function KelvinSlider({
         <div className="flex items-center justify-between mb-1.5">
           <span
             className={`text-xs ${editorSurface.sectionLabelClassName}`}
-            style={{ color: textTokens.subtitleColor }}
+            style={{
+              color: useInverseActiveLightSurface
+                ? 'rgba(255,255,255,0.78)'
+                : textTokens.subtitleColor,
+            }}
           >
             {t('lighting.colorTemperature')}
           </span>
           <span
             className={`text-sm font-bold ${editorSurface.sectionValueClassName}`}
-            style={{ color: textTokens.titleColor }}
+            style={{ color: useInverseActiveLightSurface ? '#ffffff' : textTokens.titleColor }}
           >
             {roundedValue}K
           </span>

@@ -71,6 +71,30 @@ Use the current repo vocabulary in docs and code:
 - UI/UX and dashboard behavior: [`/ai/skills/navet-ux.md`](skills/navet-ux.md)
 - Performance and kiosk constraints: [`/ai/skills/performance.md`](skills/performance.md)
 
+## Repo Layout
+
+Do not assume a repo-root `src/` directory. Navet code is split between `packages/` and `apps/`.
+
+- `packages/app/src`: app composition, dashboard behavior, services, tests, stories
+- `packages/core/src`: provider-neutral contracts, IDs, runtime types, feature models
+- `packages/ui/src`: provider-neutral shared UI exports
+- `packages/provider-homeassistant/src`: Home Assistant adapter code
+- `packages/provider-homey/src`: Homey adapter code
+- `packages/provider-openhab/src`: openHAB adapter code
+- `packages/provider-hubitat/src`: Hubitat adapter code
+- `packages/provider-smartthings/src`: SmartThings adapter code
+- `apps/standalone/src`: standalone runtime entrypoint
+- `apps/demo/src`: demo runtime entrypoint
+- `apps/website/src`: marketing website code
+- `apps/ha-panel`: Home Assistant panel wrapper and build config
+- `apps/storybook`: Storybook app and config
+
+Path resolution rules:
+
+- Search `packages/` and `apps/` first. Do not start with repo-root `src/`.
+- Pick the search root from the package or app implied by the task before running broad text searches.
+- Default to `packages/app/src` for shared dashboard application work unless the task is obviously core, UI-only, or provider-specific.
+
 ## Existing Repo Guidance
 
 Use the focused `/ai/skills/` docs first, then the deeper repo docs when needed:

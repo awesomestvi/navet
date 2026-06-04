@@ -9,12 +9,13 @@ Navet already has:
 
 - `@navet/core` for shared contracts and IDs
 - `@navet/ui` for shared rendering
-- `@navet/provider-homeassistant` as the reference provider
+- `@navet/provider-homeassistant` as the first implemented provider
 - `@navet/provider-homey` as a working standalone provider
 - `@navet/provider-openhab` as a working standalone provider
 - `@navet/app` for product wiring, runtime selection, settings, and persistence
 
-Hubitat and SmartThings have package entry points but are not real runtime providers yet.
+Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
+support is not implemented yet.
 
 ## Near-Term Work
 

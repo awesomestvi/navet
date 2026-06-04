@@ -110,7 +110,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
     isOn,
     selectedColor: null,
     theme,
-    lightColors: colors.switch.on,
+    lightColors: colors.light,
     accentColor,
   });
   const preview =
@@ -128,7 +128,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
     theme === 'light'
       ? 'bg-gradient-to-b from-slate-100/96 to-slate-200/92'
       : theme === 'glass'
-        ? 'bg-[linear-gradient(180deg,rgba(12,18,32,0.82),rgba(15,23,42,0.66))]'
+        ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02)_100%)] backdrop-blur-xl'
         : theme === 'black'
           ? 'bg-[linear-gradient(180deg,rgba(10,10,10,0.98),rgba(0,0,0,1))]'
           : 'bg-[linear-gradient(180deg,rgba(34,26,32,0.94),rgba(18,18,22,0.98))]';
@@ -167,7 +167,9 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
   };
 
   return (
-    <div className={`relative max-w-[22.5rem] rounded-[30px] p-3 ${frameClassName}`}>
+    <div
+      className={`relative max-w-[22.5rem] rounded-[30px] ${theme === 'glass' ? 'p-1.5' : 'p-3'} ${frameClassName}`}
+    >
       {isOn ? (
         <div
           aria-hidden="true"

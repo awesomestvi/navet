@@ -35,7 +35,7 @@ export function MapWidgetLive({
         zoom={4}
         zoomControl={false}
         attributionControl={false}
-        className="dashboard-map-widget h-full w-full"
+        className="dashboard-map-widget h-full w-full overflow-hidden rounded-[inherit]"
         scrollWheelZoom
         style={{ height: '100%', width: '100%' }}
       >
@@ -81,7 +81,18 @@ export function MapWidgetLive({
         .dashboard-map-widget,
         .dashboard-map-widget.leaflet-container {
           border-radius: inherit;
+          overflow: hidden;
           background: transparent;
+        }
+
+        .dashboard-map-widget .leaflet-pane,
+        .dashboard-map-widget .leaflet-map-pane,
+        .dashboard-map-widget .leaflet-tile-pane,
+        .dashboard-map-widget .leaflet-tile-container,
+        .dashboard-map-widget .leaflet-layer,
+        .dashboard-map-widget .leaflet-marker-pane,
+        .dashboard-map-widget .leaflet-overlay-pane {
+          border-radius: inherit;
         }
 
         .dashboard-map-widget .leaflet-tile-pane {

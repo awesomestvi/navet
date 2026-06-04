@@ -12,6 +12,7 @@ import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key
 import { getMediaDisplayVolume, getMediaProgressPercent } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
+import { getMediaReadableForeground } from './media-readable-foreground';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import {
@@ -98,30 +99,39 @@ export function MediaLargeView({
     theme === 'light' && subduedFallback ? '#0f172a' : textTokens.titleColor;
   const fallbackSubtitleColor =
     theme === 'light' && subduedFallback ? '#475569' : textTokens.subtitleColor;
-  const controlIconStyle = { color: fallbackTitleColor };
+  const readableForeground = getMediaReadableForeground({
+    theme,
+    palette,
+    titleColor: fallbackTitleColor,
+    subtitleColor: fallbackSubtitleColor,
+    hasArtwork: Boolean(stableArtwork),
+  });
+  const resolvedTitleColor = readableForeground.titleColor;
+  const resolvedSubtitleColor = readableForeground.subtitleColor;
+  const controlIconStyle = { color: resolvedTitleColor };
   const shouldRenderDecorativeArtworkLayers =
     stableArtwork !== null &&
     stableArtwork !== undefined &&
     (import.meta.env.DEV || !isMediaPlayerProxyUrl(stableArtwork));
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.12)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(fallbackSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(fallbackTitleColor, 0.14)}`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
-  const trackBaseStyle = { backgroundColor: withAlpha(fallbackSubtitleColor, 0.24) };
+  const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
-    background: `linear-gradient(90deg, ${fallbackTitleColor} 0%, ${fallbackSubtitleColor} 100%)`,
-    boxShadow: `0 0 18px ${withAlpha(fallbackTitleColor, 0.18)}`,
+    background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${withAlpha(resolvedTitleColor, 0.18)}`,
   };
   const trackThumbStyle = {
-    backgroundColor: fallbackTitleColor,
-    boxShadow: `0 0 0 1px ${withAlpha(fallbackTitleColor, 0.22)}, 0 0 14px ${withAlpha(
-      fallbackTitleColor,
+    backgroundColor: resolvedTitleColor,
+    boxShadow: `0 0 0 1px ${withAlpha(resolvedTitleColor, 0.22)}, 0 0 14px ${withAlpha(
+      resolvedTitleColor,
       0.32
     )}`,
   };
@@ -167,6 +177,13 @@ export function MediaLargeView({
       subduedFallback ? 0.05 : 0.12
     )} 0%, transparent 72%)`,
   };
+  const glassDepthOverlay =
+    theme === 'glass' ? (
+      <>
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+      </>
+    ) : null;
 
   return (
     <div className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]">
@@ -202,8 +219,9 @@ export function MediaLargeView({
       <div className="pointer-events-none absolute inset-0" style={artworkAtmosphereStyle} />
       <div className="pointer-events-none absolute inset-0" style={colorTintStyle} />
       <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
+      {glassDepthOverlay}
 
-      <div className="relative z-1 flex h-full min-h-0 flex-col p-3">
+      <div className="relative z-[2] flex h-full min-h-0 flex-col p-3">
         <div className="flex min-h-0 flex-1 flex-col justify-end">
           <div className="flex items-center justify-between gap-3">
             <MediaEntityHeader
@@ -212,8 +230,8 @@ export function MediaLargeView({
               size="large"
               isActive={isActive}
               accentColor={palette.highlight}
-              titleStyle={{ color: fallbackTitleColor }}
-              subtitleStyle={{ color: fallbackSubtitleColor }}
+              titleStyle={readableForeground.titleStyle}
+              subtitleStyle={readableForeground.subtitleStyle}
             />
             <div className="flex shrink-0 items-center gap-2.5 self-start">
               <MediaVisualizerButton
@@ -223,7 +241,7 @@ export function MediaLargeView({
                   onOpenDialog();
                 }}
                 className={iconTone}
-                style={{ color: textTokens.titleColor }}
+                style={readableForeground.titleStyle}
               />
             </div>
           </div>
@@ -231,13 +249,13 @@ export function MediaLargeView({
           <div className="mt-3 min-w-0">
             <div
               className={`truncate text-sm font-semibold ${iconTone}`}
-              style={{ color: fallbackTitleColor }}
+              style={readableForeground.titleStyle}
             >
               {title}
             </div>
             <div
               className={`truncate text-xs ${subtitleTone}`}
-              style={{ color: fallbackSubtitleColor }}
+              style={readableForeground.subtitleStyle}
             >
               {artist}
             </div>
@@ -262,7 +280,7 @@ export function MediaLargeView({
             </div>
             <div
               className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}
-              style={{ color: fallbackSubtitleColor }}
+              style={readableForeground.subtitleStyle}
             >
               <span>{elapsedLabel}</span>
               <span>{durationLabel}</span>
