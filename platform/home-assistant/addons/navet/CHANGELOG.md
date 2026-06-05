@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.3
+
+- Updated Navet to `0.5.3`
+- Fixed energy dashboard daily totals so they respect the source sensor unit instead of showing incorrect kWh values
+- Fixed media card room pickers and speaker naming so dropdown entries stay readable and offline speakers keep better names
+- Improved light card controls when brightness is not available on the device
+- Improved energy dashboard statistics and current-usage presentation across more setups
+- Refreshed dark, light, and liquid glass theme styling for clearer dashboard card and media surfaces
+- Added bundled sample imagery for photo frame demos and previews
+- Updated release and architecture documentation to match the current package layout
+
 ## 0.5.2
 
 - Updated Navet to `0.5.2`

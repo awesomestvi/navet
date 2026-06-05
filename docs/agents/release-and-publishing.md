@@ -35,6 +35,8 @@ Recommended operator flow:
    update.
 6. Do not require maintainers to prebuild Home Assistant panel assets for HACS or release
    publishing. The export and release workflows build them automatically.
+   Do not ask for `pnpm build:ha-panel` during local release prep unless the user explicitly wants
+   a separate manual panel build outside the normal release path.
 7. Add or update the matching `platform/home-assistant/addons/navet/CHANGELOG.md` entry for every
    versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.

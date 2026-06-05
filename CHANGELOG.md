@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.3 - 2026-06-05
+
+## Fixed
+
+- Energy dashboard daily usage now respects the source unit so totals no longer show the wrong kWh values when the sensor reports Wh.
+- Media cards keep room selections readable and continue showing the intended speaker names more reliably, even when a speaker is temporarily offline.
+
+## Improved
+
+- Light cards now keep their controls clearer when a device does not expose brightness controls.
+- Energy dashboard totals, statistics views, and current-usage presentation are clearer and more reliable across supported configurations.
+- Dark, light, and liquid glass themes now use more consistent card, media, and shared surface styling for clearer readability.
+- Photo frame demos and related dashboard previews now ship with bundled sample imagery for more realistic defaults.
+
+## Documentation
+
+- Release and architecture guidance now better reflect the current package layout and release surfaces.
+
 ## 0.5.2 - 2026-06-04
 
 ## Fixed

@@ -89,7 +89,6 @@ Merge safety gates:
 - `pnpm check:ui-kit`
 - `pnpm typecheck`
 - app build
-- `pnpm build:ha-panel`
 - Tier 1 release-critical validation
 - Tier 2 blocking app contracts
 - standalone app smoke boot
@@ -165,6 +164,8 @@ promotion in phase 1.
    issues exist, fall back to commit history since the previous release tag.
 5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
 6. Run `node scripts/check-release-surfaces.mjs`.
+   Do not run `pnpm build:ha-panel` as part of local release prep. The automated release/HACS workflow
+   builds the custom panel assets and packages the panel artifact.
 7. Merge the release commit to `main`.
 8. Create and push the release tag for `awesomestvi/navet`.
 9. Let the tagged release workflow build the panel bundle, package it, and attach

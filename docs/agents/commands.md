@@ -31,6 +31,8 @@ pnpm website:build   # build website + demo + Storybook into one Cloudflare Page
 - Do not run `pnpm build` unless explicitly asked.
 - Do not run `pnpm typecheck` or `pnpm check` yourself. Ask the user to run them and report back.
 - For release work, do not run any `pnpm` command yourself. List the required commands for the user, wait for the reported results, and continue from there.
+- For release work, do not ask the user to run `pnpm build:ha-panel` as part of standard prep. The
+  automated release/HACS workflow builds the custom panel assets.
 - If a commit or hook is blocked by TypeScript errors, fix the type errors instead of updating or relying on a typecheck baseline.
 
 ## Commit Rules
