@@ -130,6 +130,9 @@ export const settingsSelectors = {
     hasOwnKey(state.cameraViewModes, entityId),
   cameraViewModeForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
+  cameraStreamPreference: (state: SettingsState) => state.cameraStreamPreference,
+  cameraStreamPreferenceForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraStreamPreferences[entityId] ?? state.cameraStreamPreference,
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
@@ -137,6 +140,7 @@ export const settingsSelectors = {
   // Actions
   updateSettings: (state: SettingsState) => state.updateSettings,
   updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
+  updateCameraStreamPreference: (state: SettingsState) => state.updateCameraStreamPreference,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
   // Combined selectors
@@ -155,6 +159,7 @@ export const settingsSelectors = {
     entityInteractionMode: state.entityInteractionMode,
     cameraDashboardViewMode: state.cameraDashboardViewMode,
     cameraViewMode: state.cameraDashboardViewMode,
+    cameraStreamPreference: state.cameraStreamPreference,
     ambientLightBleed: state.ambientLightBleed,
     weatherForecastMode: state.weatherForecastMode,
     weatherMetricIds: state.weatherMetricIds,

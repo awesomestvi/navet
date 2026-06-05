@@ -15,9 +15,13 @@ interface CameraStreamPlayerProps {
 }
 
 const CAMERA_STREAM_LOAD_TIMEOUT_MS = 10_000;
+const CAMERA_HLS_STREAM_LOAD_TIMEOUT_MS = 20_000;
 const CAMERA_STREAM_STALL_CHECK_INTERVAL_MS = 2_000;
 const CAMERA_STREAM_STALL_THRESHOLD_MS = 6_000;
 const MJPEG_STREAM_RECONNECT_INTERVAL_MS = 30_000;
+const CAMERA_HLS_MEDIA_ERROR_RECOVERY_LIMIT = 1;
+const CAMERA_HLS_NETWORK_ERROR_RECOVERY_LIMIT = 1;
+const CAMERA_HLS_FRESH_URL_RETRY_LIMIT = 1;
 
 const videoFitClassNames = {
   contain: 'object-contain',
@@ -85,16 +89,21 @@ function clearStreamLoadTimeout(timeoutRef: React.MutableRefObject<number | null
   }
 }
 
+function hasCurrentMediaData(video: HTMLVideoElement | null) {
+  return Boolean(video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
+}
+
 function scheduleStreamLoadTimeout(
   timeoutRef: React.MutableRefObject<number | null>,
   kind: CameraImageSourceKind,
-  onError: CameraStreamPlayerProps['onError']
+  onError: CameraStreamPlayerProps['onError'],
+  delayMs = CAMERA_STREAM_LOAD_TIMEOUT_MS
 ) {
   clearStreamLoadTimeout(timeoutRef);
   timeoutRef.current = window.setTimeout(() => {
     timeoutRef.current = null;
     onError(kind);
-  }, CAMERA_STREAM_LOAD_TIMEOUT_MS);
+  }, delayMs);
 }
 
 function clearStreamStallWatchdog(
@@ -161,6 +170,10 @@ function getStreamResourceKey(resource: ResolvedPlatformResource | null | undefi
 }
 
 function appendReloadToken(url: string, reloadKey: number) {
+  if (url.includes('authSig=')) {
+    return url;
+  }
+
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}_mjpeg_t=${reloadKey}`;
 }
@@ -190,7 +203,7 @@ function MjpegCameraPlayer({
 
   useEffect(() => {
     setHasLoadedFrame(false);
-  }, [reloadKey, streamResourceUrl]);
+  }, [streamResourceUrl]);
 
   const reloadingStreamUrl =
     streamResourceUrl && reloadKey > 0
@@ -199,7 +212,9 @@ function MjpegCameraPlayer({
 
   return (
     <div className="relative h-full w-full">
-      {reloadingStreamUrl && !hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      {reloadingStreamUrl && !hasLoadedFrame && reloadKey === 0 ? (
+        <CameraStreamLoadingIndicator />
+      ) : null}
       {reloadingStreamUrl ? (
         <img
           key={reloadKey}
@@ -236,8 +251,13 @@ function HlsCameraPlayer({
   const hasLoadedFrameRef = useRef(false);
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
   const streamResourceUrl = streamResource?.kind === 'hls_stream' ? streamResource.url : undefined;
+  const freshUrlRetryCountRef = useRef(0);
 
-  const handleLoadedData = () => {
+  const markStreamReady = () => {
+    if (hasLoadedFrameRef.current) {
+      return;
+    }
+
     hasLoadedFrameRef.current = true;
     stagnantDurationRef.current = 0;
     lastObservedTimeRef.current = videoRef.current?.currentTime ?? null;
@@ -267,6 +287,9 @@ function HlsCameraPlayer({
   useEffect(() => {
     let cancelled = false;
     let cleanupHls: (() => void) | undefined;
+    let mediaErrorRecoveryAttempts = 0;
+    let networkErrorRecoveryAttempts = 0;
+    let activeStreamUrl = streamResourceUrl;
 
     const cleanUp = () => {
       cleanupHls?.();
@@ -281,7 +304,81 @@ function HlsCameraPlayer({
       hasLoadedFrameRef.current = false;
     };
 
-    const start = async () => {
+    const loadStreamUrl = async (preferFreshUrl: boolean) => {
+      if (!preferFreshUrl && activeStreamUrl) {
+        return activeStreamUrl;
+      }
+
+      const stream = await integrationCameraFeatureService.getCameraStreamUrl(entityId, 'hls');
+      if (cancelled) {
+        return undefined;
+      }
+
+      activeStreamUrl =
+        (await resolveCameraStreamResource(entityId, 'hls', stream.url)).url ?? stream.url;
+      return activeStreamUrl;
+    };
+
+    const handleTerminalFailure = async ({
+      retryable = true,
+      allowFreshUrlRetry = false,
+    }: {
+      retryable?: boolean;
+      allowFreshUrlRetry?: boolean;
+    } = {}) => {
+      if (
+        allowFreshUrlRetry &&
+        retryable &&
+        !cancelled &&
+        !hasLoadedFrameRef.current &&
+        freshUrlRetryCountRef.current < CAMERA_HLS_FRESH_URL_RETRY_LIMIT
+      ) {
+        freshUrlRetryCountRef.current += 1;
+        try {
+          const refreshedUrl = await loadStreamUrl(true);
+          if (!refreshedUrl || cancelled) {
+            return;
+          }
+
+          void start(true);
+          return;
+        } catch (error) {
+          if (!cancelled) {
+            clearStreamLoadTimeout(loadTimeoutRef);
+            onError('hls', {
+              retryable: retryable && !isHomeAssistantCameraStreamUnsupportedError(error),
+            });
+          }
+          return;
+        }
+      }
+
+      if (!cancelled) {
+        clearStreamLoadTimeout(loadTimeoutRef);
+        if (retryable) {
+          onError('hls');
+        } else {
+          onError('hls', { retryable: false });
+        }
+      }
+    };
+
+    const refreshStartupTimeout = () => {
+      if (hasLoadedFrameRef.current) {
+        return;
+      }
+
+      clearStreamLoadTimeout(loadTimeoutRef);
+      loadTimeoutRef.current = window.setTimeout(() => {
+        loadTimeoutRef.current = null;
+        void handleTerminalFailure({
+          retryable: true,
+          allowFreshUrlRetry: true,
+        });
+      }, CAMERA_HLS_STREAM_LOAD_TIMEOUT_MS);
+    };
+
+    const start = async (preferFreshUrl = false) => {
       cleanUp();
       if (document.hidden) {
         return;
@@ -297,20 +394,12 @@ function HlsCameraPlayer({
       video.muted = true;
       video.autoplay = true;
       video.playsInline = true;
-      scheduleStreamLoadTimeout(loadTimeoutRef, 'hls', onError);
+      mediaErrorRecoveryAttempts = 0;
+      networkErrorRecoveryAttempts = 0;
+      refreshStartupTimeout();
 
       try {
-        let playableStreamUrl = streamResourceUrl;
-
-        if (!playableStreamUrl) {
-          const stream = await integrationCameraFeatureService.getCameraStreamUrl(entityId, 'hls');
-          if (cancelled) {
-            return;
-          }
-
-          playableStreamUrl =
-            (await resolveCameraStreamResource(entityId, 'hls', stream.url)).url ?? stream.url;
-        }
+        const playableStreamUrl = await loadStreamUrl(preferFreshUrl);
 
         if (!playableStreamUrl || cancelled) {
           return;
@@ -319,6 +408,9 @@ function HlsCameraPlayer({
         if (shouldUseNativeHlsPlayback(video)) {
           video.src = playableStreamUrl;
           await video.play().catch(() => undefined);
+          if (hasCurrentMediaData(video)) {
+            markStreamReady();
+          }
           return;
         }
 
@@ -344,18 +436,49 @@ function HlsCameraPlayer({
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(playableStreamUrl));
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          refreshStartupTimeout();
           void video.play().catch(() => undefined);
+          if (hasCurrentMediaData(video)) {
+            markStreamReady();
+          }
+        });
+        hls.on(Hls.Events.LEVEL_LOADED, () => {
+          refreshStartupTimeout();
+        });
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          refreshStartupTimeout();
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (data.fatal) {
-            onError('hls');
+          if (!data.fatal) {
+            if (!hasLoadedFrameRef.current) {
+              refreshStartupTimeout();
+            }
+            return;
           }
+
+          if (data.type === Hls.ErrorTypes?.MEDIA_ERROR) {
+            if (mediaErrorRecoveryAttempts < CAMERA_HLS_MEDIA_ERROR_RECOVERY_LIMIT) {
+              mediaErrorRecoveryAttempts += 1;
+              refreshStartupTimeout();
+              hls.recoverMediaError();
+              return;
+            }
+          } else if (data.type === Hls.ErrorTypes?.NETWORK_ERROR) {
+            if (networkErrorRecoveryAttempts < CAMERA_HLS_NETWORK_ERROR_RECOVERY_LIMIT) {
+              networkErrorRecoveryAttempts += 1;
+              refreshStartupTimeout();
+              hls.startLoad();
+              return;
+            }
+          }
+
+          void handleTerminalFailure();
         });
       } catch (error) {
         if (!cancelled) {
-          clearStreamLoadTimeout(loadTimeoutRef);
-          onError('hls', {
+          void handleTerminalFailure({
             retryable: !isHomeAssistantCameraStreamUnsupportedError(error),
+            allowFreshUrlRetry: true,
           });
         }
       }
@@ -379,8 +502,10 @@ function HlsCameraPlayer({
           hasLoadedFrame ? 'opacity-100' : 'opacity-0'
         }`}
         muted
-        onLoadedData={handleLoadedData}
+        onCanPlay={markStreamReady}
+        onLoadedData={markStreamReady}
         onError={() => onError('hls')}
+        onPlaying={markStreamReady}
         playsInline
       />
     </div>
@@ -403,7 +528,11 @@ function WebRtcCameraPlayer({
   const hasLoadedFrameRef = useRef(false);
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
 
-  const handleLoadedData = () => {
+  const markStreamReady = () => {
+    if (hasLoadedFrameRef.current) {
+      return;
+    }
+
     hasLoadedFrameRef.current = true;
     stagnantDurationRef.current = 0;
     lastObservedTimeRef.current = videoRef.current?.currentTime ?? null;
@@ -593,8 +722,10 @@ function WebRtcCameraPlayer({
           hasLoadedFrame ? 'opacity-100' : 'opacity-0'
         }`}
         muted
-        onLoadedData={handleLoadedData}
+        onCanPlay={markStreamReady}
         onError={() => onError('web_rtc')}
+        onLoadedData={markStreamReady}
+        onPlaying={markStreamReady}
         playsInline
       />
     </div>

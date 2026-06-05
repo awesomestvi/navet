@@ -13,6 +13,7 @@ interface CameraPlaybackPlanInput {
   entityId: string;
   cameraState: PlatformCameraState;
   preferredMode: 'auto' | 'live' | 'snapshot';
+  preferredTransport: 'auto' | PlatformCameraTransport;
   snapshotUrl?: string;
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
@@ -63,7 +64,10 @@ export class CameraMediaService {
     let selectedStreamResource: ResolvedPlatformResource | null = null;
 
     if (canPlayLive) {
-      const streamTypes = await this.readOrderedStreamTypes(nativeEntityId, input.isStreamCapable);
+      const streamTypes = this.applyPreferredTransport(
+        await this.readOrderedStreamTypes(nativeEntityId, input.isStreamCapable),
+        input.preferredTransport
+      );
       for (const transport of streamTypes) {
         if (failedTransports.has(transport)) {
           continue;
@@ -98,12 +102,23 @@ export class CameraMediaService {
             continue;
           }
 
-          const stream = await this.getCameraStream(nativeEntityId, 'hls');
+          let hlsPath: string | undefined;
+          try {
+            const stream = await this.getCameraStream(nativeEntityId, 'hls');
+            hlsPath = stream.url;
+          } catch {
+            const streamPaths = await this.getCameraStreamPaths(nativeEntityId);
+            hlsPath = streamPaths.hls;
+            if (!hlsPath) {
+              throw new Error('No HLS stream path available');
+            }
+          }
+
           const resolvedStream = await this.resolver.resolve({
             kind: 'camera_stream',
             entityId: input.entityId,
             stream: 'hls',
-            rawPath: stream.url,
+            rawPath: hlsPath,
           });
           liveTransports.push('hls');
           if (!selectedStreamResource) {
@@ -210,5 +225,21 @@ export class CameraMediaService {
       prioritized.push('mjpeg');
     }
     return prioritized;
+  }
+
+  private applyPreferredTransport(
+    streamTypes: readonly PlatformCameraTransport[],
+    preferredTransport: 'auto' | PlatformCameraTransport
+  ): PlatformCameraTransport[] {
+    if (preferredTransport === 'auto') {
+      return [...streamTypes];
+    }
+
+    const preferredIndex = streamTypes.indexOf(preferredTransport);
+    if (preferredIndex === -1) {
+      return [];
+    }
+
+    return streamTypes.slice(preferredIndex);
   }
 }

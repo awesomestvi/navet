@@ -1,3 +1,4 @@
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -225,5 +226,71 @@ describe('CameraCardContainer', () => {
     );
 
     expect(cameraStreamPlayerRenderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('normalizes an unsupported saved stream preference back to auto for playback planning', () => {
+    useSettingsStore
+      .getState()
+      .updateCameraStreamPreference('home_assistant:camera.front', 'web_rtc');
+    useCameraPlaybackPlanMock
+      .mockReturnValueOnce({
+        cameraState: 'streaming',
+        snapshotResource: {
+          id: 'camera.front:snapshot',
+          kind: 'image',
+          cacheKey: 'camera.front:snapshot',
+          authStrategy: 'same_origin',
+          url: '/api/camera_proxy/camera.front',
+        },
+        supportsSnapshot: true,
+        liveTransports: ['mjpeg'],
+        fallbackTransports: [],
+        selectedTransport: 'mjpeg',
+        selectedStreamResource: null,
+        supportsStreaming: true,
+        isSnapshotFallback: false,
+        shouldStartWithSnapshot: false,
+        motionDetectionEnabled: null,
+        refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+      })
+      .mockReturnValueOnce({
+        cameraState: 'streaming',
+        snapshotResource: {
+          id: 'camera.front:snapshot',
+          kind: 'image',
+          cacheKey: 'camera.front:snapshot',
+          authStrategy: 'same_origin',
+          url: '/api/camera_proxy/camera.front',
+        },
+        supportsSnapshot: true,
+        liveTransports: ['mjpeg'],
+        fallbackTransports: [],
+        selectedTransport: 'mjpeg',
+        selectedStreamResource: null,
+        supportsStreaming: true,
+        isSnapshotFallback: false,
+        shouldStartWithSnapshot: false,
+        motionDetectionEnabled: null,
+        refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+      });
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(useCameraPlaybackPlanMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferredTransport: 'auto',
+      })
+    );
   });
 });

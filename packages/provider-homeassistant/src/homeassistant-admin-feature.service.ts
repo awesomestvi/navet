@@ -18,7 +18,7 @@ export const homeAssistantAdminFeatureService: ProviderAdminFeatureService = {
   },
   updateEntityRoom: async (entityId, roomId) => {
     const parsedRoom = roomId ? parsePlatformRoomReference(roomId) : null;
-    if (roomId && (!parsedRoom || parsedRoom.providerId !== 'home_assistant')) {
+    if (roomId && parsedRoom?.providerId !== 'home_assistant') {
       throw new Error(`Room ${roomId} does not belong to provider Home Assistant`);
     }
 

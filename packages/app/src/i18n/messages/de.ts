@@ -1361,6 +1361,13 @@ export const deMessages = {
     'This controls the dashboard preview. Live uses Home Assistant WebRTC or HLS when available, while Snapshot keeps dashboard cards cheap to render.',
   'camera.settings.viewMode.lowPowerNote':
     'Low power mode forces dashboard camera previews to snapshots until it is turned off.',
+  'camera.settings.streamPreference': 'Live stream',
+  'camera.settings.streamPreference.auto': 'Auto',
+  'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.hls': 'HLS',
+  'camera.settings.streamPreference.mjpeg': 'MJPEG',
+  'camera.settings.streamPreference.description':
+    'Auto tries the full stream fallback chain. Choosing a specific live stream type starts from that stream and continues through the remaining fallbacks before snapshot.',
   'camera.status.live': 'Live',
   'camera.status.unavailable': 'Nicht verfugbar',
   'camera.status.noSignal': 'Kein Signal',

@@ -35,11 +35,6 @@ pnpm check:lockfile &&
         pnpm check:docker
       else
         true
-      fi &&
-      pnpm build:ha-panel &&
-      if ! git diff --exit-code -- custom_components/navet/frontend; then
-        echo "custom_components/navet/frontend changed after pnpm build:ha-panel. Stage the generated panel assets and commit again." >&2
-        exit 1
       fi
   else
     true

@@ -139,7 +139,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
   );
+  const cameraStreamPreference = useSettingsStore(
+    settingsSelectors.cameraStreamPreferenceForEntity(id)
+  );
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
+  const updateCameraStreamPreference = useSettingsStore(
+    settingsSelectors.updateCameraStreamPreference
+  );
   const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
   const { cameraState, companionStates, deviceEntities, liveEntity, liveState } =
     useProviderCameraLiveData(id, deviceEntityIds);
@@ -175,10 +181,26 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     lowPowerMode,
     hasSnapshot,
   });
+  const playbackOptionsModel = useCameraPlaybackPlan({
+    entityId: id,
+    cameraState,
+    preferredMode: 'live',
+    preferredTransport: 'auto',
+    snapshotUrl,
+    isStreamCapable,
+    motionDetectionEnabled: liveState.motionDetectionEnabled,
+    failedTransports: new Set(),
+  });
+  const effectiveCameraStreamPreference =
+    cameraStreamPreference === 'auto' ||
+    (playbackOptionsModel?.liveTransports ?? []).includes(cameraStreamPreference)
+      ? cameraStreamPreference
+      : 'auto';
   const playbackModel = useCameraPlaybackPlan({
     entityId: id,
     cameraState,
     preferredMode: effectiveDashboardCameraViewMode,
+    preferredTransport: effectiveCameraStreamPreference,
     snapshotUrl,
     isStreamCapable,
     motionDetectionEnabled: liveState.motionDetectionEnabled,
@@ -210,7 +232,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   useEffect(() => {
     setFailedStreamTypes([]);
-  }, [effectiveDashboardCameraViewMode, id]);
+  }, [effectiveCameraStreamPreference, effectiveDashboardCameraViewMode, id]);
 
   useEffect(() => {
     const refreshIntervalMs = playbackModel?.refreshPolicy.snapshotRefreshMs ?? null;
@@ -278,6 +300,15 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       setRefreshKey((key) => key + 1);
     },
     [id, updateCameraViewMode]
+  );
+
+  const handleCameraStreamPreferenceChange = useCallback(
+    (preference: 'auto' | PlatformCameraTransport) => {
+      updateCameraStreamPreference(id, preference);
+      setFailedStreamTypes([]);
+      setRefreshKey((key) => key + 1);
+    },
+    [id, updateCameraStreamPreference]
   );
 
   const handleStreamError = useCallback(
@@ -385,6 +416,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           cameraState={cameraState}
           snapshotUrl={snapshotUrl}
           cameraViewMode={viewerCameraViewMode}
+          preferredTransport={cameraStreamPreference}
           isStreamCapable={isStreamCapable}
           motionDetectionEnabled={
             playbackModel?.motionDetectionEnabled ?? liveState.motionDetectionEnabled
@@ -404,10 +436,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}
           cameraViewMode={cameraDashboardViewMode}
+          cameraStreamPreference={effectiveCameraStreamPreference}
+          supportedStreamPreferences={playbackOptionsModel?.liveTransports ?? []}
           supportsStreaming={isStreamCapable}
           hasSnapshot={hasSnapshot}
           lowPowerMode={lowPowerMode}
           onCameraViewModeChange={handleCameraViewModeChange}
+          onCameraStreamPreferenceChange={handleCameraStreamPreferenceChange}
         />
       )}
     </>

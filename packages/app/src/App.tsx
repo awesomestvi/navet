@@ -273,7 +273,7 @@ function AppContent() {
 
   useEffect(() => {
     const openhabSession = sessions.openhab;
-    if (!openhabSession || openhabSession.providerId !== 'openhab') {
+    if (openhabSession?.providerId !== 'openhab') {
       return;
     }
 
@@ -289,7 +289,7 @@ function AppContent() {
 
   useEffect(() => {
     const homeAssistantSession = sessions.home_assistant;
-    if (!homeAssistantSession || homeAssistantSession.providerId !== 'home_assistant' || appError) {
+    if (homeAssistantSession?.providerId !== 'home_assistant' || appError) {
       return;
     }
 

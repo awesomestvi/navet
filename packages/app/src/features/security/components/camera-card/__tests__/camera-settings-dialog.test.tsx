@@ -33,10 +33,13 @@ const defaultProps = {
   onOpenChange: vi.fn(),
   siblingEntities: [],
   cameraViewMode: 'live' as const,
+  cameraStreamPreference: 'auto' as const,
+  supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'] as const,
   supportsStreaming: true,
   hasSnapshot: true,
   lowPowerMode: false,
   onCameraViewModeChange: vi.fn(),
+  onCameraStreamPreferenceChange: vi.fn(),
 };
 
 describe('CameraSettingsDialog', () => {
@@ -79,6 +82,47 @@ describe('CameraSettingsDialog', () => {
     ).toBeInTheDocument();
     expect(
       within(cameraViewSection as HTMLElement).queryByRole('button', { name: 'Snapshot' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('lets users pick a preferred live transport when streaming is available', () => {
+    const onCameraStreamPreferenceChange = vi.fn();
+
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="auto"
+        onCameraStreamPreferenceChange={onCameraStreamPreferenceChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'HLS' }));
+
+    expect(onCameraStreamPreferenceChange).toHaveBeenCalledWith('hls');
+  });
+
+  it('shows only supported live transport options for the camera', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        supportedStreamPreferences={['mjpeg']}
+        cameraStreamPreference="mjpeg"
+      />
+    );
+
+    const streamSection = screen.getByText('Live stream').parentElement;
+    expect(streamSection).toBeTruthy();
+    expect(
+      within(streamSection as HTMLElement).getByRole('button', { name: 'Auto' })
+    ).toBeInTheDocument();
+    expect(
+      within(streamSection as HTMLElement).getByRole('button', { name: 'MJPEG' })
+    ).toBeInTheDocument();
+    expect(
+      within(streamSection as HTMLElement).queryByRole('button', { name: 'WebRTC' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(streamSection as HTMLElement).queryByRole('button', { name: 'HLS' })
     ).not.toBeInTheDocument();
   });
 

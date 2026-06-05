@@ -27,6 +27,7 @@ const defaultProps = {
   cameraState: 'streaming' as const,
   snapshotUrl: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
   cameraViewMode: 'auto' as const,
+  preferredTransport: 'auto' as const,
   isStreamCapable: true,
   motionDetectionEnabled: true,
   initialStreamResource: null,

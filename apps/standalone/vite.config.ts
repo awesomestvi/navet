@@ -417,11 +417,6 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
         res.setHeader('Cache-Control', cacheControl)
       }
 
-      const contentLength = upstreamResponse.headers.get('content-length')
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength)
-      }
-
       if (!upstreamResponse.body) {
         res.end()
         return

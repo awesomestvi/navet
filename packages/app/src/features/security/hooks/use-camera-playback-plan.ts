@@ -4,12 +4,14 @@ import type {
   PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import { getCameraPlaybackPlan } from '@navet/app/services/integration-camera-runtime.service';
+import type { CameraStreamPreference } from '@navet/app/stores/settings-store';
 import { useEffect, useMemo, useState } from 'react';
 
 interface UseCameraPlaybackPlanOptions {
   entityId: string;
   cameraState: PlatformCameraState;
   preferredMode: 'auto' | 'live' | 'snapshot';
+  preferredTransport: CameraStreamPreference;
   snapshotUrl?: string;
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
@@ -24,6 +26,7 @@ export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
       entityId: options.entityId,
       cameraState: options.cameraState,
       preferredMode: options.preferredMode,
+      preferredTransport: options.preferredTransport,
       snapshotUrl: options.snapshotUrl,
       isStreamCapable: options.isStreamCapable,
       motionDetectionEnabled: options.motionDetectionEnabled,
@@ -37,6 +40,7 @@ export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
       options.entityId,
       options.cameraState,
       options.preferredMode,
+      options.preferredTransport,
       options.snapshotUrl,
       options.isStreamCapable,
       options.motionDetectionEnabled,

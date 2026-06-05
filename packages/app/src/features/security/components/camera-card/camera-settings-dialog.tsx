@@ -16,9 +16,12 @@ import { getAccentCardShellTokens } from '@navet/app/components/shared/theme/acc
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
-import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
+import type {
+  PlatformCameraTransport,
+  PlatformEntitySnapshot,
+} from '@navet/app/platform/provider-feature-models';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
-import type { CameraViewMode } from '@navet/app/stores/settings-store';
+import type { CameraStreamPreference, CameraViewMode } from '@navet/app/stores/settings-store';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { memo, useCallback, useEffect, useState } from 'react';
 
@@ -34,10 +37,13 @@ interface CameraSettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
+  cameraStreamPreference: CameraStreamPreference;
+  supportedStreamPreferences: readonly PlatformCameraTransport[];
   supportsStreaming: boolean;
   hasSnapshot: boolean;
   lowPowerMode: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
+  onCameraStreamPreferenceChange: (preference: CameraStreamPreference) => void;
 }
 
 function getDisplayName(entityId: string, entity: PlatformEntitySnapshot): string {
@@ -214,6 +220,12 @@ function NumberRow({
 }
 
 const CAMERA_VIEW_OPTIONS: CameraViewMode[] = ['auto', 'live', 'snapshot'];
+const CAMERA_STREAM_PREFERENCE_OPTIONS: CameraStreamPreference[] = [
+  'auto',
+  'web_rtc',
+  'hls',
+  'mjpeg',
+];
 
 function CameraViewModeRow({
   value,
@@ -268,6 +280,53 @@ function CameraViewModeRow({
   );
 }
 
+function CameraStreamPreferenceRow({
+  value,
+  supportedPreferences,
+  supportsStreaming,
+  onChange,
+}: {
+  value: CameraStreamPreference;
+  supportedPreferences: readonly PlatformCameraTransport[];
+  supportsStreaming: boolean;
+  onChange: (preference: CameraStreamPreference) => void;
+}) {
+  const { t } = useI18n();
+
+  if (!supportsStreaming) {
+    return null;
+  }
+
+  const availablePreferences: CameraStreamPreference[] = [
+    'auto',
+    ...CAMERA_STREAM_PREFERENCE_OPTIONS.filter(
+      (preference): preference is PlatformCameraTransport =>
+        preference !== 'auto' && supportedPreferences.includes(preference)
+    ),
+  ];
+
+  return (
+    <DialogSectionRow label={t('camera.settings.streamPreference')}>
+      <div className="inline-flex flex-wrap items-center gap-1">
+        {availablePreferences.map((preference) => (
+          <CardDialogChoicePill
+            key={preference}
+            active={preference === value}
+            onClick={() => onChange(preference)}
+            size="compact"
+            aria-pressed={preference === value}
+          >
+            {t(`camera.settings.streamPreference.${preference}` as TranslationKey)}
+          </CardDialogChoicePill>
+        ))}
+      </div>
+      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
+        {t('camera.settings.streamPreference.description')}
+      </p>
+    </DialogSectionRow>
+  );
+}
+
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
@@ -275,10 +334,13 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   onOpenChange,
   siblingEntities,
   cameraViewMode,
+  cameraStreamPreference,
+  supportedStreamPreferences,
   supportsStreaming,
   hasSnapshot,
   lowPowerMode,
   onCameraViewModeChange,
+  onCameraStreamPreferenceChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -328,6 +390,13 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               hasSnapshot={hasSnapshot}
               lowPowerMode={lowPowerMode}
               onChange={onCameraViewModeChange}
+            />
+
+            <CameraStreamPreferenceRow
+              value={cameraStreamPreference}
+              supportedPreferences={supportedStreamPreferences}
+              supportsStreaming={supportsStreaming}
+              onChange={onCameraStreamPreferenceChange}
             />
 
             {hasControls ? (
@@ -394,9 +463,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
                   </DialogSectionRow>
                 )}
               </>
-            ) : (
-              <p className="text-center text-sm text-white/76">{t('camera.settings.noControls')}</p>
-            )}
+            ) : null}
           </div>
 
           <div className="mt-6">

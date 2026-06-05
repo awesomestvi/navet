@@ -12,7 +12,12 @@ const {
   hlsAttachMediaMock,
   hlsInstances,
 } = vi.hoisted(() => {
-  const instances: Array<{ loadSource: ReturnType<typeof vi.fn> }> = [];
+  const instances: Array<{
+    loadSource: ReturnType<typeof vi.fn>;
+    startLoad: ReturnType<typeof vi.fn>;
+    recoverMediaError: ReturnType<typeof vi.fn>;
+    emit: (event: string, ...args: unknown[]) => void;
+  }> = [];
   return {
     getCameraStreamUrlMock: vi.fn(),
     getWebRtcClientConfigurationMock: vi.fn(),
@@ -44,15 +49,32 @@ vi.mock('hls.js', () => {
     static Events = {
       MEDIA_ATTACHED: 'media_attached',
       MANIFEST_PARSED: 'manifest_parsed',
+      LEVEL_LOADED: 'level_loaded',
+      FRAG_LOADED: 'frag_loaded',
       ERROR: 'error',
+    };
+    static ErrorTypes = {
+      MEDIA_ERROR: 'mediaError',
+      NETWORK_ERROR: 'networkError',
     };
 
     loadSource = vi.fn();
+    startLoad = vi.fn();
+    recoverMediaError = vi.fn();
     private attached = false;
     private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
 
     constructor() {
-      hlsInstances.push({ loadSource: this.loadSource });
+      hlsInstances.push({
+        loadSource: this.loadSource,
+        startLoad: this.startLoad,
+        recoverMediaError: this.recoverMediaError,
+        emit: (event: string, ...args: unknown[]) => {
+          for (const handler of this.listeners.get(event) ?? []) {
+            handler(...args);
+          }
+        },
+      });
     }
 
     attachMedia = hlsAttachMediaMock.mockImplementation(() => {
@@ -202,6 +224,31 @@ describe('CameraStreamPlayer', () => {
     expect(screen.queryByRole('status', { name: 'Loading camera feed' })).not.toBeInTheDocument();
   });
 
+  it('clears the HLS loading indicator when playback starts without a loadeddata event', async () => {
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="hls"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="cover"
+        onError={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('status', { name: 'Loading camera feed' })).toBeInTheDocument();
+
+    await waitFor(() => expect(hlsAttachMediaMock).toHaveBeenCalled());
+
+    const video = container.querySelector('video');
+    expect(video).toBeTruthy();
+
+    act(() => {
+      video?.dispatchEvent(new Event('playing'));
+    });
+
+    expect(screen.queryByRole('status', { name: 'Loading camera feed' })).not.toBeInTheDocument();
+  });
+
   it('periodically reconnects mjpeg streams to recover from frozen multipart responses', async () => {
     vi.useFakeTimers();
 
@@ -226,6 +273,13 @@ describe('CameraStreamPlayer', () => {
       expect(container.querySelector('img')?.getAttribute('src')).toBe(
         '/api/camera_proxy_stream/camera.front'
       );
+      expect(screen.getByRole('status', { name: 'Loading camera feed' })).toBeInTheDocument();
+
+      act(() => {
+        container.querySelector('img')?.dispatchEvent(new Event('load'));
+      });
+
+      expect(screen.queryByRole('status', { name: 'Loading camera feed' })).not.toBeInTheDocument();
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(30_000);
@@ -234,6 +288,42 @@ describe('CameraStreamPlayer', () => {
       expect(container.querySelector('img')?.getAttribute('src')).toBe(
         '/api/camera_proxy_stream/camera.front?_mjpeg_t=1'
       );
+      expect(screen.queryByRole('status', { name: 'Loading camera feed' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not mutate signed mjpeg stream urls when forcing a reconnect', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const signedStreamUrl =
+        '/__navet_ha_proxy__/api/camera_proxy_stream/camera.front?authSig=signed-token';
+      const { container } = render(
+        <CameraStreamPlayer
+          entityId={cameraEntityFixtures.normal.entity_id}
+          kind={'mjpeg' as const}
+          posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+          streamResource={{
+            id: 'camera.front:mjpeg',
+            kind: 'mjpeg_stream',
+            cacheKey: 'camera.front:mjpeg',
+            authStrategy: 'same_origin',
+            url: signedStreamUrl,
+          }}
+          fitMode="contain"
+          onError={vi.fn()}
+        />
+      );
+
+      expect(container.querySelector('img')?.getAttribute('src')).toBe(signedStreamUrl);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000);
+      });
+
+      expect(container.querySelector('img')?.getAttribute('src')).toBe(signedStreamUrl);
     } finally {
       vi.useRealTimers();
     }
@@ -326,6 +416,139 @@ describe('CameraStreamPlayer', () => {
     );
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith('hls', { retryable: false }));
+  });
+
+  it('recovers one fatal HLS media error before falling back', async () => {
+    const onError = vi.fn();
+
+    render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="hls"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="cover"
+        onError={onError}
+      />
+    );
+
+    await waitFor(() => expect(hlsAttachMediaMock).toHaveBeenCalled());
+
+    act(() => {
+      hlsInstances[0]?.emit('error', undefined, {
+        fatal: true,
+        type: 'mediaError',
+      });
+    });
+
+    expect(hlsInstances[0]?.recoverMediaError).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
+
+    act(() => {
+      hlsInstances[0]?.emit('error', undefined, {
+        fatal: true,
+        type: 'mediaError',
+      });
+    });
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('hls'));
+  });
+
+  it('retries one fatal HLS network error before falling back', async () => {
+    const onError = vi.fn();
+
+    render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="hls"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="cover"
+        onError={onError}
+      />
+    );
+
+    await waitFor(() => expect(hlsAttachMediaMock).toHaveBeenCalled());
+
+    act(() => {
+      hlsInstances[0]?.emit('error', undefined, {
+        fatal: true,
+        type: 'networkError',
+      });
+    });
+
+    expect(hlsInstances[0]?.startLoad).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
+
+    act(() => {
+      hlsInstances[0]?.emit('error', undefined, {
+        fatal: true,
+        type: 'networkError',
+      });
+    });
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('hls'));
+  });
+
+  it('refreshes a reused HLS resource with a fresh stream URL before falling back', async () => {
+    vi.useFakeTimers();
+    try {
+      const onError = vi.fn();
+      getCameraStreamUrlMock.mockResolvedValueOnce({
+        url: '/api/hls/camera.front/master.m3u8?fresh=1',
+      });
+      resolveCameraStreamResourceMock.mockResolvedValueOnce({
+        url: '/api/hls/camera.front/master.m3u8?fresh=1',
+      });
+
+      render(
+        <CameraStreamPlayer
+          entityId={cameraEntityFixtures.normal.entity_id}
+          kind="hls"
+          posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+          streamResource={{
+            id: 'camera.front:hls',
+            kind: 'hls_stream',
+            cacheKey: 'camera.front:hls',
+            authStrategy: 'same_origin',
+            url: '/api/hls/camera.front/master.m3u8?stale=1',
+          }}
+          fitMode="cover"
+          onError={onError}
+        />
+      );
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(hlsAttachMediaMock).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(getCameraStreamUrlMock).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'hls'
+      );
+      expect(hlsAttachMediaMock).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(onError).toHaveBeenCalledWith('hls');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('starts a WebRTC offer subscription and closes it on unmount', async () => {

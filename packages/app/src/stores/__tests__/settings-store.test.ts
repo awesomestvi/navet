@@ -48,6 +48,7 @@ describe('useSettingsStore', () => {
       .getState()
       .updateSettings({ kioskMode: true, keepDeviceAwake: true, lowPowerMode: true });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
+    useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
     useSettingsStore.getState().resetSettings();
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
@@ -60,6 +61,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraDashboardViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
+    expect(useSettingsStore.getState().cameraStreamPreference).toBe('auto');
+    expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
     expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain('"compactMode":false');
     expect(localStorage.getItem('ha-dashboard-settings')).toBeNull();
   });
@@ -71,6 +74,16 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewModes).toEqual({
       'camera.front_door': 'snapshot',
       'camera.garage': 'auto',
+    });
+  });
+
+  it('stores camera stream preference per entity', () => {
+    useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
+    useSettingsStore.getState().updateCameraStreamPreference('camera.garage', 'mjpeg');
+
+    expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
+      'camera.front_door': 'hls',
+      'camera.garage': 'mjpeg',
     });
   });
 
@@ -96,6 +109,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraDashboardViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewMode).toBe('live');
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
+    expect(useSettingsStore.getState().cameraStreamPreference).toBe('auto');
+    expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
   });
 
   it('rehydrates valid header title settings and trims imported custom text', async () => {
@@ -191,6 +206,32 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewModes).toEqual({
       'camera.front_door': 'snapshot',
       'camera.garage': 'auto',
+    });
+  });
+
+  it('rehydrates valid camera stream preferences only', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: {
+          cameraStreamPreference: 'web_rtc',
+          cameraStreamPreferences: {
+            'camera.front_door': 'hls',
+            'camera.garage': 'mjpeg',
+            'camera.invalid': 'rtsp',
+          },
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().cameraStreamPreference).toBe('web_rtc');
+    expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
+      'camera.front_door': 'hls',
+      'camera.garage': 'mjpeg',
     });
   });
 

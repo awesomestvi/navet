@@ -13,7 +13,13 @@ vi.mock('hls.js', () => {
     static Events = {
       MEDIA_ATTACHED: 'media_attached',
       MANIFEST_PARSED: 'manifest_parsed',
+      LEVEL_LOADED: 'level_loaded',
+      FRAG_LOADED: 'frag_loaded',
       ERROR: 'error',
+    };
+    static ErrorTypes = {
+      MEDIA_ERROR: 'mediaError',
+      NETWORK_ERROR: 'networkError',
     };
 
     private attached = false;
@@ -36,6 +42,8 @@ vi.mock('hls.js', () => {
     }
 
     loadSource = vi.fn();
+    startLoad = vi.fn();
+    recoverMediaError = vi.fn();
     destroy = vi.fn();
   }
 
@@ -85,7 +93,7 @@ describe('CameraStreamPlayer timeout fallback', () => {
     });
   });
 
-  it('marks HLS streams as failed when no frame loads before timeout', async () => {
+  it('refreshes the HLS URL once before failing when no frame or HLS progress occurs before timeout', async () => {
     const onError = vi.fn();
 
     render(
@@ -103,8 +111,35 @@ describe('CameraStreamPlayer timeout fallback', () => {
 
     expect(getCameraStreamUrlMock).toHaveBeenCalledWith('camera.front', 'hls');
 
-    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    expect(getCameraStreamUrlMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(onError).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(20_000);
 
     expect(onError).toHaveBeenCalledWith('hls');
+  });
+
+  it('does not time out an HLS stream that is still making manifest or fragment progress', async () => {
+    const onError = vi.fn();
+
+    render(
+      <CameraStreamPlayer
+        entityId="camera.front"
+        kind="hls"
+        posterUrl="/api/camera_proxy/camera.front"
+        fitMode="cover"
+        onError={onError}
+      />
+    );
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(getCameraStreamUrlMock).toHaveBeenCalledWith('camera.front', 'hls');
+
+    await vi.advanceTimersByTimeAsync(19_000);
+    expect(onError).not.toHaveBeenCalled();
   });
 });

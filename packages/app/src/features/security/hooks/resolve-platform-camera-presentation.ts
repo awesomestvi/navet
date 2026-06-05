@@ -27,6 +27,7 @@ export function usePlatformCameraPresentation(
     entityId: options.entityId,
     cameraState: options.cameraState,
     preferredMode: options.preferredMode,
+    preferredTransport: 'auto',
     snapshotUrl: options.snapshotUrl,
     isStreamCapable: options.isStreamCapable,
     motionDetectionEnabled: options.motionDetectionEnabled,

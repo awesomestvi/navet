@@ -1,5 +1,6 @@
 import { STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { type AppLanguage, getNavigatorLanguage } from '@navet/app/i18n/config';
+import type { PlatformCameraTransport } from '@navet/app/platform/provider-feature-models';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import {
   readLocalStorageWithMigration,
@@ -16,6 +17,7 @@ export type HeaderTitleMode = 'auto_greeting' | 'custom_text' | 'clock';
 export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
+export type CameraStreamPreference = 'auto' | PlatformCameraTransport;
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -49,6 +51,8 @@ export interface UserSettings {
   cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;
   cameraViewModes: Record<string, CameraViewMode>;
+  cameraStreamPreference: CameraStreamPreference;
+  cameraStreamPreferences: Record<string, CameraStreamPreference>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -57,6 +61,7 @@ export interface UserSettings {
 interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
+  updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
@@ -83,6 +88,8 @@ export const defaultSettings: UserSettings = {
   cameraDashboardViewMode: 'live',
   cameraViewMode: 'live',
   cameraViewModes: {},
+  cameraStreamPreference: 'auto',
+  cameraStreamPreferences: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -90,6 +97,10 @@ export const defaultSettings: UserSettings = {
 
 function isCameraViewMode(value: unknown): value is CameraViewMode {
   return value === 'live' || value === 'auto' || value === 'snapshot';
+}
+
+function isCameraStreamPreference(value: unknown): value is CameraStreamPreference {
+  return value === 'auto' || value === 'web_rtc' || value === 'hls' || value === 'mjpeg';
 }
 
 function isHeaderTitleMode(value: unknown): value is HeaderTitleMode {
@@ -127,6 +138,18 @@ function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode
   return Object.fromEntries(
     Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
       isCameraViewMode(entry[1])
+    )
+  );
+}
+
+function normalizeCameraStreamPreferences(value: unknown): Record<string, CameraStreamPreference> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraStreamPreference] =>
+      isCameraStreamPreference(entry[1])
     )
   );
 }
@@ -186,12 +209,24 @@ export const useSettingsStore = create<SettingsState>()(
               : newSettings.cameraViewMode !== undefined
                 ? resolveCameraDashboardViewMode(newSettings.cameraViewMode)
                 : state.cameraViewMode,
+          cameraStreamPreference:
+            newSettings.cameraStreamPreference !== undefined &&
+            isCameraStreamPreference(newSettings.cameraStreamPreference)
+              ? newSettings.cameraStreamPreference
+              : state.cameraStreamPreference,
         })),
       updateCameraViewMode: (entityId, mode) =>
         set((state) => ({
           cameraViewModes: {
             ...state.cameraViewModes,
             [entityId]: mode,
+          },
+        })),
+      updateCameraStreamPreference: (entityId, preference) =>
+        set((state) => ({
+          cameraStreamPreferences: {
+            ...state.cameraStreamPreferences,
+            [entityId]: preference,
           },
         })),
       applyImportedSettings: (importedSettings) => {
@@ -211,6 +246,12 @@ export const useSettingsStore = create<SettingsState>()(
             ? supportedSettings.cameraViewMode
             : resolveCameraDashboardViewMode(supportedSettings.cameraDashboardViewMode),
           cameraViewModes: normalizeCameraViewModes(supportedSettings.cameraViewModes),
+          cameraStreamPreference: isCameraStreamPreference(supportedSettings.cameraStreamPreference)
+            ? supportedSettings.cameraStreamPreference
+            : defaultSettings.cameraStreamPreference,
+          cameraStreamPreferences: normalizeCameraStreamPreferences(
+            supportedSettings.cameraStreamPreferences
+          ),
         }));
       },
       resetSettings: () => set(defaultSettings),
@@ -239,6 +280,10 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.cameraViewMode
             : resolveCameraDashboardViewMode(next.cameraDashboardViewMode, current.cameraViewMode),
           cameraViewModes: normalizeCameraViewModes(next.cameraViewModes),
+          cameraStreamPreference: isCameraStreamPreference(next.cameraStreamPreference)
+            ? next.cameraStreamPreference
+            : current.cameraStreamPreference,
+          cameraStreamPreferences: normalizeCameraStreamPreferences(next.cameraStreamPreferences),
         };
       },
     }

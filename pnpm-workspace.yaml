@@ -10,7 +10,7 @@ allowBuilds:
   sharp: true
 
 overrides:
-  vite: 8.0.13
+  vite: 8.0.14
 
 minimumReleaseAgeExclude:
   - '@rolldown/binding-android-arm64@1.0.1'

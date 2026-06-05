@@ -7,7 +7,7 @@ import type {
   PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import type { CameraViewMode } from '@navet/app/stores/settings-store';
+import type { CameraStreamPreference, CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCameraPlaybackPlan } from '../../hooks/use-camera-playback-plan';
@@ -24,6 +24,7 @@ interface CameraLiveViewerProps {
   cameraState: PlatformCameraState;
   snapshotUrl: string | undefined;
   cameraViewMode: CameraViewMode;
+  preferredTransport: CameraStreamPreference;
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
   initialStreamResource: ResolvedPlatformResource | null;
@@ -75,6 +76,7 @@ export function CameraLiveViewer({
   cameraState,
   snapshotUrl,
   cameraViewMode,
+  preferredTransport,
   isStreamCapable,
   motionDetectionEnabled,
   initialStreamResource,
@@ -93,6 +95,7 @@ export function CameraLiveViewer({
     entityId,
     cameraState,
     preferredMode: supportsCameraStreams ? cameraViewMode : 'snapshot',
+    preferredTransport,
     snapshotUrl: supportsCameraSnapshot ? snapshotUrl : undefined,
     isStreamCapable: supportsCameraStreams && isStreamCapable,
     motionDetectionEnabled,
@@ -101,7 +104,7 @@ export function CameraLiveViewer({
 
   useEffect(() => {
     setFailedStreamTypes([]);
-  }, [cameraState, cameraViewMode, isOpen, isStreamCapable]);
+  }, [cameraState, cameraViewMode, isOpen, isStreamCapable, preferredTransport]);
 
   const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
     if (kind === 'snapshot') {

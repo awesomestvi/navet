@@ -119,7 +119,7 @@ export function useLightColorSync({
   ]);
 
   useEffect(() => {
-    if (!liveEntity || liveEntity.state !== 'on' || isAdjustingTemp) return;
+    if (liveEntity?.state !== 'on' || isAdjustingTemp) return;
     const reportedColor = getReportedColorHex(liveEntity);
     if (reportedColor) {
       setSelectedColor(reportedColor);

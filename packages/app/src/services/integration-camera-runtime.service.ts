@@ -13,6 +13,7 @@ interface CameraPlaybackPlanRequest {
   entityId: string;
   cameraState: 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
   preferredMode: 'auto' | 'live' | 'snapshot';
+  preferredTransport: 'auto' | PlatformCameraTransport;
   snapshotUrl?: string;
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
