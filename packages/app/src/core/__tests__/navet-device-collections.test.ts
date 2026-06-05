@@ -252,4 +252,85 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
       },
     ]);
   });
+
+  it('keeps security sensors even when they share a device with a primary security card', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:lock.front_door',
+        externalId: 'lock.front_door',
+        type: 'lock',
+        name: 'Front Door',
+        attributes: {
+          value: 'locked',
+          deviceId: 'device-front-door',
+          locked: true,
+          securityKind: 'lock',
+          securitySeverity: 'normal',
+        },
+      }),
+      createEntity({
+        canonicalId: 'home_assistant:binary_sensor.front_door_contact',
+        externalId: 'binary_sensor.front_door_contact',
+        type: 'sensor',
+        name: 'Front Door Contact',
+        attributes: {
+          value: 'Open',
+          deviceId: 'device-front-door',
+          entityType: 'Door',
+          deviceClass: 'door',
+          status: 'active',
+          securityKind: 'door',
+          securitySeverity: 'warning',
+        },
+      }),
+    ]);
+
+    expect(devices.locks).toHaveLength(1);
+    expect(devices.sensors).toMatchObject([
+      {
+        id: 'home_assistant:binary_sensor.front_door_contact',
+        securityKind: 'door',
+        securitySeverity: 'warning',
+      },
+    ]);
+  });
+
+  it('keeps security helpers even when they share a device with sensor cards', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:sensor.doorbell_battery',
+        externalId: 'sensor.doorbell_battery',
+        type: 'sensor',
+        name: 'Doorbell Battery',
+        attributes: {
+          value: '81',
+          unit: '%',
+          deviceId: 'device-doorbell',
+        },
+      }),
+      createEntity({
+        canonicalId: 'home_assistant:button.doorbell_chime',
+        externalId: 'button.doorbell_chime',
+        type: 'helper',
+        name: 'Doorbell Chime',
+        attributes: {
+          value: 'Action',
+          deviceId: 'device-doorbell',
+          entityType: 'Button',
+          serviceDomain: 'button',
+          serviceAction: 'press',
+          securityKind: 'button',
+          securitySeverity: 'normal',
+        },
+      }),
+    ]);
+
+    expect(devices.helpers).toMatchObject([
+      {
+        id: 'home_assistant:button.doorbell_chime',
+        securityKind: 'button',
+        securitySeverity: 'normal',
+      },
+    ]);
+  });
 });

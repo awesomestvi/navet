@@ -1,3 +1,4 @@
+import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -8,7 +9,7 @@ import {
   type TemperatureUnit,
 } from '@navet/app/utils/temperature';
 import type { LucideIcon } from 'lucide-react';
-import { Clipboard, Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
+import { Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
 
 export interface HomeStatusSummaryItem {
   id: string;
@@ -20,10 +21,28 @@ export interface HomeStatusSummaryItem {
 }
 
 export interface StatusSummaryOptions {
+  climateEntityIds?: ReadonlySet<string>;
   gridImportTodayKWh?: number;
   routineCount?: number;
   temperatureUnit?: TemperatureUnit;
 }
+
+const NON_AMBIENT_CLIMATE_SENSOR_PATTERN =
+  /\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather)\b/;
+const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
+const SECURITY_CRITICAL_KINDS = new Set(['smoke', 'carbonMonoxide', 'gas', 'safety']);
+const SECURITY_WARNING_KINDS = new Set([
+  'battery',
+  'connectivity',
+  'door',
+  'garageDoor',
+  'lock',
+  'opening',
+  'problem',
+  'tamper',
+  'waterLeak',
+  'window',
+]);
 
 function getNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -139,48 +158,204 @@ function getLightSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
   };
 }
 
+function isSecuritySummaryCandidate(device: DeviceWithType): boolean {
+  if (
+    device.type === 'persons' ||
+    device.securityKind === 'person' ||
+    device.securityKind === 'deviceTracker'
+  ) {
+    return false;
+  }
+
+  return (
+    Boolean(device.securityKind) ||
+    device.type === 'locks' ||
+    device.type === 'covers' ||
+    device.type === 'cameras' ||
+    (device.type === 'sensors' &&
+      [
+        'door',
+        'garage_door',
+        'gas',
+        'moisture',
+        'motion',
+        'occupancy',
+        'opening',
+        'presence',
+        'problem',
+        'safety',
+        'smoke',
+        'tamper',
+        'window',
+      ].includes(String(device.deviceClass ?? '').toLowerCase()))
+  );
+}
+
+function getSecuritySummarySeverity(
+  device: DeviceWithType
+): 'critical' | 'warning' | 'unknown' | 'active' | 'normal' {
+  if (
+    device.type === 'persons' ||
+    device.securityKind === 'person' ||
+    device.securityKind === 'deviceTracker'
+  ) {
+    return device.securitySeverity === 'unknown' ? 'unknown' : 'normal';
+  }
+
+  if (device.securitySeverity) {
+    return device.securitySeverity;
+  }
+
+  if (device.type === 'locks') {
+    return device.state === false ? 'warning' : 'normal';
+  }
+  if (device.type === 'covers') {
+    return getNumber(device.position) !== null && getNumber(device.position) !== 0
+      ? 'warning'
+      : 'normal';
+  }
+  if (device.type === 'sensors') {
+    if (device.status === 'unavailable') {
+      return 'unknown';
+    }
+
+    const securityKind = typeof device.securityKind === 'string' ? device.securityKind : undefined;
+    const normalizedDeviceClass = String(device.deviceClass ?? '').toLowerCase();
+    const sensorKind =
+      securityKind ??
+      (normalizedDeviceClass === 'garage_door'
+        ? 'garageDoor'
+        : normalizedDeviceClass === 'carbon_monoxide'
+          ? 'carbonMonoxide'
+          : normalizedDeviceClass === 'moisture'
+            ? 'waterLeak'
+            : normalizedDeviceClass === 'door'
+              ? 'door'
+              : normalizedDeviceClass === 'window'
+                ? 'window'
+                : normalizedDeviceClass === 'opening'
+                  ? 'opening'
+                  : normalizedDeviceClass === 'problem'
+                    ? 'problem'
+                    : normalizedDeviceClass === 'tamper'
+                      ? 'tamper'
+                      : normalizedDeviceClass === 'battery'
+                        ? 'battery'
+                        : normalizedDeviceClass === 'connectivity'
+                          ? 'connectivity'
+                          : normalizedDeviceClass === 'gas'
+                            ? 'gas'
+                            : normalizedDeviceClass === 'safety'
+                              ? 'safety'
+                              : normalizedDeviceClass === 'smoke'
+                                ? 'smoke'
+                                : normalizedDeviceClass === 'motion'
+                                  ? 'motion'
+                                  : normalizedDeviceClass === 'occupancy'
+                                    ? 'occupancy'
+                                    : normalizedDeviceClass === 'presence'
+                                      ? 'presence'
+                                      : undefined);
+
+    if (device.status === 'active') {
+      if (sensorKind && SECURITY_CRITICAL_KINDS.has(sensorKind)) {
+        return 'critical';
+      }
+      if (sensorKind && SECURITY_WARNING_KINDS.has(sensorKind)) {
+        return 'warning';
+      }
+      return 'active';
+    }
+
+    return 'normal';
+  }
+  if (device.type === 'cameras') {
+    if (device.motionDetected === true) {
+      return 'active';
+    }
+    return 'normal';
+  }
+
+  return 'normal';
+}
+
+function isSecurityAlert(device: DeviceWithType): boolean {
+  const severity = getSecuritySummarySeverity(device);
+  return severity === 'critical' || severity === 'warning' || severity === 'unknown';
+}
+
+function getDeviceIdentitySet(device: DeviceWithType): Set<string> {
+  const ids = [device.id];
+  if ('nativeId' in device && typeof device.nativeId === 'string') {
+    ids.push(device.nativeId);
+  }
+  if ('canonicalId' in device && typeof device.canonicalId === 'string') {
+    ids.push(device.canonicalId);
+  }
+
+  return new Set(ids);
+}
+
+function isOpeningSecurityDevice(device: DeviceWithType): boolean {
+  return (
+    device.type === 'covers' ||
+    (typeof device.securityKind === 'string' && SECURITY_OPENING_KINDS.has(device.securityKind))
+  );
+}
+
+function collapseOverlappingSecurityDevices(devices: DeviceWithType[]): DeviceWithType[] {
+  const openingDevices = devices.filter(isOpeningSecurityDevice);
+  if (openingDevices.length < 2) {
+    return devices;
+  }
+
+  const aggregateDevices = openingDevices
+    .filter(
+      (device): device is DeviceWithType & { type: 'sensors'; groupMembers: string[] } =>
+        device.type === 'sensors' &&
+        Array.isArray(device.groupMembers) &&
+        device.groupMembers.length > 0 &&
+        isSecurityAlert(device)
+    )
+    .sort((left, right) => right.groupMembers.length - left.groupMembers.length);
+
+  if (aggregateDevices.length === 0) {
+    return devices;
+  }
+
+  const removalIds = new Set<string>();
+
+  for (const aggregateDevice of aggregateDevices) {
+    const memberIds = new Set(aggregateDevice.groupMembers);
+
+    for (const device of openingDevices) {
+      if (device.id === aggregateDevice.id || !isSecurityAlert(device)) {
+        continue;
+      }
+
+      const matchesGroupMember = [...getDeviceIdentitySet(device)].some((id) => memberIds.has(id));
+      if (matchesGroupMember) {
+        removalIds.add(device.id);
+      }
+    }
+  }
+
+  if (removalIds.size === 0) {
+    return devices;
+  }
+
+  return devices.filter((device) => !removalIds.has(device.id));
+}
+
 function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | null {
-  const securityDevices = devices.filter(
-    (device) =>
-      device.type === 'locks' ||
-      device.type === 'covers' ||
-      device.type === 'cameras' ||
-      (device.type === 'sensors' &&
-        [
-          'door',
-          'garage_door',
-          'gas',
-          'moisture',
-          'motion',
-          'occupancy',
-          'opening',
-          'presence',
-          'problem',
-          'safety',
-          'smoke',
-          'tamper',
-          'window',
-        ].includes(String(device.deviceClass ?? '').toLowerCase()))
+  const securityDevices = collapseOverlappingSecurityDevices(
+    devices.filter(isSecuritySummaryCandidate)
   );
   if (securityDevices.length === 0) {
     return null;
   }
 
-  const alertCount = securityDevices.filter((device) => {
-    if (device.type === 'locks') {
-      return device.state === false;
-    }
-    if (device.type === 'covers') {
-      return getNumber(device.position) !== null && getNumber(device.position) !== 0;
-    }
-    if (device.type === 'sensors') {
-      return device.status === 'active';
-    }
-    if (device.type === 'cameras') {
-      return device.motionDetected === true;
-    }
-    return false;
-  }).length;
+  const alertCount = securityDevices.filter(isSecurityAlert).length;
 
   return {
     id: 'security',
@@ -228,9 +403,36 @@ function isAmbientTemperatureSensor(
 
   const searchText = `${device.id} ${device.name} ${device.room}`.toLowerCase();
 
-  return !/\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather)\b/.test(
-    searchText
+  return !NON_AMBIENT_CLIMATE_SENSOR_PATTERN.test(searchText);
+}
+
+function isSummaryEligibleClimateDevice(
+  device: DeviceWithType,
+  allowedClimateEntityIds: ReadonlySet<string> | undefined
+): device is (DeviceWithType & { type: 'climate' }) | (DeviceWithType & { type: 'hvac' }) {
+  if (allowedClimateEntityIds && !allowedClimateEntityIds.has(device.id)) {
+    return false;
+  }
+
+  if (!isClimateLikeDevice(device)) {
+    return false;
+  }
+
+  return (
+    getClimateDashboardGroup(device) !== null &&
+    (device.type === 'hvac' || device.serviceDomain !== 'water_heater')
   );
+}
+
+function isSummaryEligibleClimateSensor(
+  device: DeviceWithType,
+  allowedClimateEntityIds: ReadonlySet<string> | undefined
+): device is DeviceWithType & { type: 'sensors' } {
+  if (allowedClimateEntityIds && !allowedClimateEntityIds.has(device.id)) {
+    return false;
+  }
+
+  return getClimateDashboardGroup(device) === 'temperature' && isAmbientTemperatureSensor(device);
 }
 
 function isClimateLikeDevice(
@@ -258,14 +460,13 @@ function getClimateSummary(
   devices: DeviceWithType[],
   options: StatusSummaryOptions = {}
 ): HomeStatusSummaryItem | null {
-  const climateDevices = devices.filter((device) => {
-    if (!isClimateLikeDevice(device)) {
-      return false;
-    }
-
-    return device.type === 'hvac' || device.serviceDomain !== 'water_heater';
-  });
-  const temperatureSensors = devices.filter(isAmbientTemperatureSensor);
+  const allowedClimateEntityIds = options.climateEntityIds;
+  const climateDevices = devices.filter((device) =>
+    isSummaryEligibleClimateDevice(device, allowedClimateEntityIds)
+  );
+  const temperatureSensors = devices.filter((device) =>
+    isSummaryEligibleClimateSensor(device, allowedClimateEntityIds)
+  );
   const values = [
     ...climateDevices.map((device) => {
       let value: number | null;
@@ -315,30 +516,6 @@ function getClimateSummary(
   };
 }
 
-function getRoutineSummary(
-  devices: DeviceWithType[],
-  options: StatusSummaryOptions = {}
-): HomeStatusSummaryItem | null {
-  const activeScripts = devices.filter(
-    (device) =>
-      device.type === 'helpers' && device.serviceDomain === 'script' && device.state === true
-  );
-  const count = options.routineCount ?? activeScripts.length;
-
-  if (count === 0) {
-    return null;
-  }
-
-  return {
-    id: 'routines',
-    title: 'Routines',
-    value: count === 1 ? '1 Routine' : `${count} Routines`,
-    icon: Clipboard,
-    iconColor: '#a78bfa',
-    targetSection: 'tasks',
-  };
-}
-
 function buildStatusSummaryItems(
   devices: DeviceWithType[],
   options: StatusSummaryOptions = {}
@@ -349,7 +526,6 @@ function buildStatusSummaryItems(
     getSecuritySummary(devices),
     getLightSummary(devices),
     getMediaSummary(devices),
-    getRoutineSummary(devices, options),
   ].filter((item): item is HomeStatusSummaryItem => item !== null);
 }
 

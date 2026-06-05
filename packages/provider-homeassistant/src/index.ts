@@ -12,6 +12,7 @@ export * from './homeassistant-mappers';
 export * from './homeassistant-media-feature.service';
 export * from './homeassistant-notification-feature.service';
 export * from './homeassistant-runtime-registration';
+export * from './homeassistant-security-entities';
 export * from './homeassistant-security-feature.service';
 export {
   addHomeAssistantCameraWebRtcCandidate,

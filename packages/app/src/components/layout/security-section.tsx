@@ -31,18 +31,35 @@ export function SecuritySection() {
     () => ({
       ...devices,
       cameras: devices.cameras.filter((device) => !hiddenEntityIdSet.has(device.id)),
+      covers: devices.covers.filter((device) => !hiddenEntityIdSet.has(device.id)),
       locks: devices.locks.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      sensors: devices.sensors,
+      sensors: devices.sensors.filter((device) => !hiddenEntityIdSet.has(device.id)),
+      persons: devices.persons.filter((device) => !hiddenEntityIdSet.has(device.id)),
+      helpers: devices.helpers.filter((device) => !hiddenEntityIdSet.has(device.id)),
     }),
     [devices, hiddenEntityIdSet]
   );
-  const allSecurityDevices = useMemo(
-    () => [
-      ...devices.cameras.map((device) => ({ ...device, type: 'cameras' as const })),
-      ...devices.locks.map((device) => ({ ...device, type: 'locks' as const })),
-    ],
-    [devices.cameras, devices.locks]
+  const model = useMemo(() => buildSecurityCameraDashboardModel(visibleDevices), [visibleDevices]);
+  const allEntitiesModel = useMemo(
+    () =>
+      buildSecurityCameraDashboardModel({
+        cameras: devices.cameras,
+        covers: devices.covers,
+        locks: devices.locks,
+        sensors: devices.sensors,
+        persons: devices.persons,
+        helpers: devices.helpers,
+      }),
+    [
+      devices.cameras,
+      devices.covers,
+      devices.helpers,
+      devices.locks,
+      devices.persons,
+      devices.sensors,
+    ]
   );
+  const allSecurityDevices = useMemo(() => allEntitiesModel.allEntities, [allEntitiesModel]);
   const allSecurityDeviceMap = useMemo(
     () => new Map(allSecurityDevices.map((device) => [device.id, device])),
     [allSecurityDevices]
@@ -73,9 +90,8 @@ export function SecuritySection() {
     [hideEntity, t]
   );
   const { cardSizes, updateCardSize } = useCardState(devices);
-  const model = buildSecurityCameraDashboardModel(visibleDevices);
 
-  if (devices.cameras.length === 0 && devices.locks.length === 0) {
+  if (allEntitiesModel.summary.totalEntities === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
@@ -109,23 +125,17 @@ export function SecuritySection() {
       onToggle={toggleEditMode}
       className="relative"
       actions={addHiddenEntityAction}
+      showCustomizeButton={false}
     >
-      {model.summary.totalCameras > 0 || model.locks.length > 0 ? (
+      {model.summary.totalEntities > 0 ? (
         <SecurityCameraDashboard
           model={model}
           isEditMode={isEditMode}
+          onToggleEditMode={toggleEditMode}
           cardSizes={cardSizes}
           updateCardSize={updateCardSize}
           onRemoveEntity={handleRemoveEntity}
           surface={surface}
-          labels={{
-            primaryTitle: t('security.dashboard.primaryTitle'),
-            stillTitle: t('security.dashboard.stillTitle'),
-            stillDescription: t('security.dashboard.stillDescription'),
-            noPrimaryTitle: t('security.dashboard.noPrimaryTitle'),
-            noPrimaryDescription: t('security.dashboard.noPrimaryDescription'),
-            locksTitle: t('sections.locks.title'),
-          }}
         />
       ) : (
         <div className="flex h-full items-center justify-center p-6 pt-14">

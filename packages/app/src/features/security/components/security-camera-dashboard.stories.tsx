@@ -170,28 +170,6 @@ const securitySensors: SensorDevice[] = [
   },
 ];
 
-const labels = {
-  title: 'Security Cameras',
-  subtitle: 'Camera overview',
-  cameras: 'Cameras',
-  live: 'Live',
-  idle: 'Idle',
-  unavailable: 'Unavailable',
-  motion: 'Motion',
-  locks: 'Locks secure',
-  openSensors: 'Open sensors',
-  alarms: 'Active alarms',
-  sirens: 'Active sirens',
-  primaryTitle: 'Camera feeds',
-  stillTitle: 'Still image cameras',
-  stillDescription:
-    'These cameras look like maps or still-image utilities, so Navet keeps them separate from security feeds.',
-  noPrimaryTitle: 'No live security feeds',
-  noPrimaryDescription:
-    'Navet found camera entities, but none look like live security cameras yet.',
-  locksTitle: 'Smart Locks',
-};
-
 interface SecurityDashboardStoryProps {
   cameras: CameraDevice[];
   locks: LockDevice[];
@@ -211,7 +189,6 @@ function SecurityDashboardStory({ cameras, locks, sensors }: SecurityDashboardSt
         cardSizes={{}}
         updateCardSize={noopCardSizeChange}
         surface={surface}
-        labels={labels}
       />
     </div>
   );

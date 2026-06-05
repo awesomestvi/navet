@@ -9,7 +9,7 @@ import { useI18n } from '@navet/app/hooks';
 import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { getLegacyReducedEffectsFlags } from '@navet/app/utils/effects-quality';
-import { Image as ImageIcon, Upload, X } from 'lucide-react';
+import { AlertTriangle, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsItem } from './settings-section-shell';
@@ -81,6 +81,59 @@ export function AppearanceThemeAccentItem({
         followSystemTheme={followSystemTheme}
         onFollowSystemThemeChange={setFollowSystemTheme}
       />
+    </SettingsItem>
+  );
+}
+
+export function AppearanceSpaceModeItem({ controller }: { controller: SettingsSectionController }) {
+  const { t } = useI18n();
+  const { dashboardSpaceMode, styles, updateSettings } = controller;
+  const showMoreSpaceWarning = dashboardSpaceMode === 'more_space';
+
+  return (
+    <SettingsItem
+      title={t('settings.dashboard.spaceMode.title')}
+      description={t('settings.dashboard.spaceMode.description')}
+      styles={styles}
+    >
+      <div className="space-y-3">
+        <fieldset className="w-fit">
+          <legend className="sr-only">{t('settings.dashboard.spaceMode.title')}</legend>
+          <div className="flex flex-wrap gap-2">
+            {[
+              {
+                value: 'default' as const,
+                label: t('settings.dashboard.spaceMode.default'),
+              },
+              {
+                value: 'more_space' as const,
+                label: t('settings.dashboard.spaceMode.moreSpace'),
+              },
+            ].map((option) => {
+              const isActive = dashboardSpaceMode === option.value;
+
+              return (
+                <InteractivePill
+                  key={option.value}
+                  active={isActive}
+                  size="small"
+                  onClick={() => updateSettings({ dashboardSpaceMode: option.value })}
+                  aria-pressed={isActive}
+                >
+                  {option.label}
+                </InteractivePill>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {showMoreSpaceWarning ? (
+          <div className={`flex items-start gap-2 text-sm ${styles.subtleColor}`}>
+            <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{t('settings.dashboard.spaceMode.warningBody')}</p>
+          </div>
+        ) : null}
+      </div>
     </SettingsItem>
   );
 }

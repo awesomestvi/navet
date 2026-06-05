@@ -103,6 +103,14 @@ export const itMessages = {
   'settings.dashboard.headerTitle.dateTime': 'Data e ora',
   'settings.dashboard.headerTitle.customPlaceholder': 'Bentornato a casa',
   'settings.dashboard.headerTitle.customHint': 'Lascia vuoto per tornare al saluto automatico.',
+  'settings.dashboard.spaceMode.title': 'Uso dello spazio',
+  'settings.dashboard.spaceMode.description':
+    'Scegli tra il layout dashboard standard e un layout tablet più denso con più colonne, schede con zoom adattivo e padding laterale ridotto.',
+  'settings.dashboard.spaceMode.default': 'Predefinito',
+  'settings.dashboard.spaceMode.moreSpace': 'Più spazio',
+  'settings.dashboard.spaceMode.warningTitle': 'Avviso per i tocchi',
+  'settings.dashboard.spaceMode.warningBody':
+    'Layout più denso. Alcuni controlli touch possono essere più difficili da usare.',
   'settings.dashboard.homeSummaryBar.title': 'Riepilogo Home',
   'settings.dashboard.homeSummaryBar.description':
     'Mostra riepiloghi compatti per clima, luci, sicurezza e media sopra la dashboard Home.',
@@ -823,8 +831,7 @@ export const itMessages = {
     'Usa l’URL di Home Assistant, poi completa l’accesso con OAuth.',
   'login.providers.homey.detail':
     'Accedi con Homey Cloud, poi scegli quale Homey deve usare Navet.',
-  'login.providers.openhab.detail':
-    'Collegati direttamente al tuo server openHAB usando il suo URL di base.',
+  'login.providers.openhab.detail': 'Collegati direttamente a openHAB con il suo URL.',
   'login.providers.unavailable.detail':
     'L’impalcatura del provider esiste, ma l’accesso non è ancora disponibile.',
   'login.actions.continue': 'Continua',

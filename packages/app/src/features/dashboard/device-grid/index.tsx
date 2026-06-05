@@ -1,13 +1,12 @@
-import {
-  type CardSize,
-  getCardGridAutoRowsStyle,
-  getDashboardGridColumnCount,
-} from '@navet/app/components/shared/card-size-selector';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useSearch } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { DeviceGridProps } from './types';
 
@@ -32,6 +31,9 @@ export const DeviceGrid = memo(function DeviceGrid({
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
+  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
+    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
 
   const handleSizeChange = useCallback(
@@ -82,59 +84,62 @@ export const DeviceGrid = memo(function DeviceGrid({
   const visibleCards = allCards.slice(0, visibleCount);
 
   const gridContent = (
-    <div
-      className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
-      style={
-        {
-          ...getCardGridAutoRowsStyle(breakpointCols),
-          gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
-        } as CSSProperties
-      }
-    >
-      {visibleCards.map((item) => {
-        if (item.type === 'device') {
-          const device = deviceMap.get(item.id);
-          if (!device?.id) return null;
+    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+      <div
+        ref={innerRef}
+        className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+        style={innerContainerStyle}
+      >
+        <div
+          className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
+          style={gridStyle as CSSProperties}
+        >
+          {visibleCards.map((item) => {
+            if (item.type === 'device') {
+              const device = deviceMap.get(item.id);
+              if (!device?.id) return null;
 
-          const size = cardSizes[device.id] || (device.size as CardSize);
+              const size = cardSizes[device.id] || (device.size as CardSize);
 
-          return (
-            <DashboardCardItem
-              key={`device-${device.id}`}
-              id={device.id}
-              device={device}
-              size={size}
-              isEditMode={isEditMode}
-              handleSizeChange={handleSizeChange}
-              onRemoveEntity={onRemoveEntity}
-              allowEntityRemoval={allowEntityRemoval}
-              usesHideAction={usesHideAction}
-              headerSubtitleOverride={getDeviceHeaderSubtitle?.(device)}
-            />
-          );
-        }
+              return (
+                <DashboardCardItem
+                  key={`device-${device.id}`}
+                  id={device.id}
+                  device={device}
+                  size={size}
+                  isEditMode={isEditMode}
+                  handleSizeChange={handleSizeChange}
+                  onRemoveEntity={onRemoveEntity}
+                  allowEntityRemoval={allowEntityRemoval}
+                  usesHideAction={usesHideAction}
+                  headerSubtitleOverride={getDeviceHeaderSubtitle?.(device)}
+                />
+              );
+            }
 
-        const { card } = item;
-        if (!card?.id) return null;
+            const { card } = item;
+            if (!card?.id) return null;
 
-        const size = cardSizes[card.id] || card.size;
+            const size = cardSizes[card.id] || card.size;
 
-        return (
-          <DashboardCardItem
-            key={`card-${card.id}`}
-            id={card.id}
-            card={card}
-            size={size}
-            isEditMode={isEditMode}
-            handleSizeChange={handleSizeChange}
-            onDeleteCard={onDeleteCard}
-            onUpdateCard={onUpdateCard}
-            onRemoveEntity={onRemoveEntity}
-            allowEntityRemoval={allowEntityRemoval}
-            usesHideAction={usesHideAction}
-          />
-        );
-      })}
+            return (
+              <DashboardCardItem
+                key={`card-${card.id}`}
+                id={card.id}
+                card={card}
+                size={size}
+                isEditMode={isEditMode}
+                handleSizeChange={handleSizeChange}
+                onDeleteCard={onDeleteCard}
+                onUpdateCard={onUpdateCard}
+                onRemoveEntity={onRemoveEntity}
+                allowEntityRemoval={allowEntityRemoval}
+                usesHideAction={usesHideAction}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
   return (

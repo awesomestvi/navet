@@ -45,4 +45,10 @@ describe('SettingsDashboardSection', () => {
     expect(useSettingsStore.getState().headerTitleMode).toBe('clock');
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
   });
+
+  it('does not render space usage controls in dashboard settings', () => {
+    renderWithProviders(<TestSection />);
+
+    expect(screen.queryByText('Space usage')).not.toBeInTheDocument();
+  });
 });

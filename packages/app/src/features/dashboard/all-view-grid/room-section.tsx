@@ -1,8 +1,4 @@
-import {
-  type CardSize,
-  getCardGridAutoRowsStyle,
-  getDashboardGridColumnCount,
-} from '@navet/app/components/shared/card-size-selector';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useI18n } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -11,6 +7,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { type CSSProperties, memo, startTransition, useEffect, useRef, useState } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
 
@@ -55,6 +52,9 @@ export const RoomSection = memo(function RoomSection({
 }: RoomSectionProps) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
+  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
+    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(isEditMode);
@@ -94,58 +94,61 @@ export const RoomSection = memo(function RoomSection({
   const placeholderHeight = estimatedRows * 120;
   const visibleOrderedIds = orderedIds.slice(0, visibleCount);
   const gridContent = (
-    <div
-      className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
-      style={
-        {
-          ...getCardGridAutoRowsStyle(breakpointCols),
-          gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
-        } as CSSProperties
-      }
-    >
-      {visibleOrderedIds.map((id) => {
-        const device = deviceMap.get(id);
-        if (device) {
-          const size = cardSizes[device.id] || (device.size as CardSize);
+    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+      <div
+        ref={innerRef}
+        className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+        style={innerContainerStyle}
+      >
+        <div
+          className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
+          style={gridStyle as CSSProperties}
+        >
+          {visibleOrderedIds.map((id) => {
+            const device = deviceMap.get(id);
+            if (device) {
+              const size = cardSizes[device.id] || (device.size as CardSize);
 
-          return (
-            <DashboardCardItem
-              key={device.id}
-              id={device.id}
-              device={device}
-              size={size}
-              isEditMode={isEditMode}
-              handleSizeChange={handleSizeChange}
-              onRemoveEntity={onRemoveEntity}
-              allowEntityRemoval={allowEntityRemoval}
-              usesHideAction={usesHideAction}
-            />
-          );
-        }
+              return (
+                <DashboardCardItem
+                  key={device.id}
+                  id={device.id}
+                  device={device}
+                  size={size}
+                  isEditMode={isEditMode}
+                  handleSizeChange={handleSizeChange}
+                  onRemoveEntity={onRemoveEntity}
+                  allowEntityRemoval={allowEntityRemoval}
+                  usesHideAction={usesHideAction}
+                />
+              );
+            }
 
-        const card = customCardMap.get(id);
-        if (!card) {
-          return null;
-        }
+            const card = customCardMap.get(id);
+            if (!card) {
+              return null;
+            }
 
-        const size = cardSizes[card.id] || card.size;
+            const size = cardSizes[card.id] || card.size;
 
-        return (
-          <DashboardCardItem
-            key={card.id}
-            id={card.id}
-            card={card}
-            size={size}
-            isEditMode={isEditMode}
-            handleSizeChange={handleSizeChange}
-            onDeleteCard={onDeleteCard}
-            onUpdateCard={onUpdateCard}
-            onRemoveEntity={onRemoveEntity}
-            allowEntityRemoval={allowEntityRemoval}
-            usesHideAction={usesHideAction}
-          />
-        );
-      })}
+            return (
+              <DashboardCardItem
+                key={card.id}
+                id={card.id}
+                card={card}
+                size={size}
+                isEditMode={isEditMode}
+                handleSizeChange={handleSizeChange}
+                onDeleteCard={onDeleteCard}
+                onUpdateCard={onUpdateCard}
+                onRemoveEntity={onRemoveEntity}
+                allowEntityRemoval={allowEntityRemoval}
+                usesHideAction={usesHideAction}
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 

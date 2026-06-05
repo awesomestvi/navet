@@ -56,6 +56,13 @@ export const zhMessages = {
   'settings.dashboard.headerTitle.dateTime': '日期和时间',
   'settings.dashboard.headerTitle.customPlaceholder': '欢迎回家',
   'settings.dashboard.headerTitle.customHint': '留空时会回退到自动问候语。',
+  'settings.dashboard.spaceMode.title': '空间使用',
+  'settings.dashboard.spaceMode.description':
+    '可在标准仪表板布局与更紧凑的平板布局之间切换。后者会提供更多列、自适应缩放卡片和更小的左右内边距。',
+  'settings.dashboard.spaceMode.default': '默认',
+  'settings.dashboard.spaceMode.moreSpace': '更多空间',
+  'settings.dashboard.spaceMode.warningTitle': '触控提示',
+  'settings.dashboard.spaceMode.warningBody': '布局更紧凑，部分触控操作会更难用。',
   'settings.dashboard.homeSummaryBar.title': '首页摘要栏',
   'settings.dashboard.homeSummaryBar.description':
     '在首页仪表板上方显示气候、灯光、安防和媒体的紧凑摘要。',
@@ -264,7 +271,7 @@ export const zhMessages = {
     '继续使用 {provider} Cloud OAuth，然后选择 Navet 应使用哪个 {provider}。',
   'login.providers.home_assistant.detail': '使用你的 Home Assistant URL，然后完成 OAuth 登录。',
   'login.providers.homey.detail': '使用 Homey Cloud 登录，然后选择 Navet 应使用的 Homey。',
-  'login.providers.openhab.detail': '使用基础 URL 直接连接到你的 openHAB 服务器。',
+  'login.providers.openhab.detail': '使用 URL 直接连接到 openHAB。',
   'login.providers.unavailable.detail': '提供商框架已存在，但登录功能暂不可用。',
   'login.actions.continue': '继续',
   'login.actions.back': '返回',

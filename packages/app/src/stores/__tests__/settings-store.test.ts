@@ -10,6 +10,7 @@ describe('useSettingsStore', () => {
 
   it('updates partial settings', () => {
     useSettingsStore.getState().updateSettings({
+      dashboardSpaceMode: 'more_space',
       compactMode: true,
       headerCustomText: 'Movie night',
       headerTitleMode: 'custom_text',
@@ -20,6 +21,7 @@ describe('useSettingsStore', () => {
     });
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
     expect(useSettingsStore.getState().headerCustomText).toBe('Movie night');
     expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().kioskMode).toBe(true);
@@ -31,6 +33,7 @@ describe('useSettingsStore', () => {
   it('applies imported settings wholesale', () => {
     useSettingsStore.getState().applyImportedSettings({
       ...defaultSettings,
+      dashboardSpaceMode: 'more_space',
       headerCustomText: 'Relax',
       headerTitleMode: 'custom_text',
       username: 'Vishal',
@@ -38,6 +41,7 @@ describe('useSettingsStore', () => {
     });
 
     expect(useSettingsStore.getState().headerCustomText).toBe('Relax');
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
     expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().username).toBe('Vishal');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
@@ -53,6 +57,7 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
     expect(useSettingsStore.getState().kioskMode).toBe(defaultSettings.kioskMode);
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe(defaultSettings.dashboardSpaceMode);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(defaultSettings.keepDeviceAwake);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(defaultSettings.showHomeSummaryBar);
     expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
@@ -102,6 +107,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().headerTitleMode).toBe(defaultSettings.headerTitleMode);
     expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
     expect(useSettingsStore.getState().compactMode).toBe(true);
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('default');
     expect(useSettingsStore.getState().kioskMode).toBe(false);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(false);
     expect(useSettingsStore.getState().language).toBe('sv');
@@ -168,6 +174,21 @@ describe('useSettingsStore', () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().kioskMode).toBe(true);
+  });
+
+  it('rehydrates dashboard space mode from persisted settings', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: { dashboardSpaceMode: 'more_space' },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
   });
 
   it('rehydrates keep-awake mode from persisted settings', async () => {

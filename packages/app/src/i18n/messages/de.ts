@@ -95,6 +95,14 @@ export const deMessages = {
   'settings.dashboard.headerTitle.customPlaceholder': 'Willkommen zu Hause',
   'settings.dashboard.headerTitle.customHint':
     'Leer lassen, um zur automatischen Begrüßung zurückzufallen.',
+  'settings.dashboard.spaceMode.title': 'Platznutzung',
+  'settings.dashboard.spaceMode.description':
+    'Wähle zwischen dem Standard-Dashboardlayout und einem dichteren Tablet-Layout mit mehr Spalten, Zoom-anpassenden Karten und schmalerem Seitenabstand.',
+  'settings.dashboard.spaceMode.default': 'Standard',
+  'settings.dashboard.spaceMode.moreSpace': 'Mehr Platz',
+  'settings.dashboard.spaceMode.warningTitle': 'Warnung zu Touch-Zielen',
+  'settings.dashboard.spaceMode.warningBody':
+    'Dichteres Layout. Einige Touch-Bedienelemente sind schwerer zu nutzen.',
   'settings.dashboard.homeSummaryBar.title': 'Home-Zusammenfassung',
   'settings.dashboard.homeSummaryBar.description':
     'Zeigt kompakte Zusammenfassungen für Klima, Licht, Sicherheit und Medien über dem Home-Dashboard.',
@@ -601,8 +609,7 @@ export const deMessages = {
     'Verwende deine Home-Assistant-URL und schließe dann die Anmeldung mit OAuth ab.',
   'login.providers.homey.detail':
     'Melde dich mit Homey Cloud an und wähle dann das Homey aus, das Navet verwenden soll.',
-  'login.providers.openhab.detail':
-    'Verbinde dich direkt mit deinem openHAB-Server über seine Basis-URL.',
+  'login.providers.openhab.detail': 'Verbinde dich direkt mit openHAB per URL.',
   'login.providers.unavailable.detail':
     'Das Provider-Grundgerüst ist vorhanden, aber die Anmeldung ist noch nicht verfügbar.',
   'login.actions.continue': 'Weiter',

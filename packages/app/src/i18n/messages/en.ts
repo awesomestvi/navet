@@ -91,6 +91,14 @@ export const enMessages = {
   'settings.dashboard.headerTitle.customPlaceholder': 'Welcome home',
   'settings.dashboard.headerTitle.customHint':
     'Leave it blank to fall back to the automatic greeting.',
+  'settings.dashboard.spaceMode.title': 'Space usage',
+  'settings.dashboard.spaceMode.description':
+    'Choose between the standard dashboard layout and a denser tablet layout with more columns, zoom-to-fit cards, and tighter side padding.',
+  'settings.dashboard.spaceMode.default': 'Default',
+  'settings.dashboard.spaceMode.moreSpace': 'More space',
+  'settings.dashboard.spaceMode.warningTitle': 'Touch target warning',
+  'settings.dashboard.spaceMode.warningBody':
+    'Denser layout. Some touch controls may be harder to use.',
   'settings.dashboard.homeSummaryBar.title': 'Summary bar',
   'settings.dashboard.homeSummaryBar.description':
     'Show compact energy, climate, lights, security, media, and routine summaries above dashboards.',
@@ -656,8 +664,7 @@ export const enMessages = {
     'Use your Home Assistant URL, then finish sign-in with OAuth.',
   'login.providers.homey.detail':
     'Sign in with Homey Cloud, then choose the Homey Navet should use.',
-  'login.providers.openhab.detail':
-    'Connect straight to your openHAB server with its base URL and credentials.',
+  'login.providers.openhab.detail': 'Connect directly to openHAB with its URL and credentials.',
   'login.providers.unavailable.detail':
     'Provider scaffolding exists, but login is not available yet.',
   'login.actions.continue': 'Continue',

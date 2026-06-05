@@ -7,6 +7,7 @@ interface SectionCustomizeShellProps {
   children: ReactNode;
   className?: string;
   actions?: ReactNode;
+  showCustomizeButton?: boolean;
 }
 
 export function SectionCustomizeShell({
@@ -15,12 +16,15 @@ export function SectionCustomizeShell({
   children,
   className = 'relative',
   actions,
+  showCustomizeButton = true,
 }: SectionCustomizeShellProps) {
   return (
     <div className={className}>
       <div className="absolute right-0 top-0 z-10 flex items-center gap-2">
         {actions}
-        <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggle} />
+        {showCustomizeButton ? (
+          <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggle} />
+        ) : null}
       </div>
       {children}
     </div>

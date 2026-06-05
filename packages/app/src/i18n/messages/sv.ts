@@ -93,6 +93,14 @@ export const svMessages = {
   'settings.dashboard.headerTitle.customPlaceholder': 'Välkommen hem',
   'settings.dashboard.headerTitle.customHint':
     'Lämna tomt för att falla tillbaka till den automatiska hälsningen.',
+  'settings.dashboard.spaceMode.title': 'Ytanvändning',
+  'settings.dashboard.spaceMode.description':
+    'Välj mellan standardlayouten för dashboarden och en tätare surfplattelayout med fler kolumner, zoom-anpassade kort och mindre sidopadding.',
+  'settings.dashboard.spaceMode.default': 'Standard',
+  'settings.dashboard.spaceMode.moreSpace': 'Mer plats',
+  'settings.dashboard.spaceMode.warningTitle': 'Varning för touchytor',
+  'settings.dashboard.spaceMode.warningBody':
+    'Tätare layout. Vissa touchkontroller kan bli svårare att använda.',
   'settings.dashboard.homeSummaryBar.title': 'Hemöversikt',
   'settings.dashboard.homeSummaryBar.description':
     'Visa kompakta sammanfattningar för klimat, belysning, säkerhet och media ovanför hemdashboarden.',
@@ -595,7 +603,7 @@ export const svMessages = {
     'Använd din Home Assistant-URL och slutför sedan inloggningen med OAuth.',
   'login.providers.homey.detail':
     'Logga in med Homey Cloud och välj sedan vilken Homey Navet ska använda.',
-  'login.providers.openhab.detail': 'Anslut direkt till din openHAB-server med dess bas-URL.',
+  'login.providers.openhab.detail': 'Anslut direkt till openHAB med dess URL.',
   'login.providers.unavailable.detail':
     'Provider-stöd finns påbörjat, men inloggning är inte tillgänglig ännu.',
   'login.actions.continue': 'Fortsätt',

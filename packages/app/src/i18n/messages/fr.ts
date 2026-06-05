@@ -95,6 +95,14 @@ export const frMessages = {
   'settings.dashboard.headerTitle.customPlaceholder': 'Bon retour chez vous',
   'settings.dashboard.headerTitle.customHint':
     'Laissez vide pour revenir à la salutation automatique.',
+  'settings.dashboard.spaceMode.title': 'Usage de l’espace',
+  'settings.dashboard.spaceMode.description':
+    'Choisissez entre la mise en page standard du tableau de bord et une version tablette plus dense avec plus de colonnes, des cartes ajustées par zoom et moins de padding latéral.',
+  'settings.dashboard.spaceMode.default': 'Par défaut',
+  'settings.dashboard.spaceMode.moreSpace': 'Plus d’espace',
+  'settings.dashboard.spaceMode.warningTitle': 'Avertissement tactile',
+  'settings.dashboard.spaceMode.warningBody':
+    'Mise en page plus dense. Certains contrôles tactiles seront moins faciles à utiliser.',
   'settings.dashboard.homeSummaryBar.title': 'Résumé accueil',
   'settings.dashboard.homeSummaryBar.description':
     'Affiche des résumés compacts pour climat, éclairage, sécurité et médias au-dessus du tableau de bord d’accueil.',
@@ -602,8 +610,7 @@ export const frMessages = {
     'Utilisez votre URL Home Assistant, puis terminez la connexion avec OAuth.',
   'login.providers.homey.detail':
     'Connectez-vous avec Homey Cloud, puis choisissez le Homey que Navet doit utiliser.',
-  'login.providers.openhab.detail':
-    'Connectez-vous directement à votre serveur openHAB avec son URL de base.',
+  'login.providers.openhab.detail': 'Connectez-vous directement à openHAB avec son URL.',
   'login.providers.unavailable.detail':
     'Le squelette du provider existe, mais la connexion n’est pas encore disponible.',
   'login.actions.continue': 'Continuer',

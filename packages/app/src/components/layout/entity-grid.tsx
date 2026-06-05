@@ -1,14 +1,12 @@
-import {
-  type CardSize,
-  getCardGridAutoRowsStyle,
-  getCardSpanClass,
-  getDashboardGridColumnCount,
-} from '@navet/app/components/shared/card-size-selector';
+import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/dashboard';
+import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useCardState, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { type CSSProperties, memo, type ReactNode } from 'react';
 
@@ -40,6 +38,9 @@ export const EntityGrid = memo(function EntityGrid({
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const breakpointCols = useBreakpointCols();
+  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
+    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
   const { cardSizes, updateCardSize } = useCardState(rawDevices, cardSizeStorageKey);
 
   return (
@@ -54,33 +55,36 @@ export const EntityGrid = memo(function EntityGrid({
         {headerAction}
       </div>
       <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
-        <div
-          className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-          style={
-            {
-              ...getCardGridAutoRowsStyle(breakpointCols),
-              gridTemplateColumns: `repeat(${getDashboardGridColumnCount(breakpointCols)}, minmax(0, 1fr))`,
-            } as CSSProperties
-          }
-        >
-          {devices.map((device) => {
-            const size = (cardSizes[device.id] ?? device.size) as CardSize;
+        <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+          <div
+            ref={innerRef}
+            className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+            style={innerContainerStyle}
+          >
+            <div
+              className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+              style={gridStyle as CSSProperties}
+            >
+              {devices.map((device) => {
+                const size = (cardSizes[device.id] ?? device.size) as CardSize;
 
-            return (
-              <div key={device.id} className={getCardSpanClass(size)}>
-                <DashboardCardItem
-                  id={device.id}
-                  device={device}
-                  size={size}
-                  isEditMode={isEditMode}
-                  handleSizeChange={updateCardSize}
-                  onRemoveEntity={onRemoveEntity}
-                  allowEntityRemoval={allowEntityRemoval}
-                  usesHideAction={usesHideAction}
-                />
-              </div>
-            );
-          })}
+                return (
+                  <div key={device.id} className={getCardSpanClass(size)}>
+                    <DashboardCardItem
+                      id={device.id}
+                      device={device}
+                      size={size}
+                      isEditMode={isEditMode}
+                      handleSizeChange={updateCardSize}
+                      onRemoveEntity={onRemoveEntity}
+                      allowEntityRemoval={allowEntityRemoval}
+                      usesHideAction={usesHideAction}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </DashboardEditActions>
     </section>

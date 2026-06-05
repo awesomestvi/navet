@@ -14,6 +14,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
 export type HeaderTitleMode = 'auto_greeting' | 'custom_text' | 'clock';
+export type DashboardSpaceMode = 'default' | 'more_space';
 export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
@@ -44,6 +45,7 @@ export interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
@@ -81,6 +83,7 @@ export const defaultSettings: UserSettings = {
   defaultView: 'all',
   compactMode: false,
   kioskMode: false,
+  dashboardSpaceMode: 'default',
   disableAnimations: false,
   lowPowerMode: false,
   effectsQuality: 'high',
@@ -105,6 +108,10 @@ function isCameraStreamPreference(value: unknown): value is CameraStreamPreferen
 
 function isHeaderTitleMode(value: unknown): value is HeaderTitleMode {
   return value === 'auto_greeting' || value === 'custom_text' || value === 'clock';
+}
+
+function isDashboardSpaceMode(value: unknown): value is DashboardSpaceMode {
+  return value === 'default' || value === 'more_space';
 }
 
 export function normalizeHeaderCustomText(value: unknown): string {
@@ -199,6 +206,11 @@ export const useSettingsStore = create<SettingsState>()(
             newSettings.headerCustomText !== undefined
               ? normalizeHeaderCustomText(newSettings.headerCustomText)
               : state.headerCustomText,
+          dashboardSpaceMode:
+            newSettings.dashboardSpaceMode !== undefined &&
+            isDashboardSpaceMode(newSettings.dashboardSpaceMode)
+              ? newSettings.dashboardSpaceMode
+              : state.dashboardSpaceMode,
           cameraDashboardViewMode:
             newSettings.cameraDashboardViewMode !== undefined
               ? resolveCameraDashboardViewMode(newSettings.cameraDashboardViewMode)
@@ -238,6 +250,9 @@ export const useSettingsStore = create<SettingsState>()(
             ? supportedSettings.headerTitleMode
             : defaultSettings.headerTitleMode,
           headerCustomText: normalizeHeaderCustomText(supportedSettings.headerCustomText),
+          dashboardSpaceMode: isDashboardSpaceMode(supportedSettings.dashboardSpaceMode)
+            ? supportedSettings.dashboardSpaceMode
+            : defaultSettings.dashboardSpaceMode,
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             supportedSettings.cameraDashboardViewMode,
             supportedSettings.cameraViewMode
@@ -272,6 +287,9 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.headerTitleMode
             : current.headerTitleMode,
           headerCustomText: normalizeHeaderCustomText(next.headerCustomText),
+          dashboardSpaceMode: isDashboardSpaceMode(next.dashboardSpaceMode)
+            ? next.dashboardSpaceMode
+            : current.dashboardSpaceMode,
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             next.cameraDashboardViewMode,
             next.cameraViewMode

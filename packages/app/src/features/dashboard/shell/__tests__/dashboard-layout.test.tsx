@@ -77,6 +77,21 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
   });
 
+  it('uses tighter shell padding in more-space mode', () => {
+    setPath('/dashboard');
+    useSettingsStore.getState().updateSettings({ dashboardSpaceMode: 'more_space' });
+
+    renderWithProviders(
+      <DashboardLayout>
+        <main>Dashboard content</main>
+      </DashboardLayout>
+    );
+
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('px-2.5');
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('md:px-4');
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('lg:px-5');
+  });
+
   it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', () => {
     setPath('/dashboard');
     useSettingsStore.getState().updateSettings({ kioskMode: true });

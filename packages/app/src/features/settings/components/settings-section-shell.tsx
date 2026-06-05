@@ -99,13 +99,6 @@ export function SettingsHero({ navItems, styles }: SettingsHeroProps) {
     <DashboardHeroSection
       accentColor={styles.accentColor}
       surface={surface}
-      eyebrow={
-        <p
-          className={`text-[11px] font-semibold uppercase tracking-[0.2em] md:text-xs md:tracking-[0.24em] ${styles.subtleColor}`}
-        >
-          {t('settings.hero.eyebrow')}
-        </p>
-      }
       title={t('settings.hero.title')}
       description={t('settings.hero.description')}
       actions={
@@ -122,6 +115,7 @@ export function SettingsHero({ navItems, styles }: SettingsHeroProps) {
           ))}
         </div>
       }
+      actionsClassName="!mt-2 md:!mt-0"
     />
   );
 }

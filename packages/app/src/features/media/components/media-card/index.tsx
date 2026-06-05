@@ -15,6 +15,7 @@ import { MediaMediumView } from '../media/media-medium-view';
 import { MediaSmallView } from '../media/media-small-view';
 import { MediaTvView } from '../media/media-tv-view';
 import { getMediaEntityTypeKey } from './get-media-entity-type-key';
+import { resolveMediaPlayerName } from './resolve-media-player-name';
 import { useMediaCardController } from './use-media-card-controller';
 
 const MediaDialog = lazy(async () => {
@@ -135,6 +136,12 @@ export const MediaCard = memo(function MediaCard({
 }: MediaCardProps) {
   const { theme } = useTheme();
   const mediaEntityTypeKey = getMediaEntityTypeKey(entityType, deviceClass);
+  const resolvedPlayerName = resolveMediaPlayerName({
+    entityId: id,
+    entityName: name,
+    room: _room,
+    entityType,
+  });
   const cardShell = getCardShellSurfaceTokens(theme);
   const surface = getThemeSurfaceTokens(theme);
   const mediaSize = getCompactCardSize(size);
@@ -186,7 +193,7 @@ export const MediaCard = memo(function MediaCard({
     volume,
   } = useMediaCardController({
     entityId: id,
-    entityName: name,
+    entityName: resolvedPlayerName,
     deviceClass,
     entityPicture,
     artworkKey: [entityPicture, title, artist].filter(Boolean).join('::'),
@@ -252,7 +259,7 @@ export const MediaCard = memo(function MediaCard({
     artwork: resolvedAlbumArt,
     artworkResource,
     onArtworkError: handleArtworkError,
-    entityName: name,
+    entityName: resolvedPlayerName,
     entityTypeKey: mediaEntityTypeKey,
     title: displayTitle,
     artist: displayArtist,
@@ -315,7 +322,7 @@ export const MediaCard = memo(function MediaCard({
           {isTv ? (
             <MediaTvView
               size={mediaSize}
-              playerName={name}
+              playerName={resolvedPlayerName}
               source={source}
               sourceList={sourceList}
               isOn={!isOff}

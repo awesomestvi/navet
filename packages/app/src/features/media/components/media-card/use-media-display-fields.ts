@@ -15,6 +15,10 @@ function normalizeMediaText(value: string) {
   return value.trim().toLowerCase();
 }
 
+function isRawEntityIdText(value: string) {
+  return /^[a-z0-9_]+\.[a-z0-9_]+$/i.test(value.trim());
+}
+
 function getStringAttribute(attrs: Record<string, unknown> | undefined, key: string) {
   const value = attrs?.[key];
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
@@ -46,8 +50,11 @@ export function useMediaDisplayFields({
   const isAvailable = playbackState !== 'off';
   const initialTitleIsEntityName =
     initialTitle.trim().length > 0 && normalizeMediaText(initialTitle) === normalizedEntityName;
+  const initialTitleIsRawEntityId = isRawEntityIdText(initialTitle);
   const fallbackTitle =
-    initialTitle.trim().length > 0 && (!initialTitleIsEntityName || isAvailable)
+    initialTitle.trim().length > 0 &&
+    !initialTitleIsRawEntityId &&
+    (!initialTitleIsEntityName || isAvailable)
       ? initialTitle
       : isAvailable
         ? entityName

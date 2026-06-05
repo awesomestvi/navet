@@ -203,7 +203,7 @@ export function CameraCardView({
             <span
               className={`h-1.5 w-1.5 rounded-full ${
                 cameraState === 'streaming' || cameraState === 'recording'
-                  ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.75)]'
+                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
                   : 'bg-white/45'
               }`}
             />

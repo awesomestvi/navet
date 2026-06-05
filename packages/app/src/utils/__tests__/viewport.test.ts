@@ -30,13 +30,25 @@ describe('viewport utils', () => {
     expect(getVisibleViewportSize()).toEqual({ width: 840, height: 620 });
   });
 
-  it('resolves logical width from visible width first, then layout width', () => {
+  it('resolves logical width from the larger of the visible and layout widths', () => {
     document.documentElement.style.setProperty('--navet-visible-viewport-width', '910px');
+    document.documentElement.style.setProperty('--navet-viewport-width', '1280px');
+
+    expect(getLogicalViewportWidth()).toBe(1280);
+
+    document.documentElement.style.removeProperty('--navet-viewport-width');
     expect(getLogicalViewportWidth()).toBe(910);
 
     document.documentElement.style.removeProperty('--navet-visible-viewport-width');
     document.documentElement.style.setProperty('--navet-viewport-width', '1200px');
     expect(getLogicalViewportWidth()).toBe(1200);
+  });
+
+  it('falls back to the larger window viewport when CSS vars are absent', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1365 });
+    setVisualViewportSize(1210, 680);
+
+    expect(getLogicalViewportWidth()).toBe(1365);
   });
 
   it('syncs viewport CSS vars from the layout and visible viewport', () => {

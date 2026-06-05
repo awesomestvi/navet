@@ -144,13 +144,6 @@ export function TasksSection() {
         <DashboardHeroSection
           accentColor={accentColor}
           surface={surface}
-          eyebrow={
-            <div
-              className={`text-[11px] font-semibold uppercase tracking-[0.18em] md:text-xs md:tracking-[0.2em] ${surface.textMuted}`}
-            >
-              {t('tasks.dashboard.eyebrow')}
-            </div>
-          }
           title={t('sections.tasks.automations.title')}
           description={t('tasks.dashboard.sourceNote')}
           actionsClassName="hidden md:flex"

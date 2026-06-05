@@ -69,6 +69,34 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('ignores blank media player friendly_name values and falls back to the registry name', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'media_player.living_room_tv': makeEntity('media_player.living_room_tv', 'idle', {
+          friendly_name: '   ',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        {
+          entity_id: 'media_player.living_room_tv',
+          name: null,
+          original_name: 'Living Room TV',
+        },
+      ],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'media_player.living_room_tv')).toEqual(
+      expect.objectContaining({
+        name: 'Living Room TV',
+        attributes: expect.objectContaining({
+          title: 'Living Room TV',
+        }),
+      })
+    );
+  });
+
   it('attaches related energy metrics to switch entities from the same device', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
@@ -221,6 +249,8 @@ describe('homeassistant-mappers', () => {
       expect.objectContaining({
         attributes: expect.objectContaining({
           entityPicture: '/api/camera_proxy/camera.driveway_local',
+          securityKind: 'camera',
+          securitySeverity: 'active',
         }),
         resources: expect.objectContaining({
           camera_snapshot: expect.objectContaining({
@@ -229,5 +259,118 @@ describe('homeassistant-mappers', () => {
         }),
       })
     );
+  });
+
+  it('maps Home Assistant security entities into existing Navet types with security metadata', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'alarm_control_panel.home': makeEntity('alarm_control_panel.home', 'triggered', {
+          friendly_name: 'Home Alarm',
+        }),
+        'siren.entry': makeEntity('siren.entry', 'off', {
+          friendly_name: 'Entry Siren',
+        }),
+        'device_tracker.phone_alex': makeEntity('device_tracker.phone_alex', 'not_home', {
+          friendly_name: 'Alex Phone',
+          latitude: 59.3293,
+          longitude: 18.0686,
+        }),
+        'event.front_doorbell': makeEntity('event.front_doorbell', 'doorbell_press', {
+          friendly_name: 'Front Doorbell',
+          event_type: 'doorbell_press',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'alarm_control_panel.home')).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.objectContaining({
+          securityKind: 'alarm',
+          securitySeverity: 'critical',
+          status: 'active',
+          value: 'Triggered',
+        }),
+      })
+    );
+    expect(entities.find((entity) => entity.externalId === 'siren.entry')).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.objectContaining({
+          securityKind: 'siren',
+          securitySeverity: 'normal',
+          value: 'Off',
+        }),
+      })
+    );
+    expect(entities.find((entity) => entity.externalId === 'device_tracker.phone_alex')).toEqual(
+      expect.objectContaining({
+        type: 'person',
+        attributes: expect.objectContaining({
+          securityKind: 'deviceTracker',
+          securitySeverity: 'normal',
+          location: 'Away',
+          latitude: 59.3293,
+          longitude: 18.0686,
+        }),
+      })
+    );
+    expect(entities.find((entity) => entity.externalId === 'event.front_doorbell')).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.objectContaining({
+          securityKind: 'event',
+          securitySeverity: 'normal',
+          entityType: 'Event',
+        }),
+      })
+    );
+  });
+
+  it('keeps grouped security member metadata on binary sensors', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'binary_sensor.any_window_open': makeEntity('binary_sensor.any_window_open', 'on', {
+          friendly_name: 'Any Window Open',
+          device_class: 'opening',
+          entity_id: ['binary_sensor.window_left', 'binary_sensor.window_right'],
+          group_members: ['binary_sensor.window_left'],
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(
+      entities.find((entity) => entity.externalId === 'binary_sensor.any_window_open')
+    ).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.objectContaining({
+          securityKind: 'opening',
+          groupMembers: ['binary_sensor.window_left', 'binary_sensor.window_right'],
+        }),
+      })
+    );
+  });
+
+  it('keeps non-security events out of the mapped entity set', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'event.feedreader_news': makeEntity('event.feedreader_news', '2026-06-01T10:00:00.000Z', {
+          event_type: 'feedreader',
+          link: 'https://example.com/story',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities).toEqual([]);
   });
 });

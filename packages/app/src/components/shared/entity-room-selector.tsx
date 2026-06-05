@@ -165,7 +165,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                 setIsEyebrowFocused(false);
                 setIsKeyboardFocus(false);
               }}
-              className="absolute inset-0 z-10 w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
+              className="absolute inset-0 z-10 w-full cursor-pointer appearance-none bg-white text-slate-900 opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
               {manageableRooms.map((room) => (

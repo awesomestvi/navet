@@ -1,4 +1,5 @@
 import type { HomeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import { classifySecurityEntity } from '@navet/provider-homeassistant';
 import type { HassEntity } from 'home-assistant-js-websocket';
 
 export function selectFeedreaderEventEntities(
@@ -54,11 +55,6 @@ export function selectSecuritySummaryEntities(
   }
 
   return Object.fromEntries(
-    Object.entries(all).filter(
-      ([entityId]) =>
-        entityId.startsWith('binary_sensor.') ||
-        entityId.startsWith('alarm_control_panel.') ||
-        entityId.startsWith('siren.')
-    )
+    Object.entries(all).filter(([, entity]) => classifySecurityEntity(entity) !== null)
   );
 }

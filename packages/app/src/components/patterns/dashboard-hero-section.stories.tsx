@@ -2,7 +2,6 @@ import { InteractivePill } from '@navet/app/components/primitives/interactive-pi
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Sparkles } from 'lucide-react';
 import { DashboardHeroSection } from './dashboard-hero-section';
 
 function DashboardHeroSectionStory() {
@@ -13,14 +12,6 @@ function DashboardHeroSectionStory() {
     <DashboardHeroSection
       accentColor={accentColor}
       surface={surface}
-      eyebrow={
-        <div
-          className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] ${surface.textMuted}`}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>UI Kit</span>
-        </div>
-      }
       title="Shared hero chrome for dashboard and settings entry sections."
       description="Use the pattern instead of duplicating rounded bordered hero containers in feature modules."
       actions={

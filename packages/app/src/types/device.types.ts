@@ -6,6 +6,36 @@ import type { WeatherForecastMode } from '../stores/settings-store';
 import type { TemperatureUnit } from '../utils/temperature';
 import type { IntegrationProviderId } from './provider';
 
+export type SecurityKind =
+  | 'alarm'
+  | 'lock'
+  | 'camera'
+  | 'siren'
+  | 'door'
+  | 'window'
+  | 'garageDoor'
+  | 'opening'
+  | 'motion'
+  | 'occupancy'
+  | 'presence'
+  | 'tamper'
+  | 'smoke'
+  | 'carbonMonoxide'
+  | 'gas'
+  | 'waterLeak'
+  | 'vibration'
+  | 'sound'
+  | 'safety'
+  | 'problem'
+  | 'connectivity'
+  | 'battery'
+  | 'person'
+  | 'deviceTracker'
+  | 'button'
+  | 'event';
+
+export type SecuritySeverity = 'critical' | 'warning' | 'active' | 'normal' | 'unknown';
+
 export interface DeviceMetric {
   label: string;
   value: string | number;
@@ -25,6 +55,8 @@ export interface BaseDevice {
   resources?: Partial<
     Record<'primaryImage' | 'artwork' | 'snapshot' | 'stream', PlatformResourceDescriptor>
   >;
+  securityKind?: SecurityKind;
+  securitySeverity?: SecuritySeverity;
 }
 
 // Light device
@@ -151,6 +183,8 @@ export type HelperDevice = Pick<
   | 'providerId'
   | 'nativeId'
   | 'canonicalId'
+  | 'securityKind'
+  | 'securitySeverity'
 >;
 
 // Cover device
@@ -190,6 +224,7 @@ export interface SensorDevice extends BaseDevice {
   icon?: SensorIconType;
   entityType?: string;
   deviceClass?: string;
+  groupMembers?: string[];
   sourceDeviceId?: string;
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
   lastUpdated?: string;

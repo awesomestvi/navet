@@ -1249,13 +1249,6 @@ function TasksShot() {
       <DashboardHeroSection
         accentColor={accentColor}
         surface={surface}
-        eyebrow={
-          <div
-            className={`text-[11px] font-semibold uppercase tracking-[0.18em] md:text-xs md:tracking-[0.2em] ${surface.textMuted}`}
-          >
-            Automation Dashboard
-          </div>
-        }
         title="Automations"
         description="Demo routines mirror the automation dashboard layout with active state, recent runs, and run controls."
         actionsClassName="hidden md:flex"

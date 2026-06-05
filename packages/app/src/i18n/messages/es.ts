@@ -93,6 +93,14 @@ export const esMessages = {
   'settings.dashboard.headerTitle.dateTime': 'Fecha y hora',
   'settings.dashboard.headerTitle.customPlaceholder': 'Bienvenido a casa',
   'settings.dashboard.headerTitle.customHint': 'Déjalo vacío para volver al saludo automático.',
+  'settings.dashboard.spaceMode.title': 'Uso del espacio',
+  'settings.dashboard.spaceMode.description':
+    'Elige entre el diseño estándar del panel y un diseño más denso para tablet con más columnas, tarjetas con zoom adaptable y menos padding lateral.',
+  'settings.dashboard.spaceMode.default': 'Predeterminado',
+  'settings.dashboard.spaceMode.moreSpace': 'Más espacio',
+  'settings.dashboard.spaceMode.warningTitle': 'Aviso sobre objetivos táctiles',
+  'settings.dashboard.spaceMode.warningBody':
+    'Diseño más denso. Algunos controles táctiles pueden ser más difíciles de usar.',
   'settings.dashboard.homeSummaryBar.title': 'Resumen de inicio',
   'settings.dashboard.homeSummaryBar.description':
     'Muestra resúmenes compactos de clima, luces, seguridad y medios encima del panel de inicio.',
@@ -599,7 +607,7 @@ export const esMessages = {
     'Usa tu URL de Home Assistant y después completa el inicio de sesión con OAuth.',
   'login.providers.homey.detail':
     'Inicia sesión con Homey Cloud y luego elige el Homey que Navet debe usar.',
-  'login.providers.openhab.detail': 'Conéctate directamente a tu servidor openHAB con su URL base.',
+  'login.providers.openhab.detail': 'Conéctate directamente a openHAB con su URL.',
   'login.providers.unavailable.detail':
     'La estructura del proveedor existe, pero el inicio de sesión aún no está disponible.',
   'login.actions.continue': 'Continuar',

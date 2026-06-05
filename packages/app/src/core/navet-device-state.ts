@@ -108,6 +108,7 @@ export interface NavetSensorState extends NavetBaseDeviceState {
   unit?: string;
   entityType?: string;
   deviceClass?: string;
+  groupMembers?: string[];
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
   lastUpdated?: string;
 }

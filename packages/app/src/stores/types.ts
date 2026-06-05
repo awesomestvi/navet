@@ -5,6 +5,7 @@ import type {
   CameraDashboardViewMode,
   CameraStreamPreference,
   CameraViewMode,
+  DashboardSpaceMode,
   EffectsQuality,
   EntityInteractionMode,
   HeaderTitleMode,
@@ -72,6 +73,7 @@ interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;

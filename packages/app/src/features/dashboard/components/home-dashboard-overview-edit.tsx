@@ -1,4 +1,5 @@
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
+import { Badge } from '@navet/app/components/primitives';
 import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -147,13 +148,6 @@ export default function HomeDashboardOverviewEdit({
         <DashboardHeroSection
           accentColor={accentColor}
           surface={surface}
-          eyebrow={
-            <div
-              className={`text-[11px] font-semibold uppercase tracking-[0.18em] md:text-xs md:tracking-[0.2em] ${surface.textMuted}`}
-            >
-              {t('dashboard.homePersonal.eyebrow')}
-            </div>
-          }
           title={t('dashboard.homePersonal.title')}
           description={t('dashboard.homePersonal.description')}
           actions={
@@ -188,18 +182,10 @@ export default function HomeDashboardOverviewEdit({
           }
           aside={
             <div className="flex flex-wrap gap-2 xl:justify-end">
-              {summaryItems.map((item) => (
-                <div
-                  key={item.label}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 ${surface.border} ${surface.panelMuted}`}
-                >
-                  <span className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>
-                    {item.label}
-                  </span>
-                  <span className={`text-sm font-semibold ${surface.textPrimary}`}>
-                    {item.value}
-                  </span>
-                </div>
+              {summaryItems.slice(0, 1).map((item) => (
+                <Badge key={item.label} tone="neutral">
+                  {item.value} {item.label}
+                </Badge>
               ))}
             </div>
           }

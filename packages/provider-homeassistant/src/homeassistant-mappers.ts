@@ -11,6 +11,12 @@ import {
   resolveEntityRoom,
   UNKNOWN_ROOM_LABEL,
 } from './homeassistant-mapper-support';
+import {
+  classifySecurityEntity,
+  getSecuritySeverity,
+  type SecurityEntityKind,
+  type SecuritySeverity,
+} from './homeassistant-security-entities';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -86,6 +92,21 @@ function formatDomainLabel(domain: string): string {
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function formatSecurityKindLabel(kind: SecurityEntityKind): string {
+  switch (kind) {
+    case 'garageDoor':
+      return 'Garage Door';
+    case 'carbonMonoxide':
+      return 'Carbon Monoxide';
+    case 'waterLeak':
+      return 'Water Leak';
+    case 'deviceTracker':
+      return 'Device Tracker';
+    default:
+      return kind.charAt(0).toUpperCase() + kind.slice(1);
+  }
 }
 
 function formatMetricLabel(entityId: string, friendlyName: unknown) {
@@ -379,6 +400,38 @@ function readStringList(value: unknown): string[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
+function readEntityIdList(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const entries = value.filter((entry): entry is string => typeof entry === 'string');
+    return entries.length > 0 ? entries : undefined;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  if (!normalized.includes('.')) {
+    return undefined;
+  }
+
+  return [normalized];
+}
+
+function readGroupMemberList(
+  attributes: HassEntity['attributes'] | undefined
+): string[] | undefined {
+  const members = [
+    ...(readStringList(attributes?.group_members) ?? []),
+    ...(readEntityIdList(attributes?.entity_id) ?? []),
+  ];
+  if (members.length === 0) {
+    return undefined;
+  }
+
+  return [...new Set(members)];
+}
+
 function readPercent(value: unknown): number | undefined {
   const numericValue = readNumberish(value);
   if (typeof numericValue !== 'number') {
@@ -419,6 +472,124 @@ function resolveBinarySensorPresentation(
         status: isActive ? 'active' : 'clear',
       };
   }
+}
+
+function mapSecuritySeverityToSensorStatus(
+  severity: SecuritySeverity
+): 'active' | 'clear' | 'unavailable' {
+  switch (severity) {
+    case 'critical':
+    case 'warning':
+    case 'active':
+      return 'active';
+    case 'unknown':
+      return 'unavailable';
+    default:
+      return 'clear';
+  }
+}
+
+function formatSecurityStateValue(entity: HassEntity, kind: SecurityEntityKind): string {
+  const domain = getDomain(entity.entity_id);
+  const state = entity.state;
+  const normalized = state.toLowerCase();
+
+  if (normalized === 'unknown' || normalized === 'unavailable') {
+    return state;
+  }
+
+  switch (kind) {
+    case 'alarm':
+      return formatDomainLabel(normalized);
+    case 'lock':
+      if (domain === 'binary_sensor') {
+        return normalized === 'on'
+          ? 'Open'
+          : normalized === 'off'
+            ? 'Closed'
+            : formatDomainLabel(normalized);
+      }
+      switch (normalized) {
+        case 'locked':
+          return 'Locked';
+        case 'unlocked':
+          return 'Unlocked';
+        case 'locking':
+          return 'Locking';
+        case 'unlocking':
+          return 'Unlocking';
+        case 'opening':
+          return 'Opening';
+        case 'open':
+          return 'Open';
+        case 'jammed':
+          return 'Jammed';
+        default:
+          return formatDomainLabel(normalized);
+      }
+    case 'camera':
+      return formatDomainLabel(normalized);
+    case 'siren':
+      return normalized === 'on'
+        ? 'On'
+        : normalized === 'off'
+          ? 'Off'
+          : formatDomainLabel(normalized);
+    case 'door':
+    case 'window':
+    case 'garageDoor':
+    case 'opening':
+      return ['on', 'open'].includes(normalized)
+        ? 'Open'
+        : normalized === 'off'
+          ? 'Closed'
+          : formatDomainLabel(normalized);
+    case 'motion':
+    case 'occupancy':
+    case 'presence':
+    case 'smoke':
+    case 'carbonMonoxide':
+    case 'gas':
+    case 'waterLeak':
+    case 'vibration':
+    case 'sound':
+    case 'safety':
+    case 'problem':
+    case 'connectivity':
+    case 'battery':
+    case 'tamper':
+      return ['on', 'detected', 'problem', 'unsafe', 'wet'].includes(normalized)
+        ? 'Detected'
+        : normalized === 'off'
+          ? 'Clear'
+          : formatDomainLabel(normalized);
+    case 'person':
+    case 'deviceTracker':
+      return normalized === 'home'
+        ? 'Home'
+        : normalized === 'not_home'
+          ? 'Away'
+          : formatDomainLabel(normalized);
+    case 'button':
+      return 'Action';
+    case 'event':
+      return formatDomainLabel(normalized.replace(/[:_-]/g, ' '));
+    default:
+      return formatDomainLabel(normalized);
+  }
+}
+
+function getSecurityMetadata(entity: HassEntity) {
+  const kind = classifySecurityEntity(entity);
+  if (!kind) {
+    return null;
+  }
+
+  return {
+    kind,
+    severity: getSecuritySeverity(entity, kind),
+    value: formatSecurityStateValue(entity, kind),
+  };
 }
 
 function inferHomeAssistantCapabilities(
@@ -496,8 +667,16 @@ function createHomeAssistantState(
       typeof entity.attributes?.source_device_id === 'string'
         ? entity.attributes.source_device_id
         : undefined,
+    groupMembers: readGroupMemberList(entity.attributes),
     entityCategory: entityCategory ?? undefined,
   };
+  const security = getSecurityMetadata(entity);
+  const securityState = security
+    ? {
+        securityKind: security.kind,
+        securitySeverity: security.severity,
+      }
+    : {};
 
   if (domain === 'climate' || domain === 'water_heater') {
     const currentTemperature = readNumberish(entity.attributes?.current_temperature);
@@ -609,6 +788,7 @@ function createHomeAssistantState(
   if (domain === 'lock') {
     return {
       ...commonState,
+      ...securityState,
       value: entity.state,
       locked: entity.state === 'locked',
       deviceClass,
@@ -629,6 +809,7 @@ function createHomeAssistantState(
     const personState = typeof entity.state === 'string' ? entity.state : 'not_home';
     return {
       ...commonState,
+      ...securityState,
       value: personState === 'home' ? 'home' : 'away',
       location:
         personState === 'home'
@@ -659,12 +840,56 @@ function createHomeAssistantState(
     };
   }
 
+  if (domain === 'device_tracker') {
+    const trackerState = typeof entity.state === 'string' ? entity.state : 'not_home';
+    return {
+      ...commonState,
+      ...securityState,
+      value: trackerState === 'home' ? 'home' : 'away',
+      location:
+        trackerState === 'home'
+          ? 'Home'
+          : trackerState === 'not_home'
+            ? 'Away'
+            : trackerState.replace(/_/g, ' '),
+      entityPicture:
+        (typeof entity.attributes?.entity_picture === 'string' &&
+          entity.attributes.entity_picture) ||
+        (typeof entity.attributes?.entity_picture_local === 'string' &&
+          entity.attributes.entity_picture_local) ||
+        undefined,
+      batteryLevel:
+        readPercent(entity.attributes?.battery_level) ?? readPercent(entity.attributes?.battery),
+      address:
+        typeof entity.attributes?.address === 'string' ? entity.attributes.address : undefined,
+      locationName:
+        typeof entity.attributes?.location_name === 'string'
+          ? entity.attributes.location_name
+          : undefined,
+      geocodedLocation:
+        typeof entity.attributes?.geocoded_location === 'string'
+          ? entity.attributes.geocoded_location
+          : undefined,
+      zone: typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : undefined,
+      latitude:
+        typeof entity.attributes?.latitude === 'number' ? entity.attributes.latitude : undefined,
+      longitude:
+        typeof entity.attributes?.longitude === 'number' ? entity.attributes.longitude : undefined,
+      gpsAccuracy:
+        typeof entity.attributes?.gps_accuracy === 'number'
+          ? entity.attributes.gps_accuracy
+          : undefined,
+      size: 'small',
+    };
+  }
+
   if (domain === 'camera') {
     const entityPicture = readPreferredEntityPicture(entity);
     const supportedFeatures = readNumberish(entity.attributes?.supported_features) ?? 0;
 
     return {
       ...commonState,
+      ...securityState,
       value: entity.state,
       entityPicture,
       supportedFeatures,
@@ -677,6 +902,34 @@ function createHomeAssistantState(
       lastChanged: entity.last_changed,
       lastUpdated: entity.last_updated,
       size: 'medium',
+    };
+  }
+
+  if (domain === 'alarm_control_panel' && security) {
+    return {
+      ...commonState,
+      ...securityState,
+      value: security.value,
+      entityType: 'Alarm',
+      status: mapSecuritySeverityToSensorStatus(security.severity),
+      deviceClass: 'alarm_control_panel',
+      lastChanged: entity.last_changed,
+      lastUpdated: entity.last_updated,
+      size: 'small',
+    };
+  }
+
+  if (domain === 'siren' && security) {
+    return {
+      ...commonState,
+      ...securityState,
+      value: security.value,
+      entityType: 'Siren',
+      status: mapSecuritySeverityToSensorStatus(security.severity),
+      deviceClass: 'siren',
+      lastChanged: entity.last_changed,
+      lastUpdated: entity.last_updated,
+      size: 'small',
     };
   }
 
@@ -719,6 +972,7 @@ function createHomeAssistantState(
 
   return {
     ...commonState,
+    ...securityState,
     value: entity.state,
     brightness: entity.attributes?.brightness,
     brightnessPct:
@@ -776,8 +1030,21 @@ function createHomeAssistantState(
           };
         })()
       : {}),
-    ...(domain === 'binary_sensor'
-      ? resolveBinarySensorPresentation(entity.state, deviceClass)
+    ...(domain === 'binary_sensor' && security
+      ? {
+          value: security.value,
+          status: mapSecuritySeverityToSensorStatus(security.severity),
+          entityType: formatSecurityKindLabel(security.kind),
+        }
+      : domain === 'binary_sensor'
+        ? resolveBinarySensorPresentation(entity.state, deviceClass)
+        : {}),
+    ...((domain === 'event' || domain === 'button' || domain === 'input_button') && security
+      ? {
+          value: security.value,
+          entityType: formatSecurityKindLabel(security.kind),
+          status: mapSecuritySeverityToSensorStatus(security.severity),
+        }
       : {}),
   };
 }
@@ -820,10 +1087,18 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         'lock',
         'scene',
         'person',
+        'device_tracker',
         'camera',
         'vacuum',
+        'alarm_control_panel',
+        'siren',
+        'event',
       ].includes(domain)
     ) {
+      continue;
+    }
+
+    if (domain === 'event' && classifySecurityEntity(entity) === null) {
       continue;
     }
 
@@ -840,9 +1115,13 @@ export function mapHomeAssistantEntitiesToNavetEntities(
       domain === 'button' ||
       domain === 'input_button'
         ? 'helper'
-        : domain === 'binary_sensor'
-          ? 'sensor'
-          : (domain as NavetEntity['type']);
+        : domain === 'device_tracker'
+          ? 'person'
+          : domain === 'alarm_control_panel' || domain === 'siren' || domain === 'event'
+            ? 'sensor'
+            : domain === 'binary_sensor'
+              ? 'sensor'
+              : (domain as NavetEntity['type']);
 
     const resources =
       domain === 'camera'

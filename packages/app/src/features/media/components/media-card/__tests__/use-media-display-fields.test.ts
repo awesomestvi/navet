@@ -83,6 +83,19 @@ describe('useMediaDisplayFields', () => {
     expect(fields.displayArtist).toBe('Ready to play');
   });
 
+  it('does not surface a raw entity id as the fallback media title', () => {
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      entityName: 'Bathroom Speaker',
+      initialTitle: 'media_player.bathroom',
+      liveAttrs: {},
+      playbackState: 'idle',
+    });
+
+    expect(fields.displayTitle).toBe('Bathroom Speaker');
+    expect(fields.displayArtist).toBe('Ready to play');
+  });
+
   it('keeps the empty playback fallback for an off player with no media metadata', () => {
     const fields = useMediaDisplayFields({
       ...baseParams,

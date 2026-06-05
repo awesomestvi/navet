@@ -250,7 +250,7 @@ export function CameraLiveViewer({
               <span
                 className={`h-2 w-2 rounded-full ${
                   cameraState === 'streaming' || cameraState === 'recording'
-                    ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]'
+                    ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
                     : 'bg-white/45'
                 }`}
               />

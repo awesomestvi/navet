@@ -59,20 +59,6 @@ describe('home status summary model', () => {
       ['security', 'No Alerts', 'security'],
       ['lights', '1 On', 'lights'],
       ['media', 'None Playing', 'media'],
-      ['routines', '1 Routine', 'tasks'],
-    ]);
-  });
-
-  it('can use the task routine count so automations are included with scenes and scripts', () => {
-    const scene = device({ id: 'scene.goodnight', type: 'scenes' });
-    const items = buildHomeStatusSummaryItems(new Map([[scene.id, scene]]), { routineCount: 4 });
-
-    expect(items).toEqual([
-      expect.objectContaining({
-        id: 'routines',
-        value: '4 Routines',
-        targetSection: 'tasks',
-      }),
     ]);
   });
 
@@ -88,7 +74,7 @@ describe('home status summary model', () => {
     ]);
   });
 
-  it('ignores inactive scenes and scripts when no task routine count is provided', () => {
+  it('ignores inactive scenes and scripts in the summary bar', () => {
     const scene = device({ id: 'scene.goodnight', type: 'scenes' });
     const script = device({
       id: 'script.movie',
@@ -136,6 +122,165 @@ describe('home status summary model', () => {
     );
   });
 
+  it('does not count active-only security activity in the summary bar alert total', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'binary_sensor.entry_motion',
+            type: 'sensors',
+            deviceClass: 'motion',
+            status: 'active',
+          }),
+          device({
+            id: 'camera.driveway',
+            type: 'cameras',
+            motionDetected: true,
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'security',
+        value: 'No Alerts',
+        targetSection: 'security',
+      }),
+    ]);
+  });
+
+  it('counts unavailable security devices in the summary bar like the attention lane', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'binary_sensor.side_door',
+            type: 'sensors',
+            deviceClass: 'door',
+            status: 'unavailable',
+            securitySeverity: 'unknown',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'security',
+        value: '1 Alert',
+        targetSection: 'security',
+      }),
+    ]);
+  });
+
+  it('excludes presence devices from the summary bar security alert count like the attention lane', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'binary_sensor.side_door',
+            type: 'sensors',
+            deviceClass: 'door',
+            status: 'unavailable',
+            securitySeverity: 'unknown',
+          }),
+          device({
+            id: 'person.alex',
+            type: 'persons',
+            securityKind: 'person',
+            securitySeverity: 'unknown',
+            state: 'away',
+            location: 'Away',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'security',
+        value: '1 Alert',
+        targetSection: 'security',
+      }),
+    ]);
+  });
+
+  it('deduplicates grouped opening alerts when aggregate membership metadata is present', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'binary_sensor.any_window_open',
+            type: 'sensors',
+            deviceClass: 'opening',
+            securityKind: 'opening',
+            status: 'active',
+            securitySeverity: 'warning',
+            groupMembers: ['binary_sensor.window_left', 'binary_sensor.window_right'],
+          }),
+          device({
+            id: 'binary_sensor.window_left',
+            type: 'sensors',
+            deviceClass: 'window',
+            securityKind: 'window',
+            status: 'active',
+            securitySeverity: 'warning',
+          }),
+          device({
+            id: 'binary_sensor.window_right',
+            type: 'sensors',
+            deviceClass: 'window',
+            securityKind: 'window',
+            status: 'active',
+            securitySeverity: 'warning',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'security',
+        value: '1 Alert',
+        targetSection: 'security',
+      }),
+    ]);
+  });
+
+  it('keeps separate opening alerts when overlap metadata is absent', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'binary_sensor.any_window_open',
+            type: 'sensors',
+            deviceClass: 'opening',
+            securityKind: 'opening',
+            status: 'active',
+            securitySeverity: 'warning',
+          }),
+          device({
+            id: 'binary_sensor.window_left',
+            type: 'sensors',
+            deviceClass: 'window',
+            securityKind: 'window',
+            status: 'active',
+            securitySeverity: 'warning',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'security',
+        value: '2 Alerts',
+        targetSection: 'security',
+      }),
+    ]);
+  });
+
   it('builds room summary items from devices in the selected room only', () => {
     const items = buildRoomStatusSummaryItems(
       new Map(
@@ -173,6 +318,23 @@ describe('home status summary model', () => {
       ['climate', '21°'],
       ['lights', '1 On'],
     ]);
+  });
+
+  it('only uses climate entities that exist in the room climate dashboard', () => {
+    const temperature = device({
+      id: 'sensor.living_room_temperature',
+      type: 'sensors',
+      room: 'Living Room',
+      deviceClass: 'temperature',
+      value: '21.2',
+    });
+    const items = buildRoomStatusSummaryItems(
+      new Map([[temperature.id, temperature]]),
+      'Living Room',
+      { climateEntityIds: new Set() }
+    );
+
+    expect(items).toEqual([]);
   });
 
   it('uses ambient climate readings instead of thermostat targets in the climate summary', () => {
@@ -295,18 +457,6 @@ describe('home status summary model', () => {
         id: 'climate',
         value: '20°',
         targetSection: 'climate',
-      }),
-    ]);
-  });
-
-  it('can include room-scoped automation routines in room summaries', () => {
-    const items = buildRoomStatusSummaryItems(new Map(), 'Kitchen', { routineCount: 2 });
-
-    expect(items).toEqual([
-      expect.objectContaining({
-        id: 'routines',
-        value: '2 Routines',
-        targetSection: 'tasks',
       }),
     ]);
   });

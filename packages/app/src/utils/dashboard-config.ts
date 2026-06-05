@@ -746,6 +746,10 @@ export const importDashboardConfig = (
         : defaultSettings.compactMode,
     kioskMode:
       typeof settings.kioskMode === 'boolean' ? settings.kioskMode : defaultSettings.kioskMode,
+    dashboardSpaceMode:
+      settings.dashboardSpaceMode === 'default' || settings.dashboardSpaceMode === 'more_space'
+        ? settings.dashboardSpaceMode
+        : defaultSettings.dashboardSpaceMode,
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
     entityInteractionMode:

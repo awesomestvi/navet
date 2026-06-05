@@ -31,18 +31,14 @@ export function getLogicalViewportWidth() {
     return 0;
   }
 
-  const cssVisibleViewportWidth = readCssViewportVar('--navet-visible-viewport-width');
-  if (cssVisibleViewportWidth > 0) {
-    return cssVisibleViewportWidth;
-  }
-
   const cssViewportWidth = readCssViewportVar('--navet-viewport-width');
-  if (cssViewportWidth > 0) {
-    return cssViewportWidth;
+  const cssVisibleViewportWidth = readCssViewportVar('--navet-visible-viewport-width');
+  const cssLogicalViewportWidth = Math.max(cssViewportWidth, cssVisibleViewportWidth);
+  if (cssLogicalViewportWidth > 0) {
+    return cssLogicalViewportWidth;
   }
 
-  const visibleViewportWidth = window.visualViewport?.width ?? window.innerWidth;
-  return visibleViewportWidth;
+  return Math.max(window.innerWidth, window.visualViewport?.width ?? 0);
 }
 
 export function syncViewportCssVars() {

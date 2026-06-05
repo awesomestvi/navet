@@ -74,6 +74,10 @@ function readRegistryName(registryEntry?: {
   }
 }
 
+function readNonEmptyString(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
 export function getName(
   entity: NamedEntityLike,
   registryEntry?: {
@@ -89,7 +93,7 @@ export function getName(
   }
 
   return (
-    (typeof entity.attributes?.friendly_name === 'string' && entity.attributes.friendly_name) ||
+    readNonEmptyString(entity.attributes?.friendly_name) ||
     entity.entity_id ||
     entity.entityId ||
     'Unknown'

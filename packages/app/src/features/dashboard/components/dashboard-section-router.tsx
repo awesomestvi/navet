@@ -7,6 +7,7 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
+import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks';
@@ -102,6 +103,20 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const totalRoutineCount =
     routines.automations.filter(isActiveRoutine).length +
     routines.quickActions.filter(isActiveRoutine).length;
+  const roomClimateEntityIds = useMemo(() => {
+    if (isAllRooms(activeRoom)) {
+      return undefined;
+    }
+
+    return new Set(
+      Array.from(deviceMap.values())
+        .filter(
+          (device) =>
+            getDeviceRoomLabel(device) === activeRoom && getClimateDashboardGroup(device) !== null
+        )
+        .map((device) => device.id)
+    );
+  }, [activeRoom, deviceMap]);
   const roomStatusSummaryItems = useMemo(() => {
     if (!sectionData.isOverviewSection || isAllRooms(activeRoom) || !showSummaryBar) {
       return [];
@@ -116,12 +131,14 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       ).length;
 
     return buildRoomStatusSummaryItems(availableDeviceMap, activeRoom, {
+      climateEntityIds: roomClimateEntityIds,
       routineCount,
       temperatureUnit,
     });
   }, [
     activeRoom,
     availableDeviceMap,
+    roomClimateEntityIds,
     routines.automations,
     routines.quickActions,
     showSummaryBar,

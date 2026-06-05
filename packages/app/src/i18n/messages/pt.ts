@@ -91,6 +91,14 @@ export const ptMessages = {
   'settings.dashboard.headerTitle.dateTime': 'Data e hora',
   'settings.dashboard.headerTitle.customPlaceholder': 'Bem-vindo para casa',
   'settings.dashboard.headerTitle.customHint': 'Deixe em branco para voltar à saudação automática.',
+  'settings.dashboard.spaceMode.title': 'Uso do espaço',
+  'settings.dashboard.spaceMode.description':
+    'Escolha entre o layout padrão do painel e um layout de tablet mais denso com mais colunas, cartões com zoom adaptativo e menos padding lateral.',
+  'settings.dashboard.spaceMode.default': 'Padrão',
+  'settings.dashboard.spaceMode.moreSpace': 'Mais espaço',
+  'settings.dashboard.spaceMode.warningTitle': 'Aviso sobre toque',
+  'settings.dashboard.spaceMode.warningBody':
+    'Layout mais denso. Alguns controles por toque podem ficar mais difíceis de usar.',
   'settings.dashboard.homeSummaryBar.title': 'Resumo inicial',
   'settings.dashboard.homeSummaryBar.description':
     'Mostra resumos compactos de clima, luzes, segurança e mídia acima do dashboard inicial.',
@@ -594,8 +602,7 @@ export const ptMessages = {
     'Use a URL do Home Assistant e depois conclua o login com OAuth.',
   'login.providers.homey.detail':
     'Entre com o Homey Cloud e depois escolha qual Homey o Navet deve usar.',
-  'login.providers.openhab.detail':
-    'Conecte-se diretamente ao seu servidor openHAB usando a URL base.',
+  'login.providers.openhab.detail': 'Conecte-se diretamente ao openHAB com a URL.',
   'login.providers.unavailable.detail':
     'A estrutura do provedor existe, mas o login ainda não está disponível.',
   'login.actions.continue': 'Continuar',

@@ -77,6 +77,8 @@ function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
           stream: entity.resources.camera_stream,
         }
       : undefined,
+    securityKind: readSecurityKind(state.securityKind),
+    securitySeverity: readSecuritySeverity(state.securitySeverity),
   };
 }
 
@@ -86,6 +88,53 @@ function resolveEntityValue(entity: NavetEntity, state: EntityStateRecord) {
 
 function readOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function readSecurityKind(value: unknown) {
+  switch (value) {
+    case 'alarm':
+    case 'lock':
+    case 'camera':
+    case 'siren':
+    case 'door':
+    case 'window':
+    case 'garageDoor':
+    case 'opening':
+    case 'motion':
+    case 'occupancy':
+    case 'presence':
+    case 'tamper':
+    case 'smoke':
+    case 'carbonMonoxide':
+    case 'gas':
+    case 'waterLeak':
+    case 'vibration':
+    case 'sound':
+    case 'safety':
+    case 'problem':
+    case 'connectivity':
+    case 'battery':
+    case 'person':
+    case 'deviceTracker':
+    case 'button':
+    case 'event':
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function readSecuritySeverity(value: unknown) {
+  switch (value) {
+    case 'critical':
+    case 'warning':
+    case 'active':
+    case 'normal':
+    case 'unknown':
+      return value;
+    default:
+      return undefined;
+  }
 }
 
 function readDeviceId(state: EntityStateRecord): string | undefined {
@@ -273,6 +322,18 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         });
         break;
       case 'helper':
+        if (base.securityKind) {
+          collection.helpers.push({
+            ...base,
+            state: value === 'on' || state.on === true,
+            entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
+            serviceDomain:
+              typeof state.serviceDomain === 'string' ? state.serviceDomain : undefined,
+            serviceAction:
+              typeof state.serviceAction === 'string' ? state.serviceAction : undefined,
+          });
+          break;
+        }
         if (
           deviceId &&
           (indexes.deviceIdsWithPrimaryCards.has(deviceId) ||
@@ -293,6 +354,42 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
       case 'binary_sensor':
       case 'energy':
       case 'unknown':
+        if (base.securityKind) {
+          collection.sensors.push({
+            ...base,
+            value:
+              typeof value === 'string'
+                ? value
+                : typeof value === 'number'
+                  ? String(value)
+                  : value === true
+                    ? 'Detected'
+                    : value === false
+                      ? 'Clear'
+                      : '',
+            unit: readString(state.unit, ''),
+            icon:
+              typeof state.icon === 'string'
+                ? (state.icon as DeviceCollection['sensors'][number]['icon'])
+                : undefined,
+            entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
+            deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
+            groupMembers: readStringArray(state.groupMembers),
+            sourceDeviceId:
+              typeof state.sourceDeviceId === 'string' ? state.sourceDeviceId : undefined,
+            status:
+              typeof state.status === 'string'
+                ? (state.status as DeviceCollection['sensors'][number]['status'])
+                : undefined,
+            lastUpdated:
+              typeof state.lastUpdated === 'string'
+                ? state.lastUpdated
+                : typeof state.last_updated === 'string'
+                  ? state.last_updated
+                  : entity.lastUpdated,
+          });
+          break;
+        }
         if (deviceId && indexes.deviceIdsWithPrimaryCards.has(deviceId)) {
           break;
         }
@@ -315,6 +412,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
               : undefined,
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
+          groupMembers: readStringArray(state.groupMembers),
           sourceDeviceId:
             typeof state.sourceDeviceId === 'string' ? state.sourceDeviceId : undefined,
           status:

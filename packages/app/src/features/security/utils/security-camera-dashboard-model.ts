@@ -1,10 +1,104 @@
 import type {
   CameraDevice,
   DeviceCollection,
-  LockDevice,
-  SensorDevice,
+  DeviceWithType,
+  SecuritySeverity,
 } from '@navet/app/types/device.types';
+import { getDeviceRoomLabel, UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 
+export type SecurityGroupKey =
+  | 'alarms'
+  | 'access'
+  | 'activity'
+  | 'hazards'
+  | 'cameras'
+  | 'sirens'
+  | 'presence'
+  | 'system'
+  | 'actions';
+
+export type SecurityEntityGroups = Record<SecurityGroupKey, DeviceWithType[]>;
+
+export interface SecurityGroupSummary {
+  id: string;
+  label: string;
+  severity: SecuritySeverity;
+  total: number;
+  critical: number;
+  warning: number;
+  active: number;
+  unknown: number;
+  normal: number;
+  summaryText: string;
+  entities: DeviceWithType[];
+  defaultExpanded: boolean;
+}
+
+export interface SecurityDashboardSummary {
+  highestSeverity: SecuritySeverity;
+  title: string;
+  subtitle: string;
+  attentionItems: DeviceWithType[];
+  activityItems: DeviceWithType[];
+  unknownItems: DeviceWithType[];
+  securedCounts: {
+    openingsClosed: number;
+    locksLocked: number;
+    hazardSensorsClear: number;
+    motionSensorsClear: number;
+    camerasAvailable: number;
+    totalSecure: number;
+  };
+  groupSummaries: SecurityGroupSummary[];
+  totalEntities: number;
+  criticalCount: number;
+  warningCount: number;
+  activeCount: number;
+  unknownCount: number;
+  normalCount: number;
+}
+
+export interface SecurityDashboardGroup {
+  key: SecurityGroupKey;
+  devices: DeviceWithType[];
+}
+
+export interface CameraDashboardModel {
+  allEntities: DeviceWithType[];
+  groups: SecurityEntityGroups;
+  orderedGroups: SecurityDashboardGroup[];
+  summary: SecurityDashboardSummary;
+}
+
+const GROUP_ORDER: SecurityGroupKey[] = [
+  'alarms',
+  'access',
+  'activity',
+  'hazards',
+  'cameras',
+  'sirens',
+  'presence',
+  'system',
+  'actions',
+];
+
+const SEVERITY_ORDER: Record<SecuritySeverity, number> = {
+  critical: 0,
+  warning: 1,
+  active: 2,
+  unknown: 3,
+  normal: 4,
+};
+const ATTENTION_SEVERITY_ORDER: Record<SecuritySeverity, number> = {
+  critical: 0,
+  warning: 1,
+  active: 2,
+  unknown: 3,
+  normal: 4,
+};
+const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
+
+const STILL_IMAGE_UTILITY_KEYWORDS = ['map', 'floor', 'saved map', 'vacuum', 'robot'];
 const SECURITY_CAMERA_KEYWORDS = [
   'camera',
   'cam',
@@ -21,55 +115,12 @@ const SECURITY_CAMERA_KEYWORDS = [
   'hallway',
 ];
 
-const STILL_IMAGE_UTILITY_KEYWORDS = ['map', 'floor', 'saved map', 'vacuum', 'robot'];
-const MOTION_DEVICE_CLASSES = new Set(['motion', 'occupancy', 'presence']);
-const OPENING_DEVICE_CLASSES = new Set(['door', 'window', 'opening', 'garage_door']);
-const CAMERA_LIVE_STATES = new Set(['streaming', 'recording', 'on']);
-const CAMERA_UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
-
-export interface CameraDashboardSummary {
-  totalCameras: number;
-  liveCount: number;
-  idleCount: number;
-  unavailableCount: number;
-  motionCount: number;
-  lockedCount: number;
-  unlockedCount: number;
-  openSensorCount: number;
-  activeAlarmCount: number;
-  activeSirenCount: number;
-}
-
-export interface CameraDashboardModel {
-  primaryCameras: CameraDevice[];
-  stillImageCameras: CameraDevice[];
-  unavailableCameras: CameraDevice[];
-  locks: LockDevice[];
-  summary: CameraDashboardSummary;
-}
-
 function normalizeText(value: string | undefined): string {
   return (value ?? '').replace(/[_-]/g, ' ').toLowerCase();
 }
 
 function includesAnyKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
-}
-
-function getDeviceClass(device: SensorDevice | undefined): string {
-  return typeof device?.deviceClass === 'string' ? device.deviceClass.toLowerCase() : '';
-}
-
-function isUnavailableCamera(camera: CameraDevice): boolean {
-  return CAMERA_UNAVAILABLE_STATES.has(camera.state.toLowerCase());
-}
-
-function isLiveCamera(camera: CameraDevice): boolean {
-  return CAMERA_LIVE_STATES.has(camera.state.toLowerCase());
-}
-
-function getCameraSearchText(camera: CameraDevice): string {
-  return normalizeText(`${camera.id} ${camera.name} ${camera.room}`);
 }
 
 function readCameraVariantBaseId(camera: CameraDevice): string {
@@ -82,16 +133,117 @@ function getCameraGroupingKey(camera: CameraDevice): string {
     return `${camera.providerId}:${camera.sourceDeviceId}`;
   }
 
-  return `${camera.providerId ?? ''}:${readCameraVariantBaseId(camera)}:${normalizeText(camera.room)}:${normalizeText(camera.name)}`;
+  return `${camera.providerId ?? ''}:${readCameraVariantBaseId(camera)}:${normalizeText(
+    camera.room
+  )}:${normalizeText(camera.name)}`;
+}
+
+function compareByNameAndId(
+  left: Pick<DeviceWithType, 'name' | 'id'>,
+  right: Pick<DeviceWithType, 'name' | 'id'>
+) {
+  const nameComparison = left.name.localeCompare(right.name);
+  if (nameComparison !== 0) {
+    return nameComparison;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+function getSecuritySeverity(device: DeviceWithType): SecuritySeverity {
+  if (device.type === 'covers') {
+    return device.position > 0 ? 'warning' : 'normal';
+  }
+
+  if (
+    device.type === 'persons' ||
+    device.securityKind === 'person' ||
+    device.securityKind === 'deviceTracker'
+  ) {
+    return device.securitySeverity === 'unknown' ? 'unknown' : 'normal';
+  }
+
+  return device.securitySeverity ?? 'normal';
+}
+
+function isPresenceDevice(device: DeviceWithType): boolean {
+  return (
+    device.type === 'persons' ||
+    device.securityKind === 'person' ||
+    device.securityKind === 'deviceTracker'
+  );
+}
+
+function compareSecurityDevices(left: DeviceWithType, right: DeviceWithType) {
+  const severityDifference =
+    SEVERITY_ORDER[getSecuritySeverity(left)] - SEVERITY_ORDER[getSecuritySeverity(right)];
+  if (severityDifference !== 0) {
+    return severityDifference;
+  }
+
+  return compareByNameAndId(left, right);
+}
+
+function getAttentionPriority(device: DeviceWithType): number {
+  const severity = getSecuritySeverity(device);
+
+  if (severity === 'critical') {
+    return 0;
+  }
+
+  if (
+    severity === 'warning' &&
+    (device.type === 'covers' ||
+      device.securityKind === 'door' ||
+      device.securityKind === 'window' ||
+      device.securityKind === 'garageDoor' ||
+      device.securityKind === 'opening')
+  ) {
+    return 1;
+  }
+
+  if (severity === 'warning' && (device.type === 'locks' || device.securityKind === 'lock')) {
+    return 2;
+  }
+
+  if (severity === 'warning') {
+    return 3;
+  }
+
+  if (severity === 'active') {
+    return 4;
+  }
+
+  if (severity === 'unknown') {
+    return 5;
+  }
+
+  return 6;
+}
+
+function compareAttentionDevices(left: DeviceWithType, right: DeviceWithType) {
+  const attentionPriorityDifference = getAttentionPriority(left) - getAttentionPriority(right);
+  if (attentionPriorityDifference !== 0) {
+    return attentionPriorityDifference;
+  }
+
+  const severityDifference =
+    ATTENTION_SEVERITY_ORDER[getSecuritySeverity(left)] -
+    ATTENTION_SEVERITY_ORDER[getSecuritySeverity(right)];
+  if (severityDifference !== 0) {
+    return severityDifference;
+  }
+
+  return compareByNameAndId(left, right);
 }
 
 function getCameraVariantPreference(camera: CameraDevice): [number, number, number, string] {
+  const severityPenalty = SEVERITY_ORDER[camera.securitySeverity ?? 'normal'];
   const livePenalty = camera.isStreamCapable === true && camera.isStillImageOnly !== true ? 0 : 1;
   const suffixPenalty = camera.nativeId && /(?:[_-]\d+)+$/.test(camera.nativeId) ? 1 : 0;
-  const statePenalty = isLiveCamera(camera) ? 0 : 1;
   const freshness = camera.lastUpdated ?? camera.lastChanged ?? '';
 
-  return [livePenalty, suffixPenalty, statePenalty, freshness];
+  return [severityPenalty, livePenalty, suffixPenalty, freshness];
 }
 
 function compareCameraVariantPreference(left: CameraDevice, right: CameraDevice): number {
@@ -108,7 +260,7 @@ function compareCameraVariantPreference(left: CameraDevice, right: CameraDevice)
     return rightPreference[3].localeCompare(leftPreference[3]);
   }
 
-  return compareByRoomAndName(left, right);
+  return left.name.localeCompare(right.name);
 }
 
 function collapseCameraVariants(cameras: CameraDevice[]): CameraDevice[] {
@@ -116,9 +268,9 @@ function collapseCameraVariants(cameras: CameraDevice[]): CameraDevice[] {
 
   for (const camera of cameras) {
     const key = getCameraGroupingKey(camera);
-    const existing = grouped.get(key);
-    if (existing) {
-      existing.push(camera);
+    const variants = grouped.get(key);
+    if (variants) {
+      variants.push(camera);
     } else {
       grouped.set(key, [camera]);
     }
@@ -130,7 +282,7 @@ function collapseCameraVariants(cameras: CameraDevice[]): CameraDevice[] {
 }
 
 export function isStillImageUtilityCamera(camera: CameraDevice): boolean {
-  const searchText = getCameraSearchText(camera);
+  const searchText = normalizeText(`${camera.id} ${camera.name} ${camera.room}`);
   return (
     camera.isStillImageOnly === true &&
     includesAnyKeyword(searchText, STILL_IMAGE_UTILITY_KEYWORDS) &&
@@ -141,87 +293,590 @@ export function isStillImageUtilityCamera(camera: CameraDevice): boolean {
   );
 }
 
-function compareByRoomAndName(
-  left: Pick<CameraDevice, 'room' | 'name'>,
-  right: Pick<CameraDevice, 'room' | 'name'>
-): number {
-  const roomCompare = left.room.localeCompare(right.room);
-  if (roomCompare !== 0) {
-    return roomCompare;
+function getSecurityGroupKey(device: DeviceWithType): SecurityGroupKey | null {
+  const securityKind = device.securityKind;
+
+  if (device.type === 'cameras' || securityKind === 'camera') {
+    return 'cameras';
   }
 
-  return left.name.localeCompare(right.name);
+  if (
+    device.type === 'covers' ||
+    device.type === 'locks' ||
+    securityKind === 'lock' ||
+    securityKind === 'door' ||
+    securityKind === 'window' ||
+    securityKind === 'garageDoor' ||
+    securityKind === 'opening'
+  ) {
+    return 'access';
+  }
+
+  if (
+    securityKind === 'motion' ||
+    securityKind === 'occupancy' ||
+    securityKind === 'presence' ||
+    securityKind === 'vibration' ||
+    securityKind === 'sound'
+  ) {
+    return 'activity';
+  }
+
+  if (
+    securityKind === 'smoke' ||
+    securityKind === 'carbonMonoxide' ||
+    securityKind === 'gas' ||
+    securityKind === 'waterLeak' ||
+    securityKind === 'safety'
+  ) {
+    return 'hazards';
+  }
+
+  if (securityKind === 'alarm') {
+    return 'alarms';
+  }
+
+  if (securityKind === 'siren') {
+    return 'sirens';
+  }
+
+  if (device.type === 'persons' || securityKind === 'person' || securityKind === 'deviceTracker') {
+    return 'presence';
+  }
+
+  if (
+    securityKind === 'connectivity' ||
+    securityKind === 'battery' ||
+    securityKind === 'problem' ||
+    securityKind === 'tamper'
+  ) {
+    return 'system';
+  }
+
+  if (securityKind === 'button' || securityKind === 'event') {
+    return 'actions';
+  }
+
+  return null;
 }
 
-function getRelatedMotionCount(sensors: SensorDevice[]): number {
-  return sensors.filter((device) => {
-    const entityId = device.nativeId ?? device.id;
-    const deviceClass = getDeviceClass(device);
-    const searchText = normalizeText(`${entityId} ${device.name}`);
-    const isMotionSensor =
-      MOTION_DEVICE_CLASSES.has(deviceClass) ||
-      includesAnyKeyword(searchText, ['motion', 'occupancy', 'presence', 'pir']);
-
-    return isMotionSensor && device.status === 'active';
-  }).length;
+function createEmptyGroups(): SecurityEntityGroups {
+  return {
+    alarms: [],
+    access: [],
+    activity: [],
+    hazards: [],
+    cameras: [],
+    sirens: [],
+    presence: [],
+    system: [],
+    actions: [],
+  };
 }
 
-function getOpenSensorCount(sensors: SensorDevice[]): number {
-  return sensors.filter((device) => {
-    const deviceClass = getDeviceClass(device);
-    return OPENING_DEVICE_CLASSES.has(deviceClass) && device.status === 'active';
-  }).length;
+function toTypedDevices<TType extends keyof DeviceCollection>(
+  devices: DeviceCollection[TType],
+  type: TType
+): Array<DeviceCollection[TType][number] & { type: TType }> {
+  return devices.map((device) => ({ ...device, type }));
 }
 
-function getActiveAlarmCount(sensors: SensorDevice[]): number {
-  return sensors.filter((device) => {
-    const entityId = device.nativeId ?? device.id;
-    return (
-      entityId.startsWith('alarm_control_panel.') &&
-      !['clear', 'unavailable'].includes(device.status ?? 'measurement')
-    );
-  }).length;
+function countBySeverity(entities: DeviceWithType[]) {
+  return entities.reduce(
+    (counts, entity) => {
+      counts[getSecuritySeverity(entity)] += 1;
+      return counts;
+    },
+    {
+      critical: 0,
+      warning: 0,
+      active: 0,
+      unknown: 0,
+      normal: 0,
+    }
+  );
 }
 
-function getActiveSirenCount(sensors: SensorDevice[]): number {
-  return sensors.filter((device) => {
-    const entityId = device.nativeId ?? device.id;
-    return entityId.startsWith('siren.') && device.status === 'active';
-  }).length;
+function getHighestSeverity(entities: DeviceWithType[]): SecuritySeverity {
+  if (entities.length === 0) {
+    return 'normal';
+  }
+
+  return [...entities]
+    .map((entity) => getSecuritySeverity(entity))
+    .sort((left, right) => SEVERITY_ORDER[left] - SEVERITY_ORDER[right])[0];
+}
+
+function readStateLabel(device: DeviceWithType): string {
+  switch (device.type) {
+    case 'covers':
+      return device.position > 0 ? 'Open' : 'Closed';
+    case 'locks':
+      return device.state ? 'Locked' : 'Unlocked';
+    case 'cameras':
+      return normalizeText(device.state).replace(/\b\w/g, (segment) => segment.toUpperCase());
+    case 'persons':
+      return device.state === 'home' ? 'Home' : 'Away';
+    case 'helpers':
+      return device.serviceAction === 'press' ? 'Action' : device.state ? 'On' : 'Off';
+    case 'sensors':
+      return device.value;
+    default:
+      return 'Active';
+  }
+}
+
+function getRoomSuffix(device: DeviceWithType): string {
+  const room = getDeviceRoomLabel(device);
+  return room !== UNKNOWN_ROOM_LABEL ? room : '';
+}
+
+function formatAttentionSnippet(device: DeviceWithType): string {
+  const room = getRoomSuffix(device);
+  const stateLabel = readStateLabel(device).toLowerCase();
+  return room ? `${device.name} ${stateLabel} · ${room}` : `${device.name} ${stateLabel}`;
+}
+
+function joinSummaryParts(parts: string[]): string {
+  return parts.filter(Boolean).join(' · ');
+}
+
+function getSecureCountSummaryText(
+  securedCounts: SecurityDashboardSummary['securedCounts']
+): string {
+  const parts = [
+    securedCounts.openingsClosed > 0 ? `${securedCounts.openingsClosed} openings closed` : '',
+    securedCounts.locksLocked > 0 ? `${securedCounts.locksLocked} locks locked` : '',
+    securedCounts.hazardSensorsClear > 0
+      ? `${securedCounts.hazardSensorsClear} hazard sensors clear`
+      : '',
+    securedCounts.motionSensorsClear > 0
+      ? `${securedCounts.motionSensorsClear} motion sensors clear`
+      : '',
+    securedCounts.camerasAvailable > 0 ? `${securedCounts.camerasAvailable} cameras available` : '',
+  ];
+
+  return joinSummaryParts(parts.slice(0, 3).filter(Boolean));
+}
+
+function buildSecuredCounts(allEntities: DeviceWithType[]) {
+  const normalEntities = allEntities.filter((entity) => getSecuritySeverity(entity) === 'normal');
+  const availableCameraEntities = allEntities.filter(
+    (entity) =>
+      (entity.type === 'cameras' || entity.securityKind === 'camera') &&
+      getSecuritySeverity(entity) !== 'unknown'
+  );
+
+  const openingsClosed = normalEntities.filter(
+    (entity) =>
+      entity.type === 'covers' ||
+      entity.securityKind === 'door' ||
+      entity.securityKind === 'window' ||
+      entity.securityKind === 'garageDoor' ||
+      entity.securityKind === 'opening'
+  ).length;
+  const locksLocked = normalEntities.filter(
+    (entity) => entity.type === 'locks' || entity.securityKind === 'lock'
+  ).length;
+  const hazardSensorsClear = normalEntities.filter((entity) =>
+    ['smoke', 'carbonMonoxide', 'gas', 'waterLeak', 'safety'].includes(entity.securityKind ?? '')
+  ).length;
+  const motionSensorsClear = normalEntities.filter((entity) =>
+    ['motion', 'occupancy', 'presence', 'vibration', 'sound'].includes(entity.securityKind ?? '')
+  ).length;
+  const camerasAvailable = availableCameraEntities.length;
+
+  return {
+    openingsClosed,
+    locksLocked,
+    hazardSensorsClear,
+    motionSensorsClear,
+    camerasAvailable,
+    totalSecure:
+      openingsClosed + locksLocked + hazardSensorsClear + motionSensorsClear + camerasAvailable,
+  };
+}
+
+function buildHeroCopy(
+  allEntities: DeviceWithType[],
+  attentionItems: DeviceWithType[],
+  activityItems: DeviceWithType[],
+  unknownItems: DeviceWithType[],
+  securedCounts: SecurityDashboardSummary['securedCounts']
+) {
+  const highestSeverity = getHighestSeverity(allEntities);
+
+  if (highestSeverity === 'critical') {
+    const topItem = attentionItems.find((item) => getSecuritySeverity(item) === 'critical');
+    return {
+      highestSeverity,
+      title: 'Critical alert',
+      subtitle: topItem ? formatAttentionSnippet(topItem) : 'Immediate attention required',
+    };
+  }
+
+  if (highestSeverity === 'warning') {
+    const warningItems = attentionItems.filter((item) => getSecuritySeverity(item) === 'warning');
+    return {
+      highestSeverity,
+      title: `${warningItems.length} ${warningItems.length === 1 ? 'thing needs attention' : 'things need attention'}`,
+      subtitle: joinSummaryParts(warningItems.slice(0, 2).map(formatAttentionSnippet)),
+    };
+  }
+
+  if (highestSeverity === 'active') {
+    return {
+      highestSeverity,
+      title: 'Security active',
+      subtitle:
+        joinSummaryParts(activityItems.slice(0, 2).map(formatAttentionSnippet)) ||
+        'Live security activity detected',
+    };
+  }
+
+  if (highestSeverity === 'unknown') {
+    return {
+      highestSeverity,
+      title: 'Some devices unavailable',
+      subtitle: `${unknownItems.length} ${unknownItems.length === 1 ? 'device is' : 'devices are'} unavailable`,
+    };
+  }
+
+  return {
+    highestSeverity,
+    title: 'All secure',
+    subtitle: getSecureCountSummaryText(securedCounts) || 'No security issues found',
+  };
+}
+
+function getGroupSeverity(entities: DeviceWithType[]): SecuritySeverity {
+  return getHighestSeverity(entities);
+}
+
+function buildSeverityBreakdownText(entities: DeviceWithType[]): string {
+  const counts = countBySeverity(entities);
+  const parts = [
+    counts.critical > 0 ? `${counts.critical} critical` : '',
+    counts.warning > 0 ? `${counts.warning} attention` : '',
+    counts.active > 0 ? `${counts.active} active` : '',
+    counts.unknown > 0 ? `${counts.unknown} unavailable` : '',
+    counts.normal > 0 ? `${counts.normal} normal` : '',
+  ];
+  return joinSummaryParts(parts);
+}
+
+function buildGroupSummaryText(id: string, entities: DeviceWithType[]): string {
+  const normalCount = entities.filter((entity) => getSecuritySeverity(entity) === 'normal').length;
+  const warningCount = entities.filter(
+    (entity) => getSecuritySeverity(entity) === 'warning'
+  ).length;
+  const criticalCount = entities.filter(
+    (entity) => getSecuritySeverity(entity) === 'critical'
+  ).length;
+  const activeCount = entities.filter((entity) => getSecuritySeverity(entity) === 'active').length;
+  const unknownCount = entities.filter(
+    (entity) => getSecuritySeverity(entity) === 'unknown'
+  ).length;
+
+  switch (id) {
+    case 'doors-windows':
+      return joinSummaryParts([
+        normalCount > 0 ? `${normalCount} closed` : '',
+        warningCount > 0 ? `${warningCount} open` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'locks':
+      return joinSummaryParts([
+        normalCount > 0 ? `${normalCount} locked` : '',
+        warningCount > 0 ? `${warningCount} unlocked` : '',
+        activeCount > 0 ? `${activeCount} changing` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'motion-occupancy':
+      return joinSummaryParts([
+        activeCount > 0 ? `${activeCount} active` : '',
+        normalCount > 0 ? `${normalCount} clear` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'hazards':
+      return joinSummaryParts([
+        criticalCount + warningCount > 0 ? `${criticalCount + warningCount} alerts` : '',
+        normalCount > 0 ? `${normalCount} clear` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'cameras':
+      return joinSummaryParts([
+        activeCount > 0 ? `${activeCount} live` : '',
+        normalCount > 0 ? `${normalCount} available` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'sirens':
+      return joinSummaryParts([
+        criticalCount > 0 ? `${criticalCount} on` : '',
+        normalCount > 0 ? `${normalCount} off` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'alarms':
+      return joinSummaryParts([
+        criticalCount > 0 ? `${criticalCount} triggered` : '',
+        warningCount > 0 ? `${warningCount} pending` : '',
+        activeCount > 0 ? `${activeCount} armed` : '',
+        normalCount > 0 ? `${normalCount} disarmed` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'presence':
+      return joinSummaryParts([
+        normalCount > 0 ? `${normalCount} settled` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    case 'system':
+      return joinSummaryParts([
+        warningCount + criticalCount > 0 ? `${warningCount + criticalCount} issues` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        normalCount > 0 ? `${normalCount} healthy` : '',
+      ]);
+    case 'actions':
+      return joinSummaryParts([
+        normalCount > 0 ? `${normalCount} ready` : '',
+        activeCount > 0 ? `${activeCount} active` : '',
+        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+      ]);
+    default:
+      return buildSeverityBreakdownText(entities);
+  }
+}
+
+function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummary[] {
+  const definitions: Array<{
+    id: string;
+    label: string;
+    include: (device: DeviceWithType) => boolean;
+  }> = [
+    {
+      id: 'alarms',
+      label: 'Alarm',
+      include: (device) => device.securityKind === 'alarm',
+    },
+    {
+      id: 'doors-windows',
+      label: 'Doors & windows',
+      include: (device) =>
+        device.type === 'covers' ||
+        ['door', 'window', 'garageDoor', 'opening'].includes(device.securityKind ?? ''),
+    },
+    {
+      id: 'locks',
+      label: 'Locks',
+      include: (device) => device.type === 'locks' || device.securityKind === 'lock',
+    },
+    {
+      id: 'motion-occupancy',
+      label: 'Motion & occupancy',
+      include: (device) =>
+        ['motion', 'occupancy', 'presence', 'vibration', 'sound'].includes(
+          device.securityKind ?? ''
+        ),
+    },
+    {
+      id: 'hazards',
+      label: 'Hazards',
+      include: (device) =>
+        ['smoke', 'carbonMonoxide', 'gas', 'waterLeak', 'safety'].includes(
+          device.securityKind ?? ''
+        ),
+    },
+    {
+      id: 'cameras',
+      label: 'Cameras',
+      include: (device) => device.type === 'cameras' || device.securityKind === 'camera',
+    },
+    {
+      id: 'sirens',
+      label: 'Sirens',
+      include: (device) => device.securityKind === 'siren',
+    },
+    {
+      id: 'presence',
+      label: 'Presence',
+      include: (device) =>
+        device.type === 'persons' ||
+        device.securityKind === 'person' ||
+        device.securityKind === 'deviceTracker',
+    },
+    {
+      id: 'system',
+      label: 'System',
+      include: (device) =>
+        ['connectivity', 'battery', 'problem', 'tamper'].includes(device.securityKind ?? ''),
+    },
+    {
+      id: 'actions',
+      label: 'Actions',
+      include: (device) => ['button', 'event'].includes(device.securityKind ?? ''),
+    },
+  ];
+
+  return definitions
+    .map((definition) => {
+      const entities = allEntities.filter(definition.include);
+      if (entities.length === 0) {
+        return null;
+      }
+
+      const severityCounts = countBySeverity(entities);
+      const severity = getGroupSeverity(entities);
+
+      return {
+        id: definition.id,
+        label: definition.label,
+        severity,
+        total: entities.length,
+        ...severityCounts,
+        summaryText: buildGroupSummaryText(definition.id, entities),
+        entities,
+        defaultExpanded: severity === 'critical' || severity === 'warning',
+      } satisfies SecurityGroupSummary;
+    })
+    .filter((group): group is SecurityGroupSummary => group !== null);
+}
+
+function getDeviceIdentitySet(device: DeviceWithType): Set<string> {
+  const ids = [device.id];
+  if ('nativeId' in device && typeof device.nativeId === 'string') {
+    ids.push(device.nativeId);
+  }
+  if ('canonicalId' in device && typeof device.canonicalId === 'string') {
+    ids.push(device.canonicalId);
+  }
+
+  return new Set(ids);
+}
+
+function isOpeningSecurityDevice(device: DeviceWithType): boolean {
+  return (
+    device.type === 'covers' ||
+    (typeof device.securityKind === 'string' && SECURITY_OPENING_KINDS.has(device.securityKind))
+  );
+}
+
+function collapseOverlappingSecurityDevices(devices: DeviceWithType[]): DeviceWithType[] {
+  const openingDevices = devices.filter(isOpeningSecurityDevice);
+  if (openingDevices.length < 2) {
+    return devices;
+  }
+
+  const aggregateDevices = openingDevices
+    .filter(
+      (device): device is DeviceWithType & { type: 'sensors'; groupMembers: string[] } =>
+        device.type === 'sensors' &&
+        Array.isArray(device.groupMembers) &&
+        device.groupMembers.length > 0 &&
+        getSecuritySeverity(device) !== 'normal'
+    )
+    .sort((left, right) => right.groupMembers.length - left.groupMembers.length);
+
+  if (aggregateDevices.length === 0) {
+    return devices;
+  }
+
+  const removalIds = new Set<string>();
+
+  for (const aggregateDevice of aggregateDevices) {
+    const memberIds = new Set(aggregateDevice.groupMembers);
+
+    for (const device of openingDevices) {
+      if (device.id === aggregateDevice.id || getSecuritySeverity(device) === 'normal') {
+        continue;
+      }
+
+      const matchesGroupMember = [...getDeviceIdentitySet(device)].some((id) => memberIds.has(id));
+      if (matchesGroupMember) {
+        removalIds.add(device.id);
+      }
+    }
+  }
+
+  if (removalIds.size === 0) {
+    return devices;
+  }
+
+  return devices.filter((device) => !removalIds.has(device.id));
 }
 
 export function buildSecurityCameraDashboardModel(
-  devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'>
+  devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'> &
+    Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>
 ): CameraDashboardModel {
-  const cameras = collapseCameraVariants(devices.cameras).sort(compareByRoomAndName);
-  const unavailableCameras = cameras.filter(isUnavailableCamera);
-  const availableCameras = cameras.filter((camera) => !isUnavailableCamera(camera));
-  const stillImageCameras = availableCameras.filter(isStillImageUtilityCamera);
-  const stillImageIds = new Set(stillImageCameras.map((camera) => camera.id));
-  const primaryCameras = availableCameras.filter((camera) => !stillImageIds.has(camera.id));
-  const locks = [...devices.locks].sort(compareByRoomAndName);
-  const liveCount = primaryCameras.filter(
-    (camera) => camera.isStreamCapable || isLiveCamera(camera)
-  ).length;
-  const idleCount = primaryCameras.length - liveCount;
-  const unlockedCount = locks.filter((lock) => !lock.state).length;
+  const groups = createEmptyGroups();
+  const dedupedCameras = collapseCameraVariants(devices.cameras);
+  const candidates = collapseOverlappingSecurityDevices([
+    ...toTypedDevices(dedupedCameras, 'cameras'),
+    ...toTypedDevices(devices.covers ?? [], 'covers'),
+    ...toTypedDevices(devices.locks, 'locks'),
+    ...toTypedDevices(devices.sensors, 'sensors'),
+    ...toTypedDevices(devices.persons ?? [], 'persons'),
+    ...toTypedDevices(devices.helpers ?? [], 'helpers'),
+  ]);
+
+  for (const device of candidates) {
+    const groupKey = getSecurityGroupKey(device);
+    if (!groupKey) {
+      continue;
+    }
+
+    groups[groupKey].push(device);
+  }
+
+  for (const key of GROUP_ORDER) {
+    groups[key].sort(compareSecurityDevices);
+  }
+
+  const allEntities = GROUP_ORDER.flatMap((key) => groups[key]);
+  const severityCounts = countBySeverity(allEntities);
+  const attentionItems = allEntities
+    .filter((entity) => {
+      if (isPresenceDevice(entity)) {
+        return false;
+      }
+      const severity = getSecuritySeverity(entity);
+      return severity === 'critical' || severity === 'warning' || severity === 'unknown';
+    })
+    .sort(compareAttentionDevices);
+  const activityItems = allEntities
+    .filter((entity) => !isPresenceDevice(entity) && getSecuritySeverity(entity) === 'active')
+    .sort(compareSecurityDevices);
+  const unknownItems = allEntities
+    .filter((entity) => getSecuritySeverity(entity) === 'unknown')
+    .sort(compareSecurityDevices);
+  const securedCounts = buildSecuredCounts(allEntities);
+  const hero = buildHeroCopy(
+    allEntities,
+    attentionItems,
+    activityItems,
+    unknownItems,
+    securedCounts
+  );
+  const groupSummaries = buildGroupSummaries(allEntities);
 
   return {
-    primaryCameras,
-    stillImageCameras,
-    unavailableCameras,
-    locks,
+    allEntities,
+    groups,
+    orderedGroups: GROUP_ORDER.map((key) => ({ key, devices: groups[key] })).filter(
+      (group) => group.devices.length > 0
+    ),
     summary: {
-      totalCameras: cameras.length,
-      liveCount,
-      idleCount,
-      unavailableCount: unavailableCameras.length,
-      motionCount: getRelatedMotionCount(devices.sensors),
-      lockedCount: locks.length - unlockedCount,
-      unlockedCount,
-      openSensorCount: getOpenSensorCount(devices.sensors),
-      activeAlarmCount: getActiveAlarmCount(devices.sensors),
-      activeSirenCount: getActiveSirenCount(devices.sensors),
+      ...hero,
+      attentionItems,
+      activityItems,
+      unknownItems,
+      securedCounts,
+      groupSummaries,
+      totalEntities: allEntities.length,
+      criticalCount: severityCounts.critical,
+      warningCount: severityCounts.warning,
+      activeCount: severityCounts.active,
+      unknownCount: severityCounts.unknown,
+      normalCount: severityCounts.normal,
     },
   };
 }

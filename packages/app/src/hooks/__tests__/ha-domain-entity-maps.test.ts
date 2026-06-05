@@ -5,6 +5,7 @@ import {
 } from '@navet/app/infrastructure/home-assistant/home-assistant-domain-selectors';
 import { alarmControlPanelEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/alarm-control-panel';
 import { binarySensorEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/binary-sensor';
+import { buttonEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/button';
 import { sensorEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/sensor';
 import { describe, expect, it } from 'vitest';
 
@@ -15,6 +16,7 @@ describe('ha-domain-entity-maps', () => {
     const siren = binarySensorEntityFactory({ friendly_name: 'Siren' });
     siren.entity_id = 'siren.entry';
     siren.state = 'on';
+    const doorbell = buttonEntityFactory({ friendly_name: 'Doorbell Chime' });
     const ignored = sensorEntityFactory();
 
     expect(
@@ -23,6 +25,7 @@ describe('ha-domain-entity-maps', () => {
           [motion.entity_id]: motion,
           [alarm.entity_id]: alarm,
           [siren.entity_id]: siren,
+          [doorbell.entity_id]: doorbell,
           [ignored.entity_id]: ignored,
         },
       } as never)
@@ -30,6 +33,7 @@ describe('ha-domain-entity-maps', () => {
       [motion.entity_id]: motion,
       [alarm.entity_id]: alarm,
       [siren.entity_id]: siren,
+      [doorbell.entity_id]: doorbell,
     });
   });
 

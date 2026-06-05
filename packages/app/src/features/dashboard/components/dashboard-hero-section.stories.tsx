@@ -3,7 +3,6 @@ import { DashboardHeroSection } from '@navet/app/ui-kit/patterns';
 import { InteractivePill } from '@navet/app/ui-kit/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/ui-kit/tokens';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Sparkles } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 function DefaultHeroStory() {
@@ -17,12 +16,6 @@ function DefaultHeroStory() {
 
   return (
     <ThemeAwareDashboardHeroSection
-      eyebrow={
-        <>
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Storybook</span>
-        </>
-      }
       title="Build Navet UI in isolation before it lands in a feature."
       description="Use the system layer to document primitives, validate themes, and keep new UI work consistent across onboarding, settings, and dashboard surfaces."
       actions={
@@ -51,7 +44,6 @@ function DefaultHeroStory() {
 }
 
 function ThemeAwareDashboardHeroSection({
-  eyebrow,
   title,
   description,
   actions,
@@ -59,8 +51,6 @@ function ThemeAwareDashboardHeroSection({
 }: Omit<ComponentProps<typeof DashboardHeroSection>, 'accentColor' | 'surface'>) {
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const eyebrowClassName =
-    theme === 'light' ? 'text-gray-500' : theme === 'black' ? 'text-white/70' : 'text-white/60';
   const asideSurfaceClassName =
     theme === 'light'
       ? 'border-gray-200/80 bg-white/90 text-gray-900'
@@ -70,15 +60,6 @@ function ThemeAwareDashboardHeroSection({
   const asideTextClassName = theme === 'light' ? 'text-gray-600' : 'text-white/65';
   return (
     <DashboardHeroSection
-      eyebrow={
-        eyebrow ? (
-          <div
-            className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] ${eyebrowClassName}`}
-          >
-            {eyebrow}
-          </div>
-        ) : null
-      }
       title={title}
       description={description}
       actions={actions}
@@ -108,7 +89,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Composed hero pattern for dashboard and section intros. Supports eyebrow, action slot, and aside content with shared theme-surface tokens.',
+          'Composed hero pattern for dashboard and section intros. Supports title, description, actions, and aside content with shared theme-surface tokens.',
       },
     },
   },

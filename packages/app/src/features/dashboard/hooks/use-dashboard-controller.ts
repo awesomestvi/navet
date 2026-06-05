@@ -25,6 +25,7 @@ import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.t
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
 import { startTransition, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
 import type { AllViewGrouping } from '../all-view-grid';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
@@ -300,36 +301,6 @@ export function useDashboardController(): DashboardController {
   };
 }
 
-export function getClimateDashboardGroup(
-  device: DeviceWithType
-): DashboardClimateSectionGroup['key'] | null {
-  if (device.type === 'fans') {
-    return 'fans';
-  }
-
-  if (device.type === 'climate' || device.type === 'hvac') {
-    return 'hvac';
-  }
-
-  if (device.type !== 'sensors') {
-    return null;
-  }
-
-  switch (String(device.deviceClass ?? '').toLowerCase()) {
-    case 'temperature':
-      return 'temperature';
-    case 'humidity':
-      return 'humidity';
-    case 'air_quality':
-    case 'carbon_dioxide':
-      return 'airQuality';
-    case 'pressure':
-      return 'pressure';
-    default:
-      return null;
-  }
-}
-
 function useDashboardSectionData({
   activeSection,
   allCustomCards,
@@ -513,4 +484,5 @@ function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashbo
   }, [homeLayoutController]);
 }
 
+export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
 export type { DashboardController } from './use-dashboard-controller.types';
