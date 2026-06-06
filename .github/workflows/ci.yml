@@ -52,6 +52,12 @@ jobs:
       - name: Build app
         run: pnpm build
 
+      - name: Check bundle budgets
+        run: pnpm check:bundle-budget
+
+      - name: Run Lighthouse CI
+        run: pnpm dlx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
+
   tier-1-release-critical:
     uses: ./.github/workflows/provider-platform-validation.yml
 

@@ -57,10 +57,13 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const batteries = useProviderBatterySensorRows();
   const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
   const selectedIdSet = useMemo(() => new Set(selectedEntityIds ?? []), [selectedEntityIds]);
-  const filteredBatteries =
-    selectedEntityIds === undefined
-      ? batteries
-      : batteries.filter((battery) => selectedIdSet.has(battery.id));
+  const filteredBatteries = useMemo(
+    () =>
+      selectedEntityIds === undefined
+        ? batteries
+        : batteries.filter((battery) => selectedIdSet.has(battery.id)),
+    [batteries, selectedEntityIds, selectedIdSet]
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const chromeSize = size === 'large' ? 'medium' : size;
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);

@@ -3,26 +3,17 @@ import { Input } from '@navet/app/components/primitives';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
-import { getDeviceTypeLabel } from '@navet/app/constants/device-type-labels';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
-import type { DeviceWithType } from '@navet/app/types/device.types';
-import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
-import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
 import { Plus, Search, X } from 'lucide-react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  buildPreparedDashboardDevices,
+  type PreparedDashboardDevice as PreparedDevice,
+} from '../../utils/prepared-dashboard-devices';
 import { ENTITY_LIST_HEIGHT, ENTITY_LIST_OVERSCAN, ENTITY_ROW_HEIGHT } from './constants';
 import type { AddEntityDialogProps } from './types';
-
-interface PreparedDevice {
-  device: DeviceWithType;
-  id: string;
-  name: string;
-  room: string;
-  typeLabel: string;
-  searchText: string;
-}
 
 interface AddEntityRowProps {
   actionLabel: string;
@@ -117,11 +108,15 @@ export function AddEntityDialog({
   const addedEntityIdSet = useMemo(() => new Set(addedEntityIds), [addedEntityIds]);
   const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
   const connectedProviderCount = Object.keys(providerSessions).length;
+  const preparedDeviceCatalog = useMemo(
+    () => buildPreparedDashboardDevices(deviceMap, t, connectedProviderCount),
+    [connectedProviderCount, deviceMap, t]
+  );
 
   const preparedDevices = useMemo(() => {
     const devices: PreparedDevice[] = [];
 
-    for (const device of deviceMap.values()) {
+    for (const device of preparedDeviceCatalog) {
       if (visibleIdSet && !visibleIdSet.has(device.id)) {
         continue;
       }
@@ -130,26 +125,11 @@ export function AddEntityDialog({
         continue;
       }
 
-      const room = getDeviceRoomLabel(device);
+      const room = device.room;
       if (!isAllRooms(currentRoom) && room !== currentRoom) {
         continue;
       }
-
-      const name = typeof device.name === 'string' ? device.name : device.id;
-      const typeLabel =
-        ('entityType' in device && typeof device.entityType === 'string' && device.entityType) ||
-        getDeviceTypeLabel(device.type, t);
-      const providerTypeLabel =
-        getProviderEntityTypeLabel(device.id, typeLabel, connectedProviderCount > 1) ?? typeLabel;
-
-      devices.push({
-        device,
-        id: device.id,
-        name,
-        room,
-        typeLabel: providerTypeLabel,
-        searchText: `${name} ${room} ${providerTypeLabel} ${device.id}`.toLowerCase(),
-      });
+      devices.push(device);
     }
 
     devices.sort((left, right) => {
@@ -162,7 +142,7 @@ export function AddEntityDialog({
     });
 
     return devices;
-  }, [addedEntityIdSet, connectedProviderCount, currentRoom, deviceMap, t, visibleIdSet]);
+  }, [addedEntityIdSet, currentRoom, preparedDeviceCatalog, visibleIdSet]);
 
   const availableDevices = useMemo(() => {
     const normalizedQuery = deferredQuery.trim().toLowerCase();

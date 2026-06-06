@@ -1,7 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetSemanticColorTokens } from '@navet/app/components/system/tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { AlertTriangle, CheckCircle2, Info, WifiOff } from 'lucide-react';
+import { CheckCircle2, Info, OctagonAlert, WifiOff } from 'lucide-react';
 
 type BannerTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -15,7 +15,7 @@ const iconPillClasses: Record<BannerTone, string> = {
 const toneIcons: Record<BannerTone, typeof WifiOff> = {
   info: Info,
   success: CheckCircle2,
-  warning: AlertTriangle,
+  warning: OctagonAlert,
   error: WifiOff,
 };
 

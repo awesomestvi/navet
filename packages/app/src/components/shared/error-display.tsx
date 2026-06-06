@@ -5,7 +5,7 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import { useErrorStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
-import { AlertTriangle, LogIn, RefreshCw, X } from 'lucide-react';
+import { LogIn, OctagonAlert, RefreshCw, X } from 'lucide-react';
 import { memo } from 'react';
 
 interface ErrorDisplayProps {
@@ -106,7 +106,7 @@ export const ErrorDisplay = memo(function ErrorDisplay({
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-orange-300/18 bg-orange-500/14 text-orange-200">
-                    <AlertTriangle className="h-5 w-5" />
+                    <OctagonAlert className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${textColor}`}>

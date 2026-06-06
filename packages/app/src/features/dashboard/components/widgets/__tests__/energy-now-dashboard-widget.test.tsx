@@ -10,8 +10,18 @@ const energyDashboardMock = vi.hoisted(() => ({
 }));
 
 vi.mock('@navet/app/features/energy', () => ({
+  useProviderEnergyNow: energyDashboardMock.useProviderEnergyNow,
+}));
+
+vi.mock('@navet/app/features/energy/components/widgets/energy-now-card-view', () => ({
   EnergyNowCardView: ({ title }: { title: string }) => <div>{title}</div>,
+}));
+
+vi.mock('@navet/app/features/energy/hooks/use-energy-load-history', () => ({
   useEnergyLoadHistory: energyDashboardMock.useEnergyLoadHistory,
+}));
+
+vi.mock('@navet/app/features/energy/hooks/use-provider-energy-now', () => ({
   useProviderEnergyNow: energyDashboardMock.useProviderEnergyNow,
 }));
 

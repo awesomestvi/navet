@@ -662,4 +662,73 @@ describe('integrationStore', () => {
       previousHallView
     );
   });
+
+  it('updates only the changed provider slice when Homey publishes a device update', async () => {
+    await resetAppStores();
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'on',
+          attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-ha', parent_id: null, user_id: null },
+        },
+      },
+    });
+    homeyService.replaceSnapshot({
+      connected: true,
+      zones: {
+        living_room: { id: 'living_room', name: 'Living Room' },
+      },
+      devices: {
+        'switch-1': {
+          id: 'switch-1',
+          name: 'Coffee Machine',
+          class: 'socket',
+          zone: 'living_room',
+          capabilitiesObj: {
+            onoff: { value: false },
+          },
+        },
+      },
+    });
+
+    const previousState = integrationStore.getState();
+    const previousHomeAssistantSlice = previousState.providerEntitiesByProviderId.home_assistant;
+    const previousHomeAssistantEntity =
+      previousState.providerEntitiesByCanonicalId['home_assistant:light.kitchen'];
+    const previousHomeyEntity = previousState.providerEntitiesByCanonicalId['homey:switch-1'];
+    const previousRoomDescriptors = previousState.roomDescriptors;
+
+    homeyService.replaceSnapshot({
+      connected: true,
+      zones: {
+        living_room: { id: 'living_room', name: 'Living Room' },
+      },
+      devices: {
+        'switch-1': {
+          id: 'switch-1',
+          name: 'Coffee Machine',
+          class: 'socket',
+          zone: 'living_room',
+          capabilitiesObj: {
+            onoff: { value: true },
+          },
+        },
+      },
+    });
+
+    const nextState = integrationStore.getState();
+
+    expect(nextState.providerEntitiesByProviderId.home_assistant).toBe(previousHomeAssistantSlice);
+    expect(nextState.providerEntitiesByCanonicalId['home_assistant:light.kitchen']).toBe(
+      previousHomeAssistantEntity
+    );
+    expect(nextState.providerEntitiesByCanonicalId['homey:switch-1']).not.toBe(previousHomeyEntity);
+    expect(nextState.roomDescriptors).toBe(previousRoomDescriptors);
+  });
 });

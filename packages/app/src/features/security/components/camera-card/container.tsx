@@ -92,9 +92,9 @@ function getCameraClockSnapshot() {
   return cameraClockNow;
 }
 
-function useCameraClock() {
+function useCameraClock(enabled: boolean) {
   return useSyncExternalStore(
-    subscribeToCameraClock,
+    enabled ? subscribeToCameraClock : () => () => {},
     getCameraClockSnapshot,
     getCameraClockSnapshot
   );
@@ -102,7 +102,7 @@ function useCameraClock() {
 
 function useCameraCardVisibility() {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const element = cardRef.current;
@@ -156,7 +156,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [failedStreamTypes, setFailedStreamTypes] = useState<PlatformCameraTransport[]>([]);
   const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
-  const now = useCameraClock();
+  const now = useCameraClock(isVisible || isViewerOpen);
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
   const providerState = readNavetCameraState(providerEntity);
@@ -229,6 +229,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      return;
+    }
+
+    if (streamRetryTimeoutRef.current !== null) {
+      window.clearTimeout(streamRetryTimeoutRef.current);
+      streamRetryTimeoutRef.current = null;
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     setFailedStreamTypes([]);
@@ -327,13 +338,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         return;
       }
 
+      if (!isVisible || document.visibilityState !== 'visible') {
+        return;
+      }
+
       streamRetryTimeoutRef.current = window.setTimeout(() => {
         streamRetryTimeoutRef.current = null;
         setFailedStreamTypes([]);
         setRefreshKey((key) => key + 1);
       }, CAMERA_STREAM_RETRY_DELAY_MS);
     },
-    [hasSnapshot]
+    [hasSnapshot, isVisible]
   );
 
   const handleToggleMotionDetection = useCallback(() => {

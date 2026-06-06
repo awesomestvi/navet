@@ -2,7 +2,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
-import { CheckCircle2, Info, LoaderCircle, OctagonAlert, TriangleAlert, X } from 'lucide-react';
+import { CheckCircle2, Info, LoaderCircle, OctagonAlert, X } from 'lucide-react';
 import { type CSSProperties, useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
@@ -45,7 +45,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       icons={{
         success: <CheckCircle2 className="h-4 w-4" />,
         info: <Info className="h-4 w-4" />,
-        warning: <TriangleAlert className="h-4 w-4" />,
+        warning: <OctagonAlert className="h-4 w-4" />,
         error: <OctagonAlert className="h-4 w-4" />,
         loading: <LoaderCircle className="h-4 w-4 animate-spin" />,
         close: <X className="h-4 w-4" />,

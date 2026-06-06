@@ -65,6 +65,46 @@ export function getAppChunkName(id: string) {
     return undefined
   }
 
+  if (moduleId.includes('/packages/app/src/components/layout/media-section')) {
+    return 'entity-card-media'
+  }
+
+  if (moduleId.includes('/packages/app/src/components/layout/security-section')) {
+    return 'entity-card-security'
+  }
+
+  if (
+    moduleId.includes('/packages/app/src/components/layout/') ||
+    moduleId.includes('/packages/app/src/components/patterns/') ||
+    moduleId.includes('/packages/app/src/components/primitives/') ||
+    moduleId.includes('/packages/app/src/components/system/') ||
+    moduleId.includes('/packages/app/src/components/shared/theme/') ||
+    moduleId.includes('/packages/app/src/features/auth/') ||
+    moduleId.includes('/packages/app/src/features/habits/') ||
+    moduleId.includes('/packages/app/src/hooks/') ||
+    moduleId.includes('/packages/app/src/i18n/') ||
+    moduleId.includes('/packages/app/src/stores/') ||
+    moduleId.includes('/packages/app/src/platform/') ||
+    moduleId.includes('/packages/app/src/services/') ||
+    moduleId.includes('/packages/app/src/auth/') ||
+    moduleId.includes('/packages/app/src/utils/')
+  ) {
+    return 'app-shell'
+  }
+
+  if (
+    moduleId.includes('/packages/app/src/features/energy/data/') ||
+    moduleId.includes('/packages/app/src/features/energy/hooks/') ||
+    moduleId.includes('/packages/app/src/features/energy/services/') ||
+    moduleId.includes('/packages/app/src/features/energy/utils/') ||
+    moduleId.includes('/packages/app/src/features/energy/components/charts/') ||
+    moduleId.includes('/packages/app/src/features/energy/components/widgets/energy-now-card-view') ||
+    moduleId.includes('/packages/app/src/features/energy/components/widgets/energy-now-gradient-overlays') ||
+    moduleId.includes('/packages/app/src/features/energy/types/')
+  ) {
+    return 'energy-shared'
+  }
+
   if (
     moduleId.includes('/packages/app/src/features/energy/') ||
     moduleId.includes('/packages/app/src/hooks/ha-battery-sensor-rows')
@@ -176,7 +216,6 @@ export function getAppChunkName(id: string) {
   }
 
   if (
-    moduleId.includes('/packages/app/src/components/layout/') ||
     moduleId.includes('/packages/app/src/components/shared/entity-room-selector') ||
     moduleId.includes('/packages/app/src/components/primitives/room-eyebrow') ||
     moduleId.includes('/packages/app/src/components/primitives/select') ||

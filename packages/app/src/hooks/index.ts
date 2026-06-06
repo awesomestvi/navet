@@ -16,9 +16,12 @@ export { useCurrentIntegrationConnectionState } from './use-current-integration-
 export { useDashboardDevices } from './use-dashboard-devices';
 export { useDashboardWidgetRoomOptions } from './use-dashboard-widget-room-options';
 export { useDeviceMap } from './use-device-map';
+export type { DeviceCollectionKey } from './use-devices';
 export {
+  DEVICE_COLLECTION_KEYS,
   useAggregatedDevices,
   useCalendarDevicesCollection,
+  useDeviceCollectionsByKeys,
   useDevices,
   useProviderCalendarCollections,
   useProviderDevices,
@@ -47,7 +50,11 @@ export {
 export { useProviderEntityModel } from './use-provider-device';
 export {
   useProviderConnectionState,
+  useProviderEntityIdsByPrefix,
   useProviderEntityRegistryEntries,
+  useProviderEntityRegistryEntriesByDeviceId,
+  useProviderEntityRegistryEntriesByIds,
+  useProviderEntityRegistryEntry,
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
   useProviderEntitySnapshots,

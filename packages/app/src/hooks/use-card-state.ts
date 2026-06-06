@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardSize } from '../components/shared/card-size-selector';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { DeviceCollection } from '../types/device.types';
@@ -26,9 +26,16 @@ function areCardSizeRecordsEqual(
   return rightKeys.every((key) => left[key] === right[key]);
 }
 
-function normalizeCardSize(id: string, size: CardSize, devices: DeviceCollection): CardSize {
-  const isCalendarCard = devices.calendars.some((device) => device.id === id);
-  const isLockCard = devices.locks.some((device) => device.id === id);
+function normalizeCardSize(
+  id: string,
+  size: CardSize,
+  constrainedIds: {
+    calendarIds: Set<string>;
+    lockIds: Set<string>;
+  }
+): CardSize {
+  const isCalendarCard = constrainedIds.calendarIds.has(id);
+  const isLockCard = constrainedIds.lockIds.has(id);
 
   if (isCalendarCard && !CALENDAR_ALLOWED_SIZES.includes(size)) {
     return 'large';
@@ -43,12 +50,15 @@ function normalizeCardSize(id: string, size: CardSize, devices: DeviceCollection
 
 function normalizeCardSizes(
   cardSizes: Record<string, CardSize>,
-  devices: DeviceCollection
+  constrainedIds: {
+    calendarIds: Set<string>;
+    lockIds: Set<string>;
+  }
 ): Record<string, CardSize> {
   let changed = false;
 
   const normalizedEntries = Object.entries(cardSizes).map(([id, size]) => {
-    const normalizedSize = normalizeCardSize(id, size, devices);
+    const normalizedSize = normalizeCardSize(id, size, constrainedIds);
     if (normalizedSize !== size) {
       changed = true;
     }
@@ -67,10 +77,20 @@ export const useCardState = (
   devices: DeviceCollection,
   storageKey: keyof typeof STORAGE_KEYS = 'cardSizes'
 ) => {
+  const constrainedIds = useMemo(
+    () => ({
+      calendarIds: new Set(devices.calendars.map((device) => device.id)),
+      lockIds: new Set(devices.locks.map((device) => device.id)),
+    }),
+    [devices.calendars, devices.locks]
+  );
   const [cardSizes, setCardSizes] = useState<Record<string, CardSize>>(() => {
     const stored = storage.get<Record<string, CardSize> | null>(STORAGE_KEYS[storageKey], null);
     if (stored) {
-      return normalizeCardSizes(normalizePersistedEntityRecord(stored), devices);
+      return normalizeCardSizes(normalizePersistedEntityRecord(stored), {
+        calendarIds: new Set(devices.calendars.map((device) => device.id)),
+        lockIds: new Set(devices.locks.map((device) => device.id)),
+      });
     }
 
     // Default: use sizes from devices
@@ -80,7 +100,10 @@ export const useCardState = (
           .flat()
           .map((device) => [device.id, device.size])
       ),
-      devices
+      {
+        calendarIds: new Set(devices.calendars.map((device) => device.id)),
+        lockIds: new Set(devices.locks.map((device) => device.id)),
+      }
     );
   });
 
@@ -91,8 +114,8 @@ export const useCardState = (
   }, [cardSizes, storageKey]);
 
   useEffect(() => {
-    setCardSizes((prev) => normalizeCardSizes(prev, devices));
-  }, [devices]);
+    setCardSizes((prev) => normalizeCardSizes(prev, constrainedIds));
+  }, [constrainedIds]);
 
   useEffect(() => {
     const handlePersistedState = (event: Event) => {
@@ -103,7 +126,7 @@ export const useCardState = (
 
       const normalizedValue = normalizeCardSizes(
         normalizePersistedEntityRecord(customEvent.detail.value ?? {}),
-        devices
+        constrainedIds
       );
 
       setCardSizes((previous) =>
@@ -116,13 +139,13 @@ export const useCardState = (
     return () => {
       window.removeEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
     };
-  }, [devices, storageKey]);
+  }, [constrainedIds, storageKey]);
 
   const updateCardSize = useCallback(
     (id: string, size: CardSize) => {
-      setCardSizes((prev) => ({ ...prev, [id]: normalizeCardSize(id, size, devices) }));
+      setCardSizes((prev) => ({ ...prev, [id]: normalizeCardSize(id, size, constrainedIds) }));
     },
-    [devices]
+    [constrainedIds]
   );
 
   return { cardSizes, updateCardSize };

@@ -1,5 +1,6 @@
 import type {
   PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@navet/core/provider-feature-models';
 import type { ProviderEntityRuntimeService } from '@navet/core/provider-feature-services';
@@ -19,6 +20,7 @@ let cachedSourceEntities: HassEntities | null | undefined;
 let cachedPlatformEntities: PlatformEntitySnapshotMap | null = null;
 let cachedSourceRegistry: HomeAssistantEntityRegistryEntry[] | null = null;
 let cachedPlatformRegistry: PlatformEntityRegistryEntry[] = [];
+let cachedPlatformRegistryById: Record<string, PlatformEntityRegistryEntry> = {};
 let cachedSourceConfig: HassConfig | null = null;
 let cachedPlatformConfig: HassConfig | null = null;
 
@@ -116,26 +118,43 @@ function toPlatformEntitySnapshotMap(
     return cachedPlatformEntities;
   }
 
-  cachedSourceEntities = entities;
-
   if (!entities) {
+    cachedSourceEntities = entities;
     cachedPlatformEntities = null;
     return null;
   }
 
-  cachedPlatformEntities = Object.fromEntries(
-    Object.entries(entities).map(([entityId, entity]) => [
-      entityId,
-      {
-        entityId,
-        state: entity.state,
-        attributes: (entity.attributes as Record<string, unknown> | undefined) ?? {},
-        lastChanged: entity.last_changed,
-        lastUpdated: entity.last_updated,
-      },
-    ])
-  );
+  const previousSourceEntities = cachedSourceEntities;
+  const previousPlatformEntities = cachedPlatformEntities;
+  const nextPlatformEntities: PlatformEntitySnapshotMap = {};
 
+  for (const [entityId, entity] of Object.entries(entities)) {
+    const previousEntity = previousSourceEntities?.[entityId];
+    const previousSnapshot = previousPlatformEntities?.[entityId];
+
+    if (
+      previousEntity &&
+      previousSnapshot &&
+      previousEntity.state === entity.state &&
+      previousEntity.last_changed === entity.last_changed &&
+      previousEntity.last_updated === entity.last_updated &&
+      areDataEqual(previousEntity.attributes ?? {}, entity.attributes ?? {})
+    ) {
+      nextPlatformEntities[entityId] = previousSnapshot;
+      continue;
+    }
+
+    nextPlatformEntities[entityId] = {
+      entityId,
+      state: entity.state,
+      attributes: (entity.attributes as Record<string, unknown> | undefined) ?? {},
+      lastChanged: entity.last_changed,
+      lastUpdated: entity.last_updated,
+    } satisfies PlatformEntitySnapshot;
+  }
+
+  cachedSourceEntities = entities;
+  cachedPlatformEntities = nextPlatformEntities;
   return cachedPlatformEntities;
 }
 
@@ -150,8 +169,32 @@ function toPlatformEntityRegistryEntries(
     return cachedPlatformRegistry;
   }
 
+  const previousSourceRegistryById = Object.fromEntries(
+    (cachedSourceRegistry ?? []).map((entry) => [entry.entity_id, entry])
+  );
+  const previousPlatformRegistryById = cachedPlatformRegistryById;
   cachedSourceRegistry = entityRegistry;
-  cachedPlatformRegistry = entityRegistry.map(toPlatformEntityRegistryEntry);
+  cachedPlatformRegistry = entityRegistry.map((entry) => {
+    const previousEntry = previousSourceRegistryById[entry.entity_id];
+    const previousPlatformEntry = previousPlatformRegistryById[entry.entity_id];
+
+    if (
+      previousEntry &&
+      previousPlatformEntry &&
+      previousEntry.device_id === entry.device_id &&
+      previousEntry.area_id === entry.area_id &&
+      previousEntry.name === entry.name &&
+      previousEntry.original_name === entry.original_name &&
+      previousEntry.platform === entry.platform
+    ) {
+      return previousPlatformEntry;
+    }
+
+    return toPlatformEntityRegistryEntry(entry);
+  });
+  cachedPlatformRegistryById = Object.fromEntries(
+    cachedPlatformRegistry.map((entry) => [entry.entityId, entry])
+  );
   return cachedPlatformRegistry;
 }
 
@@ -207,12 +250,56 @@ function getStableHomeAssistantConfigSnapshot(): HassConfig | null {
   return cachedPlatformConfig;
 }
 
+function subscribeHomeAssistantEntitySnapshot(entityId: string, listener: () => void) {
+  let previousSnapshot = toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot())?.[
+    entityId
+  ];
+
+  return subscribeHomeAssistantEvent('entities', () => {
+    const nextSnapshot = toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot())?.[
+      entityId
+    ];
+    if (nextSnapshot === previousSnapshot) {
+      return;
+    }
+
+    previousSnapshot = nextSnapshot;
+    listener();
+  });
+}
+
+function subscribeHomeAssistantEntityRegistryEntry(entityId: string, listener: () => void) {
+  toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+  let previousEntry = cachedPlatformRegistryById[entityId];
+
+  return subscribeHomeAssistantEvent('registries', () => {
+    toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+    const nextEntry = cachedPlatformRegistryById[entityId];
+    if (nextEntry === previousEntry) {
+      return;
+    }
+
+    previousEntry = nextEntry;
+    listener();
+  });
+}
+
 export const homeAssistantEntityRuntimeService: ProviderEntityRuntimeService = {
   getEntitySnapshots: () => toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot()),
   subscribeEntitySnapshots: (listener) => subscribeHomeAssistantEvent('entities', listener),
+  getEntitySnapshot: (entityId) =>
+    toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot())?.[entityId],
+  subscribeEntitySnapshot: (entityId, listener) =>
+    subscribeHomeAssistantEntitySnapshot(entityId, listener),
   getEntityRegistryEntries: () =>
     toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot()),
   subscribeEntityRegistryEntries: (listener) => subscribeHomeAssistantEvent('registries', listener),
+  getEntityRegistryEntry: (entityId) => {
+    toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+    return cachedPlatformRegistryById[entityId];
+  },
+  subscribeEntityRegistryEntry: (entityId, listener) =>
+    subscribeHomeAssistantEntityRegistryEntry(entityId, listener),
   getConfig: () => getStableHomeAssistantConfigSnapshot(),
   subscribeConfig: (listener) => subscribeHomeAssistantEvent('config', listener),
 };
@@ -222,6 +309,7 @@ export function resetHomeAssistantEntityRuntimeServiceCachesForTests() {
   cachedPlatformEntities = null;
   cachedSourceRegistry = null;
   cachedPlatformRegistry = [];
+  cachedPlatformRegistryById = {};
   cachedSourceConfig = null;
   cachedPlatformConfig = null;
 }

@@ -67,8 +67,17 @@ vi.mock('../use-integration-store', () => ({
 }));
 
 vi.mock('../use-provider-entity', () => ({
-  useProviderEntityRegistryEntries: () => [],
-  useProviderEntitySnapshots: () => mockEntities,
+  useProviderEntityIdsByPrefix: (_prefixes: string[], options?: { enabled?: boolean }) =>
+    options?.enabled === false
+      ? []
+      : mockEntities
+        ? Object.keys(mockEntities).filter((entityId) => entityId.startsWith('calendar.'))
+        : [],
+  useProviderEntityRegistryEntriesByIds: () => [],
+  useProviderEntitySnapshotRecord: (entityIds: string[], options?: { enabled?: boolean }) =>
+    options?.enabled === false
+      ? {}
+      : Object.fromEntries(entityIds.map((entityId) => [entityId, mockEntities?.[entityId]])),
 }));
 
 vi.mock('../use-provider-feature-support', () => ({

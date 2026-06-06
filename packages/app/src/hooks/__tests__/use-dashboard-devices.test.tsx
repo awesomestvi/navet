@@ -53,4 +53,26 @@ describe('useDashboardDevices', () => {
       expect.objectContaining({ id: 'sensor.kitchen_temperature' }),
     ]);
   });
+
+  it('preserves the original device collection reference when no visibility filters apply', () => {
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      lights: [
+        {
+          id: 'light.kitchen',
+          name: 'Kitchen',
+          room: 'Kitchen',
+          size: 'small',
+          state: true,
+          brightness: 100,
+          temp: 3000,
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useDashboardDevices(devices, [], ['sensor.none']));
+
+    expect(result.current).toBe(devices);
+    expect(result.current.lights).toBe(devices.lights);
+  });
 });

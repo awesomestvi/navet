@@ -1,9 +1,10 @@
 import { useIntegrationStore } from '@navet/app/hooks/use-integration-store';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import {
-  useProviderEntityRegistryEntries,
+  useProviderEntityIdsByPrefix,
+  useProviderEntityRegistryEntriesByIds,
   useProviderEntitySnapshot,
-  useProviderEntitySnapshots,
+  useProviderEntitySnapshotRecord,
 } from '@navet/app/hooks/use-provider-entity';
 import type {
   PlatformEntityRegistryEntry,
@@ -39,18 +40,6 @@ function selectUndefinedEntity() {
 
 function selectEmptyEntityRegistry(): PlatformEntityRegistryEntry[] {
   return [];
-}
-
-function mapMediaPlayerEntities(
-  entities: PlatformEntitySnapshotMap | null
-): PlatformEntitySnapshotMap | null {
-  if (!entities) {
-    return null;
-  }
-
-  return Object.fromEntries(
-    Object.entries(entities).filter(([entityId]) => entityId.startsWith('media_player.'))
-  );
 }
 
 function resolveCompanionEntityId(
@@ -91,17 +80,28 @@ function useResolvedMediaRuntime(options: {
 
 export function useProviderMediaPlaybackData(entityId: string): ProviderMediaPlaybackData {
   const { providerId, runtimeEntityId } = useResolvedMediaRuntime({ entityId });
-  const entities = useProviderEntitySnapshots({
+  const mediaPlayerEntityIds = useProviderEntityIdsByPrefix(['media_player.'], {
     providerId,
     enabled: Boolean(runtimeEntityId),
   });
-  const entityRegistry = useProviderEntityRegistryEntries({
+  const entities = useProviderEntitySnapshotRecord(mediaPlayerEntityIds, {
+    providerId,
+    enabled: Boolean(runtimeEntityId),
+  });
+  const entityRegistry = useProviderEntityRegistryEntriesByIds(mediaPlayerEntityIds, {
     providerId,
     enabled: Boolean(runtimeEntityId),
   });
 
   return useMemo(
-    () => (runtimeEntityId ? { entities, entityRegistry } : selectEmptyMediaPlaybackData()),
+    () =>
+      runtimeEntityId
+        ? {
+            entities:
+              Object.keys(entities).length > 0 ? (entities as PlatformEntitySnapshotMap) : null,
+            entityRegistry,
+          }
+        : selectEmptyMediaPlaybackData(),
     [entities, entityRegistry, runtimeEntityId]
   );
 }
@@ -128,7 +128,11 @@ export function useProviderMediaCompanionEntity(
 
 export function useProviderMediaEntityRegistry(entityId: string): PlatformEntityRegistryEntry[] {
   const { providerId, runtimeEntityId } = useResolvedMediaRuntime({ entityId });
-  const entityRegistry = useProviderEntityRegistryEntries({
+  const mediaPlayerEntityIds = useProviderEntityIdsByPrefix(['media_player.'], {
+    providerId,
+    enabled: Boolean(runtimeEntityId),
+  });
+  const entityRegistry = useProviderEntityRegistryEntriesByIds(mediaPlayerEntityIds, {
     providerId,
     enabled: Boolean(runtimeEntityId),
   });
@@ -144,13 +148,22 @@ export function useProviderMediaPlayerEntities(
   enabled: boolean
 ): PlatformEntitySnapshotMap | null {
   const { providerId, runtimeEntityId } = useResolvedMediaRuntime({ entityId });
-  const entities = useProviderEntitySnapshots({
+  const mediaPlayerEntityIds = useProviderEntityIdsByPrefix(['media_player.'], {
+    providerId,
+    enabled: Boolean(runtimeEntityId) && enabled,
+  });
+  const entities = useProviderEntitySnapshotRecord(mediaPlayerEntityIds, {
     providerId,
     enabled: Boolean(runtimeEntityId) && enabled,
   });
 
   return useMemo(
-    () => (runtimeEntityId && enabled ? mapMediaPlayerEntities(entities) : null),
+    () =>
+      runtimeEntityId && enabled
+        ? Object.keys(entities).length > 0
+          ? (entities as PlatformEntitySnapshotMap)
+          : null
+        : null,
     [enabled, entities, runtimeEntityId]
   );
 }

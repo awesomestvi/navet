@@ -9,6 +9,7 @@ import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/dashboard';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
+import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { getLightCardSurfaceTokens } from '@navet/app/features/lighting/components/light-card/light-card-surface-tokens';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useProviderCameraTopology } from '@navet/app/hooks';
@@ -938,9 +939,16 @@ function DetailsGrid({
   onRemoveEntity?: (entityId: string) => void;
 }) {
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const { dashboardSpaceMode, effectsQuality, lowPowerMode } = useSettingsStore((state) => ({
+    dashboardSpaceMode: settingsSelectors.dashboardSpaceMode(state),
+    effectsQuality: settingsSelectors.effectsQuality(state),
+    lowPowerMode: settingsSelectors.lowPowerMode(state),
+  }));
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
+  const visibleCount = useProgressiveBatching(devices.length, isEditMode, devices.length >= 12);
+  const visibleDevices = devices.slice(0, visibleCount);
+  const optimizeOffscreenPaint = !isEditMode && (lowPowerMode || effectsQuality !== 'high');
 
   return (
     <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
@@ -954,22 +962,30 @@ function DetailsGrid({
             className="grid w-full grid-flow-row-dense gap-3 pt-3 lg:gap-4"
             style={gridStyle as CSSProperties}
           >
-            {devices.map((device) => {
+            {visibleDevices.map((device) => {
               const defaultSize = device.type === 'cameras' ? 'large' : device.size;
               const size = cardSizes[device.id] ?? defaultSize;
 
               return (
-                <DashboardCardItem
+                <div
                   key={device.id}
-                  id={device.id}
-                  device={device}
-                  size={size}
-                  isEditMode={isEditMode}
-                  handleSizeChange={updateCardSize}
-                  onRemoveEntity={onRemoveEntity}
-                  allowEntityRemoval
-                  usesHideAction
-                />
+                  className={
+                    optimizeOffscreenPaint
+                      ? '[content-visibility:auto] [contain-intrinsic-block-size:22rem]'
+                      : undefined
+                  }
+                >
+                  <DashboardCardItem
+                    id={device.id}
+                    device={device}
+                    size={size}
+                    isEditMode={isEditMode}
+                    handleSizeChange={updateCardSize}
+                    onRemoveEntity={onRemoveEntity}
+                    allowEntityRemoval
+                    usesHideAction
+                  />
+                </div>
               );
             })}
           </div>

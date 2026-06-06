@@ -10,7 +10,7 @@ import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
-import { useTaskRoutines } from '@navet/app/features/tasks';
+import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
@@ -18,11 +18,9 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { Lightbulb, Plus, Sparkles, Thermometer } from 'lucide-react';
 import { lazy, memo, type ReactNode, Suspense, useCallback, useMemo, useState } from 'react';
-import { AllViewGrid } from '../all-view-grid';
 import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { DashboardLayout } from '../shell';
-import { AddEntityDialog } from './add-entity-dialog';
 
 const SecuritySection = lazy(async () => {
   const module = await import('@navet/app/components/layout/security-section');
@@ -33,7 +31,7 @@ const HomeDashboardOverview = lazy(async () => {
   return { default: module.HomeDashboardOverview };
 });
 const TasksSection = lazy(async () => {
-  const module = await import('@navet/app/components/layout/sections');
+  const module = await import('@navet/app/features/tasks/components/tasks-section');
   return { default: module.TasksSection };
 });
 const MediaSection = lazy(async () => {
@@ -41,12 +39,20 @@ const MediaSection = lazy(async () => {
   return { default: module.MediaSection };
 });
 const EnergySection = lazy(async () => {
-  const module = await import('@navet/app/features/energy');
+  const module = await import('@navet/app/features/energy/components/energy-section');
   return { default: module.EnergySection };
 });
 const SettingsSection = lazy(async () => {
-  const module = await import('@navet/app/features/settings');
+  const module = await import('@navet/app/features/settings/components/settings-section');
   return { default: module.SettingsSection };
+});
+const AllViewGrid = lazy(async () => {
+  const module = await import('../all-view-grid');
+  return { default: module.AllViewGrid };
+});
+const AddEntityDialog = lazy(async () => {
+  const module = await import('./add-entity-dialog');
+  return { default: module.AddEntityDialog };
 });
 
 interface DashboardSectionRouterProps {
@@ -326,18 +332,20 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         )}
 
         {isAddClimateEntityDialogOpen ? (
-          <AddEntityDialog
-            open={isAddClimateEntityDialogOpen}
-            onClose={closeAddClimateEntityDialog}
-            onAddEntity={handleAddClimateEntity}
-            currentRoom={ALL_ROOMS_ID}
-            deviceMap={sectionData.allClimateDeviceMap}
-            addedEntityIds={[]}
-            visibleEntityIds={sectionData.hiddenClimateEntityIds}
-            title={t('dashboard.addEntity.title')}
-            description={t('dashboard.addEntity.descriptionWithHidden')}
-            actionLabel={t('dashboard.addEntity.action')}
-          />
+          <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+            <AddEntityDialog
+              open={isAddClimateEntityDialogOpen}
+              onClose={closeAddClimateEntityDialog}
+              onAddEntity={handleAddClimateEntity}
+              currentRoom={ALL_ROOMS_ID}
+              deviceMap={sectionData.allClimateDeviceMap}
+              addedEntityIds={[]}
+              visibleEntityIds={sectionData.hiddenClimateEntityIds}
+              title={t('dashboard.addEntity.title')}
+              description={t('dashboard.addEntity.descriptionWithHidden')}
+              actionLabel={t('dashboard.addEntity.action')}
+            />
+          </Suspense>
         ) : null}
       </div>
     );
@@ -367,18 +375,20 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             actions={addHiddenLightEntityAction}
           >
             <RenderProfiler id="LightsSection">
-              <AllViewGrid
-                deviceMap={lightDeviceMap}
-                rooms={lightRooms}
-                cardOrders={cardOrders}
-                isEditMode={isEditMode}
-                cardSizes={cardSizes}
-                grouping="custom"
-                updateCardSize={updateCardSize}
-                onRemoveEntity={handleRemoveEntity}
-                allowEntityRemoval
-                usesHideAction
-              />
+              <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+                <AllViewGrid
+                  deviceMap={lightDeviceMap}
+                  rooms={lightRooms}
+                  cardOrders={cardOrders}
+                  isEditMode={isEditMode}
+                  cardSizes={cardSizes}
+                  grouping="custom"
+                  updateCardSize={updateCardSize}
+                  onRemoveEntity={handleRemoveEntity}
+                  allowEntityRemoval
+                  usesHideAction
+                />
+              </Suspense>
             </RenderProfiler>
           </SectionCustomizeShell>
         ) : (
@@ -406,18 +416,20 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         )}
 
         {isAddLightEntityDialogOpen ? (
-          <AddEntityDialog
-            open={isAddLightEntityDialogOpen}
-            onClose={closeAddLightEntityDialog}
-            onAddEntity={handleAddLightEntity}
-            currentRoom={ALL_ROOMS_ID}
-            deviceMap={sectionData.allLightDeviceMap}
-            addedEntityIds={[]}
-            visibleEntityIds={sectionData.hiddenLightEntityIds}
-            title={t('dashboard.addEntity.title')}
-            description={t('dashboard.addEntity.descriptionWithHidden')}
-            actionLabel={t('dashboard.addEntity.action')}
-          />
+          <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+            <AddEntityDialog
+              open={isAddLightEntityDialogOpen}
+              onClose={closeAddLightEntityDialog}
+              onAddEntity={handleAddLightEntity}
+              currentRoom={ALL_ROOMS_ID}
+              deviceMap={sectionData.allLightDeviceMap}
+              addedEntityIds={[]}
+              visibleEntityIds={sectionData.hiddenLightEntityIds}
+              title={t('dashboard.addEntity.title')}
+              description={t('dashboard.addEntity.descriptionWithHidden')}
+              actionLabel={t('dashboard.addEntity.action')}
+            />
+          </Suspense>
         ) : null}
       </div>
     );

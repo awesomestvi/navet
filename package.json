@@ -50,6 +50,7 @@
     "check": "biome check ./packages",
     "check:stories": "node scripts/check-storybook-standards.mjs",
     "check:ui-kit": "node scripts/check-ui-kit-boundaries.mjs",
+    "check:bundle-budget": "node scripts/check-bundle-budget.mjs",
     "check:provider-boundaries": "node scripts/check-provider-boundaries.mjs",
     "check:docker": "node scripts/check-docker-runtime.mjs",
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",

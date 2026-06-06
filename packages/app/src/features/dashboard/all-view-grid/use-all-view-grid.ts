@@ -1,11 +1,12 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { getDeviceTypeLabel } from '@navet/app/constants/device-type-labels';
 import { ALL_ROOMS_ID, HOME_WIDGET_ROOM, isAllRooms } from '@navet/app/constants/rooms';
-import { useI18n, useSearch } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useSearch } from '@navet/app/hooks';
+import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { getDeviceRoomLabel, UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
+import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { useCallback, useDeferredValue, useMemo } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
+import { buildPreparedDashboardDevices } from '../utils/prepared-dashboard-devices';
 import type { AllViewGrouping, AllViewSectionData } from './types';
 
 interface UseAllViewGridParams {
@@ -26,8 +27,18 @@ export function useAllViewGrid({
   updateCardSize,
 }: UseAllViewGridParams) {
   const { t } = useI18n();
+  const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
+  const connectedProviderCount = Object.keys(providerSessions).length;
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
+  const preparedDevices = useMemo(
+    () => buildPreparedDashboardDevices(deviceMap, t, connectedProviderCount),
+    [connectedProviderCount, deviceMap, t]
+  );
+  const preparedDeviceMap = useMemo(
+    () => new Map(preparedDevices.map((device) => [device.id, device])),
+    [preparedDevices]
+  );
 
   const handleSizeChange = useCallback(
     (id: string, size: CardSize) => {
@@ -48,20 +59,21 @@ export function useAllViewGrid({
   const devicesByRoom = useMemo(() => {
     const grouped: Record<string, DeviceWithType[]> = {};
 
-    deviceMap.forEach((device) => {
-      if (isSearchActive && !filteredDeviceIdMap[device.id]) {
-        return;
+    for (const preparedDevice of preparedDevices) {
+      if (isSearchActive && !filteredDeviceIdMap[preparedDevice.id]) {
+        continue;
       }
 
-      const room = getDeviceRoomLabel(device);
+      const device = preparedDevice.device;
+      const room = preparedDevice.room;
       if (!grouped[room]) {
         grouped[room] = [];
       }
       grouped[room].push(device);
-    });
+    }
 
     return grouped;
-  }, [deviceMap, filteredDeviceIdMap, isSearchActive]);
+  }, [filteredDeviceIdMap, isSearchActive, preparedDevices]);
 
   const customCardsByRoom = useMemo(() => {
     const grouped: Record<string, CustomCard[]> = {};
@@ -166,12 +178,12 @@ export function useAllViewGrid({
           continue;
         }
 
-        const device = deviceMap.get(id);
-        if (!device) {
+        const preparedDevice = preparedDeviceMap.get(id);
+        if (!preparedDevice) {
           continue;
         }
 
-        const title = getDeviceTypeLabel(device.type, t);
+        const title = preparedDevice.typeLabel;
         if (!grouped[title]) {
           grouped[title] = [];
         }
@@ -205,7 +217,7 @@ export function useAllViewGrid({
       totalItems: entry.totalItems,
       mutedTitle: entry.room === UNKNOWN_ROOM_LABEL,
     }));
-  }, [allOrderedIds, customCardMap, deviceMap, grouping, orderedRoomEntries, t]);
+  }, [allOrderedIds, customCardMap, grouping, orderedRoomEntries, preparedDeviceMap, t]);
 
   return {
     customCardMap,

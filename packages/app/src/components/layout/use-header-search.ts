@@ -1,4 +1,4 @@
-import { useDevices, useSearch } from '@navet/app/hooks';
+import { useDeviceCollectionsByKeys, useSearch } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
@@ -26,10 +26,25 @@ export function useHeaderSearch() {
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const shouldLoadDevices =
     !lowPowerMode || isSearchFocused || isMobileSearchOpen || searchQuery.trim().length > 0;
-  const devices = useDevices({
-    enabled: shouldLoadDevices,
-    includeFeatureCollections: false,
-  });
+  const devices = useDeviceCollectionsByKeys(
+    [
+      'lights',
+      'hvac',
+      'climate',
+      'switches',
+      'covers',
+      'locks',
+      'media',
+      'persons',
+      'sensors',
+      'vacuums',
+      'weather',
+    ],
+    {
+      enabled: shouldLoadDevices,
+      includeFeatureCollections: false,
+    }
+  );
   const deferredDevices = useDeferredValue(devices);
 
   useEffect(() => {

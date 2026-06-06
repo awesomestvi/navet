@@ -26,17 +26,19 @@ export function useMediaGrouping({
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const nativeEntityId = getProviderNativeId(entityId);
   const resolvedProviderId = parseProviderScopedId(entityId)?.providerId ?? currentProviderId;
-  const groupingCandidateIds = useMemo(
+  const groupingCandidates = useMemo(
     () =>
-      Object.values(entities ?? {})
-        .filter(
-          (entity): entity is NonNullable<typeof entity> =>
-            Boolean(entity) &&
-            entity.entityId.startsWith('media_player.') &&
-            entity.entityId !== nativeEntityId
-        )
-        .map((entity) => entity.entityId),
+      Object.values(entities ?? {}).filter(
+        (entity): entity is NonNullable<typeof entity> =>
+          Boolean(entity) &&
+          entity.entityId.startsWith('media_player.') &&
+          entity.entityId !== nativeEntityId
+      ),
     [entities, nativeEntityId]
+  );
+  const groupingCandidateIds = useMemo(
+    () => groupingCandidates.map((entity) => entity.entityId),
+    [groupingCandidates]
   );
   const groupingEntitiesByEntityId = useIntegrationStore(
     (state) =>
@@ -51,13 +53,7 @@ export function useMediaGrouping({
 
   const availableGroupingPlayers = useMemo(
     () =>
-      Object.values(entities ?? {})
-        .filter(
-          (entity): entity is NonNullable<typeof entity> =>
-            Boolean(entity) &&
-            entity.entityId.startsWith('media_player.') &&
-            entity.entityId !== nativeEntityId
-        )
+      groupingCandidates
         .filter((entity) => {
           const providerEntity = groupingEntitiesByEntityId[entity.entityId];
           return readNavetMediaState(providerEntity)?.supportsGrouping === true;
@@ -70,7 +66,7 @@ export function useMediaGrouping({
               : entity.entityId,
           isAttached: groupMembers.includes(entity.entityId),
         })),
-    [entities, groupMembers, groupingEntitiesByEntityId, nativeEntityId]
+    [groupMembers, groupingCandidates, groupingEntitiesByEntityId]
   );
 
   const attachGroupMember = useCallback(

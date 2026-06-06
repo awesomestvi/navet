@@ -1,6 +1,7 @@
 import { cn } from '@navet/app/components/ui/utils';
 import {
   type CSSProperties,
+  type HTMLAttributes,
   type PointerEvent,
   type ReactNode,
   useCallback,
@@ -20,6 +21,9 @@ interface OverlayScrollAreaProps {
   children: ReactNode;
   className?: string;
   viewportClassName?: string;
+  viewportProps?: HTMLAttributes<HTMLDivElement> & {
+    [key: `data-${string}`]: string | undefined;
+  };
   contentClassName?: string;
   scrollbarEndInset?: number;
   scrollbarStartInset?: number;
@@ -29,6 +33,7 @@ export function OverlayScrollArea({
   children,
   className,
   viewportClassName,
+  viewportProps,
   contentClassName,
   scrollbarEndInset = 4,
   scrollbarStartInset = 4,
@@ -179,12 +184,17 @@ export function OverlayScrollArea({
       style={scrollbarStyle}
     >
       <div
+        {...viewportProps}
         ref={viewportRef}
         className={cn(
           'h-full min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide',
-          viewportClassName
+          viewportClassName,
+          viewportProps?.className
         )}
-        onScroll={handleScroll}
+        onScroll={(event) => {
+          handleScroll();
+          viewportProps?.onScroll?.(event);
+        }}
       >
         <div className={contentClassName}>{children}</div>
       </div>

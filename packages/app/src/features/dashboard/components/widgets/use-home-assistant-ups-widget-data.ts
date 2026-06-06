@@ -3,12 +3,24 @@ import {
   toPlatformEntityRegistryEntry,
   toPlatformEntitySnapshot,
 } from '@navet/app/hooks/use-provider-entity';
+import type { HomeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@navet/app/stores/selectors';
 import { useMemo } from 'react';
 import { buildUpsDeviceOptions } from './ups-widget-data';
 
 function selectEmptyEntities() {
   return null;
+}
+
+function selectUpsEntities(state: HomeAssistantStore) {
+  const entities = homeAssistantSelectors.entities(state);
+  if (!entities) {
+    return null;
+  }
+
+  return Object.fromEntries(
+    Object.entries(entities).filter(([entityId]) => entityId.startsWith('sensor.'))
+  );
 }
 
 function selectEmptyAreas() {
@@ -25,9 +37,7 @@ function selectEmptyEntityRegistry() {
 
 export function useHomeAssistantUpsWidgetData(options: { use24HourTime: boolean }, enabled = true) {
   const { locale } = useI18n();
-  const entities = useHomeAssistant(
-    enabled ? homeAssistantSelectors.entities : selectEmptyEntities
-  );
+  const entities = useHomeAssistant(enabled ? selectUpsEntities : selectEmptyEntities);
   const areas = useHomeAssistant(enabled ? homeAssistantSelectors.areas : selectEmptyAreas);
   const deviceRegistry = useHomeAssistant(
     enabled ? homeAssistantSelectors.deviceRegistry : selectEmptyDeviceRegistry

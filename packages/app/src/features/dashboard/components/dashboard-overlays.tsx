@@ -3,12 +3,16 @@ import { getDeviceTypeLabel } from '@navet/app/constants/device-type-labels';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { AddCardDialogContainer } from './add-card-dialog';
-import { AddEntityDialog } from './add-entity-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
 import { DashboardOnboardingDialog } from './dashboard-onboarding-dialog';
+
+const AddEntityDialog = lazy(async () => {
+  const module = await import('./add-entity-dialog');
+  return { default: module.AddEntityDialog };
+});
 
 interface DashboardOverlaysProps {
   controller: DashboardController;
@@ -102,22 +106,24 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
       )}
 
       {showAddEntityDialog && (
-        <AddEntityDialog
-          open={showAddEntityDialog}
-          onClose={onCloseAddEntityDialog}
-          onAddEntity={handleAddEntity}
-          currentRoom={activeRoom}
-          deviceMap={availableDeviceMap}
-          addedEntityIds={[]}
-          visibleEntityIds={addableEntityIds}
-          title={t('dashboard.addEntity.title')}
-          description={
-            hiddenEntityIds.length > 0
-              ? t('dashboard.addEntity.descriptionWithHidden')
-              : t('dashboard.addEntity.descriptionDefault')
-          }
-          actionLabel={t('dashboard.addEntity.action')}
-        />
+        <Suspense fallback={null}>
+          <AddEntityDialog
+            open={showAddEntityDialog}
+            onClose={onCloseAddEntityDialog}
+            onAddEntity={handleAddEntity}
+            currentRoom={activeRoom}
+            deviceMap={availableDeviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={addableEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={
+              hiddenEntityIds.length > 0
+                ? t('dashboard.addEntity.descriptionWithHidden')
+                : t('dashboard.addEntity.descriptionDefault')
+            }
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        </Suspense>
       )}
 
       {(!onboardingCompleted || isOnboardingClosing) && allEntityIds.length > 0 && (

@@ -2,11 +2,9 @@ import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getCustomCardTintSurface } from '@navet/app/components/shared/theme/custom-card-tint-surface';
-import {
-  EnergyNowCardView,
-  useEnergyLoadHistory,
-  useProviderEnergyNow,
-} from '@navet/app/features/energy';
+import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
+import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
+import { useProviderEnergyNow } from '@navet/app/features/energy/hooks/use-provider-energy-now';
 import {
   useAreaRooms,
   useI18n,
@@ -44,6 +42,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   size = 'medium',
   data,
   onUpdate,
+  isEditMode = false,
   room,
   onRoomChange,
   openSettingsRequestKey = 0,
@@ -78,7 +77,8 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     sourceOptions.find((option) => option.id === selectedSourceId) ?? sourceOptions[0] ?? null;
   const selectedTrend = useEnergyLoadHistory(
     selectedOption?.trendEntityId,
-    selectedOption?.currentPowerW ?? energyNow.currentLoadW
+    selectedOption?.currentPowerW ?? energyNow.currentLoadW,
+    !isEditMode
   );
   const isCustomCard = Boolean(onUpdate);
   useEffect(() => {

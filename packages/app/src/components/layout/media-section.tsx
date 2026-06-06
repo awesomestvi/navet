@@ -2,19 +2,24 @@ import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
-import { AddEntityDialog, useDashboardEntitiesStore } from '@navet/app/features/dashboard';
+import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import {
   getMediaEntityTypeKey,
   type MediaEntityTypeKey,
 } from '@navet/app/features/media/components/media-card/get-media-entity-type-key';
-import { useDevices, useEditMode, useI18n, useTheme } from '@navet/app/hooks';
+import { useDeviceCollectionsByKeys, useEditMode, useI18n, useTheme } from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { Plus, Tv } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { EntityGrid } from './entity-grid';
 import { SectionCustomizeShell } from './section-customize-shell';
+
+const AddEntityDialog = lazy(async () => {
+  const module = await import('@navet/app/features/dashboard/components/add-entity-dialog');
+  return { default: module.AddEntityDialog };
+});
 
 type MediaSectionDevice = MediaDevice & { type: 'media' };
 
@@ -114,7 +119,7 @@ export function MediaSection() {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const devices = useDevices();
+  const devices = useDeviceCollectionsByKeys(['media']);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
@@ -269,18 +274,20 @@ export function MediaSection() {
       )}
 
       {isAddEntityDialogOpen ? (
-        <AddEntityDialog
-          open={isAddEntityDialogOpen}
-          onClose={closeAddEntityDialog}
-          onAddEntity={handleAddEntity}
-          currentRoom={ALL_ROOMS_ID}
-          deviceMap={allMediaDeviceMap}
-          addedEntityIds={[]}
-          visibleEntityIds={hiddenMediaEntityIds}
-          title={t('dashboard.addEntity.title')}
-          description={t('dashboard.addEntity.descriptionWithHidden')}
-          actionLabel={t('dashboard.addEntity.action')}
-        />
+        <Suspense fallback={null}>
+          <AddEntityDialog
+            open={isAddEntityDialogOpen}
+            onClose={closeAddEntityDialog}
+            onAddEntity={handleAddEntity}
+            currentRoom={ALL_ROOMS_ID}
+            deviceMap={allMediaDeviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={hiddenMediaEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={t('dashboard.addEntity.descriptionWithHidden')}
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        </Suspense>
       ) : null}
     </SectionCustomizeShell>
   );

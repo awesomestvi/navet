@@ -88,7 +88,7 @@ vi.mock('@navet/app/hooks', async () => {
   const actual = await vi.importActual<object>('@navet/app/hooks');
   return {
     ...actual,
-    useDevices: () => devicesFixture,
+    useDeviceCollectionsByKeys: () => devicesFixture,
     useEditMode: () => ({
       isEditMode: true,
       toggleEditMode: vi.fn(),
@@ -127,18 +127,14 @@ vi.mock('@navet/app/features/security/components/security-camera-dashboard', () 
   },
 }));
 
-vi.mock('@navet/app/features/dashboard', async () => {
-  const actual = await vi.importActual<object>('@navet/app/features/dashboard');
-  return {
-    ...actual,
-    AddEntityDialog: (props: { open: boolean; visibleEntityIds: string[] }) => {
-      addEntityDialogMock(props);
-      return props.open ? (
-        <div data-testid="add-entity-dialog">{props.visibleEntityIds.join(',')}</div>
-      ) : null;
-    },
-  };
-});
+vi.mock('@navet/app/features/dashboard/components/add-entity-dialog', () => ({
+  AddEntityDialog: (props: { open: boolean; visibleEntityIds: string[] }) => {
+    addEntityDialogMock(props);
+    return props.open ? (
+      <div data-testid="add-entity-dialog">{props.visibleEntityIds.join(',')}</div>
+    ) : null;
+  },
+}));
 
 vi.mock('sonner', () => ({
   toast: {
@@ -189,7 +185,7 @@ describe('SecuritySection', () => {
     ).toBeInTheDocument();
   });
 
-  it('keeps the full hidden security set available in the add-entity dialog', () => {
+  it('keeps the full hidden security set available in the add-entity dialog', async () => {
     useDashboardEntitiesStore.setState({
       hiddenEntityIds: ['camera.garage', 'button.panic', 'cover.entry_shutter'],
       shownSensorEntityIds: [],
@@ -201,7 +197,7 @@ describe('SecuritySection', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /dashboard.addEntity.title/i }));
 
-    expect(screen.getByTestId('add-entity-dialog')).toHaveTextContent(
+    expect(await screen.findByTestId('add-entity-dialog')).toHaveTextContent(
       'cover.entry_shutter,camera.garage,button.panic'
     );
     expect(addEntityDialogMock).toHaveBeenCalledWith(

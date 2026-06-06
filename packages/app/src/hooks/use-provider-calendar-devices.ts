@@ -15,8 +15,9 @@ import { areDataEqual, areStringArraysEqual } from '@navet/app/utils/structural-
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
-  useProviderEntityRegistryEntries,
-  useProviderEntitySnapshots,
+  useProviderEntityIdsByPrefix,
+  useProviderEntityRegistryEntriesByIds,
+  useProviderEntitySnapshotRecord,
 } from './use-provider-entity';
 import { useProviderFeature } from './use-provider-feature-support';
 
@@ -65,26 +66,20 @@ export function useProviderCalendarDevices(
       state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
   );
   const supportsCalendar = useProviderFeature('calendar', resolvedProviderId) && enabled;
-  const entities = useProviderEntitySnapshots({
+  const calendarEntityIds = useProviderEntityIdsByPrefix(['calendar.'], {
     providerId: resolvedProviderId,
     enabled: supportsCalendar,
   });
-  const entityRegistry = useProviderEntityRegistryEntries({
+  const entities = useProviderEntitySnapshotRecord(calendarEntityIds, {
+    providerId: resolvedProviderId,
+    enabled: supportsCalendar,
+  });
+  const entityRegistry = useProviderEntityRegistryEntriesByIds(calendarEntityIds, {
     providerId: resolvedProviderId,
     enabled: supportsCalendar,
   });
   const { locale, t } = useI18n();
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
-
-  const calendarEntityIds = useMemo(() => {
-    if (!supportsCalendar || !entities) {
-      return EMPTY_CALENDAR_ENTITY_IDS;
-    }
-
-    return Object.keys(entities)
-      .filter((entityId) => entityId.startsWith('calendar.'))
-      .sort((left, right) => left.localeCompare(right));
-  }, [entities, supportsCalendar]);
   const stableCalendarEntityIdsRef = useRef<string[]>(EMPTY_CALENDAR_ENTITY_IDS);
   const stableCalendarEntityIds = useMemo(() => {
     if (areStringArraysEqual(stableCalendarEntityIdsRef.current, calendarEntityIds)) {
@@ -156,7 +151,7 @@ export function useProviderCalendarDevices(
   }, [resolvedProviderId, stableCalendarEntityIds, supportsCalendar]);
 
   const resolvedDevices = useMemo<PlatformCalendarDevice[]>(() => {
-    if (!entities || stableCalendarEntityIds.length === 0) {
+    if (stableCalendarEntityIds.length === 0) {
       return EMPTY_CALENDAR_DEVICES;
     }
 

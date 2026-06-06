@@ -1,6 +1,13 @@
 import { OverlayScrollArea } from '@navet/app/components/primitives';
-import { useId } from 'react';
+import { memo, useId, useState } from 'react';
 import { BATTERY_LEVEL_COLORS, BATTERY_LEVEL_THRESHOLDS } from './battery-constants';
+
+const BATTERY_ROW_HEIGHT = 24;
+const BATTERY_ROW_GAP = 6;
+const BATTERY_ROW_STRIDE = BATTERY_ROW_HEIGHT + BATTERY_ROW_GAP;
+const BATTERY_LIST_MAX_VISIBLE_ROWS = 10;
+const BATTERY_LIST_OVERSCAN = 4;
+const BATTERY_LIST_VIRTUALIZATION_THRESHOLD = 18;
 
 interface BatteryLevelIconProps {
   level: number;
@@ -62,7 +69,7 @@ interface BatteryListItemProps {
   getLevelColor: (level: number) => string;
 }
 
-export function BatteryListItem({
+export const BatteryListItem = memo(function BatteryListItem({
   device,
   isCompact,
   subtleFill,
@@ -70,7 +77,7 @@ export function BatteryListItem({
   getLevelColor,
 }: BatteryListItemProps) {
   return (
-    <li className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <BatteryLevelIcon
         level={device.level}
         color={getLevelColor(device.level)}
@@ -97,7 +104,66 @@ export function BatteryListItem({
       >
         {device.level}%
       </span>
-    </li>
+    </div>
+  );
+});
+
+function VirtualizedBatteryList({
+  devices,
+  isCompact,
+  subtleFill,
+  textSecondary,
+  getLevelColor,
+}: Omit<BatteryListProps, 'emptyStateLabel'>) {
+  const [scrollTop, setScrollTop] = useState(0);
+  const viewportHeight =
+    Math.min(devices.length, BATTERY_LIST_MAX_VISIBLE_ROWS) * BATTERY_ROW_STRIDE - BATTERY_ROW_GAP;
+  const totalHeight = devices.length * BATTERY_ROW_STRIDE - BATTERY_ROW_GAP;
+  const startIndex = Math.max(
+    0,
+    Math.floor(scrollTop / BATTERY_ROW_STRIDE) - BATTERY_LIST_OVERSCAN
+  );
+  const endIndex = Math.min(
+    devices.length,
+    Math.ceil((scrollTop + viewportHeight) / BATTERY_ROW_STRIDE) + BATTERY_LIST_OVERSCAN
+  );
+  const visibleDevices = devices.slice(startIndex, endIndex);
+
+  return (
+    <OverlayScrollArea
+      className="flex flex-1 flex-col"
+      contentClassName="flex min-h-full flex-col pr-3"
+      viewportProps={{
+        'data-testid': 'battery-list-virtualized',
+        style: { height: `${viewportHeight}px` },
+        onScroll: (event) => setScrollTop(event.currentTarget.scrollTop),
+      }}
+    >
+      <div className="relative mt-auto min-w-0" style={{ height: `${totalHeight}px` }}>
+        {visibleDevices.map((device, offset) => {
+          const index = startIndex + offset;
+
+          return (
+            <div
+              key={device.id}
+              className="absolute left-0 right-0"
+              style={{
+                top: `${index * BATTERY_ROW_STRIDE}px`,
+                height: `${BATTERY_ROW_HEIGHT}px`,
+              }}
+            >
+              <BatteryListItem
+                device={device}
+                isCompact={isCompact}
+                subtleFill={subtleFill}
+                textSecondary={textSecondary}
+                getLevelColor={getLevelColor}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </OverlayScrollArea>
   );
 }
 
@@ -130,12 +196,24 @@ export function BatteryList({
     );
   }
 
+  if (devices.length >= BATTERY_LIST_VIRTUALIZATION_THRESHOLD) {
+    return (
+      <VirtualizedBatteryList
+        devices={devices}
+        isCompact={isCompact}
+        subtleFill={subtleFill}
+        textSecondary={textSecondary}
+        getLevelColor={getLevelColor}
+      />
+    );
+  }
+
   return (
     <OverlayScrollArea
       className="flex flex-1 flex-col"
       contentClassName="flex min-h-full flex-col pr-3"
     >
-      <ul className="mt-auto min-w-0 space-y-1.5">
+      <div className="mt-auto min-w-0 space-y-1.5">
         {devices.map((device) => (
           <BatteryListItem
             key={device.id}
@@ -146,7 +224,7 @@ export function BatteryList({
             getLevelColor={getLevelColor}
           />
         ))}
-      </ul>
+      </div>
     </OverlayScrollArea>
   );
 }

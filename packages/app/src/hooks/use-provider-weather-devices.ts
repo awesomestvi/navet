@@ -15,12 +15,14 @@ import { areDataEqual } from '@navet/app/utils/structural-equality';
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
-  useProviderEntityRegistryEntries,
-  useProviderEntitySnapshots,
+  useProviderEntityIdsByPrefix,
+  useProviderEntityRegistryEntriesByIds,
+  useProviderEntitySnapshotRecord,
 } from './use-provider-entity';
 import { useProviderFeature } from './use-provider-feature-support';
 
 const EMPTY_WEATHER_DEVICES: PlatformWeatherDevice[] = [];
+const EMPTY_WEATHER_ENTITY_IDS: string[] = [];
 
 type WeatherForecastState = Record<
   string,
@@ -72,25 +74,30 @@ export function useProviderWeatherDevices(
       state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
   );
   const supportsWeather = useProviderFeature('weather', resolvedProviderId) && enabled;
-  const entities = useProviderEntitySnapshots({
+  const weatherEntityIds = useProviderEntityIdsByPrefix(['weather.'], {
     providerId: resolvedProviderId,
     enabled: supportsWeather,
   });
-  const entityRegistry = useProviderEntityRegistryEntries({
+  const primaryWeatherEntityId = weatherEntityIds[0] ?? null;
+  const trackedEntityIds = useMemo(
+    () =>
+      primaryWeatherEntityId ? [primaryWeatherEntityId, SUN_ENTITY_ID] : EMPTY_WEATHER_ENTITY_IDS,
+    [primaryWeatherEntityId]
+  );
+  const entities = useProviderEntitySnapshotRecord(trackedEntityIds, {
     providerId: resolvedProviderId,
     enabled: supportsWeather,
   });
+  const entityRegistry = useProviderEntityRegistryEntriesByIds(
+    primaryWeatherEntityId ? [primaryWeatherEntityId] : EMPTY_WEATHER_ENTITY_IDS,
+    {
+      providerId: resolvedProviderId,
+      enabled: supportsWeather,
+    }
+  );
   const { locale, t } = useI18n();
   const weatherForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
-
-  const primaryWeatherEntityId = useMemo(() => {
-    if (!supportsWeather || !entities) {
-      return null;
-    }
-
-    return Object.keys(entities).find((entityId) => entityId.startsWith('weather.')) ?? null;
-  }, [entities, supportsWeather]);
 
   const entityRegistryMap = useMemo(
     () => new Map(entityRegistry.map((entry) => [entry.entityId, entry])),

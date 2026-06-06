@@ -1,5 +1,4 @@
 export type { AllViewGrouping } from './all-view-grid';
-export { AddEntityDialog } from './components/add-entity-dialog';
 export { DashboardCardItem } from './components/dashboard-card-item';
 export { DashboardEditActions } from './components/dashboard-edit-actions';
 export { DashboardHeroSection } from './components/dashboard-hero-section';

@@ -2,15 +2,20 @@ import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
-import { AddEntityDialog, useDashboardEntitiesStore } from '@navet/app/features/dashboard';
+import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { useEditMode, useI18n, useTheme } from '@navet/app/hooks';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { type LucideIcon, Plus } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { EntityGrid } from './entity-grid';
 import { SectionCustomizeShell } from './section-customize-shell';
+
+const AddEntityDialog = lazy(async () => {
+  const module = await import('@navet/app/features/dashboard/components/add-entity-dialog');
+  return { default: module.AddEntityDialog };
+});
 
 export function DeviceSectionLayout({
   devices,
@@ -131,18 +136,20 @@ export function DeviceSectionLayout({
       )}
 
       {isAddEntityDialogOpen ? (
-        <AddEntityDialog
-          open={isAddEntityDialogOpen}
-          onClose={closeAddEntityDialog}
-          onAddEntity={handleAddEntity}
-          currentRoom={ALL_ROOMS_ID}
-          deviceMap={deviceMap}
-          addedEntityIds={[]}
-          visibleEntityIds={hiddenSectionEntityIds}
-          title={t('dashboard.addEntity.title')}
-          description={t('dashboard.addEntity.descriptionWithHidden')}
-          actionLabel={t('dashboard.addEntity.action')}
-        />
+        <Suspense fallback={null}>
+          <AddEntityDialog
+            open={isAddEntityDialogOpen}
+            onClose={closeAddEntityDialog}
+            onAddEntity={handleAddEntity}
+            currentRoom={ALL_ROOMS_ID}
+            deviceMap={deviceMap}
+            addedEntityIds={[]}
+            visibleEntityIds={hiddenSectionEntityIds}
+            title={t('dashboard.addEntity.title')}
+            description={t('dashboard.addEntity.descriptionWithHidden')}
+            actionLabel={t('dashboard.addEntity.action')}
+          />
+        </Suspense>
       ) : null}
     </>
   );

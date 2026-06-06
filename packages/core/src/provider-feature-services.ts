@@ -154,8 +154,12 @@ export interface ProviderEnergyFeatureService {
 export interface ProviderEntityRuntimeService {
   getEntitySnapshots: () => PlatformEntitySnapshotMap | null;
   subscribeEntitySnapshots: (listener: () => void) => () => void;
+  getEntitySnapshot?: (entityId: string) => PlatformEntitySnapshotMap[string] | undefined;
+  subscribeEntitySnapshot?: (entityId: string, listener: () => void) => () => void;
   getEntityRegistryEntries: () => PlatformEntityRegistryEntry[];
   subscribeEntityRegistryEntries: (listener: () => void) => () => void;
+  getEntityRegistryEntry?: (entityId: string) => PlatformEntityRegistryEntry | undefined;
+  subscribeEntityRegistryEntry?: (entityId: string, listener: () => void) => () => void;
   getConfig: () => unknown | null;
   subscribeConfig: (listener: () => void) => () => void;
 }

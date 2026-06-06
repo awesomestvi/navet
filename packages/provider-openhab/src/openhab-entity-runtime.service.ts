@@ -1,8 +1,10 @@
 import type {
   PlatformEntityRegistryEntry,
+  PlatformEntitySnapshot,
   PlatformEntitySnapshotMap,
 } from '@navet/core/provider-feature-models';
 import type { ProviderEntityRuntimeService } from '@navet/core/provider-feature-services';
+import { areDataEqual } from '@navet/core/structural-equality';
 import { openhabService } from './openhab-service';
 import type { OpenHABItem, OpenHABSnapshot } from './openhab-types';
 
@@ -11,6 +13,7 @@ let cachedEntitySnapshotSource: OpenHABSnapshot | null = null;
 let cachedEntitySnapshots: PlatformEntitySnapshotMap | null = null;
 let cachedEntityRegistrySource: OpenHABSnapshot | null = null;
 let cachedEntityRegistry: PlatformEntityRegistryEntry[] = EMPTY_ENTITY_REGISTRY;
+let cachedEntityRegistryById: Record<string, PlatformEntityRegistryEntry> = {};
 
 function isSemanticLocation(item: OpenHABItem): boolean {
   return (item.tags ?? []).includes('Location');
@@ -98,11 +101,13 @@ function toEntitySnapshots(snapshot: OpenHABSnapshot): PlatformEntitySnapshotMap
     return cachedEntitySnapshots;
   }
 
+  const previousSnapshot = cachedEntitySnapshotSource;
+  const previousEntities = cachedEntitySnapshots;
   const entities: PlatformEntitySnapshotMap = {};
 
   for (const item of Object.values(snapshot.items)) {
     const numericValue = parseNumberishState(item.state);
-    entities[item.name] = {
+    const nextSnapshot = {
       entityId: item.name,
       state: toRuntimeState(item),
       attributes: {
@@ -117,7 +122,24 @@ function toEntitySnapshots(snapshot: OpenHABSnapshot): PlatformEntitySnapshotMap
             ? numericValue
             : undefined,
       },
-    };
+    } satisfies PlatformEntitySnapshot;
+    const previousItem = previousSnapshot?.items[item.name];
+    const previousEntity = previousEntities?.[item.name];
+    const previousRoom = previousItem
+      ? resolveItemRoom(previousItem, previousSnapshot.items)
+      : undefined;
+    entities[item.name] =
+      previousItem &&
+      previousEntity &&
+      previousItem.state === item.state &&
+      previousItem.label === item.label &&
+      previousItem.category === item.category &&
+      previousItem.type === item.type &&
+      areDataEqual(previousItem.tags ?? [], item.tags ?? []) &&
+      areDataEqual(previousItem.groupNames ?? [], item.groupNames ?? []) &&
+      previousRoom === nextSnapshot.attributes.room
+        ? previousEntity
+        : nextSnapshot;
   }
 
   cachedEntitySnapshotSource = snapshot;
@@ -130,22 +152,77 @@ function toEntityRegistryEntries(snapshot: OpenHABSnapshot): PlatformEntityRegis
     return cachedEntityRegistry;
   }
 
-  const entries = Object.values(snapshot.items).map((item) => ({
-    entityId: item.name,
-    deviceId: null,
-    areaId: null,
-    name: item.label ?? item.name,
-    platform: 'openhab',
-  }));
+  const previousSnapshot = cachedEntityRegistrySource;
+  const previousEntriesById = cachedEntityRegistryById;
+  const entries = Object.values(snapshot.items).map((item) => {
+    const nextEntry = {
+      entityId: item.name,
+      deviceId: null,
+      areaId: null,
+      name: item.label ?? item.name,
+      platform: 'openhab',
+    } satisfies PlatformEntityRegistryEntry;
+    const previousItem = previousSnapshot?.items[item.name];
+    const previousEntry = previousEntriesById[item.name];
+    return previousItem &&
+      previousEntry &&
+      previousItem.label === item.label &&
+      previousItem.name === item.name
+      ? previousEntry
+      : nextEntry;
+  });
 
   cachedEntityRegistrySource = snapshot;
   cachedEntityRegistry = entries;
+  cachedEntityRegistryById = Object.fromEntries(entries.map((entry) => [entry.entityId, entry]));
   return entries;
+}
+
+function subscribeOpenhabEntitySnapshot(entityId: string, listener: () => void) {
+  let previousSnapshot = toEntitySnapshots(openhabService.getSnapshot())?.[entityId];
+
+  return openhabService.subscribe(() => {
+    const nextSnapshot = toEntitySnapshots(openhabService.getSnapshot())?.[entityId];
+    if (nextSnapshot === previousSnapshot) {
+      return;
+    }
+
+    previousSnapshot = nextSnapshot;
+    listener();
+  });
+}
+
+function subscribeOpenhabEntityRegistryEntry(entityId: string, listener: () => void) {
+  const currentSnapshot = openhabService.getSnapshot();
+  let previousEntry = getOpenhabEntityRegistryEntryFromSnapshot(currentSnapshot, entityId);
+
+  return openhabService.subscribe(() => {
+    const snapshot = openhabService.getSnapshot();
+    const nextEntry = getOpenhabEntityRegistryEntryFromSnapshot(snapshot, entityId);
+    if (nextEntry === previousEntry) {
+      return;
+    }
+
+    previousEntry = nextEntry;
+    listener();
+  });
+}
+
+function getOpenhabEntityRegistryEntryFromSnapshot(snapshot: OpenHABSnapshot, entityId: string) {
+  if (Object.keys(snapshot.items).length === 0) {
+    return undefined;
+  }
+
+  toEntityRegistryEntries(snapshot);
+  return cachedEntityRegistryById[entityId];
 }
 
 export const openhabEntityRuntimeService: ProviderEntityRuntimeService = {
   getEntitySnapshots: () => toEntitySnapshots(openhabService.getSnapshot()),
   subscribeEntitySnapshots: (listener) => openhabService.subscribe(() => listener()),
+  getEntitySnapshot: (entityId) => toEntitySnapshots(openhabService.getSnapshot())?.[entityId],
+  subscribeEntitySnapshot: (entityId, listener) =>
+    subscribeOpenhabEntitySnapshot(entityId, listener),
   getEntityRegistryEntries: () => {
     const snapshot = openhabService.getSnapshot();
     return Object.keys(snapshot.items).length > 0
@@ -153,6 +230,18 @@ export const openhabEntityRuntimeService: ProviderEntityRuntimeService = {
       : EMPTY_ENTITY_REGISTRY;
   },
   subscribeEntityRegistryEntries: (listener) => openhabService.subscribe(() => listener()),
+  getEntityRegistryEntry: (entityId) =>
+    getOpenhabEntityRegistryEntryFromSnapshot(openhabService.getSnapshot(), entityId),
+  subscribeEntityRegistryEntry: (entityId, listener) =>
+    subscribeOpenhabEntityRegistryEntry(entityId, listener),
   getConfig: () => null,
   subscribeConfig: () => () => {},
 };
+
+export function resetOpenhabEntityRuntimeServiceCachesForTests() {
+  cachedEntitySnapshotSource = null;
+  cachedEntitySnapshots = null;
+  cachedEntityRegistrySource = null;
+  cachedEntityRegistry = EMPTY_ENTITY_REGISTRY;
+  cachedEntityRegistryById = {};
+}

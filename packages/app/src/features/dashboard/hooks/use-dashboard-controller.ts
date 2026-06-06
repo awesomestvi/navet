@@ -5,10 +5,13 @@ import {
   isAllRooms,
 } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import type { DeviceCollectionKey } from '@navet/app/hooks';
 import {
+  DEVICE_COLLECTION_KEYS,
   useAggregatedRooms,
   useCardState,
   useDashboardDevices,
+  useDeviceCollectionsByKeys,
   useDeviceMap,
   useEditMode,
   useI18n,
@@ -17,7 +20,6 @@ import {
   usePersistedState,
   useRoomNavigation,
 } from '@navet/app/hooks';
-import { useDevices } from '@navet/app/hooks/use-devices';
 import { isStandaloneMode } from '@navet/app/runtime/app-mode';
 import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
@@ -50,6 +52,18 @@ import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
 import { useOnboardingController } from './use-onboarding-controller';
 
 const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
+const SECURITY_SECTION_DEVICE_KEYS = [
+  'cameras',
+  'covers',
+  'locks',
+  'sensors',
+  'persons',
+  'helpers',
+] as const;
+const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
+const CLIMATE_SECTION_DEVICE_KEYS = ['hvac', 'climate'] as const;
+const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
+const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
   {
     key: 'hvac',
@@ -118,8 +132,35 @@ export function useDashboardController(): DashboardController {
       homeLayoutCardIds.some(
         (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')
       ));
-  const allDevices = useDevices({
-    includeFeatureCollections: shouldIncludeFeatureCollections,
+  const sectionDeviceKeys = useMemo<readonly DeviceCollectionKey[]>(() => {
+    if (activeSection === 'lights') {
+      return LIGHTS_SECTION_DEVICE_KEYS;
+    }
+
+    if (activeSection === 'climate') {
+      return CLIMATE_SECTION_DEVICE_KEYS;
+    }
+
+    if (activeSection === 'media') {
+      return MEDIA_SECTION_DEVICE_KEYS;
+    }
+
+    if (activeSection === 'security') {
+      return SECURITY_SECTION_DEVICE_KEYS;
+    }
+
+    if (['energy', 'settings', 'tasks'].includes(activeSection)) {
+      return EMPTY_SECTION_DEVICE_KEYS;
+    }
+
+    return DEVICE_COLLECTION_KEYS;
+  }, [activeSection]);
+  const allDevices = useDeviceCollectionsByKeys(sectionDeviceKeys, {
+    enabled: sectionDeviceKeys.length > 0,
+    includeFeatureCollections:
+      sectionDeviceKeys.includes('calendars') || sectionDeviceKeys.includes('weather')
+        ? shouldIncludeFeatureCollections
+        : false,
   });
   const devices = useDashboardDevices(allDevices, hiddenEntityIds, shownSensorEntityIds);
   const countableDevices = useMemo(() => {
@@ -130,8 +171,16 @@ export function useDashboardController(): DashboardController {
     };
   }, [allDevices, shownSensorEntityIds]);
   const aggregatedRooms = useAggregatedRooms();
-  const countableRooms = useMemo(() => buildAggregatedRooms(countableDevices), [countableDevices]);
-  const visibleRoomsState = useMemo(() => buildAggregatedRooms(devices), [devices]);
+  const shouldPrepareRoomCounts = sectionDeviceKeys === DEVICE_COLLECTION_KEYS;
+  const countableRooms = useMemo(
+    () =>
+      shouldPrepareRoomCounts ? buildAggregatedRooms(countableDevices) : EMPTY_AGGREGATED_ROOMS,
+    [countableDevices, shouldPrepareRoomCounts]
+  );
+  const visibleRoomsState = useMemo(
+    () => (shouldPrepareRoomCounts ? buildAggregatedRooms(devices) : EMPTY_AGGREGATED_ROOMS),
+    [devices, shouldPrepareRoomCounts]
+  );
 
   const { roomItemCounts, roomHiddenItemCounts } = useDashboardRoomCounts(
     countableRooms,
@@ -458,6 +507,7 @@ const EMPTY_DEVICE_COLLECTION: DeviceCollection = {
   cameras: [],
   'grouped-sensors': [],
 };
+const EMPTY_AGGREGATED_ROOMS = buildAggregatedRooms(EMPTY_DEVICE_COLLECTION);
 
 function usePersistedRoomOrder(availableRooms: string[], roomOrder: string[]) {
   return useMemo(() => {

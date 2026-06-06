@@ -1,12 +1,12 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useProviderEnergySnapshot } from '@navet/app/features/energy/hooks/use-provider-energy-snapshot';
 import { buildHomeStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useAccentColor, useI18n, useThemeMode } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { lazy, memo, Suspense, useMemo } from 'react';
+import { useHomeEnergySummary } from '../hooks/use-home-energy-summary';
 import {
   buildHomeOverviewCollections,
   type HomeDashboardOverviewProps,
@@ -46,7 +46,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const accentColor = useAccentColor();
   const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
-  const energySnapshot = useProviderEnergySnapshot();
+  const energySummary = useHomeEnergySummary();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
   const { allCards, flowCards, sectionCards } = useMemo(
@@ -61,17 +61,11 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const statusSummaryItems = useMemo(
     () =>
       buildHomeStatusSummaryItems(deviceMap, {
-        gridImportTodayKWh: energySnapshot.isConfigured ? energySnapshot.importTodayKWh : undefined,
+        gridImportTodayKWh: energySummary.gridImportTodayKWh,
         routineCount,
         temperatureUnit,
       }),
-    [
-      deviceMap,
-      energySnapshot.importTodayKWh,
-      energySnapshot.isConfigured,
-      routineCount,
-      temperatureUnit,
-    ]
+    [deviceMap, energySummary.gridImportTodayKWh, routineCount, temperatureUnit]
   );
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (

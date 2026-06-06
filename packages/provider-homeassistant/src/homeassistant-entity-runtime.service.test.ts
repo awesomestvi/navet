@@ -8,25 +8,49 @@ import { configureHomeAssistantServiceBridge } from './homeassistant-service-bri
 
 const state = {
   entities: null as Record<string, unknown> | null,
+  entityRegistry: [] as Array<Record<string, unknown>>,
   config: null as HassConfig | null,
 };
+const listeners = {
+  entities: new Set<() => void>(),
+  registries: new Set<() => void>(),
+  connection: new Set<() => void>(),
+  config: new Set<() => void>(),
+};
+
+function emitBridgeEvent(event: keyof typeof listeners) {
+  for (const listener of listeners[event]) {
+    listener();
+  }
+}
 
 describe('homeAssistantEntityRuntimeService', () => {
   beforeEach(() => {
     state.entities = null;
+    state.entityRegistry = [];
     state.config = null;
+    listeners.entities.clear();
+    listeners.registries.clear();
+    listeners.connection.clear();
+    listeners.config.clear();
     resetHomeAssistantEntityRuntimeServiceCachesForTests();
     configureHomeAssistantServiceBridge({
       callService: vi.fn(async () => undefined),
       signPath: vi.fn(async (path: string) => ({ path })),
       getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),
       getCameraStreamPaths: vi.fn(async () => ({})),
-      addListener: vi.fn(() => () => {}),
+      addListener: vi.fn((event: keyof typeof listeners, listener: () => void) => {
+        listeners[event].add(listener);
+
+        return () => {
+          listeners[event].delete(listener);
+        };
+      }),
       isConnected: vi.fn(() => true),
       getPanelHass: vi.fn(() => null),
       getConnection: vi.fn(() => null),
       getEntities: () => state.entities as never,
-      getEntityRegistry: vi.fn(() => []),
+      getEntityRegistry: () => state.entityRegistry as never,
       getConfig: () => state.config,
       updateLight: vi.fn(async () => undefined),
       playMedia: vi.fn(async () => undefined),
@@ -152,5 +176,204 @@ describe('homeAssistantEntityRuntimeService', () => {
     const secondConfig = homeAssistantEntityRuntimeService.getConfig();
 
     expect(secondConfig).toBe(firstConfig);
+  });
+
+  it('reuses unchanged entity snapshot references when unrelated Home Assistant entities change', () => {
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: {
+          unit_of_measurement: 'C',
+        },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+    };
+
+    const firstSnapshot = homeAssistantEntityRuntimeService.getEntitySnapshot?.(
+      'sensor.kitchen_temperature'
+    );
+
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: {
+          unit_of_measurement: 'C',
+        },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+      'sensor.hall_temperature': {
+        entity_id: 'sensor.hall_temperature',
+        state: '19',
+        attributes: {
+          unit_of_measurement: 'C',
+        },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-2', parent_id: null, user_id: null },
+      },
+    };
+
+    const secondSnapshot = homeAssistantEntityRuntimeService.getEntitySnapshot?.(
+      'sensor.kitchen_temperature'
+    );
+
+    expect(secondSnapshot).toBe(firstSnapshot);
+  });
+
+  it('reuses registry entry references when cloned registry payloads are semantically unchanged', () => {
+    state.entityRegistry = [
+      {
+        entity_id: 'light.kitchen',
+        device_id: 'device-kitchen',
+        area_id: 'area-kitchen',
+        name: 'Kitchen Light',
+        platform: 'hue',
+      },
+    ];
+
+    const firstEntry = homeAssistantEntityRuntimeService.getEntityRegistryEntry?.('light.kitchen');
+
+    state.entityRegistry = [
+      {
+        entity_id: 'light.kitchen',
+        device_id: 'device-kitchen',
+        area_id: 'area-kitchen',
+        name: 'Kitchen Light',
+        platform: 'hue',
+      },
+    ];
+
+    const secondEntry = homeAssistantEntityRuntimeService.getEntityRegistryEntry?.('light.kitchen');
+
+    expect(secondEntry).toBe(firstEntry);
+  });
+
+  it('notifies entity listeners only when the subscribed entity snapshot changes', () => {
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+    };
+
+    const listener = vi.fn();
+    const unsubscribe = homeAssistantEntityRuntimeService.subscribeEntitySnapshot?.(
+      'sensor.kitchen_temperature',
+      listener
+    );
+
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+      'sensor.hall_temperature': {
+        entity_id: 'sensor.hall_temperature',
+        state: '19',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-2', parent_id: null, user_id: null },
+      },
+    };
+    emitBridgeEvent('entities');
+
+    expect(listener).not.toHaveBeenCalled();
+
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '22',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:05:00.000Z',
+        last_updated: '2026-05-30T10:05:00.000Z',
+        context: { id: 'ctx-3', parent_id: null, user_id: null },
+      },
+      'sensor.hall_temperature': {
+        entity_id: 'sensor.hall_temperature',
+        state: '19',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-2', parent_id: null, user_id: null },
+      },
+    };
+    emitBridgeEvent('entities');
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe?.();
+  });
+
+  it('notifies registry listeners only when the subscribed entity registry entry changes', () => {
+    state.entityRegistry = [
+      {
+        entity_id: 'light.kitchen',
+        device_id: 'device-kitchen',
+        area_id: 'area-kitchen',
+        name: 'Kitchen Light',
+        platform: 'hue',
+      },
+    ];
+
+    const listener = vi.fn();
+    const unsubscribe = homeAssistantEntityRuntimeService.subscribeEntityRegistryEntry?.(
+      'light.kitchen',
+      listener
+    );
+
+    state.entityRegistry = [
+      {
+        entity_id: 'light.kitchen',
+        device_id: 'device-kitchen',
+        area_id: 'area-kitchen',
+        name: 'Kitchen Light',
+        platform: 'hue',
+      },
+      {
+        entity_id: 'light.hall',
+        device_id: 'device-hall',
+        area_id: 'area-hall',
+        name: 'Hall Light',
+        platform: 'hue',
+      },
+    ];
+    emitBridgeEvent('registries');
+
+    expect(listener).not.toHaveBeenCalled();
+
+    state.entityRegistry = [
+      {
+        entity_id: 'light.kitchen',
+        device_id: 'device-kitchen',
+        area_id: 'area-main-kitchen',
+        name: 'Kitchen Light',
+        platform: 'hue',
+      },
+      {
+        entity_id: 'light.hall',
+        device_id: 'device-hall',
+        area_id: 'area-hall',
+        name: 'Hall Light',
+        platform: 'hue',
+      },
+    ];
+    emitBridgeEvent('registries');
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe?.();
   });
 });

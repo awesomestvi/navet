@@ -170,6 +170,25 @@ describe('CameraCardContainer', () => {
     );
   });
 
+  it('does not start the shared camera clock interval when the card is hidden', () => {
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(setIntervalSpy).not.toHaveBeenCalledWith(expect.any(Function), 30_000);
+  });
+
   it('does not recreate the live stream subtree when the card rerenders for non-stream changes', () => {
     const onSizeChange = vi.fn();
     const { rerender } = renderWithProviders(

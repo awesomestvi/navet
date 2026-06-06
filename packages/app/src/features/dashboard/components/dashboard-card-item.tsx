@@ -15,6 +15,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { EyeOff, Lock, Settings2, SlidersHorizontal, Unlock, X } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
 import { lazy, memo, Suspense, useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 import { renderCard } from '../utils/card-renderer';
@@ -65,7 +66,13 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const { t } = useI18n();
   const { theme } = useTheme();
   const accentColor = useAccentColor();
-  const ambientLightBleed = useSettingsStore(settingsSelectors.ambientLightBleed);
+  const { ambientLightBleed, effectsQuality, lowPowerMode } = useSettingsStore(
+    useShallow((state) => ({
+      ambientLightBleed: settingsSelectors.ambientLightBleed(state),
+      effectsQuality: settingsSelectors.effectsQuality(state),
+      lowPowerMode: settingsSelectors.lowPowerMode(state),
+    }))
+  );
   const isLocked = useDashboardEntitiesStore((state) => state.lockedCardIds.includes(id));
   const toggleCardLock = useDashboardEntitiesStore((state) => state.toggleCardLock);
   const [isTinyEditDockOpen, setIsTinyEditDockOpen] = useState(false);
@@ -185,7 +192,12 @@ export const DashboardCardItem = memo(function DashboardCardItem({
             />
           )
         ) : (
-          <EditModeActionDock cardSize={editControlSize} accentColor={accentColor} theme={theme}>
+          <EditModeActionDock
+            cardSize={editControlSize}
+            accentColor={accentColor}
+            effectsQuality={lowPowerMode ? 'low' : effectsQuality}
+            theme={theme}
+          >
             {renderEditModeDockActions({
               allowedSizes,
               allowEntityRemoval,
@@ -276,11 +288,13 @@ function EditModeCardBackdrop({ size }: { size: CardSize }) {
 function EditModeActionDock({
   cardSize,
   accentColor,
+  effectsQuality,
   theme,
   children,
 }: {
   cardSize: CardSize;
   accentColor: string;
+  effectsQuality: 'high' | 'medium' | 'low';
   theme: ReturnType<typeof useTheme>['theme'];
   children: ReactNode;
 }) {
@@ -296,11 +310,15 @@ function EditModeActionDock({
       ? {
           border: '1px solid rgba(255,255,255,0.16)',
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.03) 100%)',
+            effectsQuality === 'high'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.03) 100%)'
+              : 'rgba(18,24,34,0.88)',
           boxShadow:
-            '0 18px 38px -24px rgba(4,10,22,0.82), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -10px 18px rgba(255,255,255,0.03)',
-          backdropFilter: 'blur(24px) saturate(1.05)',
-          WebkitBackdropFilter: 'blur(24px) saturate(1.05)',
+            effectsQuality === 'high'
+              ? '0 18px 38px -24px rgba(4,10,22,0.82), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -10px 18px rgba(255,255,255,0.03)'
+              : '0 12px 24px -18px rgba(4,10,22,0.58)',
+          backdropFilter: effectsQuality === 'high' ? 'blur(24px) saturate(1.05)' : 'none',
+          WebkitBackdropFilter: effectsQuality === 'high' ? 'blur(24px) saturate(1.05)' : 'none',
         }
       : {
           border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,

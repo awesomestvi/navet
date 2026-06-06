@@ -1,4 +1,7 @@
-import { mapNavetEntitiesToDeviceCollection } from '@navet/app/core/navet-device-collections';
+import {
+  createEmptyDeviceCollection,
+  mapNavetEntitiesToDeviceCollection,
+} from '@navet/app/core/navet-device-collections';
 import { useMemo } from 'react';
 import { integrationSelectors } from '../stores/selectors';
 import type { DeviceCollection } from '../types/device.types';
@@ -12,11 +15,134 @@ import { useProviderWeatherDevicesCollection } from './use-provider-weather-devi
 const EMPTY_SELECTED_PROVIDER_IDS: IntegrationProviderId[] = [];
 const EMPTY_DEVICE_COLLECTION = Object.freeze(mapNavetEntitiesToDeviceCollection([]));
 const EMPTY_DEVICE_COLLECTIONS: DeviceCollection[] = [];
+const EMPTY_DEVICE_GROUP_SLICES: ReadonlyArray<readonly unknown[]> = [];
+
+export const DEVICE_COLLECTION_KEYS = [
+  'lights',
+  'fans',
+  'hvac',
+  'climate',
+  'media',
+  'weather',
+  'switches',
+  'helpers',
+  'covers',
+  'locks',
+  'scenes',
+  'persons',
+  'sensors',
+  'vacuums',
+  'calendars',
+  'cameras',
+  'grouped-sensors',
+] as const;
+
+export type DeviceCollectionKey = (typeof DEVICE_COLLECTION_KEYS)[number];
 
 interface UseDevicesOptions {
   enabled?: boolean;
   includeFeatureCollections?: boolean;
 }
+
+function assignDeviceCollectionKey<K extends DeviceCollectionKey>(
+  collection: DeviceCollection,
+  key: K,
+  value: DeviceCollection[K]
+) {
+  collection[key] = value;
+}
+
+function buildDeviceCollectionForKeys(
+  keys: readonly DeviceCollectionKey[],
+  collections: readonly DeviceCollection[]
+): DeviceCollection {
+  const nextCollection = createEmptyDeviceCollection();
+
+  for (const collection of collections) {
+    for (const key of keys) {
+      assignDeviceCollectionKey(
+        nextCollection,
+        key,
+        collection[key].length === 0
+          ? nextCollection[key]
+          : [...nextCollection[key], ...collection[key]]
+      );
+    }
+  }
+
+  return nextCollection;
+}
+
+export const useDeviceCollectionsByKeys = (
+  keys: readonly DeviceCollectionKey[],
+  options?: UseDevicesOptions
+): DeviceCollection => {
+  const enabled = options?.enabled ?? true;
+  const includeFeatureCollections = options?.includeFeatureCollections ?? true;
+  const selectedProviderIds = useIntegrationStore(
+    (state) =>
+      enabled ? integrationSelectors.selectedProviderIds(state) : EMPTY_SELECTED_PROVIDER_IDS,
+    areArraysEqual
+  );
+  const providerGroupSlices = useIntegrationStore(
+    (state) => {
+      if (!enabled || keys.length === 0) {
+        return EMPTY_DEVICE_GROUP_SLICES;
+      }
+
+      return selectedProviderIds.flatMap((providerId) => {
+        const collection =
+          integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
+          EMPTY_DEVICE_COLLECTION;
+        return keys.map((key) => collection[key]);
+      });
+    },
+    (left, right) => areArraysEqual(left, right, Object.is)
+  );
+  const calendars = useProviderCalendarDevicesCollection(undefined, {
+    enabled: enabled && includeFeatureCollections && keys.includes('calendars'),
+  });
+  const weather = useProviderWeatherDevicesCollection(undefined, {
+    enabled: enabled && includeFeatureCollections && keys.includes('weather'),
+  });
+
+  return useMemo(() => {
+    if (!enabled) {
+      return createEmptyDeviceCollection();
+    }
+
+    if (keys.length === 0) {
+      return createEmptyDeviceCollection();
+    }
+
+    const selectedProviderCollections: DeviceCollection[] = [];
+    let sliceIndex = 0;
+
+    for (let providerIndex = 0; providerIndex < selectedProviderIds.length; providerIndex += 1) {
+      const collection = createEmptyDeviceCollection();
+      for (const key of keys) {
+        const slice = providerGroupSlices[sliceIndex];
+        assignDeviceCollectionKey(
+          collection,
+          key,
+          Array.isArray(slice) ? (slice as DeviceCollection[typeof key]) : []
+        );
+        sliceIndex += 1;
+      }
+      selectedProviderCollections.push(collection);
+    }
+
+    const collection = buildDeviceCollectionForKeys(keys, selectedProviderCollections);
+    if (keys.includes('calendars')) {
+      collection.calendars = calendars;
+    }
+    if (keys.includes('weather')) {
+      collection.weather = weather;
+    }
+
+    return collection;
+  }, [calendars, enabled, keys, providerGroupSlices, selectedProviderIds, weather]);
+};
 
 export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollection => {
   const enabled = options?.enabled ?? true;
@@ -65,7 +191,7 @@ export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollect
   }, [calendars, enabled, selectedProviderCollections, weather]);
 };
 export const useDevices = (options?: UseDevicesOptions): DeviceCollection =>
-  useAggregatedDevices(options);
+  useDeviceCollectionsByKeys(DEVICE_COLLECTION_KEYS, options);
 export const useProviderDevices = (providerId: IntegrationProviderId): DeviceCollection => {
   return useIntegrationStore(
     (state) =>

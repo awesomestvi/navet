@@ -1,11 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
 import {
   Circle,
   CircleDashed,
   CircleDot,
   Flame,
   Flashlight,
+  Gauge,
   Lamp,
   LampCeiling,
   LampDesk,
@@ -16,6 +16,8 @@ import {
   Moon,
   MoonStar,
   Orbit,
+  Play,
+  Power,
   Sparkle,
   Star,
   StarHalf,
@@ -58,23 +60,42 @@ export const LIGHT_ICON_MAP: Record<string, LucideIcon> = {
 
 export const DEFAULT_LIGHT_ICON = 'Zap';
 const emojiIconRegex = /\p{Extended_Pictographic}/u;
-
-const lucideIconEntries = Object.entries(LucideIcons).filter(([, value]) => {
-  return (
-    typeof value === 'function' ||
-    (typeof value === 'object' && value !== null && ('$$typeof' in value || 'render' in value))
-  );
-}) as Array<[string, LucideIcon]>;
-
-const lucideIconRegistry = new Map<string, LucideIcon>();
-
-for (const [key, icon] of lucideIconEntries) {
-  if (key.endsWith('Icon') || key.startsWith('Lucide')) {
-    continue;
-  }
-
-  lucideIconRegistry.set(key, icon);
-}
+const lucideIconRegistry = new Map<string, LucideIcon>([
+  ['Circle', Circle],
+  ['CircleDashed', CircleDashed],
+  ['CircleDot', CircleDot],
+  ['Flame', Flame],
+  ['Flashlight', Flashlight],
+  ['Gauge', Gauge],
+  ['Lamp', Lamp],
+  ['LampCeiling', LampCeiling],
+  ['LampDesk', LampDesk],
+  ['LampFloor', LampFloor],
+  ['LampWallDown', LampWallDown],
+  ['LampWallUp', LampWallUp],
+  ['Lightbulb', Lightbulb],
+  ['Moon', Moon],
+  ['MoonStar', MoonStar],
+  ['Orbit', Orbit],
+  ['Play', Play],
+  ['Power', Power],
+  ['Sparkle', Sparkle],
+  ['Star', Star],
+  ['StarHalf', StarHalf],
+  ['SunDim', SunDim],
+  ['SunMedium', SunMedium],
+  ['SunMoon', SunMoon],
+  ['Sunrise', Sunrise],
+  ['Sunset', Sunset],
+  ['Zap', Zap],
+  ['ZapOff', ZapOff],
+]);
+const lowerCaseLightIconMap = new Map(
+  Object.keys(LIGHT_ICON_MAP).map((key) => [key.toLowerCase(), key] as const)
+);
+const lowerCaseLucideIconRegistry = new Map(
+  Array.from(lucideIconRegistry.keys(), (key) => [key.toLowerCase(), key] as const)
+);
 
 function toPascalCaseIconName(value: string) {
   return value
@@ -100,21 +121,17 @@ export function normalizeLightIconName(value: string) {
   }
 
   const lowerTrimmed = trimmed.toLowerCase();
-  const matchedKey = Object.keys(LIGHT_ICON_MAP).find((key) => key.toLowerCase() === lowerTrimmed);
+  const matchedKey = lowerCaseLightIconMap.get(lowerTrimmed);
   if (matchedKey) {
     return matchedKey;
   }
 
-  const lucideMatchedKey = Array.from(lucideIconRegistry.keys()).find(
-    (key) => key.toLowerCase() === lowerTrimmed
-  );
+  const lucideMatchedKey = lowerCaseLucideIconRegistry.get(lowerTrimmed);
   if (lucideMatchedKey) {
     return lucideMatchedKey;
   }
 
-  const pascalCaseLucideMatch = Array.from(lucideIconRegistry.keys()).find(
-    (key) => key.toLowerCase() === pascalCaseValue.toLowerCase()
-  );
+  const pascalCaseLucideMatch = lowerCaseLucideIconRegistry.get(pascalCaseValue.toLowerCase());
   if (pascalCaseLucideMatch) {
     return pascalCaseLucideMatch;
   }

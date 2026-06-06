@@ -3,7 +3,10 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { getProviderNativeId, parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
-import { useProviderEntityRegistryEntries } from './use-provider-entity';
+import {
+  useProviderEntityRegistryEntriesByDeviceId,
+  useProviderEntityRegistryEntry,
+} from './use-provider-entity';
 
 const EMPTY_IDS: string[] = [];
 const HOME_ASSISTANT_TOPOLOGY_PATTERNS = {
@@ -99,19 +102,23 @@ export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceI
     entityId,
     currentProviderId
   );
-  const registry = useProviderEntityRegistryEntries({
-    providerId: providerId ?? undefined,
-    enabled: Boolean(providerId && runtimeEntityId),
-  });
+  const registryEntry = useProviderEntityRegistryEntry(entityId);
+  const deviceEntries = useProviderEntityRegistryEntriesByDeviceId(
+    registryEntry?.deviceId ?? null,
+    {
+      providerId: providerId ?? undefined,
+      enabled: Boolean(providerId && runtimeEntityId && registryEntry?.deviceId),
+    }
+  );
 
   return useMemo(
     () =>
       runtimeEntityId && providerId
-        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+        ? collectDeviceSiblingIds(deviceEntries, runtimeEntityId, (entry) =>
             includeProviderTopologyEntry(providerId, 'hvac', entry)
           )
         : selectEmptyRegistryDeviceIds(),
-    [providerId, registry, runtimeEntityId]
+    [deviceEntries, providerId, runtimeEntityId]
   );
 }
 
@@ -125,19 +132,23 @@ export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDevic
     entityId,
     currentProviderId
   );
-  const registry = useProviderEntityRegistryEntries({
-    providerId: providerId ?? undefined,
-    enabled: Boolean(providerId && runtimeEntityId),
-  });
+  const registryEntry = useProviderEntityRegistryEntry(entityId);
+  const deviceEntries = useProviderEntityRegistryEntriesByDeviceId(
+    registryEntry?.deviceId ?? null,
+    {
+      providerId: providerId ?? undefined,
+      enabled: Boolean(providerId && runtimeEntityId && registryEntry?.deviceId),
+    }
+  );
 
   return useMemo(
     () =>
       runtimeEntityId && providerId
-        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+        ? collectDeviceSiblingIds(deviceEntries, runtimeEntityId, (entry) =>
             includeProviderTopologyEntry(providerId, 'switch', entry)
           )
         : selectEmptyRegistryDeviceIds(),
-    [providerId, registry, runtimeEntityId]
+    [deviceEntries, providerId, runtimeEntityId]
   );
 }
 
@@ -151,19 +162,23 @@ export function useCameraRegistryDeviceTopology(entityId: string): RegistryDevic
     entityId,
     currentProviderId
   );
-  const registry = useProviderEntityRegistryEntries({
-    providerId: providerId ?? undefined,
-    enabled: Boolean(providerId && runtimeEntityId),
-  });
+  const registryEntry = useProviderEntityRegistryEntry(entityId);
+  const deviceEntries = useProviderEntityRegistryEntriesByDeviceId(
+    registryEntry?.deviceId ?? null,
+    {
+      providerId: providerId ?? undefined,
+      enabled: Boolean(providerId && runtimeEntityId && registryEntry?.deviceId),
+    }
+  );
 
   return useMemo(
     () =>
       runtimeEntityId && providerId
-        ? collectDeviceSiblingIds(registry, runtimeEntityId, (entry) =>
+        ? collectDeviceSiblingIds(deviceEntries, runtimeEntityId, (entry) =>
             includeProviderTopologyEntry(providerId, 'camera', entry)
           )
         : selectEmptyRegistryDeviceIds(),
-    [providerId, registry, runtimeEntityId]
+    [deviceEntries, providerId, runtimeEntityId]
   );
 }
 
@@ -192,33 +207,31 @@ export function useEntityRoomRegistryContext(entityId: string): EntityRoomRegist
     entityId,
     currentProviderId
   );
-  const registry = useProviderEntityRegistryEntries({
-    providerId: providerId ?? undefined,
-    enabled: Boolean(providerId && runtimeEntityId),
-  });
+  const registryEntry = useProviderEntityRegistryEntry(entityId);
+  const siblingEntries = useProviderEntityRegistryEntriesByDeviceId(
+    registryEntry?.deviceId ?? null,
+    {
+      providerId: providerId ?? undefined,
+      enabled: Boolean(providerId && runtimeEntityId && registryEntry?.deviceId),
+    }
+  );
 
   return useMemo((): EntityRoomRegistryContext => {
-    if (!runtimeEntityId) {
+    if (!runtimeEntityId || !registryEntry) {
       return selectEmptyEntityRoomRegistryContext();
     }
 
-    const raw = registry.find((entry) => entry.entityId === runtimeEntityId);
-    const siblingEntries = raw?.deviceId
-      ? registry.filter((entry) => entry.deviceId === raw.deviceId)
-      : [];
     const deviceAreaId = siblingEntries.find((entry) => entry.areaId != null)?.areaId ?? null;
 
     return {
-      entry: raw
-        ? {
-            entity_id: raw.entityId,
-            area_id: raw.areaId ?? null,
-            device_id: raw.deviceId ?? null,
-          }
-        : null,
+      entry: {
+        entity_id: registryEntry.entityId,
+        area_id: registryEntry.areaId ?? null,
+        device_id: registryEntry.deviceId ?? null,
+      },
       deviceAreaId,
     };
-  }, [registry, runtimeEntityId]);
+  }, [registryEntry, runtimeEntityId, siblingEntries]);
 }
 
 export function useProviderEntityRoomContext(entityId: string): ProviderEntityRoomContext {
