@@ -40,6 +40,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   name,
   isOn,
   mode,
+  action,
   targetTemp,
   currentTemp,
   sourceTemperatureUnit,
@@ -59,6 +60,7 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const visualMode = useHvacVisualMode({
+    action,
     currentTemp,
     isOn,
     mode,

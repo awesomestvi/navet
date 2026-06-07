@@ -20,11 +20,80 @@ function resolveCoverService(
   return mode === 'tilt' ? 'stop_cover_tilt' : 'stop_cover';
 }
 
+function withOptionalCode(code?: string) {
+  return typeof code === 'string' && code.trim().length > 0 ? { code: code.trim() } : {};
+}
+
+const ALARM_SERVICES: Record<
+  keyof Pick<
+    ProviderSecurityFeatureService,
+    'armHome' | 'armAway' | 'armNight' | 'armVacation' | 'armCustomBypass' | 'disarm' | 'trigger'
+  >,
+  string
+> = {
+  armHome: 'alarm_arm_home',
+  armAway: 'alarm_arm_away',
+  armNight: 'alarm_arm_night',
+  armVacation: 'alarm_arm_vacation',
+  armCustomBypass: 'alarm_arm_custom_bypass',
+  disarm: 'alarm_disarm',
+  trigger: 'alarm_trigger',
+};
+
 export const homeAssistantSecurityFeatureService: ProviderSecurityFeatureService = {
   lockEntity: async (entityId) =>
     await callHomeAssistantService('lock', 'lock', {}, { entityId: entityId }),
   unlockEntity: async (entityId) =>
     await callHomeAssistantService('lock', 'unlock', {}, { entityId: entityId }),
+  armHome: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.armHome,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  armAway: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.armAway,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  armNight: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.armNight,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  armVacation: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.armVacation,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  armCustomBypass: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.armCustomBypass,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  disarm: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.disarm,
+      withOptionalCode(code),
+      { entityId }
+    ),
+  trigger: async (entityId, code) =>
+    await callHomeAssistantService(
+      'alarm_control_panel',
+      ALARM_SERVICES.trigger,
+      withOptionalCode(code),
+      { entityId }
+    ),
   openCover: async (entityId, mode = 'position') =>
     await callHomeAssistantService(
       'cover',

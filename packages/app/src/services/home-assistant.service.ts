@@ -130,6 +130,10 @@ class HomeAssistantService {
   private entityService: HAEntityService;
   private panelAdapter: HomeAssistantPanelAdapter | null = null;
   private registryListeners = new Set<(data: HAServiceEventMap['registries']) => void>();
+  private connectionListeners = new Set<(data: HAServiceEventMap['connection']) => void>();
+  private configListeners = new Set<(data: HAServiceEventMap['config']) => void>();
+  private entityListeners = new Set<(data: HAServiceEventMap['entities']) => void>();
+  private errorListeners = new Set<(data: HAServiceEventMap['error']) => void>();
 
   constructor() {
     this.connectionService = new HAConnectionService();
@@ -139,6 +143,19 @@ class HomeAssistantService {
       (domain, service, serviceData, target) =>
         this.callService(domain, service, serviceData, target)
     );
+
+    this.connectionService.addListener('connection', (connection) => {
+      this.emitConnection(connection);
+    });
+    this.connectionService.addListener('config', (config) => {
+      this.emitConfig(config);
+    });
+    this.connectionService.addListener('entities', (entities) => {
+      this.emitEntities(entities);
+    });
+    this.connectionService.addListener('error', (error) => {
+      this.emitError(error);
+    });
   }
 
   /**
@@ -156,11 +173,13 @@ class HomeAssistantService {
   setPanelHass(hass: HomeAssistantPanelHass): void {
     if (this.panelAdapter) {
       this.panelAdapter.update(hass);
+      this.emitPanelRuntimeState();
       return;
     }
 
     this.connectionService.disconnect();
     this.panelAdapter = new HomeAssistantPanelAdapter(hass);
+    this.emitPanelRuntimeState();
   }
 
   getPanelHass(): HomeAssistantPanelHass | null {
@@ -175,9 +194,36 @@ class HomeAssistantService {
     event: K,
     callback: (data: HAServiceEventMap[K]) => void
   ): () => void {
-    // Forward to connection service for connection-related events
-    if (event === 'connection' || event === 'config' || event === 'entities' || event === 'error') {
-      return this.connectionService.addListener(event, callback);
+    if (event === 'connection') {
+      const listener = callback as (data: HAServiceEventMap['connection']) => void;
+      this.connectionListeners.add(listener);
+      return () => {
+        this.connectionListeners.delete(listener);
+      };
+    }
+
+    if (event === 'config') {
+      const listener = callback as (data: HAServiceEventMap['config']) => void;
+      this.configListeners.add(listener);
+      return () => {
+        this.configListeners.delete(listener);
+      };
+    }
+
+    if (event === 'entities') {
+      const listener = callback as (data: HAServiceEventMap['entities']) => void;
+      this.entityListeners.add(listener);
+      return () => {
+        this.entityListeners.delete(listener);
+      };
+    }
+
+    if (event === 'error') {
+      const listener = callback as (data: HAServiceEventMap['error']) => void;
+      this.errorListeners.add(listener);
+      return () => {
+        this.errorListeners.delete(listener);
+      };
     }
 
     // For registry events, we need to wrap the listener
@@ -593,8 +639,56 @@ class HomeAssistantService {
    * Disconnect from Home Assistant
    */
   disconnect(): void {
+    const hadPanelAdapter = Boolean(this.panelAdapter);
     this.panelAdapter = null;
     this.connectionService.disconnect();
+    if (hadPanelAdapter) {
+      this.emitConnection({ connected: false, connection: null, reconnecting: false });
+    }
+  }
+
+  private emitConnection(data: HAServiceEventMap['connection']): void {
+    for (const listener of this.connectionListeners) {
+      listener(data);
+    }
+  }
+
+  private emitConfig(data: HAServiceEventMap['config']): void {
+    for (const listener of this.configListeners) {
+      listener(data);
+    }
+  }
+
+  private emitEntities(data: HAServiceEventMap['entities']): void {
+    for (const listener of this.entityListeners) {
+      listener(data);
+    }
+  }
+
+  private emitError(data: HAServiceEventMap['error']): void {
+    for (const listener of this.errorListeners) {
+      listener(data);
+    }
+  }
+
+  private emitPanelRuntimeState(): void {
+    const config = this.getConfig();
+    const entities = this.getEntities();
+    const connection = this.getConnection();
+
+    if (config) {
+      this.emitConfig(config);
+    }
+
+    if (entities) {
+      this.emitEntities(entities);
+    }
+
+    this.emitConnection({
+      connected: true,
+      connection,
+      reconnecting: false,
+    });
   }
 
   private emitRegistries(): void {

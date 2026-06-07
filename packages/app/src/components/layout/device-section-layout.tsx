@@ -3,7 +3,7 @@ import { InteractivePill } from '@navet/app/components/primitives/interactive-pi
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
-import { useEditMode, useI18n, useTheme } from '@navet/app/hooks';
+import { useEditMode, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { type LucideIcon, Plus } from 'lucide-react';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
@@ -40,6 +40,7 @@ export function DeviceSectionLayout({
 }) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const surface = getThemeSurfaceTokens(theme);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
@@ -164,6 +165,7 @@ export function DeviceSectionLayout({
       onToggle={toggleEditMode}
       className="relative"
       actions={addHiddenEntityAction}
+      showCustomizeButton={!isMobileViewport}
     >
       {content}
     </SectionCustomizeShell>

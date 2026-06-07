@@ -11,7 +11,7 @@ import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/clim
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
-import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -68,6 +68,7 @@ function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
@@ -282,7 +283,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             isEditMode={isEditMode}
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
-            actions={addHiddenClimateEntityAction}
+            actions={isMobileViewport ? null : addHiddenClimateEntityAction}
+            showCustomizeButton={!isMobileViewport}
           >
             <RenderProfiler id="ClimateSection">
               <div className="space-y-8">
@@ -382,7 +384,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             isEditMode={isEditMode}
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
-            actions={addHiddenLightEntityAction}
+            actions={isMobileViewport ? null : addHiddenLightEntityAction}
+            showCustomizeButton={!isMobileViewport}
           >
             <RenderProfiler id="LightsSection">
               <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
@@ -482,7 +485,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
               <HomeDashboardOverview
                 deviceMap={controller.availableDeviceMap}
-                summaryDeviceMap={controller.deviceMap}
+                summaryDeviceMap={controller.availableDeviceMap}
                 cardSizes={cardSizes}
                 updateCardSize={updateCardSize}
                 isEditMode={isEditMode}
@@ -505,6 +508,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 onToggleEditMode={controller.onToggleEditMode}
                 onNavigateSection={controller.setActiveSection}
                 routineCount={totalRoutineCount}
+                securityAlertCount={controller.securityAlertCount}
               />
             </Suspense>
           </RenderProfiler>

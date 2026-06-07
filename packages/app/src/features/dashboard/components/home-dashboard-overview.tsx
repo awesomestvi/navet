@@ -41,6 +41,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   onToggleEditMode,
   onNavigateSection,
   routineCount,
+  securityAlertCount,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
@@ -64,9 +65,16 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
       buildHomeStatusSummaryItems(summaryDeviceMap, {
         gridImportTodayKWh: energySummary.gridImportTodayKWh,
         routineCount,
+        securityAlertCount,
         temperatureUnit,
       }),
-    [summaryDeviceMap, energySummary.gridImportTodayKWh, routineCount, temperatureUnit]
+    [
+      summaryDeviceMap,
+      energySummary.gridImportTodayKWh,
+      routineCount,
+      securityAlertCount,
+      temperatureUnit,
+    ]
   );
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (

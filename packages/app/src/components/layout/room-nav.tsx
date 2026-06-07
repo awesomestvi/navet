@@ -372,7 +372,7 @@ export const RoomNav = memo(function RoomNav({
               active={isEditMode}
               intent="action"
               size="small"
-              className={`room-nav-action-pill flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
+              className={`room-nav-action-pill hidden md:flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
                 isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
               }`}
               style={

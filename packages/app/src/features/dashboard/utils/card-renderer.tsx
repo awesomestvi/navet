@@ -16,9 +16,10 @@ import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceMetric } from '@navet/app/types/device.types';
-import type { IntegrationProviderId } from '@navet/app/types/provider';
+import { type IntegrationProviderId, isIntegrationProviderId } from '@navet/app/types/provider';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areRecordValuesEqual } from '@navet/app/utils/structural-equality';
+import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import type { NavetEntity } from '@navet/core/types';
 import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'react';
 
@@ -47,6 +48,11 @@ const CalendarCard = lazy(async () => {
 const HVACCard = lazy(async () => {
   const module = await import('@navet/app/features/climate');
   return { default: module.HVACCard };
+});
+
+const HumidifierCard = lazy(async () => {
+  const module = await import('@navet/app/features/climate');
+  return { default: module.HumidifierCard };
 });
 
 const LightCard = lazy(async () => {
@@ -92,6 +98,11 @@ const CoverCard = lazy(async () => {
 const LockCard = lazy(async () => {
   const module = await import('@navet/app/features/security');
   return { default: module.LockCard };
+});
+
+const SecurityPanelCard = lazy(async () => {
+  const module = await import('@navet/app/features/security');
+  return { default: module.SecurityPanelCard };
 });
 
 const GroupedSensorCard = lazy(async () => {
@@ -176,6 +187,46 @@ function resolveAvailabilityEntity(
   availabilityEntitiesById: Record<string, NavetEntity | null>
 ): NavetEntity | null {
   return availabilityEntitiesById[deviceId] ?? null;
+}
+
+function readAlarmEntityFromCardDevice(device: DeviceData): NavetAlarmEntity | null {
+  if (
+    device.type !== 'sensors' ||
+    typeof device.alarmState !== 'string' ||
+    typeof device.name !== 'string' ||
+    typeof device.id !== 'string' ||
+    typeof device.providerId !== 'string' ||
+    !isIntegrationProviderId(device.providerId)
+  ) {
+    return null;
+  }
+
+  return {
+    id: device.id,
+    name: device.name,
+    state: device.alarmState as NavetAlarmEntity['state'],
+    supportedActions: Array.isArray(device.alarmSupportedActions)
+      ? device.alarmSupportedActions.filter(
+          (action): action is NavetAlarmEntity['supportedActions'][number] =>
+            typeof action === 'string'
+        )
+      : [],
+    codeFormat:
+      device.alarmCodeFormat === 'number' || device.alarmCodeFormat === 'text'
+        ? device.alarmCodeFormat
+        : 'none',
+    requiresCode:
+      typeof device.alarmRequiresCode === 'boolean' ? device.alarmRequiresCode : undefined,
+    changedBy: typeof device.alarmChangedBy === 'string' ? device.alarmChangedBy : undefined,
+    lastChanged: typeof device.alarmLastChanged === 'string' ? device.alarmLastChanged : undefined,
+    provider: device.providerId,
+    availability:
+      device.availability === 'available' ||
+      device.availability === 'unavailable' ||
+      device.availability === 'unknown'
+        ? device.availability
+        : undefined,
+  };
 }
 
 export function useAvailabilityEntitiesForCard(
@@ -410,23 +461,43 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  switches: ({ device, size, isEditMode }) => (
-    <SwitchCard
-      id={device.id as string}
-      name={device.name as string}
-      size={size}
-      providerId={device.providerId as CardProviderId}
-      initialState={device.state as boolean | undefined}
-      entityType={device.entityType as string | undefined}
-      serviceDomain={device.serviceDomain as string | undefined}
-      serviceAction={device.serviceAction as string | undefined}
-      power={device.power as number | undefined}
-      voltage={device.voltage as number | undefined}
-      energy={device.energy as number | undefined}
-      metrics={device.metrics as DeviceMetric[] | undefined}
-      isEditMode={isEditMode}
-    />
-  ),
+  switches: ({ device, size, handleSizeChange, isEditMode }) =>
+    device.serviceDomain === 'humidifier' ? (
+      <HumidifierCard
+        id={device.id as string}
+        name={device.name as string}
+        room={device.room as string}
+        providerId={device.providerId as CardProviderId}
+        entityType={device.entityType as string | undefined}
+        deviceClass={device.deviceClass as string | undefined}
+        initialState={device.state as boolean | undefined}
+        initialTargetHumidity={device.targetHumidity as number | undefined}
+        minHumidity={device.minHumidity as number | undefined}
+        maxHumidity={device.maxHumidity as number | undefined}
+        targetHumidityStep={device.targetHumidityStep as number | undefined}
+        initialMode={device.mode as string | undefined}
+        availableModes={device.availableModes as string[] | undefined}
+        size={size}
+        onSizeChange={handleSizeChange}
+        isEditMode={isEditMode}
+      />
+    ) : (
+      <SwitchCard
+        id={device.id as string}
+        name={device.name as string}
+        size={size}
+        providerId={device.providerId as CardProviderId}
+        initialState={device.state as boolean | undefined}
+        entityType={device.entityType as string | undefined}
+        serviceDomain={device.serviceDomain as string | undefined}
+        serviceAction={device.serviceAction as string | undefined}
+        power={device.power as number | undefined}
+        voltage={device.voltage as number | undefined}
+        energy={device.energy as number | undefined}
+        metrics={device.metrics as DeviceMetric[] | undefined}
+        isEditMode={isEditMode}
+      />
+    ),
 
   helpers: ({ device, size, isEditMode }) => (
     <SwitchCard
@@ -497,6 +568,9 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       name={device.name as string}
       room={device.room as string}
       entityPicture={device.entityPicture as string | undefined}
+      entityPictureSources={
+        device.entityPictureSources as ReadonlyArray<{ srcSet: string; type: string }> | undefined
+      }
       supportedFeatures={device.supportedFeatures as number | undefined}
       isStreamCapable={device.isStreamCapable as boolean | undefined}
       size={size}
@@ -519,23 +593,36 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  sensors: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
-    <InfoCard
-      id={device.id as string}
-      name={device.name as string}
-      room={device.room as string}
-      value={device.value as string}
-      unit={device.unit as string}
-      icon={device.icon as SensorReading['icon']}
-      subtitle={headerSubtitleOverride ?? (device.entityType as string | undefined)}
-      deviceClass={device.deviceClass as string | undefined}
-      status={device.status as 'measurement' | 'active' | 'clear' | 'unavailable' | undefined}
-      lastUpdated={device.lastUpdated as string | undefined}
-      size={size}
-      onSizeChange={handleSizeChange}
-      isEditMode={isEditMode}
-    />
-  ),
+  sensors: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) =>
+    (() => {
+      const alarm = readAlarmEntityFromCardDevice(device);
+      if (alarm) {
+        return (
+          <SecurityPanelCard
+            alarms={[alarm]}
+            size={size === 'large' || size === 'extra-large' ? size : 'medium'}
+          />
+        );
+      }
+
+      return (
+        <InfoCard
+          id={device.id as string}
+          name={device.name as string}
+          room={device.room as string}
+          value={device.value as string}
+          unit={device.unit as string}
+          icon={device.icon as SensorReading['icon']}
+          subtitle={headerSubtitleOverride ?? (device.entityType as string | undefined)}
+          deviceClass={device.deviceClass as string | undefined}
+          status={device.status as 'measurement' | 'active' | 'clear' | 'unavailable' | undefined}
+          lastUpdated={device.lastUpdated as string | undefined}
+          size={size}
+          onSizeChange={handleSizeChange}
+          isEditMode={isEditMode}
+        />
+      );
+    })(),
 
   'grouped-sensors': ({ device, size, handleSizeChange, isEditMode }) => (
     <GroupedSensorCard

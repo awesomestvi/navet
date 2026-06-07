@@ -23,6 +23,25 @@ import {
   resolveHomeAssistantProxyUrl,
 } from './homeassistant-service-bridge';
 
+const ALARM_COMMAND_SERVICES: Record<
+  | 'arm_home'
+  | 'arm_away'
+  | 'arm_night'
+  | 'arm_vacation'
+  | 'arm_custom_bypass'
+  | 'disarm'
+  | 'trigger',
+  string
+> = {
+  arm_home: 'alarm_arm_home',
+  arm_away: 'alarm_arm_away',
+  arm_night: 'alarm_arm_night',
+  arm_vacation: 'alarm_arm_vacation',
+  arm_custom_bypass: 'alarm_arm_custom_bypass',
+  disarm: 'alarm_disarm',
+  trigger: 'alarm_trigger',
+};
+
 interface HomeAssistantProviderSessionInput extends NavetProviderSessionInput {
   providerId: 'home_assistant';
 }
@@ -272,6 +291,22 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
     case 'unlock':
       await callHomeAssistantService('lock', 'unlock', {}, { entityId: entity.externalId });
       return;
+    case 'arm_home':
+    case 'arm_away':
+    case 'arm_night':
+    case 'arm_vacation':
+    case 'arm_custom_bypass':
+    case 'disarm':
+    case 'trigger': {
+      const service = ALARM_COMMAND_SERVICES[command.type];
+      await callHomeAssistantService(
+        'alarm_control_panel',
+        service,
+        command.code ? { code: command.code } : {},
+        { entityId: entity.externalId }
+      );
+      return;
+    }
     case 'open':
       await callHomeAssistantService('cover', 'open_cover', {}, { entityId: entity.externalId });
       return;

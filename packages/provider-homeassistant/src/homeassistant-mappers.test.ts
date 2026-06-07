@@ -261,6 +261,36 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('attaches normalized alarm metadata to alarm control panel entities', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'alarm_control_panel.home': makeEntity('alarm_control_panel.home', 'armed_home', {
+          friendly_name: 'Home Alarm',
+          supported_features: 1 | 2 | 8,
+          code_format: 'number',
+          code_arm_required: true,
+          changed_by: 'Hall Keypad',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'alarm_control_panel.home')).toEqual(
+      expect.objectContaining({
+        attributes: expect.objectContaining({
+          alarmState: 'armed_home',
+          alarmSupportedActions: ['arm_home', 'arm_away', 'disarm', 'trigger'],
+          alarmCodeFormat: 'number',
+          alarmRequiresCode: true,
+          alarmChangedBy: 'Hall Keypad',
+          size: 'large',
+        }),
+      })
+    );
+  });
+
   it('maps Home Assistant security entities into existing Navet types with security metadata', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
@@ -449,5 +479,48 @@ describe('homeassistant-mappers', () => {
     });
 
     expect(entities).toEqual([]);
+  });
+
+  it('maps humidifier entities as controllable humidity devices', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'humidifier.basement': makeEntity('humidifier.basement', 'on', {
+          friendly_name: 'Basement Dehumidifier',
+          device_class: 'dehumidifier',
+          current_humidity: 58,
+          humidity: 46,
+          min_humidity: 35,
+          max_humidity: 70,
+          target_humidity_step: 5,
+          mode: 'auto',
+          available_modes: ['auto', 'sleep'],
+          action: 'drying',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities).toEqual([
+      expect.objectContaining({
+        externalId: 'humidifier.basement',
+        type: 'switch',
+        capabilities: ['toggle'],
+        attributes: expect.objectContaining({
+          currentHumidity: 58,
+          targetHumidity: 46,
+          minHumidity: 35,
+          maxHumidity: 70,
+          targetHumidityStep: 5,
+          mode: 'auto',
+          availableModes: ['auto', 'sleep'],
+          action: 'drying',
+          entityType: 'Dehumidifier',
+          serviceDomain: 'humidifier',
+          value: 'on',
+        }),
+      }),
+    ]);
   });
 });

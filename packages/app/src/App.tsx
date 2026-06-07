@@ -236,22 +236,77 @@ function AppContent() {
         attachIntegrationRuntimeBridge('home_assistant', parentHass);
         clearAppError();
         delete failedConnectionAttemptKeys.current.home_assistant;
-        return true;
+        return parentHass;
       }
 
-      return false;
+      return null;
     };
 
-    if (syncParentHass()) {
-      return;
-    }
+    let pollIntervalId: number | null = null;
+    let websocketUnsubscribe: (() => void) | null = null;
+    let cancelled = false;
 
-    const intervalId = window.setInterval(() => {
-      syncParentHass();
-    }, 1_000);
+    const clearPolling = () => {
+      if (pollIntervalId !== null) {
+        window.clearInterval(pollIntervalId);
+        pollIntervalId = null;
+      }
+    };
+
+    const startPolling = () => {
+      if (pollIntervalId !== null) {
+        return;
+      }
+
+      pollIntervalId = window.setInterval(() => {
+        syncParentHass();
+      }, 1_000);
+    };
+
+    const subscribeToParentStateChanges = async () => {
+      const parentHass = syncParentHass();
+      const connection = parentHass?.connection as
+        | {
+            subscribeMessage?: (
+              callback: () => void,
+              subscribeMessage: { type: string; event_type?: string },
+              options?: { resubscribe?: boolean; preCheck?: () => boolean | Promise<boolean> }
+            ) => Promise<() => void>;
+          }
+        | undefined;
+
+      if (!connection?.subscribeMessage) {
+        startPolling();
+        return;
+      }
+
+      try {
+        websocketUnsubscribe = await connection.subscribeMessage(
+          () => {
+            syncParentHass();
+          },
+          {
+            type: 'subscribe_events',
+            event_type: 'state_changed',
+          }
+        );
+        clearPolling();
+      } catch {
+        startPolling();
+      }
+    };
+
+    void subscribeToParentStateChanges().then(() => {
+      if (cancelled) {
+        websocketUnsubscribe?.();
+        websocketUnsubscribe = null;
+      }
+    });
 
     return () => {
-      window.clearInterval(intervalId);
+      cancelled = true;
+      clearPolling();
+      websocketUnsubscribe?.();
     };
   }, [isAuthenticated, runtime, clearAppError]);
 

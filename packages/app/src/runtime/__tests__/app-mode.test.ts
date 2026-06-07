@@ -30,6 +30,17 @@ describe('app mode detection', () => {
     expect(isHomeAssistantAddonMode()).toBe(false);
   });
 
+  it('recomputes the runtime when the panel flag appears after an earlier cache', () => {
+    resetRuntimeContextForTests();
+
+    expect(isHomeAssistantPanelMode()).toBe(false);
+
+    window.__NAVET_PANEL__ = true;
+
+    expect(isHomeAssistantPanelMode()).toBe(true);
+    expect(isHomeAssistantAddonMode()).toBe(false);
+  });
+
   it('detects add-on mode from the current ingress path', () => {
     setPath('/api/hassio_ingress/navet_dev/dashboard');
     resetRuntimeContextForTests();

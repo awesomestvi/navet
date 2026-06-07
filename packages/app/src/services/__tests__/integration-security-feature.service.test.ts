@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { closeCoverMock, dispatchEntityCommandMock, openCoverMock, setCoverPositionMock } =
-  vi.hoisted(() => ({
-    closeCoverMock: vi.fn(),
-    dispatchEntityCommandMock: vi.fn(),
-    openCoverMock: vi.fn(),
-    setCoverPositionMock: vi.fn(),
-  }));
+const {
+  closeCoverMock,
+  dispatchEntityCommandMock,
+  openCoverMock,
+  setCoverPositionMock,
+  armAwayMock,
+} = vi.hoisted(() => ({
+  armAwayMock: vi.fn(),
+  closeCoverMock: vi.fn(),
+  dispatchEntityCommandMock: vi.fn(),
+  openCoverMock: vi.fn(),
+  setCoverPositionMock: vi.fn(),
+}));
 
 vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: dispatchEntityCommandMock,
@@ -15,10 +21,17 @@ vi.mock('@navet/app/commands', () => ({
 vi.mock('@navet/app/provider-runtime-registry', () => ({
   getProviderRuntimeRegistration: vi.fn(() => ({
     securityFeatureService: {
+      armAway: armAwayMock,
+      armCustomBypass: vi.fn(),
+      armHome: vi.fn(),
+      armNight: vi.fn(),
+      armVacation: vi.fn(),
       closeCover: closeCoverMock,
+      disarm: vi.fn(),
       openCover: openCoverMock,
       setCoverPosition: setCoverPositionMock,
       stopCover: vi.fn(),
+      trigger: vi.fn(),
     },
   })),
 }));
@@ -31,6 +44,7 @@ describe('integrationSecurityFeatureService', () => {
     dispatchEntityCommandMock.mockReset();
     openCoverMock.mockReset();
     setCoverPositionMock.mockReset();
+    armAwayMock.mockReset();
   });
 
   it('routes lock actions through provider security intents', async () => {
@@ -65,5 +79,15 @@ describe('integrationSecurityFeatureService', () => {
     expect(closeCoverMock).toHaveBeenCalledWith('cover.blind', 'tilt');
     expect(setCoverPositionMock).toHaveBeenNthCalledWith(1, 'cover.blind', 75, 'position');
     expect(setCoverPositionMock).toHaveBeenNthCalledWith(2, 'cover.blind', 40, 'tilt');
+  });
+
+  it('routes alarm actions through provider-neutral commands', async () => {
+    await integrationSecurityFeatureService.armAway('alarm_control_panel.home', '4321');
+
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+      type: 'arm_away',
+      entityId: 'alarm_control_panel.home',
+      code: '4321',
+    });
   });
 });

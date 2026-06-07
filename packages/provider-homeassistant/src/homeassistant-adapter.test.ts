@@ -21,6 +21,20 @@ function lightEntityFactory() {
   };
 }
 
+function alarmEntityFactory() {
+  return {
+    entity_id: 'alarm_control_panel.home',
+    state: 'disarmed',
+    attributes: {
+      friendly_name: 'Home Alarm',
+      supported_features: 1,
+    },
+    last_changed: '2026-05-30T10:00:00.000Z',
+    last_updated: '2026-05-30T10:00:00.000Z',
+    context: { id: 'ctx-2', parent_id: null, user_id: null },
+  };
+}
+
 const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
   callHomeAssistantServiceMock: vi.fn(async () => undefined),
   resolveArtworkMock: vi.fn(async (entityId: string) => ({
@@ -53,6 +67,7 @@ describe('homeassistant-adapter', () => {
       getConnection: vi.fn(() => null),
       getEntities: vi.fn(() => ({
         'light.kitchen': lightEntityFactory(),
+        'alarm_control_panel.home': alarmEntityFactory(),
       })),
       getEntityRegistry: vi.fn(() => []),
       getConfig: vi.fn(() => null),
@@ -92,6 +107,7 @@ describe('homeassistant-adapter', () => {
         connected: true,
         entities: {
           'light.kitchen': lightEntityFactory(),
+          'alarm_control_panel.home': alarmEntityFactory(),
         },
         config: null,
         areas: [],
@@ -119,6 +135,23 @@ describe('homeassistant-adapter', () => {
       'turn_on',
       { color_temp_kelvin: 3200 },
       { entityId: 'light.kitchen' }
+    );
+  });
+
+  it('maps provider-neutral alarm commands to Home Assistant alarm services', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'arm_away',
+      entityId: createProviderScopedId('home_assistant', 'alarm_control_panel.home'),
+      code: '1234',
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'alarm_control_panel',
+      'alarm_arm_away',
+      { code: '1234' },
+      { entityId: 'alarm_control_panel.home' }
     );
   });
 

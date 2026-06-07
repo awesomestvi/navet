@@ -1,3 +1,8 @@
+import type {
+  NavetAlarmAction,
+  NavetAlarmCodeFormat,
+  NavetAlarmState,
+} from '@navet/core/alarm-types';
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { NavetMediaCapabilities } from '../core/navet-device-state';
 import type { SensorIconType } from '../features/sensors';
@@ -163,12 +168,21 @@ export interface SwitchDevice extends BaseDevice {
   room: string;
   state: boolean;
   entityType?: string;
+  deviceClass?: string;
   serviceDomain?: string;
   serviceAction?: string;
   power?: number;
   voltage?: number;
   energy?: number;
   metrics?: DeviceMetric[];
+  currentHumidity?: number;
+  targetHumidity?: number;
+  minHumidity?: number;
+  maxHumidity?: number;
+  targetHumidityStep?: number;
+  mode?: string;
+  availableModes?: string[];
+  action?: string;
 }
 
 export type HelperDevice = Pick<
@@ -230,6 +244,13 @@ export interface SensorDevice extends BaseDevice {
   sourceDeviceId?: string;
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
   lastUpdated?: string;
+  alarmState?: NavetAlarmState;
+  alarmSupportedActions?: NavetAlarmAction[];
+  alarmCodeFormat?: NavetAlarmCodeFormat;
+  alarmRequiresCode?: boolean;
+  alarmChangedBy?: string;
+  alarmLastChanged?: string;
+  availability?: 'available' | 'unavailable' | 'unknown';
 }
 
 // Vacuum device
@@ -298,6 +319,10 @@ export interface CameraDevice extends BaseDevice {
   room: string;
   sourceDeviceId?: string;
   entityPicture?: string;
+  entityPictureSources?: ReadonlyArray<{
+    srcSet: string;
+    type: string;
+  }>;
   state: string;
   supportedFeatures?: number;
   isStreamCapable?: boolean;

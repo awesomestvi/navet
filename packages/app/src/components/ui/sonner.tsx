@@ -55,7 +55,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: cn(
             defaultToastClassName,
-            'group/toast flex w-full flex-wrap items-start gap-x-3 gap-y-2 overflow-hidden',
+            'group/toast flex w-full flex-wrap items-center gap-x-3 gap-y-2 overflow-hidden sm:items-start',
             'data-[type=success]:border-emerald-500/35 data-[type=success]:bg-emerald-500/10',
             'data-[type=error]:border-rose-500/35 data-[type=error]:bg-rose-500/10',
             'data-[type=warning]:border-amber-500/35 data-[type=warning]:bg-amber-500/10',
@@ -63,11 +63,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
             'data-[type=loading]:border-white/20'
           ),
           content:
-            'order-2 flex min-w-0 flex-1 basis-[14rem] flex-col justify-center gap-1 self-center pr-2',
+            'order-2 flex min-w-0 flex-1 basis-0 flex-col justify-center gap-1 self-center pr-2 sm:basis-[14rem]',
           title: cn('text-sm font-semibold leading-5', surface.textPrimary),
           description: cn('text-sm leading-5', surface.textSecondary),
           icon: cn(
-            'relative order-1 flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-[16px] border',
+            'relative order-1 flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-[16px] border sm:self-start',
             surface.border,
             surface.iconBg,
             surface.textPrimary,
@@ -129,6 +129,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       offset={16}
       mobileOffset={88}
+      style={
+        {
+          '--width': isMobileViewport ? 'calc(100vw - 1rem)' : '356px',
+        } as CSSProperties
+      }
       {...props}
     />
   );

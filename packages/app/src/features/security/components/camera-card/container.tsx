@@ -130,6 +130,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   name,
   room,
   entityPicture: initialEntityPicture,
+  entityPictureSources: initialEntityPictureSources,
   isStreamCapable: initialIsStreamCapable,
   size,
   isEditMode,
@@ -170,6 +171,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const baseSnapshotUrl = normalizeCameraSnapshotUrl(
     liveEntityPicture ? resolveHomeAssistantImageUrl(liveEntityPicture) : initialSnapshotUrl
   );
+  const imageSources = liveEntityPicture ? undefined : initialEntityPictureSources;
   const snapshotUrl = appendCameraCacheBuster(baseSnapshotUrl, refreshKey);
   const hasSnapshot = Boolean(snapshotUrl);
   const isStreamCapable =
@@ -398,6 +400,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         room={room}
         cardRef={cardRef}
         imageUrl={imageUrl}
+        imageSources={imageSources}
         streamElement={streamElement}
         cameraState={cameraState}
         statusChangedAt={statusChangedAt}
@@ -430,6 +433,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           room={room}
           cameraState={cameraState}
           snapshotUrl={snapshotUrl}
+          snapshotSources={imageSources}
           cameraViewMode={viewerCameraViewMode}
           preferredTransport={cameraStreamPreference}
           isStreamCapable={isStreamCapable}

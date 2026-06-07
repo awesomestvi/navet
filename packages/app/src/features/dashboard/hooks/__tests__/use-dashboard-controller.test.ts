@@ -20,6 +20,7 @@ describe('getClimateDashboardGroup', () => {
       'hvac',
       'climate',
       'fans',
+      'switches',
       'sensors',
     ]);
   });
@@ -43,6 +44,19 @@ describe('getClimateDashboardGroup', () => {
           id: 'sensor.hallway_humidity',
           type: 'sensors',
           deviceClass: 'humidity',
+        })
+      )
+    ).toBe('humidity');
+  });
+
+  it('routes humidifiers into the humidity climate section', () => {
+    expect(
+      getClimateDashboardGroup(
+        createDevice({
+          id: 'humidifier.basement',
+          type: 'switches',
+          entityType: 'Dehumidifier',
+          serviceDomain: 'humidifier',
         })
       )
     ).toBe('humidity');

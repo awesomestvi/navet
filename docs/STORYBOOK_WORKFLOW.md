@@ -29,6 +29,8 @@ Use colocated stories by default.
 - do not connect stories to live provider sessions
 - initialize only the minimum store state a story needs
 - keep aggregate stories useful, but do not hide normal component stories behind them
+- when adding or renaming a public card story, register its shared docs copy in `packages/app/src/storybook/story-docs.ts`
+- keep primary entity-card families covered with standalone stories before relying on aggregate matrix or catalog stories
 
 ## Commands
 

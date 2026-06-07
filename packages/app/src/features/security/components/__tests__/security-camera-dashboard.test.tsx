@@ -230,6 +230,68 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.queryByText(/secure$/i)).not.toBeInTheDocument();
   });
 
+  it('renders the alarm panel inside the now lane when alarm entities are provided', () => {
+    const model = renderDashboardModelWithAlerts();
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        alarms={[
+          {
+            id: 'home_assistant:alarm_control_panel.home',
+            name: 'Home Alarm',
+            state: 'disarmed',
+            supportedActions: ['arm_away', 'disarm'],
+            codeFormat: 'none',
+            provider: 'home_assistant',
+            availability: 'available',
+          },
+        ]}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-card:security.now.alarm')).toBeInTheDocument();
+    expect(screen.getByText('Home Alarm')).toBeInTheDocument();
+  });
+
+  it('keeps alarm-only dashboards inside the now section without rendering all-security details', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [],
+      locks: [],
+      sensors: [],
+      persons: [],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        alarms={[
+          {
+            id: 'home_assistant:alarm_control_panel.home',
+            name: 'Home Alarm',
+            state: 'disarmed',
+            supportedActions: ['arm_away', 'disarm'],
+            codeFormat: 'none',
+            provider: 'home_assistant',
+            availability: 'available',
+          },
+        ]}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByText('Now')).toBeInTheDocument();
+    expect(screen.getByText('Home Alarm')).toBeInTheDocument();
+    expect(screen.queryByText('All Security')).not.toBeInTheDocument();
+  });
+
   it('keeps the hero attention count aligned with visible attention items', () => {
     const model = buildSecurityCameraDashboardModel({
       cameras: [],
@@ -476,6 +538,64 @@ describe('SecurityCameraDashboard', () => {
 
     expect(screen.getByTestId('security-now-card:security.now.attention').className).toContain(
       'col-span-4 row-span-2'
+    );
+  });
+
+  it('limits the now-lane alarm card to large and extra-large spans', () => {
+    const model = renderDashboardModelWithAlerts();
+
+    const { rerender } = renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        alarms={[
+          {
+            id: 'home_assistant:alarm_control_panel.home',
+            name: 'Home Alarm',
+            state: 'disarmed',
+            supportedActions: ['arm_away', 'disarm'],
+            codeFormat: 'none',
+            provider: 'home_assistant',
+            availability: 'available',
+          },
+        ]}
+        isEditMode
+        cardSizes={{
+          'security.now.alarm': 'medium',
+        }}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
+      'col-span-4 row-span-4'
+    );
+
+    rerender(
+      <SecurityCameraDashboard
+        model={model}
+        alarms={[
+          {
+            id: 'home_assistant:alarm_control_panel.home',
+            name: 'Home Alarm',
+            state: 'disarmed',
+            supportedActions: ['arm_away', 'disarm'],
+            codeFormat: 'none',
+            provider: 'home_assistant',
+            availability: 'available',
+          },
+        ]}
+        isEditMode
+        cardSizes={{
+          'security.now.alarm': 'extra-large',
+        }}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
+      'col-span-6 row-span-4'
     );
   });
 

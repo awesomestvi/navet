@@ -61,6 +61,16 @@ const HA_CONNECTION_GRACE_PERIOD_MS = 10_000;
 const HA_CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
 
+function clonePanelEntities(entities: HassEntities | null): HassEntities | null {
+  if (!entities) {
+    return null;
+  }
+
+  return Object.fromEntries(
+    Object.entries(entities).map(([entityId, entity]) => [entityId, { ...entity }])
+  );
+}
+
 export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) => {
   let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -243,13 +253,14 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
       const isPanelUpdate = panelHassAttached;
       panelHassAttached = true;
       homeAssistantService.setPanelHass(hass);
+      const panelEntities = clonePanelEntities(homeAssistantService.getEntities());
 
       if (isPanelUpdate) {
         useErrorStore.getState().clearError();
         set({
           connected: true,
           config: homeAssistantService.getConfig(),
-          entities: homeAssistantService.getEntities(),
+          entities: panelEntities,
           user: homeAssistantService.getUser(),
           connection: homeAssistantService.getConnection(),
           error: null,
@@ -278,7 +289,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
       set({
         connected: true,
         config: homeAssistantService.getConfig(),
-        entities: homeAssistantService.getEntities(),
+        entities: panelEntities,
         user: homeAssistantService.getUser(),
         connection: homeAssistantService.getConnection(),
         registriesHydrated: false,

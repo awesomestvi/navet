@@ -1,7 +1,7 @@
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { cn } from '@navet/app/components/ui/utils';
 import { CalendarCard } from '@navet/app/features/calendar';
-import { HVACCard } from '@navet/app/features/climate';
+import { HumidifierCard, HVACCard } from '@navet/app/features/climate';
 import { NoteWidget, PhotoFrameWidget } from '@navet/app/features/dashboard/components/widgets';
 import { BatteryOverviewWidget } from '@navet/app/features/dashboard/components/widgets/battery-overview-widget';
 import { MapWidget } from '@navet/app/features/dashboard/components/widgets/map-widget';
@@ -11,7 +11,7 @@ import { MediaCard } from '@navet/app/features/media';
 import { PersonCard } from '@navet/app/features/person';
 import { RSSFeedCardView } from '@navet/app/features/rss/components/rss-feed-card/view';
 import { SceneCard } from '@navet/app/features/scenes';
-import { CoverCard, LockCard } from '@navet/app/features/security';
+import { AlarmPanelCard, CoverCard, LockCard } from '@navet/app/features/security';
 import { GroupedSensorCard, InfoCard } from '@navet/app/features/sensors';
 import { VacuumCard } from '@navet/app/features/vacuum';
 import { WeatherCard } from '@navet/app/features/weather';
@@ -78,11 +78,9 @@ const BENTO_BOARDS: readonly BentoBoard[] = [
       { cardKey: 'light', colStart: 1, colSpan: 2, rowStart: 1, rowSpan: 2 },
       { cardKey: 'groupedSensors', colStart: 3, colSpan: 2, rowStart: 1, rowSpan: 2 },
       { cardKey: 'energyNow', colStart: 5, colSpan: 4, rowStart: 1, rowSpan: 2 },
-      { cardKey: 'cover', colStart: 1, colSpan: 2, rowStart: 3, rowSpan: 2 },
-      { cardKey: 'lightColor', colStart: 3, colSpan: 2, rowStart: 3, rowSpan: 2 },
+      { cardKey: 'humidifier', colStart: 1, colSpan: 4, rowStart: 3, rowSpan: 2 },
       { cardKey: 'vacuum', colStart: 5, colSpan: 4, rowStart: 3, rowSpan: 2 },
-      { cardKey: 'person', colStart: 1, colSpan: 2, rowStart: 5, rowSpan: 2 },
-      { cardKey: 'lock', colStart: 3, colSpan: 2, rowStart: 5, rowSpan: 2 },
+      { cardKey: 'alarmPanel', colStart: 1, colSpan: 4, rowStart: 5, rowSpan: 2 },
       { cardKey: 'batteryOverview', colStart: 5, colSpan: 4, rowStart: 5, rowSpan: 2 },
     ],
   },
@@ -188,8 +186,13 @@ export function MarketingProductPreview({ compact = false }: { compact?: boolean
           <HVACCard {...MARKETING_PREVIEW_CARDS.hvac} onSizeChange={noopCardSizeChange} />
         </div>
         {!compact ? (
-          <div className="lg:col-span-2">
+          <div className="grid gap-4 lg:col-span-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.85fr)]">
             <CalendarCard {...MARKETING_PREVIEW_CARDS.calendar} onSizeChange={noopCardSizeChange} />
+            <HumidifierCard
+              {...MARKETING_PREVIEW_CARDS.humidifier}
+              onSizeChange={noopCardSizeChange}
+            />
+            <AlarmPanelCard {...MARKETING_PREVIEW_CARDS.alarmPanel} />
           </div>
         ) : null}
       </div>
@@ -245,6 +248,11 @@ function MarketingBentoCard({ cardKey }: { cardKey: BentoCardKey }) {
   }
   if (cardKey === 'hvac') {
     return <HVACCard {...MARKETING_PREVIEW_CARDS.hvac} onSizeChange={noopCardSizeChange} />;
+  }
+  if (cardKey === 'humidifier') {
+    return (
+      <HumidifierCard {...MARKETING_PREVIEW_CARDS.humidifier} onSizeChange={noopCardSizeChange} />
+    );
   }
   if (cardKey === 'batteryOverview') {
     return <BatteryOverviewWidget size="medium" />;
@@ -317,6 +325,9 @@ function MarketingBentoCard({ cardKey }: { cardKey: BentoCardKey }) {
   if (cardKey === 'lock') {
     return <LockCard {...MARKETING_BENTO_CARDS.lock} />;
   }
+  if (cardKey === 'alarmPanel') {
+    return <AlarmPanelCard {...MARKETING_BENTO_CARDS.alarmPanel} />;
+  }
   return <VacuumCard {...MARKETING_BENTO_CARDS.vacuum} onSizeChange={noopCardSizeChange} />;
 }
 
@@ -358,6 +369,18 @@ function MarketingLightEntitySeed() {
           last_changed: '2026-05-30T12:05:00.000Z',
           last_updated: '2026-05-30T12:05:00.000Z',
           context: { id: 'marketing-light-2', parent_id: null, user_id: null },
+        },
+        'fan.ceiling_fan': {
+          entity_id: 'fan.ceiling_fan',
+          state: 'on',
+          attributes: {
+            friendly_name: 'Ceiling Fan',
+            percentage: 66,
+            percentage_step: 33,
+          },
+          last_changed: '2026-05-30T12:07:00.000Z',
+          last_updated: '2026-05-30T12:07:00.000Z',
+          context: { id: 'marketing-fan-1', parent_id: null, user_id: null },
         },
         'sensor.front_door_sensor_battery': {
           entity_id: 'sensor.front_door_sensor_battery',

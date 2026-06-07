@@ -1,3 +1,4 @@
+import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
 
@@ -37,6 +38,16 @@ function readResponseMetadata(response: Response) {
 export async function loadDashboardProfile(
   options: DashboardProfileLoadOptions = {}
 ): Promise<DashboardProfileLoadResult> {
+  if (isHomeAssistantPanelMode()) {
+    return {
+      available: false,
+      profile: null,
+      notModified: false,
+      etag: null,
+      lastModified: null,
+    };
+  }
+
   try {
     const headers = new Headers();
     if (options.etag) {
@@ -96,6 +107,15 @@ export async function saveDashboardProfile(
   profile: DashboardConfigPayload,
   options: { keepalive?: boolean } = {}
 ): Promise<DashboardProfileSaveResult> {
+  if (isHomeAssistantPanelMode()) {
+    return {
+      saved: false,
+      permanentFailure: true,
+      etag: null,
+      lastModified: null,
+    };
+  }
+
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINT), {
       method: 'PUT',

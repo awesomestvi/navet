@@ -7,7 +7,13 @@ import {
   getMediaEntityTypeKey,
   type MediaEntityTypeKey,
 } from '@navet/app/features/media/components/media-card/get-media-entity-type-key';
-import { useDeviceCollectionsByKeys, useEditMode, useI18n, useTheme } from '@navet/app/hooks';
+import {
+  useDeviceCollectionsByKeys,
+  useEditMode,
+  useI18n,
+  useMediaQuery,
+  useTheme,
+} from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { Plus, Tv } from 'lucide-react';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
@@ -118,6 +124,7 @@ export function buildMediaSections(
 export function MediaSection() {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDeviceCollectionsByKeys(['media']);
   const { isEditMode, toggleEditMode } = useEditMode();
@@ -241,7 +248,8 @@ export function MediaSection() {
       isEditMode={isEditMode}
       onToggle={toggleEditMode}
       className="relative space-y-8"
-      actions={addHiddenEntityAction}
+      actions={isMobileViewport ? null : addHiddenEntityAction}
+      showCustomizeButton={!isMobileViewport}
     >
       {sections.length > 0 ? (
         sections.map((section) => (

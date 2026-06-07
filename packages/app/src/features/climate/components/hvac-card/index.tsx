@@ -279,6 +279,7 @@ export const HVACCard = memo(function HVACCard({
           name={name}
           isOn={controller.isOn}
           mode={controller.mode}
+          action={controller.action}
           targetTemp={controller.targetTemp}
           currentTemp={controller.currentTemp}
           sourceTemperatureUnit={controller.sourceTemperatureUnit}

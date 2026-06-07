@@ -767,6 +767,21 @@ const STORY_DOCS: Record<string, string> = {
       'Check that temperature values remain readable and well spaced across sizes.',
     ]
   ),
+  'Cards/Entity/Humidifier': doc(
+    'Entity card for humidifiers and dehumidifiers, combining target humidity control, current reading, and quick mode switching.',
+    [
+      'How humidity target, current humidity, and live power state fit into a compact climate card.',
+      'The shared treatment for both humidifier and dehumidifier variants without splitting the UI model.',
+    ],
+    [
+      'Use this story when changing humidity-card hierarchy, gauge behavior, or quick mode controls.',
+      'Review both humidifier and dehumidifier variants before changing climate-card styling or wording.',
+    ],
+    [
+      'Check that the target humidity remains obvious before the secondary controls.',
+      'Check that humidifier and dehumidifier variants stay visually distinct without looking like separate products.',
+    ]
+  ),
   'Cards/Dialogs/HVAC': doc(
     'Settings dialog for configuring the HVAC card rather than controlling the live climate entity.',
     [
@@ -1191,6 +1206,21 @@ const STORY_DOCS: Record<string, string> = {
     [
       'Check that locked and unlocked states are unmistakable.',
       'Check that the card feels secure and deliberate rather than casual.',
+    ]
+  ),
+  'Cards/Entity/Alarm Panel': doc(
+    'Entity card for alarm-control panels, centered on arming state, supported actions, and disarm requirements.',
+    [
+      'How armed, pending, triggered, and unavailable alarm states are communicated in a dedicated security surface.',
+      'The action hierarchy for arming modes, disarming, and optional code requirements.',
+    ],
+    [
+      'Use this story when changing alarm-state emphasis, action grouping, or code-entry expectations.',
+      'Review it alongside the broader security dashboard stories before changing security language or visual severity.',
+    ],
+    [
+      'Check that the current alarm state reads immediately from normal dashboard distance.',
+      'Check that the supported actions remain clear without making the card feel noisy or unsafe.',
     ]
   ),
   'Cards/Entity/Grouped Sensor': doc(

@@ -1,3 +1,5 @@
+import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
+import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import {
   RUNTIME_SAMPLE_MEDIA,
   RUNTIME_SAMPLE_SCREENSHOTS,
@@ -20,6 +22,7 @@ import {
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
+import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import { HVACCard } from '@navet/app/features/climate/components/hvac-card';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
 import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
@@ -34,15 +37,20 @@ import { SwitchCard } from '@navet/app/features/lighting/components/switch-card'
 import { MediaCard } from '@navet/app/features/media/components/media-card';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
+import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
 import { CameraCard } from '@navet/app/features/security/components/camera-card';
 import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
+import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
+import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
+import { InfoBadgeStrip } from '@navet/app/features/sensors';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
+import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
@@ -50,20 +58,22 @@ import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
+import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import type { HassConfig, HassEntities } from 'home-assistant-js-websocket';
 import {
   Bot,
   ClipboardList,
   Clock3,
+  Fan,
   Lightbulb,
   Play,
   ShieldCheck,
   Speaker,
-  Thermometer,
   Zap,
 } from 'lucide-react';
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import type { CameraDevice, LockDevice, SensorDevice } from '../types/device.types';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
@@ -101,7 +111,12 @@ const energyTrend = [
 
 const demoEnergyScenario = getEnergyDashboardScenario('default');
 const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
-const { artwork: sampleArtworkImage, camera: sampleCameraImage } = RUNTIME_SAMPLE_MEDIA;
+const { artwork: sampleArtworkImage } = RUNTIME_SAMPLE_MEDIA;
+const sampleCameraFallbackImage = cameraSampleImageWebp;
+const sampleCameraSources = [
+  { srcSet: cameraSampleImageAvif, type: 'image/avif' },
+  { srcSet: cameraSampleImageWebp, type: 'image/webp' },
+] as const;
 const {
   energyTablet: demoEnergyImage,
   homePhone: demoMobileImage,
@@ -350,12 +365,185 @@ const demoHomeAssistantEntities: HassEntities = {
   },
 };
 
-const demoSummaryItems = [
-  { id: 'energy', title: 'Energy', value: '1.4 kW', icon: Zap, color: '#f59e0b' },
-  { id: 'climate', title: 'Climate', value: '21,0-25,4°', icon: Thermometer, color: '#06b6d4' },
-  { id: 'security', title: 'Security', value: 'No Alerts', icon: ShieldCheck, color: '#14b8a6' },
-  { id: 'lights', title: 'Lights', value: '0 On', icon: Lightbulb, color: '#eab308' },
-  { id: 'media', title: 'Speakers & TVs', value: 'None Playing', icon: Speaker, color: '#94a3b8' },
+const demoSummaryItems: HomeStatusSummaryItem[] = [
+  {
+    id: 'energy',
+    title: 'Energy',
+    value: '1.4 kW',
+    icon: Zap,
+    iconColor: '#f59e0b',
+    targetSection: 'energy',
+  },
+  {
+    id: 'climate',
+    title: 'Climate',
+    value: '21,0-25,4°',
+    icon: Fan,
+    iconColor: '#22d3ee',
+    targetSection: 'climate',
+  },
+  {
+    id: 'security',
+    title: 'Security',
+    value: 'No Alerts',
+    icon: ShieldCheck,
+    iconColor: '#22c55e',
+    targetSection: 'security',
+  },
+  {
+    id: 'lights',
+    title: 'Lights',
+    value: '0 On',
+    icon: Lightbulb,
+    iconColor: '#facc15',
+    targetSection: 'lights',
+  },
+  {
+    id: 'media',
+    title: 'Speakers & TVs',
+    value: 'None Playing',
+    icon: Speaker,
+    iconColor: '#cbd5e1',
+    targetSection: 'media',
+  },
+];
+
+const demoAlarmEntities: NavetAlarmEntity[] = [
+  {
+    id: 'home_assistant:alarm_control_panel.home',
+    name: 'Home Alarm',
+    state: 'armed_home',
+    supportedActions: ['arm_home', 'arm_away', 'arm_night', 'disarm'],
+    codeFormat: 'number',
+    requiresCode: true,
+    provider: 'home_assistant',
+    availability: 'available',
+  },
+];
+
+const demoSecurityCameras: CameraDevice[] = [
+  {
+    id: 'camera.front_door',
+    name: 'Front Door',
+    room: 'Entrance',
+    entityPicture: sampleCameraFallbackImage,
+    entityPictureSources: sampleCameraSources,
+    size: 'medium',
+    state: 'streaming',
+    supportedFeatures: 0,
+    isStreamCapable: false,
+    isStillImageOnly: true,
+    lastChanged: demoEntityTimestamp,
+    lastUpdated: demoEntityTimestamp,
+  },
+  {
+    id: 'camera.driveway',
+    name: 'Driveway',
+    room: 'Garage',
+    entityPicture: sampleCameraFallbackImage,
+    entityPictureSources: sampleCameraSources,
+    size: 'medium',
+    state: 'idle',
+    supportedFeatures: 0,
+    isStreamCapable: false,
+    isStillImageOnly: true,
+    lastChanged: demoEntityTimestamp,
+    lastUpdated: demoEntityTimestamp,
+  },
+  {
+    id: 'camera.garden',
+    name: 'Garden',
+    room: 'Garden',
+    entityPicture: sampleCameraFallbackImage,
+    entityPictureSources: sampleCameraSources,
+    size: 'medium',
+    state: 'recording',
+    supportedFeatures: 0,
+    isStreamCapable: false,
+    isStillImageOnly: true,
+    lastChanged: demoEntityTimestamp,
+    lastUpdated: demoEntityTimestamp,
+  },
+  {
+    id: 'camera.utility_map',
+    name: 'Utility Map',
+    room: 'Utility',
+    entityPicture: sampleCameraFallbackImage,
+    entityPictureSources: sampleCameraSources,
+    size: 'medium',
+    state: '2026-05-16 20:17:10',
+    supportedFeatures: 0,
+    isStreamCapable: false,
+    isStillImageOnly: true,
+    lastChanged: demoEntityTimestamp,
+    lastUpdated: demoEntityTimestamp,
+  },
+  {
+    id: 'camera.side_gate',
+    name: 'Side Gate',
+    room: 'Garden',
+    entityPicture: sampleCameraFallbackImage,
+    entityPictureSources: sampleCameraSources,
+    size: 'medium',
+    state: 'unavailable',
+    securityKind: 'camera',
+    securitySeverity: 'unknown',
+    supportedFeatures: 0,
+    isStreamCapable: false,
+    isStillImageOnly: true,
+    lastChanged: demoEntityTimestamp,
+    lastUpdated: demoEntityTimestamp,
+  },
+];
+
+const demoSecurityLocks: LockDevice[] = [
+  {
+    id: 'lock.front_door',
+    name: 'Front Door',
+    room: 'Entrance',
+    size: 'small',
+    state: true,
+    securityKind: 'lock',
+    securitySeverity: 'normal',
+  },
+  {
+    id: 'lock.back_door',
+    name: 'Back Door',
+    room: 'Kitchen',
+    size: 'small',
+    state: false,
+    securityKind: 'lock',
+    securitySeverity: 'warning',
+  },
+];
+
+const demoSecuritySensors: SensorDevice[] = [
+  {
+    id: 'binary_sensor.entry_motion',
+    nativeId: 'binary_sensor.entry_motion',
+    name: 'Entry Motion',
+    room: 'Entrance',
+    size: 'small',
+    value: 'on',
+    unit: '',
+    deviceClass: 'motion',
+    securityKind: 'motion',
+    securitySeverity: 'active',
+    status: 'active',
+  },
+  {
+    id: 'binary_sensor.patio_door',
+    nativeId: 'binary_sensor.patio_door',
+    name: 'Patio Door',
+    room: 'Garden',
+    size: 'small',
+    value: 'on',
+    unit: '',
+    deviceClass: 'door',
+    securityKind: 'door',
+    securitySeverity: 'warning',
+    status: 'active',
+  },
 ];
 
 const demoAutomations = [
@@ -638,6 +826,7 @@ function useDemoDisplayDefaults() {
       username: 'Navet',
       language: 'en',
       temperatureUnit: 'celsius',
+      cameraDashboardViewMode: 'snapshot',
       effectsQuality: 'high',
       disableAnimations: false,
       lowPowerMode: false,
@@ -725,45 +914,9 @@ function DashboardGrid({ children }: { children: ReactNode }) {
 }
 
 function DemoSummaryRow() {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const chipClassName =
-    theme === 'light'
-      ? 'border-slate-200/80 bg-white/70 text-slate-950 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.34)]'
-      : theme === 'black'
-        ? 'border-white/10 bg-white/[0.035] text-white/90'
-        : 'border-white/10 bg-white/[0.055] text-white/90 backdrop-blur-xl';
+  const setActiveSection = useNavigationStore((state) => state.setActiveSection);
 
-  return (
-    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
-      {demoSummaryItems.map((item) => {
-        const IconComponent = item.icon;
-
-        return (
-          <div
-            key={item.id}
-            className={`inline-grid min-h-10 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-full border py-1.5 pl-2 pr-3 text-left ${chipClassName}`}
-          >
-            <span
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08]"
-              style={{ color: item.color }}
-              aria-hidden="true"
-            >
-              <IconComponent className="h-3.5 w-3.5" />
-            </span>
-            <span className="min-w-0">
-              <span className="block max-w-[8rem] truncate text-[11px] font-semibold leading-3.5">
-                {item.title}
-              </span>
-              <span className={`block truncate text-[11px] leading-3.5 ${surface.textMuted}`}>
-                {item.value}
-              </span>
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <InfoBadgeStrip items={demoSummaryItems} onNavigate={setActiveSection} />;
 }
 
 function ProductGrid() {
@@ -806,6 +959,25 @@ function ProductGrid() {
             initialMode="heat"
             initialAction="heating"
             initialState
+            size="medium"
+            onSizeChange={noopCardSizeChange}
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="medium">
+          <HumidifierCard
+            id="humidifier.bedroom"
+            name="Bedroom Humidifier"
+            room="Bedroom"
+            entityType="Humidifier"
+            deviceClass="humidifier"
+            initialState
+            initialTargetHumidity={46}
+            minHumidity={30}
+            maxHumidity={70}
+            targetHumidityStep={1}
+            initialMode="auto"
+            availableModes={['auto', 'eco', 'sleep']}
             size="medium"
             onSizeChange={noopCardSizeChange}
             isEditMode={false}
@@ -869,6 +1041,9 @@ function ProductGrid() {
         </CardSlot>
         <CardSlot size="small">
           <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
+        </CardSlot>
+        <CardSlot size="medium">
+          <AlarmPanelCard alarms={demoAlarmEntities} size="medium" />
         </CardSlot>
         <CardSlot size="small">
           <PersonCard
@@ -1011,42 +1186,110 @@ function EnergyShot() {
   );
 }
 
-function SecurityShot() {
+function ClimateShot() {
+  const { t } = useI18n();
+
   return (
-    <DashboardGrid>
-      <CardSlot size="extra-large">
-        <CameraCard
-          id="camera.front_door"
-          name="Front Door"
-          room="Entrance"
-          entityPicture={sampleCameraImage}
-          supportedFeatures={2}
-          isStreamCapable
-          size="extra-large"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="extra-large">
-        <CameraCard
-          id="camera.driveway"
-          name="Driveway"
-          room="Garage"
-          entityPicture={sampleCameraImage}
-          supportedFeatures={2}
-          isStreamCapable
-          size="extra-large"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="small">
-        <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
-      </CardSlot>
-      <CardSlot size="small">
-        <LockCard id="lock.back_door" name="Back Door" initialState size="small" />
-      </CardSlot>
-    </DashboardGrid>
+    <div className="space-y-6">
+      <SectionBlock title={t('sections.climate.hvac.title')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <HVACCard
+              id="climate.main_floor_section"
+              name="Main Floor"
+              room="Hallway"
+              initialTemp={22}
+              initialCurrentTemp={21}
+              initialMode="heat"
+              initialAction="heating"
+              initialState
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+
+      <SectionBlock title={t('sections.climate.fans.title')}>
+        <DashboardGrid>
+          <CardSlot size="small">
+            <FanCard
+              id="fan.bedroom_ceiling_section"
+              name="Bedroom Fan"
+              room="Bedroom"
+              initialState
+              initialPercentage={54}
+              size="small"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+
+      <SectionBlock title={t('sections.climate.humidity.title')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <HumidifierCard
+              id="humidifier.bedroom_section"
+              name="Bedroom Humidifier"
+              room="Bedroom"
+              entityType="Humidifier"
+              deviceClass="humidifier"
+              initialState
+              initialTargetHumidity={46}
+              minHumidity={30}
+              maxHumidity={70}
+              targetHumidityStep={1}
+              initialMode="auto"
+              availableModes={['auto', 'eco', 'sleep']}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+
+      <SectionBlock title={t('sections.climate.airQuality.title')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <GroupedSensorCard
+              id="grouped_sensors.climate_air"
+              name="Indoor Air"
+              room="Home"
+              sensors={groupedSensors}
+              accentColor="teal"
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+    </div>
+  );
+}
+
+function SecurityShot() {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const model = buildSecurityCameraDashboardModel({
+    cameras: demoSecurityCameras,
+    locks: demoSecurityLocks,
+    sensors: demoSecuritySensors,
+  });
+
+  return (
+    <SecurityCameraDashboard
+      model={model}
+      isEditMode={false}
+      alarms={demoAlarmEntities}
+      cardSizes={{}}
+      updateCardSize={noopCardSizeChange}
+      surface={surface}
+    />
   );
 }
 
@@ -1131,97 +1374,113 @@ function SettingsShot() {
 }
 
 function MediaShot() {
+  const { t } = useI18n();
+
   return (
-    <DashboardGrid>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.living_room_tv"
-          name="Living Room TV"
-          room="Living Room"
-          title="Aerial"
-          artist="Apple TV"
-          entityType="TV"
-          deviceClass="tv"
-          source="Apple TV"
-          sourceList={['Apple TV', 'HDMI 1', 'Chromecast', 'PlayStation 5']}
-          state="playing"
-          volume={42}
-          isMuted={false}
-          elapsedSeconds={86}
-          durationSeconds={243}
-          positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-          supportsGrouping
-          groupMembers={['Kitchen Speaker']}
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-          simulateTvRemote
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.kitchen_speaker"
-          name="Kitchen Speaker"
-          room="Kitchen"
-          title="Morning Mix"
-          artist="Navet Radio"
-          entityType="Speaker"
-          source="Spotify"
-          sourceList={['Spotify', 'AirPlay', 'Radio']}
-          state="playing"
-          volume={34}
-          isMuted={false}
-          elapsedSeconds={104}
-          durationSeconds={218}
-          positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-          supportsGrouping
-          groupMembers={['Living Room TV', 'Bedroom Speaker']}
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.bedroom_speaker"
-          name="Bedroom Speaker"
-          room="Bedroom"
-          title="Deep Focus"
-          artist="Navet Radio"
-          entityType="Speaker"
-          source="AirPlay"
-          sourceList={['Spotify', 'AirPlay', 'Radio']}
-          state="paused"
-          volume={18}
-          isMuted={false}
-          elapsedSeconds={42}
-          durationSeconds={195}
-          positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-          supportsGrouping
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-      <CardSlot size="medium">
-        <MediaCard
-          id="media_player.office_display"
-          name="Office Display"
-          room="Office"
-          title="Standby"
-          artist="Google Cast"
-          entityType="Display"
-          source="Chromecast"
-          sourceList={['Chromecast', 'YouTube', 'Spotify']}
-          state="idle"
-          volume={24}
-          isMuted={false}
-          size="medium"
-          onSizeChange={noopCardSizeChange}
-          isEditMode={false}
-        />
-      </CardSlot>
-    </DashboardGrid>
+    <div className="space-y-6">
+      <SectionBlock title={t('sections.media.tv.title')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <MediaCard
+              id="media_player.living_room_tv"
+              name="Living Room TV"
+              room="Living Room"
+              title="Aerial"
+              artist="Apple TV"
+              entityType="TV"
+              deviceClass="tv"
+              source="Apple TV"
+              sourceList={['Apple TV', 'HDMI 1', 'Chromecast', 'PlayStation 5']}
+              state="playing"
+              volume={42}
+              isMuted={false}
+              elapsedSeconds={86}
+              durationSeconds={243}
+              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
+              supportsGrouping
+              groupMembers={['Kitchen Speaker']}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+              simulateTvRemote
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+
+      <SectionBlock title={t('sections.media.audio.title')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <MediaCard
+              id="media_player.kitchen_speaker"
+              name="Kitchen Speaker"
+              room="Kitchen"
+              title="Morning Mix"
+              artist="Navet Radio"
+              entityType="Speaker"
+              source="Spotify"
+              sourceList={['Spotify', 'AirPlay', 'Radio']}
+              state="playing"
+              volume={34}
+              isMuted={false}
+              elapsedSeconds={104}
+              durationSeconds={218}
+              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
+              supportsGrouping
+              groupMembers={['Living Room TV', 'Bedroom Speaker']}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+          <CardSlot size="medium">
+            <MediaCard
+              id="media_player.bedroom_speaker"
+              name="Bedroom Speaker"
+              room="Bedroom"
+              title="Deep Focus"
+              artist="Navet Radio"
+              entityType="Speaker"
+              source="AirPlay"
+              sourceList={['Spotify', 'AirPlay', 'Radio']}
+              state="paused"
+              volume={18}
+              isMuted={false}
+              elapsedSeconds={42}
+              durationSeconds={195}
+              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
+              supportsGrouping
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+
+      <SectionBlock title={t('media.type.streamingBox')}>
+        <DashboardGrid>
+          <CardSlot size="medium">
+            <MediaCard
+              id="media_player.office_display"
+              name="Office Display"
+              room="Office"
+              title="Standby"
+              artist="Google Cast"
+              entityType="Streaming Box"
+              source="Chromecast"
+              sourceList={['Chromecast', 'YouTube', 'Spotify']}
+              state="idle"
+              volume={24}
+              isMuted={false}
+              size="medium"
+              onSizeChange={noopCardSizeChange}
+              isEditMode={false}
+            />
+          </CardSlot>
+        </DashboardGrid>
+      </SectionBlock>
+    </div>
   );
 }
 
@@ -1558,9 +1817,10 @@ function RoomShot({ room }: { room: string }) {
             id="camera.front_door_room"
             name="Front Door Cam"
             room="Outside"
-            entityPicture={sampleCameraImage}
-            supportedFeatures={2}
-            isStreamCapable
+            entityPicture={sampleCameraFallbackImage}
+            entityPictureSources={sampleCameraSources}
+            supportedFeatures={0}
+            isStreamCapable={false}
             size="medium"
             onSizeChange={noopCardSizeChange}
             isEditMode={false}
@@ -1650,6 +1910,7 @@ function RoomShot({ room }: { room: string }) {
 
 function DemoSectionContent({ section, activeRoom }: { section: DemoSection; activeRoom: string }) {
   if (section === 'energy') return <EnergyShot />;
+  if (section === 'climate') return <ClimateShot />;
   if (section === 'security') return <SecurityShot />;
   if (section === 'tasks') return <TasksShot />;
   if (section === 'lights') return <LightsShot />;
@@ -1672,6 +1933,7 @@ function getDemoSectionFromPath() {
 function sanitizeDemoSection(value: unknown): DemoSection {
   if (
     value === 'energy' ||
+    value === 'climate' ||
     value === 'security' ||
     value === 'tasks' ||
     value === 'lights' ||

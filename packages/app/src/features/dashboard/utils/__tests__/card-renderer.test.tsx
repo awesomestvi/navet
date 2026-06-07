@@ -1,8 +1,23 @@
 import { integrationStore } from '@navet/app/stores/integration-store';
-import { renderHookWithProviders } from '@navet/app/test/render';
+import { renderHookWithProviders, renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { useAvailabilityEntitiesForCard } from '../card-renderer';
+import { screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderCard, useAvailabilityEntitiesForCard } from '../card-renderer';
+
+vi.mock('@navet/app/features/security', () => ({
+  SecurityPanelCard: ({
+    alarms,
+    size,
+  }: {
+    alarms: Array<{ id: string; name: string }>;
+    size: string;
+  }) => (
+    <div data-testid="security-panel-card">
+      {alarms[0]?.id}:{alarms[0]?.name}:{size}
+    </div>
+  ),
+}));
 
 describe('card availability lookup', () => {
   beforeEach(async () => {
@@ -82,5 +97,39 @@ describe('card availability lookup', () => {
 
     expect(renderCount).toBe(1);
     expect(result.current['camera.front_door']).toBe(initialEntity);
+  });
+
+  it('renders alarm control panel sensors with the security panel card', async () => {
+    const card = renderCard({
+      device: {
+        id: 'home_assistant:alarm_control_panel.home',
+        name: 'Home Alarm',
+        room: 'Hall',
+        type: 'sensors',
+        value: 'Disarmed',
+        unit: '',
+        securityKind: 'alarm',
+        deviceClass: 'alarm_control_panel',
+        alarmState: 'disarmed',
+        alarmSupportedActions: ['arm_away', 'disarm'],
+        alarmCodeFormat: 'none',
+        providerId: 'home_assistant',
+        availability: 'available',
+      },
+      size: 'large',
+      handleSizeChange: () => undefined,
+      isEditMode: false,
+    });
+
+    expect(card).not.toBeNull();
+    if (!card) {
+      throw new Error('Expected renderCard to return a security panel card');
+    }
+
+    renderWithProviders(card);
+
+    expect(await screen.findByTestId('security-panel-card')).toHaveTextContent(
+      'home_assistant:alarm_control_panel.home:Home Alarm:large'
+    );
   });
 });

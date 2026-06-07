@@ -28,8 +28,7 @@ function HeaderView({
     [mobileEditActions]
   );
   const hasOverflowUtilities = Boolean(
-    !mobileAvailability?.isEditMode &&
-      (mobileAvailability?.hasEditUtilities || mobileAvailability?.showAllViewGrouping)
+    mobileAvailability?.hasEditUtilities || mobileAvailability?.showAllViewGrouping
   );
   const {
     activeColorValue,

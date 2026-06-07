@@ -105,6 +105,13 @@ export interface ProviderCameraFeatureService {
 export interface ProviderSecurityFeatureService {
   lockEntity: (entityId: string) => Promise<void>;
   unlockEntity: (entityId: string) => Promise<void>;
+  armHome: (entityId: string, code?: string) => Promise<void>;
+  armAway: (entityId: string, code?: string) => Promise<void>;
+  armNight: (entityId: string, code?: string) => Promise<void>;
+  armVacation: (entityId: string, code?: string) => Promise<void>;
+  armCustomBypass: (entityId: string, code?: string) => Promise<void>;
+  disarm: (entityId: string, code?: string) => Promise<void>;
+  trigger: (entityId: string, code?: string) => Promise<void>;
   openCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;
   closeCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;
   stopCover: (entityId: string, mode?: 'position' | 'tilt') => Promise<void>;

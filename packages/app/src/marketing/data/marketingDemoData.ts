@@ -14,7 +14,7 @@ import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
 import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
 import type { CalendarCard } from '@navet/app/features/calendar';
-import type { HVACCard } from '@navet/app/features/climate';
+import type { HumidifierCard, HVACCard } from '@navet/app/features/climate';
 import type {
   NoteWidget,
   PhotoFrameWidget,
@@ -32,7 +32,21 @@ import type { GroupedSensorCard, InfoCard } from '@navet/app/features/sensors';
 import type { VacuumCard } from '@navet/app/features/vacuum';
 import type { WeatherCard } from '@navet/app/features/weather';
 import type { MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import type { ComponentProps } from 'react';
+
+const marketingAlarmEntities = [
+  {
+    id: 'home_assistant:alarm_control_panel.home',
+    name: 'Home Alarm',
+    state: 'armed_home',
+    supportedActions: ['arm_home', 'arm_away', 'arm_night', 'disarm'],
+    codeFormat: 'number',
+    requiresCode: true,
+    provider: 'home_assistant',
+    availability: 'available',
+  },
+] as const satisfies readonly NavetAlarmEntity[];
 
 export const MARKETING_SCREENSHOTS = [
   {
@@ -167,6 +181,22 @@ export const MARKETING_PREVIEW_CARDS = {
     size: 'medium',
     isEditMode: false,
   } satisfies Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>,
+  humidifier: {
+    id: 'humidifier.bedroom',
+    name: 'Bedroom Humidifier',
+    room: 'Bedroom',
+    entityType: 'Humidifier',
+    deviceClass: 'humidifier',
+    initialState: true,
+    initialTargetHumidity: 46,
+    minHumidity: 30,
+    maxHumidity: 70,
+    targetHumidityStep: 1,
+    initialMode: 'auto',
+    availableModes: ['auto', 'eco', 'sleep'],
+    size: 'medium',
+    isEditMode: false,
+  } satisfies Omit<ComponentProps<typeof HumidifierCard>, 'onSizeChange'>,
   media: {
     id: 'media_player.living_room_speaker',
     name: 'Living Room Speaker',
@@ -186,6 +216,13 @@ export const MARKETING_PREVIEW_CARDS = {
     size: 'medium',
     isEditMode: false,
   } satisfies Omit<ComponentProps<typeof MediaCard>, 'onSizeChange'>,
+  alarmPanel: {
+    alarms: [...marketingAlarmEntities],
+    size: 'medium',
+  } satisfies {
+    alarms: NavetAlarmEntity[];
+    size: 'medium' | 'large' | 'extra-large';
+  },
 } as const;
 
 export const MARKETING_BENTO_CARDS = {
@@ -344,6 +381,13 @@ export const MARKETING_BENTO_CARDS = {
     size: 'small',
     isEditMode: false,
   } satisfies ComponentProps<typeof LockCard>,
+  alarmPanel: {
+    alarms: [...marketingAlarmEntities],
+    size: 'medium',
+  } satisfies {
+    alarms: NavetAlarmEntity[];
+    size: 'medium' | 'large' | 'extra-large';
+  },
   vacuum: {
     id: 'vacuum.robby',
     name: 'Robby',

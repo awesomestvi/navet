@@ -95,6 +95,23 @@ describe('HVACSettingsDialog', () => {
     expect(props.onTargetTempCommit).toHaveBeenCalledWith(73);
   });
 
+  it('uses cooling visuals when target is below current even if hvac action says heat', () => {
+    useSettingsStore.setState({ temperatureUnit: 'celsius' });
+    renderDialog({
+      mode: 'heat',
+      action: 'heating',
+      targetTemp: 20,
+      currentTemp: 25,
+      sourceTemperatureUnit: 'celsius',
+      minTemp: 16,
+      maxTemp: 30,
+      step: 1,
+    });
+
+    expect(screen.getByRole('dialog')).toHaveClass('from-blue-900/95');
+    expect(screen.getByText('Cooling down to 20°C')).toBeInTheDocument();
+  });
+
   it('renders Celsius comfort presets as Fahrenheit display values and commits Fahrenheit source values', () => {
     const props = renderDialog();
 

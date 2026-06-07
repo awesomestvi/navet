@@ -9,6 +9,7 @@ export type BentoCardKey =
   | 'photo'
   | 'media'
   | 'hvac'
+  | 'humidifier'
   | 'batteryOverview';
 
 export function getMarketingBentoCardSize(cardKey: BentoCardKey): CardSize {
@@ -22,6 +23,7 @@ export function getMarketingBentoCardSize(cardKey: BentoCardKey): CardSize {
     cardKey === 'photo' ||
     cardKey === 'media' ||
     cardKey === 'hvac' ||
+    cardKey === 'humidifier' ||
     cardKey === 'batteryOverview'
   ) {
     return 'medium';

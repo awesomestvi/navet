@@ -674,6 +674,102 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument();
   });
 
+  it('falls back to polling the parent Home Assistant bridge in ingress when websocket subscriptions are unavailable', async () => {
+    vi.useRealTimers();
+    setNoStoredSession();
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    resetRuntimeContextForTests();
+
+    const parentDocument = document.implementation.createHTMLDocument('parent');
+    const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
+      hass?: Record<string, unknown>;
+    };
+    homeAssistantRoot.hass = {
+      states: { 'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' } },
+      config: { location_name: 'Parent Home' },
+      user: { name: 'Parent User' },
+      connection: {
+        sendMessagePromise: vi.fn(async () => ({ ok: true })),
+      },
+      callService: vi.fn(async () => undefined),
+      callWS: vi.fn(async () => ({ ok: true })),
+    };
+    parentDocument.body.append(homeAssistantRoot);
+
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: {
+        document: parentDocument,
+      },
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(0));
+
+    const initialSyncCount = homeAssistantServiceStub.setPanelHass.mock.calls.length;
+
+    await new Promise((resolve) => window.setTimeout(resolve, 1_100));
+
+    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(initialSyncCount);
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+  });
+
+  it('subscribes to parent Home Assistant state changes in ingress before falling back to polling', async () => {
+    vi.useRealTimers();
+    setNoStoredSession();
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet/');
+    resetRuntimeContextForTests();
+
+    const stateChangeListeners: Array<() => void> = [];
+    const subscribeMessage = vi.fn(async (callback: () => void) => {
+      stateChangeListeners.push(callback);
+      return () => undefined;
+    });
+
+    const parentDocument = document.implementation.createHTMLDocument('parent');
+    const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
+      hass?: Record<string, unknown>;
+    };
+    homeAssistantRoot.hass = {
+      states: { 'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' } },
+      config: { location_name: 'Parent Home' },
+      user: { name: 'Parent User' },
+      connection: {
+        sendMessagePromise: vi.fn(async () => ({ ok: true })),
+        subscribeMessage,
+      },
+      callService: vi.fn(async () => undefined),
+      callWS: vi.fn(async () => ({ ok: true })),
+    };
+    parentDocument.body.append(homeAssistantRoot);
+
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: {
+        document: parentDocument,
+      },
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await waitFor(() => expect(subscribeMessage).toHaveBeenCalled());
+    expect(subscribeMessage).toHaveBeenCalledWith(
+      expect.any(Function),
+      { type: 'subscribe_events', event_type: 'state_changed' }
+    );
+
+    const initialSyncCount = homeAssistantServiceStub.setPanelHass.mock.calls.length;
+    stateChangeListeners[0]?.();
+
+    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(initialSyncCount);
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+  });
+
   it('keeps Home Assistant local storage when returning to login from recovery', async () => {
     homeAssistantServiceStub.authenticate.mockImplementationOnce(() => new Promise(() => {}));
     localStorage.setItem('hassTokens', '{"data":"home-assistant-session"}');

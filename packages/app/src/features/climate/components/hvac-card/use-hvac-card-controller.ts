@@ -452,6 +452,7 @@ export function useHVACCardController({
   };
 
   return {
+    action,
     cardColors,
     cardInteraction,
     currentTemp,

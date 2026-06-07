@@ -1,3 +1,4 @@
+export * from './alarm-types';
 export * from './capabilities';
 export * from './dashboard-entity-view';
 export * from './energy-types';

@@ -17,6 +17,15 @@ export function getClimateDashboardGroup(device: DeviceWithType): ClimateDashboa
     return 'hvac';
   }
 
+  if (
+    device.type === 'switches' &&
+    (device.serviceDomain === 'humidifier' ||
+      String(device.entityType ?? '').toLowerCase() === 'humidifier' ||
+      String(device.entityType ?? '').toLowerCase() === 'dehumidifier')
+  ) {
+    return 'humidity';
+  }
+
   if (device.type !== 'sensors') {
     return null;
   }

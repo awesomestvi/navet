@@ -253,6 +253,48 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
     ]);
   });
 
+  it('preserves humidifier control state on switch-backed humidity devices', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:humidifier.basement',
+        externalId: 'humidifier.basement',
+        type: 'switch',
+        name: 'Basement Dehumidifier',
+        attributes: {
+          value: 'on',
+          serviceDomain: 'humidifier',
+          entityType: 'Dehumidifier',
+          deviceClass: 'dehumidifier',
+          currentHumidity: 58,
+          targetHumidity: 46,
+          minHumidity: 35,
+          maxHumidity: 70,
+          targetHumidityStep: 5,
+          mode: 'auto',
+          availableModes: ['auto', 'sleep'],
+          action: 'drying',
+        },
+      }),
+    ]);
+
+    expect(devices.switches).toMatchObject([
+      {
+        id: 'home_assistant:humidifier.basement',
+        serviceDomain: 'humidifier',
+        entityType: 'Dehumidifier',
+        deviceClass: 'dehumidifier',
+        currentHumidity: 58,
+        targetHumidity: 46,
+        minHumidity: 35,
+        maxHumidity: 70,
+        targetHumidityStep: 5,
+        mode: 'auto',
+        availableModes: ['auto', 'sleep'],
+        action: 'drying',
+      },
+    ]);
+  });
+
   it('keeps security sensors even when they share a device with a primary security card', () => {
     const devices = mapNavetEntitiesToDeviceCollection([
       createEntity({
@@ -330,6 +372,59 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
         id: 'home_assistant:button.doorbell_chime',
         securityKind: 'button',
         securitySeverity: 'normal',
+      },
+    ]);
+  });
+
+  it('preserves normalized alarm metadata on security sensor devices', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:alarm_control_panel.security',
+        externalId: 'alarm_control_panel.security',
+        type: 'sensor',
+        name: 'Security',
+        attributes: {
+          value: 'Disarmed',
+          securityKind: 'alarm',
+          securitySeverity: 'normal',
+          deviceClass: 'alarm_control_panel',
+          alarmState: 'disarmed',
+          alarmSupportedActions: [
+            'arm_home',
+            'arm_away',
+            'arm_night',
+            'arm_vacation',
+            'arm_custom_bypass',
+            'disarm',
+          ],
+          alarmCodeFormat: 'none',
+          alarmRequiresCode: false,
+          alarmChangedBy: 'Wall Panel',
+          alarmLastChanged: '2026-06-07T11:00:00.000Z',
+          availability: 'available',
+          size: 'large',
+        },
+      }),
+    ]);
+
+    expect(devices.sensors).toMatchObject([
+      {
+        id: 'home_assistant:alarm_control_panel.security',
+        deviceClass: 'alarm_control_panel',
+        alarmState: 'disarmed',
+        alarmSupportedActions: [
+          'arm_home',
+          'arm_away',
+          'arm_night',
+          'arm_vacation',
+          'arm_custom_bypass',
+          'disarm',
+        ],
+        alarmCodeFormat: 'none',
+        alarmRequiresCode: false,
+        alarmChangedBy: 'Wall Panel',
+        alarmLastChanged: '2026-06-07T11:00:00.000Z',
+        availability: 'available',
       },
     ]);
   });

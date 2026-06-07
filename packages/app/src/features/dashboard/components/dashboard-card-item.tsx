@@ -622,6 +622,13 @@ function getAllowedSizes(
     return ['small', 'medium', 'large'];
   }
 
+  if (
+    device?.type === 'sensors' &&
+    (device.securityKind === 'alarm' || device.deviceClass === 'alarm_control_panel')
+  ) {
+    return ['large', 'extra-large'];
+  }
+
   switch (device?.type) {
     case 'cameras':
       return ['medium', 'large', 'extra-large'];
@@ -641,6 +648,9 @@ function getAllowedSizes(
     case 'vacuums':
       return ['small', 'medium'];
     case 'switches':
+      if (device.serviceDomain === 'humidifier') {
+        return ['small', 'medium'];
+      }
       return ['tiny', 'extra-small', 'small'];
     case 'helpers':
       return ['tiny', 'extra-small', 'small'];

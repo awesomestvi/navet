@@ -52,6 +52,7 @@ export interface HomeDashboardOverviewProps {
   onToggleEditMode?: () => void;
   onNavigateSection?: (section: Section) => void;
   routineCount?: number;
+  securityAlertCount?: number;
   infoBadgeStrip?: ReactNode;
 }
 

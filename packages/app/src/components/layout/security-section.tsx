@@ -3,6 +3,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
+import { useSecurityAlarmEntities } from '@navet/app/features/security/hooks/use-security-alarm-entities';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import {
   getAbsorbedDashboardEntityIds,
@@ -53,6 +54,7 @@ export function SecuritySection() {
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
   const devices = useDeviceCollectionsByKeys(SECURITY_SECTION_DEVICE_KEYS);
+  const alarms = useSecurityAlarmEntities();
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
@@ -93,6 +95,10 @@ export function SecuritySection() {
         .map((device) => device.id),
     [allSecurityDevices, hiddenEntityIdSet]
   );
+  const visibleAlarms = useMemo(
+    () => alarms.filter((alarm) => !hiddenEntityIdSet.has(alarm.id)),
+    [alarms, hiddenEntityIdSet]
+  );
   const openAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(true), []);
   const closeAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(false), []);
   const handleAddEntity = useCallback(
@@ -113,7 +119,11 @@ export function SecuritySection() {
   );
   const { cardSizes, updateCardSize } = useCardState(devices);
 
-  if (model.summary.totalEntities === 0 && hiddenSecurityEntityIds.length === 0) {
+  if (
+    model.summary.totalEntities === 0 &&
+    hiddenSecurityEntityIds.length === 0 &&
+    visibleAlarms.length === 0
+  ) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
@@ -134,30 +144,36 @@ export function SecuritySection() {
       actions={null}
       showCustomizeButton={false}
     >
-      {model.summary.totalEntities > 0 ? (
-        <SecurityCameraDashboard
-          model={model}
-          isEditMode={isEditMode}
-          onToggleEditMode={toggleEditMode}
-          onAddEntity={openAddEntityDialog}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          onRemoveEntity={handleRemoveEntity}
-          surface={surface}
-        />
-      ) : (
-        <div className="flex h-full items-center justify-center p-6 pt-14">
-          <DashboardEmptyState
-            icon={Video}
-            title={t('sections.security.emptyTitle')}
-            description={t('dashboard.addEntity.descriptionWithHidden')}
-            actionIcon={Plus}
-            actionLabel={t('dashboard.addEntity.title')}
-            onAction={openAddEntityDialog}
-            className="w-full max-w-md"
+      <div className="flex flex-col gap-6">
+        {model.summary.totalEntities > 0 || visibleAlarms.length > 0 ? (
+          <SecurityCameraDashboard
+            model={model}
+            isEditMode={isEditMode}
+            onToggleEditMode={toggleEditMode}
+            onAddEntity={openAddEntityDialog}
+            alarms={visibleAlarms}
+            cardSizes={cardSizes}
+            updateCardSize={updateCardSize}
+            onRemoveEntity={handleRemoveEntity}
+            surface={surface}
           />
-        </div>
-      )}
+        ) : null}
+        {model.summary.totalEntities === 0 &&
+        visibleAlarms.length === 0 &&
+        hiddenSecurityEntityIds.length > 0 ? (
+          <div className="flex h-full items-center justify-center p-6 pt-14">
+            <DashboardEmptyState
+              icon={Video}
+              title={t('sections.security.emptyTitle')}
+              description={t('dashboard.addEntity.descriptionWithHidden')}
+              actionIcon={Plus}
+              actionLabel={t('dashboard.addEntity.title')}
+              onAction={openAddEntityDialog}
+              className="w-full max-w-md"
+            />
+          </div>
+        ) : null}
+      </div>
 
       {isAddEntityDialogOpen ? (
         <Suspense fallback={null}>

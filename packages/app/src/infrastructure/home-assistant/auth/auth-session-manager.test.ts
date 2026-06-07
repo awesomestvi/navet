@@ -180,6 +180,29 @@ describe('authSessionManager snapshot', () => {
     expect(localStorage.getItem('navet_auth_session')).toBeNull();
   });
 
+  it('only restores the Home Assistant panel session in panel mode', async () => {
+    window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
+
+    const haPanelAuthModule = await import('@navet/app/auth/adapters/haPanelAuth');
+    vi.mocked(haPanelAuthModule.haPanelAuth.init).mockResolvedValueOnce({
+      providerId: 'home_assistant',
+      runtime: 'ha-panel',
+      authMode: 'ha_frontend_session',
+      haBaseUrl: window.location.origin,
+      hassUrl: window.location.origin,
+    });
+
+    await expect(authSessionManager.init()).resolves.toMatchObject({
+      providerId: 'home_assistant',
+      runtime: 'ha_panel',
+      authMode: 'ha_frontend_session',
+      authenticatedProviderIds: ['home_assistant'],
+    });
+    expect(homeyInitMock).not.toHaveBeenCalled();
+    expect(openhabInitMock).not.toHaveBeenCalled();
+  });
+
   it('does not write openHAB credentials back to localStorage after session updates', () => {
     authSessionManager.replaceSession({
       providerId: 'openhab',

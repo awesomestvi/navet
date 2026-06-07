@@ -282,6 +282,41 @@ describe('useHVACCardController', () => {
     expect(result.current.targetTemp).toBe(24);
     expect(result.current.currentTemp).toBe(23);
     expect(result.current.mode).toBe('heat_cool');
+    expect(result.current.visualMode).toBe('heat');
+  });
+
+  it('prefers the target-vs-current temperature direction over hvac action for visual mode', () => {
+    homeAssistantStore.setState({
+      entities: {
+        'climate.hallway': createClimateEntity(
+          {
+            temperature: 20,
+            current_temperature: 25,
+            hvac_action: 'heating',
+            hvac_modes: ['heat', 'cool', 'off'],
+            temperature_unit: '°C',
+          },
+          'heat'
+        ),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useHVACCardController({
+        id: 'climate.hallway',
+        name: 'Hallway',
+        initialTemp: 22,
+        initialCurrentTemp: 22,
+        initialMode: 'heat',
+        initialAction: 'heating',
+        initialState: true,
+        isEditMode: false,
+        size: 'medium',
+      })
+    );
+
+    expect(result.current.targetTemp).toBe(20);
+    expect(result.current.currentTemp).toBe(25);
     expect(result.current.visualMode).toBe('cool');
   });
 

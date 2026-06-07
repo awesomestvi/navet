@@ -58,6 +58,20 @@ function createSensorDevice(): DeviceWithType {
   };
 }
 
+function createAlarmDevice(): DeviceWithType {
+  return {
+    id: 'home_assistant:alarm_control_panel.home',
+    name: 'Home Alarm',
+    room: 'Hall',
+    size: 'small',
+    value: 'Disarmed',
+    unit: '',
+    type: 'sensors',
+    securityKind: 'alarm',
+    deviceClass: 'alarm_control_panel',
+  };
+}
+
 function createSwitchDevice(): DeviceWithType {
   return {
     id: 'switch.espresso_machine',
@@ -66,6 +80,26 @@ function createSwitchDevice(): DeviceWithType {
     size: 'small',
     state: true,
     type: 'switches',
+  };
+}
+
+function createHumidifierDevice(): DeviceWithType {
+  return {
+    id: 'humidifier.basement',
+    name: 'Basement Dehumidifier',
+    room: 'Basement',
+    size: 'medium',
+    state: true,
+    type: 'switches',
+    serviceDomain: 'humidifier',
+    entityType: 'Dehumidifier',
+    deviceClass: 'dehumidifier',
+    targetHumidity: 46,
+    minHumidity: 35,
+    maxHumidity: 70,
+    targetHumidityStep: 5,
+    mode: 'auto',
+    availableModes: ['auto', 'sleep'],
   };
 }
 
@@ -172,6 +206,20 @@ describe('DashboardCardItem card locking', () => {
     expect(renderCardMock).toHaveBeenCalledWith(
       expect.objectContaining({ headerSubtitleOverride: 'Kitchen' })
     );
+  });
+
+  it('upgrades alarm sensor cards to the alarm panel footprint', () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="home_assistant:alarm_control_panel.home"
+        size="small"
+        isEditMode={false}
+        handleSizeChange={vi.fn()}
+        device={createAlarmDevice()}
+      />
+    );
+
+    expect(renderCardMock).toHaveBeenCalledWith(expect.objectContaining({ size: 'large' }));
   });
 
   it('avoids paint containment for camera cards so live video can compose normally', () => {
@@ -321,6 +369,42 @@ describe('DashboardCardItem card locking', () => {
     expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^tiny\b/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^medium\b/i })).not.toBeInTheDocument();
+  });
+
+  it('clamps humidifier cards to small and medium sizes and only exposes those resize options', () => {
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="humidifier.basement"
+        size="large"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={createHumidifierDevice()}
+      />
+    );
+
+    expect(renderCardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        device: expect.objectContaining({
+          id: 'humidifier.basement',
+          serviceDomain: 'humidifier',
+          type: 'switches',
+        }),
+        size: 'medium',
+      })
+    );
+
+    const resizeTrigger = container.querySelector<HTMLButtonElement>(
+      '[data-card-edit-dock="true"] button.z-500.group'
+    );
+    expect(resizeTrigger).toBeTruthy();
+
+    fireEvent.click(resizeTrigger as HTMLButtonElement);
+
+    expect(screen.getByRole('button', { name: /^small\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^medium\b/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^tiny\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^extra-small\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^large\b/i })).not.toBeInTheDocument();
   });
 
   it('lets single-sensor info cards use extra-small through large', () => {

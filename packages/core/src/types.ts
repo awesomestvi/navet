@@ -95,6 +95,13 @@ export type NavetCommand =
   | { type: 'set_temperature'; entityId: string; temperature: number }
   | { type: 'lock'; entityId: string }
   | { type: 'unlock'; entityId: string }
+  | { type: 'arm_home'; entityId: string; code?: string }
+  | { type: 'arm_away'; entityId: string; code?: string }
+  | { type: 'arm_night'; entityId: string; code?: string }
+  | { type: 'arm_vacation'; entityId: string; code?: string }
+  | { type: 'arm_custom_bypass'; entityId: string; code?: string }
+  | { type: 'disarm'; entityId: string; code?: string }
+  | { type: 'trigger'; entityId: string; code?: string }
   | { type: 'open'; entityId: string }
   | { type: 'close'; entityId: string }
   | { type: 'start'; entityId: string }

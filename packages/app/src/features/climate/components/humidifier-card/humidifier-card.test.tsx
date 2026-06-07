@@ -1,0 +1,98 @@
+import { renderWithProviders } from '@navet/app/test/render';
+import { resetAppStores } from '@navet/app/test/store-reset';
+import { fireEvent, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { HumidifierCard } from '.';
+
+const { dispatchEntityCommandMock, callIntegrationServiceMock } = vi.hoisted(() => ({
+  dispatchEntityCommandMock: vi.fn(async () => ({
+    accepted: true,
+    requiresEventConfirmation: true,
+  })),
+  callIntegrationServiceMock: vi.fn(async () => undefined),
+}));
+
+vi.mock('@navet/app/commands', () => ({
+  dispatchEntityCommand: dispatchEntityCommandMock,
+}));
+
+vi.mock('@navet/app/services/integration-service-call.service', () => ({
+  callIntegrationService: callIntegrationServiceMock,
+}));
+
+describe('HumidifierCard', () => {
+  beforeEach(async () => {
+    await resetAppStores();
+    vi.clearAllMocks();
+  });
+
+  it('renders presets and sends humidifier-specific mode and humidity services', () => {
+    renderWithProviders(
+      <HumidifierCard
+        id="humidifier.basement"
+        name="Basement Dehumidifier"
+        room="Basement"
+        entityType="Dehumidifier"
+        deviceClass="dehumidifier"
+        initialState
+        initialTargetHumidity={46}
+        minHumidity={35}
+        maxHumidity={70}
+        targetHumidityStep={5}
+        initialMode="auto"
+        availableModes={['auto', 'sleep']}
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByRole('slider', { name: 'Target humidity' })).toHaveAttribute(
+      'aria-valuenow',
+      '46'
+    );
+    expect(screen.getByText('46%')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sleep' }));
+    expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+      providerId: undefined,
+      entityId: 'humidifier.basement',
+      domain: 'humidifier',
+      service: 'set_mode',
+      serviceData: { mode: 'sleep' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase target humidity' }));
+    expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+      providerId: undefined,
+      entityId: 'humidifier.basement',
+      domain: 'humidifier',
+      service: 'set_humidity',
+      serviceData: { humidity: 51 },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open settings for Basement Dehumidifier' })
+    );
+    expect(screen.getAllByText('Dehumidifier').length).toBeGreaterThan(0);
+    expect(screen.getByRole('dialog')).toHaveClass('from-teal-950');
+    expect(screen.getByRole('slider', { name: 'Target humidity' })).toHaveAttribute(
+      'aria-valuenow',
+      '51'
+    );
+    expect(screen.getAllByText('Drying to 51%').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Card color')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Basement Dehumidifier' }));
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith(
+      {
+        type: 'turn_off',
+        entityId: 'humidifier.basement',
+      },
+      undefined
+    );
+  });
+});

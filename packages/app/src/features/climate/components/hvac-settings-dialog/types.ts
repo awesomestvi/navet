@@ -13,6 +13,7 @@ export interface HVACSettingsDialogProps {
   name: string;
   isOn: boolean;
   mode: string;
+  action?: string;
   targetTemp: number;
   currentTemp: number;
   sourceTemperatureUnit?: TemperatureUnit;

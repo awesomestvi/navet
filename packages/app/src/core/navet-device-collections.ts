@@ -314,6 +314,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           ...base,
           state: value === 'on' || state.on === true,
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
+          deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
           serviceDomain: typeof state.serviceDomain === 'string' ? state.serviceDomain : undefined,
           serviceAction: typeof state.serviceAction === 'string' ? state.serviceAction : undefined,
           power: typeof state.power === 'number' ? state.power : undefined,
@@ -322,6 +323,17 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           metrics: Array.isArray(state.metrics)
             ? (state.metrics as DeviceCollection['switches'][number]['metrics'])
             : undefined,
+          currentHumidity:
+            typeof state.currentHumidity === 'number' ? state.currentHumidity : undefined,
+          targetHumidity:
+            typeof state.targetHumidity === 'number' ? state.targetHumidity : undefined,
+          minHumidity: typeof state.minHumidity === 'number' ? state.minHumidity : undefined,
+          maxHumidity: typeof state.maxHumidity === 'number' ? state.maxHumidity : undefined,
+          targetHumidityStep:
+            typeof state.targetHumidityStep === 'number' ? state.targetHumidityStep : undefined,
+          mode: typeof state.mode === 'string' ? state.mode : undefined,
+          availableModes: readStringArray(state.availableModes),
+          action: typeof state.action === 'string' ? state.action : undefined,
         });
         break;
       case 'helper':
@@ -390,6 +402,31 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
                 : typeof state.last_updated === 'string'
                   ? state.last_updated
                   : entity.lastUpdated,
+            alarmState:
+              typeof state.alarmState === 'string'
+                ? (state.alarmState as DeviceCollection['sensors'][number]['alarmState'])
+                : undefined,
+            alarmSupportedActions: Array.isArray(state.alarmSupportedActions)
+              ? (state.alarmSupportedActions as DeviceCollection['sensors'][number]['alarmSupportedActions'])
+              : undefined,
+            alarmCodeFormat:
+              state.alarmCodeFormat === 'none' ||
+              state.alarmCodeFormat === 'number' ||
+              state.alarmCodeFormat === 'text'
+                ? state.alarmCodeFormat
+                : undefined,
+            alarmRequiresCode:
+              typeof state.alarmRequiresCode === 'boolean' ? state.alarmRequiresCode : undefined,
+            alarmChangedBy:
+              typeof state.alarmChangedBy === 'string' ? state.alarmChangedBy : undefined,
+            alarmLastChanged:
+              typeof state.alarmLastChanged === 'string' ? state.alarmLastChanged : undefined,
+            availability:
+              state.availability === 'available' ||
+              state.availability === 'unavailable' ||
+              state.availability === 'unknown'
+                ? state.availability
+                : entity.availability,
           });
           break;
         }

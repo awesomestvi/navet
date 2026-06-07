@@ -9,6 +9,7 @@ import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
+import type { CameraCardImageSource } from './types';
 
 interface CameraCardViewProps {
   id: string;
@@ -16,6 +17,7 @@ interface CameraCardViewProps {
   room: string;
   cardRef?: RefObject<HTMLDivElement | null>;
   imageUrl: string | undefined;
+  imageSources?: readonly CameraCardImageSource[];
   streamElement?: ReactNode;
   cameraState: PlatformCameraState;
   statusChangedAt: number | null;
@@ -85,6 +87,7 @@ export function CameraCardView({
   room,
   cardRef,
   imageUrl,
+  imageSources,
   streamElement,
   cameraState,
   statusChangedAt,
@@ -164,6 +167,7 @@ export function CameraCardView({
             {imageUrl && !hasLiveStream ? (
               <CameraSnapshotImage
                 src={imageUrl}
+                sources={imageSources}
                 alt={name}
                 className="absolute inset-0 h-full w-full object-cover"
                 onError={onImageError}

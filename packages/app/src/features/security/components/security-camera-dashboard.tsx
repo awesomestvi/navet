@@ -17,7 +17,7 @@ import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { getLightCardSurfaceTokens } from '@navet/app/features/lighting/components/light-card/light-card-surface-tokens';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
-import { useI18n, useProviderCameraTopology } from '@navet/app/hooks';
+import { useI18n, useMediaQuery, useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
@@ -26,6 +26,7 @@ import { normalizeResourceUrl } from '@navet/app/services/integration-resource.s
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
+import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { ChevronDown, Plus } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,6 +34,7 @@ import type {
   CameraDashboardModel,
   SecurityGroupSummary,
 } from '../utils/security-camera-dashboard-model';
+import { SecurityPanelCard } from './alarm-panel-card';
 import { CameraLiveViewer } from './camera-card/camera-live-viewer';
 import {
   appendCameraCacheBuster,
@@ -47,6 +49,7 @@ interface SecurityCameraDashboardProps {
   isEditMode: boolean;
   onToggleEditMode?: () => void;
   onAddEntity?: () => void;
+  alarms?: NavetAlarmEntity[];
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   onRemoveEntity?: (entityId: string) => void;
@@ -56,20 +59,9 @@ interface SecurityCameraDashboardProps {
 const ATTENTION_NOW_CARD_ID = 'security.now.attention';
 const SECURE_NOW_CARD_ID = 'security.now.secure';
 const LIVE_NOW_CARD_ID = 'security.now.live';
+const ALARM_NOW_CARD_ID = 'security.now.alarm';
 const NOW_LANE_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
-
-function getSeverityTone(severity: SecuritySeverity): 'neutral' | 'warning' | 'danger' | 'accent' {
-  if (severity === 'critical') {
-    return 'danger';
-  }
-  if (severity === 'warning' || severity === 'unknown') {
-    return 'warning';
-  }
-  if (severity === 'active') {
-    return 'accent';
-  }
-  return 'neutral';
-}
+const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
 
 function getSeverityLabel(severity: SecuritySeverity): string {
   switch (severity) {
@@ -103,6 +95,9 @@ function readDeviceStatusLabel(device: DeviceWithType): string {
         device.securityKind === 'garageDoor' ||
         device.securityKind === 'opening'
       ) {
+        if (device.id.startsWith('security.aggregate.')) {
+          return device.value;
+        }
         if (device.status === 'active') {
           return 'Open';
         }
@@ -540,8 +535,9 @@ function StatusBanner({
 }) {
   const { accentColor } = useTheme();
   const { t } = useI18n();
-  const badges = (
-    <div className="flex items-center justify-end gap-2">
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
+  const badges = !isMobileViewport ? (
+    <div className="flex min-h-10 items-center justify-end gap-2">
       {isEditMode && onAddEntity ? (
         <button
           type="button"
@@ -556,7 +552,7 @@ function StatusBanner({
       ) : null}
       <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggleEditMode} />
     </div>
-  );
+  ) : null;
 
   return (
     <DashboardHeroSection
@@ -571,10 +567,10 @@ function StatusBanner({
 }
 
 function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) {
-  const needsAttention = model.attentionItems.length;
+  const needsAttention = model.attentionEntityCount;
   const primaryBadge =
     needsAttention > 0 ? (
-      <Badge tone={getSeverityTone(model.highestSeverity)}>{needsAttention} to check</Badge>
+      <Badge tone="danger">{needsAttention} to check</Badge>
     ) : needsAttention === 0 && model.secureItems.length > 0 ? (
       <Badge tone="success">{model.secureItems.length} secure</Badge>
     ) : null;
@@ -967,12 +963,14 @@ function NowLaneCard({
   cardId,
   size,
   isEditMode,
+  allowedSizes = NOW_LANE_ALLOWED_SIZES,
   onSizeChange,
   children,
 }: {
   cardId: string;
   size: CardSize;
   isEditMode: boolean;
+  allowedSizes?: CardSize[];
   onSizeChange: (size: CardSize) => void;
   children: ReactNode;
 }) {
@@ -985,7 +983,7 @@ function NowLaneCard({
       {isEditMode ? (
         <DashboardResizeTrigger
           cardSize={size}
-          allowedSizes={NOW_LANE_ALLOWED_SIZES}
+          allowedSizes={allowedSizes}
           onSizeChange={onSizeChange}
         />
       ) : null}
@@ -1062,7 +1060,7 @@ function DetailsGrid({
           style={innerContainerStyle}
         >
           <div
-            className="grid w-full grid-flow-row-dense gap-3 pt-3 lg:gap-4"
+            className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
             style={gridStyle as CSSProperties}
           >
             {visibleDevices.map((device) => {
@@ -1128,47 +1126,53 @@ function DetailsSection({
 
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label="Security detail groups" className="flex flex-wrap gap-2">
-        {groupSummaries.map((group) => {
-          const isActive = group.id === selectedGroup.id;
-          const attentionCount = group.critical + group.warning + group.unknown;
-          const indicatorCount = group.id === 'presence' ? 0 : attentionCount + group.active;
+      <div
+        role="tablist"
+        aria-label="Security detail groups"
+        className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex w-max min-w-full flex-nowrap gap-2">
+          {groupSummaries.map((group) => {
+            const isActive = group.id === selectedGroup.id;
+            const attentionCount = group.critical + group.warning + group.unknown;
+            const indicatorCount = group.id === 'presence' ? 0 : attentionCount + group.active;
 
-          return (
-            <InteractivePill
-              key={group.id}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`security-details-panel-${group.id}`}
-              id={`security-details-tab-${group.id}`}
-              active={isActive}
-              size="small"
-              intent="navigation"
-              variant="ghost"
-              onClick={() => onSelectGroup(group.id)}
-              className={`rounded-[22px] gap-2 whitespace-nowrap border transition-colors ${getDetailsPillClassName(
-                isActive,
-                theme,
-                surface
-              )}`}
-            >
-              {indicatorCount > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 shrink-0 rounded-full ${getIndicatorDotClassName(group, theme)}`}
-                />
-              ) : null}
-              <span>{group.label}</span>
-            </InteractivePill>
-          );
-        })}
+            return (
+              <InteractivePill
+                key={group.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`security-details-panel-${group.id}`}
+                id={`security-details-tab-${group.id}`}
+                active={isActive}
+                size="small"
+                intent="navigation"
+                variant="ghost"
+                onClick={() => onSelectGroup(group.id)}
+                className={`shrink-0 rounded-[22px] gap-2 whitespace-nowrap border transition-colors ${getDetailsPillClassName(
+                  isActive,
+                  theme,
+                  surface
+                )}`}
+              >
+                {indicatorCount > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 shrink-0 rounded-full ${getIndicatorDotClassName(group, theme)}`}
+                  />
+                ) : null}
+                <span>{group.label}</span>
+              </InteractivePill>
+            );
+          })}
+        </div>
       </div>
 
       <div
         role="tabpanel"
         id={`security-details-panel-${selectedGroup.id}`}
         aria-labelledby={`security-details-tab-${selectedGroup.id}`}
-        className="pt-1"
+        className=""
       >
         <DetailsGrid
           devices={selectedGroup.entities}
@@ -1187,6 +1191,7 @@ export function SecurityCameraDashboard({
   isEditMode,
   onToggleEditMode = () => {},
   onAddEntity,
+  alarms = [],
   cardSizes,
   updateCardSize,
   onRemoveEntity,
@@ -1205,10 +1210,16 @@ export function SecurityCameraDashboard({
   const [viewerCamera, setViewerCamera] = useState<CameraDevice | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const attentionCount = model.summary.attentionItems.length;
+  const attentionCount = model.summary.attentionEntityCount;
   const attentionCardSize = cardSizes[ATTENTION_NOW_CARD_ID] ?? 'large';
   const secureCardSize = cardSizes[SECURE_NOW_CARD_ID] ?? 'large';
   const liveCardSize = cardSizes[LIVE_NOW_CARD_ID] ?? 'large';
+  const alarmCardSize: Extract<CardSize, 'medium' | 'large' | 'extra-large'> =
+    cardSizes[ALARM_NOW_CARD_ID] === 'large' || cardSizes[ALARM_NOW_CARD_ID] === 'extra-large'
+      ? cardSizes[ALARM_NOW_CARD_ID]
+      : cardSizes[ALARM_NOW_CARD_ID] === 'medium'
+        ? 'medium'
+        : 'large';
   const defaultGroupId = useMemo(
     () =>
       model.summary.groupSummaries.find((group) => group.defaultExpanded)?.id ??
@@ -1389,32 +1400,45 @@ export function SecurityCameraDashboard({
                   surface={surface}
                 />
               </NowLaneCard>
+              {alarms.length > 0 ? (
+                <NowLaneCard
+                  cardId={ALARM_NOW_CARD_ID}
+                  size={alarmCardSize}
+                  isEditMode={isEditMode}
+                  allowedSizes={NOW_ALARM_ALLOWED_SIZES}
+                  onSizeChange={(size) => updateCardSize(ALARM_NOW_CARD_ID, size)}
+                >
+                  <SecurityPanelCard alarms={alarms} size={alarmCardSize} />
+                </NowLaneCard>
+              ) : null}
             </div>
           </div>
         </div>
       </FlatSection>
 
-      <FlatSection
-        id="details"
-        title="All Security"
-        count={model.summary.totalEntities}
-        isCollapsed={collapsedSections.details ?? false}
-        onToggleCollapse={toggleSectionCollapse}
-        surface={surface}
-      >
-        <div ref={detailsRef}>
-          <DetailsSection
-            groupSummaries={model.summary.groupSummaries}
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={setSelectedGroupId}
-            cardSizes={cardSizes}
-            updateCardSize={updateCardSize}
-            isEditMode={isEditMode}
-            onRemoveEntity={onRemoveEntity}
-            surface={surface}
-          />
-        </div>
-      </FlatSection>
+      {model.summary.totalEntities > 0 ? (
+        <FlatSection
+          id="details"
+          title="All Security"
+          count={model.summary.totalEntities}
+          isCollapsed={collapsedSections.details ?? false}
+          onToggleCollapse={toggleSectionCollapse}
+          surface={surface}
+        >
+          <div ref={detailsRef}>
+            <DetailsSection
+              groupSummaries={model.summary.groupSummaries}
+              selectedGroupId={selectedGroupId}
+              onSelectGroup={setSelectedGroupId}
+              cardSizes={cardSizes}
+              updateCardSize={updateCardSize}
+              isEditMode={isEditMode}
+              onRemoveEntity={onRemoveEntity}
+              surface={surface}
+            />
+          </div>
+        </FlatSection>
+      ) : null}
 
       {viewerCamera ? (
         <SummaryCameraViewer

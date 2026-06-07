@@ -111,12 +111,13 @@ const devicesFixture: DeviceCollection = {
   ],
   'grouped-sensors': [],
 };
+let currentDevicesFixture: DeviceCollection = devicesFixture;
 
 vi.mock('@navet/app/hooks', async () => {
   const actual = await vi.importActual<object>('@navet/app/hooks');
   return {
     ...actual,
-    useDeviceCollectionsByKeys: () => devicesFixture,
+    useDeviceCollectionsByKeys: () => currentDevicesFixture,
     useEditMode: () => ({
       isEditMode: true,
       toggleEditMode: vi.fn(),
@@ -143,6 +144,7 @@ vi.mock('@navet/app/features/security/components/security-camera-dashboard', () 
     isEditMode: boolean;
     onToggleEditMode: () => void;
     onAddEntity?: () => void;
+    alarms?: Array<{ id: string }>;
   }) => {
     securityDashboardMock(props);
     return (
@@ -155,10 +157,27 @@ vi.mock('@navet/app/features/security/components/security-camera-dashboard', () 
             dashboard.addEntity.title
           </button>
         ) : null}
+        {props.alarms?.length ? (
+          <div data-testid="security-alarm-panel">{props.alarms.length}</div>
+        ) : null}
         <div data-testid="security-dashboard">{props.model.allEntities.length}</div>
       </div>
     );
   },
+}));
+
+vi.mock('@navet/app/features/security/hooks/use-security-alarm-entities', () => ({
+  useSecurityAlarmEntities: () => [
+    {
+      id: 'home_assistant:alarm_control_panel.home',
+      name: 'Home Alarm',
+      state: 'disarmed',
+      supportedActions: ['arm_away', 'disarm'],
+      codeFormat: 'none',
+      provider: 'home_assistant',
+      availability: 'available',
+    },
+  ],
 }));
 
 vi.mock('@navet/app/features/dashboard/components/add-entity-dialog', () => ({
@@ -179,6 +198,7 @@ vi.mock('sonner', () => ({
 describe('SecuritySection', () => {
   beforeEach(() => {
     localStorage.clear();
+    currentDevicesFixture = devicesFixture;
     securityDashboardMock.mockClear();
     addEntityDialogMock.mockClear();
     useDashboardEntitiesStore.setState({
@@ -199,6 +219,7 @@ describe('SecuritySection', () => {
 
     renderWithProviders(<SecuritySection />);
 
+    expect(screen.getByTestId('security-alarm-panel')).toHaveTextContent('1');
     expect(screen.getByTestId('security-dashboard')).toHaveTextContent('3');
     expect(securityDashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -211,6 +232,33 @@ describe('SecuritySection', () => {
         }),
       })
     );
+  });
+
+  it('passes alarm entities into the security dashboard when alarms exist', () => {
+    renderWithProviders(<SecuritySection />);
+    expect(screen.getByTestId('security-alarm-panel')).toHaveTextContent('1');
+    expect(securityDashboardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        alarms: [expect.objectContaining({ id: 'home_assistant:alarm_control_panel.home' })],
+      })
+    );
+  });
+
+  it('renders the dashboard grid for alarm-only security views', () => {
+    currentDevicesFixture = {
+      ...devicesFixture,
+      helpers: [],
+      covers: [],
+      locks: [],
+      sensors: [],
+      cameras: [],
+    };
+
+    renderWithProviders(<SecuritySection />);
+
+    expect(screen.getByTestId('security-dashboard')).toHaveTextContent('0');
+    expect(screen.getByTestId('security-alarm-panel')).toHaveTextContent('1');
+    expect(screen.queryByText('sections.security.emptyTitle')).not.toBeInTheDocument();
   });
 
   it('shows the section customize toggle so security cards can be resized', () => {
@@ -255,6 +303,7 @@ describe('SecuritySection', () => {
         'cover.entry_shutter',
         'lock.front',
         'binary_sensor.smoke',
+        'home_assistant:alarm_control_panel.home',
       ],
       shownSensorEntityIds: [],
       lockedCardIds: [],

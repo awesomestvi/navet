@@ -111,7 +111,14 @@ function resolveAppBasePath(ingressBasePath: string | null): string {
 let cachedRuntimeContext: RuntimeContext | null = null;
 
 export function detectRuntimeContext(): RuntimeContext {
-  if (cachedRuntimeContext) {
+  if (
+    cachedRuntimeContext &&
+    !(
+      typeof window !== 'undefined' &&
+      window.__NAVET_PANEL__ === true &&
+      cachedRuntimeContext.kind !== 'ha_panel'
+    )
+  ) {
     return cachedRuntimeContext;
   }
 

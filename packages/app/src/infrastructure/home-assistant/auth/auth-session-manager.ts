@@ -127,6 +127,16 @@ function clearLegacyStoredIntegrationSession(): void {
   window.localStorage.removeItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
 }
 
+function getInitProviderOrder(): IntegrationProviderId[] {
+  const runtime = getRuntimeContext().kind;
+
+  if (runtime === 'ha_panel' || runtime === 'ha_ingress') {
+    return ['home_assistant'];
+  }
+
+  return ['home_assistant', 'homey', 'openhab'];
+}
+
 export class AuthSessionManager {
   private sessions: AuthSessionMap = {};
   private activeProviderId: IntegrationProviderId | null = readStoredActiveProviderId();
@@ -183,10 +193,10 @@ export class AuthSessionManager {
 
   async init(): Promise<AuthSessionSnapshot> {
     const legacyStoredSession = readLegacyStoredIntegrationSession();
-    const providerOrder: IntegrationProviderId[] = ['home_assistant', 'homey', 'openhab'];
+    const providerOrder = getInitProviderOrder();
     const discoveredSessions: AuthSessionMap = {};
 
-    if (legacyStoredSession?.providerId === 'openhab') {
+    if (legacyStoredSession?.providerId === 'openhab' && providerOrder.includes('openhab')) {
       discoveredSessions.openhab = legacyStoredSession;
     }
 

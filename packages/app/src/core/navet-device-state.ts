@@ -1,4 +1,10 @@
 import type { NavetDevice } from '@navet/app/provider-models';
+import type {
+  NavetAlarmAction,
+  NavetAlarmCodeFormat,
+  NavetAlarmEntity,
+  NavetAlarmState,
+} from '@navet/core/alarm-types';
 import type { NavetEntity } from '@navet/core/types';
 
 interface NavetBaseDeviceState {
@@ -113,6 +119,17 @@ export interface NavetSensorState extends NavetBaseDeviceState {
   lastUpdated?: string;
 }
 
+export interface NavetAlarmStateModel extends NavetBaseDeviceState {
+  alarmState?: NavetAlarmState;
+  alarmSupportedActions?: NavetAlarmAction[];
+  alarmCodeFormat?: NavetAlarmCodeFormat;
+  alarmRequiresCode?: boolean;
+  alarmChangedBy?: string;
+  alarmLastChanged?: string;
+  lastUpdated?: string;
+  availability?: 'available' | 'unavailable' | 'unknown';
+}
+
 type NavetStatefulModel = NavetDevice | NavetEntity;
 
 function readDeviceState<TState extends object>(
@@ -195,4 +212,31 @@ export function readNavetSensorState(
   device: NavetStatefulModel | null | undefined
 ): NavetSensorState | null {
   return readDeviceState<NavetSensorState>(device);
+}
+
+export function readNavetAlarmEntity(
+  device: NavetStatefulModel | null | undefined
+): NavetAlarmEntity | null {
+  if (!device) {
+    return null;
+  }
+
+  const state = readDeviceState<NavetAlarmStateModel>(device);
+  if (!state?.alarmState) {
+    return null;
+  }
+
+  return {
+    id: device.canonicalId,
+    name: device.name,
+    state: state.alarmState,
+    supportedActions: Array.isArray(state.alarmSupportedActions) ? state.alarmSupportedActions : [],
+    codeFormat: state.alarmCodeFormat ?? 'none',
+    requiresCode: state.alarmRequiresCode,
+    changedBy: state.alarmChangedBy,
+    lastChanged: state.alarmLastChanged ?? state.lastUpdated,
+    provider: device.providerId,
+    availability:
+      state.availability ?? ('availability' in device ? device.availability : undefined),
+  };
 }

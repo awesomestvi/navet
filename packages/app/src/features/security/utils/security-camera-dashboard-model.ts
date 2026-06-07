@@ -5,6 +5,7 @@ import type {
   SecuritySeverity,
 } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel, UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
+import { collapseOverlappingSecurityDevices, getSecurityAlertCount } from './security-alert-count';
 
 export type SecurityGroupKey =
   | 'alarms'
@@ -38,6 +39,7 @@ export interface SecurityDashboardSummary {
   title: string;
   subtitle: string;
   attentionItems: DeviceWithType[];
+  attentionEntityCount: number;
   activityItems: DeviceWithType[];
   liveItems: DeviceWithType[];
   unknownItems: DeviceWithType[];
@@ -96,7 +98,6 @@ const ATTENTION_SEVERITY_ORDER: Record<SecuritySeverity, number> = {
   unknown: 3,
   normal: 4,
 };
-const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
 const SECURE_MOTION_GROUP_ID = 'security.aggregate.motion.secure';
 const ATTENTION_GROUP_ID_PREFIX = 'security.aggregate.attention.';
 
@@ -1000,69 +1001,6 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
     .filter((group): group is SecurityGroupSummary => group !== null);
 }
 
-function getDeviceIdentitySet(device: DeviceWithType): Set<string> {
-  const ids = [device.id];
-  if ('nativeId' in device && typeof device.nativeId === 'string') {
-    ids.push(device.nativeId);
-  }
-  if ('canonicalId' in device && typeof device.canonicalId === 'string') {
-    ids.push(device.canonicalId);
-  }
-
-  return new Set(ids);
-}
-
-function isOpeningSecurityDevice(device: DeviceWithType): boolean {
-  return (
-    device.type === 'covers' ||
-    (typeof device.securityKind === 'string' && SECURITY_OPENING_KINDS.has(device.securityKind))
-  );
-}
-
-function collapseOverlappingSecurityDevices(devices: DeviceWithType[]): DeviceWithType[] {
-  const openingDevices = devices.filter(isOpeningSecurityDevice);
-  if (openingDevices.length < 2) {
-    return devices;
-  }
-
-  const aggregateDevices = openingDevices
-    .filter(
-      (device): device is DeviceWithType & { type: 'sensors'; groupMembers: string[] } =>
-        device.type === 'sensors' &&
-        Array.isArray(device.groupMembers) &&
-        device.groupMembers.length > 0 &&
-        getSecuritySeverity(device) !== 'normal'
-    )
-    .sort((left, right) => right.groupMembers.length - left.groupMembers.length);
-
-  if (aggregateDevices.length === 0) {
-    return devices;
-  }
-
-  const removalIds = new Set<string>();
-
-  for (const aggregateDevice of aggregateDevices) {
-    const memberIds = new Set(aggregateDevice.groupMembers);
-
-    for (const device of openingDevices) {
-      if (device.id === aggregateDevice.id || getSecuritySeverity(device) === 'normal') {
-        continue;
-      }
-
-      const matchesGroupMember = [...getDeviceIdentitySet(device)].some((id) => memberIds.has(id));
-      if (matchesGroupMember) {
-        removalIds.add(device.id);
-      }
-    }
-  }
-
-  if (removalIds.size === 0) {
-    return devices;
-  }
-
-  return devices.filter((device) => !removalIds.has(device.id));
-}
-
 export function buildSecurityCameraDashboardModel(
   devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'> &
     Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>
@@ -1130,6 +1068,7 @@ export function buildSecurityCameraDashboardModel(
     summary: {
       ...hero,
       attentionItems,
+      attentionEntityCount: getSecurityAlertCount(allEntities),
       activityItems,
       liveItems,
       unknownItems,

@@ -29,7 +29,7 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { DeviceMetric } from '@navet/app/types/device.types';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { Palette, Sliders, ToggleLeft } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { memo, useCallback, useState } from 'react';
 import type { SwitchSiblingEntity } from './use-switch-card-controller';
 
@@ -50,6 +50,7 @@ interface SwitchSettingsDialogProps {
   selectedIcon: string;
   onIconChange: (iconName: string) => void;
   siblingEntities: SwitchSiblingEntity[];
+  customControls?: ReactNode;
   tintColor: string;
   onTintColorChange: (color: string) => void;
   dialogTintColor?: string;
@@ -74,6 +75,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   selectedIcon,
   onIconChange,
   siblingEntities,
+  customControls,
   tintColor,
   onTintColorChange,
   dialogTintColor,
@@ -83,7 +85,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const hasControls = siblingEntities.length > 0;
+  const hasControls = siblingEntities.length > 0 || customControls != null;
   const hasMetrics = availableMetrics.length > 0;
   const [activeTab, setActiveTab] = useState(
     hasControls ? 'controls' : hasMetrics ? 'metrics' : 'card'
@@ -153,6 +155,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                   labelClassName="mb-1 text-white"
                 >
                   <div className="space-y-2">
+                    {customControls}
                     {siblingEntities.map(({ id, entity }) => (
                       <SwitchControlRow
                         key={id}

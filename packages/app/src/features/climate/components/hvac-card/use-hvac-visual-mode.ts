@@ -37,14 +37,6 @@ export function useHvacVisualMode({
       return 'fan';
     }
 
-    if (normalizedAction.includes('heat')) {
-      return 'heat';
-    }
-
-    if (normalizedAction.includes('cool')) {
-      return 'cool';
-    }
-
     if (normalizedMode === 'fan' || normalizedMode === 'fan_only') {
       return 'fan';
     }
@@ -54,6 +46,14 @@ export function useHvacVisualMode({
     }
 
     if (temperatureDelta < -0.05) {
+      return 'cool';
+    }
+
+    if (normalizedAction.includes('heat')) {
+      return 'heat';
+    }
+
+    if (normalizedAction.includes('cool')) {
       return 'cool';
     }
 

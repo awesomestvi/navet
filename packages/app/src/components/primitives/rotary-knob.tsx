@@ -69,6 +69,8 @@ export interface RotaryKnobProps {
   max?: number;
   step?: number;
   isOn?: boolean;
+  ariaLabel?: string;
+  ariaValueText?: string;
   className?: string;
   glowClassName?: string;
   bandStrokeWidth?: number;
@@ -126,6 +128,8 @@ export const RotaryKnob = memo(function RotaryKnob({
   max = 100,
   step = 1,
   isOn = true,
+  ariaLabel,
+  ariaValueText,
   className,
   glowClassName,
   bandStrokeWidth = 22,
@@ -450,9 +454,11 @@ export const RotaryKnob = memo(function RotaryKnob({
           )}
           role="slider"
           tabIndex={0}
+          aria-label={ariaLabel}
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={value}
+          aria-valuetext={ariaValueText}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}

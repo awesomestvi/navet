@@ -22,6 +22,27 @@ export const integrationSecurityFeatureService: ProviderSecurityFeatureService =
   unlockEntity: async (entityId) => {
     await dispatchEntityCommand({ type: 'unlock', entityId });
   },
+  armHome: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'arm_home', entityId, code });
+  },
+  armAway: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'arm_away', entityId, code });
+  },
+  armNight: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'arm_night', entityId, code });
+  },
+  armVacation: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'arm_vacation', entityId, code });
+  },
+  armCustomBypass: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'arm_custom_bypass', entityId, code });
+  },
+  disarm: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'disarm', entityId, code });
+  },
+  trigger: async (entityId, code) => {
+    await dispatchEntityCommand({ type: 'trigger', entityId, code });
+  },
   openCover: async (entityId, mode = 'position') => {
     if (mode === 'position') {
       await dispatchEntityCommand({ type: 'open', entityId });

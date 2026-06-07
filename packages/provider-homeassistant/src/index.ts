@@ -1,5 +1,6 @@
 export * from './homeassistant-adapter';
 export * from './homeassistant-admin-feature.service';
+export * from './homeassistant-alarm';
 export * from './homeassistant-calendar-feature.service';
 export * from './homeassistant-camera-feature.service';
 export * from './homeassistant-camera-runtime';

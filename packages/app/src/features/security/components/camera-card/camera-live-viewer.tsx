@@ -14,6 +14,7 @@ import { useCameraPlaybackPlan } from '../../hooks/use-camera-playback-plan';
 import { CameraSnapshotImage } from './camera-snapshot-image';
 import { CameraStreamPlayer } from './camera-stream-player';
 import type { CameraImageSourceKind } from './camera-view-mode';
+import type { CameraCardImageSource } from './types';
 
 interface CameraLiveViewerProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface CameraLiveViewerProps {
   room: string;
   cameraState: PlatformCameraState;
   snapshotUrl: string | undefined;
+  snapshotSources?: readonly CameraCardImageSource[];
   cameraViewMode: CameraViewMode;
   preferredTransport: CameraStreamPreference;
   isStreamCapable: boolean;
@@ -75,6 +77,7 @@ export function CameraLiveViewer({
   room,
   cameraState,
   snapshotUrl,
+  snapshotSources,
   cameraViewMode,
   preferredTransport,
   isStreamCapable,
@@ -184,6 +187,7 @@ export function CameraLiveViewer({
           ) : snapshotSourceUrl && cameraState !== 'unavailable' ? (
             <CameraSnapshotImage
               src={snapshotSourceUrl}
+              sources={snapshotSources}
               alt={name}
               className="h-full w-full object-contain"
               onError={() => undefined}

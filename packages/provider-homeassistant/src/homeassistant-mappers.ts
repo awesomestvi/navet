@@ -1,6 +1,7 @@
 import { createProviderScopedId } from '@navet/core/ids';
 import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
+import { mapHomeAssistantHassAlarmEntity } from './homeassistant-alarm';
 import {
   createRegistryMaps,
   getEntityCategory,
@@ -92,6 +93,18 @@ function formatDomainLabel(domain: string): string {
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function formatHumidifierEntityTypeLabel(deviceClass: string | undefined): string {
+  if (deviceClass === 'dehumidifier') {
+    return 'Dehumidifier';
+  }
+
+  if (deviceClass === 'humidifier') {
+    return 'Humidifier';
+  }
+
+  return 'Humidifier';
 }
 
 function formatSecurityKindLabel(kind: SecurityEntityKind): string {
@@ -656,6 +669,10 @@ function inferHomeAssistantCapabilities(
     return ['toggle'];
   }
 
+  if (domain === 'humidifier') {
+    return ['toggle'];
+  }
+
   if (domain === 'climate' || domain === 'water_heater') {
     return ['temperature_setpoint'];
   }
@@ -937,6 +954,17 @@ function createHomeAssistantState(
   }
 
   if (domain === 'alarm_control_panel' && security) {
+    const alarm = mapHomeAssistantHassAlarmEntity(entity, {
+      id: entity.entity_id,
+      name: getName(entity, entityEntry),
+      availability:
+        entity.state === 'unavailable'
+          ? 'unavailable'
+          : entity.state === 'unknown'
+            ? 'unknown'
+            : 'available',
+    });
+
     return {
       ...commonState,
       ...securityState,
@@ -944,9 +972,15 @@ function createHomeAssistantState(
       entityType: 'Alarm',
       status: mapSecuritySeverityToSensorStatus(security.severity),
       deviceClass: 'alarm_control_panel',
+      alarmState: alarm.state,
+      alarmSupportedActions: alarm.supportedActions,
+      alarmCodeFormat: alarm.codeFormat,
+      alarmRequiresCode: alarm.requiresCode,
+      alarmChangedBy: alarm.changedBy,
+      alarmLastChanged: alarm.lastChanged,
       lastChanged: entity.last_changed,
       lastUpdated: entity.last_updated,
-      size: 'small',
+      size: 'large',
     };
   }
 
@@ -1021,12 +1055,16 @@ function createHomeAssistantState(
     unit: entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement,
     lastChanged: entity.last_changed,
     lastUpdated: entity.last_updated,
-    entityType: formatDomainLabel(domain),
+    entityType:
+      domain === 'humidifier'
+        ? formatHumidifierEntityTypeLabel(deviceClass)
+        : formatDomainLabel(domain),
     serviceDomain:
       domain === 'input_boolean' ||
       domain === 'script' ||
       domain === 'button' ||
-      domain === 'input_button'
+      domain === 'input_button' ||
+      domain === 'humidifier'
         ? domain
         : undefined,
     serviceAction:
@@ -1040,6 +1078,7 @@ function createHomeAssistantState(
       domain === 'fan' ||
       domain === 'switch' ||
       domain === 'input_boolean' ||
+      domain === 'humidifier' ||
       domain === 'script' ||
       domain === 'button' ||
       domain === 'input_button' ||
@@ -1060,6 +1099,19 @@ function createHomeAssistantState(
             metrics,
           };
         })()
+      : {}),
+    ...(domain === 'humidifier'
+      ? {
+          currentHumidity: readNumberish(entity.attributes?.current_humidity),
+          targetHumidity: readNumberish(entity.attributes?.humidity),
+          minHumidity: readNumberish(entity.attributes?.min_humidity),
+          maxHumidity: readNumberish(entity.attributes?.max_humidity),
+          targetHumidityStep: readNumberish(entity.attributes?.target_humidity_step),
+          mode: typeof entity.attributes?.mode === 'string' ? entity.attributes.mode : entity.state,
+          availableModes: readStringList(entity.attributes?.available_modes),
+          action:
+            typeof entity.attributes?.action === 'string' ? entity.attributes.action : undefined,
+        }
       : {}),
     ...(domain === 'binary_sensor' && security
       ? {
@@ -1112,6 +1164,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         'sensor',
         'binary_sensor',
         'climate',
+        'humidifier',
         'water_heater',
         'media_player',
         'cover',
@@ -1149,13 +1202,15 @@ export function mapHomeAssistantEntitiesToNavetEntities(
       domain === 'button' ||
       domain === 'input_button'
         ? 'helper'
-        : domain === 'device_tracker'
-          ? 'person'
-          : domain === 'alarm_control_panel' || domain === 'siren' || domain === 'event'
-            ? 'sensor'
-            : domain === 'binary_sensor'
+        : domain === 'humidifier'
+          ? 'switch'
+          : domain === 'device_tracker'
+            ? 'person'
+            : domain === 'alarm_control_panel' || domain === 'siren' || domain === 'event'
               ? 'sensor'
-              : (domain as NavetEntity['type']);
+              : domain === 'binary_sensor'
+                ? 'sensor'
+                : (domain as NavetEntity['type']);
 
     const resources =
       domain === 'camera'
