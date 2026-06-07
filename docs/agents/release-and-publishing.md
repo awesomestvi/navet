@@ -27,7 +27,7 @@ Recommended operator flow:
 
 1. Decide whether the change is `patch`, `minor`, or `prerelease`.
 2. Bump `package.json`.
-3. Run `node scripts/sync-release-versions.mjs`.
+3. Run `pnpm release:version-sync`.
 4. Fetch Linear issues in the `Ready for Release` workflow state and use them as the release-note
    source. If the release has no matching issues, draft the changelog from commit history instead.
 5. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
@@ -41,7 +41,7 @@ Recommended operator flow:
    versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
 8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
-9. Run `node scripts/check-release-surfaces.mjs`.
+9. Run `pnpm release:check`.
 10. Tag the monorepo commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or
     `v0.3.1`.
 11. Push the tag to GitHub to trigger

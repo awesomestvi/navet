@@ -21,7 +21,11 @@ import type {
   PlatformEntitySnapshot,
 } from '@navet/app/platform/provider-feature-models';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
-import type { CameraStreamPreference, CameraViewMode } from '@navet/app/stores/settings-store';
+import type {
+  CameraFitMode,
+  CameraStreamPreference,
+  CameraViewMode,
+} from '@navet/app/stores/settings-store';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { memo, useCallback, useEffect, useState } from 'react';
 
@@ -38,12 +42,14 @@ interface CameraSettingsDialogProps {
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
   cameraStreamPreference: CameraStreamPreference;
+  cameraFitMode: CameraFitMode;
   supportedStreamPreferences: readonly PlatformCameraTransport[];
   supportsStreaming: boolean;
   hasSnapshot: boolean;
   lowPowerMode: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
   onCameraStreamPreferenceChange: (preference: CameraStreamPreference) => void;
+  onCameraFitModeChange: (mode: CameraFitMode) => void;
 }
 
 function getDisplayName(entityId: string, entity: PlatformEntitySnapshot): string {
@@ -226,6 +232,7 @@ const CAMERA_STREAM_PREFERENCE_OPTIONS: CameraStreamPreference[] = [
   'hls',
   'mjpeg',
 ];
+const CAMERA_FIT_MODE_OPTIONS: CameraFitMode[] = ['contain', 'cover'];
 
 function CameraViewModeRow({
   value,
@@ -327,6 +334,37 @@ function CameraStreamPreferenceRow({
   );
 }
 
+function CameraFitModeRow({
+  value,
+  onChange,
+}: {
+  value: CameraFitMode;
+  onChange: (mode: CameraFitMode) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <DialogSectionRow label={t('camera.settings.fitMode')}>
+      <div className="inline-flex flex-wrap items-center gap-1">
+        {CAMERA_FIT_MODE_OPTIONS.map((mode) => (
+          <CardDialogChoicePill
+            key={mode}
+            active={mode === value}
+            onClick={() => onChange(mode)}
+            size="compact"
+            aria-pressed={mode === value}
+          >
+            {t(`camera.settings.fitMode.${mode}` as TranslationKey)}
+          </CardDialogChoicePill>
+        ))}
+      </div>
+      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
+        {t('camera.settings.fitMode.description')}
+      </p>
+    </DialogSectionRow>
+  );
+}
+
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
@@ -335,12 +373,14 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   siblingEntities,
   cameraViewMode,
   cameraStreamPreference,
+  cameraFitMode,
   supportedStreamPreferences,
   supportsStreaming,
   hasSnapshot,
   lowPowerMode,
   onCameraViewModeChange,
   onCameraStreamPreferenceChange,
+  onCameraFitModeChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -398,6 +438,8 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
               supportsStreaming={supportsStreaming}
               onChange={onCameraStreamPreferenceChange}
             />
+
+            <CameraFitModeRow value={cameraFitMode} onChange={onCameraFitModeChange} />
 
             {hasControls ? (
               <>

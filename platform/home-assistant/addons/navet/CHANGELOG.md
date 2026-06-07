@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- Updated Navet to `0.6.1`
+- Fixed Home dashboard weather and calendar cards so they stay visible more reliably on low-power displays
+
 ## 0.6.0
 
 - Updated Navet to `0.6.0`

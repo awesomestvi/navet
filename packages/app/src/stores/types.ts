@@ -3,6 +3,7 @@ import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
 import type {
   CameraDashboardViewMode,
+  CameraFitMode,
   CameraStreamPreference,
   CameraViewMode,
   DashboardSpaceMode,
@@ -83,6 +84,8 @@ interface UserSettings {
   cameraViewModes: Record<string, CameraViewMode>;
   cameraStreamPreference: CameraStreamPreference;
   cameraStreamPreferences: Record<string, CameraStreamPreference>;
+  cameraFitMode: CameraFitMode;
+  cameraFitModes: Record<string, CameraFitMode>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -92,6 +95,7 @@ export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;
+  updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }

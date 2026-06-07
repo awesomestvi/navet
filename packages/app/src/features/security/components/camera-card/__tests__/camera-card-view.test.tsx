@@ -17,6 +17,7 @@ const defaultProps = {
   size: 'medium' as const,
   isEditMode: false,
   cameraViewMode: 'auto' as const,
+  fitMode: 'cover' as const,
   isStreamCapable: true,
   frontendStreamTypes: [],
   streamKind: 'snapshot' as const,
@@ -75,5 +76,18 @@ describe('CameraCardView', () => {
 
     expect(screen.getByTestId('camera-stream-player')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument();
+  });
+
+  it('renders snapshot imagery in contain mode when fit is selected', () => {
+    renderWithProviders(<CameraCardView {...defaultProps} fitMode="contain" />);
+
+    expect(screen.getByRole('img', { name: 'Front Door' })).toHaveClass('object-contain');
+    expect(screen.getByRole('img', { name: 'Front Door' })).not.toHaveClass('object-cover');
+  });
+
+  it('does not render the bottom camera vignette', () => {
+    const { container } = renderWithProviders(<CameraCardView {...defaultProps} />);
+
+    expect(container.querySelector('.bg-gradient-to-t')).toBeNull();
   });
 });

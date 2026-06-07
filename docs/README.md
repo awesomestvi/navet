@@ -11,6 +11,29 @@ docs. If you are changing the codebase, use the contributor docs.
 - [Homey setup](HOMEY.md)
 - [openHAB setup](OPENHAB.md)
 
+## Workspace Map
+
+If you are trying to find the code behind a doc or feature area, start here:
+
+- `packages/app/src`: dashboard product shell, provider registration, runtime wiring, settings, tests, and stories
+- `packages/core/src`: provider-neutral contracts, IDs, runtime semantics, and feature models
+- `packages/ui/src`: provider-neutral React UI exports
+- `packages/provider-homeassistant/src`: Home Assistant adapter behavior
+- `packages/provider-homey/src`: Homey adapter behavior
+- `packages/provider-openhab/src`: openHAB adapter behavior
+- `packages/provider-hubitat/src`: planned Hubitat provider seams
+- `packages/provider-smartthings/src`: planned SmartThings provider seams
+- `apps/standalone/src`: standalone runtime entrypoint
+- `apps/demo/src`: demo app entrypoint
+- `apps/website/src`: website app entrypoint
+- `apps/ha-panel`: Home Assistant panel wrapper/build surface
+- `apps/storybook`: Storybook app and config
+- `platform/home-assistant/`: add-on and custom-component release sources
+
+Default contributor rule:
+
+- Search `packages/` and `apps/` first. Do not start with a repo-root `src/` assumption.
+
 ## User Docs
 
 - [../README.md](../README.md)
@@ -32,6 +55,8 @@ docs. If you are changing the codebase, use the contributor docs.
 
 - [../CONTRIBUTING.md](../CONTRIBUTING.md)
   Contributor onboarding, local setup, workflow expectations, and default fast checks.
+- [agents/commands.md](agents/commands.md)
+  Repo command policy, script reference, and commit message rules.
 - [agents/architecture.md](agents/architecture.md)
   Short architecture overview for contributors.
 - [architecture/package-boundaries.md](architecture/package-boundaries.md)
@@ -66,6 +91,9 @@ are not the normal starting point:
 
 If you are trying to understand the product and current provider/runtime support first, start with
 `../README.md` and the provider-specific setup guides above before reading the maintainer docs.
+
+If you are trying to understand how to run or validate work locally, read
+[agents/commands.md](agents/commands.md) next.
 
 ## Design, Brand, Legal
 

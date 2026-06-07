@@ -4,7 +4,7 @@ import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/c
 import { useI18n } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
-import type { CameraViewMode } from '@navet/app/stores/settings-store';
+import type { CameraFitMode, CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
@@ -28,6 +28,7 @@ interface CameraCardViewProps {
   size: CardSize;
   isEditMode: boolean;
   cameraViewMode: CameraViewMode;
+  fitMode: CameraFitMode;
   isStreamCapable: boolean;
   frontendStreamTypes: readonly CameraStreamType[];
   streamKind: CameraImageSourceKind;
@@ -98,6 +99,7 @@ export function CameraCardView({
   size,
   isEditMode,
   cameraViewMode,
+  fitMode,
   isStreamCapable,
   frontendStreamTypes,
   streamKind,
@@ -138,6 +140,7 @@ export function CameraCardView({
       : isStreamFallback
         ? t('camera.viewer.snapshotFallback')
         : streamLabel;
+  const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
 
   return (
     <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
@@ -169,7 +172,7 @@ export function CameraCardView({
                 src={imageUrl}
                 sources={imageSources}
                 alt={name}
-                className="absolute inset-0 h-full w-full object-cover"
+                className={`absolute inset-0 h-full w-full ${snapshotFitClassName}`}
                 onError={onImageError}
               />
             ) : null}
@@ -227,7 +230,7 @@ export function CameraCardView({
           ) : null}
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/88 via-black/52 to-transparent px-3 pb-3 pt-10">
+        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-3 pt-10">
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
               <EntityCardHeader

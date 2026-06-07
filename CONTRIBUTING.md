@@ -47,15 +47,23 @@ Common commands:
 
 ```bash
 pnpm dev
+pnpm preview
 pnpm test
 pnpm test:tier1
 pnpm test:tier2
 pnpm test:tier3
 pnpm storybook
+pnpm website:dev
+pnpm website:build
 pnpm storybook:build
 pnpm check:stories
 pnpm check:ui-kit
+pnpm check:provider-boundaries
+pnpm check:bundle-budget
 pnpm check:docker
+pnpm check:lockfile
+pnpm test:coverage
+pnpm release:check
 pnpm build:ha-panel
 pnpm sync:hacs
 ```

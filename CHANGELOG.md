@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 - 2026-06-07
+
+## Fixed
+
+- Weather and calendar cards on the Home dashboard now stay visible more reliably on low-power displays, including while adding or restoring Home cards.
+
 ## 0.6.0 - 2026-06-07
 
 ## New

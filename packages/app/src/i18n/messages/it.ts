@@ -1388,6 +1388,11 @@ export const itMessages = {
   'camera.settings.streamPreference.mjpeg': 'MJPEG',
   'camera.settings.streamPreference.description':
     'Auto tries the full stream fallback chain. Choosing a specific live stream type starts from that stream and continues through the remaining fallbacks before snapshot.',
+  'camera.settings.fitMode': 'Feed sizing',
+  'camera.settings.fitMode.contain': 'Fit',
+  'camera.settings.fitMode.cover': 'Cover',
+  'camera.settings.fitMode.description':
+    'Fit keeps the whole frame visible. Cover fills the card edge to edge.',
   'camera.status.live': 'Live',
   'camera.status.unavailable': 'Non disponibile',
   'camera.status.noSignal': 'Nessun segnale',

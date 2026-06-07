@@ -1,64 +1,82 @@
-import type { DeviceWithType } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
-import {
-  getClimateDashboardGroup,
-  resolveDashboardSectionDeviceKeys,
-} from '../use-dashboard-controller';
+import { resolveShouldIncludeFeatureCollections } from '../use-dashboard-controller';
 
-function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' | 'type'>) {
-  return {
-    name: overrides.id,
-    room: 'Hallway',
-    size: 'small',
-    ...overrides,
-  } as DeviceWithType;
-}
-
-describe('getClimateDashboardGroup', () => {
-  it('loads fan and sensor collections for the climate dashboard', () => {
-    expect(resolveDashboardSectionDeviceKeys('climate')).toEqual([
-      'hvac',
-      'climate',
-      'fans',
-      'switches',
-      'sensors',
-    ]);
+describe('resolveShouldIncludeFeatureCollections', () => {
+  it('keeps feature collections enabled outside low-power mode', () => {
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'lights',
+        homeLayoutCardIds: [],
+        lowPowerMode: false,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+      })
+    ).toBe(true);
   });
 
-  it('groups fan cards into the dedicated climate fan section', () => {
+  it('keeps feature collections enabled on home while add dialogs are open in low-power mode', () => {
     expect(
-      getClimateDashboardGroup(
-        createDevice({
-          id: 'fan.hallway',
-          type: 'fans',
-          name: 'Hallway Fan',
-        })
-      )
-    ).toBe('fans');
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        homeLayoutCardIds: [],
+        lowPowerMode: true,
+        showAddCardDialog: true,
+        showAddEntityDialog: false,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        homeLayoutCardIds: [],
+        lowPowerMode: true,
+        showAddCardDialog: false,
+        showAddEntityDialog: true,
+      })
+    ).toBe(true);
   });
 
-  it('keeps humidity sensors in the humidity climate section', () => {
+  it('keeps feature collections enabled on home when a weather or calendar card is already present', () => {
     expect(
-      getClimateDashboardGroup(
-        createDevice({
-          id: 'sensor.hallway_humidity',
-          type: 'sensors',
-          deviceClass: 'humidity',
-        })
-      )
-    ).toBe('humidity');
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        homeLayoutCardIds: ['home_assistant:weather.home'],
+        lowPowerMode: true,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        homeLayoutCardIds: ['home_assistant:calendar.navet_overview'],
+        lowPowerMode: true,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+      })
+    ).toBe(true);
   });
 
-  it('routes humidifiers into the humidity climate section', () => {
+  it('keeps feature collections disabled in low-power mode when home does not need them', () => {
     expect(
-      getClimateDashboardGroup(
-        createDevice({
-          id: 'humidifier.basement',
-          type: 'switches',
-          entityType: 'Dehumidifier',
-          serviceDomain: 'humidifier',
-        })
-      )
-    ).toBe('humidity');
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        homeLayoutCardIds: [],
+        lowPowerMode: true,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+      })
+    ).toBe(false);
+
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'lights',
+        homeLayoutCardIds: ['home_assistant:weather.home'],
+        lowPowerMode: true,
+        showAddCardDialog: true,
+        showAddEntityDialog: true,
+      })
+    ).toBe(false);
   });
 });

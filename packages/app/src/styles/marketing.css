@@ -186,6 +186,7 @@
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+    -webkit-text-fill-color: transparent;
     animation: magic-gradient-shift var(--magic-gradient-duration, 2.8s) ease infinite;
   }
 

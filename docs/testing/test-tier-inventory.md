@@ -22,7 +22,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 Tier 1 companion checks:
 
-- `node scripts/check-provider-boundaries.mjs`
+- `pnpm check:provider-boundaries`
 - `pnpm check:docker`
 
 ## Tier 2: Blocking App Contracts

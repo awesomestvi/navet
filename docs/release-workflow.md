@@ -157,13 +157,13 @@ promotion in phase 1.
 ## Maintainer Flow
 
 1. Decide the release bump and update `package.json`.
-2. Run `node scripts/sync-release-versions.mjs`.
+2. Run `pnpm release:version-sync`.
 3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
    treat them as the primary release-note source.
 4. Draft the changelog section for the target version from those Linear issues. If no matching
    issues exist, fall back to commit history since the previous release tag.
 5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
-6. Run `node scripts/check-release-surfaces.mjs`.
+6. Run `pnpm release:check`.
    Do not run `pnpm build:ha-panel` as part of local release prep. The automated release/HACS workflow
    builds the custom panel assets and packages the panel artifact.
 7. Merge the release commit to `main`.

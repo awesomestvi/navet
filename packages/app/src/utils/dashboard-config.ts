@@ -21,6 +21,7 @@ import { isSection } from '@navet/app/navigation/sections';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import {
   type CameraDashboardViewMode,
+  type CameraFitMode,
   type CameraStreamPreference,
   type CameraViewMode,
   defaultSettings,
@@ -109,6 +110,7 @@ const cameraStreamPreferences = new Set<CameraStreamPreference>([
   'hls',
   'mjpeg',
 ]);
+const cameraFitModes = new Set<CameraFitMode>(['cover', 'contain']);
 
 function isWeatherMetricId(value: unknown): value is WeatherMetricId {
   return typeof value === 'string' && weatherMetricIds.has(value as WeatherMetricId);
@@ -159,6 +161,24 @@ function resolveCameraStreamPreferences(value: unknown): Record<string, CameraSt
   return Object.fromEntries(
     Object.entries(value).filter((entry): entry is [string, CameraStreamPreference] =>
       cameraStreamPreferences.has(entry[1] as CameraStreamPreference)
+    )
+  );
+}
+
+function resolveCameraFitMode(value: unknown): CameraFitMode {
+  return typeof value === 'string' && cameraFitModes.has(value as CameraFitMode)
+    ? (value as CameraFitMode)
+    : defaultSettings.cameraFitMode;
+}
+
+function resolveCameraFitModes(value: unknown): Record<string, CameraFitMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraFitMode] =>
+      cameraFitModes.has(entry[1] as CameraFitMode)
     )
   );
 }
@@ -237,6 +257,11 @@ const buildExportedSettings = (
         : undefined,
     cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
     cameraStreamPreferences: pruneEmptyRecord(settingsState.cameraStreamPreferences),
+    cameraFitMode:
+      settingsState.cameraFitMode !== defaultSettings.cameraFitMode
+        ? settingsState.cameraFitMode
+        : undefined,
+    cameraFitModes: pruneEmptyRecord(settingsState.cameraFitModes),
     weatherMetricIds: !areArraysEqual(
       settingsState.weatherMetricIds,
       defaultSettings.weatherMetricIds
@@ -765,6 +790,8 @@ export const importDashboardConfig = (
     cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
     cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
     cameraStreamPreferences: resolveCameraStreamPreferences(settings.cameraStreamPreferences),
+    cameraFitMode: resolveCameraFitMode(settings.cameraFitMode),
+    cameraFitModes: resolveCameraFitModes(settings.cameraFitModes),
     weatherForecastMode:
       settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
         ? settings.weatherForecastMode

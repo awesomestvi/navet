@@ -72,12 +72,14 @@ const meta = {
     siblingEntities,
     cameraViewMode: 'live',
     cameraStreamPreference: 'auto',
+    cameraFitMode: 'cover',
     supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'],
     supportsStreaming: true,
     hasSnapshot: true,
     lowPowerMode: false,
     onCameraViewModeChange: () => undefined,
     onCameraStreamPreferenceChange: () => undefined,
+    onCameraFitModeChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

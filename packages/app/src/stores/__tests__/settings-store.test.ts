@@ -53,6 +53,7 @@ describe('useSettingsStore', () => {
       .updateSettings({ kioskMode: true, keepDeviceAwake: true, lowPowerMode: true });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
+    useSettingsStore.getState().updateCameraFitMode('camera.front_door', 'contain');
     useSettingsStore.getState().resetSettings();
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
@@ -68,6 +69,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraStreamPreference).toBe('auto');
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
+    expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
+    expect(useSettingsStore.getState().cameraFitModes).toEqual({});
     expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain('"compactMode":false');
     expect(localStorage.getItem('ha-dashboard-settings')).toBeNull();
   });
@@ -89,6 +92,16 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
       'camera.front_door': 'hls',
       'camera.garage': 'mjpeg',
+    });
+  });
+
+  it('stores camera fit mode per entity', () => {
+    useSettingsStore.getState().updateCameraFitMode('camera.front_door', 'contain');
+    useSettingsStore.getState().updateCameraFitMode('camera.garage', 'cover');
+
+    expect(useSettingsStore.getState().cameraFitModes).toEqual({
+      'camera.front_door': 'contain',
+      'camera.garage': 'cover',
     });
   });
 
@@ -117,6 +130,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraStreamPreference).toBe('auto');
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
+    expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
+    expect(useSettingsStore.getState().cameraFitModes).toEqual({});
   });
 
   it('rehydrates valid header title settings and trims imported custom text', async () => {
@@ -253,6 +268,32 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
       'camera.front_door': 'hls',
       'camera.garage': 'mjpeg',
+    });
+  });
+
+  it('rehydrates valid camera fit modes only', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: {
+          cameraFitMode: 'contain',
+          cameraFitModes: {
+            'camera.front_door': 'contain',
+            'camera.garage': 'cover',
+            'camera.invalid': 'stretch',
+          },
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().cameraFitMode).toBe('contain');
+    expect(useSettingsStore.getState().cameraFitModes).toEqual({
+      'camera.front_door': 'contain',
+      'camera.garage': 'cover',
     });
   });
 

@@ -78,6 +78,12 @@ For local provider testing:
 - Homey: configure `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then use the Homey login option
 - openHAB: use the openHAB login option and provide the browser-reachable base URL plus username/password
 
+Additional local surfaces:
+
+- `pnpm storybook` runs the component/workflow review surface
+- `pnpm website:dev` runs the marketing website workspace
+- `pnpm preview` writes preview config and serves the standalone production build locally
+
 ## Package Architecture
 
 Navet’s reusable package layout is:
@@ -139,14 +145,19 @@ Common local commands:
 
 ```bash
 pnpm dev
+pnpm preview
 pnpm test
 pnpm test:tier1
 pnpm test:tier2
 pnpm test:tier3
 pnpm storybook
+pnpm website:dev
+pnpm website:build
 pnpm storybook:build
 pnpm check:stories
 pnpm check:ui-kit
+pnpm check:provider-boundaries
+pnpm check:bundle-budget
 pnpm check:docker
 pnpm build:ha-panel
 pnpm sync:hacs
@@ -171,6 +182,7 @@ Useful entry points:
 - [Provider testing strategy](docs/testing/provider-testing-strategy.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Release workflow](docs/release-workflow.md)
+- [Rollback guidance](docs/rollback.md)
 
 ## Screenshots
 

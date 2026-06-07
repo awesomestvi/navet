@@ -125,17 +125,19 @@ export function useDashboardController(): DashboardController {
 
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
+  const dialogs = useDashboardDialogs();
 
   const homeLayoutCardIds = useHomeDashboardLayoutStore((state) => state.cardIds);
   const isDeviceHeavySection =
     DASHBOARD_DEVICE_SECTION_IDS.has(activeSection) ||
     !['energy', 'media', 'security', 'settings', 'tasks'].includes(activeSection);
-  const shouldIncludeFeatureCollections =
-    !lowPowerMode ||
-    (activeSection === 'home' &&
-      homeLayoutCardIds.some(
-        (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')
-      ));
+  const shouldIncludeFeatureCollections = resolveShouldIncludeFeatureCollections({
+    activeSection,
+    homeLayoutCardIds,
+    lowPowerMode,
+    showAddCardDialog: dialogs.showAddCardDialog,
+    showAddEntityDialog: dialogs.showAddEntityDialog,
+  });
   const sectionDeviceKeys = useMemo(
     () => resolveDashboardSectionDeviceKeys(activeSection),
     [activeSection]
@@ -198,8 +200,6 @@ export function useDashboardController(): DashboardController {
 
   const { isEditMode, toggleEditMode } = useEditMode();
   useEditModeBeforeUnload(isEditMode);
-
-  const dialogs = useDashboardDialogs();
   const allCards = useCustomCardsStore((state) => state.cards);
   const allCustomCards = useMemo(
     () => allCards.filter((card) => isAllRooms(card.room) || card.room === HOME_WIDGET_ROOM),
@@ -546,6 +546,37 @@ function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashbo
 }
 
 export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
+
+export function resolveShouldIncludeFeatureCollections({
+  activeSection,
+  homeLayoutCardIds,
+  lowPowerMode,
+  showAddCardDialog,
+  showAddEntityDialog,
+}: {
+  activeSection: Section;
+  homeLayoutCardIds: string[];
+  lowPowerMode: boolean;
+  showAddCardDialog: boolean;
+  showAddEntityDialog: boolean;
+}) {
+  if (!lowPowerMode) {
+    return true;
+  }
+
+  if (
+    activeSection === 'home' &&
+    (showAddCardDialog ||
+      showAddEntityDialog ||
+      homeLayoutCardIds.some(
+        (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')
+      ))
+  ) {
+    return true;
+  }
+
+  return false;
+}
 
 export function resolveDashboardSectionDeviceKeys(
   activeSection: Section

@@ -100,11 +100,11 @@ export function MarketingHeroSection() {
             <div className="space-y-3 sm:space-y-4">
               <Heading
                 as="h1"
-                className="max-w-[10ch] text-[2.75rem] leading-[0.94] tracking-[-0.06em] sm:text-5xl md:text-6xl"
+                className="max-w-[10.25ch] text-[2.75rem] leading-[0.94] tracking-[-0.06em] sm:text-5xl md:text-6xl"
               >
                 {MARKETING_HERO_CONTENT.headline.lead}{' '}
                 <AnimatedGradientText
-                  className="text-inherit"
+                  className="inline-block pr-[0.04em] text-inherit"
                   colorFrom="#ffb14f"
                   colorTo="#ffd18a"
                   speed={1.2}

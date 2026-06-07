@@ -34,12 +34,14 @@ const defaultProps = {
   siblingEntities: [],
   cameraViewMode: 'live' as const,
   cameraStreamPreference: 'auto' as const,
+  cameraFitMode: 'cover' as const,
   supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'] as const,
   supportsStreaming: true,
   hasSnapshot: true,
   lowPowerMode: false,
   onCameraViewModeChange: vi.fn(),
   onCameraStreamPreferenceChange: vi.fn(),
+  onCameraFitModeChange: vi.fn(),
 };
 
 describe('CameraSettingsDialog', () => {
@@ -124,6 +126,22 @@ describe('CameraSettingsDialog', () => {
     expect(
       within(streamSection as HTMLElement).queryByRole('button', { name: 'HLS' })
     ).not.toBeInTheDocument();
+  });
+
+  it('lets users pick how the card feed is framed', () => {
+    const onCameraFitModeChange = vi.fn();
+
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraFitMode="cover"
+        onCameraFitModeChange={onCameraFitModeChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
+
+    expect(onCameraFitModeChange).toHaveBeenCalledWith('contain');
   });
 
   it('routes sibling switch and select controls through the camera provider service', async () => {

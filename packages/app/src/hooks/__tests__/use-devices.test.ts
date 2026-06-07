@@ -5,7 +5,7 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceCollection } from '@navet/app/types/device.types';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DEVICE_COLLECTION_KEYS,
   filterDeviceCollectionByProvider,
@@ -14,6 +14,51 @@ import {
   useDeviceCollectionsByKeys,
   useDevices,
 } from '../use-devices';
+
+vi.mock('../use-provider-calendar-devices', () => ({
+  useProviderCalendarDevicesCollection: vi.fn(
+    (providerId?: string, options?: { enabled?: boolean }) =>
+      options?.enabled === false
+        ? []
+        : providerId === 'home_assistant'
+          ? [
+              {
+                id: 'home_assistant:calendar.navet_overview',
+                providerId: 'home_assistant',
+                name: 'Family calendar',
+                room: 'Home',
+                size: 'medium',
+                events: [],
+                sourceIds: [],
+                sources: [],
+              },
+            ]
+          : []
+  ),
+}));
+
+vi.mock('../use-provider-weather-devices', () => ({
+  useProviderWeatherDevicesCollection: vi.fn(
+    (providerId?: string, options?: { enabled?: boolean }) =>
+      options?.enabled === false
+        ? []
+        : providerId === 'home_assistant'
+          ? [
+              {
+                id: 'home_assistant:weather.home',
+                providerId: 'home_assistant',
+                name: 'Home weather',
+                room: 'Home',
+                size: 'large',
+                location: 'Home',
+                temperature: 20,
+                condition: 'sunny',
+                forecast: [],
+              },
+            ]
+          : []
+  ),
+}));
 
 describe('filterDeviceCollectionByProvider', () => {
   it('returns only devices from the requested provider', () => {
@@ -238,6 +283,36 @@ describe('useDevices', () => {
       expect.objectContaining({
         id: 'homey:switch_1',
         providerId: 'homey',
+      }),
+    ]);
+  });
+
+  it('keeps weather and calendar devices from selected providers when the current provider differs', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      currentProviderId: 'homey',
+      selectedProviderIds: ['home_assistant', 'homey'],
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: createEmptyDeviceCollection(),
+        homey: createEmptyDeviceCollection(),
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useDeviceCollectionsByKeys(['weather', 'calendars'])
+    );
+
+    expect(result.current.weather).toEqual([
+      expect.objectContaining({
+        id: 'home_assistant:weather.home',
+        providerId: 'home_assistant',
+      }),
+    ]);
+    expect(result.current.calendars).toEqual([
+      expect.objectContaining({
+        id: 'home_assistant:calendar.navet_overview',
+        providerId: 'home_assistant',
       }),
     ]);
   });

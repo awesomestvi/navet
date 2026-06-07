@@ -44,6 +44,81 @@ interface UseDevicesOptions {
   includeFeatureCollections?: boolean;
 }
 
+function useSelectedProviderFeatureCollections({
+  selectedProviderIds,
+  enabled,
+  includeCalendars,
+  includeWeather,
+}: {
+  selectedProviderIds: readonly IntegrationProviderId[];
+  enabled: boolean;
+  includeCalendars: boolean;
+  includeWeather: boolean;
+}) {
+  const selectedProviderIdSet = useMemo(() => new Set(selectedProviderIds), [selectedProviderIds]);
+
+  const homeAssistantCalendars = useProviderCalendarDevicesCollection('home_assistant', {
+    enabled: enabled && includeCalendars && selectedProviderIdSet.has('home_assistant'),
+  });
+  const homeyCalendars = useProviderCalendarDevicesCollection('homey', {
+    enabled: enabled && includeCalendars && selectedProviderIdSet.has('homey'),
+  });
+  const openhabCalendars = useProviderCalendarDevicesCollection('openhab', {
+    enabled: enabled && includeCalendars && selectedProviderIdSet.has('openhab'),
+  });
+  const hubitatCalendars = useProviderCalendarDevicesCollection('hubitat', {
+    enabled: enabled && includeCalendars && selectedProviderIdSet.has('hubitat'),
+  });
+  const smartthingsCalendars = useProviderCalendarDevicesCollection('smartthings', {
+    enabled: enabled && includeCalendars && selectedProviderIdSet.has('smartthings'),
+  });
+
+  const homeAssistantWeather = useProviderWeatherDevicesCollection('home_assistant', {
+    enabled: enabled && includeWeather && selectedProviderIdSet.has('home_assistant'),
+  });
+  const homeyWeather = useProviderWeatherDevicesCollection('homey', {
+    enabled: enabled && includeWeather && selectedProviderIdSet.has('homey'),
+  });
+  const openhabWeather = useProviderWeatherDevicesCollection('openhab', {
+    enabled: enabled && includeWeather && selectedProviderIdSet.has('openhab'),
+  });
+  const hubitatWeather = useProviderWeatherDevicesCollection('hubitat', {
+    enabled: enabled && includeWeather && selectedProviderIdSet.has('hubitat'),
+  });
+  const smartthingsWeather = useProviderWeatherDevicesCollection('smartthings', {
+    enabled: enabled && includeWeather && selectedProviderIdSet.has('smartthings'),
+  });
+
+  const calendars = useMemo(
+    () => [
+      ...homeAssistantCalendars,
+      ...homeyCalendars,
+      ...openhabCalendars,
+      ...hubitatCalendars,
+      ...smartthingsCalendars,
+    ],
+    [
+      homeAssistantCalendars,
+      homeyCalendars,
+      hubitatCalendars,
+      openhabCalendars,
+      smartthingsCalendars,
+    ]
+  );
+  const weather = useMemo(
+    () => [
+      ...homeAssistantWeather,
+      ...homeyWeather,
+      ...openhabWeather,
+      ...hubitatWeather,
+      ...smartthingsWeather,
+    ],
+    [homeAssistantWeather, homeyWeather, hubitatWeather, openhabWeather, smartthingsWeather]
+  );
+
+  return { calendars, weather };
+}
+
 function assignDeviceCollectionKey<K extends DeviceCollectionKey>(
   collection: DeviceCollection,
   key: K,
@@ -99,11 +174,11 @@ export const useDeviceCollectionsByKeys = (
     },
     (left, right) => areArraysEqual(left, right, Object.is)
   );
-  const calendars = useProviderCalendarDevicesCollection(undefined, {
-    enabled: enabled && includeFeatureCollections && keys.includes('calendars'),
-  });
-  const weather = useProviderWeatherDevicesCollection(undefined, {
-    enabled: enabled && includeFeatureCollections && keys.includes('weather'),
+  const { calendars, weather } = useSelectedProviderFeatureCollections({
+    selectedProviderIds,
+    enabled,
+    includeCalendars: includeFeatureCollections && keys.includes('calendars'),
+    includeWeather: includeFeatureCollections && keys.includes('weather'),
   });
 
   return useMemo(() => {
@@ -163,11 +238,11 @@ export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollect
         : EMPTY_DEVICE_COLLECTIONS,
     (left, right) => areArraysEqual(left, right, Object.is)
   );
-  const calendars = useProviderCalendarDevicesCollection(undefined, {
-    enabled: enabled && includeFeatureCollections,
-  });
-  const weather = useProviderWeatherDevicesCollection(undefined, {
-    enabled: enabled && includeFeatureCollections,
+  const { calendars, weather } = useSelectedProviderFeatureCollections({
+    selectedProviderIds,
+    enabled,
+    includeCalendars: includeFeatureCollections,
+    includeWeather: includeFeatureCollections,
   });
 
   return useMemo(() => {
@@ -210,8 +285,36 @@ export const useProviderSensorCollection = (providerId: IntegrationProviderId) =
       ).sensors,
     Object.is
   );
-export const useCalendarDevicesCollection = () => useProviderCalendarDevicesCollection();
-export const useWeatherDevicesCollection = () => useProviderWeatherDevicesCollection();
+export const useCalendarDevicesCollection = (options?: { enabled?: boolean }) => {
+  const enabled = options?.enabled ?? true;
+  const selectedProviderIds = useIntegrationStore(
+    (state) =>
+      enabled ? integrationSelectors.selectedProviderIds(state) : EMPTY_SELECTED_PROVIDER_IDS,
+    areArraysEqual
+  );
+
+  return useSelectedProviderFeatureCollections({
+    selectedProviderIds,
+    enabled,
+    includeCalendars: true,
+    includeWeather: false,
+  }).calendars;
+};
+export const useWeatherDevicesCollection = (options?: { enabled?: boolean }) => {
+  const enabled = options?.enabled ?? true;
+  const selectedProviderIds = useIntegrationStore(
+    (state) =>
+      enabled ? integrationSelectors.selectedProviderIds(state) : EMPTY_SELECTED_PROVIDER_IDS,
+    areArraysEqual
+  );
+
+  return useSelectedProviderFeatureCollections({
+    selectedProviderIds,
+    enabled,
+    includeCalendars: false,
+    includeWeather: true,
+  }).weather;
+};
 export const useProviderCalendarCollections = useProviderCalendarDevicesCollection;
 export const useProviderWeatherCollections = useProviderWeatherDevicesCollection;
 

@@ -19,6 +19,7 @@ export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
 export type CameraStreamPreference = 'auto' | PlatformCameraTransport;
+export type CameraFitMode = 'cover' | 'contain';
 export type WeatherForecastMode = 'weekly' | 'hourly';
 export type WeatherMetricId =
   | 'precipitation'
@@ -55,6 +56,8 @@ export interface UserSettings {
   cameraViewModes: Record<string, CameraViewMode>;
   cameraStreamPreference: CameraStreamPreference;
   cameraStreamPreferences: Record<string, CameraStreamPreference>;
+  cameraFitMode: CameraFitMode;
+  cameraFitModes: Record<string, CameraFitMode>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -64,6 +67,7 @@ interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;
+  updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }
@@ -93,6 +97,8 @@ export const defaultSettings: UserSettings = {
   cameraViewModes: {},
   cameraStreamPreference: 'auto',
   cameraStreamPreferences: {},
+  cameraFitMode: 'cover',
+  cameraFitModes: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -104,6 +110,10 @@ function isCameraViewMode(value: unknown): value is CameraViewMode {
 
 function isCameraStreamPreference(value: unknown): value is CameraStreamPreference {
   return value === 'auto' || value === 'web_rtc' || value === 'hls' || value === 'mjpeg';
+}
+
+function isCameraFitMode(value: unknown): value is CameraFitMode {
+  return value === 'cover' || value === 'contain';
 }
 
 function isHeaderTitleMode(value: unknown): value is HeaderTitleMode {
@@ -157,6 +167,18 @@ function normalizeCameraStreamPreferences(value: unknown): Record<string, Camera
   return Object.fromEntries(
     Object.entries(value).filter((entry): entry is [string, CameraStreamPreference] =>
       isCameraStreamPreference(entry[1])
+    )
+  );
+}
+
+function normalizeCameraFitModes(value: unknown): Record<string, CameraFitMode> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, CameraFitMode] =>
+      isCameraFitMode(entry[1])
     )
   );
 }
@@ -226,6 +248,10 @@ export const useSettingsStore = create<SettingsState>()(
             isCameraStreamPreference(newSettings.cameraStreamPreference)
               ? newSettings.cameraStreamPreference
               : state.cameraStreamPreference,
+          cameraFitMode:
+            newSettings.cameraFitMode !== undefined && isCameraFitMode(newSettings.cameraFitMode)
+              ? newSettings.cameraFitMode
+              : state.cameraFitMode,
         })),
       updateCameraViewMode: (entityId, mode) =>
         set((state) => ({
@@ -239,6 +265,13 @@ export const useSettingsStore = create<SettingsState>()(
           cameraStreamPreferences: {
             ...state.cameraStreamPreferences,
             [entityId]: preference,
+          },
+        })),
+      updateCameraFitMode: (entityId, mode) =>
+        set((state) => ({
+          cameraFitModes: {
+            ...state.cameraFitModes,
+            [entityId]: mode,
           },
         })),
       applyImportedSettings: (importedSettings) => {
@@ -267,6 +300,10 @@ export const useSettingsStore = create<SettingsState>()(
           cameraStreamPreferences: normalizeCameraStreamPreferences(
             supportedSettings.cameraStreamPreferences
           ),
+          cameraFitMode: isCameraFitMode(supportedSettings.cameraFitMode)
+            ? supportedSettings.cameraFitMode
+            : defaultSettings.cameraFitMode,
+          cameraFitModes: normalizeCameraFitModes(supportedSettings.cameraFitModes),
         }));
       },
       resetSettings: () => set(defaultSettings),
@@ -302,6 +339,10 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.cameraStreamPreference
             : current.cameraStreamPreference,
           cameraStreamPreferences: normalizeCameraStreamPreferences(next.cameraStreamPreferences),
+          cameraFitMode: isCameraFitMode(next.cameraFitMode)
+            ? next.cameraFitMode
+            : current.cameraFitMode,
+          cameraFitModes: normalizeCameraFitModes(next.cameraFitModes),
         };
       },
     }

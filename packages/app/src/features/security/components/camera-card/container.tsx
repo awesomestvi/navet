@@ -143,10 +143,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const cameraStreamPreference = useSettingsStore(
     settingsSelectors.cameraStreamPreferenceForEntity(id)
   );
+  const cameraFitMode = useSettingsStore(settingsSelectors.cameraFitModeForEntity(id));
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
   const updateCameraStreamPreference = useSettingsStore(
     settingsSelectors.updateCameraStreamPreference
   );
+  const updateCameraFitMode = useSettingsStore(settingsSelectors.updateCameraFitMode);
   const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
   const { cameraState, companionStates, deviceEntities, liveEntity, liveState } =
     useProviderCameraLiveData(id, deviceEntityIds);
@@ -324,6 +326,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     [id, updateCameraStreamPreference]
   );
 
+  const handleCameraFitModeChange = useCallback(
+    (mode: 'cover' | 'contain') => {
+      updateCameraFitMode(id, mode);
+    },
+    [id, updateCameraFitMode]
+  );
+
   const handleStreamError = useCallback(
     (kind: 'hls' | 'web_rtc' | 'mjpeg' | 'snapshot', options?: { retryable?: boolean }) => {
       if (kind === 'snapshot') {
@@ -380,11 +389,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         kind={shouldRenderLiveStream}
         posterUrl={imageUrl}
         streamResource={playbackModel?.selectedStreamResource ?? null}
-        fitMode="cover"
+        fitMode={cameraFitMode}
         onError={handleStreamError}
       />
     );
   }, [
+    cameraFitMode,
     handleStreamError,
     id,
     imageUrl,
@@ -413,6 +423,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         size={size}
         isEditMode={isEditMode}
         cameraViewMode={effectiveDashboardCameraViewMode}
+        fitMode={cameraFitMode}
         isStreamCapable={playbackModel?.supportsStreaming ?? isStreamCapable}
         frontendStreamTypes={playbackModel?.liveTransports ?? []}
         streamKind={streamKind}
@@ -460,8 +471,10 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           supportsStreaming={isStreamCapable}
           hasSnapshot={hasSnapshot}
           lowPowerMode={lowPowerMode}
+          cameraFitMode={cameraFitMode}
           onCameraViewModeChange={handleCameraViewModeChange}
           onCameraStreamPreferenceChange={handleCameraStreamPreferenceChange}
+          onCameraFitModeChange={handleCameraFitModeChange}
         />
       )}
     </>
