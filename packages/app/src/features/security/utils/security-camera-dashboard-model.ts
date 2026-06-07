@@ -14,8 +14,7 @@ export type SecurityGroupKey =
   | 'cameras'
   | 'sirens'
   | 'presence'
-  | 'system'
-  | 'actions';
+  | 'system';
 
 export type SecurityEntityGroups = Record<SecurityGroupKey, DeviceWithType[]>;
 
@@ -40,7 +39,9 @@ export interface SecurityDashboardSummary {
   subtitle: string;
   attentionItems: DeviceWithType[];
   activityItems: DeviceWithType[];
+  liveItems: DeviceWithType[];
   unknownItems: DeviceWithType[];
+  secureItems: DeviceWithType[];
   securedCounts: {
     openingsClosed: number;
     locksLocked: number;
@@ -79,7 +80,6 @@ const GROUP_ORDER: SecurityGroupKey[] = [
   'sirens',
   'presence',
   'system',
-  'actions',
 ];
 
 const SEVERITY_ORDER: Record<SecuritySeverity, number> = {
@@ -97,6 +97,8 @@ const ATTENTION_SEVERITY_ORDER: Record<SecuritySeverity, number> = {
   normal: 4,
 };
 const SECURITY_OPENING_KINDS = new Set(['door', 'window', 'garageDoor', 'opening']);
+const SECURE_MOTION_GROUP_ID = 'security.aggregate.motion.secure';
+const ATTENTION_GROUP_ID_PREFIX = 'security.aggregate.attention.';
 
 const STILL_IMAGE_UTILITY_KEYWORDS = ['map', 'floor', 'saved map', 'vacuum', 'robot'];
 const SECURITY_CAMERA_KEYWORDS = [
@@ -150,9 +152,21 @@ function compareByNameAndId(
   return left.id.localeCompare(right.id);
 }
 
+function isActiveCameraState(state: string | undefined): boolean {
+  return state === 'streaming' || state === 'recording' || state === 'on';
+}
+
 function getSecuritySeverity(device: DeviceWithType): SecuritySeverity {
   if (device.type === 'covers') {
     return device.position > 0 ? 'warning' : 'normal';
+  }
+
+  if (device.type === 'cameras' || device.securityKind === 'camera') {
+    if (device.securitySeverity === 'unknown') {
+      return 'unknown';
+    }
+
+    return device.type === 'cameras' && isActiveCameraState(device.state) ? 'active' : 'normal';
   }
 
   if (
@@ -238,7 +252,7 @@ function compareAttentionDevices(left: DeviceWithType, right: DeviceWithType) {
 }
 
 function getCameraVariantPreference(camera: CameraDevice): [number, number, number, string] {
-  const severityPenalty = SEVERITY_ORDER[camera.securitySeverity ?? 'normal'];
+  const severityPenalty = SEVERITY_ORDER[getSecuritySeverity({ ...camera, type: 'cameras' })];
   const livePenalty = camera.isStreamCapable === true && camera.isStillImageOnly !== true ? 0 : 1;
   const suffixPenalty = camera.nativeId && /(?:[_-]\d+)+$/.test(camera.nativeId) ? 1 : 0;
   const freshness = camera.lastUpdated ?? camera.lastChanged ?? '';
@@ -353,10 +367,6 @@ function getSecurityGroupKey(device: DeviceWithType): SecurityGroupKey | null {
     return 'system';
   }
 
-  if (securityKind === 'button' || securityKind === 'event') {
-    return 'actions';
-  }
-
   return null;
 }
 
@@ -370,7 +380,6 @@ function createEmptyGroups(): SecurityEntityGroups {
     sirens: [],
     presence: [],
     system: [],
-    actions: [],
   };
 }
 
@@ -460,14 +469,14 @@ function getSecureCountSummaryText(
 }
 
 function buildSecuredCounts(allEntities: DeviceWithType[]) {
-  const normalEntities = allEntities.filter((entity) => getSecuritySeverity(entity) === 'normal');
+  const secureItems = getRawSecureItems(allEntities);
   const availableCameraEntities = allEntities.filter(
     (entity) =>
       (entity.type === 'cameras' || entity.securityKind === 'camera') &&
       getSecuritySeverity(entity) !== 'unknown'
   );
 
-  const openingsClosed = normalEntities.filter(
+  const openingsClosed = secureItems.filter(
     (entity) =>
       entity.type === 'covers' ||
       entity.securityKind === 'door' ||
@@ -475,26 +484,268 @@ function buildSecuredCounts(allEntities: DeviceWithType[]) {
       entity.securityKind === 'garageDoor' ||
       entity.securityKind === 'opening'
   ).length;
-  const locksLocked = normalEntities.filter(
+  const locksLocked = secureItems.filter(
     (entity) => entity.type === 'locks' || entity.securityKind === 'lock'
   ).length;
-  const hazardSensorsClear = normalEntities.filter((entity) =>
+  const hazardSensorsClear = secureItems.filter((entity) =>
     ['smoke', 'carbonMonoxide', 'gas', 'waterLeak', 'safety'].includes(entity.securityKind ?? '')
   ).length;
-  const motionSensorsClear = normalEntities.filter((entity) =>
+  const motionSensorsClear = secureItems.filter((entity) =>
     ['motion', 'occupancy', 'presence', 'vibration', 'sound'].includes(entity.securityKind ?? '')
   ).length;
-  const camerasAvailable = availableCameraEntities.length;
+  const camerasAvailable = secureItems.filter(
+    (entity) => entity.type === 'cameras' || entity.securityKind === 'camera'
+  ).length;
+  const availableCameraCount = Math.max(camerasAvailable, availableCameraEntities.length);
 
   return {
     openingsClosed,
     locksLocked,
     hazardSensorsClear,
     motionSensorsClear,
-    camerasAvailable,
+    camerasAvailable: availableCameraCount,
     totalSecure:
-      openingsClosed + locksLocked + hazardSensorsClear + motionSensorsClear + camerasAvailable,
+      openingsClosed + locksLocked + hazardSensorsClear + motionSensorsClear + availableCameraCount,
   };
+}
+
+function buildSecureOverviewItems(
+  securedCounts: SecurityDashboardSummary['securedCounts']
+): DeviceWithType[] {
+  const items: DeviceWithType[] = [];
+
+  if (securedCounts.openingsClosed > 0) {
+    items.push({
+      id: 'security.aggregate.openings.secure',
+      type: 'sensors',
+      name: 'Openings',
+      room: UNKNOWN_ROOM_LABEL,
+      size: 'small',
+      value: `${securedCounts.openingsClosed} closed`,
+      unit: '',
+      deviceClass: 'door',
+      securityKind: 'opening',
+      securitySeverity: 'normal',
+      status: 'clear',
+    });
+  }
+
+  if (securedCounts.locksLocked > 0) {
+    items.push({
+      id: 'security.aggregate.locks.secure',
+      type: 'sensors',
+      name: 'Locks',
+      room: UNKNOWN_ROOM_LABEL,
+      size: 'small',
+      value: `${securedCounts.locksLocked} locked`,
+      unit: '',
+      deviceClass: 'lock',
+      securityKind: 'lock',
+      securitySeverity: 'normal',
+      status: 'clear',
+    });
+  }
+
+  if (securedCounts.motionSensorsClear > 0) {
+    items.push({
+      id: 'security.aggregate.motion.secure',
+      type: 'sensors',
+      name: 'Motion & occupancy',
+      room: UNKNOWN_ROOM_LABEL,
+      size: 'small',
+      value: `${securedCounts.motionSensorsClear} clear`,
+      unit: '',
+      deviceClass: 'motion',
+      securityKind: 'motion',
+      securitySeverity: 'normal',
+      status: 'clear',
+    });
+  }
+
+  if (securedCounts.hazardSensorsClear > 0) {
+    items.push({
+      id: 'security.aggregate.hazards.secure',
+      type: 'sensors',
+      name: 'Hazards',
+      room: UNKNOWN_ROOM_LABEL,
+      size: 'small',
+      value: `${securedCounts.hazardSensorsClear} clear`,
+      unit: '',
+      deviceClass: 'smoke',
+      securityKind: 'safety',
+      securitySeverity: 'normal',
+      status: 'clear',
+    });
+  }
+
+  return items;
+}
+
+function getAttentionGroupIconShape(groupId: string): {
+  securityKind: DeviceWithType['securityKind'];
+  deviceClass?: string;
+} {
+  switch (groupId) {
+    case 'doors-windows':
+      return { securityKind: 'opening', deviceClass: 'door' };
+    case 'locks':
+      return { securityKind: 'lock', deviceClass: 'lock' };
+    case 'motion-occupancy':
+      return { securityKind: 'motion', deviceClass: 'motion' };
+    case 'hazards':
+      return { securityKind: 'smoke', deviceClass: 'smoke' };
+    case 'cameras':
+      return { securityKind: 'camera', deviceClass: 'camera' };
+    case 'sirens':
+      return { securityKind: 'siren', deviceClass: 'siren' };
+    case 'alarms':
+      return { securityKind: 'alarm', deviceClass: 'safety' };
+    case 'system':
+      return { securityKind: 'problem', deviceClass: 'problem' };
+    default:
+      return { securityKind: 'problem' };
+  }
+}
+
+function buildAttentionOverviewItems(groupSummaries: SecurityGroupSummary[]): DeviceWithType[] {
+  return groupSummaries
+    .filter((group) => group.id !== 'presence')
+    .filter((group) =>
+      group.entities.some((entity) => {
+        if (isPresenceDevice(entity)) {
+          return false;
+        }
+
+        const severity = getSecuritySeverity(entity);
+        return severity === 'critical' || severity === 'warning' || severity === 'unknown';
+      })
+    )
+    .map((group) => {
+      const attentionEntities = group.entities.filter((entity) => {
+        if (isPresenceDevice(entity)) {
+          return false;
+        }
+
+        const severity = getSecuritySeverity(entity);
+        return severity === 'critical' || severity === 'warning' || severity === 'unknown';
+      });
+      const iconShape = getAttentionGroupIconShape(group.id);
+      return {
+        id: `${ATTENTION_GROUP_ID_PREFIX}${group.id}`,
+        type: 'sensors',
+        name: group.label,
+        room: UNKNOWN_ROOM_LABEL,
+        size: 'small',
+        value: buildGroupSummaryText(group.id, attentionEntities),
+        unit: '',
+        deviceClass: iconShape.deviceClass,
+        securityKind: iconShape.securityKind,
+        securitySeverity: getHighestSeverity(attentionEntities),
+        status: attentionEntities.some((entity) => getSecuritySeverity(entity) === 'unknown')
+          ? 'unavailable'
+          : 'active',
+      } satisfies DeviceWithType;
+    })
+    .sort(compareAttentionDevices);
+}
+
+function isSecureOverviewEntity(device: DeviceWithType): boolean {
+  const severity = getSecuritySeverity(device);
+  if (severity !== 'normal') {
+    return false;
+  }
+
+  if (isPresenceDevice(device)) {
+    return false;
+  }
+
+  if (device.type === 'cameras' || device.securityKind === 'camera') {
+    return false;
+  }
+
+  return (
+    device.type === 'covers' ||
+    device.type === 'locks' ||
+    [
+      'lock',
+      'door',
+      'window',
+      'garageDoor',
+      'opening',
+      'motion',
+      'occupancy',
+      'presence',
+      'vibration',
+      'sound',
+      'smoke',
+      'carbonMonoxide',
+      'gas',
+      'waterLeak',
+      'safety',
+    ].includes(device.securityKind ?? '')
+  );
+}
+
+function getRawSecureItems(allEntities: DeviceWithType[]): DeviceWithType[] {
+  return allEntities.filter(isSecureOverviewEntity).sort(compareSecurityDevices);
+}
+
+function isSecureMotionSensor(device: DeviceWithType): boolean {
+  return device.type === 'sensors' && device.securityKind === 'motion';
+}
+
+function buildGroupedSecureMotionItem(motionDevices: DeviceWithType[]): DeviceWithType {
+  const firstMotionDevice = motionDevices[0];
+  const count = motionDevices.length;
+
+  return {
+    id: SECURE_MOTION_GROUP_ID,
+    type: 'sensors',
+    name: 'Motion sensors',
+    room: firstMotionDevice?.room ?? UNKNOWN_ROOM_LABEL,
+    size: 'small',
+    value: `${count} clear`,
+    unit: '',
+    securityKind: 'motion',
+    securitySeverity: 'normal',
+    status: 'clear',
+    groupMembers: motionDevices.map((device) => device.id),
+  };
+}
+
+function collapseSecureMotionDevices(devices: DeviceWithType[]): DeviceWithType[] {
+  const motionDevices = devices.filter(isSecureMotionSensor);
+
+  if (motionDevices.length <= 1) {
+    return devices;
+  }
+
+  return [
+    ...devices.filter((device) => !isSecureMotionSensor(device)),
+    buildGroupedSecureMotionItem(motionDevices),
+  ].sort(compareSecurityDevices);
+}
+
+function getSecureItems(
+  securedCounts: SecurityDashboardSummary['securedCounts']
+): DeviceWithType[] {
+  return buildSecureOverviewItems(securedCounts);
+}
+
+function getLiveItems(allEntities: DeviceWithType[]): DeviceWithType[] {
+  return allEntities
+    .filter((entity) => {
+      if (isPresenceDevice(entity) || getSecuritySeverity(entity) === 'unknown') {
+        return false;
+      }
+
+      if (entity.type === 'cameras' || entity.securityKind === 'camera') {
+        return true;
+      }
+
+      return getSecuritySeverity(entity) === 'active';
+    })
+    .sort(compareSecurityDevices);
 }
 
 function buildHeroCopy(
@@ -709,30 +960,39 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
       include: (device) =>
         ['connectivity', 'battery', 'problem', 'tamper'].includes(device.securityKind ?? ''),
     },
-    {
-      id: 'actions',
-      label: 'Actions',
-      include: (device) => ['button', 'event'].includes(device.securityKind ?? ''),
-    },
   ];
 
   return definitions
     .map((definition) => {
-      const entities = allEntities.filter(definition.include);
-      if (entities.length === 0) {
+      const rawEntities = allEntities.filter(definition.include);
+      if (rawEntities.length === 0) {
         return null;
       }
 
-      const severityCounts = countBySeverity(entities);
-      const severity = getGroupSeverity(entities);
+      const entities =
+        definition.id === 'motion-occupancy'
+          ? [
+              ...collapseSecureMotionDevices(
+                rawEntities.filter(
+                  (entity) =>
+                    !isSecureMotionSensor(entity) || getSecuritySeverity(entity) === 'normal'
+                )
+              ),
+              ...rawEntities.filter(
+                (entity) => isSecureMotionSensor(entity) && getSecuritySeverity(entity) !== 'normal'
+              ),
+            ].sort(compareSecurityDevices)
+          : rawEntities;
+      const severityCounts = countBySeverity(rawEntities);
+      const severity = getGroupSeverity(rawEntities);
 
       return {
         id: definition.id,
         label: definition.label,
         severity,
-        total: entities.length,
+        total: rawEntities.length,
         ...severityCounts,
-        summaryText: buildGroupSummaryText(definition.id, entities),
+        summaryText: buildGroupSummaryText(definition.id, rawEntities),
         entities,
         defaultExpanded: severity === 'critical' || severity === 'warning',
       } satisfies SecurityGroupSummary;
@@ -833,7 +1093,7 @@ export function buildSecurityCameraDashboardModel(
 
   const allEntities = GROUP_ORDER.flatMap((key) => groups[key]);
   const severityCounts = countBySeverity(allEntities);
-  const attentionItems = allEntities
+  const attentionEntityItems = allEntities
     .filter((entity) => {
       if (isPresenceDevice(entity)) {
         return false;
@@ -845,18 +1105,21 @@ export function buildSecurityCameraDashboardModel(
   const activityItems = allEntities
     .filter((entity) => !isPresenceDevice(entity) && getSecuritySeverity(entity) === 'active')
     .sort(compareSecurityDevices);
+  const securedCounts = buildSecuredCounts(allEntities);
+  const liveItems = getLiveItems(allEntities);
   const unknownItems = allEntities
     .filter((entity) => getSecuritySeverity(entity) === 'unknown')
     .sort(compareSecurityDevices);
-  const securedCounts = buildSecuredCounts(allEntities);
+  const secureItems = getSecureItems(securedCounts);
+  const groupSummaries = buildGroupSummaries(allEntities);
+  const attentionItems = buildAttentionOverviewItems(groupSummaries);
   const hero = buildHeroCopy(
     allEntities,
-    attentionItems,
+    attentionEntityItems,
     activityItems,
     unknownItems,
     securedCounts
   );
-  const groupSummaries = buildGroupSummaries(allEntities);
 
   return {
     allEntities,
@@ -868,7 +1131,9 @@ export function buildSecurityCameraDashboardModel(
       ...hero,
       attentionItems,
       activityItems,
+      liveItems,
       unknownItems,
+      secureItems,
       securedCounts,
       groupSummaries,
       totalEntities: allEntities.length,

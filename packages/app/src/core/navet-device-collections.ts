@@ -56,6 +56,8 @@ function readStringArray(value: unknown): string[] | undefined {
 }
 
 function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
+  const underlyingDeviceId = readDeviceId(state);
+
   return {
     id: entity.canonicalId,
     name: entity.name,
@@ -69,6 +71,7 @@ function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
     providerId: entity.providerId,
     nativeId: entity.externalId,
     canonicalId: entity.canonicalId,
+    underlyingDeviceId,
     resources: entity.resources
       ? {
           primaryImage: entity.resources.primary_image,

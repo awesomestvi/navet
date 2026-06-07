@@ -362,7 +362,7 @@ function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | 
     title: 'Security',
     value: alertCount === 0 ? 'No Alerts' : alertCount === 1 ? '1 Alert' : `${alertCount} Alerts`,
     icon: Shield,
-    iconColor: alertCount === 0 ? '#2dd4bf' : '#f87171',
+    iconColor: alertCount === 0 ? '#22c55e' : '#f87171',
     targetSection: 'security',
   };
 }

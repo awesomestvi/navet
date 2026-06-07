@@ -7,10 +7,10 @@ import {
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { DeviceCollectionKey } from '@navet/app/hooks';
 import {
+  buildDashboardVisibilityResult,
   DEVICE_COLLECTION_KEYS,
   useAggregatedRooms,
   useCardState,
-  useDashboardDevices,
   useDeviceCollectionsByKeys,
   useDeviceMap,
   useEditMode,
@@ -20,6 +20,7 @@ import {
   usePersistedState,
   useRoomNavigation,
 } from '@navet/app/hooks';
+import type { Section } from '@navet/app/navigation/sections';
 import { isStandaloneMode } from '@navet/app/runtime/app-mode';
 import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
@@ -61,7 +62,7 @@ const SECURITY_SECTION_DEVICE_KEYS = [
   'helpers',
 ] as const;
 const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
-const CLIMATE_SECTION_DEVICE_KEYS = ['hvac', 'climate'] as const;
+const CLIMATE_SECTION_DEVICE_KEYS = ['hvac', 'climate', 'fans', 'sensors'] as const;
 const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
@@ -132,29 +133,10 @@ export function useDashboardController(): DashboardController {
       homeLayoutCardIds.some(
         (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')
       ));
-  const sectionDeviceKeys = useMemo<readonly DeviceCollectionKey[]>(() => {
-    if (activeSection === 'lights') {
-      return LIGHTS_SECTION_DEVICE_KEYS;
-    }
-
-    if (activeSection === 'climate') {
-      return CLIMATE_SECTION_DEVICE_KEYS;
-    }
-
-    if (activeSection === 'media') {
-      return MEDIA_SECTION_DEVICE_KEYS;
-    }
-
-    if (activeSection === 'security') {
-      return SECURITY_SECTION_DEVICE_KEYS;
-    }
-
-    if (['energy', 'settings', 'tasks'].includes(activeSection)) {
-      return EMPTY_SECTION_DEVICE_KEYS;
-    }
-
-    return DEVICE_COLLECTION_KEYS;
-  }, [activeSection]);
+  const sectionDeviceKeys = useMemo(
+    () => resolveDashboardSectionDeviceKeys(activeSection),
+    [activeSection]
+  );
   const allDevices = useDeviceCollectionsByKeys(sectionDeviceKeys, {
     enabled: sectionDeviceKeys.length > 0,
     includeFeatureCollections:
@@ -162,14 +144,13 @@ export function useDashboardController(): DashboardController {
         ? shouldIncludeFeatureCollections
         : false,
   });
-  const devices = useDashboardDevices(allDevices, hiddenEntityIds, shownSensorEntityIds);
-  const countableDevices = useMemo(() => {
-    const shownSensorIds = new Set(shownSensorEntityIds);
-    return {
-      ...allDevices,
-      sensors: allDevices.sensors.filter((device) => shownSensorIds.has(device.id)),
-    };
-  }, [allDevices, shownSensorEntityIds]);
+  const dashboardVisibility = useMemo(
+    () => buildDashboardVisibilityResult(allDevices, hiddenEntityIds, shownSensorEntityIds),
+    [allDevices, hiddenEntityIds, shownSensorEntityIds]
+  );
+  const devices = dashboardVisibility.visibleDevices;
+  const availableDevices = dashboardVisibility.availableDevices;
+  const countableDevices = useMemo(() => devices, [devices]);
   const aggregatedRooms = useAggregatedRooms();
   const shouldPrepareRoomCounts = sectionDeviceKeys === DEVICE_COLLECTION_KEYS;
   const countableRooms = useMemo(
@@ -230,7 +211,7 @@ export function useDashboardController(): DashboardController {
   const { cardZones, updateCardZone } = useCardZones();
   const { deviceMap } = useDeviceMap(isDeviceHeavySection ? devices : EMPTY_DEVICE_COLLECTION);
   const { deviceMap: availableDeviceMap } = useDeviceMap(
-    isDeviceHeavySection ? allDevices : EMPTY_DEVICE_COLLECTION
+    isDeviceHeavySection ? availableDevices : EMPTY_DEVICE_COLLECTION
   );
 
   const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
@@ -244,6 +225,7 @@ export function useDashboardController(): DashboardController {
   const { addableEntityIds, allEntityIds, lightDeviceMap, lightRooms, orderedCardIds } =
     useDashboardDerivedState({
       activeRoom,
+      absorbedEntityIds: dashboardVisibility.absorbedEntityIds,
       includeLightState: activeSection === 'lights',
       includeOrderedCardIds: isDeviceHeavySection,
       availableDeviceMap,
@@ -535,4 +517,30 @@ function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashbo
 }
 
 export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
+
+export function resolveDashboardSectionDeviceKeys(
+  activeSection: Section
+): readonly DeviceCollectionKey[] {
+  if (activeSection === 'lights') {
+    return LIGHTS_SECTION_DEVICE_KEYS;
+  }
+
+  if (activeSection === 'climate') {
+    return CLIMATE_SECTION_DEVICE_KEYS;
+  }
+
+  if (activeSection === 'media') {
+    return MEDIA_SECTION_DEVICE_KEYS;
+  }
+
+  if (activeSection === 'security') {
+    return SECURITY_SECTION_DEVICE_KEYS;
+  }
+
+  if (['energy', 'settings', 'tasks'].includes(activeSection)) {
+    return EMPTY_SECTION_DEVICE_KEYS;
+  }
+
+  return DEVICE_COLLECTION_KEYS;
+}
 export type { DashboardController } from './use-dashboard-controller.types';

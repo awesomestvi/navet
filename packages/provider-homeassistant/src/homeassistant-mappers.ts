@@ -109,6 +109,37 @@ function formatSecurityKindLabel(kind: SecurityEntityKind): string {
   }
 }
 
+function readDeviceRegistryName(
+  deviceEntry: HomeAssistantDeviceRegistryEntry | undefined
+): string | undefined {
+  for (const candidate of [deviceEntry?.name_by_user, deviceEntry?.name]) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function resolveSecurityEntityName(
+  entity: HassEntity,
+  entityEntry: HomeAssistantEntityRegistryEntry | undefined,
+  deviceEntry: HomeAssistantDeviceRegistryEntry | undefined,
+  securityKind: SecurityEntityKind | null
+): string {
+  const mappedName = getName(entity, entityEntry);
+  if (!securityKind) {
+    return mappedName;
+  }
+
+  const genericSecurityLabel = formatSecurityKindLabel(securityKind).toLowerCase();
+  if (mappedName.trim().toLowerCase() !== genericSecurityLabel) {
+    return mappedName;
+  }
+
+  return readDeviceRegistryName(deviceEntry) ?? mappedName;
+}
+
 function formatMetricLabel(entityId: string, friendlyName: unknown) {
   if (typeof friendlyName === 'string' && friendlyName.trim().length > 0) {
     return friendlyName.trim();
@@ -1106,8 +1137,11 @@ export function mapHomeAssistantEntitiesToNavetEntities(
       continue;
     }
 
+    const deviceId = entityEntry?.device_id ?? undefined;
+    const deviceEntry = deviceId ? deviceRegistryMap.get(deviceId) : undefined;
+    const securityKind = classifySecurityEntity(entity);
     const room = resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
-    const name = getName(entity, entityEntry);
+    const name = resolveSecurityEntityName(entity, entityEntry, deviceEntry, securityKind);
     const capabilities = inferHomeAssistantCapabilities(entityId, entity);
     const type =
       domain === 'input_boolean' ||

@@ -18,6 +18,7 @@ const HomeDashboardOverviewEdit = lazy(() => import('./home-dashboard-overview-e
 
 export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   deviceMap,
+  summaryDeviceMap,
   cardSizes,
   updateCardSize,
   isEditMode,
@@ -60,12 +61,12 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   );
   const statusSummaryItems = useMemo(
     () =>
-      buildHomeStatusSummaryItems(deviceMap, {
+      buildHomeStatusSummaryItems(summaryDeviceMap, {
         gridImportTodayKWh: energySummary.gridImportTodayKWh,
         routineCount,
         temperatureUnit,
       }),
-    [deviceMap, energySummary.gridImportTodayKWh, routineCount, temperatureUnit]
+    [summaryDeviceMap, energySummary.gridImportTodayKWh, routineCount, temperatureUnit]
   );
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (
@@ -101,6 +102,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
       <HomeDashboardOverviewEdit
         deviceMap={deviceMap}
+        summaryDeviceMap={summaryDeviceMap}
         cardSizes={cardSizes}
         updateCardSize={updateCardSize}
         isEditMode={isEditMode}

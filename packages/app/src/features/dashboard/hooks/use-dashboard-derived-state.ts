@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 
 interface UseDashboardDerivedStateParams {
   activeRoom: string;
+  absorbedEntityIds?: string[];
   includeLightState?: boolean;
   includeOrderedCardIds?: boolean;
   availableDeviceMap: Map<string, DeviceWithType>;
@@ -15,6 +16,7 @@ interface UseDashboardDerivedStateParams {
 
 export function useDashboardDerivedState({
   activeRoom,
+  absorbedEntityIds = [],
   includeLightState = true,
   includeOrderedCardIds = true,
   availableDeviceMap,
@@ -24,9 +26,13 @@ export function useDashboardDerivedState({
   rooms,
 }: UseDashboardDerivedStateParams) {
   const allEntityIds = useMemo(() => Array.from(availableDeviceMap.keys()), [availableDeviceMap]);
+  const absorbedEntityIdSet = useMemo(() => new Set(absorbedEntityIds), [absorbedEntityIds]);
   const addableEntityIds = useMemo(
-    () => (hiddenEntityIds.length > 0 ? hiddenEntityIds : allEntityIds),
-    [allEntityIds, hiddenEntityIds]
+    () =>
+      (hiddenEntityIds.length > 0 ? hiddenEntityIds : allEntityIds).filter(
+        (entityId) => !absorbedEntityIdSet.has(entityId)
+      ),
+    [absorbedEntityIdSet, allEntityIds, hiddenEntityIds]
   );
 
   const lightDeviceMap = useMemo(

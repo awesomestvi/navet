@@ -1,6 +1,9 @@
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
-import { getClimateDashboardGroup } from '../use-dashboard-controller';
+import {
+  getClimateDashboardGroup,
+  resolveDashboardSectionDeviceKeys,
+} from '../use-dashboard-controller';
 
 function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' | 'type'>) {
   return {
@@ -12,6 +15,15 @@ function createDevice(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 
 }
 
 describe('getClimateDashboardGroup', () => {
+  it('loads fan and sensor collections for the climate dashboard', () => {
+    expect(resolveDashboardSectionDeviceKeys('climate')).toEqual([
+      'hvac',
+      'climate',
+      'fans',
+      'sensors',
+    ]);
+  });
+
   it('groups fan cards into the dedicated climate fan section', () => {
     expect(
       getClimateDashboardGroup(

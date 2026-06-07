@@ -1,11 +1,12 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
-import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import {
+  getAbsorbedDashboardEntityIds,
+  getExpandedHiddenDashboardEntityIds,
   useCardState,
   useDeviceCollectionsByKeys,
   useEditMode,
@@ -23,18 +24,35 @@ const AddEntityDialog = lazy(async () => {
   return { default: module.AddEntityDialog };
 });
 
+const SECURITY_SECTION_DEVICE_KEYS = [
+  'cameras',
+  'covers',
+  'locks',
+  'sensors',
+  'persons',
+  'helpers',
+] as const;
+
+function filterSecuritySectionDevices(
+  devices: ReturnType<typeof useDeviceCollectionsByKeys>,
+  filteredEntityIds: Set<string>
+) {
+  return {
+    ...devices,
+    cameras: devices.cameras.filter((device) => !filteredEntityIds.has(device.id)),
+    covers: devices.covers.filter((device) => !filteredEntityIds.has(device.id)),
+    locks: devices.locks.filter((device) => !filteredEntityIds.has(device.id)),
+    sensors: devices.sensors.filter((device) => !filteredEntityIds.has(device.id)),
+    persons: devices.persons.filter((device) => !filteredEntityIds.has(device.id)),
+    helpers: devices.helpers.filter((device) => !filteredEntityIds.has(device.id)),
+  };
+}
+
 export function SecuritySection() {
   const { t } = useI18n();
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
-  const devices = useDeviceCollectionsByKeys([
-    'cameras',
-    'covers',
-    'locks',
-    'sensors',
-    'persons',
-    'helpers',
-  ]);
+  const devices = useDeviceCollectionsByKeys(SECURITY_SECTION_DEVICE_KEYS);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
@@ -44,38 +62,24 @@ export function SecuritySection() {
       showEntity: state.showEntity,
     }))
   );
-  const hiddenEntityIdSet = useMemo(() => new Set(hiddenEntityIds), [hiddenEntityIds]);
+  const hiddenEntityIdSet = useMemo(
+    () => new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds)),
+    [devices, hiddenEntityIds]
+  );
+  const absorbedEntityIds = useMemo(() => getAbsorbedDashboardEntityIds(devices, []), [devices]);
+  const absorbedEntityIdSet = useMemo(() => new Set(absorbedEntityIds), [absorbedEntityIds]);
+  const availableDevices = useMemo(
+    () => filterSecuritySectionDevices(devices, absorbedEntityIdSet),
+    [absorbedEntityIdSet, devices]
+  );
   const visibleDevices = useMemo(
-    () => ({
-      ...devices,
-      cameras: devices.cameras.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      covers: devices.covers.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      locks: devices.locks.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      sensors: devices.sensors.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      persons: devices.persons.filter((device) => !hiddenEntityIdSet.has(device.id)),
-      helpers: devices.helpers.filter((device) => !hiddenEntityIdSet.has(device.id)),
-    }),
-    [devices, hiddenEntityIdSet]
+    () => filterSecuritySectionDevices(availableDevices, hiddenEntityIdSet),
+    [availableDevices, hiddenEntityIdSet]
   );
   const model = useMemo(() => buildSecurityCameraDashboardModel(visibleDevices), [visibleDevices]);
   const allEntitiesModel = useMemo(
-    () =>
-      buildSecurityCameraDashboardModel({
-        cameras: devices.cameras,
-        covers: devices.covers,
-        locks: devices.locks,
-        sensors: devices.sensors,
-        persons: devices.persons,
-        helpers: devices.helpers,
-      }),
-    [
-      devices.cameras,
-      devices.covers,
-      devices.helpers,
-      devices.locks,
-      devices.persons,
-      devices.sensors,
-    ]
+    () => buildSecurityCameraDashboardModel(availableDevices),
+    [availableDevices]
   );
   const allSecurityDevices = useMemo(() => allEntitiesModel.allEntities, [allEntitiesModel]);
   const allSecurityDeviceMap = useMemo(
@@ -109,7 +113,7 @@ export function SecuritySection() {
   );
   const { cardSizes, updateCardSize } = useCardState(devices);
 
-  if (allEntitiesModel.summary.totalEntities === 0) {
+  if (model.summary.totalEntities === 0 && hiddenSecurityEntityIds.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <DashboardEmptyState
@@ -122,27 +126,12 @@ export function SecuritySection() {
     );
   }
 
-  const addHiddenEntityAction =
-    isEditMode && hiddenSecurityEntityIds.length > 0 ? (
-      <InteractivePill
-        intent="action"
-        size="small"
-        onClick={openAddEntityDialog}
-        className={`${surface.subtleBg} ${surface.hoverBg}`}
-      >
-        <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-        <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
-          {t('dashboard.addEntity.title')}
-        </span>
-      </InteractivePill>
-    ) : null;
-
   return (
     <SectionCustomizeShell
       isEditMode={isEditMode}
       onToggle={toggleEditMode}
       className="relative"
-      actions={addHiddenEntityAction}
+      actions={null}
       showCustomizeButton={false}
     >
       {model.summary.totalEntities > 0 ? (
@@ -150,6 +139,7 @@ export function SecuritySection() {
           model={model}
           isEditMode={isEditMode}
           onToggleEditMode={toggleEditMode}
+          onAddEntity={openAddEntityDialog}
           cardSizes={cardSizes}
           updateCardSize={updateCardSize}
           onRemoveEntity={handleRemoveEntity}

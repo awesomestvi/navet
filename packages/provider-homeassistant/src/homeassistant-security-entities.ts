@@ -82,6 +82,37 @@ const SECURITY_BUTTON_EVENT_TOKENS = [
   'water',
   'window',
 ];
+const SECURITY_BUTTON_EVENT_EXCLUDE_TOKENS = ['identify', 'identtify', 'identification'];
+const SECURITY_INFRASTRUCTURE_EXCLUDE_TOKENS = [
+  'wan',
+  'internet',
+  'network',
+  'router',
+  'modem',
+  'gateway',
+  'wifi',
+  'wi-fi',
+  'wlan',
+  'lan',
+];
+const SECURITY_INFRASTRUCTURE_INCLUDE_TOKENS = [
+  'alarm',
+  'camera',
+  'door',
+  'doorbell',
+  'entry',
+  'garage',
+  'lock',
+  'motion',
+  'occupancy',
+  'opening',
+  'presence',
+  'security',
+  'siren',
+  'smoke',
+  'tamper',
+  'window',
+];
 
 function getDomain(entity: HassEntity): string {
   const entityId = entity.entity_id;
@@ -120,6 +151,14 @@ function looksSecurityRelatedButtonOrEvent(entity: HassEntity): boolean {
     .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
     .map((value) => value.toLowerCase());
 
+  if (
+    SECURITY_BUTTON_EVENT_EXCLUDE_TOKENS.some((token) =>
+      searchFields.some((field) => field.includes(token))
+    )
+  ) {
+    return false;
+  }
+
   return SECURITY_BUTTON_EVENT_TOKENS.some((token) =>
     searchFields.some((field) => field.includes(token))
   );
@@ -127,6 +166,42 @@ function looksSecurityRelatedButtonOrEvent(entity: HassEntity): boolean {
 
 function isBinarySensorActiveState(state: string): boolean {
   return ['on', 'detected', 'open', 'wet', 'problem', 'unsafe'].includes(state);
+}
+
+function getSecuritySearchFields(entity: HassEntity): string[] {
+  const attributes = entity.attributes as Record<string, unknown> | undefined;
+
+  return [
+    entity.entity_id,
+    attributes?.friendly_name,
+    attributes?.name,
+    attributes?.device_class,
+    attributes?.category,
+    attributes?.entity_category,
+    attributes?.translation_key,
+    attributes?.event_type,
+    attributes?.event_types,
+    attributes?.event,
+    entity.state,
+  ]
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .map((value) => value.toLowerCase());
+}
+
+function isExcludedInfrastructureSecurityBinarySensor(entity: HassEntity): boolean {
+  const searchFields = getSecuritySearchFields(entity);
+  const hasInfrastructureToken = SECURITY_INFRASTRUCTURE_EXCLUDE_TOKENS.some((token) =>
+    searchFields.some((field) => field.includes(token))
+  );
+
+  if (!hasInfrastructureToken) {
+    return false;
+  }
+
+  return !SECURITY_INFRASTRUCTURE_INCLUDE_TOKENS.some((token) =>
+    searchFields.some((field) => field.includes(token))
+  );
 }
 
 export function classifySecurityEntity(entity: HassEntity): SecurityEntityKind | null {
@@ -153,7 +228,19 @@ export function classifySecurityEntity(entity: HassEntity): SecurityEntityKind |
       return looksSecurityRelatedButtonOrEvent(entity) ? 'event' : null;
     case 'binary_sensor': {
       const deviceClass = normalizeString(attributes?.device_class);
-      return BINARY_SENSOR_SECURITY_KINDS[deviceClass] ?? null;
+      const kind = BINARY_SENSOR_SECURITY_KINDS[deviceClass] ?? null;
+      if (!kind) {
+        return null;
+      }
+
+      if (
+        (kind === 'connectivity' || kind === 'problem') &&
+        isExcludedInfrastructureSecurityBinarySensor(entity)
+      ) {
+        return null;
+      }
+
+      return kind;
     }
     default:
       return null;

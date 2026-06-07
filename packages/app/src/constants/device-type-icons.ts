@@ -63,6 +63,7 @@ const SENSOR_DEVICE_CLASS_ICONS: Record<string, LucideIcon> = {
   garage_door: DoorOpen,
   gas: CircleAlert,
   humidity: Droplets,
+  lock: Lock,
   moisture: Droplets,
   motion: PersonStanding,
   occupancy: PersonStanding,

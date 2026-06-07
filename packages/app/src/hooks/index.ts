@@ -13,7 +13,12 @@ export { useAreaRooms } from './use-area-rooms';
 export { useCardState } from './use-card-state';
 export { useClickOutside } from './use-click-outside';
 export { useCurrentIntegrationConnectionState } from './use-current-integration-connection';
-export { useDashboardDevices } from './use-dashboard-devices';
+export {
+  buildDashboardVisibilityResult,
+  getAbsorbedDashboardEntityIds,
+  getExpandedHiddenDashboardEntityIds,
+  useDashboardDevices,
+} from './use-dashboard-devices';
 export { useDashboardWidgetRoomOptions } from './use-dashboard-widget-room-options';
 export { useDeviceMap } from './use-device-map';
 export type { DeviceCollectionKey } from './use-devices';

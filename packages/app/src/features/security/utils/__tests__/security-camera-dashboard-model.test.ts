@@ -241,10 +241,8 @@ describe('security camera dashboard model', () => {
     expect(model.groups.sirens.map((device) => device.id)).toEqual(['siren.entry']);
     expect(model.groups.presence.map((device) => device.id)).toEqual(['person.alex']);
     expect(model.groups.system.map((device) => device.id)).toEqual(['binary_sensor.panel_problem']);
-    expect(model.groups.actions.map((device) => device.id)).toEqual([
-      'button.doorbell_chime',
-      'event.front_doorbell',
-    ]);
+    expect(model.allEntities.map((device) => device.id)).not.toContain('button.doorbell_chime');
+    expect(model.allEntities.map((device) => device.id)).not.toContain('event.front_doorbell');
   });
 
   it('sorts entities by severity before name and id', () => {
@@ -318,9 +316,9 @@ describe('security camera dashboard model', () => {
     expect(model.summary.title).toBe('Critical alert');
     expect(model.summary.subtitle).toContain('Kitchen Smoke');
     expect(model.summary.attentionItems.map((device) => device.id)).toEqual([
-      'binary_sensor.smoke',
-      'binary_sensor.panel_problem',
-      'binary_sensor.side_door',
+      'security.aggregate.attention.hazards',
+      'security.aggregate.attention.system',
+      'security.aggregate.attention.doors-windows',
     ]);
     expect(model.summary.activityItems).toHaveLength(0);
     expect(model.summary.unknownItems.map((device) => device.id)).toEqual([
@@ -358,6 +356,10 @@ describe('security camera dashboard model', () => {
     expect(activeModel.summary.highestSeverity).toBe('active');
     expect(activeModel.summary.title).toBe('Security active');
     expect(activeModel.summary.attentionItems).toHaveLength(0);
+    expect(activeModel.summary.liveItems.map((device) => device.id)).toEqual([
+      'camera.driveway',
+      'binary_sensor.entry_motion',
+    ]);
     expect(activeModel.summary.activityItems.map((device) => device.id)).toEqual([
       'camera.driveway',
       'binary_sensor.entry_motion',
@@ -374,7 +376,7 @@ describe('security camera dashboard model', () => {
     expect(unknownModel.summary.title).toBe('Some devices unavailable');
     expect(unknownModel.summary.subtitle).toBe('1 device is unavailable');
     expect(unknownModel.summary.attentionItems.map((device) => device.id)).toEqual([
-      'camera.garage',
+      'security.aggregate.attention.cameras',
     ]);
   });
 
@@ -433,6 +435,103 @@ describe('security camera dashboard model', () => {
     expect(model.summary.subtitle).toContain('2 openings closed');
     expect(model.summary.attentionItems).toHaveLength(0);
     expect(model.summary.activityItems).toHaveLength(0);
+    expect(model.summary.liveItems.map((device) => device.id)).toEqual(['camera.front']);
+    expect(model.summary.secureItems.map((device) => device.id)).toEqual([
+      'security.aggregate.openings.secure',
+      'security.aggregate.locks.secure',
+      'security.aggregate.motion.secure',
+      'security.aggregate.hazards.secure',
+    ]);
+  });
+
+  it('keeps idle cameras out of secure rows while preserving available-camera counts', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage', securitySeverity: 'normal' })],
+      covers: [],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [],
+    });
+
+    expect(model.summary.securedCounts.camerasAvailable).toBe(1);
+    expect(model.summary.liveItems.map((device) => device.id)).toEqual(['camera.garage']);
+    expect(model.summary.secureItems.map((device) => device.id)).toEqual([
+      'security.aggregate.locks.secure',
+    ]);
+  });
+
+  it('renders secure rows as grouped kinds instead of individual devices', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [],
+      covers: [],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.hall_motion',
+          name: 'Hall Motion',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+        sensor({
+          id: 'binary_sensor.garage_motion',
+          name: 'Garage Motion',
+          room: 'Garage',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+      ],
+    });
+
+    expect(model.summary.securedCounts.motionSensorsClear).toBe(2);
+    expect(model.summary.secureItems.map((device) => device.id)).toEqual([
+      'security.aggregate.locks.secure',
+      'security.aggregate.motion.secure',
+    ]);
+    expect(
+      model.summary.secureItems.find((device) => device.id === 'security.aggregate.motion.secure')
+    ).toMatchObject({
+      name: 'Motion & occupancy',
+      value: '2 clear',
+    });
+    expect(
+      model.summary.secureItems.find((device) => device.id === 'security.aggregate.locks.secure')
+    ).toMatchObject({
+      name: 'Locks',
+      value: '1 locked',
+    });
+    expect(
+      model.summary.groupSummaries.find((group) => group.id === 'motion-occupancy')?.entities
+    ).toMatchObject([
+      {
+        id: 'security.aggregate.motion.secure',
+        name: 'Motion sensors',
+        value: '2 clear',
+      },
+    ]);
+  });
+
+  it('treats streaming cameras as live even if upstream securitySeverity is stale', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'camera.driveway',
+          name: 'Driveway',
+          state: 'streaming',
+          isStreamCapable: true,
+          isStillImageOnly: false,
+          securitySeverity: 'normal',
+        }),
+      ],
+      covers: [],
+      locks: [],
+      sensors: [],
+    });
+
+    expect(model.summary.activityItems.map((device) => device.id)).toEqual(['camera.driveway']);
+    expect(model.summary.secureItems).toHaveLength(0);
   });
 
   it('builds group summaries and default expansion from problem severity', () => {
@@ -652,7 +751,7 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.summary.attentionItems.map((device) => device.id)).toEqual([
-      'binary_sensor.any_window_open',
+      'security.aggregate.attention.doors-windows',
     ]);
     expect(model.summary.totalEntities).toBe(1);
     expect(
@@ -689,8 +788,7 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.summary.attentionItems.map((device) => device.id)).toEqual([
-      'binary_sensor.any_window_open',
-      'binary_sensor.window_left',
+      'security.aggregate.attention.doors-windows',
     ]);
     expect(model.summary.totalEntities).toBe(2);
   });
@@ -737,11 +835,10 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.summary.attentionItems.map((device) => device.id)).toEqual([
-      'siren.entry',
-      'binary_sensor.hall_window',
-      'cover.pergola_roof',
-      'lock.kitchen_door',
-      'camera.driveway',
+      'security.aggregate.attention.sirens',
+      'security.aggregate.attention.doors-windows',
+      'security.aggregate.attention.locks',
+      'security.aggregate.attention.cameras',
     ]);
   });
 });

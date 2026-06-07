@@ -5,11 +5,13 @@
 @source "../hooks/**/*.{js,ts,jsx,tsx}";
 @source "../i18n/**/*.{js,ts,jsx,tsx}";
 @source "../infrastructure/**/*.{js,ts,jsx,tsx}";
+@source "../marketing/**/*.{js,ts,jsx,tsx}";
 @source "../platform/**/*.{js,ts,jsx,tsx}";
 @source "../services/**/*.{js,ts,jsx,tsx}";
 @source "../stores/**/*.{js,ts,jsx,tsx}";
 @source "../types/**/*.{js,ts,jsx,tsx}";
 @source "../utils/**/*.{js,ts,jsx,tsx}";
+@source "../../../apps/website/src/**/*.{js,ts,jsx,tsx}";
 @source "../../core/src/**/*.{js,ts,jsx,tsx}";
 @source "../../ui/src/**/*.{js,ts,jsx,tsx}";
 @source "../../provider-homeassistant/src/**/*.{js,ts,jsx,tsx}";

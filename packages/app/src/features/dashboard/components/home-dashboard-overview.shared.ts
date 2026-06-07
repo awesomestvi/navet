@@ -25,6 +25,7 @@ import {
 
 export interface HomeDashboardOverviewProps {
   deviceMap: Map<string, DeviceWithType>;
+  summaryDeviceMap: Map<string, DeviceWithType>;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;

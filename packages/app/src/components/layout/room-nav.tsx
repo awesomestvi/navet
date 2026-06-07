@@ -13,7 +13,15 @@ import { isAllRooms } from '@navet/app/constants/rooms';
 import type { AllViewGrouping } from '@navet/app/features/dashboard';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
-import { Check, ChevronDown, Edit3, LayoutGrid, Lightbulb, SlidersHorizontal } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  Edit3,
+  LayoutGrid,
+  type Lightbulb,
+  Plus,
+  SlidersHorizontal,
+} from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -339,26 +347,17 @@ export const RoomNav = memo(function RoomNav({
             ) : null}
 
             {isEditMode && onAddEntity ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <RoomNavMenuButton
-                    icon={Lightbulb}
-                    label={t('dashboard.roomNav.add')}
-                    textSecondary={textSecondary}
-                    className={actionPillClassName}
-                  />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={8}
-                  className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
-                >
-                  <DropdownMenuItem className={dropdownItemClassName} onClick={onAddEntity}>
-                    <Lightbulb className="h-4 w-4" />
-                    {addEntityLabel}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <InteractivePill
+                onClick={onAddEntity}
+                intent="action"
+                size="small"
+                className={actionPillClassName}
+              >
+                <Plus className={`h-4 w-4 ${textSecondary}`} />
+                <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
+                  {addEntityLabel}
+                </span>
+              </InteractivePill>
             ) : null}
 
             {hasEditMenus ? (

@@ -145,6 +145,7 @@ describe('home status summary model', () => {
       expect.objectContaining({
         id: 'security',
         value: 'No Alerts',
+        iconColor: '#22c55e',
         targetSection: 'security',
       }),
     ]);

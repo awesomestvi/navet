@@ -72,6 +72,22 @@ describe('homeassistant-security-entities', () => {
     ).toBeNull();
     expect(
       classifySecurityEntity(
+        makeEntity('binary_sensor.wan_status', 'on', {
+          device_class: 'connectivity',
+          friendly_name: 'WAN Status',
+        })
+      )
+    ).toBeNull();
+    expect(
+      classifySecurityEntity(
+        makeEntity('binary_sensor.router_problem', 'on', {
+          device_class: 'problem',
+          friendly_name: 'Router Problem',
+        })
+      )
+    ).toBeNull();
+    expect(
+      classifySecurityEntity(
         makeEntity('button.router_restart', 'unknown', { device_class: 'restart' })
       )
     ).toBeNull();
@@ -79,6 +95,20 @@ describe('homeassistant-security-entities', () => {
       classifySecurityEntity(
         makeEntity('event.feedreader_news', '2026-06-01T10:00:00.000Z', {
           event_type: 'feedreader',
+        })
+      )
+    ).toBeNull();
+    expect(
+      classifySecurityEntity(
+        makeEntity('button.front_door_identify', 'unknown', {
+          friendly_name: 'Front Door Identify',
+        })
+      )
+    ).toBeNull();
+    expect(
+      classifySecurityEntity(
+        makeEntity('event.garage_identify', '2026-06-01T10:00:00.000Z', {
+          event_type: 'garage_identify',
         })
       )
     ).toBeNull();
@@ -127,6 +157,25 @@ describe('homeassistant-security-entities', () => {
     expectSeverity('binary_sensor.battery_low', 'off', 'battery', 'normal');
     expectSeverity('binary_sensor.connectivity', 'on', 'connectivity', 'warning');
     expectSeverity('binary_sensor.connectivity', 'off', 'connectivity', 'normal');
+  });
+
+  it('keeps security-scoped connectivity and problem sensors classifiable', () => {
+    expect(
+      classifySecurityEntity(
+        makeEntity('binary_sensor.front_door_connectivity', 'on', {
+          device_class: 'connectivity',
+          friendly_name: 'Front Door Lock Connectivity',
+        })
+      )
+    ).toBe('connectivity');
+    expect(
+      classifySecurityEntity(
+        makeEntity('binary_sensor.security_panel_problem', 'on', {
+          device_class: 'problem',
+          friendly_name: 'Security Panel Problem',
+        })
+      )
+    ).toBe('problem');
   });
 
   it('maps camera and siren states to severity', () => {

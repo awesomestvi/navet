@@ -54,6 +54,18 @@ const devicesFixture: DeviceCollection = {
   persons: [],
   sensors: [
     {
+      id: 'binary_sensor.garage_motion',
+      name: 'Garage Motion',
+      room: 'Garage',
+      size: 'small',
+      value: 'Motion detected',
+      unit: '',
+      status: 'active',
+      securityKind: 'motion',
+      securitySeverity: 'active',
+      underlyingDeviceId: 'device.garage_camera',
+    },
+    {
       id: 'binary_sensor.smoke',
       name: 'Kitchen Smoke',
       room: 'Kitchen',
@@ -73,8 +85,24 @@ const devicesFixture: DeviceCollection = {
       name: 'Garage Camera',
       room: 'Garage',
       size: 'medium',
+      underlyingDeviceId: 'device.garage_camera',
+      sourceDeviceId: 'device-garage-camera',
       state: 'idle',
       supportedFeatures: 0,
+      isStreamCapable: true,
+      isStillImageOnly: false,
+      securityKind: 'camera',
+      securitySeverity: 'normal',
+    },
+    {
+      id: 'camera.garage_2',
+      name: 'Garage Camera',
+      room: 'Garage',
+      size: 'medium',
+      underlyingDeviceId: 'device.garage_camera',
+      sourceDeviceId: 'device-garage-camera',
+      state: 'idle',
+      supportedFeatures: 2,
       isStreamCapable: true,
       isStillImageOnly: false,
       securityKind: 'camera',
@@ -114,6 +142,7 @@ vi.mock('@navet/app/features/security/components/security-camera-dashboard', () 
     model: { allEntities: Array<{ id: string }> };
     isEditMode: boolean;
     onToggleEditMode: () => void;
+    onAddEntity?: () => void;
   }) => {
     securityDashboardMock(props);
     return (
@@ -121,6 +150,11 @@ vi.mock('@navet/app/features/security/components/security-camera-dashboard', () 
         <button type="button" onClick={props.onToggleEditMode}>
           {props.isEditMode ? 'dashboard.roomNav.doneEditing' : 'dashboard.roomNav.customize'}
         </button>
+        {props.onAddEntity ? (
+          <button type="button" onClick={props.onAddEntity}>
+            dashboard.addEntity.title
+          </button>
+        ) : null}
         <div data-testid="security-dashboard">{props.model.allEntities.length}</div>
       </div>
     );
@@ -165,12 +199,14 @@ describe('SecuritySection', () => {
 
     renderWithProviders(<SecuritySection />);
 
-    expect(screen.getByTestId('security-dashboard')).toHaveTextContent('4');
+    expect(screen.getByTestId('security-dashboard')).toHaveTextContent('3');
     expect(securityDashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         model: expect.objectContaining({
           allEntities: expect.not.arrayContaining([
             expect.objectContaining({ id: 'camera.garage' }),
+            expect.objectContaining({ id: 'camera.garage_2' }),
+            expect.objectContaining({ id: 'binary_sensor.garage_motion' }),
           ]),
         }),
       })
@@ -187,7 +223,12 @@ describe('SecuritySection', () => {
 
   it('keeps the full hidden security set available in the add-entity dialog', async () => {
     useDashboardEntitiesStore.setState({
-      hiddenEntityIds: ['camera.garage', 'button.panic', 'cover.entry_shutter'],
+      hiddenEntityIds: [
+        'camera.garage',
+        'binary_sensor.garage_motion',
+        'button.panic',
+        'cover.entry_shutter',
+      ],
       shownSensorEntityIds: [],
       lockedCardIds: [],
       onboardingCompleted: false,
@@ -198,11 +239,52 @@ describe('SecuritySection', () => {
     fireEvent.click(screen.getByRole('button', { name: /dashboard.addEntity.title/i }));
 
     expect(await screen.findByTestId('add-entity-dialog')).toHaveTextContent(
-      'cover.entry_shutter,camera.garage,button.panic'
+      'cover.entry_shutter,camera.garage,camera.garage_2'
     );
     expect(addEntityDialogMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        visibleEntityIds: ['cover.entry_shutter', 'camera.garage', 'button.panic'],
+        visibleEntityIds: ['cover.entry_shutter', 'camera.garage', 'camera.garage_2'],
+      })
+    );
+  });
+
+  it('does not consider fully hidden entities as part of the visible security overview', () => {
+    useDashboardEntitiesStore.setState({
+      hiddenEntityIds: [
+        'camera.garage',
+        'cover.entry_shutter',
+        'lock.front',
+        'binary_sensor.smoke',
+      ],
+      shownSensorEntityIds: [],
+      lockedCardIds: [],
+      onboardingCompleted: false,
+    });
+
+    renderWithProviders(<SecuritySection />);
+
+    expect(screen.queryByTestId('security-dashboard')).not.toBeInTheDocument();
+    expect(screen.getByText('sections.security.emptyTitle')).toBeInTheDocument();
+    expect(screen.getByText('dashboard.addEntity.descriptionWithHidden')).toBeInTheDocument();
+  });
+
+  it('prefers parent security devices over child sub-entities in the dashboard model', () => {
+    renderWithProviders(<SecuritySection />);
+
+    expect(securityDashboardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: expect.objectContaining({
+          allEntities: expect.arrayContaining([expect.objectContaining({ id: 'camera.garage' })]),
+        }),
+      })
+    );
+    expect(securityDashboardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: expect.objectContaining({
+          allEntities: expect.not.arrayContaining([
+            expect.objectContaining({ id: 'binary_sensor.garage_motion' }),
+          ]),
+        }),
       })
     );
   });

@@ -52,6 +52,7 @@ export interface BaseDevice {
   providerId?: IntegrationProviderId;
   nativeId?: string;
   canonicalId?: string;
+  underlyingDeviceId?: string;
   resources?: Partial<
     Record<'primaryImage' | 'artwork' | 'snapshot' | 'stream', PlatformResourceDescriptor>
   >;
@@ -183,6 +184,7 @@ export type HelperDevice = Pick<
   | 'providerId'
   | 'nativeId'
   | 'canonicalId'
+  | 'underlyingDeviceId'
   | 'securityKind'
   | 'securitySeverity'
 >;

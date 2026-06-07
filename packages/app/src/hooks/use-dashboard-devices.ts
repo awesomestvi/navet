@@ -1,7 +1,37 @@
 import { useMemo } from 'react';
-import type { DeviceCollection } from '../types/device.types';
+import type { BaseDevice, DeviceCollection } from '../types/device.types';
 
 const EMPTY_DEVICES: [] = [];
+const ABSORBING_PARENT_KEYS = [
+  'lights',
+  'fans',
+  'hvac',
+  'climate',
+  'media',
+  'switches',
+  'covers',
+  'locks',
+  'persons',
+  'vacuums',
+  'cameras',
+] as const;
+const ABSORBABLE_CHILD_KEYS = ['helpers', 'sensors'] as const;
+
+interface DashboardVisibilityResult {
+  absorbedEntityIds: string[];
+  availableDevices: DeviceCollection;
+  visibleDevices: DeviceCollection;
+}
+
+function readSecurityCameraGroupKey(camera: DeviceCollection['cameras'][number]) {
+  if (camera.providerId && camera.sourceDeviceId) {
+    return `${camera.providerId}:${camera.sourceDeviceId}`;
+  }
+
+  const nativeId = typeof camera.nativeId === 'string' ? camera.nativeId : camera.id;
+  const normalizedBaseId = nativeId.toLowerCase().replace(/(?:[_-]\d+)+$/, '');
+  return `${camera.providerId ?? ''}:${normalizedBaseId}:${camera.room.toLowerCase()}:${camera.name.toLowerCase()}`;
+}
 
 function filterVisibleDevices<T extends { id: string }>(devices: T[], hiddenIds: Set<string>): T[] {
   if (devices.length === 0 || hiddenIds.size === 0) {
@@ -31,53 +61,194 @@ function filterVisibleSensors<T extends { id: string }>(
   return visibleSensors.length === devices.length ? devices : visibleSensors;
 }
 
+function collectVisibleParentDeviceIds(
+  devices: DeviceCollection,
+  hiddenIds: Set<string>
+): Set<string> {
+  const parentDeviceIds = new Set<string>();
+
+  for (const key of ABSORBING_PARENT_KEYS) {
+    for (const device of devices[key]) {
+      if (hiddenIds.has(device.id) || typeof device.underlyingDeviceId !== 'string') {
+        continue;
+      }
+
+      parentDeviceIds.add(device.underlyingDeviceId);
+    }
+  }
+
+  return parentDeviceIds;
+}
+
+function isAbsorbableSecurityChild(
+  device: Pick<BaseDevice, 'id' | 'securityKind' | 'underlyingDeviceId'>
+) {
+  return (
+    typeof device.securityKind === 'string' &&
+    typeof device.underlyingDeviceId === 'string' &&
+    device.underlyingDeviceId.length > 0
+  );
+}
+
+function isAlwaysAbsorbedSecurityHelper(
+  device: Pick<BaseDevice, 'securityKind'>,
+  collectionKey: (typeof ABSORBABLE_CHILD_KEYS)[number]
+) {
+  return (
+    collectionKey === 'helpers' &&
+    (device.securityKind === 'button' || device.securityKind === 'event')
+  );
+}
+
+function filterAbsorbedDevices<T extends { id: string }>(
+  devices: T[],
+  absorbedIds: Set<string>
+): T[] {
+  if (devices.length === 0 || absorbedIds.size === 0) {
+    return devices;
+  }
+
+  const nextDevices = devices.filter((device) => !absorbedIds.has(device.id));
+  return nextDevices.length === devices.length ? devices : nextDevices;
+}
+
+export function getExpandedHiddenDashboardEntityIds(
+  devices: Pick<DeviceCollection, 'cameras'>,
+  hiddenEntityIds: string[]
+): string[] {
+  if (hiddenEntityIds.length === 0 || devices.cameras.length < 2) {
+    return hiddenEntityIds;
+  }
+
+  const hiddenIds = new Set(hiddenEntityIds);
+  const hiddenCameraGroupKeys = new Set(
+    devices.cameras
+      .filter((camera) => hiddenIds.has(camera.id))
+      .map((camera) => readSecurityCameraGroupKey(camera))
+  );
+
+  if (hiddenCameraGroupKeys.size === 0) {
+    return hiddenEntityIds;
+  }
+
+  for (const camera of devices.cameras) {
+    if (hiddenCameraGroupKeys.has(readSecurityCameraGroupKey(camera))) {
+      hiddenIds.add(camera.id);
+    }
+  }
+
+  return hiddenIds.size === hiddenEntityIds.length ? hiddenEntityIds : [...hiddenIds];
+}
+
+export function getAbsorbedDashboardEntityIds(
+  devices: DeviceCollection,
+  hiddenEntityIds: string[]
+): string[] {
+  const hiddenIds = new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds));
+  const visibleParentDeviceIds = collectVisibleParentDeviceIds(devices, hiddenIds);
+  const absorbedEntityIds: string[] = [];
+
+  for (const key of ABSORBABLE_CHILD_KEYS) {
+    for (const device of devices[key]) {
+      if (isAlwaysAbsorbedSecurityHelper(device, key)) {
+        absorbedEntityIds.push(device.id);
+        continue;
+      }
+
+      if (
+        isAbsorbableSecurityChild(device) &&
+        typeof device.underlyingDeviceId === 'string' &&
+        visibleParentDeviceIds.has(device.underlyingDeviceId)
+      ) {
+        absorbedEntityIds.push(device.id);
+      }
+    }
+  }
+
+  return absorbedEntityIds.length > 0 ? absorbedEntityIds : EMPTY_DEVICES;
+}
+
+export function buildDashboardVisibilityResult(
+  devices: DeviceCollection,
+  hiddenEntityIds: string[],
+  shownSensorEntityIds: string[] = []
+): DashboardVisibilityResult {
+  const expandedHiddenEntityIds = getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds);
+  const hiddenIds = new Set(expandedHiddenEntityIds);
+  const shownSensorIds = new Set(shownSensorEntityIds);
+  const absorbedEntityIds = getAbsorbedDashboardEntityIds(devices, expandedHiddenEntityIds);
+  const absorbedIds = new Set(absorbedEntityIds);
+
+  const visibleDevices: DeviceCollection = {
+    lights: filterVisibleDevices(devices.lights, hiddenIds),
+    fans: filterVisibleDevices(devices.fans, hiddenIds),
+    hvac: filterVisibleDevices(devices.hvac, hiddenIds),
+    climate: filterVisibleDevices(devices.climate, hiddenIds),
+    media: filterVisibleDevices(devices.media, hiddenIds),
+    weather: filterVisibleDevices(devices.weather, hiddenIds),
+    switches: filterVisibleDevices(devices.switches, hiddenIds),
+    helpers: filterAbsorbedDevices(filterVisibleDevices(devices.helpers, hiddenIds), absorbedIds),
+    covers: filterVisibleDevices(devices.covers, hiddenIds),
+    locks: filterVisibleDevices(devices.locks, hiddenIds),
+    scenes: filterVisibleDevices(devices.scenes, hiddenIds),
+    persons: filterVisibleDevices(devices.persons, hiddenIds),
+    sensors: filterAbsorbedDevices(
+      filterVisibleSensors(devices.sensors, hiddenIds, shownSensorIds),
+      absorbedIds
+    ),
+    vacuums: filterVisibleDevices(devices.vacuums, hiddenIds),
+    calendars: filterVisibleDevices(devices.calendars, hiddenIds),
+    cameras: filterVisibleDevices(devices.cameras, hiddenIds),
+    'grouped-sensors': filterVisibleDevices(devices['grouped-sensors'], hiddenIds),
+  };
+
+  const availableDevices: DeviceCollection =
+    absorbedIds.size === 0
+      ? devices
+      : {
+          ...devices,
+          helpers: filterAbsorbedDevices(devices.helpers, absorbedIds),
+          sensors: filterAbsorbedDevices(devices.sensors, absorbedIds),
+        };
+
+  return {
+    absorbedEntityIds,
+    availableDevices,
+    visibleDevices,
+  };
+}
+
 export const useDashboardDevices = (
   devices: DeviceCollection,
   hiddenEntityIds: string[],
   shownSensorEntityIds: string[] = []
 ): DeviceCollection => {
   return useMemo(() => {
-    const hiddenIds = new Set(hiddenEntityIds);
-    const shownSensorIds = new Set(shownSensorEntityIds);
-    const nextDevices: DeviceCollection = {
-      lights: filterVisibleDevices(devices.lights, hiddenIds),
-      fans: filterVisibleDevices(devices.fans, hiddenIds),
-      hvac: filterVisibleDevices(devices.hvac, hiddenIds),
-      climate: filterVisibleDevices(devices.climate, hiddenIds),
-      media: filterVisibleDevices(devices.media, hiddenIds),
-      weather: filterVisibleDevices(devices.weather, hiddenIds),
-      switches: filterVisibleDevices(devices.switches, hiddenIds),
-      helpers: filterVisibleDevices(devices.helpers, hiddenIds),
-      covers: filterVisibleDevices(devices.covers, hiddenIds),
-      locks: filterVisibleDevices(devices.locks, hiddenIds),
-      scenes: filterVisibleDevices(devices.scenes, hiddenIds),
-      persons: filterVisibleDevices(devices.persons, hiddenIds),
-      sensors: filterVisibleSensors(devices.sensors, hiddenIds, shownSensorIds),
-      vacuums: filterVisibleDevices(devices.vacuums, hiddenIds),
-      calendars: filterVisibleDevices(devices.calendars, hiddenIds),
-      cameras: filterVisibleDevices(devices.cameras, hiddenIds),
-      'grouped-sensors': filterVisibleDevices(devices['grouped-sensors'], hiddenIds),
-    };
+    const { visibleDevices } = buildDashboardVisibilityResult(
+      devices,
+      hiddenEntityIds,
+      shownSensorEntityIds
+    );
 
     const unchanged =
-      nextDevices.lights === devices.lights &&
-      nextDevices.fans === devices.fans &&
-      nextDevices.hvac === devices.hvac &&
-      nextDevices.climate === devices.climate &&
-      nextDevices.media === devices.media &&
-      nextDevices.weather === devices.weather &&
-      nextDevices.switches === devices.switches &&
-      nextDevices.helpers === devices.helpers &&
-      nextDevices.covers === devices.covers &&
-      nextDevices.locks === devices.locks &&
-      nextDevices.scenes === devices.scenes &&
-      nextDevices.persons === devices.persons &&
-      nextDevices.sensors === devices.sensors &&
-      nextDevices.vacuums === devices.vacuums &&
-      nextDevices.calendars === devices.calendars &&
-      nextDevices.cameras === devices.cameras &&
-      nextDevices['grouped-sensors'] === devices['grouped-sensors'];
+      visibleDevices.lights === devices.lights &&
+      visibleDevices.fans === devices.fans &&
+      visibleDevices.hvac === devices.hvac &&
+      visibleDevices.climate === devices.climate &&
+      visibleDevices.media === devices.media &&
+      visibleDevices.weather === devices.weather &&
+      visibleDevices.switches === devices.switches &&
+      visibleDevices.helpers === devices.helpers &&
+      visibleDevices.covers === devices.covers &&
+      visibleDevices.locks === devices.locks &&
+      visibleDevices.scenes === devices.scenes &&
+      visibleDevices.persons === devices.persons &&
+      visibleDevices.sensors === devices.sensors &&
+      visibleDevices.vacuums === devices.vacuums &&
+      visibleDevices.calendars === devices.calendars &&
+      visibleDevices.cameras === devices.cameras &&
+      visibleDevices['grouped-sensors'] === devices['grouped-sensors'];
 
-    return unchanged ? devices : nextDevices;
+    return unchanged ? devices : visibleDevices;
   }, [devices, hiddenEntityIds, shownSensorEntityIds]);
 };

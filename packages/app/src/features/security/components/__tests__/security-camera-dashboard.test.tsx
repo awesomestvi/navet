@@ -157,7 +157,21 @@ function person(
 }
 
 function renderDashboard() {
-  const model = buildSecurityCameraDashboardModel({
+  const model = renderDashboardModelWithAlerts();
+
+  return renderWithProviders(
+    <SecurityCameraDashboard
+      model={model}
+      isEditMode={false}
+      cardSizes={{}}
+      updateCardSize={vi.fn()}
+      surface={getThemeSurfaceTokens('glass')}
+    />
+  );
+}
+
+function renderDashboardModelWithAlerts() {
+  return buildSecurityCameraDashboardModel({
     cameras: [
       camera({
         id: 'camera.garage',
@@ -195,16 +209,6 @@ function renderDashboard() {
       }),
     ],
   });
-
-  return renderWithProviders(
-    <SecurityCameraDashboard
-      model={model}
-      isEditMode={false}
-      cardSizes={{}}
-      updateCardSize={vi.fn()}
-      surface={getThemeSurfaceTokens('glass')}
-    />
-  );
 }
 
 describe('SecurityCameraDashboard', () => {
@@ -213,14 +217,14 @@ describe('SecurityCameraDashboard', () => {
 
     expect(screen.getByRole('heading', { name: 'Critical alert' })).toBeInTheDocument();
     expect(screen.getByText('Now')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Attention' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Live' })).toBeInTheDocument();
+    expect(screen.getByTestId('security-now-lane-list-danger')).toBeInTheDocument();
+    expect(screen.getByTestId('security-now-lane-list-accent')).toBeInTheDocument();
     expect(screen.getByText('All Security')).toBeInTheDocument();
 
     const headings = screen.getAllByRole('heading').map((heading) => heading.textContent);
     expect(headings.indexOf('Now')).toBeLessThan(headings.indexOf('All Security'));
 
-    expect(screen.getAllByText('Kitchen Smoke').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Hazards/i })).toBeInTheDocument();
     expect(screen.getAllByText('Entry Motion').length).toBeGreaterThan(0);
     expect(screen.queryByText('Secure')).not.toBeInTheDocument();
     expect(screen.queryByText(/secure$/i)).not.toBeInTheDocument();
@@ -270,10 +274,10 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByText('3 to check')).toBeInTheDocument();
-    expect(
-      screen.getAllByRole('button', { name: /Kitchen Smoke|Front Door|Side Door/i })
-    ).toHaveLength(3);
+    expect(screen.getByText(/3 to check/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Hazards|Locks|Doors & windows/i })).toHaveLength(
+      3
+    );
   });
 
   it('keeps the now section focused on problems when there is no active item', () => {
@@ -340,8 +344,170 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByText('Secure')).toBeInTheDocument();
-    expect(screen.getByText('1 locks locked')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /now/i })).toBeInTheDocument();
+    expect(screen.getByText('1 secure')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing needs attention.')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Garage Camera').length).toBeGreaterThan(0);
+    const secureRow = screen.getByRole('button', { name: /Locks/i });
+    const secureCard = screen.getByTestId(
+      'security-now-card:security.now.secure'
+    ).firstElementChild;
+    expect(secureRow).toHaveTextContent('1 locked');
+    expect(secureRow.innerHTML).toContain('bg-green-400');
+    expect(secureRow.innerHTML).toContain('text-green-300');
+    expect(secureCard?.className).toContain('from-emerald-900/90');
+    expect(secureCard?.className).toContain('to-green-950/95');
+  });
+
+  it('puts add entity before done editing and shows status badges in the now header', () => {
+    const onAddEntity = vi.fn();
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode
+        onAddEntity={onAddEntity}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    const addEntityButton = screen.getByRole('button', { name: /add entity/i });
+    const doneEditingButton = screen.getByRole('button', { name: /done editing/i });
+
+    expect(addEntityButton.compareDocumentPosition(doneEditingButton)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+
+    fireEvent.click(addEntityButton);
+    expect(onAddEntity).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('security-hero-actions-divider')).not.toBeInTheDocument();
+
+    const nowHeaderButton = screen.getByRole('button', { name: /now/i });
+    expect(nowHeaderButton).toHaveTextContent('1 live');
+    expect(nowHeaderButton).toHaveTextContent('1 secure');
+  });
+
+  it('renders attention, live, and secure lanes with overlay scroll wrappers', () => {
+    renderDashboard();
+
+    expect(screen.getByTestId('security-now-lane-list-danger').className).toContain(
+      'overflow-y-auto'
+    );
+    expect(
+      screen.getByTestId('security-now-lane-list-danger').parentElement?.className ?? ''
+    ).toContain('overlay-scroll-area');
+    expect(screen.getByTestId('security-now-lane-list-accent').className).toContain(
+      'overflow-y-auto'
+    );
+    expect(
+      screen.getByTestId('security-now-lane-list-accent').parentElement?.className ?? ''
+    ).toContain('overlay-scroll-area');
+
+    const secureModel = buildSecurityCameraDashboardModel({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={secureModel}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-lane-list-success').className).toContain(
+      'overflow-y-auto'
+    );
+    expect(
+      screen.getByTestId('security-now-lane-list-success').parentElement?.className ?? ''
+    ).toContain('overlay-scroll-area');
+  });
+
+  it('applies configured size spans to attention or secure and live now cards', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [],
+    });
+
+    const { rerender } = renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode
+        cardSizes={{
+          'security.now.secure': 'medium',
+          'security.now.live': 'extra-large',
+        }}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-card:security.now.secure').className).toContain(
+      'col-span-4 row-span-2'
+    );
+    expect(screen.getByTestId('security-now-card:security.now.live').className).toContain(
+      'col-span-6 row-span-4'
+    );
+
+    rerender(
+      <SecurityCameraDashboard
+        model={renderDashboardModelWithAlerts()}
+        isEditMode
+        cardSizes={{
+          'security.now.attention': 'medium',
+          'security.now.live': 'extra-large',
+        }}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByTestId('security-now-card:security.now.attention').className).toContain(
+      'col-span-4 row-span-2'
+    );
+  });
+
+  it('shows idle cameras in the live lane without marking the dashboard as active', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'camera.garage',
+          name: 'Garage Camera',
+          room: 'Garage',
+          state: 'idle',
+          securitySeverity: 'normal',
+        }),
+      ],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'All secure' })).toBeInTheDocument();
+    const liveRow = screen.getByRole('button', { name: /Garage Camera/i });
+    expect(liveRow).toHaveTextContent('Idle');
+    expect(screen.getByText('1 live')).toBeInTheDocument();
   });
 
   it('uses severity-weighted pulse markers only for critical and warning rows', () => {
@@ -352,10 +518,10 @@ describe('SecurityCameraDashboard', () => {
     );
 
     expect(pulseMarkers.length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /Kitchen Smoke/i }).innerHTML).toContain(
+    expect(screen.getByRole('button', { name: /Hazards/i }).innerHTML).toContain(
       'navet-security-critical-pulse'
     );
-    expect(screen.getByRole('button', { name: /Front Door/i }).innerHTML).toContain(
+    expect(screen.getByRole('button', { name: /Locks/i }).innerHTML).toContain(
       'navet-security-warning-pulse'
     );
     expect(screen.getByRole('button', { name: /Entry Motion/i }).innerHTML).not.toContain(
@@ -364,10 +530,10 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.getByRole('button', { name: /Entry Motion/i }).innerHTML).not.toContain(
       'navet-security-warning-pulse'
     );
-    expect(screen.getByRole('button', { name: /Side Door/i }).innerHTML).not.toContain(
+    expect(screen.getByRole('button', { name: /Doors & windows/i }).innerHTML).not.toContain(
       'navet-security-critical-pulse'
     );
-    expect(screen.getByRole('button', { name: /Side Door/i }).innerHTML).not.toContain(
+    expect(screen.getByRole('button', { name: /Doors & windows/i }).innerHTML).not.toContain(
       'navet-security-warning-pulse'
     );
   });
@@ -375,14 +541,14 @@ describe('SecurityCameraDashboard', () => {
   it('shows device status instead of generic severity label in the attention lane', () => {
     renderDashboard();
 
-    const attentionRow = screen.getByRole('button', { name: /Kitchen Smoke/i });
-    const unlockedLockRow = screen.getByRole('button', { name: /Front Door/i });
-    const openingRow = screen.getByRole('button', { name: /Side Door/i });
+    const attentionRow = screen.getByRole('button', { name: /Hazards/i });
+    const unlockedLockRow = screen.getByRole('button', { name: /Locks/i });
+    const openingRow = screen.getByRole('button', { name: /Doors & windows/i });
 
-    expect(attentionRow).toHaveTextContent('Smoke detected');
+    expect(attentionRow).toHaveTextContent('1 alerts');
     expect(attentionRow).not.toHaveTextContent('Critical');
     expect(attentionRow.innerHTML).toContain('text-rose-300');
-    expect(unlockedLockRow).toHaveTextContent('Unlocked');
+    expect(unlockedLockRow).toHaveTextContent('1 unlocked');
     expect(unlockedLockRow.innerHTML).toContain('text-red-300');
     expect(unlockedLockRow.innerHTML).toContain('bg-red-400');
     expect(openingRow).toHaveTextContent('Unavailable');
@@ -415,9 +581,9 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    const sirenRow = screen.getByRole('button', { name: /Garage Siren/i });
+    const sirenRow = screen.getByRole('button', { name: /Sirens/i });
 
-    expect(sirenRow).toHaveTextContent('On');
+    expect(sirenRow).toHaveTextContent('1 on');
     expect(sirenRow.innerHTML).toContain('text-red-400');
     expect(sirenRow.innerHTML).toContain('bg-red-500');
   });
@@ -440,6 +606,98 @@ describe('SecurityCameraDashboard', () => {
 
     expect(camerasTab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('detail-card:camera.garage')).toBeInTheDocument();
+  });
+
+  it('combines clear motion sensors into one all-security detail card', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.hall_motion',
+          name: 'Hall Motion',
+          room: 'Hall',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+        sensor({
+          id: 'binary_sensor.garage_motion',
+          name: 'Garage Motion',
+          room: 'Garage',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+        sensor({
+          id: 'binary_sensor.garage_motion',
+          name: 'Garage Motion',
+          room: 'Garage',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+      ],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /Motion & occupancy/i }));
+
+    expect(screen.getByTestId('detail-card:security.aggregate.motion.secure')).toHaveTextContent(
+      'Motion sensors'
+    );
+    expect(screen.queryByTestId('detail-card:binary_sensor.hall_motion')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:binary_sensor.garage_motion')).not.toBeInTheDocument();
+  });
+
+  it('applies the configured card span classes to security detail cards', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'camera.garage',
+          name: 'Garage Camera',
+          room: 'Garage',
+          securitySeverity: 'normal',
+          size: 'medium',
+        }),
+      ],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: false, size: 'small' })],
+      sensors: [],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode={false}
+        cardSizes={{ 'camera.garage': 'large', 'lock.front': 'small' }}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    const lockCard = screen.getByTestId('detail-card:lock.front').parentElement;
+
+    expect(lockCard?.className).toContain('col-span-2');
+    expect(lockCard?.className).toContain('row-span-2');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Cameras/i }));
+
+    const cameraCard = screen.getByTestId('detail-card:camera.garage').parentElement;
+
+    expect(cameraCard?.className).toContain('col-span-4');
+    expect(cameraCard?.className).toContain('row-span-4');
   });
 
   it('allows top-level sections to collapse and expand', () => {
@@ -576,13 +834,51 @@ describe('SecurityCameraDashboard', () => {
     const accessTab = screen.getByRole('tab', { name: /Doors & windows/i });
     expect(accessTab).toHaveAttribute('aria-selected', 'false');
 
-    fireEvent.click(screen.getByRole('button', { name: /Side Door/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Doors & windows/i }));
 
     expect(screen.getByRole('tab', { name: /Doors & windows/i })).toHaveAttribute(
       'aria-selected',
       'true'
     );
     expect(screen.getByTestId('detail-card:binary_sensor.side_door')).toBeInTheDocument();
+  });
+
+  it('switches to the matching detail tab when a grouped secure row is clicked', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.hall_motion',
+          name: 'Hall Motion',
+          room: 'Hall',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+        }),
+      ],
+    });
+
+    renderWithProviders(
+      <SecurityCameraDashboard
+        model={model}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        surface={getThemeSurfaceTokens('glass')}
+      />
+    );
+
+    const motionTab = screen.getByRole('tab', { name: /Motion & occupancy/i });
+    expect(motionTab).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: /Motion & occupancy/i }));
+
+    expect(screen.getByRole('tab', { name: /Motion & occupancy/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   it('opens the live camera viewer when a live camera row is clicked', () => {
@@ -731,7 +1027,7 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    const openingRow = screen.getByRole('button', { name: /Side Door/i });
+    const openingRow = screen.getByRole('button', { name: /Doors & windows/i });
     const openingsTab = screen.getByRole('tab', { name: /Doors & windows/i });
 
     expect(openingRow).toHaveTextContent('Open');

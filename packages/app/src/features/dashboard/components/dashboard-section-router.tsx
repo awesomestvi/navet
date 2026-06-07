@@ -167,6 +167,16 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     },
     [handleAddEntity]
   );
+  const canOpenAddEntityDialog = addableEntityIds.length > 0;
+  const isHomeAllRooms = activeSection === 'home' && isAllRooms(activeRoom);
+  const headerAddAction = isHomeAllRooms
+    ? controller.onOpenAddCardDialog
+    : canOpenAddEntityDialog
+      ? onOpenAddEntityDialog
+      : undefined;
+  const headerAddLabel = isHomeAllRooms
+    ? t('dashboard.roomNav.addCard')
+    : t('dashboard.addEntity.title');
 
   let sectionContent: ReactNode;
 
@@ -458,20 +468,12 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             roomItemCounts={controller.roomItemCounts}
             activeRoom={activeRoom}
             onRoomChange={changeRoom}
-            allViewGrouping={isAllRooms(activeRoom) ? controller.allViewGrouping : undefined}
             isEditMode={isEditMode}
             onRoomOrderChange={controller.onSetRoomOrder}
             onHiddenRoomsChange={controller.onSetHiddenRoomNames}
-            onAllViewGroupingChange={
-              isAllRooms(activeRoom) ? controller.onSetAllViewGrouping : undefined
-            }
             onToggleEditMode={onToggleEditMode}
-            onAddEntity={
-              isAllRooms(activeRoom) || addableEntityIds.length === 0
-                ? undefined
-                : onOpenAddEntityDialog
-            }
-            addEntityLabel={t('dashboard.addEntity.title')}
+            onAddEntity={headerAddAction}
+            addEntityLabel={headerAddLabel}
           />
         )}
 
@@ -480,6 +482,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
               <HomeDashboardOverview
                 deviceMap={controller.availableDeviceMap}
+                summaryDeviceMap={controller.deviceMap}
                 cardSizes={cardSizes}
                 updateCardSize={updateCardSize}
                 isEditMode={isEditMode}
@@ -544,11 +547,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       mobileEditActions={{
         isEditMode,
         onToggleEditMode,
-        onAddEntity:
-          isAllRooms(activeRoom) || addableEntityIds.length === 0
-            ? undefined
-            : onOpenAddEntityDialog,
-        addEntityLabel: t('dashboard.addEntity.title'),
+        onAddEntity: headerAddAction,
+        addEntityLabel: headerAddLabel,
         reorderRooms:
           manageableRooms.length > 0
             ? {
@@ -561,10 +561,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 onHiddenRoomsChange: controller.onSetHiddenRoomNames,
               }
             : undefined,
-        allViewGrouping: isAllRooms(activeRoom) ? controller.allViewGrouping : undefined,
-        onAllViewGroupingChange: isAllRooms(activeRoom)
-          ? controller.onSetAllViewGrouping
-          : undefined,
       }}
       mobileRoomNavigation={{
         activeRoom,

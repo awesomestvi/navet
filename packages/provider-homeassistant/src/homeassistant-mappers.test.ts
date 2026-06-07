@@ -330,6 +330,43 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('does not attach security metadata to generic WAN or router health sensors', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'binary_sensor.wan_status': makeEntity('binary_sensor.wan_status', 'on', {
+          friendly_name: 'WAN Status',
+          device_class: 'connectivity',
+        }),
+        'binary_sensor.router_problem': makeEntity('binary_sensor.router_problem', 'on', {
+          friendly_name: 'Router Problem',
+          device_class: 'problem',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'binary_sensor.wan_status')).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.not.objectContaining({
+          securityKind: expect.anything(),
+          securitySeverity: expect.anything(),
+        }),
+      })
+    );
+    expect(entities.find((entity) => entity.externalId === 'binary_sensor.router_problem')).toEqual(
+      expect.objectContaining({
+        type: 'sensor',
+        attributes: expect.not.objectContaining({
+          securityKind: expect.anything(),
+          securitySeverity: expect.anything(),
+        }),
+      })
+    );
+  });
+
   it('keeps grouped security member metadata on binary sensors', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
@@ -353,6 +390,46 @@ describe('homeassistant-mappers', () => {
         attributes: expect.objectContaining({
           securityKind: 'opening',
           groupMembers: ['binary_sensor.window_left', 'binary_sensor.window_right'],
+        }),
+      })
+    );
+  });
+
+  it('uses the parent device name when a security opening sensor only exposes a generic label', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'binary_sensor.front_patio_opening': makeEntity(
+          'binary_sensor.front_patio_opening',
+          'off',
+          {
+            friendly_name: 'Opening',
+            device_class: 'opening',
+          }
+        ),
+      },
+      areas: [],
+      deviceRegistry: [
+        {
+          id: 'device-front-patio-door',
+          name: 'Front Patio Door',
+        },
+      ],
+      entityRegistry: [
+        {
+          entity_id: 'binary_sensor.front_patio_opening',
+          device_id: 'device-front-patio-door',
+        },
+      ],
+    });
+
+    expect(
+      entities.find((entity) => entity.externalId === 'binary_sensor.front_patio_opening')
+    ).toEqual(
+      expect.objectContaining({
+        name: 'Front Patio Door',
+        attributes: expect.objectContaining({
+          entityType: 'Opening',
+          securityKind: 'opening',
         }),
       })
     );
