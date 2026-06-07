@@ -157,6 +157,9 @@ jobs:
     name: Sync HACS edge files
     runs-on: ubuntu-latest
     needs: tier-1-release-critical
+    concurrency:
+      group: hacs-sync-navet-hacs-main
+      cancel-in-progress: false
     environment: edge
     if: github.repository == 'awesomestvi/navet'
     env:
@@ -224,6 +227,7 @@ jobs:
         if: steps.hacs_preflight.outputs.enabled == 'true'
         working-directory: navet-hacs
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -232,4 +236,17 @@ jobs:
             exit 0
           fi
           git commit -m "chore: sync edge export from ${GITHUB_SHA::7}"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "HACS sync push failed after ${attempt} attempts."
+              exit 1
+            fi
+
+            sleep $((attempt * 5))
+          done
