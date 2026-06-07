@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- Updated Navet to `0.6.0`
+- Added dashboard support for alarm panel and humidifier entities
+- Improved security dashboard organization, room navigation, and larger mixed-device layouts
+- Improved provider-backed dashboard loading and camera stream fallback handling
+
 ## 0.5.3
 
 - Updated Navet to `0.5.3`

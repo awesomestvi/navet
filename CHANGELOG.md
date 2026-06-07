@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 - 2026-06-07
+
+## New
+
+- Alarm panel entities can now appear as dashboard cards with provider-aware arming status and controls.
+- Humidifier entities can now appear as dashboard cards with direct mode, power, and target humidity controls.
+
+## Fixed
+
+- Camera cards now recover Home Assistant HLS and MJPEG fallback playback more reliably and keep stream preferences available from card settings.
+
+## Improved
+
+- Security dashboards now organize cameras, alarm states, and summaries more clearly for faster monitoring.
+- Home overview, room navigation, and dashboard device grouping now handle larger mixed-device setups more cleanly.
+- Dashboard loading and provider-backed data updates are more reliable across Home Assistant, Homey, and openHAB integrations.
+
 ## 0.5.3 - 2026-06-05
 
 ## Fixed

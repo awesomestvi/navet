@@ -685,7 +685,9 @@ describe('App Home Assistant connection recovery', () => {
       hass?: Record<string, unknown>;
     };
     homeAssistantRoot.hass = {
-      states: { 'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' } },
+      states: {
+        'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' },
+      },
       config: { location_name: 'Parent Home' },
       user: { name: 'Parent User' },
       connection: {
@@ -707,13 +709,17 @@ describe('App Home Assistant connection recovery', () => {
       render(<App />);
     });
 
-    await waitFor(() => expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(0)
+    );
 
     const initialSyncCount = homeAssistantServiceStub.setPanelHass.mock.calls.length;
 
     await new Promise((resolve) => window.setTimeout(resolve, 1_100));
 
-    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(initialSyncCount);
+    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(
+      initialSyncCount
+    );
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
   });
 
@@ -734,7 +740,9 @@ describe('App Home Assistant connection recovery', () => {
       hass?: Record<string, unknown>;
     };
     homeAssistantRoot.hass = {
-      states: { 'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' } },
+      states: {
+        'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'disarmed' },
+      },
       config: { location_name: 'Parent Home' },
       user: { name: 'Parent User' },
       connection: {
@@ -758,15 +766,17 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     await waitFor(() => expect(subscribeMessage).toHaveBeenCalled());
-    expect(subscribeMessage).toHaveBeenCalledWith(
-      expect.any(Function),
-      { type: 'subscribe_events', event_type: 'state_changed' }
-    );
+    expect(subscribeMessage).toHaveBeenCalledWith(expect.any(Function), {
+      type: 'subscribe_events',
+      event_type: 'state_changed',
+    });
 
     const initialSyncCount = homeAssistantServiceStub.setPanelHass.mock.calls.length;
     stateChangeListeners[0]?.();
 
-    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(initialSyncCount);
+    expect(homeAssistantServiceStub.setPanelHass.mock.calls.length).toBeGreaterThan(
+      initialSyncCount
+    );
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
   });
 
