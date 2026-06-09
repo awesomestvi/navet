@@ -24,6 +24,7 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import { getProviderNativeId, parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { useState } from 'react';
 import type { UseMediaCardControllerParams } from './media-card-controller.types';
+import { resolveGroupedMediaArtwork } from './resolve-grouped-media-artwork';
 import { useMediaArtworkResolution } from './use-media-artwork-resolution';
 import { useMediaDisplayFields } from './use-media-display-fields';
 import { useMediaEntitySync } from './use-media-entity-sync';
@@ -247,14 +248,24 @@ export function useMediaCardController({
     nothingPlayingDescription: t('media.nothingPlayingDescription'),
     readyToPlayLabel: t('media.readyToPlay'),
   });
+  const resolvedArtworkPicture = resolveGroupedMediaArtwork({
+    entityId,
+    currentPicture: liveEntityPicture,
+    groupMembers,
+    mediaPlayerEntities,
+  });
+  const resolvedArtworkKey =
+    resolvedArtworkPicture && resolvedArtworkPicture !== liveEntityPicture
+      ? [liveArtworkKey, resolvedArtworkPicture].filter(Boolean).join('::')
+      : liveArtworkKey;
 
   const { albumArt, artworkResource, handleArtworkError } = useMediaArtworkResolution({
     entityId,
     providerId: resolvedProviderId,
     artworkKey,
     liveAttrs,
-    liveEntityPicture,
-    liveArtworkKey,
+    liveEntityPicture: resolvedArtworkPicture,
+    liveArtworkKey: resolvedArtworkKey,
   });
 
   useMediaEntitySync({
