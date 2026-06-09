@@ -26,8 +26,8 @@ function getStringAttribute(attrs: Record<string, unknown> | undefined, key: str
 
 function getLiveEntityPicture(attrs: Record<string, unknown> | undefined, fallback?: string) {
   return (
-    getStringAttribute(attrs, 'entity_picture') ??
     getStringAttribute(attrs, 'entity_picture_local') ??
+    getStringAttribute(attrs, 'entity_picture') ??
     getStringAttribute(attrs, 'media_image_url') ??
     fallback
   );

@@ -15,6 +15,7 @@ export default defineConfig({
     __APP_GIT_SHA__: JSON.stringify('storybook'),
     __APP_BUILD_DATE__: JSON.stringify(new Date(0).toISOString()),
     __APP_RELEASE_CHANNEL__: JSON.stringify('development'),
+    __APP_BUILD_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
   },
   resolve: {
     alias: {

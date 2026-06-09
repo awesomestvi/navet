@@ -152,6 +152,7 @@ jobs:
             NAVET_GIT_SHA=${{ github.sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=${{ needs.release-context.outputs.release_channel }}
+            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.package_version }}
 
   publish-addon:
     name: Publish Home Assistant Add-on (${{ matrix.arch }})
@@ -235,6 +236,7 @@ jobs:
             NAVET_GIT_SHA=${{ github.sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=${{ needs.release-context.outputs.release_channel }}
+            NAVET_BUILD_VERSION=${{ steps.tags.outputs.version }}
           tags: ${{ steps.tags.outputs.value }}
 
   sync-hacs:

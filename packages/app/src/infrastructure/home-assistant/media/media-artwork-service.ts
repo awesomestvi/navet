@@ -678,9 +678,9 @@ export class MediaArtworkService {
     this.evictExpiredEntries();
 
     const picture =
-      (typeof attrs.media_image_url === 'string' && attrs.media_image_url) ||
-      (typeof attrs.entity_picture === 'string' && attrs.entity_picture) ||
       (typeof attrs.entity_picture_local === 'string' && attrs.entity_picture_local) ||
+      (typeof attrs.entity_picture === 'string' && attrs.entity_picture) ||
+      (typeof attrs.media_image_url === 'string' && attrs.media_image_url) ||
       fallbackPicture;
     const fingerprint = [
       entityId,

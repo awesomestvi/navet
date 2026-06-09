@@ -83,7 +83,7 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
   const { setShowLicense, setShowTerms, showLicense, showTerms, styles } = controller;
   const buildDate = APP_BUILD_METADATA.buildDate.slice(0, 10);
   const buildMeta = [
-    getAppBuildChannelLabel(APP_VERSION),
+    `${getAppBuildChannelLabel(APP_VERSION)} ${APP_BUILD_METADATA.buildVersion}`,
     APP_BUILD_METADATA.gitShaShort,
     buildDate,
   ].join(' · ');

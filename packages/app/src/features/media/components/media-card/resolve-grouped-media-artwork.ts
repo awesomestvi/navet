@@ -22,7 +22,7 @@ function readArtworkPath(attrs: Record<string, unknown> | undefined) {
       ? attrs.media_image_url
       : undefined;
 
-  return entityPicture ?? entityPictureLocal ?? mediaImageUrl;
+  return entityPictureLocal ?? entityPicture ?? mediaImageUrl;
 }
 
 function isPreferredPlaybackState(state: string) {

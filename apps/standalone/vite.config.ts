@@ -99,6 +99,7 @@ const buildMetadata = {
   gitSha: (process.env.NAVET_GIT_SHA ?? resolveFallbackGitSha()).trim(),
   buildDate: (process.env.NAVET_BUILD_DATE ?? resolveFallbackBuildDate()).trim(),
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
+  buildVersion: (process.env.NAVET_BUILD_VERSION ?? packageJson.version ?? '0.0.0').trim(),
 }
 
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
@@ -1871,6 +1872,7 @@ export default defineConfig(({ mode }) => {
         __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
         __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
         __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
+        __APP_BUILD_VERSION__: JSON.stringify(buildMetadata.buildVersion),
         __NAVET_ENABLE_DEMO__: JSON.stringify(enableDemo),
       },
       resolve: resolveConfig,

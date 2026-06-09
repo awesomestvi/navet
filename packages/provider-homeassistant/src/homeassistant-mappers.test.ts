@@ -261,6 +261,46 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('prefers entity_picture_local for media artwork resources and mapped media state', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'media_player.living_homepods_ma_group': makeEntity(
+          'media_player.living_homepods_ma_group',
+          'playing',
+          {
+            friendly_name: 'HomePods Airplay Gruppe',
+            entity_picture: 'http://music-assistant.local:8095/imageproxy/cover?size=512',
+            entity_picture_local:
+              '/api/media_player_proxy/media_player.living_homepods_ma_group?token=proxy',
+            media_image_url: 'https://cdn.example.test/album.jpg',
+            media_title: 'Sunshine (My Girl)',
+            media_artist: 'Wuki',
+            supported_features: 65281,
+          }
+        ),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(
+      entities.find((entity) => entity.externalId === 'media_player.living_homepods_ma_group')
+    ).toEqual(
+      expect.objectContaining({
+        attributes: expect.objectContaining({
+          entityPicture:
+            '/api/media_player_proxy/media_player.living_homepods_ma_group?token=proxy',
+        }),
+        resources: expect.objectContaining({
+          media_artwork: expect.objectContaining({
+            path: '/api/media_player_proxy/media_player.living_homepods_ma_group?token=proxy',
+          }),
+        }),
+      })
+    );
+  });
+
   it('attaches normalized alarm metadata to alarm control panel entities', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

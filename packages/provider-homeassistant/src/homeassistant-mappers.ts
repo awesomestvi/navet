@@ -770,9 +770,9 @@ function createHomeAssistantState(
             ? 'idle'
             : 'off';
     const entityPicture =
-      (typeof entity.attributes?.entity_picture === 'string' && entity.attributes.entity_picture) ||
       (typeof entity.attributes?.entity_picture_local === 'string' &&
         entity.attributes.entity_picture_local) ||
+      (typeof entity.attributes?.entity_picture === 'string' && entity.attributes.entity_picture) ||
       (typeof entity.attributes?.media_image_url === 'string' &&
         entity.attributes.media_image_url) ||
       undefined;
@@ -1247,10 +1247,10 @@ export function mapHomeAssistantEntitiesToNavetEntities(
                 providerId: 'home_assistant',
                 entityId,
                 path:
-                  (typeof entity.attributes?.entity_picture === 'string' &&
-                    entity.attributes.entity_picture) ||
                   (typeof entity.attributes?.entity_picture_local === 'string' &&
                     entity.attributes.entity_picture_local) ||
+                  (typeof entity.attributes?.entity_picture === 'string' &&
+                    entity.attributes.entity_picture) ||
                   (typeof entity.attributes?.media_image_url === 'string' &&
                     entity.attributes.media_image_url) ||
                   undefined,

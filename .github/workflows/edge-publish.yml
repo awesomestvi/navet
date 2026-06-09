@@ -1,4 +1,4 @@
-name: Publish Nightly Builds
+name: Publish Dev Builds
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -21,17 +21,128 @@ env:
 jobs:
   tier-1-release-critical:
     name: Release Safety Checks
-    uses: ./.github/workflows/provider-platform-validation.yml
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Tier 1 release-critical tests
+        run: pnpm test:tier1
+
+      - name: Check provider boundaries
+        run: node scripts/check-provider-boundaries.mjs
+
+      - name: Validate Docker build and config
+        run: pnpm check:docker
+
+  prepare-dev-release:
+    name: Prepare Dev Release
+    runs-on: ubuntu-latest
+    needs: tier-1-release-critical
+    outputs:
+      dev_version: ${{ steps.resolved_dev.outputs.value }}
+      release_sha: ${{ steps.release_sha.outputs.value }}
+      release_sha_short: ${{ steps.release_sha_short.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Detect existing dev metadata commit
+        id: existing_metadata
+        run: |
+          if [[ "${{ github.actor }}" == 'github-actions[bot]' && "${{ github.event.head_commit.message }}" == 'chore(ci): publish Navet Dev metadata' ]]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute dev version
+        id: dev_version
+        if: steps.existing_metadata.outputs.value != 'true'
+        run: |
+          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
+          DEV_DATE=$(date -u +%Y%m%d)
+          echo "value=${PACKAGE_VERSION}-dev.${DEV_DATE}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Read committed dev version
+        id: committed_dev
+        if: steps.existing_metadata.outputs.value == 'true'
+        run: |
+          VERSION=$(node --input-type=module -e 'import fs from "node:fs"; const content = fs.readFileSync("platform/home-assistant/addons/navet-dev/config.yaml", "utf8"); const match = content.match(/^version:\s*"?(.*?)"?\s*$/m); if (!match?.[1]) { throw new Error("Unable to read Navet Dev add-on version"); } process.stdout.write(match[1].trim());')
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update Navet Dev add-on version
+        if: steps.existing_metadata.outputs.value != 'true'
+        env:
+          DEV_VERSION: ${{ steps.dev_version.outputs.value }}
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; const filePath = "platform/home-assistant/addons/navet-dev/config.yaml"; const content = fs.readFileSync(filePath, "utf8"); const replacement = `version: "${process.env.DEV_VERSION}"`; const nextContent = content.replace(/^version:\s*"?.*?"?\s*$/m, replacement); if (nextContent !== content) { fs.writeFileSync(filePath, nextContent, "utf8"); }'
+
+      - name: Commit dev metadata
+        if: steps.existing_metadata.outputs.value != 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add platform/home-assistant/addons/navet-dev/config.yaml
+          if git diff --cached --quiet; then
+            echo "Navet Dev metadata already matches this dev version."
+          else
+            git commit -m "chore(ci): publish Navet Dev metadata"
+            git push origin HEAD:main
+          fi
+
+      - name: Export resolved dev version
+        id: resolved_dev
+        run: |
+          if [[ "${{ steps.existing_metadata.outputs.value }}" == 'true' ]]; then
+            echo "value=${{ steps.committed_dev.outputs.value }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ steps.dev_version.outputs.value }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Capture release sha
+        id: release_sha
+        run: echo "value=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Capture short release sha
+        id: release_sha_short
+        run: echo "value=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
   publish-standalone:
     name: Publish Navet App
     runs-on: ubuntu-latest
-    needs: tier-1-release-critical
+    needs:
+      - tier-1-release-critical
+      - prepare-dev-release
     environment: edge
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-dev-release.outputs.release_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -67,7 +178,7 @@ jobs:
             echo "value<<EOF"
             echo "$IMAGE:edge"
             echo "$IMAGE:dev"
-            echo "$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "$IMAGE:sha-${{ needs.prepare-dev-release.outputs.release_sha_short }}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -83,14 +194,17 @@ jobs:
           tags: ${{ steps.tags.outputs.value }}
           build-args: |
             NAVET_VERSION=${{ steps.version.outputs.value }}
-            NAVET_GIT_SHA=${{ github.sha }}
+            NAVET_GIT_SHA=${{ needs.prepare-dev-release.outputs.release_sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=edge
+            NAVET_BUILD_VERSION=${{ needs.prepare-dev-release.outputs.dev_version }}
 
   publish-addon:
     name: Publish Home Assistant Add-on (${{ matrix.arch }})
     runs-on: ubuntu-latest
-    needs: tier-1-release-critical
+    needs:
+      - tier-1-release-critical
+      - prepare-dev-release
     environment: edge
     strategy:
       fail-fast: false
@@ -101,22 +215,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Read Navet Dev add-on version
-        id: dev_version
-        run: |
-          VERSION=$(node --input-type=module -e 'import fs from "node:fs"; const content = fs.readFileSync("platform/home-assistant/addons/navet-dev/config.yaml", "utf8"); const match = content.match(/^version:\s*"?(.*?)"?\s*$/m); if (!match?.[1]) { throw new Error("Unable to read Navet Dev add-on version"); } process.stdout.write(match[1].trim());')
-          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Detect Navet Dev nightly version bump
-        id: dev_bump
-        run: |
-          if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | grep -Fxq 'platform/home-assistant/addons/navet-dev/config.yaml'; then
-            echo "value=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=false" >> "$GITHUB_OUTPUT"
-          fi
+          ref: ${{ needs.prepare-dev-release.outputs.release_sha }}
 
       - name: Resolve add-on build target
         id: target
@@ -157,21 +256,15 @@ jobs:
         id: tags
         run: |
           IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon"
-          VERSION="${{ steps.dev_version.outputs.value }}"
+          VERSION="${{ needs.prepare-dev-release.outputs.dev_version }}"
           {
             echo "value<<EOF"
-            if [[ "${{ steps.dev_bump.outputs.value }}" == 'true' ]]; then
-              echo "$IMAGE:$VERSION"
-            fi
+            echo "$IMAGE:$VERSION"
             echo "$IMAGE:edge"
             echo "$IMAGE:dev"
-            echo "$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "$IMAGE:sha-${{ needs.prepare-dev-release.outputs.release_sha_short }}"
             echo "EOF"
-            if [[ "${{ steps.dev_bump.outputs.value }}" == 'true' ]]; then
-              echo "build_version=$VERSION"
-            else
-              echo "build_version=edge"
-            fi
+            echo "build_version=$VERSION"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push add-on edge image
@@ -187,15 +280,18 @@ jobs:
             BUILD_FROM=${{ steps.target.outputs.build_from }}
             BUILD_VERSION=${{ steps.tags.outputs.build_version }}
             BUILD_ARCH=${{ matrix.arch }}
-            NAVET_GIT_SHA=${{ github.sha }}
+            NAVET_GIT_SHA=${{ needs.prepare-dev-release.outputs.release_sha }}
             NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
             NAVET_RELEASE_CHANNEL=edge
+            NAVET_BUILD_VERSION=${{ steps.tags.outputs.build_version }}
           tags: ${{ steps.tags.outputs.value }}
 
   sync-hacs:
     name: Sync HACS Integration
     runs-on: ubuntu-latest
-    needs: tier-1-release-critical
+    needs:
+      - tier-1-release-critical
+      - prepare-dev-release
     concurrency:
       group: hacs-sync-navet-hacs-main
       cancel-in-progress: false
@@ -220,6 +316,8 @@ jobs:
       - name: Checkout monorepo
         if: steps.hacs_preflight.outputs.enabled == 'true'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-dev-release.outputs.release_sha }}
 
       - name: Create GitHub App token for HACS sync
         if: steps.hacs_preflight.outputs.enabled == 'true'

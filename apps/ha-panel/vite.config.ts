@@ -50,6 +50,7 @@ const buildMetadata = {
   gitSha: (process.env.NAVET_GIT_SHA ?? resolveFallbackGitSha()).trim(),
   buildDate: (process.env.NAVET_BUILD_DATE ?? resolveFallbackBuildDate()).trim(),
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
+  buildVersion: (process.env.NAVET_BUILD_VERSION ?? packageJson.version ?? '0.0.0').trim(),
 };
 const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/]/, /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/];
 const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/];
@@ -65,6 +66,7 @@ export default defineConfig({
     __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
     __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
     __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
+    __APP_BUILD_VERSION__: JSON.stringify(buildMetadata.buildVersion),
   },
   plugins: [
     react(),
