@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+
+- Updated Navet to `0.7.0`
+- Added richer vacuum card controls, status details, and Roborock-friendly presentation
+- Fixed missing Apple Music and Music Assistant album artwork in affected media cards
+- Improved security state colors, dashboard feedback, and deployment install guidance
+- Reduced disruptive full-dashboard refresh behavior during routine updates
+
 ## 0.6.1
 
 - Updated Navet to `0.6.1`

@@ -90,9 +90,16 @@ export function readAddonVersion(filePath = addonConfigPath) {
 
 export function updateAddonVersion(version, filePath = addonConfigPath) {
   const content = readText(filePath);
-  const nextContent = content.replace(/^version:\s*"?.*?"?\s*$/m, `version: "${version}"`);
-  if (nextContent === content) {
+  const versionLinePattern = /^version:\s*"?.*?"?\s*$/m;
+
+  if (!versionLinePattern.test(content)) {
     throw new Error(`Unable to update version in ${filePath}.`);
+  }
+
+  const nextContent = content.replace(versionLinePattern, `version: "${version}"`);
+
+  if (nextContent === content) {
+    return;
   }
 
   writeText(filePath, nextContent);
@@ -115,12 +122,16 @@ export function readVersioningCurrentVersion() {
 
 export function updateVersioningCurrentVersion(version) {
   const content = readText(versioningDocPath);
-  const nextContent = content.replace(
-    /^- current version:\s*`[^`]+`\s*$/m,
-    `- current version: \`${version}\``
-  );
-  if (nextContent === content) {
+  const currentVersionPattern = /^- current version:\s*`[^`]+`\s*$/m;
+
+  if (!currentVersionPattern.test(content)) {
     throw new Error('Unable to update current version in docs/VERSIONING.md.');
+  }
+
+  const nextContent = content.replace(currentVersionPattern, `- current version: \`${version}\``);
+
+  if (nextContent === content) {
+    return;
   }
 
   writeText(versioningDocPath, nextContent);

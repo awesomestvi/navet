@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0 - 2026-06-09
+
+## New
+
+- Vacuum cards now show richer controls, cleaning details, and device-specific status for supported robot vacuums such as Roborock models.
+
+## Fixed
+
+- Media cards now recover Apple Music and Music Assistant album artwork more reliably in Home Assistant setups where artwork previously stayed blank.
+- Dashboard views no longer risk full refresh-style interruptions during routine updates, which makes shared wall-panel displays feel steadier.
+
+## Improved
+
+- Security cards now use clearer alarm-state styling and more readable dashboard summaries for armed, disarmed, pending, and alert states.
+- Climate, energy, and dashboard status surfaces now give clearer device feedback, while install guidance is easier to follow across supported deployment flows.
+
 ## 0.6.1 - 2026-06-07
 
 ## Fixed
