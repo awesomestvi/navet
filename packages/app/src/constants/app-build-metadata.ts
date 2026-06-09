@@ -1,3 +1,4 @@
+import { APP_VERSION } from '@navet/app/constants/app-version';
 import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 
 declare const __APP_GIT_SHA__: string;
@@ -18,13 +19,22 @@ export const APP_BUILD_METADATA = Object.freeze({
   dashboardConfigVersion: DASHBOARD_CONFIG_VERSION,
 });
 
-export function getAppReleaseBadgeLabel() {
+export function isAppPreV1(version = APP_VERSION) {
+  const match = version.trim().match(/^(\d+)\./);
+  return match ? Number(match[1]) < 1 : false;
+}
+
+export function getAppReleaseBadgeLabel(version = APP_VERSION) {
   switch (APP_BUILD_METADATA.releaseChannel) {
     case 'edge':
       return 'Edge';
     case 'beta':
       return 'Beta';
     default:
+      if (version.includes('-beta') || version.includes('-rc') || isAppPreV1(version)) {
+        return 'Beta';
+      }
+
       return null;
   }
 }

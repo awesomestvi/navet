@@ -781,6 +781,7 @@ export const deMessages = {
   'climate.settings.room': 'Raum',
   'climate.coolingDownTo': 'Kühlt auf {temp} herunter',
   'climate.heatingTo': 'Heizt auf {temp}',
+  'climate.holdingAt': 'Hält {temp}',
   'climate.feedback.updateTemperatureFailed': 'Temperatur konnte nicht aktualisiert werden',
   'climate.feedback.updateModeFailed': 'Modus konnte nicht aktualisiert werden',
   'climate.decreaseTemperature': 'Temperatur senken',

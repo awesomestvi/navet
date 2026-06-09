@@ -773,6 +773,7 @@ export const ptMessages = {
   'climate.settings.room': 'Cômodo',
   'climate.coolingDownTo': 'Resfriando até {temp}',
   'climate.heatingTo': 'Aquecer para {temp}',
+  'climate.holdingAt': 'Mantendo em {temp}',
   'climate.feedback.updateTemperatureFailed': 'Falha ao atualizar a temperatura',
   'climate.feedback.updateModeFailed': 'Falha ao atualizar o modo',
   'climate.decreaseTemperature': 'Diminuir temperatura',

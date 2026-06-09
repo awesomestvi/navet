@@ -9,12 +9,13 @@ import type { ReactNode } from 'react';
 
 export interface BadgeProps {
   tone?: 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+  size?: 'default' | 'small';
   className?: string;
   children: ReactNode;
 }
 
 // Status: in-progress. Compact metadata badge for wizard states, progress, and inline status text.
-export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
+export function Badge({ tone = 'neutral', size = 'default', className, children }: BadgeProps) {
   const { theme, accentColor } = useTheme();
 
   const toneClassName =
@@ -37,9 +38,11 @@ export function Badge({ tone = 'neutral', className, children }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center border px-2.5 py-1',
+        size === 'small'
+          ? 'inline-flex items-center border px-2 py-0.5'
+          : 'inline-flex items-center border px-2.5 py-1',
         navetRadiusTokens.pill,
-        navetTypographyTokens.helper,
+        size === 'small' ? navetTypographyTokens.compactHelper : navetTypographyTokens.helper,
         toneClassName,
         className
       )}

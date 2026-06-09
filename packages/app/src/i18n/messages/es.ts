@@ -779,6 +779,7 @@ export const esMessages = {
   'climate.settings.room': 'Habitación',
   'climate.coolingDownTo': 'Enfriando hasta {temp}',
   'climate.heatingTo': 'Calentar hasta {temp}',
+  'climate.holdingAt': 'Manteniendo en {temp}',
   'climate.feedback.updateTemperatureFailed': 'No se pudo actualizar la temperatura',
   'climate.feedback.updateModeFailed': 'No se pudo actualizar el modo',
   'climate.decreaseTemperature': 'Bajar temperatura',

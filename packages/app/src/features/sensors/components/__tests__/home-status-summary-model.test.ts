@@ -362,6 +362,31 @@ describe('home status summary model', () => {
     ]);
   });
 
+  it('does not treat unitless Fahrenheit climate readings as Celsius in the climate summary', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'climate.hallway',
+            type: 'climate',
+            currentTemperature: 75,
+            temperature: 76,
+            mode: 'cool',
+          }),
+        ].map((entry) => [entry.id, entry])
+      ),
+      { temperatureUnit: 'fahrenheit' }
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '75°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
   it('ignores water-heater temperatures in the climate summary strip', () => {
     const items = buildHomeStatusSummaryItems(
       new Map(

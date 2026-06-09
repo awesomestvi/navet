@@ -10,6 +10,7 @@ interface UseMediaArtworkResolutionParams {
   artworkVersionKey?: string;
   liveEntityPicture?: string;
   liveArtworkKey?: string;
+  liveAttrs?: Record<string, unknown>;
   homeAssistantUrl?: string;
 }
 
@@ -22,6 +23,7 @@ export function useMediaArtworkResolution({
   artworkVersionKey,
   liveEntityPicture,
   liveArtworkKey,
+  liveAttrs,
   homeAssistantUrl: _homeAssistantUrl,
 }: UseMediaArtworkResolutionParams) {
   const [failedArtworkUrl, setFailedArtworkUrl] = useState<string | null>(null);
@@ -32,6 +34,7 @@ export function useMediaArtworkResolution({
     entityId,
     providerId,
     attrs: {
+      ...liveAttrs,
       entity_picture: liveEntityPicture,
     },
     fallbackPicture: liveEntityPicture,

@@ -63,13 +63,14 @@ export const HVACCard = memo(function HVACCard({
     controller.targetTemp,
     controller.currentTemp
   );
-  const tone = !controller.isOn
-    ? 'neutral'
-    : controller.visualMode === 'heat'
-      ? 'orange'
-      : controller.visualMode === 'cool'
-        ? 'cyan'
-        : 'blue';
+  const tone =
+    !controller.isOn || controller.visualMode === 'idle'
+      ? 'neutral'
+      : controller.visualMode === 'heat'
+        ? 'orange'
+        : controller.visualMode === 'cool'
+          ? 'cyan'
+          : 'blue';
   const readableTokens = getCardReadableTextTokens({
     theme: controller.theme,
     tone,

@@ -1001,6 +1001,7 @@ export const itMessages = {
   'climate.settings.room': 'Stanza',
   'climate.coolingDownTo': 'Raffreddamento fino a {temp}',
   'climate.heatingTo': 'Riscaldamento fino a {temp}',
+  'climate.holdingAt': 'Mantiene {temp}',
   'climate.feedback.updateTemperatureFailed': 'Impossibile aggiornare la temperatura',
   'climate.feedback.updateModeFailed': 'Impossibile aggiornare la modalità',
   'climate.decreaseTemperature': 'Diminuisci temperatura',

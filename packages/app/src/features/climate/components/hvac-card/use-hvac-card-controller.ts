@@ -46,6 +46,13 @@ export interface HVACSiblingEntity {
   entity: PlatformEntitySnapshot;
 }
 
+interface OperatingStateSnapshot {
+  mode: string;
+  isOn: boolean;
+  action?: string;
+  supportedHvacModes?: string[];
+}
+
 export type HVACCardController = ReturnType<typeof useHVACCardController>;
 
 // Stable empty references so the selector and useMemo don't create new objects
@@ -56,6 +63,40 @@ const DEFAULT_TEMP_STEP = 0.5;
 const DEFAULT_MIN_TEMP_FAHRENHEIT = 60;
 const DEFAULT_MAX_TEMP_FAHRENHEIT = 86;
 const DEFAULT_TEMP_STEP_FAHRENHEIT = 1;
+
+function normalizeDisplayControlValue(value: number, temperatureUnit: TemperatureUnit) {
+  return temperatureUnit === 'fahrenheit' ? Math.round(value) : value;
+}
+
+function normalizeDisplayControlStep(step: number, temperatureUnit: TemperatureUnit) {
+  if (temperatureUnit !== 'fahrenheit') {
+    return step;
+  }
+
+  return Math.max(1, Math.round(step));
+}
+
+function hvacModeListsEqual(left: string[] | undefined, right: string[] | undefined) {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return left === right;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 function resolveDefaultTemperatureRange(sourceTemperatureUnit: TemperatureUnit | undefined) {
   if (sourceTemperatureUnit !== 'fahrenheit') {
@@ -98,7 +139,11 @@ function snapClimateTemperature(value: number, minTemp: number, maxTemp: number,
 function resolveClimateTemperatureServiceData(
   entityId: string,
   liveEntity: PlatformEntitySnapshot | undefined,
-  nextTemp: number
+  nextTemp: number,
+  operatingState?: {
+    mode?: string;
+    action?: string;
+  }
 ): {
   serviceDomain: 'climate' | 'water_heater';
   temperature?: number;
@@ -116,13 +161,26 @@ function resolveClimateTemperatureServiceData(
   const attrs = liveEntity.attributes;
   const targetLow = parseNumberish(attrs?.target_temp_low);
   const targetHigh = parseNumberish(attrs?.target_temp_high);
+  const hasOperatingModeOverride = typeof operatingState?.mode === 'string';
 
   if (targetLow === null && targetHigh === null) {
     return { serviceDomain: 'climate', temperature: nextTemp };
   }
 
-  const action = typeof attrs?.hvac_action === 'string' ? attrs.hvac_action.toLowerCase() : '';
-  const mode = typeof liveEntity.state === 'string' ? liveEntity.state.toLowerCase() : '';
+  const action =
+    typeof operatingState?.action === 'string'
+      ? operatingState.action.toLowerCase()
+      : hasOperatingModeOverride
+        ? ''
+        : typeof attrs?.hvac_action === 'string'
+          ? attrs.hvac_action.toLowerCase()
+          : '';
+  const mode =
+    typeof operatingState?.mode === 'string'
+      ? operatingState.mode.toLowerCase()
+      : typeof liveEntity.state === 'string'
+        ? liveEntity.state.toLowerCase()
+        : '';
 
   if ((action.includes('cool') || mode === 'cool') && targetHigh !== null) {
     return { serviceDomain: 'climate', targetTemperatureHigh: nextTemp };
@@ -183,6 +241,11 @@ export function useHVACCardController({
   const [supportedHvacModes, setSupportedHvacModes] = useState(initialSupportedHvacModes);
   const [isOn, setIsOn] = useState(initialState);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const lastActiveModeRef = useRef(
+    initialMode !== 'off'
+      ? initialMode
+      : initialSupportedHvacModes?.find((entry) => entry !== 'off')
+  );
   const { colors, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const providerEntity = useProviderEntityModel(id);
@@ -220,6 +283,9 @@ export function useHVACCardController({
   const pendingTargetTempRef = useRef<number | null>(null);
   const deferredTargetTempRef = useRef<number | null>(null);
   const targetTempSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingOperatingStateRef = useRef<OperatingStateSnapshot | null>(null);
+  const deferredOperatingStateRef = useRef<OperatingStateSnapshot | null>(null);
+  const operatingStateSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runTemperatureAction = useServiceActionHandler();
   const runModeAction = useServiceActionHandler();
 
@@ -227,6 +293,9 @@ export function useHVACCardController({
     return () => {
       if (targetTempSyncTimeoutRef.current !== null) {
         clearTimeout(targetTempSyncTimeoutRef.current);
+      }
+      if (operatingStateSyncTimeoutRef.current !== null) {
+        clearTimeout(operatingStateSyncTimeoutRef.current);
       }
     };
   }, []);
@@ -261,7 +330,10 @@ export function useHVACCardController({
 
   const { queue: queueTargetTempSync } = useHaCommandQueue((nextTemp: number) =>
     runTemperatureAction(async () => {
-      const temperatureUpdate = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp);
+      const temperatureUpdate = resolveClimateTemperatureServiceData(id, liveEntity, nextTemp, {
+        mode: pendingOperatingStateRef.current?.mode ?? mode,
+        action: pendingOperatingStateRef.current ? pendingOperatingStateRef.current.action : action,
+      });
       await integrationClimateFeatureService.setTargetTemperature(id, temperatureUpdate);
     }, t('climate.feedback.updateTemperatureFailed'))
   );
@@ -283,6 +355,60 @@ export function useHVACCardController({
     }, HA_PENDING_ECHO_WINDOW_MS);
   }, []);
 
+  const applyOperatingState = useCallback((nextState: OperatingStateSnapshot) => {
+    setMode((current) => (current === nextState.mode ? current : nextState.mode));
+    setIsOn((current) => (current === nextState.isOn ? current : nextState.isOn));
+    setAction((current) => (current === nextState.action ? current : nextState.action));
+    setSupportedHvacModes((current) =>
+      hvacModeListsEqual(current, nextState.supportedHvacModes)
+        ? current
+        : nextState.supportedHvacModes
+    );
+  }, []);
+
+  const syncOperatingStateFromEntity = useCallback(
+    (nextState: OperatingStateSnapshot) => {
+      const pendingState = pendingOperatingStateRef.current;
+
+      if (pendingState) {
+        if (nextState.mode !== pendingState.mode || nextState.isOn !== pendingState.isOn) {
+          deferredOperatingStateRef.current = nextState;
+          return;
+        }
+
+        pendingOperatingStateRef.current = null;
+        deferredOperatingStateRef.current = null;
+        if (operatingStateSyncTimeoutRef.current !== null) {
+          clearTimeout(operatingStateSyncTimeoutRef.current);
+          operatingStateSyncTimeoutRef.current = null;
+        }
+      }
+
+      applyOperatingState(nextState);
+    },
+    [applyOperatingState]
+  );
+
+  const schedulePendingOperatingState = useCallback(
+    (nextState: OperatingStateSnapshot) => {
+      pendingOperatingStateRef.current = nextState;
+      deferredOperatingStateRef.current = null;
+      if (operatingStateSyncTimeoutRef.current !== null) {
+        clearTimeout(operatingStateSyncTimeoutRef.current);
+      }
+      operatingStateSyncTimeoutRef.current = setTimeout(() => {
+        pendingOperatingStateRef.current = null;
+        operatingStateSyncTimeoutRef.current = null;
+        const deferredOperatingState = deferredOperatingStateRef.current;
+        deferredOperatingStateRef.current = null;
+        if (deferredOperatingState !== null) {
+          applyOperatingState(deferredOperatingState);
+        }
+      }, HA_PENDING_ECHO_WINDOW_MS);
+    },
+    [applyOperatingState]
+  );
+
   const updateTargetTemp = useCallback(
     (nextTemp: number, immediate = false) => {
       const normalizedTemp = snapClimateTemperature(
@@ -302,8 +428,18 @@ export function useHVACCardController({
     (nextMode: string) => {
       const previousMode = mode;
       const previousIsOn = isOn;
-      setMode(nextMode);
-      setIsOn(nextMode !== 'off');
+      const previousAction = action;
+      if (nextMode !== 'off') {
+        lastActiveModeRef.current = nextMode;
+      }
+      const nextOperatingState = {
+        mode: nextMode,
+        isOn: nextMode !== 'off',
+        action: nextMode === 'off' ? 'idle' : undefined,
+        supportedHvacModes,
+      };
+      applyOperatingState(nextOperatingState);
+      schedulePendingOperatingState(nextOperatingState);
       void runModeAction(
         async () => {
           await dispatchEntityCommand(
@@ -318,14 +454,45 @@ export function useHVACCardController({
         t('climate.feedback.updateModeFailed'),
         {
           onError: () => {
+            pendingOperatingStateRef.current = null;
+            deferredOperatingStateRef.current = null;
+            if (operatingStateSyncTimeoutRef.current !== null) {
+              clearTimeout(operatingStateSyncTimeoutRef.current);
+              operatingStateSyncTimeoutRef.current = null;
+            }
             setMode(previousMode);
             setIsOn(previousIsOn);
+            setAction(previousAction);
           },
         }
       );
     },
-    [id, isOn, mode, resolvedProviderId, runModeAction, t]
+    [
+      action,
+      applyOperatingState,
+      id,
+      isOn,
+      mode,
+      resolvedProviderId,
+      runModeAction,
+      schedulePendingOperatingState,
+      supportedHvacModes,
+      t,
+    ]
   );
+
+  const togglePower = useCallback(() => {
+    if (isOn) {
+      updateMode('off');
+      return;
+    }
+
+    const restoreMode =
+      lastActiveModeRef.current ??
+      supportedHvacModes?.find((entry) => entry !== 'off') ??
+      (initialMode !== 'off' ? initialMode : 'cool');
+    updateMode(restoreMode);
+  }, [initialMode, isOn, supportedHvacModes, updateMode]);
 
   useHvacEntitySync({
     liveEntity,
@@ -338,10 +505,7 @@ export function useHVACCardController({
     initialState,
     setTargetTemp: syncTargetTempFromEntity,
     setCurrentTemp,
-    setMode,
-    setAction,
-    setSupportedHvacModes,
-    setIsOn,
+    syncOperatingState: syncOperatingStateFromEntity,
   });
 
   const isSmall = isCompactCardSize(size);
@@ -397,6 +561,7 @@ export function useHVACCardController({
     ariaLabel: `${name} ${t('climate.subtitle').toLowerCase()}`,
     ariaPressed: isOn,
     isEditMode,
+    onToggle: togglePower,
     onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
@@ -439,6 +604,10 @@ export function useHVACCardController({
     effectiveSourceTemperatureUnit,
     temperatureUnit
   );
+  const controlDisplayMinTemp = normalizeDisplayControlValue(displayMinTemp, temperatureUnit);
+  const controlDisplayMaxTemp = normalizeDisplayControlValue(displayMaxTemp, temperatureUnit);
+  const controlDisplayStep = normalizeDisplayControlStep(displayStep, temperatureUnit);
+  const controlDisplayTargetTemp = normalizeDisplayControlValue(displayTargetTemp, temperatureUnit);
 
   const updateDisplayTargetTemp = (nextTemp: number, immediate = false) => {
     updateTargetTemp(
@@ -456,6 +625,10 @@ export function useHVACCardController({
     cardColors,
     cardInteraction,
     currentTemp,
+    controlDisplayMaxTemp,
+    controlDisplayMinTemp,
+    controlDisplayStep,
+    controlDisplayTargetTemp,
     displayCurrentTemp,
     displayMaxTemp,
     displayMinTemp,

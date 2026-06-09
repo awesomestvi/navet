@@ -835,6 +835,7 @@ export const enMessages = {
   'climate.settings.room': 'Room',
   'climate.coolingDownTo': 'Cooling down to {temp}',
   'climate.heatingTo': 'Heat to {temp}',
+  'climate.holdingAt': 'Holding at {temp}',
   'climate.feedback.updateTemperatureFailed': 'Failed to update temperature',
   'climate.feedback.updateModeFailed': 'Failed to update mode',
   'climate.decreaseTemperature': 'Decrease temperature',

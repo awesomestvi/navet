@@ -8,9 +8,9 @@ import type {
   SecuritySeverity,
   SensorDevice,
 } from '@navet/app/types/device.types';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildSecurityCameraDashboardModel } from '../../utils/security-camera-dashboard-model';
 import { SecurityCameraDashboard } from '../security-camera-dashboard';
 
@@ -212,6 +212,10 @@ function renderDashboardModelWithAlerts() {
 }
 
 describe('SecurityCameraDashboard', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('renders the summary and top-priority sections before details', () => {
     renderDashboard();
 
@@ -494,6 +498,39 @@ describe('SecurityCameraDashboard', () => {
     expect(
       screen.getByTestId('security-now-lane-list-success').parentElement?.className ?? ''
     ).toContain('overlay-scroll-area');
+  });
+
+  it('restores collapsed sections and the selected detail group after remounting', async () => {
+    const firstRender = renderDashboard();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Locks/i }));
+    fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Now/i }));
+
+    await waitFor(() =>
+      expect(localStorage.getItem('navet-security-dashboard-selected-group')).toBe(
+        JSON.stringify('locks')
+      )
+    );
+    await waitFor(() =>
+      expect(localStorage.getItem('navet-security-dashboard-collapsed-sections')).toBe(
+        JSON.stringify({ details: true, now: true })
+      )
+    );
+
+    firstRender.unmount();
+    renderDashboard();
+
+    expect(screen.getByRole('button', { name: /All Security/i })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    expect(screen.getByRole('button', { name: /Now/i })).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
+
+    expect(screen.getByRole('tab', { name: /Locks/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('detail-card:lock.front')).toBeInTheDocument();
   });
 
   it('applies configured size spans to attention or secure and live now cards', () => {

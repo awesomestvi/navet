@@ -129,8 +129,8 @@ export const HVACGauge = memo(function HVACGauge({
 
     if (variant === 'docked-card' || variant === 'docked-card-small') {
       const isCompact = variant === 'docked-card-small';
-      const primaryBandColor = textTokens.titleColor;
-      const secondaryBandColor = textTokens.subtitleColor;
+      const primaryBandColor = gaugeColors.primary;
+      const secondaryBandColor = gaugeColors.secondary;
       const glowBandColor = hvacGaugeSurface.glowBandColor || withAlpha(primaryBandColor, '66');
 
       return (

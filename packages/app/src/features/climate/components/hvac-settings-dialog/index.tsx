@@ -33,6 +33,18 @@ import { useHvacVisualMode } from '../hvac-card/use-hvac-visual-mode';
 import { getHVACSettingsDialogStyles } from './styles';
 import type { HVACSettingsDialogProps } from './types';
 
+function normalizeDisplayControlValue(value: number, temperatureUnit: 'celsius' | 'fahrenheit') {
+  return temperatureUnit === 'fahrenheit' ? Math.round(value) : value;
+}
+
+function normalizeDisplayControlStep(step: number, temperatureUnit: 'celsius' | 'fahrenheit') {
+  if (temperatureUnit !== 'fahrenheit') {
+    return step;
+  }
+
+  return Math.max(1, Math.round(step));
+}
+
 export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   entityId,
   isOpen,
@@ -66,13 +78,14 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
     mode,
     targetTemp,
   });
-  const textTone = !isOn
-    ? 'neutral'
-    : visualMode === 'heat'
-      ? 'orange'
-      : visualMode === 'cool'
-        ? 'cyan'
-        : 'blue';
+  const textTone =
+    !isOn || visualMode === 'idle'
+      ? 'neutral'
+      : visualMode === 'heat'
+        ? 'orange'
+        : visualMode === 'cool'
+          ? 'cyan'
+          : 'blue';
   const dialogTextTokens = getCardReadableTextTokens({
     theme,
     tone: textTone,
@@ -106,6 +119,10 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
     convertTemperatureUnitValue(step, sourceTemperatureUnit, temperatureUnit) -
       convertTemperatureUnitValue(0, sourceTemperatureUnit, temperatureUnit)
   );
+  const controlDisplayTargetTemp = normalizeDisplayControlValue(displayTargetTemp, temperatureUnit);
+  const controlDisplayMinTemp = normalizeDisplayControlValue(displayMinTemp, temperatureUnit);
+  const controlDisplayMaxTemp = normalizeDisplayControlValue(displayMaxTemp, temperatureUnit);
+  const controlDisplayStep = normalizeDisplayControlStep(displayStep, temperatureUnit);
   const handleDisplayTargetTempChange = (nextTemp: number) => {
     onTargetTempChange(
       convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
@@ -206,14 +223,14 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                   leftContent={
                     <div className="flex items-center gap-2">
                       <HVACTempControls
-                        targetTemp={displayTargetTemp}
+                        targetTemp={controlDisplayTargetTemp}
                         onTempChange={handleDisplayTargetTempChange}
                         onTempCommit={handleDisplayTargetTempCommit}
                         isOn={isOn}
                         size="medium"
-                        minTemp={displayMinTemp}
-                        maxTemp={displayMaxTemp}
-                        step={displayStep}
+                        minTemp={controlDisplayMinTemp}
+                        maxTemp={controlDisplayMaxTemp}
+                        step={controlDisplayStep}
                       />
                       <HVACModeControls
                         mode={mode}

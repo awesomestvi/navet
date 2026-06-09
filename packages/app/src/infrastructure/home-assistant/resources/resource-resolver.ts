@@ -18,6 +18,7 @@ const HOME_ASSISTANT_RELATIVE_PREFIXES = [
 ];
 const DEFAULT_CACHE_TTL_MS = 60_000;
 const SIGNED_PATH_EXPIRY_SECONDS = 30;
+const MEDIA_PLAYER_PROXY_PATH_SEGMENT = '/api/media_player_proxy/';
 
 function isAbsoluteHttpUrl(value: string) {
   return value.startsWith('http://') || value.startsWith('https://');
@@ -77,6 +78,10 @@ function extractSignablePath(resourceUrl: string, haBaseUrl: string | null) {
   } catch {
     return null;
   }
+}
+
+function shouldSkipSignedPathForProxyResource(signablePath: string) {
+  return signablePath.includes(MEDIA_PLAYER_PROXY_PATH_SEGMENT);
 }
 
 function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBustKey']) {
@@ -490,6 +495,13 @@ export class HomeAssistantResourceResolver {
 
     const signablePath = extractSignablePath(resource.url, haBaseUrl);
     if (!signablePath) {
+      return resource;
+    }
+
+    // Media artwork already flows through Navet's same-origin proxy in standalone OAuth mode.
+    // Re-signing media_player_proxy paths adds authSig noise without improving access, and some
+    // Home Assistant-backed players fail when the extra signed query is appended.
+    if (shouldSkipSignedPathForProxyResource(signablePath)) {
       return resource;
     }
 

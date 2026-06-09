@@ -1,14 +1,17 @@
+import { parseProviderScopedId } from './provider-ids';
+
 export function getEntityTypeLabel(entityId?: string) {
   if (!entityId) {
     return '';
   }
 
-  const separatorIndex = entityId.indexOf('.');
-  if (separatorIndex <= 0 || separatorIndex === entityId.length - 1) {
+  const normalizedEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
+  const separatorIndex = normalizedEntityId.indexOf('.');
+  if (separatorIndex <= 0 || separatorIndex === normalizedEntityId.length - 1) {
     return '';
   }
 
-  const domain = entityId.slice(0, separatorIndex).trim();
+  const domain = normalizedEntityId.slice(0, separatorIndex).trim();
   if (!domain) {
     return '';
   }

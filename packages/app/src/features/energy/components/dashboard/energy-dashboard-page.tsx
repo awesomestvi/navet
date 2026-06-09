@@ -3,6 +3,7 @@ import { DashboardHeroSection } from '@navet/app/components/patterns/dashboard-h
 import { BaseCard } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
@@ -590,31 +591,31 @@ function SourceDiagnostics({
   sources: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const sourceRows = getSourceDiagnostics(sources);
-  const cardFrameClassName =
-    theme === 'light'
-      ? 'bg-linear-to-br from-amber-50 via-orange-50 to-white border-amber-200'
-      : theme === 'glass'
-        ? 'bg-linear-to-br from-orange-500/18 via-slate-950/92 to-amber-500/14 border-white/14 shadow-[0_26px_62px_-36px_rgba(0,0,0,0.72),inset_0_1px_0_rgba(255,255,255,0.06)]'
-        : theme === 'black'
-          ? 'bg-linear-to-br from-black via-orange-950/28 to-black border-orange-900/40'
-          : 'bg-linear-to-br from-orange-950/90 to-amber-950/95 border-orange-700/30 shadow-[0_26px_62px_-36px_rgba(0,0,0,0.78),inset_0_1px_0_rgba(255,255,255,0.04)]';
+  const accentSurface = getLightCardSurfaceTokens({
+    isOn: true,
+    selectedColor: null,
+    currentColor: null,
+    theme,
+    lightColors: colors.light,
+    accentColor,
+  });
   const rowDividerClassName = theme === 'light' ? 'border-slate-200/80' : 'border-white/8';
 
   return (
     <BaseCard
+      data-testid="energy-sources-card"
       size="medium"
       title="Sources"
       subtitle="Manage source selection in Home Assistant Energy"
-      headerTone="orange"
       accentColor={accentColor}
       headerLeading={
         <EntityCardHeaderIcon
           IconComponent={Zap}
           isActive
           size="medium"
-          tone="orange"
+          tone="primary"
           baseColor={accentColor}
         />
       }
@@ -625,30 +626,38 @@ function SourceDiagnostics({
             target="_blank"
             rel="noopener noreferrer"
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-              theme === 'light'
-                ? 'border-orange-200 bg-white/85 text-orange-700 hover:bg-orange-50'
-                : 'border-orange-400/20 bg-black/18 text-orange-100 hover:bg-orange-400/10'
+              theme === 'light' ? 'bg-white/88 hover:bg-white' : 'bg-black/18 hover:bg-black/24'
             }`}
+            style={{
+              borderColor: `${accentColor}${theme === 'light' ? '33' : '29'}`,
+              color: accentColor,
+            }}
           >
             <ExternalLink className="h-3.5 w-3.5" />
             <span>{openLabel}</span>
           </a>
         ) : null
       }
-      frameClassName={cardFrameClassName}
+      frameClassName={accentSurface.cardClassName}
+      style={accentSurface.cardStyle}
       disableDefaultSheen
       overlay={
         <>
-          <div className="absolute inset-0 bg-linear-to-b from-orange-500/10 via-transparent to-transparent" />
-          <div
-            className={`absolute inset-0 ${
-              theme === 'light'
-                ? 'bg-white/18'
-                : theme === 'glass'
-                  ? 'bg-white/[0.025]'
-                  : 'bg-black/10'
-            }`}
-          />
+          {accentSurface.activeGlowClassName ? (
+            <div
+              className={accentSurface.activeGlowClassName}
+              style={accentSurface.activeGlowStyle}
+            />
+          ) : null}
+          {accentSurface.innerOverlayClassName ? (
+            <div
+              className={accentSurface.innerOverlayClassName}
+              style={accentSurface.innerOverlayStyle}
+            />
+          ) : null}
+          {accentSurface.shineOverlayClassName ? (
+            <div className={accentSurface.shineOverlayClassName} />
+          ) : null}
         </>
       }
       className="w-full"

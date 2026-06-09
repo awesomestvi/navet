@@ -9,12 +9,13 @@ import type { ReactNode } from 'react';
 
 export interface TagProps {
   tone?: 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+  size?: 'default' | 'small';
   className?: string;
   children: ReactNode;
 }
 
 // Status: in-progress. Compact badge/tag primitive for small status labels and metadata chips.
-export function Tag({ tone = 'neutral', className, children }: TagProps) {
+export function Tag({ tone = 'neutral', size = 'default', className, children }: TagProps) {
   const { theme, accentColor } = useTheme();
 
   const toneClassName =
@@ -35,9 +36,11 @@ export function Tag({ tone = 'neutral', className, children }: TagProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center border px-2.5 py-1',
+        size === 'small'
+          ? 'inline-flex items-center border px-2 py-0.5'
+          : 'inline-flex items-center border px-2.5 py-1',
         navetRadiusTokens.pill,
-        navetTypographyTokens.helper,
+        size === 'small' ? navetTypographyTokens.compactHelper : navetTypographyTokens.helper,
         toneClassName,
         className
       )}

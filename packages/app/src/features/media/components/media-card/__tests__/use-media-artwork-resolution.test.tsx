@@ -56,9 +56,11 @@ describe('useMediaArtworkResolution', () => {
     const artworkServiceForTest = mediaArtworkService as unknown as {
       objectUrlCache: Map<string, unknown>;
       negativeCache: Map<string, unknown>;
+      lookupCache: Map<string, unknown>;
     };
     artworkServiceForTest.objectUrlCache.clear();
     artworkServiceForTest.negativeCache.clear();
+    artworkServiceForTest.lookupCache.clear();
     vi.stubGlobal(
       'createImageBitmap',
       vi.fn().mockResolvedValue({ close: vi.fn() } as unknown as ImageBitmap)
@@ -418,6 +420,425 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     expect(result.current.albumArt).toBeNull();
+  });
+
+  it('falls back to normalized cache artwork URLs when Home Assistant media proxy artwork returns a broken response', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('', {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/66/7a/9e/667a9e1e-c6d4-a658-2a36-f96ff92f3dbc/067003220361.png/{w}x{h}bb.{f}',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe(
+        'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/66/7a/9e/667a9e1e-c6d4-a658-2a36-f96ff92f3dbc/067003220361.png/512x512bb.png'
+      );
+    });
+    expectFetchUrl(
+      fetchMock,
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/66/7a/9e/667a9e1e-c6d4-a658-2a36-f96ff92f3dbc/067003220361.png/{w}x{h}bb.{f}'
+    );
+    expect(result.current.artworkResource).toMatchObject({
+      kind: 'image',
+      url: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/66/7a/9e/667a9e1e-c6d4-a658-2a36-f96ff92f3dbc/067003220361.png/512x512bb.png',
+      authStrategy: 'none',
+    });
+  });
+
+  it('falls back to MusicBrainz cover art when Home Assistant proxy artwork fails and metadata is available', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/musicbrainz-cover-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith('https://musicbrainz.org/ws/2/release')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              releases: [
+                {
+                  id: '8c7b18fe-c68b-3bcf-980d-9d75208615e5',
+                  score: 100,
+                  status: 'Official',
+                  title: 'I’m Wide Awake, It’s Morning',
+                  'artist-credit': [{ name: 'Bright Eyes' }],
+                  'release-group': {
+                    title: 'I’m Wide Awake, It’s Morning',
+                    'primary-type': 'Album',
+                  },
+                  media: [{ format: 'Digital Media' }],
+                },
+              ],
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        );
+      }
+
+      if (
+        url === 'https://coverartarchive.org/release/8c7b18fe-c68b-3bcf-980d-9d75208615e5/front'
+      ) {
+        return Promise.resolve(
+          new Response('image', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520',
+        liveAttrs: {
+          app_name: 'Spotify',
+          media_title: 'Poison Oak',
+          media_artist: 'Bright Eyes',
+          media_album_name: 'I’m Wide Awake, It’s Morning',
+        },
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/musicbrainz-cover-art');
+    });
+    expect(fetchMock.mock.calls.map((call) => call[0])).not.toContain(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=opaque'
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release'),
+      expect.objectContaining({
+        headers: { Accept: 'application/json' },
+      })
+    );
+  });
+
+  it('falls back to MusicBrainz release-group art when the release cover is missing', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/musicbrainz-release-group-cover-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith('https://musicbrainz.org/ws/2/release')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              releases: [
+                {
+                  id: 'release-id',
+                  score: 100,
+                  status: 'Official',
+                  title: 'Pablo Honey',
+                  'artist-credit': [{ name: 'Radiohead' }],
+                  'release-group': {
+                    id: 'release-group-id',
+                    title: 'Pablo Honey',
+                    'primary-type': 'Album',
+                  },
+                  media: [{ format: 'Digital Media' }],
+                },
+              ],
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        );
+      }
+
+      if (url === 'https://coverartarchive.org/release/release-id/front') {
+        return Promise.resolve(new Response('', { status: 404 }));
+      }
+
+      if (url === 'https://coverartarchive.org/release-group/release-group-id/front') {
+        return Promise.resolve(
+          new Response('image', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520',
+        liveAttrs: {
+          app_name: 'Spotify',
+          media_title: 'Creep',
+          media_artist: 'Radiohead',
+          media_album_name: 'Pablo Honey',
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe(
+        'blob:http://navet.local/musicbrainz-release-group-cover-art'
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://coverartarchive.org/release/release-id/front',
+      expect.objectContaining({ cache: 'force-cache' })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://coverartarchive.org/release-group/release-group-id/front',
+      expect.objectContaining({ cache: 'force-cache' })
+    );
+  });
+
+  it('falls back to MusicBrainz when only artist and title metadata are available', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/musicbrainz-title-only-cover-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith('https://musicbrainz.org/ws/2/release')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              releases: [
+                {
+                  id: 'title-only-release-id',
+                  score: 95,
+                  status: 'Official',
+                  title: 'Creep',
+                  'artist-credit': [{ name: 'Radiohead' }],
+                  media: [{ format: 'Digital Media' }],
+                },
+              ],
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        );
+      }
+
+      if (url === 'https://coverartarchive.org/release/title-only-release-id/front') {
+        return Promise.resolve(
+          new Response('image', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520',
+        liveAttrs: {
+          app_name: 'Spotify',
+          media_title: 'Creep',
+          media_artist: 'Radiohead',
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe(
+        'blob:http://navet.local/musicbrainz-title-only-cover-art'
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('recording%3A%22Creep%22'),
+      expect.objectContaining({
+        headers: { Accept: 'application/json' },
+      })
+    );
+  });
+
+  it('prefers MusicBrainz album art over YouTube thumbnails when HomePod artwork only exposes an opaque cache key', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,youtube-thumbnail');
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/youtube-musicbrainz-cover-art'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith('https://musicbrainz.org/ws/2/release')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              releases: [
+                {
+                  id: 'bright-eyes-release-id',
+                  score: 100,
+                  status: 'Official',
+                  title: 'I’m Wide Awake, It’s Morning',
+                  'artist-credit': [{ name: 'Bright Eyes' }],
+                  'release-group': {
+                    id: 'bright-eyes-release-group-id',
+                    title: 'I’m Wide Awake, It’s Morning',
+                    'primary-type': 'Album',
+                  },
+                  media: [{ format: 'Digital Media' }],
+                },
+              ],
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        );
+      }
+
+      if (url === 'https://coverartarchive.org/release/bright-eyes-release-id/front') {
+        return Promise.resolve(
+          new Response('image', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=ebc5b876a366a328',
+        liveAttrs: {
+          app_name: 'YouTube Music',
+          media_content_id: 'zNm-tWPArDM',
+          media_title: 'Poison Oak',
+          media_artist: 'Bright Eyes',
+          media_album_name: 'I’m Wide Awake, It’s Morning',
+        },
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+        liveArtworkKey: 'Poison Oak::Bright Eyes',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/youtube-musicbrainz-cover-art');
+    });
+    expect(fetchMediaThumbnailDataUrlMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release'),
+      expect.objectContaining({
+        headers: { Accept: 'application/json' },
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://coverartarchive.org/release/bright-eyes-release-id/front',
+      expect.objectContaining({ cache: 'force-cache' })
+    );
+  });
+
+  it('falls back to YouTube Music thumbnails when MusicBrainz has no usable match', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://navet.local/youtube-thumbnail-square'
+    );
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith('https://musicbrainz.org/ws/2/release')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              releases: [],
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        );
+      }
+
+      if (url === 'https://i.ytimg.com/vi/zNm-tWPArDM/hqdefault.jpg') {
+        return Promise.resolve(
+          new Response('image', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          })
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=ebc5b876a366a328',
+        liveAttrs: {
+          app_name: 'YouTube Music',
+          media_content_id: 'zNm-tWPArDM',
+          media_title: 'Poison Oak',
+          media_artist: 'Bright Eyes',
+        },
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+        liveArtworkKey: 'Poison Oak::Bright Eyes',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/youtube-thumbnail-square');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release'),
+      expect.objectContaining({
+        headers: { Accept: 'application/json' },
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://i.ytimg.com/vi/zNm-tWPArDM/hqdefault.jpg',
+      expect.objectContaining({ cache: 'force-cache' })
+    );
   });
 
   it('does not render proxy artwork when the response body fails image decode despite returning 200', async () => {

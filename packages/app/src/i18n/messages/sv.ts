@@ -773,6 +773,7 @@ export const svMessages = {
   'climate.settings.room': 'Rum',
   'climate.coolingDownTo': 'Kyler ner till {temp}',
   'climate.heatingTo': 'Värmer till {temp}',
+  'climate.holdingAt': 'Håller {temp}',
   'climate.feedback.updateTemperatureFailed': 'Det gick inte att uppdatera temperaturen',
   'climate.feedback.updateModeFailed': 'Det gick inte att uppdatera läget',
   'climate.decreaseTemperature': 'Sänk temperaturen',

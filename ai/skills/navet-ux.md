@@ -22,5 +22,7 @@ surfaces, or core visual hierarchy.
 - reuse the existing shared UI and theme system before inventing new patterns
 - keep surfaces theme-native: in `dark` and `black`, cards should stay dark-surface cards, not glass or frosted treatments
 - use accent color as tint, border, glow, or emphasis inside the active theme surface instead of swapping the surface family
+- when a card needs to become accent-aware, prefer shared surface helpers such as the existing accent/tinted card tokens instead of feature-local gradient recipes
 - when a card sits beside adjacent cards in an established lane or section, inherit that same surface family first; do not make one card look like a different theme or material system
+- in dashboard pairs or lanes, prefer the same shared card recipe across neighboring cards; for example, the energy dashboard `Sources` card should stay in the same surface family as `Live Energy`, but may become accent-aware by layering a shared accent surface helper on top of that family rather than switching to a feature-local material treatment
 - avoid over-contained cards and nested shells that reduce density without improving clarity

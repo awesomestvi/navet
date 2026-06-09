@@ -23,6 +23,7 @@ export function useMediaArtwork({
   const entityPicture = typeof attrs?.entity_picture === 'string' ? attrs.entity_picture : '';
   const entityPictureLocal =
     typeof attrs?.entity_picture_local === 'string' ? attrs.entity_picture_local : '';
+  const appName = typeof attrs?.app_name === 'string' ? attrs.app_name : '';
   const mediaContentId = typeof attrs?.media_content_id === 'string' ? attrs.media_content_id : '';
   const mediaTitle = typeof attrs?.media_title === 'string' ? attrs.media_title : '';
   const mediaArtist = typeof attrs?.media_artist === 'string' ? attrs.media_artist : '';
@@ -32,6 +33,7 @@ export function useMediaArtwork({
       media_image_url: mediaImageUrl || undefined,
       entity_picture: entityPicture || undefined,
       entity_picture_local: entityPictureLocal || undefined,
+      app_name: appName || undefined,
       media_content_id: mediaContentId || undefined,
       media_title: mediaTitle || undefined,
       media_artist: mediaArtist || undefined,
@@ -41,6 +43,7 @@ export function useMediaArtwork({
       mediaImageUrl,
       entityPicture,
       entityPictureLocal,
+      appName,
       mediaContentId,
       mediaTitle,
       mediaArtist,

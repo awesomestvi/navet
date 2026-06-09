@@ -16,6 +16,10 @@ export function getHvacTemperatureStatusLabel(
     return t('climate.heatingTo', { temp: targetTemp });
   }
 
+  if (visualMode === 'idle') {
+    return t('climate.holdingAt', { temp: targetTemp });
+  }
+
   return comparisonTargetTemp < comparisonCurrentTemp
     ? t('climate.coolingDownTo', { temp: targetTemp })
     : t('climate.heatingTo', { temp: targetTemp });

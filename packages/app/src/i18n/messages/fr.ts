@@ -782,6 +782,7 @@ export const frMessages = {
   'climate.settings.room': 'Piece',
   'climate.coolingDownTo': 'Refroidit jusqu’à {temp}',
   'climate.heatingTo': 'Chauffe jusqu’à {temp}',
+  'climate.holdingAt': 'Maintien à {temp}',
   'climate.feedback.updateTemperatureFailed': 'Impossible de mettre à jour la temperature',
   'climate.feedback.updateModeFailed': 'Impossible de mettre à jour le mode',
   'climate.decreaseTemperature': 'Baisser la temperature',

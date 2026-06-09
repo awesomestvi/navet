@@ -252,6 +252,7 @@ export function useMediaCardController({
     entityId,
     providerId: resolvedProviderId,
     artworkKey,
+    liveAttrs,
     liveEntityPicture,
     liveArtworkKey,
   });

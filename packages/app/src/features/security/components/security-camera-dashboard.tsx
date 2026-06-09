@@ -17,6 +17,7 @@ import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useI18n, useMediaQuery, useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
@@ -60,6 +61,8 @@ const LIVE_NOW_CARD_ID = 'security.now.live';
 const ALARM_NOW_CARD_ID = 'security.now.alarm';
 const NOW_LANE_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
 const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large'];
+const SECURITY_DASHBOARD_COLLAPSED_SECTIONS_KEY = 'navet-security-dashboard-collapsed-sections';
+const SECURITY_DASHBOARD_SELECTED_GROUP_KEY = 'navet-security-dashboard-selected-group';
 
 function getSeverityLabel(severity: SecuritySeverity): string {
   switch (severity) {
@@ -1129,7 +1132,10 @@ export function SecurityCameraDashboard({
   } = useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
   const [viewerCamera, setViewerCamera] = useState<CameraDevice | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(
+    SECURITY_DASHBOARD_COLLAPSED_SECTIONS_KEY,
+    {}
+  );
   const attentionCount = model.summary.attentionEntityCount;
   const attentionCardSize = cardSizes[ATTENTION_NOW_CARD_ID] ?? 'large';
   const secureCardSize = cardSizes[SECURE_NOW_CARD_ID] ?? 'large';
@@ -1143,7 +1149,10 @@ export function SecurityCameraDashboard({
       '',
     [model.summary.groupSummaries]
   );
-  const [selectedGroupId, setSelectedGroupId] = useState(defaultGroupId);
+  const [selectedGroupId, setSelectedGroupId] = usePersistedState(
+    SECURITY_DASHBOARD_SELECTED_GROUP_KEY,
+    defaultGroupId
+  );
 
   useEffect(() => {
     setSelectedGroupId((current) => {

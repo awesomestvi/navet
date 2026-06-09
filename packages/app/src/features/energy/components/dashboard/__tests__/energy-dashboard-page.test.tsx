@@ -11,14 +11,6 @@ import { EnergyDashboardPage } from '../energy-dashboard-page';
 
 function renderDashboardPage(storyId: string) {
   const scenario = getEnergyDashboardScenario(storyId);
-  useThemeStore.setState({
-    ...useThemeStore.getState(),
-    theme: 'dark',
-    followSystemTheme: false,
-    primaryColor: 'orange',
-    customPrimaryColor: null,
-    wallpaper: null,
-  });
 
   return render(
     <I18nProvider>
@@ -33,6 +25,14 @@ function renderDashboardPage(storyId: string) {
 describe('EnergyDashboardPage', () => {
   beforeEach(() => {
     useSettingsStore.getState().resetSettings();
+    useThemeStore.setState({
+      ...useThemeStore.getState(),
+      theme: 'dark',
+      followSystemTheme: false,
+      primaryColor: 'orange',
+      customPrimaryColor: null,
+      wallpaper: null,
+    });
   });
 
   it('renders ripple dots from inner to outer rings around the load orb', () => {
@@ -52,5 +52,25 @@ describe('EnergyDashboardPage', () => {
     const layout = screen.getByTestId('energy-live-layout');
     expect(layout).toHaveAttribute('data-space-mode', 'more_space');
     expect(layout).toHaveClass('lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]');
+  });
+
+  it('keeps the sources card accent-aware through the shared accent surface helper', () => {
+    useThemeStore.setState({
+      ...useThemeStore.getState(),
+      theme: 'dark',
+      followSystemTheme: false,
+      primaryColor: 'custom',
+      customPrimaryColor: '#12abef',
+      wallpaper: null,
+    });
+
+    renderDashboardPage('default');
+
+    const sourcesCard = screen.getByTestId('energy-sources-card');
+    expect(sourcesCard.className).toContain('bg-gradient-to-br');
+    expect(sourcesCard.className).toContain('from-blue-900/90');
+    expect(sourcesCard.className).toContain('to-blue-950/95');
+    expect(sourcesCard.className).toContain('border-blue-700/30');
+    expect(sourcesCard.getAttribute('style')).toBeNull();
   });
 });

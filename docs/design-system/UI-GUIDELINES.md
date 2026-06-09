@@ -27,8 +27,10 @@ Rules:
 - use readable-text and surface-token helpers for tinted or accent-heavy surfaces
 - keep card backgrounds theme-aware: `dark` and `black` should remain dark surfaces, while `glass` is the only theme that should use frosted or translucent glass-like card treatments
 - when adding semantic or accent state styling, tint the current theme surface with border, glow, overlay, or text changes instead of replacing it with a different surface family
+- when a card needs to become accent-aware, prefer shared accent/tinted surface helpers before introducing feature-local gradients or theme branches
 - when a card appears inside an established dashboard lane or neighboring card group, match the adjacent cards' surface treatment for the active theme before introducing any custom state styling
 - custom state styling should layer on top of the inherited lane/card surface recipe, not replace it with a separate material treatment unless the exception is intentional and documented
+- concrete example: the energy dashboard `Sources` card should be accent-aware through the same shared surface-family helpers used by other dashboard cards, not through a one-off feature-local shell recipe
 
 ## Shared Foundations
 

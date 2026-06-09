@@ -14,32 +14,12 @@ interface UseHvacEntitySyncParams {
   initialState: boolean;
   setTargetTemp: Dispatch<SetStateAction<number>>;
   setCurrentTemp: Dispatch<SetStateAction<number>>;
-  setMode: Dispatch<SetStateAction<string>>;
-  setAction: Dispatch<SetStateAction<string | undefined>>;
-  setSupportedHvacModes: Dispatch<SetStateAction<string[] | undefined>>;
-  setIsOn: Dispatch<SetStateAction<boolean>>;
-}
-
-function arraysEqual(left: string[] | undefined, right: string[] | undefined) {
-  if (left === right) {
-    return true;
-  }
-
-  if (!left || !right) {
-    return left === right;
-  }
-
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) {
-      return false;
-    }
-  }
-
-  return true;
+  syncOperatingState: (state: {
+    mode: string;
+    isOn: boolean;
+    action?: string;
+    supportedHvacModes?: string[];
+  }) => void;
 }
 
 function parseSupportedHvacModes(value: unknown): string[] | undefined {
@@ -85,10 +65,7 @@ export function useHvacEntitySync({
   initialState,
   setTargetTemp,
   setCurrentTemp,
-  setMode,
-  setAction,
-  setSupportedHvacModes,
-  setIsOn,
+  syncOperatingState,
 }: UseHvacEntitySyncParams) {
   useEffect(() => {
     if (liveEntity) {
@@ -97,12 +74,12 @@ export function useHvacEntitySync({
       const nextMode = resolveMode(liveEntity, attrs, initialMode);
       const nextAction = typeof attrs.hvac_action === 'string' ? attrs.hvac_action : initialAction;
       const nextSupportedModes = resolveSupportedModes(liveEntity, attrs);
-      setIsOn((current) => (current === nextIsOn ? current : nextIsOn));
-      setMode((current) => (current === nextMode ? current : nextMode));
-      setAction((current) => (current === nextAction ? current : nextAction));
-      setSupportedHvacModes((current) =>
-        arraysEqual(current, nextSupportedModes) ? current : nextSupportedModes
-      );
+      syncOperatingState({
+        mode: nextMode,
+        isOn: nextIsOn,
+        action: nextAction,
+        supportedHvacModes: nextSupportedModes,
+      });
       const targetTemp = resolveClimateTargetTemperature(liveEntity);
       const currentTemp = parseNumberish(attrs.current_temperature);
       if (targetTemp !== null) {
@@ -129,22 +106,22 @@ export function useHvacEntitySync({
 
       setTargetTemp((current) => (current === nextTargetTemp ? current : nextTargetTemp));
       setCurrentTemp((current) => (current === nextCurrentTemp ? current : nextCurrentTemp));
-      setMode((current) => (current === nextMode ? current : nextMode));
-      setAction((current) => (current === nextAction ? current : nextAction));
-      setSupportedHvacModes((current) =>
-        arraysEqual(current, nextSupportedModes) ? current : nextSupportedModes
-      );
-      setIsOn((current) => (current === nextIsOn ? current : nextIsOn));
+      syncOperatingState({
+        mode: nextMode,
+        isOn: nextIsOn,
+        action: nextAction,
+        supportedHvacModes: nextSupportedModes,
+      });
       return;
     }
     setTargetTemp((current) => (current === initialTemp ? current : initialTemp));
     setCurrentTemp((current) => (current === initialCurrentTemp ? current : initialCurrentTemp));
-    setMode((current) => (current === initialMode ? current : initialMode));
-    setAction((current) => (current === initialAction ? current : initialAction));
-    setSupportedHvacModes((current) =>
-      arraysEqual(current, initialSupportedHvacModes) ? current : initialSupportedHvacModes
-    );
-    setIsOn((current) => (current === initialState ? current : initialState));
+    syncOperatingState({
+      mode: initialMode,
+      isOn: initialState,
+      action: initialAction,
+      supportedHvacModes: initialSupportedHvacModes,
+    });
   }, [
     liveEntity,
     providerState,
@@ -156,9 +133,6 @@ export function useHvacEntitySync({
     initialState,
     setTargetTemp,
     setCurrentTemp,
-    setMode,
-    setAction,
-    setSupportedHvacModes,
-    setIsOn,
+    syncOperatingState,
   ]);
 }

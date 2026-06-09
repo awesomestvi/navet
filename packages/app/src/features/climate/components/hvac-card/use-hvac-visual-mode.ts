@@ -28,6 +28,9 @@ export function useHvacVisualMode({
     const normalizedAction = action?.toLowerCase() ?? '';
     const normalizedMode = mode.toLowerCase();
     const temperatureDelta = targetTemp - currentTemp;
+    const isHeatingMode = normalizedMode === 'heat' || WATER_HEATER_HEAT_MODES.has(normalizedMode);
+    const isCoolingMode = normalizedMode === 'cool';
+    const isAutoLikeMode = normalizedMode === 'auto' || normalizedMode === 'heat_cool';
 
     if (!isOn) {
       return 'off';
@@ -39,6 +42,34 @@ export function useHvacVisualMode({
 
     if (normalizedMode === 'fan' || normalizedMode === 'fan_only') {
       return 'fan';
+    }
+
+    if (isCoolingMode) {
+      if (normalizedAction.includes('cool')) {
+        return 'cool';
+      }
+
+      if (temperatureDelta < -0.05) {
+        return 'cool';
+      }
+
+      return 'idle';
+    }
+
+    if (isHeatingMode) {
+      if (normalizedAction.includes('heat')) {
+        return 'heat';
+      }
+
+      if (WATER_HEATER_HEAT_MODES.has(normalizedMode)) {
+        return 'heat';
+      }
+
+      if (temperatureDelta > 0.05) {
+        return 'heat';
+      }
+
+      return 'idle';
     }
 
     if (temperatureDelta > 0.05) {
@@ -57,16 +88,8 @@ export function useHvacVisualMode({
       return 'cool';
     }
 
-    if (normalizedMode === 'heat') {
-      return 'heat';
-    }
-
-    if (WATER_HEATER_HEAT_MODES.has(normalizedMode)) {
-      return 'heat';
-    }
-
-    if (normalizedMode === 'cool') {
-      return 'cool';
+    if (normalizedAction.includes('idle') || isAutoLikeMode) {
+      return 'idle';
     }
 
     return normalizedMode;

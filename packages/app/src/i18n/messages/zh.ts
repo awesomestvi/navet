@@ -810,6 +810,7 @@ export const zhMessages = {
   'climate.currentTemperature': '当前 {temp}',
   'climate.coolingDownTo': '暖通空调下移 {temp}',
   'climate.heatingTo': '暖通空调 {temp}',
+  'climate.holdingAt': '保持在 {temp}',
   'climate.decreaseTemperature': '降低温度',
   'climate.increaseTemperature': '升高温度',
   'climate.gaugeLabel': '暖通空调 {temp} {mode}',

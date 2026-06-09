@@ -12,8 +12,12 @@ describe('getHvacTemperatureStatusLabel', () => {
     expect(getHvacTemperatureStatusLabel(t, 18, 21, 'heat')).toBe('climate.heatingTo:18');
   });
 
+  it('uses holding copy when visual mode is idle', () => {
+    expect(getHvacTemperatureStatusLabel(t, 76, 75, 'idle')).toBe('climate.holdingAt:76');
+  });
+
   it('falls back to target and current temperature comparison for unknown visual mode', () => {
-    expect(getHvacTemperatureStatusLabel(t, 18, 21, 'idle')).toBe('climate.coolingDownTo:18');
-    expect(getHvacTemperatureStatusLabel(t, 22, 20, 'idle')).toBe('climate.heatingTo:22');
+    expect(getHvacTemperatureStatusLabel(t, 18, 21, 'auto')).toBe('climate.coolingDownTo:18');
+    expect(getHvacTemperatureStatusLabel(t, 22, 20, 'auto')).toBe('climate.heatingTo:22');
   });
 });

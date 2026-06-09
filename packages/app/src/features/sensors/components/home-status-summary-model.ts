@@ -31,6 +31,8 @@ export interface StatusSummaryOptions {
 
 const NON_AMBIENT_CLIMATE_SENSOR_PATTERN =
   /\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather)\b/;
+const AMBIENT_FAHRENHEIT_INFERENCE_THRESHOLD = 45;
+
 function getNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -258,6 +260,17 @@ function formatClimateSummaryValue(values: number[]): string {
   return `${formatDisplayTemperature(min).replace('.', ',')}–${formatDisplayTemperature(max).replace('.', ',')}°`;
 }
 
+function resolveAmbientTemperatureSourceUnit(
+  value: number,
+  sourceUnit: TemperatureUnit | undefined
+): TemperatureUnit {
+  if (sourceUnit) {
+    return sourceUnit;
+  }
+
+  return value > AMBIENT_FAHRENHEIT_INFERENCE_THRESHOLD ? 'fahrenheit' : 'celsius';
+}
+
 function getClimateSummary(
   devices: DeviceWithType[],
   options: StatusSummaryOptions = {}
@@ -283,8 +296,10 @@ function getClimateSummary(
         return null;
       }
 
-      const sourceUnit =
-        device.type === 'climate' ? normalizeTemperatureUnit(device.temperatureUnit) : undefined;
+      const sourceUnit = resolveAmbientTemperatureSourceUnit(
+        value,
+        device.type === 'climate' ? normalizeTemperatureUnit(device.temperatureUnit) : undefined
+      );
       return convertTemperatureUnitValue(value, sourceUnit, options.temperatureUnit ?? 'celsius');
     }),
     ...temperatureSensors.map((device) => {
@@ -295,7 +310,7 @@ function getClimateSummary(
 
       return convertTemperatureUnitValue(
         value,
-        normalizeTemperatureUnit(device.unit),
+        resolveAmbientTemperatureSourceUnit(value, normalizeTemperatureUnit(device.unit)),
         options.temperatureUnit ?? 'celsius'
       );
     }),

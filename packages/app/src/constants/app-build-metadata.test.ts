@@ -1,6 +1,7 @@
 import {
   APP_BUILD_METADATA,
   getAppReleaseBadgeLabel,
+  isAppPreV1,
 } from '@navet/app/constants/app-build-metadata';
 import { describe, expect, it } from 'vitest';
 
@@ -15,7 +16,14 @@ describe('APP_BUILD_METADATA', () => {
     });
   });
 
-  it('does not show a release badge for stable or development builds', () => {
-    expect(getAppReleaseBadgeLabel()).toBeNull();
+  it('treats pre-v1 builds as beta even on the development channel', () => {
+    expect(getAppReleaseBadgeLabel()).toBe('Beta');
+  });
+
+  it('detects versions before 1.0.0 as beta lifecycle builds', () => {
+    expect(isAppPreV1('0.6.1')).toBe(true);
+    expect(isAppPreV1('0.9.0-rc.1')).toBe(true);
+    expect(isAppPreV1('1.0.0')).toBe(false);
+    expect(isAppPreV1('1.2.3-beta.1')).toBe(false);
   });
 });

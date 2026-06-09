@@ -70,6 +70,33 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('same_origin');
   });
 
+  it('does not sign standalone OAuth media artwork that already uses the same-origin proxy', async () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const signPath = async () => '/api/media_player_proxy/media_player.living_room?authSig=signed';
+    const resolver = new HomeAssistantResourceResolver(
+      () => ({
+        providerId: 'home_assistant',
+        runtime: oauthSessionFixture.runtime,
+        authMode: oauthSessionFixture.authMode,
+        haBaseUrl: oauthSessionFixture.haBaseUrl,
+        hassUrl: oauthSessionFixture.hassUrl,
+      }),
+      signPath
+    );
+
+    const resource = await resolver.resolve({
+      kind: 'media_artwork',
+      entityId: 'media_player.living_room',
+      rawPath: homeAssistantUrlFixtures.relativeMediaArtwork,
+    });
+
+    expect(resource.url).toBe(
+      `/__navet_ha_proxy__${homeAssistantUrlFixtures.relativeMediaArtwork}`
+    );
+    expect(resource.authStrategy).toBe('same_origin');
+  });
+
   it('rewrites absolute Home Assistant URLs through ingress-aware proxy paths', () => {
     const base = document.createElement('base');
     base.href = `${window.location.origin}${homeAssistantUrlFixtures.ingressBasePath}/`;
