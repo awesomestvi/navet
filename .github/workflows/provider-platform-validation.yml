@@ -1,10 +1,11 @@
-name: Tier 1 Release-Critical Validation
+name: Release Safety Checks
 
 on:
   workflow_call:
 
 jobs:
   tier-1-release-critical:
+    name: Run Release Safety Checks
     runs-on: ubuntu-latest
 
     steps:

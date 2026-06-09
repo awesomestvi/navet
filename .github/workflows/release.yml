@@ -1,4 +1,4 @@
-name: Publish Release Artifacts
+name: Publish Release
 
 on:
   push:
@@ -20,7 +20,7 @@ env:
 
 jobs:
   release-context:
-    name: Validate release surfaces
+    name: Validate Release Files
     runs-on: ubuntu-latest
 
     outputs:
@@ -80,11 +80,12 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   tier-1-release-critical:
+    name: Release Safety Checks
     needs: release-context
     uses: ./.github/workflows/provider-platform-validation.yml
 
   custom-panel-artifact:
-    name: Package built custom panel artifact
+    name: Package Home Assistant Panel
     runs-on: ubuntu-latest
     needs:
       - release-context
@@ -108,7 +109,7 @@ jobs:
           if-no-files-found: error
 
   publish-standalone:
-    name: Publish standalone release image
+    name: Publish Navet App
     runs-on: ubuntu-latest
     needs:
       - release-context
@@ -153,7 +154,7 @@ jobs:
             NAVET_RELEASE_CHANNEL=${{ needs.release-context.outputs.release_channel }}
 
   publish-addon:
-    name: Publish add-on release images
+    name: Publish Home Assistant Add-on (${{ matrix.arch }})
     runs-on: ubuntu-latest
     needs:
       - release-context
@@ -162,13 +163,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: amd64
-            platform: linux/amd64
-            build_from: ghcr.io/home-assistant/amd64-base:3.20
-          - arch: aarch64
-            platform: linux/arm64
-            build_from: ghcr.io/home-assistant/aarch64-base:3.20
+        arch: [amd64, aarch64]
 
     steps:
       - name: Checkout
@@ -177,6 +172,24 @@ jobs:
       - name: Capture build metadata
         id: metadata
         run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve add-on build target
+        id: target
+        run: |
+          case "${{ matrix.arch }}" in
+            amd64)
+              echo "platform=linux/amd64" >> "$GITHUB_OUTPUT"
+              echo "build_from=ghcr.io/home-assistant/amd64-base:3.20" >> "$GITHUB_OUTPUT"
+              ;;
+            aarch64)
+              echo "platform=linux/arm64" >> "$GITHUB_OUTPUT"
+              echo "build_from=ghcr.io/home-assistant/aarch64-base:3.20" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported architecture: ${{ matrix.arch }}"
+              exit 1
+              ;;
+          esac
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -211,12 +224,12 @@ jobs:
         with:
           context: .
           file: ./platform/home-assistant/addons/navet/Dockerfile
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ steps.target.outputs.platform }}
           push: true
           cache-from: type=gha,scope=navet-addon-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }}
           build-args: |
-            BUILD_FROM=${{ matrix.build_from }}
+            BUILD_FROM=${{ steps.target.outputs.build_from }}
             BUILD_VERSION=${{ steps.tags.outputs.version }}
             BUILD_ARCH=${{ matrix.arch }}
             NAVET_GIT_SHA=${{ github.sha }}
@@ -225,7 +238,7 @@ jobs:
           tags: ${{ steps.tags.outputs.value }}
 
   sync-hacs:
-    name: Sync HACS release files
+    name: Sync HACS Integration
     runs-on: ubuntu-latest
     needs:
       - release-context

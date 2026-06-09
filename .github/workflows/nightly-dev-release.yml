@@ -1,4 +1,4 @@
-name: Bump Navet Dev Nightly Version
+name: Publish Navet Dev Nightly
 
 on:
   schedule:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   bump-dev-version:
-    name: Bump Navet Dev nightly version
+    name: Publish Navet Dev Nightly
     runs-on: ubuntu-latest
 
     steps:
