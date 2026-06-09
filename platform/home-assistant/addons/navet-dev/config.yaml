@@ -1,7 +1,7 @@
 name: Navet Dev
-version: "dev"
+version: "0.7.0-dev.20260609"
 slug: navet_dev
-description: Development build of the Navet smart home dashboard
+description: Nightly development build of the Navet smart home dashboard
 url: https://github.com/awesomestvi/navet
 image: ghcr.io/awesomestvi/{arch}-navet-addon
 arch:
@@ -12,6 +12,7 @@ init: false
 ingress: true
 ingress_port: 8099
 homeassistant_api: true
+stage: experimental
 ports:
   8099/tcp: null
 ports_description:

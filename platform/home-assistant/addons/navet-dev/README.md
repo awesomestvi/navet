@@ -5,16 +5,19 @@ This directory is the monorepo source for the add-on published from `awesomestvi
 
 ## Current Behavior
 
-- pulls the `dev` add-on image published by CI
+- pulls the current nightly `Navet Dev` add-on image published by CI
 - uses the authenticated Home Assistant Ingress session
 - does not require manual Home Assistant URL or token entry
 - supports optional `dashboard_config_url` import on first launch
+- exposes a changing nightly add-on version so Home Assistant can detect updates
 
 Published image tag shape:
 
 ```text
-ghcr.io/awesomestvi/{arch}-navet-addon:dev
+ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDD
 ```
+
+CI also refreshes the `dev` and `edge` tags as moving aliases for the same nightly image.
 
 If opened outside Ingress through an optional direct port, Navet behaves like the standalone
 runtime and uses OAuth login instead.

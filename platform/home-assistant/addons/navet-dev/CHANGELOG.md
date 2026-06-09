@@ -1,5 +1,5 @@
 # Changelog
 
-## dev
+## Nightly
 
-- Added a separate development add-on entry that tracks the `dev` GHCR image tag.
+- Navet Dev now uses a nightly versioned add-on release so Home Assistant can detect updates.

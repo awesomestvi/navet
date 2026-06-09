@@ -159,7 +159,10 @@ internal, or release-only changes into the fewest useful user-facing bullets.
   and `sha-*`.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
-- Home Assistant add-on images publish `edge`, temporary `dev`, and `sha-*` on `main` pushes.
+- Home Assistant add-on images publish moving `edge`, temporary `dev`, and `sha-*` tags on `main`
+  pushes.
+- The nightly `Navet Dev` workflow publishes the exact `0.x.y-dev.YYYYMMDD` add-on version tag and
+  refreshes the `edge` and `dev` aliases to the same nightly image.
 - Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
   archive to the GitHub release.

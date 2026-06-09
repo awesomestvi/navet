@@ -62,6 +62,7 @@ repo must not contain `repository.yaml`.
 ## Channels
 
 - `edge`: published from `main`
+- `dev`: nightly `Navet Dev` add-on metadata and image tag published for Home Assistant update detection
 - `beta`: published from prerelease tags
 - `latest`: published from stable tags only
 - `sha-*`: immutable publish trace for every artifact push
@@ -109,12 +110,29 @@ Behavior:
 
 - requires Tier 1 validation
 - publishes standalone app edge artifacts
-- publishes add-on edge artifacts
+- publishes add-on edge artifacts for the moving `edge` and `dev` aliases
 - exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
 - uses a GitHub App token for `awesomestvi/navet-hacs` checkout and push
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - does not create a GitHub release
 - does not update `latest`
+
+### Navet Dev nightly bump
+
+`/.github/workflows/nightly-dev-release.yml`
+
+Trigger:
+
+- nightly schedule
+- manual dispatch
+
+Behavior:
+
+- computes a `package-version` based nightly add-on version such as `0.7.0-dev.20260609`
+- writes that version into `platform/home-assistant/addons/navet-dev/config.yaml`
+- builds and pushes matching `Navet Dev` nightly add-on images for both supported architectures
+- refreshes the moving `edge` and `dev` aliases to the same nightly image
+- pushes the version bump commit to `main`
 
 ### Release publish
 

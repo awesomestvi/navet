@@ -1,5 +1,8 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
-import { APP_BUILD_METADATA } from '@navet/app/constants/app-build-metadata';
+import {
+  APP_BUILD_METADATA,
+  getAppBuildChannelLabel,
+} from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useI18n } from '@navet/app/hooks';
 import { ExternalLink, FileText, Info, Scale } from 'lucide-react';
@@ -80,10 +83,9 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
   const { setShowLicense, setShowTerms, showLicense, showTerms, styles } = controller;
   const buildDate = APP_BUILD_METADATA.buildDate.slice(0, 10);
   const buildMeta = [
-    APP_BUILD_METADATA.releaseChannel,
+    getAppBuildChannelLabel(APP_VERSION),
     APP_BUILD_METADATA.gitShaShort,
     buildDate,
-    `config v${APP_BUILD_METADATA.dashboardConfigVersion}`,
   ].join(' · ');
 
   return (

@@ -1,5 +1,6 @@
 import {
   APP_BUILD_METADATA,
+  getAppBuildChannelLabel,
   getAppReleaseBadgeLabel,
   isAppPreV1,
 } from '@navet/app/constants/app-build-metadata';
@@ -25,5 +26,13 @@ describe('APP_BUILD_METADATA', () => {
     expect(isAppPreV1('0.9.0-rc.1')).toBe(true);
     expect(isAppPreV1('1.0.0')).toBe(false);
     expect(isAppPreV1('1.2.3-beta.1')).toBe(false);
+  });
+
+  it('maps development-style channels to the nightly build label', () => {
+    expect(getAppBuildChannelLabel()).toBe('Nightly');
+  });
+
+  it('uses stable as the fallback build label for stable versions', () => {
+    expect(getAppBuildChannelLabel('1.0.0')).toBe('Stable');
   });
 });

@@ -38,3 +38,22 @@ export function getAppReleaseBadgeLabel(version = APP_VERSION) {
       return null;
   }
 }
+
+export function getAppBuildChannelLabel(version = APP_VERSION) {
+  switch (APP_BUILD_METADATA.releaseChannel) {
+    case 'edge':
+    case 'development':
+    case 'dev':
+      return 'Nightly';
+    case 'beta':
+      return 'Beta';
+    case 'stable':
+      return 'Stable';
+    default:
+      if (version.includes('-beta') || version.includes('-rc') || isAppPreV1(version)) {
+        return 'Beta';
+      }
+
+      return 'Stable';
+  }
+}
