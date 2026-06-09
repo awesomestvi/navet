@@ -222,7 +222,17 @@ describe('SecurityPanelCard', () => {
       />
     );
 
-    expect(screen.getByText('Emergency Trigger').className).toContain('emerald');
-    expect(screen.getByText('Emergency Trigger').className).not.toContain('red-');
+    const emergencyTrigger = screen.getByText('Emergency Trigger');
+
+    expect(emergencyTrigger.className).not.toContain('indigo');
+    expect(emergencyTrigger.getAttribute('style')).toContain('border-color');
+  });
+
+  it('uses the medium-style horizontal action buttons for large cards', () => {
+    renderWithProviders(<SecurityPanelCard alarms={[singleAlarm]} size="large" />);
+
+    expect(screen.getByRole('button', { name: 'Arm Away' }).className).toContain('flex-row');
+    expect(screen.getByRole('button', { name: 'Arm Away' }).className).toContain('justify-start');
+    expect(screen.getByRole('button', { name: 'Arm Away' }).className).toContain('rounded-full');
   });
 });

@@ -61,7 +61,8 @@ export function mapVacuumDevice(
     room,
     size: 'medium',
     status: normalizedStatus,
-    battery: typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : 0,
+    battery:
+      typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
     cleanedArea:
       typeof cleanedAreaValue === 'number'
         ? `${cleanedAreaValue.toFixed(cleanedAreaValue >= 10 ? 0 : 1)} m²`

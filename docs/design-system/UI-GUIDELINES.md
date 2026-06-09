@@ -25,6 +25,10 @@ Rules:
 - resolve shared surfaces through theme helpers before writing feature-local theme branches
 - keep `black` as a distinct high-contrast treatment
 - use readable-text and surface-token helpers for tinted or accent-heavy surfaces
+- keep card backgrounds theme-aware: `dark` and `black` should remain dark surfaces, while `glass` is the only theme that should use frosted or translucent glass-like card treatments
+- when adding semantic or accent state styling, tint the current theme surface with border, glow, overlay, or text changes instead of replacing it with a different surface family
+- when a card appears inside an established dashboard lane or neighboring card group, match the adjacent cards' surface treatment for the active theme before introducing any custom state styling
+- custom state styling should layer on top of the inherited lane/card surface recipe, not replace it with a separate material treatment unless the exception is intentional and documented
 
 ## Shared Foundations
 

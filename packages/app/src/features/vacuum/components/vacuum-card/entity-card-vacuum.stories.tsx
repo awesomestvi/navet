@@ -31,7 +31,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['small', 'medium'],
+      options: ['small', 'medium', 'large'],
     },
     status: {
       control: 'select',
@@ -133,6 +133,37 @@ export const PausedAttention: Story = {
     battery: 56,
     cleanedArea: '51 m²',
     cleaningTime: '46 min',
+    size: 'medium',
+  },
+};
+
+export const PartialCapabilities: Story = {
+  args: {
+    status: 'idle',
+    battery: undefined,
+    cleanedArea: undefined,
+    cleaningTime: undefined,
+    size: 'medium',
+  },
+};
+
+export const Unavailable: Story = {
+  args: {
+    status: 'idle',
+    availability: 'unavailable',
+    battery: undefined,
+    cleanedArea: undefined,
+    cleaningTime: undefined,
+    size: 'medium',
+  },
+};
+
+export const Returning: Story = {
+  args: {
+    status: 'returning',
+    battery: 63,
+    cleanedArea: '29 m²',
+    cleaningTime: '24 min',
     size: 'medium',
   },
 };

@@ -523,4 +523,31 @@ describe('homeassistant-mappers', () => {
       }),
     ]);
   });
+
+  it('preserves Home Assistant vacuum supported_features in normalized state', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'vacuum.roborock': makeEntity('vacuum.roborock', 'idle', {
+          friendly_name: 'Roborock',
+          supported_features: 4 | 16 | 32 | 512 | 1024 | 8192,
+          cleaned_area_today: 0,
+          clean_time: 0,
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities).toEqual([
+      expect.objectContaining({
+        externalId: 'vacuum.roborock',
+        attributes: expect.objectContaining({
+          supportedFeatures: 4 | 16 | 32 | 512 | 1024 | 8192,
+          cleanedArea: '0.0 m²',
+          cleaningTime: '0 min',
+        }),
+      }),
+    ]);
+  });
 });

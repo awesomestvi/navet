@@ -1,8 +1,9 @@
 import { CardDialogChoicePill, CardDialogSection } from '@navet/app/components/patterns';
 import { Button } from '@navet/app/components/primitives';
 import { useI18n } from '@navet/app/hooks';
-import { Home, Pause, Play } from 'lucide-react';
+import { Home, Pause, Play, Square } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import type { VacuumCapabilities } from './vacuum-features';
 import type { VacuumStatus } from './vacuum-utils';
 
 type CleaningMode = 'auto' | 'spot' | 'edge' | 'room';
@@ -13,10 +14,14 @@ interface VacuumCleaningControlsProps {
   fanSpeed: string;
   onFanSpeedChange: (speed: string) => void;
   fanSpeedOptions: string[];
+  supportsFanSpeed: boolean;
+  isUpdatingFanSpeed?: boolean;
   currentStatus: VacuumStatus;
   onStartCleaning: () => void;
   onPauseCleaning?: () => void;
+  onStopCleaning?: () => void;
   onReturnHome: () => void;
+  capabilities?: VacuumCapabilities;
   activePillStyle?: CSSProperties;
   softControlStyle?: CSSProperties;
   activeControlColor: string;
@@ -29,10 +34,14 @@ export function VacuumCleaningControls({
   fanSpeed,
   onFanSpeedChange,
   fanSpeedOptions,
+  supportsFanSpeed,
+  isUpdatingFanSpeed = false,
   currentStatus,
   onStartCleaning,
   onPauseCleaning,
+  onStopCleaning,
   onReturnHome,
+  capabilities,
   activePillStyle,
   softControlStyle,
   activeControlColor,
@@ -40,14 +49,21 @@ export function VacuumCleaningControls({
 }: VacuumCleaningControlsProps) {
   const { t } = useI18n();
   const isRunning = currentStatus === 'cleaning' || currentStatus === 'mopping';
+  const shouldStop = Boolean(capabilities?.canStop);
 
   const primaryActionLabel = isRunning
-    ? t('vacuum.action.pause')
+    ? shouldStop
+      ? t('vacuum.action.stop')
+      : t('vacuum.action.pause')
     : t('vacuum.action.startCleaning');
 
   const handlePrimaryAction = () => {
     if (isRunning) {
-      onPauseCleaning?.();
+      if (shouldStop) {
+        onStopCleaning?.();
+      } else {
+        onPauseCleaning?.();
+      }
     } else {
       onStartCleaning();
     }
@@ -72,29 +88,45 @@ export function VacuumCleaningControls({
         </div>
       </CardDialogSection>
 
-      <CardDialogSection label={t('vacuum.settings.fanSpeed')} className="mb-0">
-        <div className="flex flex-wrap gap-2">
-          {fanSpeedOptions.map((speed) => (
-            <CardDialogChoicePill
-              key={speed}
-              active={fanSpeed === speed}
-              onClick={() => onFanSpeedChange(speed)}
-              size="compact"
-              className="min-w-18"
-              style={fanSpeed === speed ? activePillStyle : undefined}
-            >
-              {speed}
-            </CardDialogChoicePill>
-          ))}
-        </div>
-      </CardDialogSection>
+      {supportsFanSpeed ? (
+        <CardDialogSection label={t('vacuum.settings.fanSpeed')} className="mb-0">
+          <div className="flex flex-wrap gap-2">
+            {fanSpeedOptions.map((speed) => (
+              <CardDialogChoicePill
+                key={speed}
+                active={fanSpeed === speed}
+                onClick={() => {
+                  if (!isUpdatingFanSpeed) {
+                    onFanSpeedChange(speed);
+                  }
+                }}
+                size="compact"
+                className="min-w-18"
+                style={fanSpeed === speed ? activePillStyle : undefined}
+              >
+                {speed}
+              </CardDialogChoicePill>
+            ))}
+          </div>
+        </CardDialogSection>
+      ) : null}
 
       <CardDialogSection label={t('vacuum.settings.actions')} className="mb-0">
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
             variant="primary"
             size="default"
-            leading={isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            leading={
+              isRunning ? (
+                shouldStop ? (
+                  <Square className="h-4 w-4" />
+                ) : (
+                  <Pause className="h-4 w-4" />
+                )
+              ) : (
+                <Play className="h-4 w-4" />
+              )
+            }
             onClick={handlePrimaryAction}
             style={{ backgroundColor: activeControlColor }}
           >

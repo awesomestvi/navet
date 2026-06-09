@@ -25,12 +25,39 @@ vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: async ({
     type,
     entityId,
+    fanSpeed,
   }: {
-    type: 'start' | 'stop' | 'return_home';
+    type:
+      | 'start'
+      | 'pause'
+      | 'stop'
+      | 'return_home'
+      | 'locate'
+      | 'clean_spot'
+      | 'set_vacuum_fan_speed';
     entityId: string;
+    fanSpeed?: string;
   }) => {
-    const service = type === 'start' ? 'start' : type === 'stop' ? 'pause' : 'return_to_base';
-    await serviceMock.callService('vacuum', service, {}, { entity_id: entityId });
+    const service =
+      type === 'start'
+        ? 'start'
+        : type === 'pause'
+          ? 'pause'
+          : type === 'stop'
+            ? 'stop'
+            : type === 'return_home'
+              ? 'return_to_base'
+              : type === 'locate'
+                ? 'locate'
+                : type === 'clean_spot'
+                  ? 'clean_spot'
+                  : 'set_fan_speed';
+    await serviceMock.callService(
+      'vacuum',
+      service,
+      type === 'set_vacuum_fan_speed' ? { fan_speed: fanSpeed } : {},
+      { entity_id: entityId }
+    );
     return {
       accepted: true,
       requiresEventConfirmation: true,
@@ -77,6 +104,24 @@ describe('useVacuumControl', () => {
     );
   });
 
+  it('stops cleaning through the documented Home Assistant vacuum.stop service', () => {
+    const { result } = renderHookWithProviders(() =>
+      useVacuumControl({
+        entityId: dreameFixtures.vacuum.entity_id,
+        initialStatus: 'cleaning',
+      })
+    );
+
+    act(() => result.current.handleStop());
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'vacuum',
+      'stop',
+      {},
+      { entity_id: dreameFixtures.vacuum.entity_id }
+    );
+  });
+
   it('returns the vacuum to base through the documented Home Assistant service', () => {
     const { result } = renderHookWithProviders(() =>
       useVacuumControl({
@@ -93,5 +138,92 @@ describe('useVacuumControl', () => {
       {},
       { entity_id: vacuumEntityFixtures.normal.entity_id }
     );
+  });
+
+  it('locates the vacuum through the documented Home Assistant service', () => {
+    const { result } = renderHookWithProviders(() =>
+      useVacuumControl({
+        entityId: vacuumEntityFixtures.normal.entity_id,
+        initialStatus: 'idle',
+      })
+    );
+
+    act(() => result.current.handleLocate());
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'vacuum',
+      'locate',
+      {},
+      { entity_id: vacuumEntityFixtures.normal.entity_id }
+    );
+  });
+
+  it('starts a spot clean through the documented Home Assistant service', () => {
+    const { result } = renderHookWithProviders(() =>
+      useVacuumControl({
+        entityId: vacuumEntityFixtures.normal.entity_id,
+        initialStatus: 'idle',
+      })
+    );
+
+    act(() => result.current.handleCleanSpot());
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'vacuum',
+      'clean_spot',
+      {},
+      { entity_id: vacuumEntityFixtures.normal.entity_id }
+    );
+  });
+
+  it('sets vacuum fan speed through the documented Home Assistant service', async () => {
+    const { result } = renderHookWithProviders(() =>
+      useVacuumControl({
+        entityId: vacuumEntityFixtures.normal.entity_id,
+        initialStatus: 'idle',
+        currentFanSpeed: 'quiet',
+      })
+    );
+
+    await act(async () => {
+      result.current.handleSetFanSpeed('turbo');
+      await Promise.resolve();
+    });
+
+    expect(result.current.displayFanSpeed).toBe('turbo');
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'vacuum',
+      'set_fan_speed',
+      { fan_speed: 'turbo' },
+      { entity_id: vacuumEntityFixtures.normal.entity_id }
+    );
+  });
+
+  it('clears the optimistic fan speed once live state catches up', async () => {
+    const { result, rerender } = renderHookWithProviders(
+      ({ currentFanSpeed }: { currentFanSpeed?: string }) =>
+        useVacuumControl({
+          entityId: vacuumEntityFixtures.normal.entity_id,
+          initialStatus: 'idle',
+          currentFanSpeed,
+        }),
+      {
+        initialProps: { currentFanSpeed: 'quiet' },
+      }
+    );
+
+    await act(async () => {
+      result.current.handleSetFanSpeed('turbo');
+      await Promise.resolve();
+    });
+    expect(result.current.displayFanSpeed).toBe('turbo');
+
+    await act(async () => {
+      rerender({ currentFanSpeed: 'turbo' });
+      await Promise.resolve();
+    });
+
+    expect(result.current.displayFanSpeed).toBe('turbo');
+    expect(result.current.isUpdatingFanSpeed).toBe(false);
   });
 });

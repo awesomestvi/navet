@@ -195,7 +195,7 @@ function StateMatrixExtendedPage() {
           battery={32}
           cleanedArea="42 m2"
           cleaningTime="38 min"
-          size="large"
+          size="medium"
           onSizeChange={() => {}}
           isEditMode={false}
         />

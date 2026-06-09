@@ -541,7 +541,7 @@ describe('SecurityCameraDashboard', () => {
     );
   });
 
-  it('limits the now-lane alarm card to large and extra-large spans', () => {
+  it('limits the now-lane alarm card to medium and large spans', () => {
     const model = renderDashboardModelWithAlerts();
 
     const { rerender } = renderWithProviders(
@@ -568,7 +568,7 @@ describe('SecurityCameraDashboard', () => {
     );
 
     expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
-      'col-span-4 row-span-4'
+      'col-span-4 row-span-2'
     );
 
     rerender(
@@ -587,7 +587,7 @@ describe('SecurityCameraDashboard', () => {
         ]}
         isEditMode
         cardSizes={{
-          'security.now.alarm': 'extra-large',
+          'security.now.alarm': 'large',
         }}
         updateCardSize={vi.fn()}
         surface={getThemeSurfaceTokens('glass')}
@@ -595,7 +595,7 @@ describe('SecurityCameraDashboard', () => {
     );
 
     expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
-      'col-span-6 row-span-4'
+      'col-span-4 row-span-4'
     );
   });
 

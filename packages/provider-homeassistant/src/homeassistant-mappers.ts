@@ -1003,20 +1003,37 @@ function createHomeAssistantState(
       readNumberish(entity.attributes?.battery_level) ??
       readNumberish(entity.attributes?.battery) ??
       readNumberish(entity.attributes?.battery_percent);
+    const cleanedAreaValue =
+      readNumberish(entity.attributes?.cleaned_area) ??
+      readNumberish(entity.attributes?.cleaned_area_today) ??
+      readNumberish(entity.attributes?.last_cleaned_area);
+    const cleaningTimeMinutes =
+      readNumberish(entity.attributes?.cleaning_time) ??
+      readNumberish(entity.attributes?.clean_time) ??
+      readNumberish(entity.attributes?.cleaning_duration);
 
     return {
       ...commonState,
       value: entity.state,
       status: normalizeVacuumStatus(entity.attributes?.status ?? entity.state),
-      battery: typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : 0,
+      battery:
+        typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
       cleanedArea:
-        typeof entity.attributes?.cleaned_area === 'number'
-          ? `${entity.attributes.cleaned_area} m²`
+        typeof cleanedAreaValue === 'number'
+          ? `${cleanedAreaValue.toFixed(cleanedAreaValue >= 10 ? 0 : 1)} m²`
           : undefined,
       cleaningTime:
-        typeof entity.attributes?.cleaning_time === 'number'
-          ? `${Math.round(entity.attributes.cleaning_time)} min`
+        typeof cleaningTimeMinutes === 'number'
+          ? `${Math.max(0, Math.round(cleaningTimeMinutes))} min`
           : undefined,
+      fanSpeed:
+        typeof entity.attributes?.fan_speed === 'string' ? entity.attributes.fan_speed : undefined,
+      fanSpeedList:
+        readStringList(
+          entity.attributes?.fan_speed_list ??
+            entity.attributes?.fan_speeds ??
+            entity.attributes?.preset_modes
+        ) ?? undefined,
       nextCleaning:
         typeof entity.attributes?.next_cleaning === 'string'
           ? entity.attributes.next_cleaning
@@ -1031,6 +1048,7 @@ function createHomeAssistantState(
         typeof entity.attributes?.bin_level === 'number'
           ? entity.attributes.bin_level
           : undefined,
+      supportedFeatures: readNumberish(entity.attributes?.supported_features),
       size: 'medium',
     };
   }

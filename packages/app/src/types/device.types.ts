@@ -267,7 +267,7 @@ export interface VacuumDevice extends BaseDevice {
     | 'paused'
     | 'idle'
     | 'error';
-  battery: number;
+  battery?: number;
   cleanedArea?: string;
   cleaningTime?: string;
   nextCleaning?: string;

@@ -37,7 +37,9 @@ interface VacuumSettingsDialogProps {
   onClose: () => void;
   onStartCleaning: () => void;
   onPauseCleaning?: () => void;
+  onStopCleaning?: () => void;
   onReturnHome: () => void;
+  onSetFanSpeed?: (fanSpeed: string) => void;
   name: string;
   room: string;
   theme: ThemeType;
@@ -49,6 +51,9 @@ interface VacuumSettingsDialogProps {
   cleaningMode?: CleaningMode;
   fanSpeed?: string;
   fanSpeeds?: string[];
+  supportsFanSpeed?: boolean;
+  isUpdatingFanSpeed?: boolean;
+  capabilities?: import('./vacuum-features').VacuumCapabilities;
   availableRooms?: string[];
   availableZones?: string[];
   tintColor?: string;
@@ -61,18 +66,23 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   onClose,
   onStartCleaning,
   onPauseCleaning,
+  onStopCleaning,
   onReturnHome,
+  onSetFanSpeed,
   name,
   room,
   theme,
   accentColorValue,
   currentStatus = 'idle',
-  battery = 0,
-  cleanedArea = '0 m²',
-  cleaningTime = '0 min',
+  battery,
+  cleanedArea,
+  cleaningTime,
   cleaningMode = 'auto',
   fanSpeed,
   fanSpeeds,
+  supportsFanSpeed = true,
+  isUpdatingFanSpeed = false,
+  capabilities,
   availableRooms,
   availableZones,
   tintColor,
@@ -91,13 +101,15 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
     () => (availableZones?.length ? availableZones : EMPTY_TARGETS),
     [availableZones]
   );
-  const speedOptions = useMemo(
-    () =>
-      fanSpeeds?.length
-        ? fanSpeeds
-        : [t('vacuum.speed.quiet'), t('vacuum.speed.standard'), t('vacuum.speed.max')],
-    [fanSpeeds, t]
-  );
+  const speedOptions = useMemo(() => {
+    if (!supportsFanSpeed) {
+      return [];
+    }
+
+    return fanSpeeds?.length
+      ? fanSpeeds
+      : [t('vacuum.speed.quiet'), t('vacuum.speed.standard'), t('vacuum.speed.max')];
+  }, [fanSpeeds, supportsFanSpeed, t]);
   const initialPlannerView = useMemo<PlannerView>(
     () => (roomTargets.length > 0 ? 'rooms' : zoneTargets.length > 0 ? 'zones' : 'all'),
     [roomTargets.length, zoneTargets.length]
@@ -124,6 +136,10 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
         : roomTargets.length;
 
   useEffect(() => {
+    setSelectedFanSpeed(fanSpeed ?? speedOptions[1] ?? speedOptions[0] ?? '');
+  }, [fanSpeed, speedOptions]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }
@@ -137,7 +153,6 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   }, [
     accentColorValue,
     cleaningMode,
-    fanSpeed,
     initialPlannerView,
     isOpen,
     roomTargets,
@@ -148,7 +163,9 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
 
   const primaryActionLabel =
     currentStatus === 'cleaning' || currentStatus === 'mopping'
-      ? t('vacuum.action.pause')
+      ? capabilities?.canStop
+        ? t('vacuum.action.stop')
+        : t('vacuum.action.pause')
       : t('vacuum.action.startCleaning');
   const formatTargetCount = (count: number) =>
     `${count} ${count === 1 ? t('vacuum.settings.room') : t('vacuum.plan.rooms')}`;
@@ -260,12 +277,19 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 cleaningMode={selectedCleaningMode}
                 onCleaningModeChange={setSelectedCleaningMode}
                 fanSpeed={selectedFanSpeed}
-                onFanSpeedChange={setSelectedFanSpeed}
+                onFanSpeedChange={(speed) => {
+                  setSelectedFanSpeed(speed);
+                  onSetFanSpeed?.(speed);
+                }}
                 fanSpeedOptions={speedOptions}
+                supportsFanSpeed={supportsFanSpeed}
+                isUpdatingFanSpeed={isUpdatingFanSpeed}
                 currentStatus={currentStatus}
                 onStartCleaning={onStartCleaning}
                 onPauseCleaning={onPauseCleaning}
+                onStopCleaning={onStopCleaning}
                 onReturnHome={onReturnHome}
+                capabilities={capabilities}
                 activePillStyle={activePillStyle}
                 softControlStyle={softControlStyle}
                 activeControlColor={activeControlColor}

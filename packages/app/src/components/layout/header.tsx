@@ -5,11 +5,13 @@ import { Bell, CalendarDays, Check, Clock3, Edit3, Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { HeaderDesktopActions } from './header-actions';
 import { HeaderSearchInput } from './header-search-input';
+import { resolveHeaderTitle } from './header-title';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
 import { MobileHeaderCommandSheet } from './mobile-header-command-sheet';
 import { getMobileHeaderActionAvailability } from './mobile-layout-helpers';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
 import { type HeaderController, useHeaderController } from './use-header-controller';
+import { useHeaderDateTime } from './use-header-datetime';
 import { UserDropdown } from './user-dropdown';
 
 interface HeaderProps {
@@ -37,12 +39,11 @@ function HeaderView({
     closeNotifications,
     desktopNotificationButtonRef,
     dividerColor,
-    formattedDate,
-    formattedTime,
+    firstName,
     handleClearSearch,
     handleSearchChange,
-    headerSecondaryText,
-    headerTitleText,
+    headerCustomText,
+    headerTitleMode,
     hoverBg,
     inputBg,
     isMobileUtilityOpen,
@@ -56,13 +57,32 @@ function HeaderView({
     setIsMobileUtilityOpen,
     setIsNotificationOpen,
     setIsSearchFocused,
-    showTimeMetadata,
     t,
     textPrimary,
     textSecondary,
     unreadCount,
-    weekNumber,
   } = controller;
+  const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();
+  const greetingText = useMemo(
+    () => t(greetingKey, { name: firstName }),
+    [firstName, greetingKey, t]
+  );
+  const weekLabel = useMemo(() => t('header.weekLabel', { week: weekNumber }), [t, weekNumber]);
+  const headerTitle = useMemo(
+    () =>
+      resolveHeaderTitle({
+        mode: headerTitleMode,
+        customText: headerCustomText,
+        formattedDate,
+        formattedTime,
+        greetingText,
+      }),
+    [formattedDate, formattedTime, greetingText, headerCustomText, headerTitleMode]
+  );
+  const headerSecondaryText =
+    headerTitle.mode === 'clock' ? `${greetingText} · ${weekLabel}` : headerTitle.secondaryText;
+  const showTimeMetadata = headerTitle.showTimeMetadata;
+  const headerTitleText = headerTitle.text;
 
   return (
     <>

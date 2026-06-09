@@ -15,7 +15,7 @@ import {
   MessageBar,
 } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
+import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
 import type { NavetAlarmAction, NavetAlarmEntity } from '@navet/core/alarm-types';
 import {
@@ -48,9 +49,12 @@ import {
   Unlock,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
+import {
+  getSecurityCardSurfaceTokens,
+  getSecurityStateSurfaceProps,
+} from './security-card-surface-tokens';
 
 interface SecurityPanelCardProps {
   alarms: NavetAlarmEntity[];
@@ -127,97 +131,243 @@ function getAlarmStateLabel(state: NavetAlarmEntity['state']) {
 
 function getAlarmStateTone(state: NavetAlarmEntity['state']) {
   switch (state) {
-    case 'triggered':
-      return 'red' as const;
-    case 'pending':
-    case 'disarming':
     case 'disarmed':
-      return 'red' as const;
-    case 'arming':
+      return 'neutral' as const;
     case 'armed_away':
     case 'armed_home':
     case 'armed_night':
     case 'armed_vacation':
     case 'armed_custom_bypass':
-      return 'green' as const;
+      return 'primary' as const;
+    case 'pending':
+    case 'arming':
+    case 'disarming':
+      return 'yellow' as const;
+    case 'triggered':
+      return 'red' as const;
     case 'unavailable':
     case 'unknown':
       return 'neutral' as const;
   }
 }
 
-function getEmergencyTriggerClassName(
+function getAlarmStatePalette(
   state: NavetAlarmEntity['state'],
-  theme: ReturnType<typeof useTheme>['theme']
+  theme: ThemeType,
+  accentColor?: string
 ) {
   const tone = getAlarmStateTone(state);
 
-  if (tone === 'green') {
+  if (tone === 'primary') {
+    const tintColor = accentColor ?? '#f97316';
+
     if (theme === 'light') {
-      return 'border-emerald-300/80 bg-emerald-50/88 text-emerald-700 hover:bg-emerald-100/92';
+      return {
+        pillClassName: 'text-slate-900 hover:bg-white/96',
+        pillStyle: {
+          backgroundColor: withTintAlpha(tintColor, 0.14),
+          borderColor: withTintAlpha(tintColor, 0.28),
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.78), 0 10px 24px -20px ${withTintAlpha(
+            tintColor,
+            0.3
+          )}`,
+        },
+      };
     }
 
     if (theme === 'glass') {
-      return 'border-emerald-300/22 bg-emerald-500/14 text-emerald-100 hover:bg-emerald-500/20';
+      return {
+        pillClassName: 'text-white hover:bg-white/16',
+        pillStyle: {
+          backgroundColor: withTintAlpha(tintColor, 0.16),
+          borderColor: withTintAlpha(tintColor, 0.24),
+          boxShadow: `0 12px 28px -22px ${withTintAlpha(tintColor, 0.34)}`,
+        },
+      };
     }
 
-    return 'border-emerald-400/24 bg-emerald-900/34 text-emerald-100 hover:bg-emerald-900/46';
+    return {
+      pillClassName: 'text-white hover:bg-white/12',
+      pillStyle: {
+        backgroundColor: withTintAlpha(tintColor, theme === 'black' ? 0.18 : 0.14),
+        borderColor: withTintAlpha(tintColor, theme === 'black' ? 0.26 : 0.24),
+        boxShadow: `0 12px 28px -24px ${withTintAlpha(tintColor, 0.28)}`,
+      },
+    };
+  }
+
+  if (tone === 'yellow') {
+    if (theme === 'light') {
+      return {
+        pillClassName: 'border-amber-300/80 bg-amber-50/88 text-amber-700 hover:bg-amber-100/92',
+        frameGradient: 'from-amber-100 via-white to-orange-50',
+        frameBorder: 'border-amber-200/80',
+        glow: 'from-amber-300/28',
+      };
+    }
+
+    if (theme === 'glass') {
+      return {
+        pillClassName: 'border-amber-300/22 bg-amber-500/14 text-amber-100 hover:bg-amber-500/20',
+        frameGradient: 'from-amber-500/18 via-white/8 to-orange-500/12',
+        frameBorder: 'border-amber-300/22',
+        glow: 'from-amber-300/18',
+      };
+    }
+
+    return {
+      pillClassName: 'border-amber-400/24 bg-amber-900/34 text-amber-100 hover:bg-amber-900/46',
+      frameGradient: 'from-amber-950 via-zinc-950 to-orange-900/72',
+      frameBorder: 'border-amber-400/24',
+      glow: 'from-amber-400/16',
+    };
   }
 
   if (tone === 'neutral') {
     if (theme === 'light') {
-      return 'border-slate-300/80 bg-slate-50/88 text-slate-700 hover:bg-slate-100/92';
+      return {
+        pillClassName: 'border-slate-300/80 bg-slate-50/88 text-slate-700 hover:bg-slate-100/92',
+        frameGradient: 'from-slate-100 via-white to-slate-50',
+        frameBorder: 'border-slate-200/80',
+        glow: 'from-slate-300/18',
+      };
     }
 
     if (theme === 'glass') {
-      return 'border-white/18 bg-white/10 text-white/92 hover:bg-white/14';
+      return {
+        pillClassName: 'border-white/18 bg-white/10 text-white/92 hover:bg-white/14',
+        frameGradient: 'from-slate-500/16 via-white/8 to-slate-400/10',
+        frameBorder: 'border-white/18',
+        glow: 'from-white/10',
+      };
     }
 
-    return 'border-white/14 bg-white/8 text-white/92 hover:bg-white/12';
+    return {
+      pillClassName: 'border-white/14 bg-white/8 text-white/92 hover:bg-white/12',
+      frameGradient: 'from-zinc-900 via-black to-slate-950/72',
+      frameBorder: 'border-white/14',
+      glow: 'from-white/8',
+    };
   }
 
   if (theme === 'light') {
-    return 'border-red-300/80 bg-red-50/88 text-red-700 hover:bg-red-100/92';
+    return {
+      pillClassName: 'border-red-300/80 bg-red-50/88 text-red-700 hover:bg-red-100/92',
+      frameGradient: 'from-red-100 via-white to-rose-50',
+      frameBorder: 'border-red-200/80',
+      glow: 'from-red-300/30',
+    };
   }
 
   if (theme === 'glass') {
-    return 'border-red-300/22 bg-red-500/14 text-red-100 hover:bg-red-500/20';
+    return {
+      pillClassName: 'border-red-300/22 bg-red-500/14 text-red-100 hover:bg-red-500/20',
+      frameGradient: 'from-red-500/18 via-white/8 to-rose-500/12',
+      frameBorder: 'border-red-300/22',
+      glow: 'from-red-300/18',
+    };
   }
 
-  return 'border-red-400/24 bg-red-900/34 text-red-100 hover:bg-red-900/46';
+  return {
+    pillClassName: 'border-red-400/24 bg-red-900/34 text-red-100 hover:bg-red-900/46',
+    frameGradient: 'from-red-950 via-zinc-950 to-rose-900/72',
+    frameBorder: 'border-red-400/24',
+    glow: 'from-red-400/16',
+  };
 }
 
-function isAlarmArmed(state: NavetAlarmEntity['state']) {
-  return (
-    state === 'armed_home' ||
-    state === 'armed_away' ||
-    state === 'armed_night' ||
-    state === 'armed_vacation' ||
-    state === 'armed_custom_bypass'
-  );
+function getAlarmToneBaseColor(tone: ReturnType<typeof getAlarmStateTone>, accentColor?: string) {
+  switch (tone) {
+    case 'primary':
+      return accentColor ?? '#f97316';
+    case 'yellow':
+      return '#f59e0b';
+    case 'red':
+      return '#ef4444';
+    default:
+      return '#64748b';
+  }
+}
+
+function getAlarmActionStyles({
+  alarmState,
+  theme,
+  accentColor,
+  selected,
+  destructive,
+}: {
+  alarmState: NavetAlarmEntity['state'];
+  theme: ThemeType;
+  accentColor?: string;
+  selected: boolean;
+  destructive: boolean;
+}) {
+  const tone = destructive ? 'red' : getAlarmStateTone(alarmState);
+  const baseColor = getAlarmToneBaseColor(tone, accentColor);
+
+  const buttonStyle: CSSProperties =
+    theme === 'light'
+      ? {
+          backgroundColor: withTintAlpha(baseColor, selected ? 0.24 : 0.08),
+          borderColor: withTintAlpha(baseColor, selected ? 0.46 : 0.18),
+          color: tone === 'neutral' ? '#334155' : tone === 'red' ? '#991b1b' : '#0f172a',
+          boxShadow: selected
+            ? `0 16px 32px -22px ${withTintAlpha(baseColor, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.82), inset 0 0 0 1px ${withTintAlpha(baseColor, 0.18)}`
+            : `inset 0 1px 0 rgba(255,255,255,0.55)`,
+        }
+      : {
+          backgroundColor: withTintAlpha(baseColor, selected ? 0.24 : 0.1),
+          borderColor: withTintAlpha(baseColor, selected ? 0.42 : 0.18),
+          color: 'rgba(255,255,255,0.96)',
+          boxShadow: selected
+            ? `0 18px 34px -24px ${withTintAlpha(baseColor, 0.34)}, inset 0 0 0 1px ${withTintAlpha(
+                baseColor,
+                0.16
+              )}`
+            : 'none',
+        };
+
+  const iconStyle: CSSProperties =
+    theme === 'light'
+      ? {
+          backgroundColor: withTintAlpha(baseColor, selected ? 0.22 : 0.1),
+          borderColor: withTintAlpha(baseColor, selected ? 0.36 : 0.16),
+          color: tone === 'neutral' ? '#475569' : tone === 'red' ? '#b91c1c' : '#0f172a',
+        }
+      : {
+          backgroundColor: withTintAlpha(baseColor, selected ? 0.22 : 0.12),
+          borderColor: withTintAlpha(baseColor, selected ? 0.34 : 0.16),
+          color: 'rgba(255,255,255,0.96)',
+        };
+
+  return { buttonStyle, iconStyle };
+}
+
+function getEmergencyTriggerClassName(
+  state: NavetAlarmEntity['state'],
+  theme: ThemeType,
+  accentColor?: string
+) {
+  return getAlarmStatePalette(state, theme, accentColor).pillClassName;
 }
 
 function getAlarmSurfaceProps(
   state: NavetAlarmEntity['state'],
-  theme: ReturnType<typeof useTheme>['theme'],
-  colors: ReturnType<typeof useTheme>['colors']
+  theme: ThemeType,
+  colors: ReturnType<typeof useTheme>['colors'],
+  accentColor: string
 ) {
-  const cardShell = getCardShellSurfaceTokens(theme);
-  const securitySurface = getSecurityCardSurfaceTokens(theme);
-  const lockColors = isAlarmArmed(state) ? colors.lock.locked : colors.lock.unlocked;
+  const tone = getAlarmStateTone(state);
+  const surfaceTone =
+    tone === 'red'
+      ? 'danger'
+      : tone === 'yellow'
+        ? 'warning'
+        : tone === 'primary'
+          ? 'armed'
+          : 'neutral';
 
-  return {
-    frameClassName: `${cardShell.rootFrameClassName} bg-linear-to-br ${lockColors.gradient} ${lockColors.border} ${securitySurface.containerShadowClassName}`,
-    overlay: (
-      <>
-        <div
-          className={`absolute inset-0 bg-linear-to-b ${lockColors.glow} via-transparent to-transparent`}
-        />
-        <div className={`absolute inset-0 ${securitySurface.lockCardOverlay}`} />
-      </>
-    ),
-    disableDefaultSheen: true,
-  };
+  return getSecurityStateSurfaceProps(surfaceTone, theme, colors, accentColor);
 }
 
 function getAlarmStateIcon(state: NavetAlarmEntity['state']) {
@@ -341,6 +491,36 @@ function orderSupportedActions(actions: NavetAlarmAction[]) {
   return ACTION_ORDER.filter((action) => actions.includes(action));
 }
 
+function isArmAction(action: NavetAlarmAction) {
+  return (
+    action === 'arm_home' ||
+    action === 'arm_away' ||
+    action === 'arm_night' ||
+    action === 'arm_vacation' ||
+    action === 'arm_custom_bypass'
+  );
+}
+
+function isPostSubmitArmTransitionSatisfied(
+  action: NavetAlarmAction,
+  state: NavetAlarmEntity['state']
+) {
+  switch (action) {
+    case 'arm_home':
+      return state === 'armed_home';
+    case 'arm_away':
+      return state === 'armed_away';
+    case 'arm_night':
+      return state === 'armed_night';
+    case 'arm_vacation':
+      return state === 'armed_vacation';
+    case 'arm_custom_bypass':
+      return state === 'armed_custom_bypass';
+    default:
+      return true;
+  }
+}
+
 export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardProps) {
   const sortedAlarms = useMemo(() => [...alarms].sort(compareAlarms), [alarms]);
   const [selectedAlarmId, setSelectedAlarmId] = useState<string | null>(
@@ -349,8 +529,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const [code, setCode] = useState('');
   const [draftAction, setDraftAction] = useState<NavetAlarmAction | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingActionState>(null);
+  const [postSubmitAction, setPostSubmitAction] = useState<PendingActionState>(null);
   const [triggerAction, setTriggerAction] = useState<{ alarmId: string } | null>(null);
-  const { theme, colors } = useTheme();
+  const { theme, colors, accentColor } = useTheme();
   const securitySurface = getSecurityCardSurfaceTokens(theme);
 
   useEffect(() => {
@@ -358,6 +539,22 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
       setSelectedAlarmId(sortedAlarms[0]?.id ?? null);
     }
   }, [selectedAlarmId, sortedAlarms]);
+
+  useEffect(() => {
+    if (postSubmitAction === null) {
+      return;
+    }
+
+    const matchingAlarm = sortedAlarms.find((alarm) => alarm.id === postSubmitAction.alarmId);
+    if (!matchingAlarm) {
+      setPostSubmitAction(null);
+      return;
+    }
+
+    if (isPostSubmitArmTransitionSatisfied(postSubmitAction.action, matchingAlarm.state)) {
+      setPostSubmitAction(null);
+    }
+  }, [postSubmitAction, sortedAlarms]);
 
   const selectedAlarm = useMemo(
     () => sortedAlarms.find((alarm) => alarm.id === selectedAlarmId) ?? sortedAlarms[0] ?? null,
@@ -373,9 +570,13 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const requiresCode = shouldRequireCode(selectedAlarm);
   const supportsCodeEntry = selectedAlarm.codeFormat !== 'none';
   const pendingForSelectedAlarm =
-    pendingAction !== null && pendingAction.alarmId === selectedAlarm.id ? pendingAction : null;
+    pendingAction !== null && pendingAction.alarmId === selectedAlarm.id
+      ? pendingAction
+      : postSubmitAction !== null && postSubmitAction.alarmId === selectedAlarm.id
+        ? postSubmitAction
+        : null;
   const AlarmIcon = getAlarmStateIcon(selectedAlarm.state);
-  const cardSurface = getAlarmSurfaceProps(selectedAlarm.state, theme, colors);
+  const cardSurface = getAlarmSurfaceProps(selectedAlarm.state, theme, colors, accentColor);
   const codeDialogOpen = supportsCodeEntry && draftAction !== null;
   const themeSurface = getThemeSurfaceTokens(theme);
   const codeDialogShell = customCardDialogShellProps(
@@ -407,6 +608,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
 
     try {
       await getActionHandler(action)(selectedAlarm.id, code.trim().length > 0 ? code : undefined);
+      if (isArmAction(action)) {
+        setPostSubmitAction({ action, alarmId: selectedAlarm.id });
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to update the alarm.');
     } finally {
@@ -444,31 +648,21 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
 
   const maskedCodeValue =
     selectedAlarm.codeFormat === 'number' ? '•'.repeat(code.length) || 'No code entered' : null;
-  const selectorPillSize = size === 'extra-large' ? 'default' : 'small';
-  const actionGridClassName = size === 'extra-large' ? 'grid-cols-2 xl:grid-cols-3' : 'grid-cols-2';
+  const selectorPillSize = 'small';
+  const actionGridClassName = 'grid-cols-2';
   const actionAwaitingCode = draftAction !== null ? getActionLabel(draftAction) : null;
   const isMedium = size === 'medium';
-  const emergencyTriggerClassName = getEmergencyTriggerClassName(selectedAlarm.state, theme);
-  const actionPillClassName =
-    size === 'extra-large'
-      ? 'min-h-20 gap-1.5 rounded-[22px] px-2.5 py-2.5'
-      : 'min-h-18 gap-1 rounded-[20px] px-2.25 py-2.25';
+  const emergencyTriggerClassName = getEmergencyTriggerClassName(
+    selectedAlarm.state,
+    theme,
+    accentColor
+  );
+  const emergencyTriggerPalette = getAlarmStatePalette(selectedAlarm.state, theme, accentColor);
   const mediumActionButtonClassName =
     'h-11 min-w-0 flex-1 flex-row items-center justify-start gap-2 rounded-full px-3 py-0 text-left';
-  const actionIconWrapClassName =
-    size === 'extra-large' ? 'h-10 w-10 rounded-full' : 'h-9 w-9 rounded-full';
-  const actionIconClassName = size === 'extra-large' ? 'h-4.5 w-4.5' : 'h-4 w-4';
-  const actionLabelClassName =
-    size === 'extra-large' ? 'text-[13px] leading-tight' : 'text-xs leading-tight';
   const mediumActionLabelClassName = 'whitespace-normal break-words text-[12px] leading-tight';
-  const numpadKeyClassName =
-    size === 'extra-large'
-      ? 'h-14 w-14 rounded-full justify-self-center p-0 text-sm'
-      : 'h-12 w-12 rounded-full justify-self-center p-0 text-sm';
-  const numpadDisplayClassName =
-    size === 'extra-large'
-      ? 'w-44 rounded-3xl px-4 py-3 text-sm'
-      : 'w-40 rounded-3xl px-4 py-3 text-sm';
+  const numpadKeyClassName = 'h-12 w-12 rounded-full justify-self-center p-0 text-sm';
+  const numpadDisplayClassName = 'w-40 rounded-3xl px-4 py-3 text-sm';
   const numpadButtonClassName =
     theme === 'light'
       ? 'border-gray-200/80 bg-white/92 text-slate-900 hover:bg-white'
@@ -491,33 +685,20 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
     const isSelectedAction = isActionActiveForState(action, selectedAlarm.state);
     const isTriggeredDismissAction = action === 'disarm' && selectedAlarm.state === 'triggered';
     const isPendingAction = Boolean(pendingForSelectedAlarm);
+    const isPendingCurrentAction = pendingForSelectedAlarm?.action === action;
     const isUnavailableAction = unavailable;
     const isDisabledAction = isUnavailableAction || isPendingAction || isSelectedAction;
-    const isMediumRowButton = isMedium && fullWidth;
-    const buttonBaseClassName = isMediumRowButton
-      ? mediumActionButtonClassName
-      : actionPillClassName;
-    const iconWrapClassName = isMediumRowButton
-      ? 'h-7 w-7 rounded-full shrink-0'
-      : actionIconWrapClassName;
-    const iconClassName = isMediumRowButton ? 'h-3.5 w-3.5' : actionIconClassName;
-    const labelClassName = isMediumRowButton ? mediumActionLabelClassName : actionLabelClassName;
-    const selectedActionClassName =
-      action === 'disarm'
-        ? 'border border-white/32 bg-black/22 text-white shadow-[0_16px_36px_-24px_rgba(0,0,0,0.55)] ring-1 ring-white/12'
-        : 'border border-white/32 bg-black/22 text-white shadow-[0_16px_36px_-24px_rgba(0,0,0,0.55)] ring-1 ring-white/12';
-    const idleActionClassName =
-      action === 'disarm'
-        ? 'border border-white/18 bg-white/10 text-white/88 hover:bg-white/16'
-        : 'border border-white/18 bg-white/10 text-white/92 hover:bg-white/16';
-    const selectedIconWrapClassName =
-      action === 'disarm'
-        ? 'border-white/18 bg-white/10 text-white'
-        : 'border-white/18 bg-white/10 text-white';
-    const idleIconWrapClassName =
-      action === 'disarm'
-        ? 'border-white/14 bg-white/14 text-white'
-        : 'border-white/14 bg-white/14 text-white';
+    const buttonBaseClassName = mediumActionButtonClassName;
+    const iconWrapClassName = 'h-7 w-7 rounded-full shrink-0';
+    const iconClassName = 'h-3.5 w-3.5';
+    const labelClassName = mediumActionLabelClassName;
+    const actionStyles = getAlarmActionStyles({
+      alarmState: selectedAlarm.state,
+      theme,
+      accentColor,
+      selected: isSelectedAction,
+      destructive: isTriggeredDismissAction,
+    });
 
     return (
       <button
@@ -525,7 +706,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         key={action}
         aria-label={getActionLabel(action)}
         disabled={isDisabledAction}
-        className={`group flex ${fullWidth ? 'flex-1' : 'w-full'} ${isMediumRowButton ? '' : 'flex-col items-center justify-center text-center'} transition-all duration-200 ${
+        className={`group relative flex overflow-hidden ${fullWidth ? 'flex-1' : 'w-full'} border transition-all duration-200 ${
           buttonBaseClassName
         } ${
           isUnavailableAction
@@ -535,25 +716,29 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               : isSelectedAction
                 ? 'cursor-not-allowed'
                 : ''
-        } ${
-          isTriggeredDismissAction
-            ? 'border border-white/18 bg-white/10 text-white hover:bg-white/16'
-            : isSelectedAction
-              ? selectedActionClassName
-              : idleActionClassName
         }`}
+        style={actionStyles.buttonStyle}
         onClick={() => void handleAction(action)}
       >
+        {isPendingCurrentAction ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/2 motion-safe:animate-[navet-alarm-action-loading-sweep_1.05s_linear_infinite]"
+            style={{
+              background:
+                theme === 'light'
+                  ? 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 14%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0.08) 86%, transparent 100%)'
+                  : 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 14%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.02) 86%, transparent 100%)',
+            }}
+          />
+        ) : null}
         <span
-          className={`flex items-center justify-center border ${iconWrapClassName} ${
-            isTriggeredDismissAction
-              ? 'border-white/14 bg-white/14 text-white'
-              : isSelectedAction
-                ? selectedIconWrapClassName
-                : idleIconWrapClassName
+          className={`relative z-10 flex items-center justify-center border ${iconWrapClassName} ${
+            isPendingCurrentAction ? 'motion-safe:animate-pulse' : ''
           }`}
+          style={actionStyles.iconStyle}
         >
-          {pendingForSelectedAlarm?.action === action ? (
+          {isPendingCurrentAction ? (
             <Loader2 className={`${iconClassName} animate-spin`} />
           ) : (
             (() => {
@@ -562,8 +747,12 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
             })()
           )}
         </span>
-        <span className={`flex min-w-0 flex-1 items-center font-medium ${labelClassName}`}>
-          {getActionLabel(action)}
+        <span
+          className={`relative z-10 flex min-w-0 flex-1 items-center font-medium ${labelClassName} ${
+            isPendingCurrentAction ? 'motion-safe:animate-pulse' : ''
+          }`}
+        >
+          {isPendingCurrentAction ? `${getActionLabel(action)}...` : getActionLabel(action)}
         </span>
       </button>
     );
@@ -571,6 +760,16 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
 
   return (
     <>
+      <style>{`
+        @keyframes navet-alarm-action-loading-sweep {
+          0% {
+            transform: translateX(-120%);
+          }
+          100% {
+            transform: translateX(220%);
+          }
+        }
+      `}</style>
       <BaseCard
         size={size}
         title={selectedAlarm.name}
@@ -591,6 +790,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               size="compact"
               icon={ShieldAlert}
               className={emergencyTriggerClassName}
+              style={emergencyTriggerPalette.pillStyle}
               disabled
             >
               Alarm Triggered
@@ -601,6 +801,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               size="compact"
               icon={BellRing}
               className={emergencyTriggerClassName}
+              style={emergencyTriggerPalette.pillStyle}
               disabled={unavailable || Boolean(pendingForSelectedAlarm)}
               onClick={() => void handleAction('trigger')}
             >
@@ -610,6 +811,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         }
         tone={getAlarmStateTone(selectedAlarm.state)}
         frameClassName={cardSurface.frameClassName}
+        style={cardSurface.frameStyle}
         overlay={cardSurface.overlay}
         disableDefaultSheen={cardSurface.disableDefaultSheen}
       >

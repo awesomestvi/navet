@@ -13,6 +13,15 @@ const NEXT_CLEANING_KEYS = [
   'next_cleaning_time',
 ];
 
+const LAST_CLEANED_KEYS = [
+  'last_cleaned',
+  'last_completed_clean',
+  'last_run_end',
+  'last_job_end',
+  'clean_finish',
+  'completed_at',
+];
+
 const WATER_LEVEL_KEYS = [
   'water_level',
   'water_tank_level',
@@ -41,16 +50,21 @@ export interface VacuumLevelMetric {
 }
 
 export interface VacuumGlanceMetrics {
-  battery: number;
+  battery?: number;
   nextCleaning?: string;
+  lastCleaned?: string;
   waterLevel?: VacuumLevelMetric;
   binLevel?: VacuumLevelMetric;
+  cleanedArea?: string;
+  cleaningTime?: string;
 }
 
 interface ResolveVacuumGlanceMetricsOptions {
   vacuumEntity?: PlatformEntitySnapshot;
   vacuumEntityId: string;
-  fallbackBattery: number;
+  fallbackBattery?: number;
+  fallbackCleanedArea?: string;
+  fallbackCleaningTime?: string;
   fallbackNextCleaning?: unknown;
   fallbackWaterLevel?: unknown;
   fallbackBinLevel?: unknown;
@@ -99,6 +113,34 @@ function formatSchedule(value: unknown, use24HourTime = false): string | undefin
   }
 
   return raw;
+}
+
+function formatArea(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (normalized.length === 0) return undefined;
+    if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+      return normalized;
+    }
+  }
+
+  const numeric = parseNumberish(value);
+  if (typeof numeric !== 'number') return undefined;
+  return `${numeric.toFixed(numeric >= 10 ? 0 : 1)} m²`;
+}
+
+function formatCleaningTime(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (normalized.length === 0) return undefined;
+    if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+      return normalized;
+    }
+  }
+
+  const numeric = parseNumberish(value);
+  if (typeof numeric !== 'number') return undefined;
+  return `${Math.max(0, Math.round(numeric))} min`;
 }
 
 function formatDate(date: Date, use24HourTime: boolean): string {
@@ -187,6 +229,8 @@ export function resolveVacuumGlanceMetrics({
   vacuumEntity,
   vacuumEntityId,
   fallbackBattery,
+  fallbackCleanedArea,
+  fallbackCleaningTime,
   fallbackNextCleaning,
   fallbackWaterLevel,
   fallbackBinLevel,
@@ -199,11 +243,19 @@ export function resolveVacuumGlanceMetrics({
     parseNumberish(attrs?.battery_level) ??
     parseNumberish(attrs?.battery) ??
     parseNumberish(attrs?.battery_percent) ??
-    fallbackBattery;
+    parseNumberish(fallbackBattery);
+  const cleanedArea = formatArea(
+    readFirst(attrs, ['cleaned_area', 'cleaned_area_today', 'last_cleaned_area']) ??
+      fallbackCleanedArea
+  );
+  const cleaningTime = formatCleaningTime(
+    readFirst(attrs, ['cleaning_time', 'clean_time', 'cleaning_duration']) ?? fallbackCleaningTime
+  );
   const nextCleaning = formatSchedule(
     readFirst(attrs, NEXT_CLEANING_KEYS) ?? fallbackNextCleaning,
     use24HourTime
   );
+  const lastCleaned = formatSchedule(readFirst(attrs, LAST_CLEANED_KEYS), use24HourTime);
   const waterLevel = normalizeLevelMetric(
     readFirst(attrs, WATER_LEVEL_KEYS) ??
       findRelatedSensorValue({
@@ -228,8 +280,11 @@ export function resolveVacuumGlanceMetrics({
   );
 
   return {
-    battery: clampPercentage(battery),
+    battery: typeof battery === 'number' ? clampPercentage(battery) : undefined,
+    cleanedArea,
+    cleaningTime,
     nextCleaning,
+    lastCleaned,
     waterLevel,
     binLevel,
   };

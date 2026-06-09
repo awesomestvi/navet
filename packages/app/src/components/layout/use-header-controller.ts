@@ -8,8 +8,6 @@ import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selec
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { PersonDevice } from '@navet/app/types/device.types';
 import { useMemo, useRef, useState } from 'react';
-import { resolveHeaderTitle } from './header-title';
-import { useHeaderDateTime } from './use-header-datetime';
 import { useHeaderSearch } from './use-header-search';
 
 export type HeaderController = ReturnType<typeof useHeaderController>;
@@ -78,8 +76,6 @@ export function useHeaderController() {
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const unreadCount = useNotificationBadgeCount({ includeUpdates: !lowPowerMode });
   const { t } = useI18n();
-
-  const { formattedDate, formattedTime, greetingKey, weekNumber } = useHeaderDateTime();
   const headerTitleMode = useSettingsStore(settingsSelectors.headerTitleMode);
   const headerCustomText = useSettingsStore(settingsSelectors.headerCustomText);
   const {
@@ -104,22 +100,6 @@ export function useHeaderController() {
 
     return fullName.split(/\s+/)[0];
   }, [t, user?.name]);
-  const greetingText = useMemo(
-    () => t(greetingKey, { name: firstName }),
-    [firstName, greetingKey, t]
-  );
-  const weekLabel = useMemo(() => t('header.weekLabel', { week: weekNumber }), [t, weekNumber]);
-  const headerTitle = useMemo(
-    () =>
-      resolveHeaderTitle({
-        mode: headerTitleMode,
-        customText: headerCustomText,
-        formattedDate,
-        formattedTime,
-        greetingText,
-      }),
-    [formattedDate, formattedTime, greetingText, headerCustomText, headerTitleMode]
-  );
 
   const matchedPersonCanonicalId = useMemo(() => {
     if (lowPowerMode || user?.avatarUrl) {
@@ -178,14 +158,8 @@ export function useHeaderController() {
     desktopNotificationButtonRef,
     dividerColor: surface.textMuted,
     firstName,
-    formattedDate,
-    formattedTime,
-    greetingKey,
-    headerSecondaryText:
-      headerTitle.mode === 'clock' ? `${greetingText} · ${weekLabel}` : headerTitle.secondaryText,
-    headerSupportingText: headerTitle.supportingText,
-    headerTitleMode: headerTitle.mode,
-    headerTitleText: headerTitle.text,
+    headerCustomText,
+    headerTitleMode,
     closeMobileSearch,
     closeNotifications: () => setIsNotificationOpen(false),
     handleClearSearch,
@@ -213,7 +187,5 @@ export function useHeaderController() {
     textPrimary: surface.textPrimary,
     textSecondary: surface.textSecondary,
     unreadCount,
-    weekNumber,
-    showTimeMetadata: headerTitle.showTimeMetadata,
   };
 }

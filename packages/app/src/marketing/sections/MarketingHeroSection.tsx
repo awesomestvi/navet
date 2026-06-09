@@ -41,7 +41,7 @@ function MarketingHeroVisual({ mobile = false }: { mobile?: boolean }) {
       />
       <div
         className={cn(
-          'relative drop-shadow-[0_48px_120px_rgba(0,0,0,0.68)]',
+          'marketing-hero-visual-frame relative drop-shadow-[0_48px_120px_rgba(0,0,0,0.68)]',
           mobile
             ? 'shadow-[0_26px_68px_-38px_rgba(0,0,0,0.9)]'
             : 'w-full max-w-[980px] translate-x-[12%] -translate-y-[2rem] xl:max-w-[1080px] xl:translate-x-[14%] xl:-translate-y-[2.5rem]'
@@ -84,8 +84,8 @@ export function MarketingHeroSection() {
             { srcSet: heroBackgroundRoomWebp, type: 'image/webp' },
           ]}
           alt="Warm modern living space used as the background for the Navet marketing hero"
-          pictureClassName="absolute inset-0"
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          pictureClassName="marketing-hero-background-shell absolute inset-0"
+          className="marketing-hero-background-image absolute inset-0 h-full w-full object-cover object-center"
           fetchPriority="high"
           sizes="100vw"
         />
@@ -96,11 +96,11 @@ export function MarketingHeroSection() {
         <div className="pointer-events-none absolute inset-x-[10%] bottom-[-3.75rem] h-24 rounded-[999px] bg-[#06080d] opacity-90 blur-3xl sm:bottom-[-5rem] sm:h-32 lg:bottom-[-5.5rem] lg:h-36" />
 
         <div className="marketing-hero-layout relative mx-auto grid min-h-[46rem] w-full max-w-[1320px] items-center gap-8 px-4 pt-28 pb-14 sm:px-6 sm:py-28 lg:min-h-screen lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12 lg:px-8 lg:py-32">
-          <div className="max-w-[640px] space-y-5 sm:space-y-6">
-            <div className="space-y-3 sm:space-y-4">
+          <div className="marketing-hero-copy max-w-[640px] space-y-5 sm:space-y-6">
+            <div className="marketing-hero-copy-stack space-y-3 sm:space-y-4">
               <Heading
                 as="h1"
-                className="max-w-[10.25ch] text-[2.75rem] leading-[0.94] tracking-[-0.06em] sm:text-5xl md:text-6xl"
+                className="marketing-hero-title max-w-[10.25ch] text-[2.75rem] leading-[0.94] tracking-[-0.06em] sm:text-5xl md:text-6xl"
               >
                 {MARKETING_HERO_CONTENT.headline.lead}{' '}
                 <AnimatedGradientText
@@ -123,7 +123,7 @@ export function MarketingHeroSection() {
                 {MARKETING_HERO_CONTENT.supportLine}
               </Text>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="marketing-hero-actions flex flex-col gap-3 sm:flex-row">
               <Button
                 className="w-full justify-center sm:w-auto sm:justify-start"
                 onClick={() => {
@@ -138,12 +138,13 @@ export function MarketingHeroSection() {
             </div>
             <MarketingPillGroup
               items={MARKETING_HERO_CONTENT.pills}
+              className="marketing-hero-pills"
               compactMobile
               mobileBehavior="scroll"
             />
             <MarketingHeroVisual mobile />
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
+              <div className="marketing-hero-secondary-links flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
                 {MARKETING_HERO_CONTENT.secondaryCtas.map((cta, index) => (
                   <Link
                     key={cta.label}

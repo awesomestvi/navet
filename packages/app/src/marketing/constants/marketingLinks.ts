@@ -27,7 +27,9 @@ export const MARKETING_URLS = {
   github: GITHUB_REPO_URL,
   roadmapDoc: `${GITHUB_REPO_URL}/blob/main/docs/ROADMAP.md`,
   docsIndex: `${GITHUB_REPO_URL}/blob/main/docs/README.md`,
+  gettingStarted: `${GITHUB_REPO_URL}#getting-started`,
   install: {
+    page: getMarketingWebsitePath('/install/'),
     homeAssistantGuide: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md`,
     homeAssistantCustomPanel: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md#home-assistant-custom-panel`,
     homeAssistantAddon: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md#home-assistant-add-on`,

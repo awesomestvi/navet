@@ -60,6 +60,17 @@ vi.mock('@navet/app/provider-contract-registry', () => ({
         );
       }
 
+      if (command.type === 'set_vacuum_fan_speed') {
+        await serviceCaller(
+          'vacuum',
+          'set_fan_speed',
+          { fan_speed: command.fanSpeed },
+          {
+            entity_id: nativeEntityId,
+          }
+        );
+      }
+
       if (command.type === 'play_pause') {
         await serviceCaller('media_player', 'media_play_pause', {}, { entity_id: nativeEntityId });
       }
@@ -114,6 +125,18 @@ vi.mock('@navet/app/provider-contract-registry', () => ({
 
       if (command.type === 'return_home') {
         await serviceCaller('vacuum', 'return_to_base', {}, { entity_id: nativeEntityId });
+      }
+
+      if (command.type === 'pause') {
+        await serviceCaller('vacuum', 'pause', {}, { entity_id: nativeEntityId });
+      }
+
+      if (command.type === 'locate') {
+        await serviceCaller('vacuum', 'locate', {}, { entity_id: nativeEntityId });
+      }
+
+      if (command.type === 'clean_spot') {
+        await serviceCaller('vacuum', 'clean_spot', {}, { entity_id: nativeEntityId });
       }
 
       if (command.type === 'set_shuffle') {
@@ -300,6 +323,62 @@ describe('integration-action.service', () => {
       'vacuum',
       'return_to_base',
       {},
+      { entity_id: 'vacuum.roborock' }
+    );
+  });
+
+  it('dispatches provider-neutral vacuum pause, locate, and spot-clean commands through the Home Assistant adapter', async () => {
+    const { dispatchEntityCommand } = await import('../integration-action.service');
+
+    await dispatchEntityCommand({
+      type: 'pause',
+      entityId: 'vacuum.roborock',
+    });
+    await dispatchEntityCommand({
+      type: 'locate',
+      entityId: 'vacuum.roborock',
+    });
+    await dispatchEntityCommand({
+      type: 'clean_spot',
+      entityId: 'vacuum.roborock',
+    });
+
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'vacuum',
+      'pause',
+      {},
+      { entity_id: 'vacuum.roborock' }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'vacuum',
+      'locate',
+      {},
+      { entity_id: 'vacuum.roborock' }
+    );
+    expect(callServiceMock).toHaveBeenNthCalledWith(
+      3,
+      'vacuum',
+      'clean_spot',
+      {},
+      { entity_id: 'vacuum.roborock' }
+    );
+  });
+
+  it('dispatches provider-neutral vacuum fan-speed commands through the Home Assistant adapter', async () => {
+    const { dispatchEntityCommand } = await import('../integration-action.service');
+
+    await dispatchEntityCommand({
+      type: 'set_vacuum_fan_speed',
+      entityId: 'vacuum.roborock',
+      fanSpeed: 'turbo',
+    });
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      'vacuum',
+      'set_fan_speed',
+      { fan_speed: 'turbo' },
       { entity_id: 'vacuum.roborock' }
     );
   });

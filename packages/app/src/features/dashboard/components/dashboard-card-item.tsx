@@ -626,7 +626,7 @@ function getAllowedSizes(
     device?.type === 'sensors' &&
     (device.securityKind === 'alarm' || device.deviceClass === 'alarm_control_panel')
   ) {
-    return ['large', 'extra-large'];
+    return ['medium', 'large'];
   }
 
   switch (device?.type) {
@@ -686,6 +686,13 @@ function isSingleSensorInfoCard(card: CustomCard) {
 }
 
 function supportsEditModeSettingsDock(device: DeviceWithType) {
+  if (
+    device.type === 'sensors' &&
+    (device.securityKind === 'alarm' || device.deviceClass === 'alarm_control_panel')
+  ) {
+    return false;
+  }
+
   return [
     'lights',
     'fans',

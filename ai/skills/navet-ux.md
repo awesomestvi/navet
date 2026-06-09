@@ -20,4 +20,7 @@ surfaces, or core visual hierarchy.
 
 - preserve Navet's current theme model: `glass`, `dark`, `light`, `black`
 - reuse the existing shared UI and theme system before inventing new patterns
+- keep surfaces theme-native: in `dark` and `black`, cards should stay dark-surface cards, not glass or frosted treatments
+- use accent color as tint, border, glow, or emphasis inside the active theme surface instead of swapping the surface family
+- when a card sits beside adjacent cards in an established lane or section, inherit that same surface family first; do not make one card look like a different theme or material system
 - avoid over-contained cards and nested shells that reduce density without improving clarity

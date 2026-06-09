@@ -79,6 +79,7 @@ export type NavetCommand =
   | { type: 'turn_on'; entityId: string }
   | { type: 'turn_off'; entityId: string }
   | { type: 'set_fan_speed'; entityId: string; percentage: number }
+  | { type: 'set_vacuum_fan_speed'; entityId: string; fanSpeed: string }
   | { type: 'play_pause'; entityId: string }
   | { type: 'previous_track'; entityId: string }
   | { type: 'next_track'; entityId: string }
@@ -105,8 +106,11 @@ export type NavetCommand =
   | { type: 'open'; entityId: string }
   | { type: 'close'; entityId: string }
   | { type: 'start'; entityId: string }
+  | { type: 'pause'; entityId: string }
   | { type: 'stop'; entityId: string }
   | { type: 'return_home'; entityId: string }
+  | { type: 'locate'; entityId: string }
+  | { type: 'clean_spot'; entityId: string }
   | {
       type: 'service';
       entityId: string;

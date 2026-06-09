@@ -22,6 +22,7 @@ const GITHUB_STARS_CACHE_KEY = 'marketing:github-stars';
 const GITHUB_STARS_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const WEBSITE_PRIMARY_NAV_ITEMS = [
+  { href: getMarketingWebsitePath('/install/'), label: 'Install' },
   { href: MARKETING_URLS.demo, label: 'Demo' },
   { href: MARKETING_URLS.storybook, label: 'Storybook' },
 ] as const;

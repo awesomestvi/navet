@@ -130,13 +130,8 @@ function createHeaderStoryController(args: {
     desktopNotificationButtonRef,
     dividerColor: surface.textMuted,
     firstName: 'Vishal',
-    formattedDate: 'Sunday, May 3',
-    formattedTime: '09:41',
-    greetingKey: 'header.greeting.welcome',
-    headerSecondaryText: null,
-    headerSupportingText: null,
+    headerCustomText: '',
     headerTitleMode: 'auto_greeting',
-    headerTitleText: 'Welcome back, Vishal!',
     handleClearSearch: () => setSearchQuery(''),
     handleSearchChange: (value: string) => setSearchQuery(value),
     handleToggleMobileSearch: () => setIsMobileSearchOpen((current) => !current),
@@ -162,8 +157,6 @@ function createHeaderStoryController(args: {
     textPrimary: surface.textPrimary,
     textSecondary: surface.textSecondary,
     unreadCount,
-    weekNumber: 18,
-    showTimeMetadata: true,
   };
 }
 

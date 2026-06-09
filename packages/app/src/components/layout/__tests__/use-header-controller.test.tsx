@@ -16,15 +16,6 @@ vi.mock('@navet/app/hooks', async () => {
   };
 });
 
-vi.mock('../use-header-datetime', () => ({
-  useHeaderDateTime: () => ({
-    formattedDate: 'May 30',
-    formattedTime: '12:00',
-    greetingKey: 'header.greeting.welcome',
-    weekNumber: 22,
-  }),
-}));
-
 vi.mock('../use-header-search', () => ({
   useHeaderSearch: () => ({
     closeMobileSearch: vi.fn(),
@@ -290,7 +281,7 @@ describe('useHeaderController', () => {
     );
   });
 
-  it('uses the greeting as secondary text in date-and-time mode', () => {
+  it('exposes the first name and configured title mode without clock-driven header text', () => {
     integrationStore.setState({
       ...integrationStore.getState(),
       currentUser: {
@@ -304,10 +295,9 @@ describe('useHeaderController', () => {
 
     const { result } = renderHookWithProviders(() => useHeaderController());
 
-    expect(result.current.headerTitleText).toBe('May 30 · 12:00');
-    expect(result.current.headerSecondaryText).toBe('Welcome back, Jane! · Week 22');
-    expect(result.current.headerSupportingText).toBeNull();
-    expect(result.current.showTimeMetadata).toBe(false);
+    expect(result.current.firstName).toBe('Jane');
+    expect(result.current.headerTitleMode).toBe('clock');
+    expect(result.current.headerCustomText).toBe('');
   });
 
   it('normalizes direct Home Assistant avatar URLs for the current provider', () => {

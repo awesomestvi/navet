@@ -40,6 +40,7 @@ const meta = {
     onStartCleaning: () => {},
     onPauseCleaning: () => {},
     onReturnHome: () => {},
+    onSetFanSpeed: () => {},
     name: 'Robo Cleaner',
     room: 'Whole Home',
     theme: 'glass',
@@ -75,3 +76,19 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const MultiSpeed: Story = {
+  args: {
+    fanSpeed: 'Balanced',
+    fanSpeeds: ['Silent', 'Balanced', 'Turbo'],
+    supportsFanSpeed: true,
+  },
+};
+
+export const NoFanSpeedSupport: Story = {
+  args: {
+    fanSpeed: undefined,
+    fanSpeeds: [],
+    supportsFanSpeed: false,
+  },
+};

@@ -31,17 +31,28 @@ export function MarketingDemoCtaSection({ className }: { className?: string }) {
             Explore the layout, cards, widgets, and theme surfaces without signing into a provider
             first.
           </Text>
-          <Button
-            className="w-full justify-center sm:w-auto sm:justify-start"
-            onClick={() => {
-              window.location.assign(MARKETING_URLS.demo);
-            }}
-          >
-            <span className="inline-flex items-center gap-2">
-              Open demo
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              className="w-full justify-center sm:w-auto sm:justify-start"
+              onClick={() => {
+                window.location.assign(MARKETING_URLS.demo);
+              }}
+            >
+              <span className="inline-flex items-center gap-2">
+                Open demo
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </span>
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full justify-center sm:w-auto sm:justify-start"
+              onClick={() => {
+                window.location.assign(MARKETING_URLS.install.page);
+              }}
+            >
+              How to install
+            </Button>
+          </div>
         </div>
       </Panel>
     </MarketingSectionShell>

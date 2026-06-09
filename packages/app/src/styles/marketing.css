@@ -1,4 +1,4 @@
-@layer base {
+@layer utilities {
   @keyframes marketing-aurora-drift {
     0% {
       transform: translate3d(0, 0, 0) scale(1);
@@ -242,7 +242,7 @@
     will-change: auto;
   }
 
-  @media (min-width: 1024px) and (orientation: portrait) {
+  @media (min-width: 640px) and (orientation: portrait) {
     .marketing-hero-shell {
       min-height: min(81rem, 86.5vh);
     }
@@ -251,6 +251,98 @@
       min-height: min(81rem, 86.5vh);
       padding-top: 6.125rem;
       padding-bottom: 5.125rem;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .marketing-hero-layout {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: center;
+      text-align: center;
+    }
+
+    .marketing-hero-copy {
+      margin-inline: auto;
+      text-align: center;
+    }
+
+    .marketing-hero-copy > * {
+      margin-inline: auto;
+    }
+
+    .marketing-hero-copy-stack,
+    .marketing-hero-copy-stack > * {
+      text-align: center;
+      margin-inline: auto;
+    }
+
+    .marketing-hero-actions {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .marketing-hero-pills {
+      display: flex;
+      justify-content: center;
+    }
+
+    .marketing-hero-pills > div {
+      min-width: 0;
+      justify-content: center;
+    }
+
+    .marketing-hero-secondary-links {
+      justify-content: center;
+    }
+  }
+
+  @media (min-width: 900px) and (max-width: 1100px) and (orientation: portrait) {
+    .marketing-hero-background-shell {
+      inset: 0;
+    }
+
+    .marketing-hero-background-image {
+      left: -90px;
+      right: auto;
+      width: calc(100% + 90px);
+      max-width: none;
+      object-position: center;
+    }
+
+    .marketing-hero-layout {
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+      gap: 1.25rem;
+    }
+
+    .marketing-hero-copy {
+      max-width: 27rem;
+    }
+
+    .marketing-hero-title {
+      max-width: 11.5ch;
+      font-size: 3.05rem;
+    }
+
+    .marketing-hero-visual-frame {
+      max-width: 760px;
+      transform: translateX(-5%) translateY(-0.35rem);
+    }
+  }
+
+  @media (max-width: 1024px) and (orientation: portrait) {
+    .marketing-hero-layout {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: center;
+      text-align: center;
+    }
+
+    .marketing-hero-copy {
+      max-width: 31rem;
+      text-align: center;
+    }
+
+    .marketing-hero-visual-frame {
+      transform: translateX(0) translateY(-0.35rem);
     }
   }
 

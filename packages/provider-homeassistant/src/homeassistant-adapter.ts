@@ -163,6 +163,14 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         { entityId: entity.externalId }
       );
       return;
+    case 'set_vacuum_fan_speed':
+      await callHomeAssistantService(
+        'vacuum',
+        'set_fan_speed',
+        { fan_speed: command.fanSpeed },
+        { entityId: entity.externalId }
+      );
+      return;
     case 'play_pause':
       await callHomeAssistantService(
         'media_player',
@@ -323,8 +331,11 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
     case 'start':
       await callHomeAssistantService('vacuum', 'start', {}, { entityId: entity.externalId });
       return;
-    case 'stop':
+    case 'pause':
       await callHomeAssistantService('vacuum', 'pause', {}, { entityId: entity.externalId });
+      return;
+    case 'stop':
+      await callHomeAssistantService('vacuum', 'stop', {}, { entityId: entity.externalId });
       return;
     case 'return_home':
       await callHomeAssistantService(
@@ -335,6 +346,12 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
           entityId: entity.externalId,
         }
       );
+      return;
+    case 'locate':
+      await callHomeAssistantService('vacuum', 'locate', {}, { entityId: entity.externalId });
+      return;
+    case 'clean_spot':
+      await callHomeAssistantService('vacuum', 'clean_spot', {}, { entityId: entity.externalId });
       return;
     case 'service':
       await callHomeAssistantService(

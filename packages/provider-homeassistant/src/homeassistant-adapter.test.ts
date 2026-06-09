@@ -35,6 +35,20 @@ function alarmEntityFactory() {
   };
 }
 
+function vacuumEntityFactory() {
+  return {
+    entity_id: 'vacuum.roborock',
+    state: 'idle',
+    attributes: {
+      friendly_name: 'Roborock',
+      supported_features: 4 | 16 | 32 | 512 | 1024 | 8192,
+    },
+    last_changed: '2026-05-30T10:00:00.000Z',
+    last_updated: '2026-05-30T10:00:00.000Z',
+    context: { id: 'ctx-3', parent_id: null, user_id: null },
+  };
+}
+
 const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
   callHomeAssistantServiceMock: vi.fn(async () => undefined),
   resolveArtworkMock: vi.fn(async (entityId: string) => ({
@@ -68,6 +82,7 @@ describe('homeassistant-adapter', () => {
       getEntities: vi.fn(() => ({
         'light.kitchen': lightEntityFactory(),
         'alarm_control_panel.home': alarmEntityFactory(),
+        'vacuum.roborock': vacuumEntityFactory(),
       })),
       getEntityRegistry: vi.fn(() => []),
       getConfig: vi.fn(() => null),
@@ -108,6 +123,7 @@ describe('homeassistant-adapter', () => {
         entities: {
           'light.kitchen': lightEntityFactory(),
           'alarm_control_panel.home': alarmEntityFactory(),
+          'vacuum.roborock': vacuumEntityFactory(),
         },
         config: null,
         areas: [],
@@ -152,6 +168,62 @@ describe('homeassistant-adapter', () => {
       'alarm_arm_away',
       { code: '1234' },
       { entityId: 'alarm_control_panel.home' }
+    );
+  });
+
+  it('maps provider-neutral vacuum commands to the documented Home Assistant services', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'pause',
+      entityId: createProviderScopedId('home_assistant', 'vacuum.roborock'),
+    });
+    await adapter.execute({
+      type: 'locate',
+      entityId: createProviderScopedId('home_assistant', 'vacuum.roborock'),
+    });
+    await adapter.execute({
+      type: 'clean_spot',
+      entityId: createProviderScopedId('home_assistant', 'vacuum.roborock'),
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'vacuum',
+      'pause',
+      {},
+      { entityId: 'vacuum.roborock' }
+    );
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'vacuum',
+      'locate',
+      {},
+      { entityId: 'vacuum.roborock' }
+    );
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      3,
+      'vacuum',
+      'clean_spot',
+      {},
+      { entityId: 'vacuum.roborock' }
+    );
+  });
+
+  it('maps provider-neutral vacuum fan-speed commands to vacuum.set_fan_speed', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'set_vacuum_fan_speed',
+      entityId: createProviderScopedId('home_assistant', 'vacuum.roborock'),
+      fanSpeed: 'turbo',
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'vacuum',
+      'set_fan_speed',
+      { fan_speed: 'turbo' },
+      { entityId: 'vacuum.roborock' }
     );
   });
 

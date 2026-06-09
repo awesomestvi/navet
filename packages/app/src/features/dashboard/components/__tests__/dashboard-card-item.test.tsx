@@ -219,7 +219,7 @@ describe('DashboardCardItem card locking', () => {
       />
     );
 
-    expect(renderCardMock).toHaveBeenCalledWith(expect.objectContaining({ size: 'large' }));
+    expect(renderCardMock).toHaveBeenCalledWith(expect.objectContaining({ size: 'medium' }));
   });
 
   it('avoids paint containment for camera cards so live video can compose normally', () => {
@@ -295,6 +295,24 @@ describe('DashboardCardItem card locking', () => {
     );
 
     dispatchEventSpy.mockRestore();
+  });
+
+  it('does not add a settings action to the edit dock for security panel cards', () => {
+    renderWithProviders(
+      <DashboardCardItem
+        id="home_assistant:alarm_control_panel.home"
+        size="medium"
+        isEditMode
+        handleSizeChange={vi.fn()}
+        device={createAlarmDevice()}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'Open settings for Home Alarm',
+      })
+    ).not.toBeInTheDocument();
   });
 
   it('clamps action cards to compact sizes and only exposes compact resize options', () => {

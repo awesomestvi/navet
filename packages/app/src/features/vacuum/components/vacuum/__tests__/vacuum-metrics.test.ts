@@ -11,7 +11,10 @@ describe('resolveVacuumGlanceMetrics', () => {
   it('reads direct vacuum attributes first', () => {
     const vacuumEntity = vacuumEntityFactory({
       battery_level: 82,
+      cleaned_area: 41.6,
+      cleaning_time: 38,
       next_cleaning: 'Every weekday 09:00',
+      last_cleaned: '2026-05-17T13:00:00.000Z',
       water_level: 63,
       bin_level: 41,
     });
@@ -32,7 +35,10 @@ describe('resolveVacuumGlanceMetrics', () => {
 
     expect(metrics).toEqual({
       battery: 82,
+      cleanedArea: '42 m²',
+      cleaningTime: '38 min',
       nextCleaning: 'Every weekday 09:00',
+      lastCleaned: expect.any(String),
       waterLevel: { value: '63%', percentage: 63, isWarning: false },
       binLevel: { value: '41%', percentage: 41, isWarning: false },
     });
@@ -101,15 +107,28 @@ describe('resolveVacuumGlanceMetrics', () => {
     const metrics = resolveVacuumGlanceMetrics({
       vacuumEntityId: 'vacuum.roborock',
       fallbackBattery: 120,
+      fallbackCleanedArea: '0 m²',
+      fallbackCleaningTime: '0 min',
       fallbackNextCleaning: 'Tonight 21:00',
       fallbackWaterLevel: 'low',
       fallbackBinLevel: 86,
     });
 
     expect(metrics.battery).toBe(100);
+    expect(metrics.cleanedArea).toBe('0 m²');
+    expect(metrics.cleaningTime).toBe('0 min');
     expect(metrics.nextCleaning).toBe('Tonight 21:00');
+    expect(metrics.lastCleaned).toBeUndefined();
     expect(metrics.waterLevel).toEqual({ value: 'low', isWarning: true });
     expect(metrics.binLevel).toEqual({ value: '86%', percentage: 86, isWarning: true });
+  });
+
+  it('keeps battery undefined when neither live nor fallback battery data exists', () => {
+    const metrics = resolveVacuumGlanceMetrics({
+      vacuumEntityId: 'vacuum.roborock',
+    });
+
+    expect(metrics.battery).toBeUndefined();
   });
 
   it('formats scheduled cleanings with the selected 12-hour preference', () => {

@@ -618,7 +618,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         collection.vacuums.push({
           ...base,
           status: readString(state.status, 'idle') as DeviceCollection['vacuums'][number]['status'],
-          battery: readNumber(state.battery, 0),
+          battery: typeof state.battery === 'number' ? readNumber(state.battery, 0) : undefined,
           cleanedArea: typeof state.cleanedArea === 'string' ? state.cleanedArea : undefined,
           cleaningTime: typeof state.cleaningTime === 'string' ? state.cleaningTime : undefined,
           nextCleaning: typeof state.nextCleaning === 'string' ? state.nextCleaning : undefined,

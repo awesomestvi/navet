@@ -7,7 +7,6 @@ import {
   OverlayScrollArea,
 } from '@navet/app/components/primitives';
 import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
-import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
@@ -15,7 +14,6 @@ import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/das
 import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
-import { getLightCardSurfaceTokens } from '@navet/app/features/lighting/components/light-card/light-card-surface-tokens';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useI18n, useMediaQuery, useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
@@ -42,7 +40,7 @@ import {
   resolveViewerInitialCameraViewMode,
 } from './camera-card/camera-view-mode';
 import { useProviderCameraLiveData } from './camera-card/use-provider-camera-live-data';
-import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
+import { getSecurityStateSurfaceProps } from './security-card-surface-tokens';
 
 interface SecurityCameraDashboardProps {
   model: CameraDashboardModel;
@@ -61,7 +59,7 @@ const SECURE_NOW_CARD_ID = 'security.now.secure';
 const LIVE_NOW_CARD_ID = 'security.now.live';
 const ALARM_NOW_CARD_ID = 'security.now.alarm';
 const NOW_LANE_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
-const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
+const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large'];
 
 function getSeverityLabel(severity: SecuritySeverity): string {
   switch (severity) {
@@ -95,9 +93,6 @@ function readDeviceStatusLabel(device: DeviceWithType): string {
         device.securityKind === 'garageDoor' ||
         device.securityKind === 'opening'
       ) {
-        if (device.id.startsWith('security.aggregate.')) {
-          return device.value;
-        }
         if (device.status === 'active') {
           return 'Open';
         }
@@ -151,81 +146,6 @@ function getSeverityAccentClassName(device: DeviceWithType, severity: SecuritySe
     default:
       return 'bg-emerald-300';
   }
-}
-
-function getNowLaneSurfaceProps(
-  tone: 'neutral' | 'warning' | 'danger' | 'accent' | 'success',
-  theme: ThemeType,
-  colors: ReturnType<typeof useTheme>['colors'],
-  accentColor: string
-) {
-  const cardShell = getCardShellSurfaceTokens(theme);
-  const securitySurface = getSecurityCardSurfaceTokens(theme);
-
-  if (tone === 'success') {
-    const lockColors = colors.lock.locked;
-
-    return {
-      frameClassName: `${cardShell.rootFrameClassName} bg-linear-to-br ${lockColors.gradient} ${lockColors.border} ${securitySurface.containerShadowClassName}`,
-      overlay: (
-        <>
-          <div
-            className={`absolute inset-0 bg-linear-to-b ${lockColors.glow} via-transparent to-transparent`}
-          />
-          <div className={`absolute inset-0 ${securitySurface.lockCardOverlay}`} />
-        </>
-      ),
-      disableDefaultSheen: true,
-    };
-  }
-
-  if (tone === 'accent') {
-    const fanSurface = getLightCardSurfaceTokens({
-      isOn: true,
-      selectedColor: null,
-      currentColor: '#38bdf8',
-      theme,
-      lightColors: colors.light,
-      accentColor,
-    });
-
-    return {
-      frameClassName: `${cardShell.rootFrameClassName} ${fanSurface.cardClassName}`,
-      style: fanSurface.cardStyle,
-      overlay: (
-        <>
-          {fanSurface.activeGlowClassName ? (
-            <div className={fanSurface.activeGlowClassName} style={fanSurface.activeGlowStyle} />
-          ) : null}
-          {fanSurface.innerOverlayClassName ? (
-            <div
-              className={fanSurface.innerOverlayClassName}
-              style={fanSurface.innerOverlayStyle}
-            />
-          ) : null}
-          {fanSurface.shineOverlayClassName ? (
-            <div className={fanSurface.shineOverlayClassName} />
-          ) : null}
-        </>
-      ),
-      disableDefaultSheen: true,
-    };
-  }
-
-  const lockColors = colors.lock.unlocked;
-
-  return {
-    frameClassName: `${cardShell.rootFrameClassName} bg-linear-to-br ${lockColors.gradient} ${lockColors.border} ${securitySurface.containerShadowClassName}`,
-    overlay: (
-      <>
-        <div
-          className={`absolute inset-0 bg-linear-to-b ${lockColors.glow} via-transparent to-transparent`}
-        />
-        <div className={`absolute inset-0 ${securitySurface.lockCardOverlay}`} />
-      </>
-    ),
-    disableDefaultSheen: true,
-  };
 }
 
 function getSeverityStatusClassName(device: DeviceWithType, severity: SecuritySeverity) {
@@ -805,7 +725,7 @@ function NowLane({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const { theme, colors, accentColor } = useTheme();
-  const laneSurface = getNowLaneSurfaceProps(tone, theme, colors, accentColor);
+  const laneSurface = getSecurityStateSurfaceProps(tone, theme, colors, accentColor);
   const laneListId = `security-now-lane-list-${tone}`;
 
   return (
@@ -814,7 +734,7 @@ function NowLane({
       surfaceVariant="muted"
       className="min-w-0"
       frameClassName={laneSurface.frameClassName}
-      style={laneSurface.style}
+      style={laneSurface.frameStyle}
       overlay={laneSurface.overlay}
       disableDefaultSheen={laneSurface.disableDefaultSheen}
       contentClassName="min-h-0"
@@ -1214,12 +1134,8 @@ export function SecurityCameraDashboard({
   const attentionCardSize = cardSizes[ATTENTION_NOW_CARD_ID] ?? 'large';
   const secureCardSize = cardSizes[SECURE_NOW_CARD_ID] ?? 'large';
   const liveCardSize = cardSizes[LIVE_NOW_CARD_ID] ?? 'large';
-  const alarmCardSize: Extract<CardSize, 'medium' | 'large' | 'extra-large'> =
-    cardSizes[ALARM_NOW_CARD_ID] === 'large' || cardSizes[ALARM_NOW_CARD_ID] === 'extra-large'
-      ? cardSizes[ALARM_NOW_CARD_ID]
-      : cardSizes[ALARM_NOW_CARD_ID] === 'medium'
-        ? 'medium'
-        : 'large';
+  const alarmCardSize: Extract<CardSize, 'medium' | 'large'> =
+    cardSizes[ALARM_NOW_CARD_ID] === 'medium' ? 'medium' : 'large';
   const defaultGroupId = useMemo(
     () =>
       model.summary.groupSummaries.find((group) => group.defaultExpanded)?.id ??

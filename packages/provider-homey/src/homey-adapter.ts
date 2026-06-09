@@ -82,6 +82,9 @@ async function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
     case 'set_fan_speed':
       await callHomeyService('fan', 'set_percentage', { percentage: command.percentage }, target);
       return;
+    case 'set_vacuum_fan_speed':
+      await callHomeyService('vacuum', 'set_fan_speed', { fan_speed: command.fanSpeed }, target);
+      return;
     case 'play_pause':
       await callHomeyService('media_player', 'media_play_pause', {}, target);
       return;
@@ -149,11 +152,20 @@ async function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
     case 'start':
       await callHomeyService('vacuum', 'start', {}, target);
       return;
-    case 'stop':
+    case 'pause':
       await callHomeyService('vacuum', 'pause', {}, target);
+      return;
+    case 'stop':
+      await callHomeyService('vacuum', 'stop', {}, target);
       return;
     case 'return_home':
       await callHomeyService('vacuum', 'return_to_base', {}, target);
+      return;
+    case 'locate':
+      await callHomeyService('vacuum', 'locate', {}, target);
+      return;
+    case 'clean_spot':
+      await callHomeyService('vacuum', 'clean_spot', {}, target);
       return;
     case 'service':
       await callHomeyService(

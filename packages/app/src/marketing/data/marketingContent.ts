@@ -14,9 +14,9 @@ export const MARKETING_HERO_CONTENT = {
   secondaryCtas: [
     { label: 'View GitHub', href: MARKETING_URLS.github, external: true },
     {
-      label: 'Read setup guide',
-      href: MARKETING_URLS.install.homeAssistantCustomPanel,
-      external: true,
+      label: 'How to install',
+      href: MARKETING_URLS.install.page,
+      external: false,
     },
   ],
 } as const;
