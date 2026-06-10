@@ -9,7 +9,7 @@ Versioned release surfaces:
 - Home Assistant custom panel build output and downloadable release archive
 - GitHub release notes
 
-Continuous `main` surfaces:
+Continuous `develop` surfaces:
 
 - website bundle on Cloudflare Pages
 - public demo inside the website bundle at `/demo/`
@@ -17,7 +17,8 @@ Continuous `main` surfaces:
 
 ## Branches And Tags
 
-- `main` is the default integration branch
+- `develop` is the default integration branch
+- `main` is the published branch for Home Assistant-facing repository state and releases
 - optional `hotfix/*` branches are allowed when a production fix cannot wait
 - stable releases use tags such as `v0.4.1`
 - prereleases use tags such as `v0.5.0-beta.1` or `v0.5.0-rc.1`
@@ -61,8 +62,8 @@ repo must not contain `repository.yaml`.
 
 ## Channels
 
-- `edge`: published from `main`
-- `dev`: nightly `Navet Dev` add-on metadata and image tag published from every `main` push
+- `edge`: published from `develop`
+- `dev`: nightly `Navet Dev` add-on image tags published from every `develop` push
 - `beta`: published from prerelease tags
 - `latest`: published from stable tags only
 - `sha-*`: immutable publish trace for every artifact push
@@ -104,25 +105,32 @@ Visible but non-blocking:
 
 Trigger:
 
-- push to `main`
+- push to `develop`
 
 Behavior:
 
 - requires Tier 1 validation
-- reads the committed `platform/home-assistant/addons/navet-dev/config.yaml` version
-- expects a local dev version such as `0.7.0-dev.20260610.093015`
+- computes a fresh dev version such as `0.7.0-dev.20260610.093015` inside CI
 - publishes standalone app dev artifacts
 - publishes add-on dev artifacts, including the exact dev version tag plus the moving `edge` and `dev` aliases
-- exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
-- uses a GitHub App token for `awesomestvi/navet-hacs` checkout and push
+- does not update the published branch metadata directly
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - does not create a GitHub release
 - does not update `latest`
 
-Local maintainer step for dev publishes:
+### Published branch sync
 
-- run `pnpm release:dev-version` before committing or before pushing `main`
-- commit the resulting `platform/home-assistant/addons/navet-dev/config.yaml` change in the same user commit
+`/.github/workflows/published-branch-sync.yml`
+
+Trigger:
+
+- push to `main`
+
+Behavior:
+
+- exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
+- uses a GitHub App token for `awesomestvi/navet-hacs` checkout and push
+- keeps HACS aligned with the published branch rather than the integration branch
 
 ### Release publish
 
@@ -150,7 +158,7 @@ Behavior:
 
 Trigger:
 
-- Cloudflare Pages builds directly from the connected repo on push
+- Cloudflare Pages builds directly from the connected `develop` branch on push
 
 Behavior:
 
@@ -164,22 +172,30 @@ promotion in phase 1.
 
 ## Maintainer Flow
 
-1. Decide the release bump and update `package.json`.
-2. Run `pnpm release:version-sync`.
-3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
+1. Merge normal feature work into `develop`.
+2. Decide the release bump on `develop` and update `package.json`.
+3. Run `pnpm release:version-sync`.
+4. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
    treat them as the primary release-note source.
-4. Draft the changelog section for the target version from those Linear issues. If no matching
+5. Draft the changelog section for the target version from those Linear issues. If no matching
    issues exist, fall back to commit history since the previous release tag.
-5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
-6. Run `pnpm release:check`.
+6. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
+7. Run `pnpm release:check`.
    Do not run `pnpm build:ha-panel` as part of local release prep. The automated release/HACS workflow
    builds the custom panel assets and packages the panel artifact.
-7. Merge the release commit to `main`.
-8. Create and push the release tag for `awesomestvi/navet`.
-9. Let the tagged release workflow build the panel bundle, package it, and attach
+8. Promote the selected `develop` commit to `main`.
+9. Create and push the release tag from `main` for `awesomestvi/navet`.
+10. Let the tagged release workflow build the panel bundle, package it, and attach
     `navet-panel-<tag>.tar.gz` to the GitHub release.
-10. Verify the published standalone/add-on artifacts, the matching `navet-hacs` branch/tag sync, and
+11. Verify the published standalone/add-on artifacts, the matching `navet-hacs` branch/tag sync, and
     the GitHub release page.
+
+Promotion and hotfix flow:
+
+- feature branch -> PR into `develop`
+- `develop` auto-builds preview and dev-channel artifacts
+- maintainer promotes a chosen `develop` commit into `main` when the public Home Assistant repository should move
+- hotfix branches start from `main`, merge back to `main`, then merge or cherry-pick back into `develop`
 
 ## What Stays Manual
 

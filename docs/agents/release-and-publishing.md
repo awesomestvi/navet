@@ -25,33 +25,42 @@ This file defines release workflow constraints and publishing behavior for Navet
 
 Recommended operator flow:
 
-1. Decide whether the change is `patch`, `minor`, or `prerelease`.
-2. Bump `package.json`.
-3. Run `pnpm release:version-sync`.
-4. Fetch Linear issues in the `Ready for Release` workflow state and use them as the release-note
+1. Merge feature work into `develop`.
+2. Decide whether the change is `patch`, `minor`, or `prerelease`.
+3. Bump `package.json` on `develop`.
+4. Run `pnpm release:version-sync`.
+5. Fetch Linear issues in the `Ready for Release` workflow state and use them as the release-note
    source. If the release has no matching issues, draft the changelog from commit history instead.
-5. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
+6. Add a matching `CHANGELOG.md` section for the release version. The GitHub Release workflow
    publishes this section as the release notes that HACS/Home Assistant can show before users
    update.
-6. Do not require maintainers to prebuild Home Assistant panel assets for HACS or release
+7. Do not require maintainers to prebuild Home Assistant panel assets for HACS or release
    publishing. The export and release workflows build them automatically.
    Do not ask for `pnpm build:ha-panel` during local release prep unless the user explicitly wants
    a separate manual panel build outside the normal release path.
-7. Add or update the matching `platform/home-assistant/addons/navet/CHANGELOG.md` entry for every
+8. Add or update the matching `platform/home-assistant/addons/navet/CHANGELOG.md` entry for every
    versioned add-on release.
    Keep it concise and add-on-facing, even when it mostly mirrors the main app changelog.
-8. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
-9. Run `pnpm release:check`.
-10. Tag the monorepo commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or
+9. If the release meaning changed, update [../VERSIONING.md](../VERSIONING.md).
+10. Run `pnpm release:check`.
+11. Promote the selected `develop` commit to `main`.
+12. Tag the promoted `main` commit with a version tag such as `v0.3.1-beta.1`, `v0.3.1-rc.1`, or
     `v0.3.1`.
-11. Push the tag to GitHub to trigger
+13. Push the tag to GitHub to trigger
     [../../.github/workflows/release.yml](../../.github/workflows/release.yml).
-12. The tagged release workflow validates the committed release surfaces, packages the committed
+14. The tagged release workflow validates the committed release surfaces, packages the committed
     custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
-13. The tagged release workflow also syncs `awesomestvi/navet-hacs/main` and refreshes the matching
+15. The tagged release workflow also syncs `awesomestvi/navet-hacs/main` and refreshes the matching
     `awesomestvi/navet-hacs` tag.
-14. For developer hardware testing from `main`, use
+16. For developer hardware testing from `develop`, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
+
+Branch flow:
+
+- feature branch -> PR into `develop`
+- `develop` owns preview and dev-channel automation
+- `main` is release and published-branch only
+- hotfix branches start from `main`, then merge back into `main` and `develop`
 
 ## Release Note Style
 
@@ -139,7 +148,7 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Publish and release workflows should require Tier 1 validation before shipping.
 - Tagged releases should build the custom-panel artifact in workflow before creating the GitHub
   release.
-- Pushes to `main` and tagged releases should also sync the exported HACS payload into
+- Pushes to the published `main` branch and tagged releases should also sync the exported HACS payload into
   `awesomestvi/navet-hacs/main`.
 - Tagged releases should also create or refresh the matching Git tag in `awesomestvi/navet-hacs`
   so both repositories expose the same release tag name.
@@ -154,14 +163,15 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 ## Publishing Rules
 
 - Cloudflare Pages deploys the demo at `/demo/` and Storybook at `/storybook/` from the website bundle.
-- Cloudflare Pages builds directly from the repo; GitHub Pages is retired and there is no GitHub Pages or GitHub deploy workflow for the website bundle.
-- Pushes to `main` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
+- Cloudflare Pages builds directly from the `develop` branch; GitHub Pages is retired and there is no GitHub Pages or GitHub deploy workflow for the website bundle.
+- Pushes to `develop` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
   and `sha-*`.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
-- Pushes to `main` publish the committed `Navet Dev` add-on version such as
-  `0.x.y-dev.YYYYMMDD.HHMMSS`, plus moving `edge`, temporary `dev`, and `sha-*` tags.
-- Before pushing `main`, refresh that committed dev version locally with `pnpm release:dev-version`.
+- Pushes to `develop` compute and publish a fresh `Navet Dev` add-on version such as
+  `0.x.y-dev.YYYYMMDD.HHMMSS` from the integration branch commit SHA.
+- The published `main` branch remains the Home Assistant repository source of truth, so it should
+  only move when the corresponding dev or release artifacts are already ready for users.
 - Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
   archive to the GitHub release.

@@ -3,7 +3,7 @@ name: Publish Dev Builds
 on:
   push:
     branches:
-      - main
+      - develop
 
 permissions:
   contents: read
@@ -16,7 +16,6 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/navet
-  HACS_REPOSITORY: awesomestvi/navet-hacs
 
 jobs:
   tier-1-release-critical:
@@ -60,30 +59,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Read committed dev version
+      - name: Compute dev version
         id: dev_version
         run: |
-          VERSION=$(node --input-type=module -e 'import fs from "node:fs"; const content = fs.readFileSync("platform/home-assistant/addons/navet-dev/config.yaml", "utf8"); const match = content.match(/^version:\s*"?(.*?)"?\s*$/m); if (!match?.[1]) { throw new Error("Unable to read Navet Dev add-on version"); } process.stdout.write(match[1].trim());')
-          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Validate committed dev version
-        env:
-          DEV_VERSION: ${{ steps.dev_version.outputs.value }}
-        run: |
           PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
+          DEV_VERSION="${PACKAGE_VERSION}-dev.$(date -u +%Y%m%d.%H%M%S)"
           if [[ ! "$DEV_VERSION" =~ ^${PACKAGE_VERSION//./\\.}-dev\.[0-9]{8}\.[0-9]{6}$ ]]; then
-            echo "Expected platform/home-assistant/addons/navet-dev/config.yaml version to match ${PACKAGE_VERSION}-dev.YYYYMMDD.HHMMSS but received: $DEV_VERSION"
-            echo "Run: pnpm release:dev-version"
+            echo "Expected computed Navet Dev add-on version to match ${PACKAGE_VERSION}-dev.YYYYMMDD.HHMMSS but received: $DEV_VERSION"
             exit 1
           fi
+          echo "value=$DEV_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Capture release sha
         id: release_sha
@@ -248,105 +239,3 @@ jobs:
             NAVET_RELEASE_CHANNEL=edge
             NAVET_BUILD_VERSION=${{ steps.tags.outputs.build_version }}
           tags: ${{ steps.tags.outputs.value }}
-
-  sync-hacs:
-    name: Sync HACS Integration
-    runs-on: ubuntu-latest
-    needs:
-      - tier-1-release-critical
-      - prepare-dev-release
-    concurrency:
-      group: hacs-sync-navet-hacs-main
-      cancel-in-progress: false
-    environment: edge
-    if: github.repository == 'awesomestvi/navet'
-    env:
-      NAVET_HACS_APP_ID: ${{ secrets.NAVET_HACS_APP_ID }}
-      NAVET_HACS_APP_PRIVATE_KEY: ${{ secrets.NAVET_HACS_APP_PRIVATE_KEY }}
-
-    steps:
-      - name: Check HACS sync secrets
-        id: hacs_preflight
-        run: |
-          if [[ -z "${NAVET_HACS_APP_ID}" || -z "${NAVET_HACS_APP_PRIVATE_KEY}" ]]; then
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "HACS sync secrets are missing; skipping sync job steps."
-            exit 0
-          fi
-
-          echo "enabled=true" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout monorepo
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare-dev-release.outputs.release_sha }}
-
-      - name: Create GitHub App token for HACS sync
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        id: hacs_app_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.NAVET_HACS_APP_ID }}
-          private-key: ${{ secrets.NAVET_HACS_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: navet-hacs
-
-      - name: Checkout HACS repository
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HACS_REPOSITORY }}
-          ref: main
-          path: navet-hacs
-          token: ${{ steps.hacs_app_token.outputs.token }}
-
-      - name: Setup pnpm
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        run: pnpm install --frozen-lockfile
-
-      - name: Export HACS payload
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        env:
-          NAVET_HACS_EXPORT_ROOT: ${{ github.workspace }}/navet-hacs
-        run: node scripts/export-hacs-integration.mjs
-
-      - name: Commit and push HACS sync
-        if: steps.hacs_preflight.outputs.enabled == 'true'
-        working-directory: navet-hacs
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No HACS changes to publish."
-            exit 0
-          fi
-          git commit -m "chore: sync edge export from ${GITHUB_SHA::7}"
-          for attempt in 1 2 3; do
-            git fetch origin main
-            git rebase origin/main
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-
-            if [[ "$attempt" -eq 3 ]]; then
-              echo "HACS sync push failed after ${attempt} attempts."
-              exit 1
-            fi
-
-            sleep $((attempt * 5))
-          done
