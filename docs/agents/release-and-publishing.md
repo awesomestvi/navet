@@ -160,7 +160,7 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
 - Pushes to `main` publish the committed `Navet Dev` add-on version such as
-  `0.x.y-dev.YYYYMMDD.HHMMSS`, plus moving `edge`, temporary `dev`, and `sha-*` tags.
+  `0.x.y-dev.YYYYMMDDHHMMSS`, plus moving `edge`, temporary `dev`, and `sha-*` tags.
 - Before pushing `main`, refresh that committed dev version locally with `pnpm release:dev-version`.
 - Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel

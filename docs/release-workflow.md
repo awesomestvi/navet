@@ -118,6 +118,10 @@ Behavior:
 - does not create a GitHub release
 - does not update `latest`
 
+Expected dev version shape:
+
+- `0.x.y-dev.YYYYMMDDHHMMSS`
+
 ### Release publish
 
 `/.github/workflows/release.yml`

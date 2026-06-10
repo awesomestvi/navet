@@ -14,7 +14,7 @@ This directory is the monorepo source for the add-on published from `awesomestvi
 Published image tag shape:
 
 ```text
-ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDD.HHMMSS
+ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
 Before pushing `main`, run `pnpm release:dev-version` so `platform/home-assistant/addons/navet-dev/config.yaml`
