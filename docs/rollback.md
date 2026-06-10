@@ -40,7 +40,7 @@ earlier release tag and its attached artifact, not the current `main` branch tip
 
 ## Demo, Storybook, Website
 
-These are continuous `main` surfaces, not versioned production artifacts in phase 1.
+These are continuous `develop` surfaces, not versioned production artifacts in phase 1.
 
 If a Cloudflare Pages deployment must be reverted, restore the earlier known-good commit in the
 connected branch or trigger a redeploy from that commit rather than treating the website bundle as
