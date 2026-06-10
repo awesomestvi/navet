@@ -833,6 +833,7 @@ function useDemoDisplayDefaults() {
     });
 
     document.documentElement.dataset.theme = 'dark';
+    document.documentElement.dataset.navetPreviewRuntime = 'demo';
     document.documentElement.style.setProperty('--navet-accent', '#f97316');
     document.documentElement.dataset.effectsQuality = 'high';
     document.documentElement.dataset.lowPower = 'false';

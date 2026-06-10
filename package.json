@@ -21,6 +21,7 @@
     "build:storybook": "pnpm storybook:build",
     "build:website": "pnpm website:bundle",
     "dev": "pnpm --filter @navet/standalone dev",
+    "demo:dev": "pnpm --filter @navet/demo dev",
     "website:build": "pnpm website:bundle",
     "website:build:app": "pnpm --filter @navet/website build",
     "website:bundle": "pnpm website:build:app && pnpm build:demo && pnpm storybook:build && node scripts/stage-website-bundle.mjs",

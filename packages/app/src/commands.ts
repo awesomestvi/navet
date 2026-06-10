@@ -1,4 +1,5 @@
 import { recordHabitCommand } from '@navet/app/features/habits/command-attribution';
+import { maybeDispatchPreviewCommand } from '@navet/app/preview/preview-action-bridge';
 import { getRegisteredSmartHomeProviderAdapter } from '@navet/app/provider-contract-registry';
 import { resolveIntegrationProviderId } from '@navet/app/services/integration-provider-context.service';
 import type { CommandResult, NavetCommand, NavetUiCommand } from '@navet/core/types';
@@ -8,6 +9,11 @@ export async function dispatchNavetCommand(
   command: NavetCommand,
   providerId?: IntegrationProviderId
 ): Promise<CommandResult> {
+  const previewResult = await maybeDispatchPreviewCommand(command);
+  if (previewResult) {
+    return previewResult;
+  }
+
   const resolvedProviderId = resolveProviderId(providerId, command.entityId);
   const adapter = getRegisteredSmartHomeProviderAdapter(resolvedProviderId);
 

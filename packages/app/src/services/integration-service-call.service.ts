@@ -1,3 +1,4 @@
+import { maybeHandlePreviewServiceCall } from '@navet/app/preview/preview-action-bridge';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { IntegrationServiceTarget } from '@navet/app/types/integration-service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
@@ -48,6 +49,17 @@ export async function callIntegrationService({
   serviceData = {},
   target,
 }: IntegrationServiceCallRequest): Promise<void> {
+  const handledByPreview = await maybeHandlePreviewServiceCall({
+    entityId,
+    domain,
+    service,
+    serviceData,
+    target,
+  });
+  if (handledByPreview) {
+    return;
+  }
+
   const resolvedProviderId = resolveIntegrationProviderId(entityId, providerId);
   const registration = getProviderRuntimeRegistration(resolvedProviderId);
 

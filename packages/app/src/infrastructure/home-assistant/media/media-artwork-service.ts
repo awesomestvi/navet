@@ -740,12 +740,24 @@ export class MediaArtworkService {
       THUMBNAIL_LOOKUP_TIMEOUT_MS
     );
     if (thumbnailDataUrl) {
+      const fallbackResource = await this.resolver.resolve({
+        kind: 'media_artwork',
+        entityId,
+        rawPath: picture,
+      });
+
       return {
         id: `${entityId}:thumbnail`,
         kind: 'image',
         url: thumbnailDataUrl,
         cacheKey: fingerprint,
         authStrategy: 'none',
+        fallback: fallbackResource.url
+          ? {
+              ...fallbackResource,
+              cacheKey: fingerprint,
+            }
+          : undefined,
         metadata: { source: 'media_player_thumbnail' },
       };
     }

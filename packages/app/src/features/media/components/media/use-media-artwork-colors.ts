@@ -16,6 +16,12 @@ export interface MediaArtworkPaletteSource {
   cacheKey?: string;
   authStrategy?: ResolvedPlatformResource['authStrategy'];
   source?: string;
+  fallback?: {
+    url?: string | null;
+    cacheKey?: string;
+    authStrategy?: ResolvedPlatformResource['authStrategy'];
+    source?: string;
+  };
 }
 
 const FALLBACK_COLORS: Record<ThemeType, MediaArtworkPalette> = {
@@ -61,19 +67,29 @@ export function getMediaArtworkPaletteSource(
     return null;
   }
 
-  if (artworkResource?.url === artwork) {
+  const primary = {
+    url: artwork,
+    cacheKey: artworkResource?.url === artwork ? artworkResource.cacheKey : undefined,
+    authStrategy: artworkResource?.url === artwork ? artworkResource.authStrategy : 'none',
+    source: artworkResource?.url === artwork ? artworkResource.metadata?.source : undefined,
+  };
+
+  if (
+    artworkResource?.metadata?.source === 'media_player_thumbnail' &&
+    artworkResource.fallback?.url
+  ) {
     return {
-      url: artwork,
-      cacheKey: artworkResource.cacheKey,
-      authStrategy: artworkResource.authStrategy,
-      source: artworkResource.metadata?.source,
+      ...primary,
+      fallback: {
+        url: artworkResource.fallback.url,
+        cacheKey: artworkResource.fallback.cacheKey,
+        authStrategy: artworkResource.fallback.authStrategy,
+        source: artworkResource.fallback.metadata?.source,
+      },
     };
   }
 
-  return {
-    url: artwork,
-    authStrategy: 'none',
-  };
+  return primary;
 }
 
 export function withAlpha(color: string, alpha: number) {
@@ -144,9 +160,22 @@ export function useMediaArtworkColors(
 
     let cancelled = false;
     const existingRequest = pendingPaletteRequests.get(requestKey);
+    const resolvePrimaryThenFallback = async () => {
+      const primaryColors = await resolveArtworkPalette(artworkSource);
+      if (primaryColors) {
+        return primaryColors;
+      }
+
+      const fallbackSource = artworkSource?.fallback;
+      if (!fallbackSource) {
+        return null;
+      }
+
+      return resolveArtworkPalette(fallbackSource);
+    };
     const paletteRequest =
       existingRequest ??
-      resolveArtworkPalette(artworkSource).finally(() => {
+      resolvePrimaryThenFallback().finally(() => {
         pendingPaletteRequests.delete(requestKey);
       });
 
