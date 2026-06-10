@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 concurrency:
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: tier-1-release-critical
     outputs:
-      dev_version: ${{ steps.resolved_dev.outputs.value }}
+      dev_version: ${{ steps.dev_version.outputs.value }}
       release_sha: ${{ steps.release_sha.outputs.value }}
       release_sha_short: ${{ steps.release_sha_short.outputs.value }}
     steps:
@@ -68,58 +68,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Detect existing dev metadata commit
-        id: existing_metadata
-        run: |
-          if [[ "${{ github.actor }}" == 'github-actions[bot]' && "${{ github.event.head_commit.message }}" == 'chore(ci): publish Navet Dev metadata' ]]; then
-            echo "value=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Compute dev version
-        id: dev_version
-        if: steps.existing_metadata.outputs.value != 'true'
-        run: |
-          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
-          DEV_DATE=$(date -u +%Y%m%d)
-          echo "value=${PACKAGE_VERSION}-dev.${DEV_DATE}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
-
       - name: Read committed dev version
-        id: committed_dev
-        if: steps.existing_metadata.outputs.value == 'true'
+        id: dev_version
         run: |
           VERSION=$(node --input-type=module -e 'import fs from "node:fs"; const content = fs.readFileSync("platform/home-assistant/addons/navet-dev/config.yaml", "utf8"); const match = content.match(/^version:\s*"?(.*?)"?\s*$/m); if (!match?.[1]) { throw new Error("Unable to read Navet Dev add-on version"); } process.stdout.write(match[1].trim());')
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Update Navet Dev add-on version
-        if: steps.existing_metadata.outputs.value != 'true'
+      - name: Validate committed dev version
         env:
           DEV_VERSION: ${{ steps.dev_version.outputs.value }}
         run: |
-          node --input-type=module -e 'import fs from "node:fs"; const filePath = "platform/home-assistant/addons/navet-dev/config.yaml"; const content = fs.readFileSync(filePath, "utf8"); const replacement = `version: "${process.env.DEV_VERSION}"`; const nextContent = content.replace(/^version:\s*"?.*?"?\s*$/m, replacement); if (nextContent !== content) { fs.writeFileSync(filePath, nextContent, "utf8"); }'
-
-      - name: Commit dev metadata
-        if: steps.existing_metadata.outputs.value != 'true'
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add platform/home-assistant/addons/navet-dev/config.yaml
-          if git diff --cached --quiet; then
-            echo "Navet Dev metadata already matches this dev version."
-          else
-            git commit -m "chore(ci): publish Navet Dev metadata"
-            git push origin HEAD:main
-          fi
-
-      - name: Export resolved dev version
-        id: resolved_dev
-        run: |
-          if [[ "${{ steps.existing_metadata.outputs.value }}" == 'true' ]]; then
-            echo "value=${{ steps.committed_dev.outputs.value }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ steps.dev_version.outputs.value }}" >> "$GITHUB_OUTPUT"
+          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
+          if [[ ! "$DEV_VERSION" =~ ^${PACKAGE_VERSION//./\\.}-dev\.[0-9]{8}\.[0-9]{6}$ ]]; then
+            echo "Expected platform/home-assistant/addons/navet-dev/config.yaml version to match ${PACKAGE_VERSION}-dev.YYYYMMDD.HHMMSS but received: $DEV_VERSION"
+            echo "Run: pnpm release:dev-version"
+            exit 1
           fi
 
       - name: Capture release sha

@@ -109,8 +109,8 @@ Trigger:
 Behavior:
 
 - requires Tier 1 validation
-- computes a `package-version` based dev add-on version such as `0.7.0-dev.20260609.1234`
-- updates `platform/home-assistant/addons/navet-dev/config.yaml` on `main` so Home Assistant sees a new dev version
+- reads the committed `platform/home-assistant/addons/navet-dev/config.yaml` version
+- expects a local dev version such as `0.7.0-dev.20260610.093015`
 - publishes standalone app dev artifacts
 - publishes add-on dev artifacts, including the exact dev version tag plus the moving `edge` and `dev` aliases
 - exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
@@ -118,6 +118,11 @@ Behavior:
 - pins Node 22 anywhere the workflow runs repo JavaScript
 - does not create a GitHub release
 - does not update `latest`
+
+Local maintainer step for dev publishes:
+
+- run `pnpm release:dev-version` before committing or before pushing `main`
+- commit the resulting `platform/home-assistant/addons/navet-dev/config.yaml` change in the same user commit
 
 ### Release publish
 

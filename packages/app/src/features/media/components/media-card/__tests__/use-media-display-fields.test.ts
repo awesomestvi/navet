@@ -71,6 +71,25 @@ describe('useMediaDisplayFields', () => {
     expect(fields.liveArtworkKey).toContain('/api/media_player_proxy/media_player.kitchen_local');
   });
 
+  it('keys artwork changes from entity_picture_local before entity_picture when both are present', () => {
+    const entity = mediaPlayerEntityFactory({
+      entity_picture: 'http://music-assistant.local:8095/imageproxy/cover?size=512',
+      entity_picture_local: '/api/media_player_proxy/media_player.kitchen_local',
+      media_content_id: 'track-1',
+      media_title: 'Local artwork song',
+      media_artist: 'Artist Name',
+      media_album_name: 'Album Name',
+    });
+    const fields = useMediaDisplayFields({
+      ...baseParams,
+      liveAttrs: entity.attributes,
+    });
+
+    expect(
+      fields.liveArtworkKey.startsWith('/api/media_player_proxy/media_player.kitchen_local')
+    ).toBe(true);
+  });
+
   it('uses media_image_url as live artwork when proxy picture attributes are unavailable', () => {
     const entity = mediaPlayerEntityFactory({
       entity_picture: undefined,

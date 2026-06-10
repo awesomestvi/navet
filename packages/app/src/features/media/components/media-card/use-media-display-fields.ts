@@ -84,8 +84,8 @@ export function useMediaDisplayFields({
     (typeof liveAttrs?.source === 'string' && liveAttrs.source) ||
     fallbackArtist;
   const liveArtworkKey = [
-    getStringAttribute(liveAttrs, 'entity_picture'),
     getStringAttribute(liveAttrs, 'entity_picture_local'),
+    getStringAttribute(liveAttrs, 'entity_picture'),
     getStringAttribute(liveAttrs, 'media_image_url'),
     getStringAttribute(liveAttrs, 'media_content_id'),
     getStringAttribute(liveAttrs, 'media_title'),
